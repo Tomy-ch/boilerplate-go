@@ -172,12 +172,19 @@ than left implicit:
   statement. Splitting is forced by [ADR-0037](0037-uuidv7-identifiers.md), which puts key generation
   in the domain. Specified in `docs/spec/usecase/product.md`.
 
-- **Coupon redemption — a decomposable write on the same aggregate.** Applying one coupon at
-  checkout writes both `purchases` and `coupons`, yet it stays an ordinary usecase composed of
-  Repository calls. The rows it writes are named by identity: the caller supplies the coupon id, so
-  the row can be locked, and the write decomposes into `coupon.Repository.LockByID` +
-  `coupon.Repository.UpdateUsed` alongside `purchase.Repository.Create`. Branch 1 with a guard, by
-  the decision procedure above.
+- **Coupon redemption — branch 1, and the lock is on a row this transaction writes.** Applying one
+  coupon at checkout writes both `purchases` and `coupons`, and a state where the purchase is
+  confirmed at the discounted price while the coupon is still spendable must never be observable —
+  the coupon would be spent twice. That atomicity is supplied by the transaction the usecase already
+  owns, exactly as in purchase creation above: the rows are named by identity, since the caller
+  supplies the coupon id, so the write decomposes into `coupon.Repository.LockByID` +
+  `coupon.Repository.UpdateUsed` alongside `purchase.Repository.Create`.
+  **The coupon lock is not a branch-2 guard.** A guard writes nothing and holds a row against the
+  writer that would invalidate the observation; here this transaction *is* that writer, so
+  `LockByID` is the ordinary ordered pessimistic lock [ADR-0036](0036-ordered-pessimistic-row-locks.md)
+  requires before writing a row whose condition was read — the same role the product lock plays in
+  purchase creation, which is likewise not called a guard. The guard in this workflow is the
+  purchaser row, and purchase creation above already records it.
   **Read this against the discontinuation above:** both write the coupon aggregate, and they land on
   opposite sides of the criterion. What separates them is not how many aggregates are touched, nor how
   important the operation is, but whether the target rows can be named — which is why the pair sits in
