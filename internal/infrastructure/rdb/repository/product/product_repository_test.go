@@ -1882,6 +1882,9 @@ func Test_repository_UpdateStock(t *testing.T) {
 //nolint:paralleltest // 両 tx から見える commit 済みの行を使うため非並列
 func Test_repository_UpdateStock_concurrentRowLock(t *testing.T) {
 	testDB := testkit.NewTestDB(t)
+	// 検証用商品の作成から 2 本の tx の完了までを、他パッケージの CASCADE TRUNCATE から守る。
+	testkit.HoldSuiteSerialization(t, testDB)
+
 	lt := observability.NewMockInfraLayerTracer(t)
 	repo := &repository{tracer: lt, db: testDB}
 
