@@ -376,6 +376,8 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
       "database/migrations/000024_create_coupons.down.sql",
 
       "internal/domain/coupon",
+      // 引き換え可否と値引き額はカートの明細と商品を材料にするため、この Usecase は
+      // cart / product を直接参照する。カートのレスポンス片も同様なので、両者と生死を共にする。
       "internal/usecase/coupon",
       "internal/infrastructure/rdb/repository/coupon",
       "database/dml/repository/coupon",
