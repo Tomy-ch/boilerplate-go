@@ -2654,7 +2654,7 @@ func Test_settle(t *testing.T) {
 		t.Run("値引きが無い場合は小計をそのまま課税の基礎にする", func(t *testing.T) {
 			t.Parallel()
 
-			tax, shipping, total := settle(10000, 0)
+			tax, shipping, total := settle(settlementBasis{Subtotal: 10000, Discount: 0})
 
 			assert.Equal(t, 1000, tax)
 			assert.Equal(t, shippingFeeCents, shipping)
@@ -2664,7 +2664,7 @@ func Test_settle(t *testing.T) {
 		t.Run("値引きがある場合は値引き後の額を課税の基礎にする", func(t *testing.T) {
 			t.Parallel()
 
-			tax, _, total := settle(10000, 2000)
+			tax, _, total := settle(settlementBasis{Subtotal: 10000, Discount: 2000})
 
 			assert.Equal(t, 800, tax)
 			assert.Equal(t, 8000+800+shippingFeeCents, total)
@@ -2673,7 +2673,7 @@ func Test_settle(t *testing.T) {
 		t.Run("値引きが小計と同額の場合、税は0で合計は送料だけになる", func(t *testing.T) {
 			t.Parallel()
 
-			tax, shipping, total := settle(10000, 10000)
+			tax, shipping, total := settle(settlementBasis{Subtotal: 10000, Discount: 10000})
 
 			assert.Zero(t, tax)
 			assert.Equal(t, shipping, total)
@@ -2729,19 +2729,19 @@ func Test_validateDiscount(t *testing.T) {
 		t.Run("クーポンと正の値引きが揃っている場合は通る", func(t *testing.T) {
 			t.Parallel()
 
-			require.NoError(t, validateDiscount(couponID(t), 500, 10000))
+			require.NoError(t, validateDiscount(couponID(t), settlementBasis{Subtotal: 10000, Discount: 500}))
 		})
 
 		t.Run("どちらも無い場合は通る", func(t *testing.T) {
 			t.Parallel()
 
-			require.NoError(t, validateDiscount(nil, 0, 10000))
+			require.NoError(t, validateDiscount(nil, settlementBasis{Subtotal: 10000, Discount: 0}))
 		})
 
 		t.Run("値引きが小計ちょうどの場合は通る", func(t *testing.T) {
 			t.Parallel()
 
-			require.NoError(t, validateDiscount(couponID(t), 10000, 10000))
+			require.NoError(t, validateDiscount(couponID(t), settlementBasis{Subtotal: 10000, Discount: 10000}))
 		})
 	})
 
@@ -2751,7 +2751,7 @@ func Test_validateDiscount(t *testing.T) {
 		t.Run("クーポンがあるのに値引きが0の場合、ErrZeroDiscountを返す", func(t *testing.T) {
 			t.Parallel()
 
-			err := validateDiscount(couponID(t), 0, 10000)
+			err := validateDiscount(couponID(t), settlementBasis{Subtotal: 10000, Discount: 0})
 
 			require.ErrorIs(t, err, ErrZeroDiscount)
 		})
@@ -2759,7 +2759,7 @@ func Test_validateDiscount(t *testing.T) {
 		t.Run("クーポンが無いのに値引きが立っている場合、ErrZeroDiscountを返す", func(t *testing.T) {
 			t.Parallel()
 
-			err := validateDiscount(nil, 500, 10000)
+			err := validateDiscount(nil, settlementBasis{Subtotal: 10000, Discount: 500})
 
 			require.ErrorIs(t, err, ErrZeroDiscount)
 		})
@@ -2767,7 +2767,7 @@ func Test_validateDiscount(t *testing.T) {
 		t.Run("値引きが負の場合、ErrInvalidAmountを返す", func(t *testing.T) {
 			t.Parallel()
 
-			err := validateDiscount(couponID(t), -1, 10000)
+			err := validateDiscount(couponID(t), settlementBasis{Subtotal: 10000, Discount: -1})
 
 			require.ErrorIs(t, err, ErrInvalidAmount)
 		})
@@ -2775,7 +2775,7 @@ func Test_validateDiscount(t *testing.T) {
 		t.Run("値引きが小計を超える場合、ErrInvalidAmountを返す", func(t *testing.T) {
 			t.Parallel()
 
-			err := validateDiscount(couponID(t), 10001, 10000)
+			err := validateDiscount(couponID(t), settlementBasis{Subtotal: 10000, Discount: 10001})
 
 			require.ErrorIs(t, err, ErrInvalidAmount)
 		})

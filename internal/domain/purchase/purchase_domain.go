@@ -250,7 +250,7 @@ func New(
 		)
 	}
 	subtotal := int(subtotalCents)
-	tax, shipping, total := settle(subtotal, 0)
+	tax, shipping, total := settle(settlementBasis{Subtotal: subtotal, Discount: 0})
 
 	return &Purchase{
 		id:             id,
@@ -265,13 +265,22 @@ func New(
 	}, nil
 }
 
+// settlementBasis は、税・送料・合計を決める材料です。
+// どちらも同じ尺度の金額なので、位置ではなく名前で渡します（docs/rules.md の Function Signature Rules）。
+type settlementBasis struct {
+	// Subtotal は、明細の小計（USD セント）です。
+	Subtotal int
+	// Discount は、クーポンによる値引き額（USD セント）です。
+	Discount int
+}
+
 // settle は、小計と値引き額から税・送料・合計を決めます。
 //
 // 課税の基礎は値引き後の額です。値引いた分にまで課税しないためで、この規則の所在はここ 1 箇所です
 // （docs/spec/domain/purchase.md の Cross-field Invariants）。
 // 生成時と値引きの適用時が同じ関数を通るので、両者で式がずれません。
-func settle(subtotal, discount int) (int, int, int) {
-	taxable := subtotal - discount
+func settle(basis settlementBasis) (int, int, int) {
+	taxable := basis.Subtotal - basis.Discount
 	tax := taxable * taxRatePercent / percentDivisor
 	shipping := shippingFeeCents
 	total := taxable + tax + shipping
@@ -310,7 +319,7 @@ func Reconstruct(id uuid.UUID, attrs Attributes) (*Purchase, error) {
 	if attrs.SubtotalAmount < 0 || attrs.TaxAmount < 0 || attrs.ShippingFee < 0 || attrs.TotalAmount < 0 {
 		return nil, xerrors.Wrap(ErrInvalidAmount, "amounts must not be negative")
 	}
-	if err := validateDiscount(attrs.CouponID, attrs.DiscountAmount, attrs.SubtotalAmount); err != nil {
+	if err := validateDiscount(attrs.CouponID, settlementBasis{Subtotal: attrs.SubtotalAmount, Discount: attrs.DiscountAmount}); err != nil {
 		return nil, err
 	}
 	if len(attrs.Details) == 0 {
@@ -352,17 +361,17 @@ func Reconstruct(id uuid.UUID, attrs Attributes) (*Purchase, error) {
 // （docs/spec/domain/purchase.md の Cross-field Invariants）。
 //
 // 値引きは小計を超えません。超えると請求額が負になります。
-func validateDiscount(couponID *uuid.UUID, discount, subtotal int) error {
-	if discount < 0 {
+func validateDiscount(couponID *uuid.UUID, basis settlementBasis) error {
+	if basis.Discount < 0 {
 		return xerrors.Wrap(ErrInvalidAmount, "discountAmount must not be negative")
 	}
-	if (couponID != nil) != (discount > 0) {
+	if (couponID != nil) != (basis.Discount > 0) {
 		return apperror.WithDetails(
 			xerrors.Wrap(ErrZeroDiscount, "couponID and a positive discountAmount must be set together"),
 			FieldCouponID,
 		)
 	}
-	if discount > subtotal {
+	if basis.Discount > basis.Subtotal {
 		return xerrors.Wrap(ErrInvalidAmount, "discountAmount must not exceed the subtotal")
 	}
 
@@ -389,13 +398,13 @@ func (p *Purchase) ApplyCoupon(couponID uuid.UUID, discountAmount int) error {
 			FieldCouponID,
 		)
 	}
-	if err := validateDiscount(&couponID, discountAmount, p.subtotalAmount); err != nil {
+	if err := validateDiscount(&couponID, settlementBasis{Subtotal: p.subtotalAmount, Discount: discountAmount}); err != nil {
 		return err
 	}
 
 	p.couponID = &couponID
 	p.discountAmount = discountAmount
-	p.taxAmount, p.shippingFee, p.totalAmount = settle(p.subtotalAmount, discountAmount)
+	p.taxAmount, p.shippingFee, p.totalAmount = settle(settlementBasis{Subtotal: p.subtotalAmount, Discount: discountAmount})
 
 	return nil
 }
