@@ -139,6 +139,15 @@ func newTestProduct(t *testing.T, salt, price string, quantity int) *product.Pro
 func newTestCart(t *testing.T, ownerID uuid.UUID, productIDs ...uuid.UUID) *cart.Cart {
 	t.Helper()
 
+	return newTestCartExpiringAt(t, ownerID, testExpiresAt, productIDs...)
+}
+
+// newTestCartExpiringAt は、有効期限を指定してカートを組み立てます。
+func newTestCartExpiringAt(
+	t *testing.T, ownerID uuid.UUID, expiresAt time.Time, productIDs ...uuid.UUID,
+) *cart.Cart {
+	t.Helper()
+
 	items := make([]cart.CartItem, len(productIDs))
 	for i, id := range productIDs {
 		items[i] = cart.NewCartItem(uuidtestkit.NewTestFromSalt(t, "item_"+id.String()), cart.CartItemAttributes{
@@ -151,7 +160,7 @@ func newTestCart(t *testing.T, ownerID uuid.UUID, productIDs ...uuid.UUID) *cart
 	c, err := cart.Reconstruct(uuidtestkit.NewTestFromSalt(t, "coupon_cart"), cart.Attributes{
 		OwnerID:   &ownerID,
 		Items:     items,
-		ExpiresAt: testExpiresAt,
+		ExpiresAt: expiresAt,
 		CreatedAt: testIssuedAt,
 		UpdatedAt: testIssuedAt,
 	})
@@ -394,7 +403,7 @@ func Test_usecase_ListApplicableToMyCart(t *testing.T) {
 			authn, userID := newTestAuthn(t)
 			c := newCoupon(t, "nocart_coupon", userID, rateDiscount(t, "0.10"), domaincoupon.NewAllScope())
 			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, nil)
+			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrNotFound)
 
 			got, err := u.ListApplicableToMyCart(t.Context(), authn)
 
@@ -487,7 +496,7 @@ func Test_usecase_buildLines(t *testing.T) {
 				FindByIDs(gomock.Any(), gomock.Any()).
 				Return(product.Products{ok, oos}, nil)
 
-			lines, err := u.buildLines(t.Context(), userID)
+			lines, err := u.buildLines(t.Context(), userID, testNow)
 
 			require.NoError(t, err)
 			require.Len(t, lines, 1)
@@ -503,10 +512,54 @@ func Test_usecase_buildLines(t *testing.T) {
 			_, userID := newTestAuthn(t)
 			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID), nil)
 
-			lines, err := u.buildLines(t.Context(), userID)
+			lines, err := u.buildLines(t.Context(), userID, testNow)
 
 			require.NoError(t, err)
 			assert.Empty(t, lines)
+		})
+
+		t.Run("カートを持たない場合はエラーにせず空を返す", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+			_, userID := newTestAuthn(t)
+			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrNotFound)
+
+			lines, err := u.buildLines(t.Context(), userID, testNow)
+
+			require.NoError(t, err)
+			assert.Empty(t, lines)
+		})
+
+		t.Run("期限切れのカートは明細を持っていても空を返す", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+			_, userID := newTestAuthn(t)
+			p := newTestProduct(t, "lines_expired", "100.00", 10)
+			expired := newTestCartExpiringAt(t, userID, testNow.Add(-time.Second), p.ID())
+			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(expired, nil)
+
+			lines, err := u.buildLines(t.Context(), userID, testNow)
+
+			require.NoError(t, err)
+			assert.Empty(t, lines)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("NotFound 以外のカート取得エラーはそのまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+			_, userID := newTestAuthn(t)
+			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrCanceled)
+
+			_, err := u.buildLines(t.Context(), userID, testNow)
+
+			require.ErrorIs(t, err, apperror.ErrCanceled)
 		})
 	})
 }

@@ -20,6 +20,7 @@ import (
 	"go-boilerplate/internal/usecase/boundary/clock"
 	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/uuid"
+	"go-boilerplate/pkg/xerrors"
 )
 
 // CouponView は、保有クーポン 1 枚の出力です。
@@ -130,7 +131,9 @@ func (u *usecase) ListApplicableToMyCart(ctx context.Context, authn *auth.Authn)
 		return []CartCouponView{}, nil
 	}
 
-	lines, err := u.buildLines(ctx, userID)
+	now := u.clock.Now()
+
+	lines, err := u.buildLines(ctx, userID, now)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +141,6 @@ func (u *usecase) ListApplicableToMyCart(ctx context.Context, authn *auth.Authn)
 		return []CartCouponView{}, nil
 	}
 
-	now := u.clock.Now()
 	views := make([]CartCouponView, 0, len(coupons))
 	for _, c := range coupons {
 		if c.IsUsed() || c.IsExpired(now) {
@@ -160,13 +162,22 @@ func (u *usecase) ListApplicableToMyCart(ctx context.Context, authn *auth.Authn)
 }
 
 // buildLines は、カートの明細のうち購入できるものだけをクーポンの対象明細へ写します。
-// カートを持たない場合は空を返します。
-func (u *usecase) buildLines(ctx context.Context, userID uuid.UUID) ([]coupon.Line, error) {
+// カートを持たない場合と期限切れの場合は、いずれも空を返します。
+//
+// Repository は期限切れのカートも返し、期限の判定は Cart.IsExpired が持ちます
+// （internal/domain/cart/cart_repository.go）。期限切れのカートは購入へ進めないため、
+// カート表示（internal/usecase/cart）と同じく「表示するカートが無い」に畳みます。
+func (u *usecase) buildLines(
+	ctx context.Context, userID uuid.UUID, now time.Time,
+) ([]coupon.Line, error) {
 	c, err := u.cartRepo.FindByOwnerID(ctx, userID)
 	if err != nil {
+		if xerrors.Is(err, apperror.ErrNotFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
-	if c == nil {
+	if c.IsExpired(now) {
 		return nil, nil
 	}
 
