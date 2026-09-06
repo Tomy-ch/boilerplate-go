@@ -1,7 +1,5 @@
 # error response
 
-English | [日本語](README.ja.md)
-
 This package handles the generation and management of HTTP error responses.
 
 ## Role
@@ -75,6 +73,7 @@ The HTTP Status column mirrors the sentinel classification owned by [`internal/a
 |`ErrPermissionDenied`|403 Forbidden|`ACCESS_DENIED`|
 |`ErrNotFound`|404 Not Found|`NOT_FOUND`|
 |`ErrConflict`|409 Conflict|`RESOURCE_CONFLICT`|
+|`ErrGone`|410 Gone|`GONE`|
 |`ErrPayloadTooLarge`|413 Payload Too Large|`PAYLOAD_TOO_LARGE`|
 |`ErrUnsupportedMediaType`|415 Unsupported Media Type|`UNSUPPORTED_MEDIA_TYPE`|
 |`ErrValidation`|422 Unprocessable Entity|`VALIDATION_FAILED`|
@@ -125,6 +124,14 @@ a status that neither source can produce would be speculative.
 - **Modify response logic**: Edit `error_response.go`
 - **Add error codes / messages**: Add constants and mapping to `http_error.go`
 - **Update type definitions**: After updating the OpenAPI spec, regenerate with `make gen-api`
+
+## Test Strategy
+
+This package is a mapping table, not an adapter, so nothing in [`../../README.md`](../../README.md) applies; the viewpoints are its own.
+
+- **Every entry, all columns** — for each `apperror` sentinel in the mapping, one case asserts status, `code` and message together (`lookupErrorMetaByAppError`), and for each status one case asserts the same triple by status (`lookupErrorMetaByHTTPStatus`). Adding a status (as `410` was) means adding both cases.
+- **The fallback is its own case** — an unmapped error lands on the 500 meta; assert it explicitly, since a sentinel forgotten here falls into it silently.
+- **Meta overrides only the code** — an `apperror.Meta` on the error replaces the `code` (and the message when given) but never the status the sentinel decided; assert both halves.
 
 ## Notes
 

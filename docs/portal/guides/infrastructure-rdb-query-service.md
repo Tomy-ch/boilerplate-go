@@ -1,7 +1,5 @@
 # Query Service Implementation Guide
 
-English | [日本語](README.ja.md)
-
 ## Position of Query Service in Onion Architecture
 
 In Onion Architecture, persistence abstractions are defined as **Repository interfaces** in the Domain layer. Repository handles per-Aggregate CRUD and guards Domain invariants.

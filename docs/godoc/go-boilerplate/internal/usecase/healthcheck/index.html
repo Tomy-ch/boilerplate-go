@@ -114,10 +114,20 @@
 				
 			
 				
+				<dd><a href="#DependencyStatus">type DependencyStatus</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Probe">type Probe</a></dd>
+				
+				
+			
+				
 				<dd><a href="#Usecase">type Usecase</a></dd>
 				
 					
-					<dd>    <a href="#New">func New(dbsq query.DBSystemCqrs, tf observability.TracerFactory, clock clock.Clock) Usecase</a></dd>
+					<dd>    <a href="#New">func New(dbsq query.DBSystemCqrs, tf observability.TracerFactory, clock clock.Clock, probes []Probe) Usecase</a></dd>
 				
 				
 			
@@ -162,7 +172,7 @@
 		
 			
 			
-			<h2 id="DTO">type <a href="../../../../src/go-boilerplate/internal/usecase/healthcheck/health_check_usecase.go.html?s=886:988#L16">DTO</a>
+			<h2 id="DTO">type <a href="../../../../src/go-boilerplate/internal/usecase/healthcheck/health_check_usecase.go.html?s=2379:2629#L43">DTO</a>
 				<a class="permalink" href="#DTO">¶</a>
 				
 				
@@ -173,6 +183,8 @@
 <span id="DTO.Status"></span>    Status          <a href="../../../../builtin/#string">string</a>
 <span id="DTO.ApplicationTime"></span>    ApplicationTime <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
 <span id="DTO.DBHealthCheck"></span>    DBHealthCheck   <a href="../../../../go-boilerplate/internal/usecase/healthcheck/query/">query</a>.<a href="../../../../go-boilerplate/internal/usecase/healthcheck/query/#DBHealth">DBHealth</a>
+<span id="DTO.Dependencies"></span>    <span class="comment">// Dependencies は、readiness に加わった依存の状態です。probe が 1 つも無ければ空です。</span>
+    Dependencies []<a href="#DependencyStatus">DependencyStatus</a>
 }
 </pre>
 
@@ -190,7 +202,70 @@
 		
 			
 			
-			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/healthcheck/health_check_usecase.go.html?s=1219:1405#L29">Usecase</a>
+			<h2 id="DependencyStatus">type <a href="../../../../src/go-boilerplate/internal/usecase/healthcheck/health_check_usecase.go.html?s=2106:2279#L35">DependencyStatus</a>
+				<a class="permalink" href="#DependencyStatus">¶</a>
+				
+				
+			</h2>
+			<p>DependencyStatus は、依存 1 つの状態です。
+
+			</p><pre>type DependencyStatus struct {
+<span id="DependencyStatus.Name"></span>    <span class="comment">// Name は、Probe に与えられた名前です。</span>
+    Name <a href="../../../../builtin/#string">string</a>
+<span id="DependencyStatus.Status"></span>    <span class="comment">// Status は、Ok か Degraded のどちらかです。</span>
+    Status <a href="../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Probe">type <a href="../../../../src/go-boilerplate/internal/usecase/healthcheck/health_check_usecase.go.html?s=1820:2047#L27">Probe</a>
+				<a class="permalink" href="#Probe">¶</a>
+				
+				
+			</h2>
+			<p>Probe は、readiness に加わる依存 1 つ分の到達性検査です。
+名前は /ready の応答にそのまま載るので、subsystem の名前（realtime 等）を与えます。
+</p><p>ここに並ぶのは、落ちていても通常の HTTP 応答を続けられる依存だけで、その失敗は degraded であって
+エラー（503）ではありません — 503 は instance を load balancer から外し、健全な HTTP まで止めます。
+不可欠な依存は起動時の fail-fast が受け持ちます（README「Degradable dependencies」、
+docs/design/realtime-delivery.md §2.6）。
+
+			</p><pre>type Probe struct {
+<span id="Probe.Name"></span>    <span class="comment">// Name は、応答に載せる依存の名前です。</span>
+    Name <a href="../../../../builtin/#string">string</a>
+<span id="Probe.Check"></span>    <span class="comment">// Check は、依存へ到達できるかを確かめます。nil を返せば健全です。</span>
+    Check func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/healthcheck/health_check_usecase.go.html?s=2882:3068#L59">Usecase</a>
 				<a class="permalink" href="#Usecase">¶</a>
 				
 				
@@ -212,13 +287,14 @@
 
 			
 				
-				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/healthcheck/health_check_usecase.go.html?s=1511:1603#L35">New</a>
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/healthcheck/health_check_usecase.go.html?s=3245:3353#L66">New</a>
 					<a class="permalink" href="#New">¶</a>
 					
 					
 				</h3>
-				<pre>func New(dbsq <a href="../../../../go-boilerplate/internal/usecase/healthcheck/query/">query</a>.<a href="../../../../go-boilerplate/internal/usecase/healthcheck/query/#DBSystemCqrs">DBSystemCqrs</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>, clock <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>) <a href="#Usecase">Usecase</a></pre>
+				<pre>func New(dbsq <a href="../../../../go-boilerplate/internal/usecase/healthcheck/query/">query</a>.<a href="../../../../go-boilerplate/internal/usecase/healthcheck/query/#DBSystemCqrs">DBSystemCqrs</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>, clock <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>, probes []<a href="#Probe">Probe</a>) <a href="#Usecase">Usecase</a></pre>
 				<p>New は、システムの健全性チェックに関するユースケースを初期化します。
+probes は、Probe の検査です（空でも構いません）。
 
 				
 				

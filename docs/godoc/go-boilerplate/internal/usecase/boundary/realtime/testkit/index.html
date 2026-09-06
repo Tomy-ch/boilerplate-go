@@ -1,0 +1,460 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>testkit - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package testkit
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/boundary/realtime/testkit&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package testkit は、Realtime Delivery の境界をテストから駆動するための実装を提供します。
+本番の配線には現れません。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#EventLog">type EventLog</a></dd>
+				
+					
+					<dd>    <a href="#NewEventLog">func NewEventLog() *EventLog</a></dd>
+				
+				
+					
+					<dd>    <a href="#EventLog.Append">func (l *EventLog) Append(_ context.Context, event rt.DeliveryEvent) error</a></dd>
+				
+					
+					<dd>    <a href="#EventLog.AppendedThrough">func (l *EventLog) AppendedThrough(_ context.Context, streamID rt.StreamID) (rt.Sequence, error)</a></dd>
+				
+					
+					<dd>    <a href="#EventLog.Find">func (l *EventLog) Find(_ context.Context, streamID rt.StreamID, seq rt.Sequence) (rt.DeliveryEvent, bool, error)</a></dd>
+				
+					
+					<dd>    <a href="#EventLog.Hold">func (l *EventLog) Hold() func()</a></dd>
+				
+					
+					<dd>    <a href="#EventLog.Latest">func (l *EventLog) Latest(_ context.Context, streamID rt.StreamID) (rt.DeliveryEvent, bool, error)</a></dd>
+				
+					
+					<dd>    <a href="#EventLog.ReadAfter">func (l *EventLog) ReadAfter(ctx context.Context, q rt.ReadAfterQuery) (rt.ReadAfterResult, error)</a></dd>
+				
+					
+					<dd>    <a href="#EventLog.Seed">func (l *EventLog) Seed(events ...rt.DeliveryEvent)</a></dd>
+				
+					
+					<dd>    <a href="#EventLog.SeedAppendedThrough">func (l *EventLog) SeedAppendedThrough(streamID rt.StreamID, seq rt.Sequence)</a></dd>
+				
+					
+					<dd>    <a href="#EventLog.SetUnavailable">func (l *EventLog) SetUnavailable(v bool)</a></dd>
+				
+			
+				
+				<dd><a href="#StreamTicketStore">type StreamTicketStore</a></dd>
+				
+					
+					<dd>    <a href="#NewStreamTicketStore">func NewStreamTicketStore() *StreamTicketStore</a></dd>
+				
+				
+					
+					<dd>    <a href="#StreamTicketStore.Find">func (s *StreamTicketStore) Find(_ context.Context, hash rt.TicketHash, asOf time.Time) (rt.StreamTicket, bool, error)</a></dd>
+				
+					
+					<dd>    <a href="#StreamTicketStore.Invalidate">func (s *StreamTicketStore) Invalidate(_ context.Context, subject string, destination rt.StreamID) error</a></dd>
+				
+					
+					<dd>    <a href="#StreamTicketStore.Len">func (s *StreamTicketStore) Len() int</a></dd>
+				
+					
+					<dd>    <a href="#StreamTicketStore.Save">func (s *StreamTicketStore) Save(_ context.Context, ticket rt.StreamTicket) error</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html">eventlog.go</a>
+			
+				<a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/streamticket.go.html">streamticket.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="EventLog">type <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=1144:1435#L21">EventLog</a>
+				<a class="permalink" href="#EventLog">¶</a>
+				
+				
+			</h2>
+			<p>EventLog は、in-memory の rt.EventLogStore です。読み取りは常に最新の書き込みを反映します
+（実装は強い一貫性の読み取りとして振る舞います）。
+</p><p>正規の Append では作れない状態を組み立てる専用の口（Seed / SetUnavailable / Hold /
+SeedAppendedThrough）を持ちます。
+各口の使い分けは README を参照してください。
+
+			</p><pre>type EventLog struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewEventLog">func <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=1496:1524#L31">NewEventLog</a>
+					<a class="permalink" href="#NewEventLog">¶</a>
+					
+					
+				</h3>
+				<pre>func NewEventLog() *<a href="#EventLog">EventLog</a></pre>
+				<p>NewEventLog は、空の EventLog を生成します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="EventLog.Append">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=2863:2937#L81">Append</a>
+					<a class="permalink" href="#EventLog.Append">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) Append(_ <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, event <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#DeliveryEvent">DeliveryEvent</a>) <a href="../../../../../../builtin/#error">error</a></pre>
+				<p>Append は、event を (StreamID, Sequence) へ 1 度だけ書きます。同じ位置に同じ EventID があれば成功、
+異なる EventID があれば rt.ErrSequenceConflict を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="EventLog.AppendedThrough">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=3592:3688#L112">AppendedThrough</a>
+					<a class="permalink" href="#EventLog.AppendedThrough">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) AppendedThrough(_ <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, streamID <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>) (<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>AppendedThrough は、Append で書いた最大の位置を返します。Seed は正規の追記ではないので数えません。
+
+				
+				
+				
+			
+				
+				</p><h3 id="EventLog.Find">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=5546:5659#L182">Find</a>
+					<a class="permalink" href="#EventLog.Find">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) Find(_ <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, streamID <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>, seq <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>) (<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#DeliveryEvent">DeliveryEvent</a>, <a href="../../../../../../builtin/#bool">bool</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>Find は、stream の slice を走査して sequence の一致する event を返します。無ければ ok=false です。
+
+				
+				
+				
+			
+				
+				</p><h3 id="EventLog.Hold">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=2170:2202#L51">Hold</a>
+					<a class="permalink" href="#EventLog.Hold">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) Hold() func()</pre>
+				<p>Hold は、以降の読み取りを、返った関数が呼ばれるまで待たせます
+（EventLog の doc にある専用の口の一つ）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="EventLog.Latest">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=5057:5155#L165">Latest</a>
+					<a class="permalink" href="#EventLog.Latest">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) Latest(_ <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, streamID <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>) (<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#DeliveryEvent">DeliveryEvent</a>, <a href="../../../../../../builtin/#bool">bool</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>Latest は、sequence 昇順に保った slice の末尾を返します。stream が空なら ok=false です。
+
+				
+				
+				
+			
+				
+				</p><h3 id="EventLog.ReadAfter">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=4285:4383#L133">ReadAfter</a>
+					<a class="permalink" href="#EventLog.ReadAfter">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) ReadAfter(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, q <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#ReadAfterQuery">ReadAfterQuery</a>) (<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#ReadAfterResult">ReadAfterResult</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>ReadAfter は、q.After より後ろの event を sequence 昇順に最大 q.Limit 件返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="EventLog.Seed">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=1835:1886#L40">Seed</a>
+					<a class="permalink" href="#EventLog.Seed">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) Seed(events ...<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#DeliveryEvent">DeliveryEvent</a>)</pre>
+				<p>Seed は、Validate も冪等判定も通さずに event を置きます。飛び番や保持期間外の位置を作れます
+（EventLog の doc にある専用の口の一つ）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="EventLog.SeedAppendedThrough">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=4034:4111#L125">SeedAppendedThrough</a>
+					<a class="permalink" href="#EventLog.SeedAppendedThrough">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) SeedAppendedThrough(streamID <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>, seq <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>)</pre>
+				<p>SeedAppendedThrough は、Append を経ずに追記済みの位置を置きます。保持期間で event が消えたあとの
+状態を作れます（EventLog の doc にある専用の口の一つ）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="EventLog.SetUnavailable">func (*EventLog) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/eventlog.go.html?s=2557:2598#L72">SetUnavailable</a>
+					<a class="permalink" href="#EventLog.SetUnavailable">¶</a>
+					
+					
+				</h3>
+				<pre>func (l *<a href="#EventLog">EventLog</a>) SetUnavailable(v <a href="../../../../../../builtin/#bool">bool</a>)</pre>
+				<p>SetUnavailable は、以降の読み書きが apperror.ErrUnavailable を返すかどうかを切り替えます。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="StreamTicketStore">type <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/streamticket.go.html?s=304:400#L4">StreamTicketStore</a>
+				<a class="permalink" href="#StreamTicketStore">¶</a>
+				
+				
+			</h2>
+			<p>StreamTicketStore は、in-memory の rt.StreamTicketStore です。読み取りは常に最新の書き込みを反映します。
+
+			</p><pre>type StreamTicketStore struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewStreamTicketStore">func <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/streamticket.go.html?s=479:525#L10">NewStreamTicketStore</a>
+					<a class="permalink" href="#NewStreamTicketStore">¶</a>
+					
+					
+				</h3>
+				<pre>func NewStreamTicketStore() *<a href="#StreamTicketStore">StreamTicketStore</a></pre>
+				<p>NewStreamTicketStore は、空の StreamTicketStore を生成します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="StreamTicketStore.Find">func (*StreamTicketStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/streamticket.go.html?s=1026:1144#L26">Find</a>
+					<a class="permalink" href="#StreamTicketStore.Find">¶</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#StreamTicketStore">StreamTicketStore</a>) Find(_ <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, hash <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#TicketHash">TicketHash</a>, asOf <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>) (<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamTicket">StreamTicket</a>, <a href="../../../../../../builtin/#bool">bool</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>Find は、hash に対応する ticket を返します。無い、または asOf 時点で ExpiresAt に達しているものは
+ok=false を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="StreamTicketStore.Invalidate">func (*StreamTicketStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/streamticket.go.html?s=1480:1584#L39">Invalidate</a>
+					<a class="permalink" href="#StreamTicketStore.Invalidate">¶</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#StreamTicketStore">StreamTicketStore</a>) Invalidate(_ <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, subject <a href="../../../../../../builtin/#string">string</a>, destination <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>) <a href="../../../../../../builtin/#error">error</a></pre>
+				<p>Invalidate は、subject × destination に発行された ticket をすべて落とします。該当が無くてもエラーになりません。
+
+				
+				
+				
+			
+				
+				</p><h3 id="StreamTicketStore.Len">func (*StreamTicketStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/streamticket.go.html?s=1848:1885#L53">Len</a>
+					<a class="permalink" href="#StreamTicketStore.Len">¶</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#StreamTicketStore">StreamTicketStore</a>) Len() <a href="../../../../../../builtin/#int">int</a></pre>
+				<p>Len は、保持している ticket の件数を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="StreamTicketStore.Save">func (*StreamTicketStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/testkit/streamticket.go.html?s=695:776#L15">Save</a>
+					<a class="permalink" href="#StreamTicketStore.Save">¶</a>
+					
+					
+				</h3>
+				<pre>func (s *<a href="#StreamTicketStore">StreamTicketStore</a>) Save(_ <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, ticket <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamTicket">StreamTicket</a>) <a href="../../../../../../builtin/#error">error</a></pre>
+				<p>Save は、ticket を保存します。同じ Hash への再保存は上書きです。
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

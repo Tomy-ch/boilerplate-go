@@ -1,7 +1,5 @@
 # error response
 
-[English](README.md) | 日本語
-
 このパッケージは、HTTPエラーレスポンスの生成と管理を行います。
 
 ## 役割
@@ -75,6 +73,7 @@ HTTP ステータス列は [`internal/apperror/README.ja.md`](../../../apperror/
 |`ErrPermissionDenied`|403 Forbidden|`ACCESS_DENIED`|
 |`ErrNotFound`|404 Not Found|`NOT_FOUND`|
 |`ErrConflict`|409 Conflict|`RESOURCE_CONFLICT`|
+|`ErrGone`|410 Gone|`GONE`|
 |`ErrPayloadTooLarge`|413 Payload Too Large|`PAYLOAD_TOO_LARGE`|
 |`ErrUnsupportedMediaType`|415 Unsupported Media Type|`UNSUPPORTED_MEDIA_TYPE`|
 |`ErrValidation`|422 Unprocessable Entity|`VALIDATION_FAILED`|
@@ -125,6 +124,14 @@ HTTP ステータス列は [`internal/apperror/README.ja.md`](../../../apperror/
 - **レスポンスロジックの修正**: `error_response.go` を編集
 - **エラーコード / メッセージの追加**: `http_error.go` に定数とマッピングを追加
 - **型定義の更新**: OpenAPI 仕様を更新後、`make gen-api` で再生成
+
+## テスト戦略
+
+この package は adapter ではなく写像表なので、[`../../README.ja.md`](../../README.ja.md) の観点は当てはまらない。観点はここで持つ。
+
+- **全エントリを全列で** — 写像にある `apperror` の sentinel ごとに status・`code`・message を一度に表明する（`lookupErrorMetaByAppError`）。status ごとにも同じ 3 つ組を status から引いて表明する（`lookupErrorMetaByHTTPStatus`）。status を足すとき（`410` がそうだった）は両方のケースを足す。
+- **fallback は独立したケース** — 未登録のエラーは 500 のメタに落ちる。sentinel の登録忘れは黙ってここへ落ちるので、明示的に表明する。
+- **Meta が置き換えるのは code だけ** — エラーに載った `apperror.Meta` は `code`（与えられれば message も）を置き換えるが、sentinel が決めた status は変えない。両側を表明する。
 
 ## 注意点
 

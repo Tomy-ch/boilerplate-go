@@ -4,8 +4,6 @@
 subagent、scaffolding が読むスペックテンプレート、補助スクリプト、project スコープの権限 / プラグイン
 宣言です。リポジトリを clone して信頼したメンバーは、全員が同じエージェント挙動を継承します。
 
-英語 canonical 版は [`README.md`](README.md) を参照してください（本ファイルはその日本語参考訳です）。
-
 ## `AGENTS.md` との関係
 
 `AGENTS.md`（リポジトリ直下）は人手で管理する **運用契約** で、エージェントが何に触れてよいか・どう振る舞う
@@ -84,8 +82,14 @@ AST のみで API キーを要しません。docs / PDF / 画像の抽出、`--m
 コミュニティの**命名**は LLM API を呼び、内容がマシン外へ出るため opt-in に留めます。
 
 ```bash
-mise exec "pipx:graphifyy[sql]" -- graphify update . --no-cluster
+make graphify-update
 ```
+
+**`mise exec "pipx:graphifyy[sql]"` ではなく固定版を走らせること。** あの形は `python/graphify.txt` を
+経由せず pipx が返したものを使うので、ロックからずれる。固定版が入るのは 2 箇所 —— `python_tool_runner`
+イメージ（上の make target が使う先）と、bootstrap の venv
+`${XDG_CACHE_HOME:-$HOME/.cache}/go-boilerplate/graphify/bin/graphify`（`graph-affected.ts` が呼ぶ先）。
+コマンドと残りの規律は `AGENTS.md` が持つ。
 
 グラフから除外する対象（追跡下の生成物、日本語ミラー、ベンダリング）は `.graphifyignore` で
 宣言します。変更した場合は全再抽出が必要です — 差分 `update` は fail-closed で、除外済みの

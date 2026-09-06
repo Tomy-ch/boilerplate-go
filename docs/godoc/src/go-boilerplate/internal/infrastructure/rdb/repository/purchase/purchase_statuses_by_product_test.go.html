@@ -1,0 +1,264 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>purchase - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../../src/go-boilerplate/internal/infrastructure">infrastructure</a>/<a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb">rdb</a>/<a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/repository">repository</a>/<a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/repository/purchase">purchase</a>/<span class="text-muted">purchase_statuses_by_product_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../../go-boilerplate/internal/infrastructure/rdb/repository/purchase">go-boilerplate/internal/infrastructure/rdb/repository/purchase</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package purchase
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;testing&#34;
+<span id="L6" class="ln">     6  </span>	&#34;time&#34;
+<span id="L7" class="ln">     7  </span>
+<span id="L8" class="ln">     8  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L9" class="ln">     9  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/driver&#34;
+<span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/testkit&#34;
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L13" class="ln">    13  </span>
+<span id="L14" class="ln">    14  </span>	domainpurchase &#34;go-boilerplate/internal/domain/purchase&#34;
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L17" class="ln">    17  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L18" class="ln">    18  </span>)
+<span id="L19" class="ln">    19  </span>
+<span id="L20" class="ln">    20  </span><span class="comment">// insertPurchaseDetailRow は、購入へ対象商品の明細を 1 件足します。</span>
+<span id="L21" class="ln">    21  </span>func insertPurchaseDetailRow(
+<span id="L22" class="ln">    22  </span>	ctx context.Context, t *testing.T, db driver.DBTX, id, purchaseID, productID uuid.UUID,
+<span id="L23" class="ln">    23  </span>) {
+<span id="L24" class="ln">    24  </span>	t.Helper()
+<span id="L25" class="ln">    25  </span>	_, err := db.Exec(ctx,
+<span id="L26" class="ln">    26  </span>		&#34;INSERT INTO purchase_details (id, purchase_id, product_id, quantity, unit_price) VALUES ($1,$2,$3,1,100)&#34;,
+<span id="L27" class="ln">    27  </span>		id, purchaseID, productID,
+<span id="L28" class="ln">    28  </span>	)
+<span id="L29" class="ln">    29  </span>	require.NoError(t, err)
+<span id="L30" class="ln">    30  </span>}
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span>func Test_repository_FindStatusesByProductID(t *testing.T) {
+<span id="L33" class="ln">    33  </span>	t.Parallel()
+<span id="L34" class="ln">    34  </span>
+<span id="L35" class="ln">    35  </span>	<span class="comment">// 購入ステータスマスタ（seed 済み）。進行中と終端の両方を使う。</span>
+<span id="L36" class="ln">    36  </span>	const (
+<span id="L37" class="ln">    37  </span>		seedShippedSID   = &#34;5c9a1f3b-2d4e-4b6f-9c8a-3e0d1f2b4c5d&#34;
+<span id="L38" class="ln">    38  </span>		seedCompletedSID = &#34;1904bf76-7d37-4288-bc15-359d2512ac91&#34;
+<span id="L39" class="ln">    39  </span>	)
+<span id="L40" class="ln">    40  </span>
+<span id="L41" class="ln">    41  </span>	testDB := testkit.NewTestDB(t)
+<span id="L42" class="ln">    42  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L43" class="ln">    43  </span>	repo := &amp;repository{tracer: observability.NewMockInfraLayerTracer(t), db: testDB}
+<span id="L44" class="ln">    44  </span>
+<span id="L45" class="ln">    45  </span>	orderedAt := time.Date(2099, time.January, 1, 0, 0, 0, 0, time.UTC)
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L48" class="ln">    48  </span>		t.Parallel()
+<span id="L49" class="ln">    49  </span>
+<span id="L50" class="ln">    50  </span>		t.Run(&#34;対象商品を明細に持つ購入のステータスを進行中も終端も区別せず返す&#34;, func(t *testing.T) {
+<span id="L51" class="ln">    51  </span>			t.Parallel()
+<span id="L52" class="ln">    52  </span>
+<span id="L53" class="ln">    53  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L54" class="ln">    54  </span>				drv := driver.New(ctx, testDB)
+<span id="L55" class="ln">    55  </span>				userID := &#34;fc000000-0000-4000-8000-000000000001&#34;
+<span id="L56" class="ln">    56  </span>				productID := mustParse(t, &#34;fd000000-0000-4000-8000-000000000001&#34;)
+<span id="L57" class="ln">    57  </span>				insertPurchaseOwner(ctx, t, drv, userID)
+<span id="L58" class="ln">    58  </span>				insertProductRow(ctx, t, drv, productID, &#34;廃番判定対象&#34;, 10)
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>				shipped := &#34;fe000000-0000-4000-8000-000000000001&#34;
+<span id="L61" class="ln">    61  </span>				completed := &#34;fe000000-0000-4000-8000-000000000002&#34;
+<span id="L62" class="ln">    62  </span>				insertPurchaseWithStatus(ctx, t, drv, shipped, userID, seedShippedSID, 100, orderedAt)
+<span id="L63" class="ln">    63  </span>				insertPurchaseWithStatus(ctx, t, drv, completed, userID, seedCompletedSID, 200, orderedAt)
+<span id="L64" class="ln">    64  </span>				insertPurchaseDetailRow(
+<span id="L65" class="ln">    65  </span>					ctx, t, drv, mustParse(t, &#34;ff000000-0000-4000-8000-000000000001&#34;), mustParse(t, shipped), productID,
+<span id="L66" class="ln">    66  </span>				)
+<span id="L67" class="ln">    67  </span>				insertPurchaseDetailRow(
+<span id="L68" class="ln">    68  </span>					ctx, t, drv, mustParse(t, &#34;ff000000-0000-4000-8000-000000000002&#34;), mustParse(t, completed), productID,
+<span id="L69" class="ln">    69  </span>				)
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span>				statuses, err := repo.FindStatusesByProductID(ctx, productID)
+<span id="L72" class="ln">    72  </span>
+<span id="L73" class="ln">    73  </span>				require.NoError(t, err)
+<span id="L74" class="ln">    74  </span>				assert.ElementsMatch(
+<span id="L75" class="ln">    75  </span>					t,
+<span id="L76" class="ln">    76  </span>					[]domainpurchase.Status{domainpurchase.StatusShipped, domainpurchase.StatusCompleted},
+<span id="L77" class="ln">    77  </span>					statuses,
+<span id="L78" class="ln">    78  </span>				)
+<span id="L79" class="ln">    79  </span>			})
+<span id="L80" class="ln">    80  </span>		})
+<span id="L81" class="ln">    81  </span>
+<span id="L82" class="ln">    82  </span>		t.Run(&#34;同じステータスの購入が複数あっても1件へ畳む&#34;, func(t *testing.T) {
+<span id="L83" class="ln">    83  </span>			t.Parallel()
+<span id="L84" class="ln">    84  </span>
+<span id="L85" class="ln">    85  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L86" class="ln">    86  </span>				drv := driver.New(ctx, testDB)
+<span id="L87" class="ln">    87  </span>				userID := &#34;fc000000-0000-4000-8000-000000000002&#34;
+<span id="L88" class="ln">    88  </span>				productID := mustParse(t, &#34;fd000000-0000-4000-8000-000000000002&#34;)
+<span id="L89" class="ln">    89  </span>				insertPurchaseOwner(ctx, t, drv, userID)
+<span id="L90" class="ln">    90  </span>				insertProductRow(ctx, t, drv, productID, &#34;重複ステータス対象&#34;, 10)
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>				first := &#34;fe000000-0000-4000-8000-000000000003&#34;
+<span id="L93" class="ln">    93  </span>				second := &#34;fe000000-0000-4000-8000-000000000004&#34;
+<span id="L94" class="ln">    94  </span>				insertPurchaseWithStatus(ctx, t, drv, first, userID, seedShippedSID, 100, orderedAt)
+<span id="L95" class="ln">    95  </span>				insertPurchaseWithStatus(ctx, t, drv, second, userID, seedShippedSID, 200, orderedAt)
+<span id="L96" class="ln">    96  </span>				insertPurchaseDetailRow(
+<span id="L97" class="ln">    97  </span>					ctx, t, drv, mustParse(t, &#34;ff000000-0000-4000-8000-000000000003&#34;), mustParse(t, first), productID,
+<span id="L98" class="ln">    98  </span>				)
+<span id="L99" class="ln">    99  </span>				insertPurchaseDetailRow(
+<span id="L100" class="ln">   100  </span>					ctx, t, drv, mustParse(t, &#34;ff000000-0000-4000-8000-000000000004&#34;), mustParse(t, second), productID,
+<span id="L101" class="ln">   101  </span>				)
+<span id="L102" class="ln">   102  </span>
+<span id="L103" class="ln">   103  </span>				statuses, err := repo.FindStatusesByProductID(ctx, productID)
+<span id="L104" class="ln">   104  </span>
+<span id="L105" class="ln">   105  </span>				require.NoError(t, err)
+<span id="L106" class="ln">   106  </span>				assert.Equal(t, []domainpurchase.Status{domainpurchase.StatusShipped}, statuses)
+<span id="L107" class="ln">   107  </span>			})
+<span id="L108" class="ln">   108  </span>		})
+<span id="L109" class="ln">   109  </span>
+<span id="L110" class="ln">   110  </span>		t.Run(&#34;どの購入にも含まれない商品は空を返す&#34;, func(t *testing.T) {
+<span id="L111" class="ln">   111  </span>			t.Parallel()
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L114" class="ln">   114  </span>				drv := driver.New(ctx, testDB)
+<span id="L115" class="ln">   115  </span>				productID := mustParse(t, &#34;fd000000-0000-4000-8000-000000000003&#34;)
+<span id="L116" class="ln">   116  </span>				insertProductRow(ctx, t, drv, productID, &#34;未購入商品&#34;, 10)
+<span id="L117" class="ln">   117  </span>
+<span id="L118" class="ln">   118  </span>				statuses, err := repo.FindStatusesByProductID(ctx, productID)
+<span id="L119" class="ln">   119  </span>
+<span id="L120" class="ln">   120  </span>				require.NoError(t, err)
+<span id="L121" class="ln">   121  </span>				assert.Empty(t, statuses)
+<span id="L122" class="ln">   122  </span>			})
+<span id="L123" class="ln">   123  </span>		})
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>		t.Run(&#34;他の商品の明細しか持たない購入のステータスは返さない&#34;, func(t *testing.T) {
+<span id="L126" class="ln">   126  </span>			t.Parallel()
+<span id="L127" class="ln">   127  </span>
+<span id="L128" class="ln">   128  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L129" class="ln">   129  </span>				drv := driver.New(ctx, testDB)
+<span id="L130" class="ln">   130  </span>				userID := &#34;fc000000-0000-4000-8000-000000000003&#34;
+<span id="L131" class="ln">   131  </span>				target := mustParse(t, &#34;fd000000-0000-4000-8000-000000000004&#34;)
+<span id="L132" class="ln">   132  </span>				other := mustParse(t, &#34;fd000000-0000-4000-8000-000000000005&#34;)
+<span id="L133" class="ln">   133  </span>				insertPurchaseOwner(ctx, t, drv, userID)
+<span id="L134" class="ln">   134  </span>				insertProductRow(ctx, t, drv, target, &#34;対象商品&#34;, 10)
+<span id="L135" class="ln">   135  </span>				insertProductRow(ctx, t, drv, other, &#34;別商品&#34;, 10)
+<span id="L136" class="ln">   136  </span>
+<span id="L137" class="ln">   137  </span>				purchaseID := &#34;fe000000-0000-4000-8000-000000000005&#34;
+<span id="L138" class="ln">   138  </span>				insertPurchaseWithStatus(ctx, t, drv, purchaseID, userID, seedShippedSID, 100, orderedAt)
+<span id="L139" class="ln">   139  </span>				insertPurchaseDetailRow(
+<span id="L140" class="ln">   140  </span>					ctx, t, drv, mustParse(t, &#34;ff000000-0000-4000-8000-000000000005&#34;), mustParse(t, purchaseID), other,
+<span id="L141" class="ln">   141  </span>				)
+<span id="L142" class="ln">   142  </span>
+<span id="L143" class="ln">   143  </span>				statuses, err := repo.FindStatusesByProductID(ctx, target)
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span>				require.NoError(t, err)
+<span id="L146" class="ln">   146  </span>				assert.Empty(t, statuses)
+<span id="L147" class="ln">   147  </span>			})
+<span id="L148" class="ln">   148  </span>		})
+<span id="L149" class="ln">   149  </span>	})
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L152" class="ln">   152  </span>		t.Parallel()
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L155" class="ln">   155  </span>			t.Parallel()
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L158" class="ln">   158  </span>			cancel()
+<span id="L159" class="ln">   159  </span>
+<span id="L160" class="ln">   160  </span>			statuses, err := repo.FindStatusesByProductID(ctx, mustParse(t, &#34;fd000000-0000-4000-8000-00000000000f&#34;))
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>			assert.Nil(t, statuses)
+<span id="L163" class="ln">   163  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L164" class="ln">   164  </span>		})
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>		t.Run(&#34;ステータスマスタにドメインの知らないcodeがある場合、再構築のエラーを返す&#34;, func(t *testing.T) {
+<span id="L167" class="ln">   167  </span>			t.Parallel()
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L170" class="ln">   170  </span>				drv := driver.New(ctx, testDB)
+<span id="L171" class="ln">   171  </span>				userID := &#34;fc000000-0000-4000-8000-00000000000e&#34;
+<span id="L172" class="ln">   172  </span>				productID := mustParse(t, &#34;fd000000-0000-4000-8000-00000000000e&#34;)
+<span id="L173" class="ln">   173  </span>				insertPurchaseOwner(ctx, t, drv, userID)
+<span id="L174" class="ln">   174  </span>				insertProductRow(ctx, t, drv, productID, &#34;未知ステータス対象&#34;, 10)
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>				<span class="comment">// 業務キーの解決はドメインが持つため、永続化側に未知の code があれば再構築で弾かれる。</span>
+<span id="L177" class="ln">   177  </span>				unknownStatusID := &#34;fb000000-0000-4000-8000-0000000000ee&#34;
+<span id="L178" class="ln">   178  </span>				_, err := drv.Exec(ctx,
+<span id="L179" class="ln">   179  </span>					&#34;INSERT INTO purchase_statuses (id, code, name, sort_key) VALUES ($1,$2,$3,$4)&#34;,
+<span id="L180" class="ln">   180  </span>					unknownStatusID, 99, &#34;未知&#34;, 99,
+<span id="L181" class="ln">   181  </span>				)
+<span id="L182" class="ln">   182  </span>				require.NoError(t, err)
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>				purchaseID := &#34;fe000000-0000-4000-8000-00000000000e&#34;
+<span id="L185" class="ln">   185  </span>				insertPurchaseWithStatus(ctx, t, drv, purchaseID, userID, unknownStatusID, 100, orderedAt)
+<span id="L186" class="ln">   186  </span>				insertPurchaseDetailRow(
+<span id="L187" class="ln">   187  </span>					ctx, t, drv, mustParse(t, &#34;ff000000-0000-4000-8000-00000000000e&#34;), mustParse(t, purchaseID), productID,
+<span id="L188" class="ln">   188  </span>				)
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>				statuses, serr := repo.FindStatusesByProductID(ctx, productID)
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>				assert.Nil(t, statuses)
+<span id="L193" class="ln">   193  </span>				require.ErrorIs(t, serr, domainpurchase.ErrInvalidStatusID)
+<span id="L194" class="ln">   194  </span>			})
+<span id="L195" class="ln">   195  </span>		})
+<span id="L196" class="ln">   196  </span>	})
+<span id="L197" class="ln">   197  </span>}
+<span id="L198" class="ln">   198  </span>
+</pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/repository/purchase/purchase_statuses_by_product_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

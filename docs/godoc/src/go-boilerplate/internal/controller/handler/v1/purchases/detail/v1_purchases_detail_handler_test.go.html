@@ -71,222 +71,303 @@
 <span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/internal/usecase/boundary/auth&#34;
 <span id="L15" class="ln">    15  </span>	purchaseuc &#34;go-boilerplate/internal/usecase/purchase&#34;
 <span id="L16" class="ln">    16  </span>	mock_purchaseuc &#34;go-boilerplate/internal/usecase/purchase/mock&#34;
-<span id="L17" class="ln">    17  </span>	decimaltestkit &#34;go-boilerplate/pkg/decimal/testkit&#34;
-<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/pkg/safecast&#34;
-<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/pkg/uuid&#34;
-<span id="L20" class="ln">    20  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
-<span id="L21" class="ln">    21  </span>
-<span id="L22" class="ln">    22  </span>	&#34;github.com/labstack/echo/v5&#34;
-<span id="L23" class="ln">    23  </span>	&#34;github.com/stretchr/testify/assert&#34;
-<span id="L24" class="ln">    24  </span>	&#34;github.com/stretchr/testify/require&#34;
-<span id="L25" class="ln">    25  </span>	&#34;go.uber.org/mock/gomock&#34;
-<span id="L26" class="ln">    26  </span>)
-<span id="L27" class="ln">    27  </span>
-<span id="L28" class="ln">    28  </span><span class="comment">// authnContext は、内部ユーザー ID を解決済みの認証コンテキストを返すテストヘルパーです。</span>
-<span id="L29" class="ln">    29  </span>func authnContext(t *testing.T, userID uuid.UUID) context.Context {
-<span id="L30" class="ln">    30  </span>	t.Helper()
-<span id="L31" class="ln">    31  </span>	ctx := ctxhelper.WithAuthn(context.Background())
-<span id="L32" class="ln">    32  </span>	authn, err := auth.New(&#34;subject&#34;, &#34;issuer&#34;, nil, nil)
-<span id="L33" class="ln">    33  </span>	require.NoError(t, err)
-<span id="L34" class="ln">    34  </span>
-<span id="L35" class="ln">    35  </span>	resolved, err := authn.WithUserID(userID)
-<span id="L36" class="ln">    36  </span>	require.NoError(t, err)
-<span id="L37" class="ln">    37  </span>	require.True(t, ctxhelper.SetAuthn(ctx, *resolved))
-<span id="L38" class="ln">    38  </span>	return ctx
-<span id="L39" class="ln">    39  </span>}
-<span id="L40" class="ln">    40  </span>
-<span id="L41" class="ln">    41  </span><span class="comment">// detailViewFixture は、購入詳細ビューを生成するテストヘルパーです。</span>
-<span id="L42" class="ln">    42  </span>func detailViewFixture(t *testing.T) purchaseuc.PurchaseGetDetailView {
-<span id="L43" class="ln">    43  </span>	t.Helper()
-<span id="L44" class="ln">    44  </span>	paidAt := time.Date(2026, time.July, 25, 12, 0, 0, 0, time.UTC)
-<span id="L45" class="ln">    45  </span>	return purchaseuc.PurchaseGetDetailView{
-<span id="L46" class="ln">    46  </span>		Code:           &#34;hd-code&#34;,
-<span id="L47" class="ln">    47  </span>		UserID:         uuidtestkit.NewTestFromSalt(t, &#34;hd_user&#34;),
-<span id="L48" class="ln">    48  </span>		StatusID:       uuidtestkit.NewTestFromSalt(t, &#34;hd_status&#34;),
-<span id="L49" class="ln">    49  </span>		StatusCode:     7,
-<span id="L50" class="ln">    50  </span>		StatusName:     &#34;支払い済み&#34;,
-<span id="L51" class="ln">    51  </span>		SubtotalAmount: 160000,
-<span id="L52" class="ln">    52  </span>		TaxAmount:      16000,
-<span id="L53" class="ln">    53  </span>		ShippingFee:    500,
-<span id="L54" class="ln">    54  </span>		TotalAmount:    176500,
-<span id="L55" class="ln">    55  </span>		Details: []purchaseuc.PurchaseDetailItemView{
-<span id="L56" class="ln">    56  </span>			{ProductID: uuidtestkit.NewTestFromSalt(t, &#34;hd_prod&#34;), ProductName: &#34;商品A&#34;, Quantity: 2, UnitPrice: decimaltestkit.MustParse(t, &#34;800&#34;)},
-<span id="L57" class="ln">    57  </span>		},
-<span id="L58" class="ln">    58  </span>		OrderedAt:  time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
-<span id="L59" class="ln">    59  </span>		PaidAt:     &amp;paidAt,
-<span id="L60" class="ln">    60  </span>		CanceledAt: nil,
-<span id="L61" class="ln">    61  </span>	}
-<span id="L62" class="ln">    62  </span>}
-<span id="L63" class="ln">    63  </span>
-<span id="L64" class="ln">    64  </span>func TestBindHandler(t *testing.T) {
-<span id="L65" class="ln">    65  </span>	t.Parallel()
-<span id="L66" class="ln">    66  </span>
-<span id="L67" class="ln">    67  </span>	e := echo.New()
-<span id="L68" class="ln">    68  </span>	tf := observability.NewNoopTracerFactory(t)
-<span id="L69" class="ln">    69  </span>	uc := mock_purchaseuc.NewMockUsecase(gomock.NewController(t))
-<span id="L70" class="ln">    70  </span>
-<span id="L71" class="ln">    71  </span>	BindHandler(e, tf, uc)
-<span id="L72" class="ln">    72  </span>
-<span id="L73" class="ln">    73  </span>	routes := e.Router().Routes()
-<span id="L74" class="ln">    74  </span>	require.Len(t, routes, 1)
-<span id="L75" class="ln">    75  </span>	assert.Equal(t, http.MethodGet, routes[0].Method)
-<span id="L76" class="ln">    76  </span>	assert.Equal(t, &#34;/v1/purchases/:purchaseCode&#34;, routes[0].Path)
-<span id="L77" class="ln">    77  </span>}
-<span id="L78" class="ln">    78  </span>
-<span id="L79" class="ln">    79  </span>func Test_server_GetPurchasesDetail(t *testing.T) {
-<span id="L80" class="ln">    80  </span>	t.Parallel()
-<span id="L81" class="ln">    81  </span>
-<span id="L82" class="ln">    82  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L83" class="ln">    83  </span>		t.Parallel()
-<span id="L84" class="ln">    84  </span>
-<span id="L85" class="ln">    85  </span>		t.Run(&#34;認証済みユーザーの購入詳細を200で返す&#34;, func(t *testing.T) {
-<span id="L86" class="ln">    86  </span>			t.Parallel()
-<span id="L87" class="ln">    87  </span>
-<span id="L88" class="ln">    88  </span>			ctrl := gomock.NewController(t)
-<span id="L89" class="ln">    89  </span>			uc := mock_purchaseuc.NewMockUsecase(ctrl)
-<span id="L90" class="ln">    90  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: uc}
-<span id="L91" class="ln">    91  </span>
-<span id="L92" class="ln">    92  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;hd_user&#34;)
-<span id="L93" class="ln">    93  </span>			const purchaseCode = &#34;hd-code&#34;
-<span id="L94" class="ln">    94  </span>			view := detailViewFixture(t)
-<span id="L95" class="ln">    95  </span>			uc.EXPECT().GetPurchaseDetail(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L96" class="ln">    96  </span>				DoAndReturn(func(_ context.Context, authn *auth.Authn, code string) (purchaseuc.PurchaseGetDetailView, error) {
-<span id="L97" class="ln">    97  </span>					uid, uerr := authn.UserID()
-<span id="L98" class="ln">    98  </span>					require.NoError(t, uerr)
-<span id="L99" class="ln">    99  </span>					assert.Equal(t, userID, uid)
-<span id="L100" class="ln">   100  </span>					assert.Equal(t, purchaseCode, code)
-<span id="L101" class="ln">   101  </span>					return view, nil
-<span id="L102" class="ln">   102  </span>				})
-<span id="L103" class="ln">   103  </span>
-<span id="L104" class="ln">   104  </span>			resp, err := s.GetPurchasesDetail(authnContext(t, userID), gen.GetPurchasesDetailRequestObject{
-<span id="L105" class="ln">   105  </span>				PurchaseCode: purchaseCode,
-<span id="L106" class="ln">   106  </span>			})
-<span id="L107" class="ln">   107  </span>			require.NoError(t, err)
-<span id="L108" class="ln">   108  </span>
-<span id="L109" class="ln">   109  </span>			r, ok := resp.(gen.GetPurchasesDetail200JSONResponse)
-<span id="L110" class="ln">   110  </span>			require.True(t, ok)
-<span id="L111" class="ln">   111  </span>			assert.Equal(t, view.Code, r.Code)
-<span id="L112" class="ln">   112  </span>			assert.Equal(t, &#34;支払い済み&#34;, r.Status.Name)
-<span id="L113" class="ln">   113  </span>			require.Len(t, r.Details, 1)
-<span id="L114" class="ln">   114  </span>			assert.Equal(t, &#34;商品A&#34;, r.Details[0].ProductName)
-<span id="L115" class="ln">   115  </span>		})
-<span id="L116" class="ln">   116  </span>	})
-<span id="L117" class="ln">   117  </span>
-<span id="L118" class="ln">   118  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L119" class="ln">   119  </span>		t.Parallel()
-<span id="L120" class="ln">   120  </span>
-<span id="L121" class="ln">   121  </span>		t.Run(&#34;認証情報が無い場合、ErrUnauthenticatedUserを返す&#34;, func(t *testing.T) {
-<span id="L122" class="ln">   122  </span>			t.Parallel()
-<span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>			ctrl := gomock.NewController(t)
-<span id="L125" class="ln">   125  </span>			uc := mock_purchaseuc.NewMockUsecase(ctrl)
-<span id="L126" class="ln">   126  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: uc}
-<span id="L127" class="ln">   127  </span>
-<span id="L128" class="ln">   128  </span>			_, err := s.GetPurchasesDetail(context.Background(), gen.GetPurchasesDetailRequestObject{
-<span id="L129" class="ln">   129  </span>				PurchaseCode: &#34;hd-code-noauth&#34;,
-<span id="L130" class="ln">   130  </span>			})
-<span id="L131" class="ln">   131  </span>			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
-<span id="L132" class="ln">   132  </span>		})
-<span id="L133" class="ln">   133  </span>
-<span id="L134" class="ln">   134  </span>		t.Run(&#34;ユースケースがエラーを返した場合はそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L135" class="ln">   135  </span>			t.Parallel()
-<span id="L136" class="ln">   136  </span>
-<span id="L137" class="ln">   137  </span>			ctrl := gomock.NewController(t)
-<span id="L138" class="ln">   138  </span>			uc := mock_purchaseuc.NewMockUsecase(ctrl)
-<span id="L139" class="ln">   139  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: uc}
-<span id="L140" class="ln">   140  </span>
-<span id="L141" class="ln">   141  </span>			uc.EXPECT().GetPurchaseDetail(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L142" class="ln">   142  </span>				Return(purchaseuc.PurchaseGetDetailView{}, apperror.ErrNotFound)
-<span id="L143" class="ln">   143  </span>
-<span id="L144" class="ln">   144  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;hd_user_err&#34;)
-<span id="L145" class="ln">   145  </span>			_, err := s.GetPurchasesDetail(authnContext(t, userID), gen.GetPurchasesDetailRequestObject{
-<span id="L146" class="ln">   146  </span>				PurchaseCode: &#34;hd-code-err&#34;,
-<span id="L147" class="ln">   147  </span>			})
-<span id="L148" class="ln">   148  </span>			require.ErrorIs(t, err, apperror.ErrNotFound)
-<span id="L149" class="ln">   149  </span>		})
-<span id="L150" class="ln">   150  </span>
-<span id="L151" class="ln">   151  </span>		t.Run(&#34;レスポンス変換が失敗した場合はエラーを伝播する&#34;, func(t *testing.T) {
-<span id="L152" class="ln">   152  </span>			t.Parallel()
-<span id="L153" class="ln">   153  </span>
-<span id="L154" class="ln">   154  </span>			ctrl := gomock.NewController(t)
-<span id="L155" class="ln">   155  </span>			uc := mock_purchaseuc.NewMockUsecase(ctrl)
-<span id="L156" class="ln">   156  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: uc}
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span>			view := detailViewFixture(t)
-<span id="L159" class="ln">   159  </span>			view.Details[0].Quantity = math.MaxInt32 + 1
-<span id="L160" class="ln">   160  </span>			uc.EXPECT().GetPurchaseDetail(gomock.Any(), gomock.Any(), gomock.Any()).Return(view, nil)
-<span id="L161" class="ln">   161  </span>
-<span id="L162" class="ln">   162  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;hd_user_overflow&#34;)
-<span id="L163" class="ln">   163  </span>			_, err := s.GetPurchasesDetail(authnContext(t, userID), gen.GetPurchasesDetailRequestObject{
-<span id="L164" class="ln">   164  </span>				PurchaseCode: &#34;hd-code-overflow&#34;,
-<span id="L165" class="ln">   165  </span>			})
-<span id="L166" class="ln">   166  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
-<span id="L167" class="ln">   167  </span>		})
-<span id="L168" class="ln">   168  </span>	})
-<span id="L169" class="ln">   169  </span>}
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span>func Test_toPurchaseGetDetailResponse(t *testing.T) {
-<span id="L172" class="ln">   172  </span>	t.Parallel()
-<span id="L173" class="ln">   173  </span>
-<span id="L174" class="ln">   174  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L175" class="ln">   175  </span>		t.Parallel()
-<span id="L176" class="ln">   176  </span>
-<span id="L177" class="ln">   177  </span>		t.Run(&#34;詳細ビューを商品名込みのレスポンスへ写像する&#34;, func(t *testing.T) {
-<span id="L178" class="ln">   178  </span>			t.Parallel()
-<span id="L179" class="ln">   179  </span>
-<span id="L180" class="ln">   180  </span>			view := detailViewFixture(t)
-<span id="L181" class="ln">   181  </span>			r, err := toPurchaseGetDetailResponse(view)
-<span id="L182" class="ln">   182  </span>			require.NoError(t, err)
-<span id="L183" class="ln">   183  </span>			assert.Equal(t, view.Code, r.Code)
-<span id="L184" class="ln">   184  </span>			assert.Equal(t, view.UserID.ToPrimitive(), r.UserId)
-<span id="L185" class="ln">   185  </span>			assert.Equal(t, view.OrderedAt, r.OrderedAt)
-<span id="L186" class="ln">   186  </span>			assert.Equal(t, view.StatusID.ToPrimitive(), r.Status.Id)
-<span id="L187" class="ln">   187  </span>			assert.Equal(t, &#34;支払い済み&#34;, r.Status.Name)
-<span id="L188" class="ln">   188  </span>			assert.EqualValues(t, view.StatusCode, r.Status.Code)
-<span id="L189" class="ln">   189  </span>			assert.Equal(t, int64(16000), r.TaxAmount)
-<span id="L190" class="ln">   190  </span>			assert.Equal(t, int64(500), r.ShippingFee)
-<span id="L191" class="ln">   191  </span>			assert.Equal(t, int64(176500), r.TotalAmount)
-<span id="L192" class="ln">   192  </span>			require.NotNil(t, r.PaidAt)
-<span id="L193" class="ln">   193  </span>			assert.Equal(t, *view.PaidAt, *r.PaidAt)
-<span id="L194" class="ln">   194  </span>			assert.Nil(t, r.CanceledAt)
-<span id="L195" class="ln">   195  </span>			require.Len(t, r.Details, 1)
-<span id="L196" class="ln">   196  </span>			assert.Equal(t, view.Details[0].ProductID.ToPrimitive(), r.Details[0].ProductId)
-<span id="L197" class="ln">   197  </span>			assert.Equal(t, &#34;商品A&#34;, r.Details[0].ProductName)
-<span id="L198" class="ln">   198  </span>			assert.Equal(t, &#34;800&#34;, r.Details[0].UnitPrice)
-<span id="L199" class="ln">   199  </span>			assert.EqualValues(t, 2, r.Details[0].Quantity)
-<span id="L200" class="ln">   200  </span>		})
-<span id="L201" class="ln">   201  </span>
-<span id="L202" class="ln">   202  </span>		t.Run(&#34;キャンセル済みビューはcanceledAtを写像しpaidAtはnilになる&#34;, func(t *testing.T) {
-<span id="L203" class="ln">   203  </span>			t.Parallel()
-<span id="L204" class="ln">   204  </span>
-<span id="L205" class="ln">   205  </span>			canceledAt := time.Date(2026, time.July, 26, 9, 0, 0, 0, time.UTC)
-<span id="L206" class="ln">   206  </span>			view := detailViewFixture(t)
-<span id="L207" class="ln">   207  </span>			view.StatusName = &#34;キャンセル&#34;
-<span id="L208" class="ln">   208  </span>			view.PaidAt = nil
-<span id="L209" class="ln">   209  </span>			view.CanceledAt = &amp;canceledAt
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>			r, err := toPurchaseGetDetailResponse(view)
-<span id="L212" class="ln">   212  </span>			require.NoError(t, err)
-<span id="L213" class="ln">   213  </span>			assert.Nil(t, r.PaidAt)
-<span id="L214" class="ln">   214  </span>			require.NotNil(t, r.CanceledAt)
-<span id="L215" class="ln">   215  </span>			assert.Equal(t, canceledAt, *r.CanceledAt)
-<span id="L216" class="ln">   216  </span>		})
-<span id="L217" class="ln">   217  </span>	})
-<span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L220" class="ln">   220  </span>		t.Parallel()
-<span id="L221" class="ln">   221  </span>
-<span id="L222" class="ln">   222  </span>		t.Run(&#34;数量がint32範囲を超える場合はエラーを返す&#34;, func(t *testing.T) {
-<span id="L223" class="ln">   223  </span>			t.Parallel()
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>			view := detailViewFixture(t)
-<span id="L226" class="ln">   226  </span>			view.Details[0].Quantity = math.MaxInt32 + 1
-<span id="L227" class="ln">   227  </span>			_, err := toPurchaseGetDetailResponse(view)
-<span id="L228" class="ln">   228  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
-<span id="L229" class="ln">   229  </span>		})
-<span id="L230" class="ln">   230  </span>	})
-<span id="L231" class="ln">   231  </span>}
-<span id="L232" class="ln">   232  </span>
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/pkg/decimal&#34;
+<span id="L18" class="ln">    18  </span>	decimaltestkit &#34;go-boilerplate/pkg/decimal/testkit&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/pkg/safecast&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L21" class="ln">    21  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
+<span id="L22" class="ln">    22  </span>
+<span id="L23" class="ln">    23  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L24" class="ln">    24  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L25" class="ln">    25  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L26" class="ln">    26  </span>	&#34;go.uber.org/mock/gomock&#34;
+<span id="L27" class="ln">    27  </span>)
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span><span class="comment">// authnContext は、内部ユーザー ID を解決済みの認証コンテキストを返すテストヘルパーです。</span>
+<span id="L30" class="ln">    30  </span>func authnContext(t *testing.T, userID uuid.UUID) context.Context {
+<span id="L31" class="ln">    31  </span>	t.Helper()
+<span id="L32" class="ln">    32  </span>	ctx := ctxhelper.WithAuthn(context.Background())
+<span id="L33" class="ln">    33  </span>	authn, err := auth.New(&#34;subject&#34;, &#34;issuer&#34;, nil, nil)
+<span id="L34" class="ln">    34  </span>	require.NoError(t, err)
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span>	resolved, err := authn.WithUserID(userID)
+<span id="L37" class="ln">    37  </span>	require.NoError(t, err)
+<span id="L38" class="ln">    38  </span>	require.True(t, ctxhelper.SetAuthn(ctx, *resolved))
+<span id="L39" class="ln">    39  </span>	return ctx
+<span id="L40" class="ln">    40  </span>}
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// detailViewFixture は、購入詳細ビューを生成するテストヘルパーです。</span>
+<span id="L43" class="ln">    43  </span>func detailViewFixture(t *testing.T) purchaseuc.PurchaseGetDetailView {
+<span id="L44" class="ln">    44  </span>	t.Helper()
+<span id="L45" class="ln">    45  </span>	paidAt := time.Date(2026, time.July, 25, 12, 0, 0, 0, time.UTC)
+<span id="L46" class="ln">    46  </span>	return purchaseuc.PurchaseGetDetailView{
+<span id="L47" class="ln">    47  </span>		Code:           &#34;hd-code&#34;,
+<span id="L48" class="ln">    48  </span>		UserID:         uuidtestkit.NewTestFromSalt(t, &#34;hd_user&#34;),
+<span id="L49" class="ln">    49  </span>		StatusID:       uuidtestkit.NewTestFromSalt(t, &#34;hd_status&#34;),
+<span id="L50" class="ln">    50  </span>		StatusCode:     7,
+<span id="L51" class="ln">    51  </span>		StatusName:     &#34;支払い済み&#34;,
+<span id="L52" class="ln">    52  </span>		SubtotalAmount: 160000,
+<span id="L53" class="ln">    53  </span>		TaxAmount:      16000,
+<span id="L54" class="ln">    54  </span>		ShippingFee:    500,
+<span id="L55" class="ln">    55  </span>		TotalAmount:    176500,
+<span id="L56" class="ln">    56  </span>		Details: []purchaseuc.PurchaseDetailItemView{
+<span id="L57" class="ln">    57  </span>			{ProductID: uuidtestkit.NewTestFromSalt(t, &#34;hd_prod&#34;), ProductName: &#34;商品A&#34;, Quantity: 2, UnitPrice: decimaltestkit.MustParse(t, &#34;800&#34;)},
+<span id="L58" class="ln">    58  </span>		},
+<span id="L59" class="ln">    59  </span>		OrderedAt:  time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
+<span id="L60" class="ln">    60  </span>		PaidAt:     &amp;paidAt,
+<span id="L61" class="ln">    61  </span>		CanceledAt: nil,
+<span id="L62" class="ln">    62  </span>	}
+<span id="L63" class="ln">    63  </span>}
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span>func TestBindHandler(t *testing.T) {
+<span id="L66" class="ln">    66  </span>	t.Parallel()
+<span id="L67" class="ln">    67  </span>
+<span id="L68" class="ln">    68  </span>	e := echo.New()
+<span id="L69" class="ln">    69  </span>	tf := observability.NewNoopTracerFactory(t)
+<span id="L70" class="ln">    70  </span>	uc := mock_purchaseuc.NewMockUsecase(gomock.NewController(t))
+<span id="L71" class="ln">    71  </span>
+<span id="L72" class="ln">    72  </span>	BindHandler(e, tf, uc)
+<span id="L73" class="ln">    73  </span>
+<span id="L74" class="ln">    74  </span>	routes := e.Router().Routes()
+<span id="L75" class="ln">    75  </span>	require.Len(t, routes, 1)
+<span id="L76" class="ln">    76  </span>	assert.Equal(t, http.MethodGet, routes[0].Method)
+<span id="L77" class="ln">    77  </span>	assert.Equal(t, &#34;/v1/purchases/:purchaseCode&#34;, routes[0].Path)
+<span id="L78" class="ln">    78  </span>}
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span>func Test_server_GetPurchasesDetail(t *testing.T) {
+<span id="L81" class="ln">    81  </span>	t.Parallel()
+<span id="L82" class="ln">    82  </span>
+<span id="L83" class="ln">    83  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L84" class="ln">    84  </span>		t.Parallel()
+<span id="L85" class="ln">    85  </span>
+<span id="L86" class="ln">    86  </span>		t.Run(&#34;認証済みユーザーの購入詳細を200で返す&#34;, func(t *testing.T) {
+<span id="L87" class="ln">    87  </span>			t.Parallel()
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span>			ctrl := gomock.NewController(t)
+<span id="L90" class="ln">    90  </span>			uc := mock_purchaseuc.NewMockUsecase(ctrl)
+<span id="L91" class="ln">    91  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: uc}
+<span id="L92" class="ln">    92  </span>
+<span id="L93" class="ln">    93  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;hd_user&#34;)
+<span id="L94" class="ln">    94  </span>			const purchaseCode = &#34;hd-code&#34;
+<span id="L95" class="ln">    95  </span>			view := detailViewFixture(t)
+<span id="L96" class="ln">    96  </span>			uc.EXPECT().GetPurchaseDetail(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L97" class="ln">    97  </span>				DoAndReturn(func(_ context.Context, authn *auth.Authn, code string) (purchaseuc.PurchaseGetDetailView, error) {
+<span id="L98" class="ln">    98  </span>					uid, uerr := authn.UserID()
+<span id="L99" class="ln">    99  </span>					require.NoError(t, uerr)
+<span id="L100" class="ln">   100  </span>					assert.Equal(t, userID, uid)
+<span id="L101" class="ln">   101  </span>					assert.Equal(t, purchaseCode, code)
+<span id="L102" class="ln">   102  </span>					return view, nil
+<span id="L103" class="ln">   103  </span>				})
+<span id="L104" class="ln">   104  </span>
+<span id="L105" class="ln">   105  </span>			resp, err := s.GetPurchasesDetail(authnContext(t, userID), gen.GetPurchasesDetailRequestObject{
+<span id="L106" class="ln">   106  </span>				PurchaseCode: purchaseCode,
+<span id="L107" class="ln">   107  </span>			})
+<span id="L108" class="ln">   108  </span>			require.NoError(t, err)
+<span id="L109" class="ln">   109  </span>
+<span id="L110" class="ln">   110  </span>			r, ok := resp.(gen.GetPurchasesDetail200JSONResponse)
+<span id="L111" class="ln">   111  </span>			require.True(t, ok)
+<span id="L112" class="ln">   112  </span>			assert.Equal(t, view.Code, r.Code)
+<span id="L113" class="ln">   113  </span>			assert.Equal(t, &#34;支払い済み&#34;, r.Status.Name)
+<span id="L114" class="ln">   114  </span>			require.Len(t, r.Details, 1)
+<span id="L115" class="ln">   115  </span>			assert.Equal(t, &#34;商品A&#34;, r.Details[0].ProductName)
+<span id="L116" class="ln">   116  </span>		})
+<span id="L117" class="ln">   117  </span>	})
+<span id="L118" class="ln">   118  </span>
+<span id="L119" class="ln">   119  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L120" class="ln">   120  </span>		t.Parallel()
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>		t.Run(&#34;認証情報が無い場合、ErrUnauthenticatedUserを返す&#34;, func(t *testing.T) {
+<span id="L123" class="ln">   123  </span>			t.Parallel()
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>			ctrl := gomock.NewController(t)
+<span id="L126" class="ln">   126  </span>			uc := mock_purchaseuc.NewMockUsecase(ctrl)
+<span id="L127" class="ln">   127  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: uc}
+<span id="L128" class="ln">   128  </span>
+<span id="L129" class="ln">   129  </span>			_, err := s.GetPurchasesDetail(context.Background(), gen.GetPurchasesDetailRequestObject{
+<span id="L130" class="ln">   130  </span>				PurchaseCode: &#34;hd-code-noauth&#34;,
+<span id="L131" class="ln">   131  </span>			})
+<span id="L132" class="ln">   132  </span>			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
+<span id="L133" class="ln">   133  </span>		})
+<span id="L134" class="ln">   134  </span>
+<span id="L135" class="ln">   135  </span>		t.Run(&#34;ユースケースがエラーを返した場合はそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L136" class="ln">   136  </span>			t.Parallel()
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>			ctrl := gomock.NewController(t)
+<span id="L139" class="ln">   139  </span>			uc := mock_purchaseuc.NewMockUsecase(ctrl)
+<span id="L140" class="ln">   140  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: uc}
+<span id="L141" class="ln">   141  </span>
+<span id="L142" class="ln">   142  </span>			uc.EXPECT().GetPurchaseDetail(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L143" class="ln">   143  </span>				Return(purchaseuc.PurchaseGetDetailView{}, apperror.ErrNotFound)
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;hd_user_err&#34;)
+<span id="L146" class="ln">   146  </span>			_, err := s.GetPurchasesDetail(authnContext(t, userID), gen.GetPurchasesDetailRequestObject{
+<span id="L147" class="ln">   147  </span>				PurchaseCode: &#34;hd-code-err&#34;,
+<span id="L148" class="ln">   148  </span>			})
+<span id="L149" class="ln">   149  </span>			require.ErrorIs(t, err, apperror.ErrNotFound)
+<span id="L150" class="ln">   150  </span>		})
+<span id="L151" class="ln">   151  </span>
+<span id="L152" class="ln">   152  </span>		t.Run(&#34;レスポンス変換が失敗した場合はエラーを伝播する&#34;, func(t *testing.T) {
+<span id="L153" class="ln">   153  </span>			t.Parallel()
+<span id="L154" class="ln">   154  </span>
+<span id="L155" class="ln">   155  </span>			ctrl := gomock.NewController(t)
+<span id="L156" class="ln">   156  </span>			uc := mock_purchaseuc.NewMockUsecase(ctrl)
+<span id="L157" class="ln">   157  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: uc}
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>			view := detailViewFixture(t)
+<span id="L160" class="ln">   160  </span>			view.Details[0].Quantity = math.MaxInt32 + 1
+<span id="L161" class="ln">   161  </span>			uc.EXPECT().GetPurchaseDetail(gomock.Any(), gomock.Any(), gomock.Any()).Return(view, nil)
+<span id="L162" class="ln">   162  </span>
+<span id="L163" class="ln">   163  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;hd_user_overflow&#34;)
+<span id="L164" class="ln">   164  </span>			_, err := s.GetPurchasesDetail(authnContext(t, userID), gen.GetPurchasesDetailRequestObject{
+<span id="L165" class="ln">   165  </span>				PurchaseCode: &#34;hd-code-overflow&#34;,
+<span id="L166" class="ln">   166  </span>			})
+<span id="L167" class="ln">   167  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
+<span id="L168" class="ln">   168  </span>		})
+<span id="L169" class="ln">   169  </span>	})
+<span id="L170" class="ln">   170  </span>}
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>func Test_toPurchaseGetDetailResponse(t *testing.T) {
+<span id="L173" class="ln">   173  </span>	t.Parallel()
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L176" class="ln">   176  </span>		t.Parallel()
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>		t.Run(&#34;詳細ビューを商品名込みのレスポンスへ写像する&#34;, func(t *testing.T) {
+<span id="L179" class="ln">   179  </span>			t.Parallel()
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>			view := detailViewFixture(t)
+<span id="L182" class="ln">   182  </span>			r, err := toPurchaseGetDetailResponse(view)
+<span id="L183" class="ln">   183  </span>			require.NoError(t, err)
+<span id="L184" class="ln">   184  </span>			assert.Equal(t, view.Code, r.Code)
+<span id="L185" class="ln">   185  </span>			assert.Equal(t, view.UserID.ToPrimitive(), r.UserId)
+<span id="L186" class="ln">   186  </span>			assert.Equal(t, view.OrderedAt, r.OrderedAt)
+<span id="L187" class="ln">   187  </span>			assert.Equal(t, view.StatusID.ToPrimitive(), r.Status.Id)
+<span id="L188" class="ln">   188  </span>			assert.Equal(t, &#34;支払い済み&#34;, r.Status.Name)
+<span id="L189" class="ln">   189  </span>			assert.EqualValues(t, view.StatusCode, r.Status.Code)
+<span id="L190" class="ln">   190  </span>			assert.Equal(t, int64(16000), r.TaxAmount)
+<span id="L191" class="ln">   191  </span>			assert.Equal(t, int64(500), r.ShippingFee)
+<span id="L192" class="ln">   192  </span>			assert.Equal(t, int64(176500), r.TotalAmount)
+<span id="L193" class="ln">   193  </span>			require.NotNil(t, r.PaidAt)
+<span id="L194" class="ln">   194  </span>			assert.Equal(t, *view.PaidAt, *r.PaidAt)
+<span id="L195" class="ln">   195  </span>			assert.Nil(t, r.CanceledAt)
+<span id="L196" class="ln">   196  </span>			require.Len(t, r.Details, 1)
+<span id="L197" class="ln">   197  </span>			assert.Equal(t, view.Details[0].ProductID.ToPrimitive(), r.Details[0].ProductId)
+<span id="L198" class="ln">   198  </span>			assert.Equal(t, &#34;商品A&#34;, r.Details[0].ProductName)
+<span id="L199" class="ln">   199  </span>			assert.Equal(t, &#34;800&#34;, r.Details[0].UnitPrice)
+<span id="L200" class="ln">   200  </span>			assert.EqualValues(t, 2, r.Details[0].Quantity)
+<span id="L201" class="ln">   201  </span>		})
+<span id="L202" class="ln">   202  </span>
+<span id="L203" class="ln">   203  </span>		t.Run(&#34;クーポン適用済みビューは値引き額と適用クーポンをレスポンスへ写す&#34;, func(t *testing.T) {
+<span id="L204" class="ln">   204  </span>			t.Parallel()
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>			couponID := uuidtestkit.NewTestFromSalt(t, &#34;hd_coupon&#34;)
+<span id="L207" class="ln">   207  </span>			view := detailViewFixture(t)
+<span id="L208" class="ln">   208  </span>			view.DiscountAmount = 16000
+<span id="L209" class="ln">   209  </span>			view.AppliedCoupon = &amp;purchaseuc.AppliedCouponView{
+<span id="L210" class="ln">   210  </span>				ID:            couponID,
+<span id="L211" class="ln">   211  </span>				DiscountKind:  &#34;rate&#34;,
+<span id="L212" class="ln">   212  </span>				DiscountValue: decimaltestkit.MustParse(t, &#34;0.10&#34;),
+<span id="L213" class="ln">   213  </span>				ScopeKind:     &#34;all&#34;,
+<span id="L214" class="ln">   214  </span>			}
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>			r, err := toPurchaseGetDetailResponse(view)
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>			require.NoError(t, err)
+<span id="L219" class="ln">   219  </span>			assert.Equal(t, int64(16000), r.DiscountAmount)
+<span id="L220" class="ln">   220  </span>			require.NotNil(t, r.AppliedCoupon)
+<span id="L221" class="ln">   221  </span>			assert.Equal(t, couponID.ToPrimitive(), r.AppliedCoupon.Id)
+<span id="L222" class="ln">   222  </span>			assert.Equal(t, gen.CouponDiscountKind(&#34;rate&#34;), r.AppliedCoupon.Discount.Kind)
+<span id="L223" class="ln">   223  </span>			assert.Equal(t, gen.CouponScopeKind(&#34;all&#34;), r.AppliedCoupon.Scope.Kind)
+<span id="L224" class="ln">   224  </span>		})
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>		t.Run(&#34;キャンセル済みビューはcanceledAtを写像しpaidAtはnilになる&#34;, func(t *testing.T) {
+<span id="L227" class="ln">   227  </span>			t.Parallel()
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>			canceledAt := time.Date(2026, time.July, 26, 9, 0, 0, 0, time.UTC)
+<span id="L230" class="ln">   230  </span>			view := detailViewFixture(t)
+<span id="L231" class="ln">   231  </span>			view.StatusName = &#34;キャンセル&#34;
+<span id="L232" class="ln">   232  </span>			view.PaidAt = nil
+<span id="L233" class="ln">   233  </span>			view.CanceledAt = &amp;canceledAt
+<span id="L234" class="ln">   234  </span>
+<span id="L235" class="ln">   235  </span>			r, err := toPurchaseGetDetailResponse(view)
+<span id="L236" class="ln">   236  </span>			require.NoError(t, err)
+<span id="L237" class="ln">   237  </span>			assert.Nil(t, r.PaidAt)
+<span id="L238" class="ln">   238  </span>			require.NotNil(t, r.CanceledAt)
+<span id="L239" class="ln">   239  </span>			assert.Equal(t, canceledAt, *r.CanceledAt)
+<span id="L240" class="ln">   240  </span>		})
+<span id="L241" class="ln">   241  </span>	})
+<span id="L242" class="ln">   242  </span>
+<span id="L243" class="ln">   243  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L244" class="ln">   244  </span>		t.Parallel()
+<span id="L245" class="ln">   245  </span>
+<span id="L246" class="ln">   246  </span>		t.Run(&#34;数量がint32範囲を超える場合はエラーを返す&#34;, func(t *testing.T) {
+<span id="L247" class="ln">   247  </span>			t.Parallel()
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>			view := detailViewFixture(t)
+<span id="L250" class="ln">   250  </span>			view.Details[0].Quantity = math.MaxInt32 + 1
+<span id="L251" class="ln">   251  </span>			_, err := toPurchaseGetDetailResponse(view)
+<span id="L252" class="ln">   252  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
+<span id="L253" class="ln">   253  </span>		})
+<span id="L254" class="ln">   254  </span>	})
+<span id="L255" class="ln">   255  </span>}
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>func Test_toAppliedCouponResponse(t *testing.T) {
+<span id="L258" class="ln">   258  </span>	t.Parallel()
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L261" class="ln">   261  </span>		t.Parallel()
+<span id="L262" class="ln">   262  </span>
+<span id="L263" class="ln">   263  </span>		t.Run(&#34;値引きと適用範囲を2軸のまま写す&#34;, func(t *testing.T) {
+<span id="L264" class="ln">   264  </span>			t.Parallel()
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>			value, err := decimal.Parse(&#34;0.10&#34;)
+<span id="L267" class="ln">   267  </span>			require.NoError(t, err)
+<span id="L268" class="ln">   268  </span>			target := uuidtestkit.NewTestFromSalt(t, &#34;applied_category&#34;)
+<span id="L269" class="ln">   269  </span>			view := &amp;purchaseuc.AppliedCouponView{
+<span id="L270" class="ln">   270  </span>				ID:            uuidtestkit.NewTestFromSalt(t, &#34;applied_coupon&#34;),
+<span id="L271" class="ln">   271  </span>				DiscountKind:  &#34;rate&#34;,
+<span id="L272" class="ln">   272  </span>				DiscountValue: value,
+<span id="L273" class="ln">   273  </span>				ScopeKind:     &#34;category&#34;,
+<span id="L274" class="ln">   274  </span>				ScopeTargetID: &amp;target,
+<span id="L275" class="ln">   275  </span>			}
+<span id="L276" class="ln">   276  </span>
+<span id="L277" class="ln">   277  </span>			got := toAppliedCouponResponse(view)
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>			require.NotNil(t, got)
+<span id="L280" class="ln">   280  </span>			assert.Equal(t, view.ID.ToPrimitive(), got.Id)
+<span id="L281" class="ln">   281  </span>			assert.Equal(t, gen.CouponDiscountKind(&#34;rate&#34;), got.Discount.Kind)
+<span id="L282" class="ln">   282  </span>			assert.Equal(t, &#34;0.1&#34;, got.Discount.Value)
+<span id="L283" class="ln">   283  </span>			assert.Equal(t, gen.CouponScopeKind(&#34;category&#34;), got.Scope.Kind)
+<span id="L284" class="ln">   284  </span>			require.NotNil(t, got.Scope.TargetId)
+<span id="L285" class="ln">   285  </span>			assert.Equal(t, target.ToPrimitive(), *got.Scope.TargetId)
+<span id="L286" class="ln">   286  </span>		})
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>		t.Run(&#34;全体の適用範囲は対象IDをnilで返す&#34;, func(t *testing.T) {
+<span id="L289" class="ln">   289  </span>			t.Parallel()
+<span id="L290" class="ln">   290  </span>
+<span id="L291" class="ln">   291  </span>			value, err := decimal.Parse(&#34;5&#34;)
+<span id="L292" class="ln">   292  </span>			require.NoError(t, err)
+<span id="L293" class="ln">   293  </span>			view := &amp;purchaseuc.AppliedCouponView{
+<span id="L294" class="ln">   294  </span>				ID:            uuidtestkit.NewTestFromSalt(t, &#34;applied_all&#34;),
+<span id="L295" class="ln">   295  </span>				DiscountKind:  &#34;flat&#34;,
+<span id="L296" class="ln">   296  </span>				DiscountValue: value,
+<span id="L297" class="ln">   297  </span>				ScopeKind:     &#34;all&#34;,
+<span id="L298" class="ln">   298  </span>			}
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>			got := toAppliedCouponResponse(view)
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>			require.NotNil(t, got)
+<span id="L303" class="ln">   303  </span>			assert.Nil(t, got.Scope.TargetId)
+<span id="L304" class="ln">   304  </span>		})
+<span id="L305" class="ln">   305  </span>
+<span id="L306" class="ln">   306  </span>		t.Run(&#34;未適用の場合はnilを返す&#34;, func(t *testing.T) {
+<span id="L307" class="ln">   307  </span>			t.Parallel()
+<span id="L308" class="ln">   308  </span>
+<span id="L309" class="ln">   309  </span>			assert.Nil(t, toAppliedCouponResponse(nil))
+<span id="L310" class="ln">   310  </span>		})
+<span id="L311" class="ln">   311  </span>	})
+<span id="L312" class="ln">   312  </span>}
+<span id="L313" class="ln">   313  </span>
 </pre><p><a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/v1_purchases_detail_handler_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

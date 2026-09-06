@@ -122,6 +122,9 @@
 				
 				
 					
+					<dd>    <a href="#SupervisedRunner.Bind">func (s SupervisedRunner) Bind() (func(ctx context.Context) error, func(ctx context.Context) error)</a></dd>
+				
+					
 					<dd>    <a href="#SupervisedRunner.Register">func (s SupervisedRunner) Register(reg Registrar)</a></dd>
 				
 			
@@ -210,7 +213,7 @@
 		
 			
 			
-			</p><h2 id="SupervisedRunner">type <a href="../../../../src/go-boilerplate/internal/di/lifecycle/supervisor.go.html?s=1013:1605#L8">SupervisedRunner</a>
+			</p><h2 id="SupervisedRunner">type <a href="../../../../src/go-boilerplate/internal/di/lifecycle/supervisor.go.html?s=783:1375#L6">SupervisedRunner</a>
 				<a class="permalink" href="#SupervisedRunner">¶</a>
 				
 				
@@ -223,13 +226,9 @@ goroutine で起動する（OnStart はブロックしない）。
 </li><li>OnStop:  実行 context をキャンセルし、Body の完了を stopCtx（grace）の範囲で待ち、
 その後 <a href="#SupervisedRunner.OnStopAux">SupervisedRunner.OnStopAux</a>（任意）を実行する。
 </li></ul>
-<p>Body に渡される実行 context は startCtx とは独立しており、OnStop でのみキャンセルされます。これにより
-</p><ul>
-<li>OnStart 完了後に fx が startCtx をキャンセルしても Body は巻き込まれず（detached）、
-</li><li>OnStop の cancel でのみ Body の context が切れて中断できる（停止時キャンセル）。
-</li></ul>
+<p>Body に渡される実行 context は startCtx とは独立しており、OnStop でのみキャンセルされます（detached）。
 
-			<pre>type SupervisedRunner struct {
+			</p><pre>type SupervisedRunner struct {
 <span id="SupervisedRunner.Body"></span>    <span class="comment">// Body は、background ループ本体です。渡される context は OnStop でキャンセルされます。</span>
     <span class="comment">// nil の場合は何も起動しません。</span>
     Body func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>)
@@ -253,7 +252,22 @@ goroutine で起動する（OnStart はブロックしない）。
 
 			
 				
-				<h3 id="SupervisedRunner.Register">func (SupervisedRunner) <a href="../../../../src/go-boilerplate/internal/di/lifecycle/supervisor.go.html?s=1696:1745#L20">Register</a>
+				<h3 id="SupervisedRunner.Bind">func (SupervisedRunner) <a href="../../../../src/go-boilerplate/internal/di/lifecycle/supervisor.go.html?s=1898:1997#L27">Bind</a>
+					<a class="permalink" href="#SupervisedRunner.Bind">¶</a>
+					
+					
+				</h3>
+				<pre>func (s <a href="#SupervisedRunner">SupervisedRunner</a>) Bind() (func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>, func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>Bind は、SupervisedRunner の start / stop 関数を返します。順序を呼び出し側で決めたいときに使い、
+Register はこれを 1 組ずつ登録します。1 度の Bind で返る組は 1 つの実行 context を共有するので、
+start は 1 回だけ呼びます。
+
+				
+				
+				
+			
+				
+				</p><h3 id="SupervisedRunner.Register">func (SupervisedRunner) <a href="../../../../src/go-boilerplate/internal/di/lifecycle/supervisor.go.html?s=1466:1515#L18">Register</a>
 					<a class="permalink" href="#SupervisedRunner.Register">¶</a>
 					
 					

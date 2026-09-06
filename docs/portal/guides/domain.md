@@ -578,6 +578,27 @@ and is never read to reach a decision. A mutable aggregate stays identity-only.
 > lookup and buys a boundary the compiler can see. The reference-master exception above is the single
 > place a non-identity value crosses, and it carries no behavior to mutate through.
 
+#### Where a sub-entity's files live
+
+A sub-entity needs no package of its own, and the default is a file beside the root
+(`cart/cart_item.go`). When one grows enough value objects, constants and errors that they crowd the
+root's files, it may take a package — but only at `<aggregate>/internal/<name>`. The `internal/`
+segment is not decoration: Go refuses an import of it from outside the aggregate, so the sub-entity
+stays unreachable to everyone but its own root no matter what any linter is configured to do.
+
+Nesting alone never makes something a sub-entity. `product/category` and `purchase/status` sit under
+a parent directory and are separate aggregates all the same — each has its own Repository, which is
+the access path that decides it. A nested package that is *not* under `internal/` is therefore read
+as another aggregate, and importing it from the parent is the cross-aggregate reference this section
+forbids.
+
+**Where this rule is checked.** `internal/architest`'s `TestDomainAggregateImportIsolation`, not
+`golangci-lint`. The rule depends on both endpoints of an import — which aggregate is importing, and
+what it imports — and `depguard` can only see the importing side through its `files` filter while its
+`allow` / `deny` lists match the imported path alone. A single `depguard` rule therefore cannot say
+"any aggregate may import its own `internal/` subtree and nothing else's", which is why the rule
+moved to a test that can.
+
 ### Reference master aggregates
 
 A reference master is a lighter archetype than a mutable aggregate: no state-transition method, no

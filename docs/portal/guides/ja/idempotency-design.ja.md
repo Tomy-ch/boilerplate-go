@@ -1,7 +1,5 @@
 # 冪等性サブシステム設計リファレンス
 
-[Idempotency README（日本語）](../../internal/usecase/idempotency/README.ja.md) | English: [idempotency.md](idempotency.md)
-
 本書は冪等性（`Idempotency-Key`）サブシステムの **役割論・状態遷移・実装箇所・integrator が書く箇所・用語** を、実装を精査して 1 枚にまとめた参照資料です。概要は README、接続先の HTTP 経路は [rest.ja.md](rest.ja.md)、GC 側は [job](job.ja.md) として動きます。
 
 ---

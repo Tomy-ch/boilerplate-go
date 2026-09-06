@@ -1,7 +1,5 @@
 # oapi/auth
 
-[English](README.md) | 日本語
-
 `Authorization` ヘッダーから Bearer トークンを抽出し、boundary の `Authenticator` で検証し、結果をリクエストコンテキスト（authn スロット）に格納する OpenAPI 認証関数です。Cookie ベースの抽出はサポートしません（Bearer / リソースサーバーモデル）。
 
 ## トークン抽出フロー
@@ -45,6 +43,40 @@ flowchart TB
 fail-closed の節を参照）。資格情報が提示されなかったことは失敗ではなく、記録もされないため、
 匿名の呼び出し元を受け入れる operation は従来どおり受け入れます。
 
+## scheme 別の dispatch
+
+バリデータは security requirement ごとに 1 つの `AuthenticationFunc` を呼び、評価中の scheme の名前
+（`input.SecuritySchemeName`）を渡します。`NewAuthenticator` は Bearer 用の `Authenticator` / `IdentityResolver` に加えて、
+fx group `SchemeGroup`（`oapi.security.schemes`）で集めた `SchemeAuthenticator` の一覧を受け取ります。
+
+```mermaid
+flowchart TB
+    In["AuthenticationInput（scheme 名 + 宣言）"]
+    Named{"その名前を担当する SchemeAuthenticator がいる?"}
+    Delegate["委譲 — 認証器が自分の context スロットへ書く"]
+    Bearer{"宣言が http / bearer（または無し）?"}
+    BearerFlow["上の Bearer フロー"]
+    Reject["ErrUnauthorizedSchemeUnsupported → 401（fail-closed）"]
+
+    In --> Named
+    Named -- yes --> Delegate
+    Named -- no --> Bearer
+    Bearer -- yes --> BearerFlow
+    Bearer -- no --> Reject
+```
+
+- 認証器が登録された scheme は **名前**（`components.securitySchemes` のキー）で委譲する。形では判定しないので、
+  同じ形の scheme が 2 つあっても区別できる
+- 認証器が無く Bearer でもない scheme は拒否する。誰も検証できない資格情報は受け入れない
+  （ADR-0021 (optional-authentication-fail-closed)）。Realtime module を持たない `serve` graph が stream ticket に返すのがこれ
+- 委譲の有無にかかわらず、失敗は `ctxhelper.SetAuthnFailure` で記録され HTTP ステータスを持つ（Bearer フローと同じ）
+
+spec は `/metrics` に `BasicAuth` も宣言しているが、その operation は ops skipper が検証パイプラインの外に置くためここへ到達しない（ADR-0020 (metrics-endpoint-auth-exception)）。ops でない operation が `BasicAuth` を宣言すると、その `SchemeAuthenticator` が現れるまでここで拒否される。
+
+現在の `SchemeAuthenticator` は stream ticket（`internal/controller/stream/auth`、
+ADR-0074 (query-ticket-stream-authentication)）だけで、検証済みの束縛を `oapi.Middleware` が `Authn` スロットと並べて
+仕込む `StreamGrant` スロットへ書きます。
+
 ## エラー
 
 |エラー|ベースエラー|説明|
@@ -52,6 +84,7 @@ fail-closed の節を参照）。資格情報が提示されなかったこと�
 |`ErrUnauthorizedInvalidToken`|`ErrUnauthenticated`|`Authenticator` によるトークン検証失敗|
 |`ErrUnauthorizedTokenNotProvided`|`ErrUnauthenticated`|`Authorization` ヘッダーにトークンが見つからない|
 |`ErrUnauthorizedTokenMissing`|`ErrUnauthenticated`|認証トークンが欠落（**予約** — 現状は返さない。注意点を参照）|
+|`ErrUnauthorizedSchemeUnsupported`|`ErrUnauthenticated`|operation が Bearer 以外の scheme を宣言しているが担当する `SchemeAuthenticator` が無い。資格情報を検証できないため拒否する|
 |`ErrAuthnSlotNotFound`|`ErrInternal`|リクエストコンテキストに authn スロットが無い（`oapi.Middleware` が未注入）。資格情報と無関係な結線の不具合|
 |`ErrInvalidAuthDefaultMode`|`ErrInternal`|デフォルト認証ポリシーが見つからない（**予約** — 現状は返さない。注意点を参照）|
 

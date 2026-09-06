@@ -82,342 +82,357 @@
 <span id="L25" class="ln">    25  </span>)
 <span id="L26" class="ln">    26  </span>
 <span id="L27" class="ln">    27  </span>const (
-<span id="L28" class="ln">    28  </span>	<span class="comment">// cartTTL は、Cart.Touch へ供給する有効期限の長さです（docs/spec/cart/domain.md の Touch）。</span>
+<span id="L28" class="ln">    28  </span>	<span class="comment">// cartTTL は、Cart.Touch へ供給する有効期限の長さです（docs/spec/domain/cart.md の Touch）。</span>
 <span id="L29" class="ln">    29  </span>	cartTTL = 30 * 24 * time.Hour
 <span id="L30" class="ln">    30  </span>
-<span id="L31" class="ln">    31  </span>	<span class="comment">// ItemIssueNotFound は、商品を引けなかったことを表します。</span>
+<span id="L31" class="ln">    31  </span>	<span class="comment">// ItemIssueNotFound は、cart.IssueNotFound に対応します。</span>
 <span id="L32" class="ln">    32  </span>	ItemIssueNotFound ItemIssue = &#34;notFound&#34;
-<span id="L33" class="ln">    33  </span>	<span class="comment">// ItemIssueUnpublished は、商品が非公開であることを表します。</span>
+<span id="L33" class="ln">    33  </span>	<span class="comment">// ItemIssueUnpublished は、cart.IssueUnpublished に対応します。</span>
 <span id="L34" class="ln">    34  </span>	ItemIssueUnpublished ItemIssue = &#34;unpublished&#34;
-<span id="L35" class="ln">    35  </span>	<span class="comment">// ItemIssueOutOfStock は、在庫が無いことを表します。</span>
-<span id="L36" class="ln">    36  </span>	ItemIssueOutOfStock ItemIssue = &#34;outOfStock&#34;
-<span id="L37" class="ln">    37  </span>	<span class="comment">// ItemIssueInsufficientStock は、在庫が要求数量に満たないことを表します。</span>
-<span id="L38" class="ln">    38  </span>	ItemIssueInsufficientStock ItemIssue = &#34;insufficientStock&#34;
-<span id="L39" class="ln">    39  </span>	<span class="comment">// ItemIssuePriceIncreased は、前回提示した価格より高いことを表します。</span>
-<span id="L40" class="ln">    40  </span>	ItemIssuePriceIncreased ItemIssue = &#34;priceIncreased&#34;
-<span id="L41" class="ln">    41  </span>	<span class="comment">// ItemIssuePriceDecreased は、前回提示した価格より安いことを表します。</span>
-<span id="L42" class="ln">    42  </span>	ItemIssuePriceDecreased ItemIssue = &#34;priceDecreased&#34;
-<span id="L43" class="ln">    43  </span>)
-<span id="L44" class="ln">    44  </span>
-<span id="L45" class="ln">    45  </span><span class="comment">// ErrUnavailableProduct は、カートへ入れられない商品を指定した場合のエラーです（422）。</span>
-<span id="L46" class="ln">    46  </span><span class="comment">// 不存在の商品と非公開の商品のどちらもこれになります（区別しない理由と、明細に立つ issue との</span>
-<span id="L47" class="ln">    47  </span><span class="comment">// 違いは docs/spec/cart/usecase.md の SetItem）。</span>
-<span id="L48" class="ln">    48  </span>var ErrUnavailableProduct = xerrors.Wrap(apperror.ErrValidation, &#34;product is unavailable for the cart&#34;)
-<span id="L49" class="ln">    49  </span>
-<span id="L50" class="ln">    50  </span><span class="comment">// ItemIssue は、明細ごとの再評価結果です。値は外部向けの安定コードで、表示ではなく分岐に用います。</span>
-<span id="L51" class="ln">    51  </span>type ItemIssue string
-<span id="L52" class="ln">    52  </span>
-<span id="L53" class="ln">    53  </span><span class="comment">// Subject は、カートの主体です。認証済みユーザーとゲストセッションのうち高々一方が設定され、</span>
-<span id="L54" class="ln">    54  </span><span class="comment">// どちらも設定されていない場合は表示するカートを持ちません。</span>
-<span id="L55" class="ln">    55  </span>type Subject struct {
-<span id="L56" class="ln">    56  </span>	<span class="comment">// UserID は、認証済みの内部ユーザー ID です。</span>
-<span id="L57" class="ln">    57  </span>	UserID *uuid.UUID
-<span id="L58" class="ln">    58  </span>	<span class="comment">// SessionToken は、ゲスト追跡用のトークンです。</span>
-<span id="L59" class="ln">    59  </span>	SessionToken *string
-<span id="L60" class="ln">    60  </span>}
-<span id="L61" class="ln">    61  </span>
-<span id="L62" class="ln">    62  </span><span class="comment">// SetItemParams は、明細の数量設定の入力 DTO です。</span>
-<span id="L63" class="ln">    63  </span>type SetItemParams struct {
-<span id="L64" class="ln">    64  </span>	<span class="comment">// Subject は、カートの主体です。</span>
-<span id="L65" class="ln">    65  </span>	Subject Subject
-<span id="L66" class="ln">    66  </span>	<span class="comment">// ProductID は、対象の商品です。</span>
-<span id="L67" class="ln">    67  </span>	ProductID uuid.UUID
-<span id="L68" class="ln">    68  </span>	<span class="comment">// Quantity は、設定する数量です。現在の数量への加算ではありません。</span>
-<span id="L69" class="ln">    69  </span>	Quantity int
-<span id="L70" class="ln">    70  </span>}
-<span id="L71" class="ln">    71  </span>
-<span id="L72" class="ln">    72  </span><span class="comment">// RemoveItemParams は、明細の削除の入力 DTO です。</span>
-<span id="L73" class="ln">    73  </span>type RemoveItemParams struct {
-<span id="L74" class="ln">    74  </span>	<span class="comment">// Subject は、カートの主体です。</span>
-<span id="L75" class="ln">    75  </span>	Subject Subject
-<span id="L76" class="ln">    76  </span>	<span class="comment">// ProductID は、取り除く明細が指す商品です。</span>
-<span id="L77" class="ln">    77  </span>	ProductID uuid.UUID
-<span id="L78" class="ln">    78  </span>}
-<span id="L79" class="ln">    79  </span>
-<span id="L80" class="ln">    80  </span><span class="comment">// MergeOnLoginParams は、ログイン時のカート引き継ぎの入力 DTO です。</span>
-<span id="L81" class="ln">    81  </span>type MergeOnLoginParams struct {
-<span id="L82" class="ln">    82  </span>	<span class="comment">// UserID は、引き継ぎ先の認証済みユーザーです。</span>
-<span id="L83" class="ln">    83  </span>	UserID uuid.UUID
-<span id="L84" class="ln">    84  </span>	<span class="comment">// SessionToken は、引き継ぎ元のゲストカートのトークンです。</span>
-<span id="L85" class="ln">    85  </span>	SessionToken string
-<span id="L86" class="ln">    86  </span>}
-<span id="L87" class="ln">    87  </span>
-<span id="L88" class="ln">    88  </span><span class="comment">// MergeCartResult は、引き継ぎで失われた分の出力 DTO です。</span>
-<span id="L89" class="ln">    89  </span><span class="comment">// 引き継ぎ後のカートの中身は持ちません（取得でいつでも引けるため）。</span>
-<span id="L90" class="ln">    90  </span>type MergeCartResult struct {
-<span id="L91" class="ln">    91  </span>	<span class="comment">// Clamped は、合算の結果が明細ごとの上限を超え、上限へ丸めた商品です。</span>
-<span id="L92" class="ln">    92  </span>	Clamped []uuid.UUID
-<span id="L93" class="ln">    93  </span>	<span class="comment">// Dropped は、明細数の上限を超えたため取り込まれなかった商品です。</span>
-<span id="L94" class="ln">    94  </span>	Dropped []uuid.UUID
-<span id="L95" class="ln">    95  </span>}
-<span id="L96" class="ln">    96  </span>
-<span id="L97" class="ln">    97  </span><span class="comment">// CartItemView は、明細 1 件の出力 DTO です。</span>
-<span id="L98" class="ln">    98  </span>type CartItemView struct {
-<span id="L99" class="ln">    99  </span>	<span class="comment">// ProductID は、対象の商品です。カート内で明細を一意に指す自然キーでもあります。</span>
-<span id="L100" class="ln">   100  </span>	ProductID uuid.UUID
-<span id="L101" class="ln">   101  </span>	<span class="comment">// ProductName / UnitPrice は、取得時点の商品の値です。商品を引けなかった場合は nil です。</span>
-<span id="L102" class="ln">   102  </span>	ProductName *string
-<span id="L103" class="ln">   103  </span>	UnitPrice   *decimal.Decimal
-<span id="L104" class="ln">   104  </span>	<span class="comment">// ImagePath は、取得時点の商品の代表画像のオブジェクトキーです。</span>
-<span id="L105" class="ln">   105  </span>	<span class="comment">// 商品を引けなかった場合と、商品が代表画像を持たない場合は nil です。</span>
-<span id="L106" class="ln">   106  </span>	ImagePath *string
-<span id="L107" class="ln">   107  </span>	<span class="comment">// Quantity は、カートに入っている数量です。</span>
-<span id="L108" class="ln">   108  </span>	Quantity int
-<span id="L109" class="ln">   109  </span>	<span class="comment">// Issues は、この明細の再評価結果です。空なら現時点で購入可能です。</span>
-<span id="L110" class="ln">   110  </span>	Issues []ItemIssue
-<span id="L111" class="ln">   111  </span>	<span class="comment">// AvailableQuantity は、ItemIssueInsufficientStock のときの今買える上限です。それ以外は nil です。</span>
-<span id="L112" class="ln">   112  </span>	AvailableQuantity *int
-<span id="L113" class="ln">   113  </span>}
-<span id="L114" class="ln">   114  </span>
-<span id="L115" class="ln">   115  </span><span class="comment">// CartView は、カートの出力 DTO です。</span>
-<span id="L116" class="ln">   116  </span>type CartView struct {
-<span id="L117" class="ln">   117  </span>	<span class="comment">// SessionToken は、ゲストカートのトークンです。新規発行が起きなかった操作では nil です。</span>
-<span id="L118" class="ln">   118  </span>	SessionToken *string
-<span id="L119" class="ln">   119  </span>	<span class="comment">// Items は、明細です。カートが無い場合も空スライスで、nil にはなりません。</span>
-<span id="L120" class="ln">   120  </span>	Items []CartItemView
-<span id="L121" class="ln">   121  </span>	<span class="comment">// SubtotalAmount は、購入可能な明細のみを合算した参考値（USD セント）です。請求額ではありません。</span>
-<span id="L122" class="ln">   122  </span>	SubtotalAmount int64
-<span id="L123" class="ln">   123  </span>	<span class="comment">// ExpiresAt は、カートの有効期限です。カートが存在しない場合は nil です。</span>
-<span id="L124" class="ln">   124  </span>	ExpiresAt *time.Time
-<span id="L125" class="ln">   125  </span>}
-<span id="L126" class="ln">   126  </span>
-<span id="L127" class="ln">   127  </span><span class="comment">// Usecase は、カートのユースケースを定義します。</span>
-<span id="L128" class="ln">   128  </span>type Usecase interface {
-<span id="L129" class="ln">   129  </span>	<span class="comment">// GetCart は、主体のカートを明細ごとの再評価つきで返します。</span>
-<span id="L130" class="ln">   130  </span>	<span class="comment">// カートが無い、または有効期限を過ぎている場合は空のカートを返し、行は作りません。</span>
-<span id="L131" class="ln">   131  </span>	<span class="comment">// 明細の問題（在庫・非公開・価格差）はエラーではなく、各明細の Issues として返されます。</span>
-<span id="L132" class="ln">   132  </span>	GetCart(ctx context.Context, subject Subject) (CartView, error)
-<span id="L133" class="ln">   133  </span>
-<span id="L134" class="ln">   134  </span>	<span class="comment">// SetItem は、主体のカートに指定商品の数量を設定し、再評価つきのカートを返します。</span>
-<span id="L135" class="ln">   135  </span>	<span class="comment">// 現在の数量への加算ではないため、同じ入力を何回与えても結果は変わりません。</span>
-<span id="L136" class="ln">   136  </span>	<span class="comment">// カートを持たない主体にはこの操作がカートを作ります（ゲストにはトークンを発行します）。</span>
-<span id="L137" class="ln">   137  </span>	<span class="comment">// カートへ入れられない商品は ErrUnavailableProduct を返します。</span>
-<span id="L138" class="ln">   138  </span>	SetItem(ctx context.Context, params SetItemParams) (CartView, error)
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>	<span class="comment">// RemoveItem は、主体のカートから指定商品の明細を取り除きます。</span>
-<span id="L141" class="ln">   141  </span>	<span class="comment">// 対象の明細が無い場合も、カートを持たない主体が呼んだ場合も成功します（削除は冪等です）。</span>
-<span id="L142" class="ln">   142  </span>	<span class="comment">// カートは作らず、商品の存在も公開状態も確かめません。</span>
-<span id="L143" class="ln">   143  </span>	<span class="comment">// カートを持つ主体には有効期限の延長だけが起きます。</span>
-<span id="L144" class="ln">   144  </span>	RemoveItem(ctx context.Context, params RemoveItemParams) error
-<span id="L145" class="ln">   145  </span>
-<span id="L146" class="ln">   146  </span>	<span class="comment">// ClearCart は、主体のカートから明細をすべて取り除きます。</span>
-<span id="L147" class="ln">   147  </span>	<span class="comment">// カートの行は残り、有効期限は延長されます（空のカートは正当な状態です）。</span>
-<span id="L148" class="ln">   148  </span>	<span class="comment">// 既に空の場合も、カートを持たない主体が呼んだ場合も成功します。カートは作りません。</span>
-<span id="L149" class="ln">   149  </span>	ClearCart(ctx context.Context, subject Subject) error
-<span id="L150" class="ln">   150  </span>
-<span id="L151" class="ln">   151  </span>	<span class="comment">// MergeOnLogin は、ゲストカートを認証済みユーザーへ引き継ぎます。</span>
-<span id="L152" class="ln">   152  </span>	<span class="comment">// 引き継ぎ元を引けない場合（引き継ぎ済み・期限切れ・未知のトークン）も成功し、失われた分は空になります。</span>
-<span id="L153" class="ln">   153  </span>	<span class="comment">// 形式が不正なトークンはエラーを返しますが、それ以外の理由で引き継ぎが失敗することはありません。</span>
-<span id="L154" class="ln">   154  </span>	<span class="comment">// 数量や明細数が上限を超える分は調整され、失われた分は戻り値で報告します</span>
-<span id="L155" class="ln">   155  </span>	<span class="comment">// （切り捨ての優先順位は docs/spec/cart/domain.md の Merge）。</span>
-<span id="L156" class="ln">   156  </span>	MergeOnLogin(ctx context.Context, params MergeOnLoginParams) (MergeCartResult, error)
-<span id="L157" class="ln">   157  </span>}
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>type usecase struct {
-<span id="L160" class="ln">   160  </span>	tracer      observability.LayerTracer
-<span id="L161" class="ln">   161  </span>	txm         tx.Manager
-<span id="L162" class="ln">   162  </span>	cartRepo    cart.Repository
-<span id="L163" class="ln">   163  </span>	productRepo product.Repository
-<span id="L164" class="ln">   164  </span>	tokenGen    token.Generator
-<span id="L165" class="ln">   165  </span>	clock       clock.Clock
-<span id="L166" class="ln">   166  </span>}
-<span id="L167" class="ln">   167  </span>
-<span id="L168" class="ln">   168  </span><span class="comment">// New は、カートのユースケースを生成します。</span>
-<span id="L169" class="ln">   169  </span>func New(
-<span id="L170" class="ln">   170  </span>	txm tx.Manager,
-<span id="L171" class="ln">   171  </span>	cartRepo cart.Repository,
-<span id="L172" class="ln">   172  </span>	productRepo product.Repository,
-<span id="L173" class="ln">   173  </span>	tokenGen token.Generator,
-<span id="L174" class="ln">   174  </span>	clk clock.Clock,
-<span id="L175" class="ln">   175  </span>	tf observability.TracerFactory,
-<span id="L176" class="ln">   176  </span>) Usecase {
-<span id="L177" class="ln">   177  </span>	return &amp;usecase{
-<span id="L178" class="ln">   178  </span>		tracer:      tf.Usecase(),
-<span id="L179" class="ln">   179  </span>		txm:         txm,
-<span id="L180" class="ln">   180  </span>		cartRepo:    cartRepo,
-<span id="L181" class="ln">   181  </span>		productRepo: productRepo,
-<span id="L182" class="ln">   182  </span>		tokenGen:    tokenGen,
-<span id="L183" class="ln">   183  </span>		clock:       clk,
-<span id="L184" class="ln">   184  </span>	}
-<span id="L185" class="ln">   185  </span>}
-<span id="L186" class="ln">   186  </span>
-<span id="L187" class="ln">   187  </span><span class="comment">// resolveCart は、主体から表示すべきカートを解決します。</span>
-<span id="L188" class="ln">   188  </span><span class="comment">// 主体を持たない・カートが無い・有効期限を過ぎているのいずれも「表示するカートが無い」であり、</span>
-<span id="L189" class="ln">   189  </span><span class="comment">// found=false を返します。いずれも呼び出し側の失敗ではありません。</span>
-<span id="L190" class="ln">   190  </span>func (u *usecase) resolveCart(ctx context.Context, subject Subject, now time.Time) (*cart.Cart, bool, error) {
-<span id="L191" class="ln">   191  </span>	c, found, err := u.findCart(ctx, subject)
-<span id="L192" class="ln">   192  </span>	if err != nil {
-<span id="L193" class="ln">   193  </span>		if xerrors.Is(err, apperror.ErrNotFound) {
-<span id="L194" class="ln">   194  </span>			return nil, false, nil
-<span id="L195" class="ln">   195  </span>		}
-<span id="L196" class="ln">   196  </span>		return nil, false, err
-<span id="L197" class="ln">   197  </span>	}
-<span id="L198" class="ln">   198  </span>	if !found || c.IsExpired(now) {
-<span id="L199" class="ln">   199  </span>		return nil, false, nil
-<span id="L200" class="ln">   200  </span>	}
-<span id="L201" class="ln">   201  </span>	return c, true, nil
-<span id="L202" class="ln">   202  </span>}
-<span id="L203" class="ln">   203  </span>
-<span id="L204" class="ln">   204  </span><span class="comment">// findCart は、主体の種類に応じてカートを引きます。主体を持たない場合は found=false を返します。</span>
-<span id="L205" class="ln">   205  </span><span class="comment">// 認証済みユーザーはゲストセッションより優先されます。</span>
-<span id="L206" class="ln">   206  </span>func (u *usecase) findCart(ctx context.Context, subject Subject) (*cart.Cart, bool, error) {
-<span id="L207" class="ln">   207  </span>	switch {
-<span id="L208" class="ln">   208  </span>	case subject.UserID != nil:
-<span id="L209" class="ln">   209  </span>		c, err := u.cartRepo.FindByOwnerID(ctx, *subject.UserID)
-<span id="L210" class="ln">   210  </span>		return c, err == nil, err
-<span id="L211" class="ln">   211  </span>	case subject.SessionToken != nil:
-<span id="L212" class="ln">   212  </span>		token, err := cart.NewSessionToken(*subject.SessionToken)
-<span id="L213" class="ln">   213  </span>		if err != nil {
-<span id="L214" class="ln">   214  </span>			return nil, false, err
-<span id="L215" class="ln">   215  </span>		}
-<span id="L216" class="ln">   216  </span>		c, err := u.cartRepo.FindBySessionToken(ctx, token)
-<span id="L217" class="ln">   217  </span>		return c, err == nil, err
-<span id="L218" class="ln">   218  </span>	default:
-<span id="L219" class="ln">   219  </span>		return nil, false, nil
-<span id="L220" class="ln">   220  </span>	}
-<span id="L221" class="ln">   221  </span>}
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span><span class="comment">// findProducts は、明細が指す商品を ID で引き当てた表を返します。</span>
-<span id="L224" class="ln">   224  </span><span class="comment">// 引けなかった商品は表に現れません。明細が無い場合は問い合わせません。</span>
-<span id="L225" class="ln">   225  </span>func (u *usecase) findProducts(
-<span id="L226" class="ln">   226  </span>	ctx context.Context, items []cart.CartItem,
-<span id="L227" class="ln">   227  </span>) (map[uuid.UUID]*product.Product, error) {
-<span id="L228" class="ln">   228  </span>	if len(items) == 0 {
-<span id="L229" class="ln">   229  </span>		return map[uuid.UUID]*product.Product{}, nil
-<span id="L230" class="ln">   230  </span>	}
-<span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>	ids := make([]uuid.UUID, 0, len(items))
-<span id="L233" class="ln">   233  </span>	for _, item := range items {
-<span id="L234" class="ln">   234  </span>		ids = append(ids, item.ProductID())
-<span id="L235" class="ln">   235  </span>	}
-<span id="L236" class="ln">   236  </span>
-<span id="L237" class="ln">   237  </span>	products, err := u.productRepo.FindByIDs(ctx, ids)
-<span id="L238" class="ln">   238  </span>	if err != nil {
-<span id="L239" class="ln">   239  </span>		return nil, err
-<span id="L240" class="ln">   240  </span>	}
-<span id="L241" class="ln">   241  </span>
-<span id="L242" class="ln">   242  </span>	found := make(map[uuid.UUID]*product.Product, len(products))
-<span id="L243" class="ln">   243  </span>	for _, p := range products {
-<span id="L244" class="ln">   244  </span>		found[p.ID()] = p
-<span id="L245" class="ln">   245  </span>	}
-<span id="L246" class="ln">   246  </span>	return found, nil
-<span id="L247" class="ln">   247  </span>}
-<span id="L248" class="ln">   248  </span>
-<span id="L249" class="ln">   249  </span><span class="comment">// buildView は、明細を再評価して出力 DTO を組み立て、あわせてカートの状態を進めます。</span>
-<span id="L250" class="ln">   250  </span><span class="comment">// 提示した価格の記録と有効期限の延長までを含むため、呼び出し側は戻り値を返す前にカートを保存します。</span>
-<span id="L251" class="ln">   251  </span><span class="comment">//</span>
-<span id="L252" class="ln">   252  </span><span class="comment">// 判定も合算も提示価格を書き換える前に済ませます（docs/spec/cart/domain.md の Cart.Subtotal）。</span>
-<span id="L253" class="ln">   253  </span><span class="comment">//</span>
-<span id="L254" class="ln">   254  </span><span class="comment">// SessionToken は埋めません。トークンを新しく発行したかどうかを知るのはカートを解決した側だけです。</span>
-<span id="L255" class="ln">   255  </span>func (u *usecase) buildView(ctx context.Context, c *cart.Cart, now time.Time) (CartView, error) {
-<span id="L256" class="ln">   256  </span>	items := c.Items()
-<span id="L257" class="ln">   257  </span>	products, err := u.findProducts(ctx, items)
-<span id="L258" class="ln">   258  </span>	if err != nil {
-<span id="L259" class="ln">   259  </span>		return CartView{}, err
-<span id="L260" class="ln">   260  </span>	}
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>	views, seen := evaluateItems(items, products)
-<span id="L263" class="ln">   263  </span>	subtotal, serr := c.Subtotal(toSnapshots(products))
-<span id="L264" class="ln">   264  </span>	if serr != nil {
-<span id="L265" class="ln">   265  </span>		return CartView{}, serr
-<span id="L266" class="ln">   266  </span>	}
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>	c.MarkSeen(seen)
-<span id="L269" class="ln">   269  </span>	c.Touch(now, cartTTL)
-<span id="L270" class="ln">   270  </span>
-<span id="L271" class="ln">   271  </span>	expiresAt := c.ExpiresAt()
-<span id="L272" class="ln">   272  </span>	return CartView{Items: views, SubtotalAmount: subtotal, ExpiresAt: &amp;expiresAt}, nil
-<span id="L273" class="ln">   273  </span>}
+<span id="L35" class="ln">    35  </span>	<span class="comment">// ItemIssueDiscontinued は、cart.IssueDiscontinued に対応します。</span>
+<span id="L36" class="ln">    36  </span>	ItemIssueDiscontinued ItemIssue = &#34;discontinued&#34;
+<span id="L37" class="ln">    37  </span>	<span class="comment">// ItemIssueOutOfStock は、cart.IssueOutOfStock に対応します。</span>
+<span id="L38" class="ln">    38  </span>	ItemIssueOutOfStock ItemIssue = &#34;outOfStock&#34;
+<span id="L39" class="ln">    39  </span>	<span class="comment">// ItemIssueInsufficientStock は、cart.IssueInsufficientStock に対応します。</span>
+<span id="L40" class="ln">    40  </span>	ItemIssueInsufficientStock ItemIssue = &#34;insufficientStock&#34;
+<span id="L41" class="ln">    41  </span>	<span class="comment">// ItemIssuePriceIncreased は、cart.IssuePriceIncreased に対応します。</span>
+<span id="L42" class="ln">    42  </span>	ItemIssuePriceIncreased ItemIssue = &#34;priceIncreased&#34;
+<span id="L43" class="ln">    43  </span>	<span class="comment">// ItemIssuePriceDecreased は、cart.IssuePriceDecreased に対応します。</span>
+<span id="L44" class="ln">    44  </span>	ItemIssuePriceDecreased ItemIssue = &#34;priceDecreased&#34;
+<span id="L45" class="ln">    45  </span>)
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span><span class="comment">// ErrUnavailableProduct は、カートへ入れられない商品を指定した場合のエラーです（422）。</span>
+<span id="L48" class="ln">    48  </span><span class="comment">// 不存在の商品と非公開の商品のどちらもこれになります（区別しない理由と、明細に立つ issue との</span>
+<span id="L49" class="ln">    49  </span><span class="comment">// 違いは docs/spec/usecase/cart.md の SetItem）。</span>
+<span id="L50" class="ln">    50  </span>var ErrUnavailableProduct = xerrors.Wrap(apperror.ErrValidation, &#34;product is unavailable for the cart&#34;)
+<span id="L51" class="ln">    51  </span>
+<span id="L52" class="ln">    52  </span><span class="comment">// ItemIssue は、明細ごとの再評価結果です。値は外部向けの安定コードで、表示ではなく分岐に用います。</span>
+<span id="L53" class="ln">    53  </span><span class="comment">// 各値の意味は対応する cart.Issue が定義し、ここでは再定義しません</span>
+<span id="L54" class="ln">    54  </span><span class="comment">// （docs/spec/domain/cart.md の Issue）。</span>
+<span id="L55" class="ln">    55  </span>type ItemIssue string
+<span id="L56" class="ln">    56  </span>
+<span id="L57" class="ln">    57  </span><span class="comment">// Subject は、カートの主体です。認証済みユーザーとゲストセッションのうち高々一方が設定され、</span>
+<span id="L58" class="ln">    58  </span><span class="comment">// どちらも設定されていない場合は表示するカートを持ちません。</span>
+<span id="L59" class="ln">    59  </span>type Subject struct {
+<span id="L60" class="ln">    60  </span>	<span class="comment">// UserID は、認証済みの内部ユーザー ID です。</span>
+<span id="L61" class="ln">    61  </span>	UserID *uuid.UUID
+<span id="L62" class="ln">    62  </span>	<span class="comment">// SessionToken は、ゲスト追跡用のトークンです。</span>
+<span id="L63" class="ln">    63  </span>	SessionToken *string
+<span id="L64" class="ln">    64  </span>}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span><span class="comment">// SetItemParams は、明細の数量設定の入力 DTO です。</span>
+<span id="L67" class="ln">    67  </span>type SetItemParams struct {
+<span id="L68" class="ln">    68  </span>	<span class="comment">// Subject は、カートの主体です。</span>
+<span id="L69" class="ln">    69  </span>	Subject Subject
+<span id="L70" class="ln">    70  </span>	<span class="comment">// ProductID は、対象の商品です。</span>
+<span id="L71" class="ln">    71  </span>	ProductID uuid.UUID
+<span id="L72" class="ln">    72  </span>	<span class="comment">// Quantity は、設定する数量です。現在の数量への加算ではありません。</span>
+<span id="L73" class="ln">    73  </span>	Quantity int
+<span id="L74" class="ln">    74  </span>}
+<span id="L75" class="ln">    75  </span>
+<span id="L76" class="ln">    76  </span><span class="comment">// RemoveItemParams は、明細の削除の入力 DTO です。</span>
+<span id="L77" class="ln">    77  </span>type RemoveItemParams struct {
+<span id="L78" class="ln">    78  </span>	<span class="comment">// Subject は、カートの主体です。</span>
+<span id="L79" class="ln">    79  </span>	Subject Subject
+<span id="L80" class="ln">    80  </span>	<span class="comment">// ProductID は、取り除く明細が指す商品です。</span>
+<span id="L81" class="ln">    81  </span>	ProductID uuid.UUID
+<span id="L82" class="ln">    82  </span>}
+<span id="L83" class="ln">    83  </span>
+<span id="L84" class="ln">    84  </span><span class="comment">// MergeOnLoginParams は、ログイン時のカート引き継ぎの入力 DTO です。</span>
+<span id="L85" class="ln">    85  </span>type MergeOnLoginParams struct {
+<span id="L86" class="ln">    86  </span>	<span class="comment">// UserID は、引き継ぎ先の認証済みユーザーです。</span>
+<span id="L87" class="ln">    87  </span>	UserID uuid.UUID
+<span id="L88" class="ln">    88  </span>	<span class="comment">// SessionToken は、引き継ぎ元のゲストカートのトークンです。</span>
+<span id="L89" class="ln">    89  </span>	SessionToken string
+<span id="L90" class="ln">    90  </span>}
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span><span class="comment">// MergeCartResult は、引き継ぎで失われた分の出力 DTO です。</span>
+<span id="L93" class="ln">    93  </span><span class="comment">// 引き継ぎ後のカートの中身は持ちません（取得でいつでも引けるため）。</span>
+<span id="L94" class="ln">    94  </span>type MergeCartResult struct {
+<span id="L95" class="ln">    95  </span>	<span class="comment">// Clamped は、合算の結果が明細ごとの上限を超え、上限へ丸めた商品です。</span>
+<span id="L96" class="ln">    96  </span>	Clamped []uuid.UUID
+<span id="L97" class="ln">    97  </span>	<span class="comment">// Dropped は、明細数の上限を超えたため取り込まれなかった商品です。</span>
+<span id="L98" class="ln">    98  </span>	Dropped []uuid.UUID
+<span id="L99" class="ln">    99  </span>}
+<span id="L100" class="ln">   100  </span>
+<span id="L101" class="ln">   101  </span><span class="comment">// CartItemView は、明細 1 件の出力 DTO です。</span>
+<span id="L102" class="ln">   102  </span>type CartItemView struct {
+<span id="L103" class="ln">   103  </span>	<span class="comment">// ProductID は、対象の商品です。カート内で明細を一意に指す自然キーでもあります。</span>
+<span id="L104" class="ln">   104  </span>	ProductID uuid.UUID
+<span id="L105" class="ln">   105  </span>	<span class="comment">// ProductName / UnitPrice は、取得時点の商品の値です。商品を引けなかった場合は nil です。</span>
+<span id="L106" class="ln">   106  </span>	ProductName *string
+<span id="L107" class="ln">   107  </span>	UnitPrice   *decimal.Decimal
+<span id="L108" class="ln">   108  </span>	<span class="comment">// ImagePath は、取得時点の商品の代表画像のオブジェクトキーです。</span>
+<span id="L109" class="ln">   109  </span>	<span class="comment">// 商品を引けなかった場合と、商品が代表画像を持たない場合は nil です。</span>
+<span id="L110" class="ln">   110  </span>	ImagePath *string
+<span id="L111" class="ln">   111  </span>	<span class="comment">// Quantity は、カートに入っている数量です。</span>
+<span id="L112" class="ln">   112  </span>	Quantity int
+<span id="L113" class="ln">   113  </span>	<span class="comment">// Issues は、この明細の再評価結果です。空なら現時点で購入可能です。</span>
+<span id="L114" class="ln">   114  </span>	Issues []ItemIssue
+<span id="L115" class="ln">   115  </span>	<span class="comment">// AvailableQuantity は、ItemIssueInsufficientStock のときの今買える上限です。それ以外は nil です。</span>
+<span id="L116" class="ln">   116  </span>	AvailableQuantity *int
+<span id="L117" class="ln">   117  </span>}
+<span id="L118" class="ln">   118  </span>
+<span id="L119" class="ln">   119  </span><span class="comment">// CartView は、カートの出力 DTO です。</span>
+<span id="L120" class="ln">   120  </span>type CartView struct {
+<span id="L121" class="ln">   121  </span>	<span class="comment">// SessionToken は、ゲストカートのトークンです。新規発行が起きなかった操作では nil です。</span>
+<span id="L122" class="ln">   122  </span>	SessionToken *string
+<span id="L123" class="ln">   123  </span>	<span class="comment">// Items は、明細です。カートが無い場合も空スライスで、nil にはなりません。</span>
+<span id="L124" class="ln">   124  </span>	Items []CartItemView
+<span id="L125" class="ln">   125  </span>	<span class="comment">// SubtotalAmount は、購入可能な明細のみを合算した参考値（USD セント）です。請求額ではありません。</span>
+<span id="L126" class="ln">   126  </span>	SubtotalAmount int64
+<span id="L127" class="ln">   127  </span>	<span class="comment">// ExpiresAt は、カートの有効期限です。カートが存在しない場合は nil です。</span>
+<span id="L128" class="ln">   128  </span>	ExpiresAt *time.Time
+<span id="L129" class="ln">   129  </span>}
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span><span class="comment">// Usecase は、カートのユースケースを定義します。</span>
+<span id="L132" class="ln">   132  </span>type Usecase interface {
+<span id="L133" class="ln">   133  </span>	<span class="comment">// GetCart は、主体のカートを明細ごとの再評価つきで返します。</span>
+<span id="L134" class="ln">   134  </span>	<span class="comment">// カートが無い、または有効期限を過ぎている場合は空のカートを返し、行は作りません。</span>
+<span id="L135" class="ln">   135  </span>	<span class="comment">// 明細の問題（在庫・非公開・価格差）はエラーではなく、各明細の Issues として返されます。</span>
+<span id="L136" class="ln">   136  </span>	GetCart(ctx context.Context, subject Subject) (CartView, error)
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>	<span class="comment">// SetItem は、主体のカートに指定商品の数量を設定し、再評価つきのカートを返します。</span>
+<span id="L139" class="ln">   139  </span>	<span class="comment">// 現在の数量への加算ではないため、同じ入力を何回与えても結果は変わりません。</span>
+<span id="L140" class="ln">   140  </span>	<span class="comment">// カートを持たない主体にはこの操作がカートを作ります（ゲストにはトークンを発行します）。</span>
+<span id="L141" class="ln">   141  </span>	<span class="comment">// カートへ入れられない商品は ErrUnavailableProduct を返します。</span>
+<span id="L142" class="ln">   142  </span>	SetItem(ctx context.Context, params SetItemParams) (CartView, error)
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>	<span class="comment">// RemoveItem は、主体のカートから指定商品の明細を取り除きます。</span>
+<span id="L145" class="ln">   145  </span>	<span class="comment">// 対象の明細が無い場合も、カートを持たない主体が呼んだ場合も成功します（削除は冪等です）。</span>
+<span id="L146" class="ln">   146  </span>	<span class="comment">// カートは作らず、商品の存在も公開状態も確かめません。</span>
+<span id="L147" class="ln">   147  </span>	<span class="comment">// カートを持つ主体には有効期限の延長だけが起きます。</span>
+<span id="L148" class="ln">   148  </span>	RemoveItem(ctx context.Context, params RemoveItemParams) error
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span>	<span class="comment">// ClearCart は、主体のカートから明細をすべて取り除きます。</span>
+<span id="L151" class="ln">   151  </span>	<span class="comment">// カートの行は残り、有効期限は延長されます（空のカートは正当な状態です）。</span>
+<span id="L152" class="ln">   152  </span>	<span class="comment">// 既に空の場合も、カートを持たない主体が呼んだ場合も成功します。カートは作りません。</span>
+<span id="L153" class="ln">   153  </span>	ClearCart(ctx context.Context, subject Subject) error
+<span id="L154" class="ln">   154  </span>
+<span id="L155" class="ln">   155  </span>	<span class="comment">// MergeOnLogin は、ゲストカートを認証済みユーザーへ引き継ぎます。</span>
+<span id="L156" class="ln">   156  </span>	<span class="comment">// 引き継ぎ元を引けない場合（引き継ぎ済み・期限切れ・未知のトークン）も成功し、失われた分は空になります。</span>
+<span id="L157" class="ln">   157  </span>	<span class="comment">// 形式が不正なトークンはエラーを返しますが、それ以外の理由で引き継ぎが失敗することはありません。</span>
+<span id="L158" class="ln">   158  </span>	<span class="comment">// 数量や明細数が上限を超える分は調整され、失われた分は戻り値で報告します</span>
+<span id="L159" class="ln">   159  </span>	<span class="comment">// （切り捨ての優先順位は docs/spec/domain/cart.md の Merge）。</span>
+<span id="L160" class="ln">   160  </span>	MergeOnLogin(ctx context.Context, params MergeOnLoginParams) (MergeCartResult, error)
+<span id="L161" class="ln">   161  </span>}
+<span id="L162" class="ln">   162  </span>
+<span id="L163" class="ln">   163  </span>type usecase struct {
+<span id="L164" class="ln">   164  </span>	tracer      observability.LayerTracer
+<span id="L165" class="ln">   165  </span>	txm         tx.Manager
+<span id="L166" class="ln">   166  </span>	cartRepo    cart.Repository
+<span id="L167" class="ln">   167  </span>	productRepo product.Repository
+<span id="L168" class="ln">   168  </span>	tokenGen    token.Generator
+<span id="L169" class="ln">   169  </span>	clock       clock.Clock
+<span id="L170" class="ln">   170  </span>}
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span><span class="comment">// New は、カートのユースケースを生成します。</span>
+<span id="L173" class="ln">   173  </span>func New(
+<span id="L174" class="ln">   174  </span>	txm tx.Manager,
+<span id="L175" class="ln">   175  </span>	cartRepo cart.Repository,
+<span id="L176" class="ln">   176  </span>	productRepo product.Repository,
+<span id="L177" class="ln">   177  </span>	tokenGen token.Generator,
+<span id="L178" class="ln">   178  </span>	clk clock.Clock,
+<span id="L179" class="ln">   179  </span>	tf observability.TracerFactory,
+<span id="L180" class="ln">   180  </span>) Usecase {
+<span id="L181" class="ln">   181  </span>	return &amp;usecase{
+<span id="L182" class="ln">   182  </span>		tracer:      tf.Usecase(),
+<span id="L183" class="ln">   183  </span>		txm:         txm,
+<span id="L184" class="ln">   184  </span>		cartRepo:    cartRepo,
+<span id="L185" class="ln">   185  </span>		productRepo: productRepo,
+<span id="L186" class="ln">   186  </span>		tokenGen:    tokenGen,
+<span id="L187" class="ln">   187  </span>		clock:       clk,
+<span id="L188" class="ln">   188  </span>	}
+<span id="L189" class="ln">   189  </span>}
+<span id="L190" class="ln">   190  </span>
+<span id="L191" class="ln">   191  </span><span class="comment">// resolveCart は、主体から表示すべきカートを解決します。</span>
+<span id="L192" class="ln">   192  </span><span class="comment">// 主体を持たない・カートが無い・有効期限を過ぎているのいずれも「表示するカートが無い」であり、</span>
+<span id="L193" class="ln">   193  </span><span class="comment">// found=false を返します。いずれも呼び出し側の失敗ではありません。</span>
+<span id="L194" class="ln">   194  </span>func (u *usecase) resolveCart(ctx context.Context, subject Subject, now time.Time) (*cart.Cart, bool, error) {
+<span id="L195" class="ln">   195  </span>	c, found, err := u.findCart(ctx, subject)
+<span id="L196" class="ln">   196  </span>	if err != nil {
+<span id="L197" class="ln">   197  </span>		if xerrors.Is(err, apperror.ErrNotFound) {
+<span id="L198" class="ln">   198  </span>			return nil, false, nil
+<span id="L199" class="ln">   199  </span>		}
+<span id="L200" class="ln">   200  </span>		return nil, false, err
+<span id="L201" class="ln">   201  </span>	}
+<span id="L202" class="ln">   202  </span>	if !found || c.IsExpired(now) {
+<span id="L203" class="ln">   203  </span>		return nil, false, nil
+<span id="L204" class="ln">   204  </span>	}
+<span id="L205" class="ln">   205  </span>	return c, true, nil
+<span id="L206" class="ln">   206  </span>}
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span><span class="comment">// findCart は、主体の種類に応じてカートを引きます。主体を持たない場合は found=false を返します。</span>
+<span id="L209" class="ln">   209  </span><span class="comment">// 認証済みユーザーはゲストセッションより優先されます。</span>
+<span id="L210" class="ln">   210  </span>func (u *usecase) findCart(ctx context.Context, subject Subject) (*cart.Cart, bool, error) {
+<span id="L211" class="ln">   211  </span>	switch {
+<span id="L212" class="ln">   212  </span>	case subject.UserID != nil:
+<span id="L213" class="ln">   213  </span>		c, err := u.cartRepo.FindByOwnerID(ctx, *subject.UserID)
+<span id="L214" class="ln">   214  </span>		return c, err == nil, err
+<span id="L215" class="ln">   215  </span>	case subject.SessionToken != nil:
+<span id="L216" class="ln">   216  </span>		token, err := cart.NewSessionToken(*subject.SessionToken)
+<span id="L217" class="ln">   217  </span>		if err != nil {
+<span id="L218" class="ln">   218  </span>			return nil, false, err
+<span id="L219" class="ln">   219  </span>		}
+<span id="L220" class="ln">   220  </span>		c, err := u.cartRepo.FindBySessionToken(ctx, token)
+<span id="L221" class="ln">   221  </span>		return c, err == nil, err
+<span id="L222" class="ln">   222  </span>	default:
+<span id="L223" class="ln">   223  </span>		return nil, false, nil
+<span id="L224" class="ln">   224  </span>	}
+<span id="L225" class="ln">   225  </span>}
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span><span class="comment">// findProducts は、明細が指す商品を ID で引き当てた表を返します。</span>
+<span id="L228" class="ln">   228  </span><span class="comment">// 引けなかった商品は表に現れません。明細が無い場合は問い合わせません。</span>
+<span id="L229" class="ln">   229  </span>func (u *usecase) findProducts(
+<span id="L230" class="ln">   230  </span>	ctx context.Context, items []cart.CartItem,
+<span id="L231" class="ln">   231  </span>) (map[uuid.UUID]*product.Product, error) {
+<span id="L232" class="ln">   232  </span>	if len(items) == 0 {
+<span id="L233" class="ln">   233  </span>		return map[uuid.UUID]*product.Product{}, nil
+<span id="L234" class="ln">   234  </span>	}
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>	ids := make([]uuid.UUID, 0, len(items))
+<span id="L237" class="ln">   237  </span>	for _, item := range items {
+<span id="L238" class="ln">   238  </span>		ids = append(ids, item.ProductID())
+<span id="L239" class="ln">   239  </span>	}
+<span id="L240" class="ln">   240  </span>
+<span id="L241" class="ln">   241  </span>	products, err := u.productRepo.FindByIDs(ctx, ids)
+<span id="L242" class="ln">   242  </span>	if err != nil {
+<span id="L243" class="ln">   243  </span>		return nil, err
+<span id="L244" class="ln">   244  </span>	}
+<span id="L245" class="ln">   245  </span>
+<span id="L246" class="ln">   246  </span>	found := make(map[uuid.UUID]*product.Product, len(products))
+<span id="L247" class="ln">   247  </span>	for _, p := range products {
+<span id="L248" class="ln">   248  </span>		found[p.ID()] = p
+<span id="L249" class="ln">   249  </span>	}
+<span id="L250" class="ln">   250  </span>	return found, nil
+<span id="L251" class="ln">   251  </span>}
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span><span class="comment">// buildView は、明細を再評価して出力 DTO を組み立て、あわせてカートの状態を進めます。</span>
+<span id="L254" class="ln">   254  </span><span class="comment">// 提示した価格の記録と有効期限の延長までを含むため、呼び出し側は戻り値を返す前にカートを保存します。</span>
+<span id="L255" class="ln">   255  </span><span class="comment">//</span>
+<span id="L256" class="ln">   256  </span><span class="comment">// 判定も合算も提示価格を書き換える前に済ませます（docs/spec/domain/cart.md の Cart.Subtotal）。</span>
+<span id="L257" class="ln">   257  </span><span class="comment">//</span>
+<span id="L258" class="ln">   258  </span><span class="comment">// SessionToken は埋めません。トークンを新しく発行したかどうかを知るのはカートを解決した側だけです。</span>
+<span id="L259" class="ln">   259  </span>func (u *usecase) buildView(ctx context.Context, c *cart.Cart, now time.Time) (CartView, error) {
+<span id="L260" class="ln">   260  </span>	items := c.Items()
+<span id="L261" class="ln">   261  </span>	products, err := u.findProducts(ctx, items)
+<span id="L262" class="ln">   262  </span>	if err != nil {
+<span id="L263" class="ln">   263  </span>		return CartView{}, err
+<span id="L264" class="ln">   264  </span>	}
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>	views, seen := evaluateItems(items, products)
+<span id="L267" class="ln">   267  </span>	subtotal, serr := c.Subtotal(toSnapshots(products))
+<span id="L268" class="ln">   268  </span>	if serr != nil {
+<span id="L269" class="ln">   269  </span>		return CartView{}, serr
+<span id="L270" class="ln">   270  </span>	}
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>	c.MarkSeen(seen)
+<span id="L273" class="ln">   273  </span>	c.Touch(now, cartTTL)
 <span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span><span class="comment">// evaluateItems は、明細を商品の現在値と突き合わせ、明細ごとの View と、提示した価格の表を返します。</span>
-<span id="L276" class="ln">   276  </span><span class="comment">// 価格の表には引けた商品のぶんだけが入ります（引けなかった明細の提示価格は据え置かれます）。</span>
-<span id="L277" class="ln">   277  </span>func evaluateItems(
-<span id="L278" class="ln">   278  </span>	items []cart.CartItem, products map[uuid.UUID]*product.Product,
-<span id="L279" class="ln">   279  </span>) ([]CartItemView, map[uuid.UUID]money.Price) {
-<span id="L280" class="ln">   280  </span>	views := make([]CartItemView, 0, len(items))
-<span id="L281" class="ln">   281  </span>	seen := make(map[uuid.UUID]money.Price, len(items))
-<span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>	for _, item := range items {
-<span id="L284" class="ln">   284  </span>		p := products[item.ProductID()]
-<span id="L285" class="ln">   285  </span>		views = append(views, evaluateItem(item, p))
-<span id="L286" class="ln">   286  </span>		if p != nil {
-<span id="L287" class="ln">   287  </span>			seen[p.ID()] = p.Price()
-<span id="L288" class="ln">   288  </span>		}
-<span id="L289" class="ln">   289  </span>	}
-<span id="L290" class="ln">   290  </span>
-<span id="L291" class="ln">   291  </span>	return views, seen
-<span id="L292" class="ln">   292  </span>}
-<span id="L293" class="ln">   293  </span>
-<span id="L294" class="ln">   294  </span><span class="comment">// toSnapshots は、引けた商品を再評価用の観測値へ切り出します。</span>
-<span id="L295" class="ln">   295  </span><span class="comment">// 引けなかった商品は含めません（この表に無い明細の扱いは docs/spec/cart/domain.md の Cart.Subtotal）。</span>
-<span id="L296" class="ln">   296  </span>func toSnapshots(products map[uuid.UUID]*product.Product) map[uuid.UUID]cart.ProductSnapshot {
-<span id="L297" class="ln">   297  </span>	snapshots := make(map[uuid.UUID]cart.ProductSnapshot, len(products))
-<span id="L298" class="ln">   298  </span>	for id, p := range products {
-<span id="L299" class="ln">   299  </span>		snapshots[id] = cart.NewProductSnapshot(p.Quantity(), p.Price(), p.IsPublished())
-<span id="L300" class="ln">   300  </span>	}
-<span id="L301" class="ln">   301  </span>
-<span id="L302" class="ln">   302  </span>	return snapshots
-<span id="L303" class="ln">   303  </span>}
-<span id="L304" class="ln">   304  </span>
-<span id="L305" class="ln">   305  </span><span class="comment">// evaluateItem は、明細 1 件の再評価を cart.CartItem.Evaluate へ委ね、結果を出力 DTO の語彙へ写します。</span>
-<span id="L306" class="ln">   306  </span>func evaluateItem(item cart.CartItem, p *product.Product) CartItemView {
-<span id="L307" class="ln">   307  </span>	view := CartItemView{ProductID: item.ProductID(), Quantity: item.Quantity()}
-<span id="L308" class="ln">   308  </span>
-<span id="L309" class="ln">   309  </span>	var snapshot *cart.ProductSnapshot
-<span id="L310" class="ln">   310  </span>	if p != nil {
-<span id="L311" class="ln">   311  </span>		name, price := p.Name(), p.Price().Decimal()
-<span id="L312" class="ln">   312  </span>		view.ProductName, view.UnitPrice = &amp;name, &amp;price
-<span id="L313" class="ln">   313  </span>		if image, ok := p.PrimaryImage(); ok {
-<span id="L314" class="ln">   314  </span>			imagePath := image.ImagePath()
-<span id="L315" class="ln">   315  </span>			view.ImagePath = &amp;imagePath
-<span id="L316" class="ln">   316  </span>		}
-<span id="L317" class="ln">   317  </span>		s := cart.NewProductSnapshot(p.Quantity(), p.Price(), p.IsPublished())
-<span id="L318" class="ln">   318  </span>		snapshot = &amp;s
-<span id="L319" class="ln">   319  </span>	}
-<span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>	evaluation := item.Evaluate(snapshot)
-<span id="L322" class="ln">   322  </span>	view.Issues = toItemIssues(evaluation.Issues())
-<span id="L323" class="ln">   323  </span>	view.AvailableQuantity = evaluation.AvailableQuantity()
-<span id="L324" class="ln">   324  </span>
-<span id="L325" class="ln">   325  </span>	return view
-<span id="L326" class="ln">   326  </span>}
-<span id="L327" class="ln">   327  </span>
-<span id="L328" class="ln">   328  </span><span class="comment">// toItemIssues は、ドメインの再評価結果を出力 DTO の語彙へ写します。</span>
-<span id="L329" class="ln">   329  </span>func toItemIssues(issues []cart.Issue) []ItemIssue {
-<span id="L330" class="ln">   330  </span>	converted := make([]ItemIssue, len(issues))
-<span id="L331" class="ln">   331  </span>	for i, issue := range issues {
-<span id="L332" class="ln">   332  </span>		converted[i] = toItemIssue(issue)
+<span id="L275" class="ln">   275  </span>	expiresAt := c.ExpiresAt()
+<span id="L276" class="ln">   276  </span>	return CartView{Items: views, SubtotalAmount: subtotal, ExpiresAt: &amp;expiresAt}, nil
+<span id="L277" class="ln">   277  </span>}
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span><span class="comment">// evaluateItems は、明細を商品の現在値と突き合わせ、明細ごとの View と、提示した価格の表を返します。</span>
+<span id="L280" class="ln">   280  </span><span class="comment">// 価格の表には引けた商品のぶんだけが入ります（引けなかった明細の提示価格は据え置かれます）。</span>
+<span id="L281" class="ln">   281  </span>func evaluateItems(
+<span id="L282" class="ln">   282  </span>	items []cart.CartItem, products map[uuid.UUID]*product.Product,
+<span id="L283" class="ln">   283  </span>) ([]CartItemView, map[uuid.UUID]money.Price) {
+<span id="L284" class="ln">   284  </span>	views := make([]CartItemView, 0, len(items))
+<span id="L285" class="ln">   285  </span>	seen := make(map[uuid.UUID]money.Price, len(items))
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>	for _, item := range items {
+<span id="L288" class="ln">   288  </span>		p := products[item.ProductID()]
+<span id="L289" class="ln">   289  </span>		views = append(views, evaluateItem(item, p))
+<span id="L290" class="ln">   290  </span>		if p != nil {
+<span id="L291" class="ln">   291  </span>			seen[p.ID()] = p.Price()
+<span id="L292" class="ln">   292  </span>		}
+<span id="L293" class="ln">   293  </span>	}
+<span id="L294" class="ln">   294  </span>
+<span id="L295" class="ln">   295  </span>	return views, seen
+<span id="L296" class="ln">   296  </span>}
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span><span class="comment">// toSnapshots は、引けた商品を再評価用の観測値へ切り出します。</span>
+<span id="L299" class="ln">   299  </span><span class="comment">// 引けなかった商品は含めません（この表に無い明細の扱いは docs/spec/domain/cart.md の Cart.Subtotal）。</span>
+<span id="L300" class="ln">   300  </span>func toSnapshots(products map[uuid.UUID]*product.Product) map[uuid.UUID]cart.ProductSnapshot {
+<span id="L301" class="ln">   301  </span>	snapshots := make(map[uuid.UUID]cart.ProductSnapshot, len(products))
+<span id="L302" class="ln">   302  </span>	for id, p := range products {
+<span id="L303" class="ln">   303  </span>		snapshots[id] = cart.NewProductSnapshot(cart.ProductSnapshotAttributes{
+<span id="L304" class="ln">   304  </span>			Quantity:     p.Quantity(),
+<span id="L305" class="ln">   305  </span>			Price:        p.Price(),
+<span id="L306" class="ln">   306  </span>			Published:    p.IsPublished(),
+<span id="L307" class="ln">   307  </span>			Discontinued: p.IsDiscontinued(),
+<span id="L308" class="ln">   308  </span>		})
+<span id="L309" class="ln">   309  </span>	}
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>	return snapshots
+<span id="L312" class="ln">   312  </span>}
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span><span class="comment">// evaluateItem は、明細 1 件の再評価を cart.CartItem.Evaluate へ委ね、結果を出力 DTO の語彙へ写します。</span>
+<span id="L315" class="ln">   315  </span>func evaluateItem(item cart.CartItem, p *product.Product) CartItemView {
+<span id="L316" class="ln">   316  </span>	view := CartItemView{ProductID: item.ProductID(), Quantity: item.Quantity()}
+<span id="L317" class="ln">   317  </span>
+<span id="L318" class="ln">   318  </span>	var snapshot *cart.ProductSnapshot
+<span id="L319" class="ln">   319  </span>	if p != nil {
+<span id="L320" class="ln">   320  </span>		name, price := p.Name(), p.Price().Decimal()
+<span id="L321" class="ln">   321  </span>		view.ProductName, view.UnitPrice = &amp;name, &amp;price
+<span id="L322" class="ln">   322  </span>		if image, ok := p.PrimaryImage(); ok {
+<span id="L323" class="ln">   323  </span>			imagePath := image.ImagePath()
+<span id="L324" class="ln">   324  </span>			view.ImagePath = &amp;imagePath
+<span id="L325" class="ln">   325  </span>		}
+<span id="L326" class="ln">   326  </span>		s := cart.NewProductSnapshot(cart.ProductSnapshotAttributes{
+<span id="L327" class="ln">   327  </span>			Quantity:     p.Quantity(),
+<span id="L328" class="ln">   328  </span>			Price:        p.Price(),
+<span id="L329" class="ln">   329  </span>			Published:    p.IsPublished(),
+<span id="L330" class="ln">   330  </span>			Discontinued: p.IsDiscontinued(),
+<span id="L331" class="ln">   331  </span>		})
+<span id="L332" class="ln">   332  </span>		snapshot = &amp;s
 <span id="L333" class="ln">   333  </span>	}
-<span id="L334" class="ln">   334  </span>	return converted
-<span id="L335" class="ln">   335  </span>}
-<span id="L336" class="ln">   336  </span>
-<span id="L337" class="ln">   337  </span><span class="comment">// toItemIssue は、再評価結果 1 件を出力 DTO の語彙へ写します。</span>
-<span id="L338" class="ln">   338  </span><span class="comment">// 対応を持たない値は写像できないため、黙って既定値へ倒さず panic で異常を知らせます。</span>
-<span id="L339" class="ln">   339  </span>func toItemIssue(issue cart.Issue) ItemIssue {
-<span id="L340" class="ln">   340  </span>	switch issue {
-<span id="L341" class="ln">   341  </span>	case cart.IssueNotFound:
-<span id="L342" class="ln">   342  </span>		return ItemIssueNotFound
-<span id="L343" class="ln">   343  </span>	case cart.IssueUnpublished:
-<span id="L344" class="ln">   344  </span>		return ItemIssueUnpublished
-<span id="L345" class="ln">   345  </span>	case cart.IssueOutOfStock:
-<span id="L346" class="ln">   346  </span>		return ItemIssueOutOfStock
-<span id="L347" class="ln">   347  </span>	case cart.IssueInsufficientStock:
-<span id="L348" class="ln">   348  </span>		return ItemIssueInsufficientStock
-<span id="L349" class="ln">   349  </span>	case cart.IssuePriceIncreased:
-<span id="L350" class="ln">   350  </span>		return ItemIssuePriceIncreased
-<span id="L351" class="ln">   351  </span>	case cart.IssuePriceDecreased:
-<span id="L352" class="ln">   352  </span>		return ItemIssuePriceDecreased
-<span id="L353" class="ln">   353  </span>	default:
-<span id="L354" class="ln">   354  </span>		panic(fmt.Sprintf(&#34;cart: unknown item issue: %q&#34;, issue))
-<span id="L355" class="ln">   355  </span>	}
-<span id="L356" class="ln">   356  </span>}
-<span id="L357" class="ln">   357  </span>
-<span id="L358" class="ln">   358  </span><span class="comment">// emptyCartView は、表示するカートが無いときの応答です。</span>
-<span id="L359" class="ln">   359  </span><span class="comment">// 明細は空スライスで、有効期限は行が存在しないため nil です。</span>
-<span id="L360" class="ln">   360  </span>func emptyCartView() CartView {
-<span id="L361" class="ln">   361  </span>	return CartView{Items: []CartItemView{}}
-<span id="L362" class="ln">   362  </span>}
-<span id="L363" class="ln">   363  </span>
+<span id="L334" class="ln">   334  </span>
+<span id="L335" class="ln">   335  </span>	evaluation := item.Evaluate(snapshot)
+<span id="L336" class="ln">   336  </span>	view.Issues = toItemIssues(evaluation.Issues())
+<span id="L337" class="ln">   337  </span>	view.AvailableQuantity = evaluation.AvailableQuantity()
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>	return view
+<span id="L340" class="ln">   340  </span>}
+<span id="L341" class="ln">   341  </span>
+<span id="L342" class="ln">   342  </span><span class="comment">// toItemIssues は、ドメインの再評価結果を出力 DTO の語彙へ写します。</span>
+<span id="L343" class="ln">   343  </span>func toItemIssues(issues []cart.Issue) []ItemIssue {
+<span id="L344" class="ln">   344  </span>	converted := make([]ItemIssue, len(issues))
+<span id="L345" class="ln">   345  </span>	for i, issue := range issues {
+<span id="L346" class="ln">   346  </span>		converted[i] = toItemIssue(issue)
+<span id="L347" class="ln">   347  </span>	}
+<span id="L348" class="ln">   348  </span>	return converted
+<span id="L349" class="ln">   349  </span>}
+<span id="L350" class="ln">   350  </span>
+<span id="L351" class="ln">   351  </span><span class="comment">// toItemIssue は、再評価結果 1 件を出力 DTO の語彙へ写します。</span>
+<span id="L352" class="ln">   352  </span><span class="comment">// 網羅的な写像を意図し、対応を持たない値は panic します（理由は docs/spec/usecase/cart.md の Notes）。</span>
+<span id="L353" class="ln">   353  </span>func toItemIssue(issue cart.Issue) ItemIssue {
+<span id="L354" class="ln">   354  </span>	switch issue {
+<span id="L355" class="ln">   355  </span>	case cart.IssueNotFound:
+<span id="L356" class="ln">   356  </span>		return ItemIssueNotFound
+<span id="L357" class="ln">   357  </span>	case cart.IssueUnpublished:
+<span id="L358" class="ln">   358  </span>		return ItemIssueUnpublished
+<span id="L359" class="ln">   359  </span>	case cart.IssueDiscontinued:
+<span id="L360" class="ln">   360  </span>		return ItemIssueDiscontinued
+<span id="L361" class="ln">   361  </span>	case cart.IssueOutOfStock:
+<span id="L362" class="ln">   362  </span>		return ItemIssueOutOfStock
+<span id="L363" class="ln">   363  </span>	case cart.IssueInsufficientStock:
+<span id="L364" class="ln">   364  </span>		return ItemIssueInsufficientStock
+<span id="L365" class="ln">   365  </span>	case cart.IssuePriceIncreased:
+<span id="L366" class="ln">   366  </span>		return ItemIssuePriceIncreased
+<span id="L367" class="ln">   367  </span>	case cart.IssuePriceDecreased:
+<span id="L368" class="ln">   368  </span>		return ItemIssuePriceDecreased
+<span id="L369" class="ln">   369  </span>	default:
+<span id="L370" class="ln">   370  </span>		panic(fmt.Sprintf(&#34;cart: unknown item issue: %q&#34;, issue))
+<span id="L371" class="ln">   371  </span>	}
+<span id="L372" class="ln">   372  </span>}
+<span id="L373" class="ln">   373  </span>
+<span id="L374" class="ln">   374  </span><span class="comment">// emptyCartView は、表示するカートが無いときの応答です。</span>
+<span id="L375" class="ln">   375  </span>func emptyCartView() CartView {
+<span id="L376" class="ln">   376  </span>	return CartView{Items: []CartItemView{}}
+<span id="L377" class="ln">   377  </span>}
+<span id="L378" class="ln">   378  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

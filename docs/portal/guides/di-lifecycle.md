@@ -1,7 +1,5 @@
 # lifecycle
 
-English | [日本語](README.ja.md)
-
 A DI layer for registering hooks (Start/Stop) to be executed at application startup and shutdown. Provides a `Registrar` that wraps `fx.Lifecycle`, making it easy to register lifecycle events across the application.
 
 ## Why a Dedicated Package?
@@ -89,6 +87,8 @@ lifecycle.SupervisedRunner{
 - **OnStop**: cancels the run context, waits for `Body` to finish bounded by the stop `ctx` (grace), then runs `OnStopAux`.
 
 The run context is derived from `context.Background()` with `WithCancel`, so the goroutine is **not** affected when fx cancels the start context after `OnStart`, yet **is** cancelled on `OnStop`. Standardizing this "Background-derived + cancel-on-stop" shape across the three hooks guarantees the stop signal propagates into in-flight work.
+
+`Bind()` returns the same start / stop pair without registering it, for a caller that sequences several runners inside one hook (the serve lifecycle in `internal/di/server/hook`); `Register` is `Bind` plus the registration. One `Bind` shares one run context, so its `start` is called once.
 
 ## Usage Examples
 

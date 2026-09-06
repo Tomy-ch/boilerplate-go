@@ -65,37 +65,49 @@
 <span id="L8" class="ln">     8  </span>)
 <span id="L9" class="ln">     9  </span>
 <span id="L10" class="ln">    10  </span><span class="comment">// Repository は、購入の永続化操作を定義するドメインリポジトリインターフェースです。</span>
-<span id="L11" class="ln">    11  </span>type Repository interface {
-<span id="L12" class="ln">    12  </span>	<span class="comment">// FindByID は、ID から購入を明細込みで取得します。存在しない場合は NotFound を返します。</span>
-<span id="L13" class="ln">    13  </span>	FindByID(ctx context.Context, id uuid.UUID) (*Purchase, error)
-<span id="L14" class="ln">    14  </span>	<span class="comment">// LockByCode は、購入コードから対象の購入のみを悲観ロックして明細込みで再構築し返します。</span>
-<span id="L15" class="ln">    15  </span>	<span class="comment">// 状態遷移の競合（同一購入への並行更新）をこのロックで直列化します。</span>
-<span id="L16" class="ln">    16  </span>	<span class="comment">// 存在しない場合は NotFound を返します。</span>
-<span id="L17" class="ln">    17  </span>	LockByCode(ctx context.Context, code string) (*Purchase, error)
-<span id="L18" class="ln">    18  </span>	<span class="comment">// UpdatePaid は、購入の状態遷移（→ 支払い済み）を、渡された ctx のトランザクション内で実行します。</span>
-<span id="L19" class="ln">    19  </span>	<span class="comment">// 対象は LockByCode で取得・検証済みです。</span>
-<span id="L20" class="ln">    20  </span>	UpdatePaid(ctx context.Context, p *Purchase) error
-<span id="L21" class="ln">    21  </span>	<span class="comment">// UpdateShipped は、購入の状態遷移（→ 発送済み）を、渡された ctx のトランザクション内で実行します。</span>
-<span id="L22" class="ln">    22  </span>	<span class="comment">// 対象は LockByCode で取得・検証済みです。</span>
-<span id="L23" class="ln">    23  </span>	UpdateShipped(ctx context.Context, p *Purchase) error
-<span id="L24" class="ln">    24  </span>	<span class="comment">// UpdateDelivered は、購入の状態遷移（→ 配達済み）を、渡された ctx のトランザクション内で実行します。</span>
-<span id="L25" class="ln">    25  </span>	<span class="comment">// 対象は LockByCode で取得・検証済みです。</span>
-<span id="L26" class="ln">    26  </span>	UpdateDelivered(ctx context.Context, p *Purchase) error
-<span id="L27" class="ln">    27  </span>	<span class="comment">// FindShippable は、発送可能な購入を注文日時の古い順（同時刻は ID 昇順）で明細込みに最大 limit 件</span>
-<span id="L28" class="ln">    28  </span>	<span class="comment">// 取得します。該当が無い場合は空を返します。絞り込みは Purchase.IsShippable の定義と一致させること。</span>
-<span id="L29" class="ln">    29  </span>	FindShippable(ctx context.Context, limit int32) (Purchases, error)
-<span id="L30" class="ln">    30  </span>	<span class="comment">// FindDetailByID は、ID から購入詳細（読み取りモデル）を明細込みで取得します。ステータス名は</span>
-<span id="L31" class="ln">    31  </span>	<span class="comment">// 購入ステータスマスタで解決します。存在しない場合は NotFound を返します。</span>
-<span id="L32" class="ln">    32  </span>	FindDetailByID(ctx context.Context, id uuid.UUID) (*Detail, error)
-<span id="L33" class="ln">    33  </span>	<span class="comment">// FindStatusesByUserID は、指定ユーザーの購入が取っているステータスを重複なく返します。</span>
-<span id="L34" class="ln">    34  </span>	<span class="comment">// 進行中かどうかで絞り込まないため、その判定（Status.IsTerminal の否定）は呼び出し側が行います。</span>
-<span id="L35" class="ln">    35  </span>	<span class="comment">// 購入を 1 件も持たない場合は空を返し、順序は保証しません。</span>
-<span id="L36" class="ln">    36  </span>	FindStatusesByUserID(ctx context.Context, userID uuid.UUID) ([]Status, error)
-<span id="L37" class="ln">    37  </span>	<span class="comment">// FindUserIDsWithPurchases は、与えたユーザー ID のうち、購入を 1 件以上持つものを返します。</span>
-<span id="L38" class="ln">    38  </span>	<span class="comment">// ステータスは問わず、順序は保証しません。userIDs が空の場合は空を返します。</span>
-<span id="L39" class="ln">    39  </span>	FindUserIDsWithPurchases(ctx context.Context, userIDs []uuid.UUID) ([]uuid.UUID, error)
-<span id="L40" class="ln">    40  </span>}
-<span id="L41" class="ln">    41  </span>
+<span id="L11" class="ln">    11  </span><span class="comment">// 状態遷移の Update 系（UpdatePaid / UpdateShipped / UpdateDelivered / UpdateCancelled）は、</span>
+<span id="L12" class="ln">    12  </span><span class="comment">// いずれも LockByCode で取得・検証済みの対象に対し、渡された ctx のトランザクション内で実行します。</span>
+<span id="L13" class="ln">    13  </span><span class="comment">//</span>
+<span id="L14" class="ln">    14  </span><span class="comment">//nolint:interfacebloat // 集約の永続化契約は 1 本に保つ（ADR-0032 (lightweight-cqrs)）。呼び出し側ごとに分割すると同一集約の契約が複数箇所へ散る</span>
+<span id="L15" class="ln">    15  </span>type Repository interface {
+<span id="L16" class="ln">    16  </span>	<span class="comment">// Create は、購入を新規登録します。p が保持する明細も併せて登録します。</span>
+<span id="L17" class="ln">    17  </span>	<span class="comment">// 在庫の増減（作成時の減算と、UpdateCancelled によるキャンセル時の復元の双方）は商品集約の</span>
+<span id="L18" class="ln">    18  </span>	<span class="comment">// 書き込みであり、いずれも呼び出し側が同一トランザクション内で product.Repository を通して行います。</span>
+<span id="L19" class="ln">    19  </span>	Create(ctx context.Context, p *Purchase) error
+<span id="L20" class="ln">    20  </span>	<span class="comment">// FindByID は、ID から購入を明細込みで取得します。存在しない場合は NotFound を返します。</span>
+<span id="L21" class="ln">    21  </span>	FindByID(ctx context.Context, id uuid.UUID) (*Purchase, error)
+<span id="L22" class="ln">    22  </span>	<span class="comment">// LockByCode は、購入コードから対象の購入のみを悲観ロックして明細込みで再構築し返します。</span>
+<span id="L23" class="ln">    23  </span>	<span class="comment">// 状態遷移の競合（同一購入への並行更新）をこのロックで直列化します。</span>
+<span id="L24" class="ln">    24  </span>	<span class="comment">// 存在しない場合は NotFound を返します。</span>
+<span id="L25" class="ln">    25  </span>	LockByCode(ctx context.Context, code string) (*Purchase, error)
+<span id="L26" class="ln">    26  </span>	<span class="comment">// UpdatePaid は、購入の状態遷移（→ 支払い済み）を実行します。</span>
+<span id="L27" class="ln">    27  </span>	UpdatePaid(ctx context.Context, p *Purchase) error
+<span id="L28" class="ln">    28  </span>	<span class="comment">// UpdateShipped は、購入の状態遷移（→ 発送済み）を実行します。</span>
+<span id="L29" class="ln">    29  </span>	UpdateShipped(ctx context.Context, p *Purchase) error
+<span id="L30" class="ln">    30  </span>	<span class="comment">// UpdateDelivered は、購入の状態遷移（→ 配達済み）を実行します。</span>
+<span id="L31" class="ln">    31  </span>	UpdateDelivered(ctx context.Context, p *Purchase) error
+<span id="L32" class="ln">    32  </span>	<span class="comment">// UpdateCancelled は、購入の状態遷移（→ キャンセル）を実行します。</span>
+<span id="L33" class="ln">    33  </span>	<span class="comment">// 在庫復元と product.Repository の扱いは Create を参照。</span>
+<span id="L34" class="ln">    34  </span>	UpdateCancelled(ctx context.Context, p *Purchase) error
+<span id="L35" class="ln">    35  </span>	<span class="comment">// FindShippable は、発送可能な購入を注文日時の古い順（同時刻は ID 昇順）で明細込みに最大 limit 件</span>
+<span id="L36" class="ln">    36  </span>	<span class="comment">// 取得します。該当が無い場合は空を返します。絞り込みは Purchase.IsShippable の定義と一致させること。</span>
+<span id="L37" class="ln">    37  </span>	FindShippable(ctx context.Context, limit int32) (Purchases, error)
+<span id="L38" class="ln">    38  </span>	<span class="comment">// FindDetailByID は、ID から購入詳細（読み取りモデル）を明細込みで取得します。ステータス名は</span>
+<span id="L39" class="ln">    39  </span>	<span class="comment">// 購入ステータスマスタで解決します。存在しない場合は NotFound を返します。</span>
+<span id="L40" class="ln">    40  </span>	FindDetailByID(ctx context.Context, id uuid.UUID) (*Detail, error)
+<span id="L41" class="ln">    41  </span>	<span class="comment">// FindStatusesByUserID は、指定ユーザーの購入が取っているステータスを重複なく返します。</span>
+<span id="L42" class="ln">    42  </span>	<span class="comment">// 進行中かどうかで絞り込まないため、その判定（Status.IsTerminal の否定）は呼び出し側が行います。</span>
+<span id="L43" class="ln">    43  </span>	<span class="comment">// 購入を 1 件も持たない場合は空を返し、順序は保証しません。</span>
+<span id="L44" class="ln">    44  </span>	FindStatusesByUserID(ctx context.Context, userID uuid.UUID) ([]Status, error)
+<span id="L45" class="ln">    45  </span>	<span class="comment">// FindStatusesByProductID は、指定商品を明細に持つ購入が取っているステータスを重複なく返します。</span>
+<span id="L46" class="ln">    46  </span>	<span class="comment">// 進行中かどうかで絞り込まないため、その判定（Status.IsTerminal の否定）は呼び出し側が行います。</span>
+<span id="L47" class="ln">    47  </span>	<span class="comment">// 該当する購入が 1 件も無い場合は空を返し、順序は保証しません。</span>
+<span id="L48" class="ln">    48  </span>	FindStatusesByProductID(ctx context.Context, productID uuid.UUID) ([]Status, error)
+<span id="L49" class="ln">    49  </span>	<span class="comment">// FindUserIDsWithPurchases は、与えたユーザー ID のうち、購入を 1 件以上持つものを返します。</span>
+<span id="L50" class="ln">    50  </span>	<span class="comment">// ステータスは問わず、順序は保証しません。userIDs が空の場合は空を返します。</span>
+<span id="L51" class="ln">    51  </span>	FindUserIDsWithPurchases(ctx context.Context, userIDs []uuid.UUID) ([]uuid.UUID, error)
+<span id="L52" class="ln">    52  </span>}
+<span id="L53" class="ln">    53  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/domain/purchase/purchase_repository.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

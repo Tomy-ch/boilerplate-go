@@ -50,6 +50,30 @@
          </index>
          <checkConstraint constraint="((user_id IS NULL) &lt;&gt; (session_token IS NULL))" name="carts_owner_exclusive"/>
       </table>
+      <table name="coupons" remarks="クーポン" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111">
+            <child column="coupon_id" foreignKey="purchases_coupon_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="purchases"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="user_id" nullable="false" remarks="受給者のユーザーID" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="coupons_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="discount_kind" nullable="false" remarks="値引き種別コード" size="5" type="int2" typeCode="5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="discount_value" nullable="false" remarks="値引きの値（定額なら金額、定率なら率）" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="scope_kind" nullable="false" remarks="適用範囲種別コード" size="5" type="int2" typeCode="5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="scope_target_id" nullable="true" remarks="適用範囲の対象ID（カテゴリIDまたは商品ID。全体のときNULL）" size="2147483647" type="uuid" typeCode="1111"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="6" name="expires_at" nullable="false" remarks="有効期限" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="7" name="used_at" nullable="true" remarks="使用日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="8" name="issued_at" nullable="false" remarks="発行日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="9" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="10" name="updated_at" nullable="false" remarks="更新日時" size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="coupons_id_primary" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+         <index name="coupons_user_id_idx" unique="false">
+            <column ascending="true" name="user_id"/>
+         </index>
+      </table>
       <table name="idempotency_keys" remarks="冪等性キー" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="gen_random_uuid()" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="scope" nullable="false" remarks="スコープ（認証プリンシパルID）" size="2147483647" type="text" typeCode="12"/>
@@ -76,6 +100,50 @@
          </index>
          <checkConstraint constraint="(status = ANY (ARRAY['claimed'::text, 'completed'::text]))" name="idempotency_keys_status_check"/>
       </table>
+      <table name="inquiries" remarks="問い合わせ" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111">
+            <child column="inquiry_id" foreignKey="inquiry_messages_inquiry_id_foreign" implied="false" onDeleteCascade="true" schema="public" table="inquiry_messages"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="user_id" nullable="false" remarks="問い合わせを開始した利用者のユーザーID" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="inquiries_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="2" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="3" name="updated_at" nullable="false" remarks="最後にメッセージが追加された日時" size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="inquiries_id_primary" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+         <index name="inquiries_updated_at_id_index" unique="false">
+            <column ascending="false" name="updated_at"/>
+            <column ascending="false" name="id"/>
+         </index>
+         <index name="inquiries_user_id_unique" unique="true">
+            <column ascending="true" name="user_id"/>
+         </index>
+      </table>
+      <table name="inquiry_messages" remarks="問い合わせメッセージ" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="inquiry_id" nullable="false" remarks="所属する問い合わせのID" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="inquiry_messages_inquiry_id_foreign" implied="false" onDeleteCascade="true" schema="public" table="inquiries"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="author_kind" nullable="false" remarks="送り手の種別（user / operator）" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="author_subject_id" nullable="false" remarks="送り手のユーザーID" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="inquiry_messages_author_subject_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="body" nullable="false" remarks="本文" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="stream_sequence" nullable="false" remarks="問い合わせ内の位置（1 起算）" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="6" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="inquiry_messages_id_primary" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+         <index name="inquiry_messages_inquiry_id_stream_sequence_unique" unique="true">
+            <column ascending="true" name="inquiry_id"/>
+            <column ascending="true" name="stream_sequence"/>
+         </index>
+         <checkConstraint constraint="(author_kind = ANY (ARRAY['user'::text, 'operator'::text]))" name="inquiry_messages_author_kind_check"/>
+         <checkConstraint constraint="(stream_sequence &gt;= 1)" name="inquiry_messages_stream_sequence_positive"/>
+      </table>
       <table name="outbox" remarks="トランザクショナル outbox（ドメインイベントの信頼 publish）" schema="public" type="TABLE">
          <column autoUpdated="true" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="19" type="int8" typeCode="-5"/>
          <column autoUpdated="false" defaultValue="gen_random_uuid()" digits="0" id="1" name="message_id" nullable="false" remarks="dedup の安定キー（INSERT 時採番、Idempotency-Key へ伝搬）" size="2147483647" type="uuid" typeCode="1111"/>
@@ -89,6 +157,10 @@
          <column autoUpdated="false" defaultValue="null" digits="0" id="9" name="last_error" nullable="true" remarks="直近の publish 失敗理由" size="2147483647" type="text" typeCode="12"/>
          <column autoUpdated="false" defaultValue="now()" digits="6" id="10" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
          <column autoUpdated="false" defaultValue="null" digits="6" id="11" name="published_at" nullable="true" remarks="publish 完了日時（published 遷移時刻）" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="delivery_channel" nullable="false" remarks="配送チャネル（http / realtime）。relay は 1 チャネルのみを claim する" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="13" name="ordering_key" nullable="true" remarks="順序保証の単位（ストリーム）。順序を持たないチャネルは NULL" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="14" name="ordering_sequence" nullable="true" remarks="ordering_key 内の位置。順序を持たないチャネルは NULL" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="15" name="next_attempt_at" nullable="false" remarks="次に claim してよい時刻（再試行のバックオフ）" size="35" type="timestamptz" typeCode="93"/>
          <primaryKey column="id" sequenceNumberInPK="1"/>
          <index name="outbox_id_primary" unique="true">
             <column ascending="true" name="id"/>
@@ -99,12 +171,23 @@
          <index name="outbox_message_id_unique" unique="true">
             <column ascending="true" name="message_id"/>
          </index>
-         <index name="outbox_pending_idx" unique="false">
+         <index name="outbox_ordering_head_idx" unique="false">
+            <column ascending="true" name="ordering_key"/>
+            <column ascending="true" name="ordering_sequence"/>
+         </index>
+         <index name="outbox_ordering_unique_idx" unique="true">
+            <column ascending="true" name="ordering_key"/>
+            <column ascending="true" name="ordering_sequence"/>
+         </index>
+         <index name="outbox_pending_claim_idx" unique="false">
+            <column ascending="true" name="delivery_channel"/>
             <column ascending="true" name="id"/>
          </index>
          <index name="outbox_published_gc_idx" unique="false">
             <column ascending="true" name="published_at"/>
          </index>
+         <checkConstraint constraint="(delivery_channel = ANY (ARRAY['http'::text, 'realtime'::text]))" name="outbox_delivery_channel_check"/>
+         <checkConstraint constraint="((ordering_key IS NULL) = (ordering_sequence IS NULL))" name="outbox_ordering_pair_check"/>
          <checkConstraint constraint="(status = ANY (ARRAY['pending'::text, 'published'::text, 'dead'::text]))" name="outbox_status_check"/>
       </table>
       <table name="prefectures" remarks="都道府県" schema="public" type="TABLE">
@@ -216,6 +299,7 @@
          <column autoUpdated="false" defaultValue="1" digits="0" id="9" name="lock_version" nullable="false" remarks="楽観ロックバージョン" size="10" type="int4" typeCode="4"/>
          <column autoUpdated="false" defaultValue="now()" digits="6" id="10" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
          <column autoUpdated="false" defaultValue="now()" digits="6" id="11" name="updated_at" nullable="false" remarks="更新日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="12" name="discontinued_at" nullable="true" remarks="廃番日時" size="35" type="timestamptz" typeCode="93"/>
          <primaryKey column="id" sequenceNumberInPK="1"/>
          <index name="products_id_primary" unique="true">
             <column ascending="true" name="id"/>
@@ -231,6 +315,9 @@
          </index>
          <index name="products_description_trgm_idx" unique="false">
             <column ascending="true" name="description"/>
+         </index>
+         <index name="products_discontinued_at_idx" unique="false">
+            <column ascending="true" name="discontinued_at"/>
          </index>
          <index name="products_low_stock_quantity_id_idx" unique="false">
             <column ascending="true" name="quantity"/>
@@ -314,6 +401,10 @@
          <column autoUpdated="false" defaultValue="null" digits="6" id="12" name="delivered_at" nullable="true" remarks="配達日時" size="35" type="timestamptz" typeCode="93"/>
          <column autoUpdated="false" defaultValue="now()" digits="6" id="13" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
          <column autoUpdated="false" defaultValue="now()" digits="6" id="14" name="updated_at" nullable="false" remarks="更新日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="15" name="coupon_id" nullable="true" remarks="適用したクーポンのID（未使用のときNULL）" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="purchases_coupon_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="coupons"/>
+         </column>
+         <column autoUpdated="false" defaultValue="0" digits="0" id="16" name="discount_amount" nullable="false" remarks="値引き額" size="19" type="int8" typeCode="-5"/>
          <primaryKey column="id" sequenceNumberInPK="1"/>
          <index name="purchases_id_primary" unique="true">
             <column ascending="true" name="id"/>
@@ -321,11 +412,23 @@
          <index name="purchases_code_unique" unique="true">
             <column ascending="true" name="code"/>
          </index>
+         <index name="purchases_coupon_id_idx" unique="false">
+            <column ascending="true" name="coupon_id"/>
+         </index>
          <index name="purchases_user_id_ordered_at_id_idx" unique="false">
             <column ascending="true" name="user_id"/>
             <column ascending="false" name="ordered_at"/>
             <column ascending="false" name="id"/>
          </index>
+      </table>
+      <table name="realtime_stream_sequences" remarks="ストリーム採番（1 ストリーム 1 行、gap なし単調増加）" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="stream_id" nullable="false" remarks="ストリーム識別子" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="last_sequence" nullable="false" remarks="採番済みの最後の位置（1 起算）" size="19" type="int8" typeCode="-5"/>
+         <primaryKey column="stream_id" sequenceNumberInPK="1"/>
+         <index name="realtime_stream_sequences_stream_id_primary" unique="true">
+            <column ascending="true" name="stream_id"/>
+         </index>
+         <checkConstraint constraint="(last_sequence &gt; 0)" name="realtime_stream_sequences_last_sequence_check"/>
       </table>
       <table name="roles" remarks="ロール" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111">
@@ -399,6 +502,9 @@
       <table name="users" remarks="ユーザ" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111">
             <child column="user_id" foreignKey="carts_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="carts"/>
+            <child column="user_id" foreignKey="coupons_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="coupons"/>
+            <child column="user_id" foreignKey="inquiries_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="inquiries"/>
+            <child column="author_subject_id" foreignKey="inquiry_messages_author_subject_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="inquiry_messages"/>
             <child column="user_id" foreignKey="purchases_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="purchases"/>
             <child column="user_id" foreignKey="user_identities_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="user_identities"/>
             <child column="user_id" foreignKey="user_roles_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="user_roles"/>

@@ -1,7 +1,5 @@
 # DI Layer (`internal/di`)
 
-[English](README.md) | 日本語
-
 `internal/di` は、このアプリケーションにおける **依存性注入 (Dependency Injection: DI)** の中枢レイヤです。
 
 この層は **Uber Fx** をベースとした DI コンテナを構築し、  
@@ -113,7 +111,7 @@ fx.New(
 |Server|`serve`|`internal/di/server.go`|`NewApplicationCore()` + `NewApplicationServer(app)`|HTTP / Web API（常駐）|
 |Job|`job`|`internal/di/job.go`|`NewJobCore()` / `RunJob(grace)`|CLI / バッチ（ワンショット）|
 |Worker|`worker`|`internal/di/worker.go`|`NewWorkerCore()` / `RunWorker(grace)`|キュー consumer engine（常駐）|
-|Outbox Relay|`outbox-relay`|`internal/di/outboxrelay.go`|`NewOutboxRelayApp(grace)` + `NewApplicationServer(app)`／ワンショット replay は `RunOutboxReplay()`|transactional outbox の relay（常駐）＋ dead 行の replay|
+|Outbox Relay|`outbox-relay`|`internal/di/outboxrelay.go`|`NewOutboxRelayApp(grace, channel)` + `NewApplicationServer(app)`／ワンショット replay は `RunOutboxReplay()`|transactional outbox の relay（常駐）＋ dead 行の replay|
 
 4つはすべて **同じアーキテクチャ**・同じ内側レイヤ（domain / usecase /
 infrastructure）を共有し、異なるのは DI グラフがどの外側モジュールを結線するかと、
@@ -202,7 +200,7 @@ case config.EnvLocal:
 |---|---|---|
 |`module.JobModule()`|Job|`group:"jobs"` 登録 + Runner + State + hook|
 |`module.WorkerModule()`|Worker|Engine + State + queue-stats collector。**既定では worker を1つも登録しない**（`provideWorkers` / `provideQueueStatsTargets` が seam）。`ValidateShutdownGrace` は `WORKER_DRAIN_TIMEOUT >= APP_SHUTDOWN_TIMEOUT` なら起動を失敗させる|
-|`module.OutboxRelayModule()`|Outbox Relay|Relay usecase + engine + hook。`outboxPublisherModule()` も取り込む|
+|`module.OutboxRelayModule(channel)`|Outbox Relay|1 つの配送チャネル向けの Relay usecase + engine + hook。そのチャネルが必要とする publisher モジュール（`http` なら `outboxPublisherModule()`、`realtime` なら `realtimePublisherModule()`）を取り込み、配送できる publisher モジュールが無いチャネルでは構築を拒否する（`fx.Error`）|
 |`shutdowner.Module()`|Job, Worker|ワンショット / シグナル駆動の自己停止用（Server / Relay では不要）|
 
 `outboxPublisherModule()` はあえて共有の `InfrastructureModule()` に **含めません**。

@@ -1,0 +1,261 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>observability - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../src/go-boilerplate/internal/observability">observability</a>/<span class="text-muted">realtime_metrics.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/internal/observability">go-boilerplate/internal/observability</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package observability
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>
+<span id="L6" class="ln">     6  </span>	&#34;go.opentelemetry.io/otel/attribute&#34;
+<span id="L7" class="ln">     7  </span>	&#34;go.opentelemetry.io/otel/metric&#34;
+<span id="L8" class="ln">     8  </span>)
+<span id="L9" class="ln">     9  </span>
+<span id="L10" class="ln">    10  </span><span class="comment">// realtimeMeterName は、Realtime Delivery 計装の meter 名です。</span>
+<span id="L11" class="ln">    11  </span>const realtimeMeterName = &#34;go-boilerplate/realtime&#34;
+<span id="L12" class="ln">    12  </span>
+<span id="L13" class="ln">    13  </span><span class="comment">// Realtime Delivery の計装が使う属性キー。ここに無いキーは付けず、主体の識別子は label にしない</span>
+<span id="L14" class="ln">    14  </span><span class="comment">// （docs/design/realtime-delivery.md §3.4。internal/architest/realtime_metrics_test.go が検査する）。</span>
+<span id="L15" class="ln">    15  </span>const (
+<span id="L16" class="ln">    16  </span>	<span class="comment">// attrReason は、接続を受け付けなかった・閉じた理由です。</span>
+<span id="L17" class="ln">    17  </span>	attrReason = &#34;reason&#34;
+<span id="L18" class="ln">    18  </span>	<span class="comment">// attrTrigger は、replay を起こした契機です。</span>
+<span id="L19" class="ln">    19  </span>	attrTrigger = &#34;trigger&#34;
+<span id="L20" class="ln">    20  </span>	<span class="comment">// attrResult は、1 回の操作の成否です。</span>
+<span id="L21" class="ln">    21  </span>	attrResult = &#34;result&#34;
+<span id="L22" class="ln">    22  </span>	<span class="comment">// attrOutcome は、掃除の対象 1 件がどう処理されたかです。</span>
+<span id="L23" class="ln">    23  </span>	attrOutcome = &#34;outcome&#34;
+<span id="L24" class="ln">    24  </span>)
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span><span class="comment">// label に載せる値の語彙。3 つの process が同じ語で記録するよう、計装の側で定義します。</span>
+<span id="L27" class="ln">    27  </span>const (
+<span id="L28" class="ln">    28  </span>	<span class="comment">// RealtimeResultOK は、操作が成功したことを表します。</span>
+<span id="L29" class="ln">    29  </span>	RealtimeResultOK = &#34;ok&#34;
+<span id="L30" class="ln">    30  </span>	<span class="comment">// RealtimeResultError は、操作が失敗したことを表します。</span>
+<span id="L31" class="ln">    31  </span>	RealtimeResultError = &#34;error&#34;
+<span id="L32" class="ln">    32  </span>	<span class="comment">// RealtimeResultConflict は、既に同じ位置が書かれていて追記しなかったことを表します。</span>
+<span id="L33" class="ln">    33  </span>	RealtimeResultConflict = &#34;conflict&#34;
+<span id="L34" class="ln">    34  </span>)
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span><span class="comment">// RealtimeMetrics は、Realtime Delivery の lifecycle 計装一式です。</span>
+<span id="L37" class="ln">    37  </span><span class="comment">// serve（接続・replay・配送）・relay（EventLog への追記）・cleanup job（lease の回収）が同じ meter を共有します。</span>
+<span id="L38" class="ln">    38  </span>type RealtimeMetrics struct {
+<span id="L39" class="ln">    39  </span>	connectionsActive     metric.Int64UpDownCounter
+<span id="L40" class="ln">    40  </span>	connectionsAccepted   metric.Int64Counter
+<span id="L41" class="ln">    41  </span>	connectionsReconnects metric.Int64Counter
+<span id="L42" class="ln">    42  </span>	connectionsRejected   metric.Int64Counter
+<span id="L43" class="ln">    43  </span>	connectionsClosed     metric.Int64Counter
+<span id="L44" class="ln">    44  </span>	connectionDurationMs  metric.Float64Histogram
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span>	replayExecutions        metric.Int64Counter
+<span id="L47" class="ln">    47  </span>	replayEvents            metric.Int64Counter
+<span id="L48" class="ln">    48  </span>	replayDepth             metric.Int64Histogram
+<span id="L49" class="ln">    49  </span>	replayFailures          metric.Int64Counter
+<span id="L50" class="ln">    50  </span>	replayInFlight          metric.Int64UpDownCounter
+<span id="L51" class="ln">    51  </span>	replayAdmissionTimeouts metric.Int64Counter
+<span id="L52" class="ln">    52  </span>	catchUpLagMs            metric.Float64Histogram
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span>	deliveryLatencyMs     metric.Float64Histogram
+<span id="L55" class="ln">    55  </span>	eventLogAppends       metric.Int64Counter
+<span id="L56" class="ln">    56  </span>	eventLogLagMs         metric.Float64Histogram
+<span id="L57" class="ln">    57  </span>	wakeupPublishFailures metric.Int64Counter
+<span id="L58" class="ln">    58  </span>	recoveryExecutions    metric.Int64Counter
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>	leaseHeartbeatFailures metric.Int64Counter
+<span id="L61" class="ln">    61  </span>	cleanupExecutions      metric.Int64Counter
+<span id="L62" class="ln">    62  </span>	cleanupInstances       metric.Int64Counter
+<span id="L63" class="ln">    63  </span>}
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span><span class="comment">// NewRealtimeMetrics は、注入された MeterProvider から Realtime Delivery の計装一式を生成します。</span>
+<span id="L66" class="ln">    66  </span><span class="comment">// いずれかの計装生成失敗で error を返します。</span>
+<span id="L67" class="ln">    67  </span>func NewRealtimeMetrics(mp metric.MeterProvider) (*RealtimeMetrics, error) {
+<span id="L68" class="ln">    68  </span>	b := &amp;meterBuilder{m: mp.Meter(realtimeMeterName)}
+<span id="L69" class="ln">    69  </span>	rm := &amp;RealtimeMetrics{
+<span id="L70" class="ln">    70  </span>		connectionsActive:     b.upDownCounter(&#34;realtime.connections.active&#34;, &#34;この instance が索引に持っている SSE 接続数&#34;),
+<span id="L71" class="ln">    71  </span>		connectionsAccepted:   b.counter(&#34;realtime.connections.accepted&#34;, &#34;レスポンスを確定して配信を始めた接続数&#34;),
+<span id="L72" class="ln">    72  </span>		connectionsReconnects: b.counter(&#34;realtime.connections.reconnects&#34;, &#34;cursor を伴って張り直された接続数&#34;),
+<span id="L73" class="ln">    73  </span>		connectionsRejected:   b.counter(&#34;realtime.connections.rejected&#34;, &#34;確定せず 503 で断った接続数&#34;),
+<span id="L74" class="ln">    74  </span>		connectionsClosed:     b.counter(&#34;realtime.connections.closed&#34;, &#34;索引から外れた接続数&#34;),
+<span id="L75" class="ln">    75  </span>		connectionDurationMs:  b.histogram(&#34;realtime.connections.duration_ms&#34;, &#34;接続が索引に居た時間(ミリ秒)&#34;),
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>		replayExecutions:        b.counter(&#34;realtime.replay.executions&#34;, &#34;EventLog を読み進めた回数&#34;),
+<span id="L78" class="ln">    78  </span>		replayEvents:            b.counter(&#34;realtime.replay.events&#34;, &#34;読み進めて送出した event 数&#34;),
+<span id="L79" class="ln">    79  </span>		replayDepth:             b.countHistogram(&#34;realtime.replay.depth&#34;, &#34;1 回の読み進めで追いついた event 数&#34;),
+<span id="L80" class="ln">    80  </span>		replayFailures:          b.counter(&#34;realtime.replay.failures&#34;, &#34;EventLog の読み取りに失敗した回数&#34;),
+<span id="L81" class="ln">    81  </span>		replayInFlight:          b.upDownCounter(&#34;realtime.replay.in_flight&#34;, &#34;同時に走っている読み進めの本数&#34;),
+<span id="L82" class="ln">    82  </span>		replayAdmissionTimeouts: b.counter(&#34;realtime.replay.admission_timeouts&#34;, &#34;初回 replay の枠を待ち切れず諦めた回数&#34;),
+<span id="L83" class="ln">    83  </span>		catchUpLagMs:            b.histogram(&#34;realtime.catchup.lag_ms&#34;, &#34;wakeup 受信から読み終わりまでの時間(ミリ秒)&#34;),
+<span id="L84" class="ln">    84  </span>
+<span id="L85" class="ln">    85  </span>		deliveryLatencyMs:     b.histogram(&#34;realtime.delivery.latency_ms&#34;, &#34;event の発生から SSE へ書き終わるまでの時間(ミリ秒)&#34;),
+<span id="L86" class="ln">    86  </span>		eventLogAppends:       b.counter(&#34;realtime.eventlog.appends&#34;, &#34;EventLog への追記回数&#34;),
+<span id="L87" class="ln">    87  </span>		eventLogLagMs:         b.histogram(&#34;realtime.eventlog.lag_ms&#34;, &#34;outbox 行の作成から EventLog 追記までの時間(ミリ秒)&#34;),
+<span id="L88" class="ln">    88  </span>		wakeupPublishFailures: b.counter(&#34;realtime.wakeup.publish_failures&#34;, &#34;wakeup の publish に失敗した回数&#34;),
+<span id="L89" class="ln">    89  </span>		recoveryExecutions:    b.counter(&#34;realtime.recovery.executions&#34;, &#34;消えた受信先を作り直した回数&#34;),
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>		leaseHeartbeatFailures: b.counter(&#34;realtime.lease.heartbeat_failures&#34;, &#34;instance lease の heartbeat に失敗した回数&#34;),
+<span id="L92" class="ln">    92  </span>		cleanupExecutions:      b.counter(&#34;realtime.cleanup.executions&#34;, &#34;orphan cleanup ジョブの実行回数&#34;),
+<span id="L93" class="ln">    93  </span>		cleanupInstances:       b.counter(&#34;realtime.cleanup.instances&#34;, &#34;orphan cleanup が扱った instance 数&#34;),
+<span id="L94" class="ln">    94  </span>	}
+<span id="L95" class="ln">    95  </span>	if b.err != nil {
+<span id="L96" class="ln">    96  </span>		return nil, b.err
+<span id="L97" class="ln">    97  </span>	}
+<span id="L98" class="ln">    98  </span>	return rm, nil
+<span id="L99" class="ln">    99  </span>}
+<span id="L100" class="ln">   100  </span>
+<span id="L101" class="ln">   101  </span><span class="comment">// ConnectionRegistered は、接続が索引に載ったことを計上します。</span>
+<span id="L102" class="ln">   102  </span><span class="comment">// 確定はまだで、この後 503 で断ることがあります（対になるのは ConnectionClosed）。</span>
+<span id="L103" class="ln">   103  </span>func (m *RealtimeMetrics) ConnectionRegistered(ctx context.Context) {
+<span id="L104" class="ln">   104  </span>	m.connectionsActive.Add(ctx, 1)
+<span id="L105" class="ln">   105  </span>}
+<span id="L106" class="ln">   106  </span>
+<span id="L107" class="ln">   107  </span><span class="comment">// ConnectionEstablished は、レスポンスを確定して配信を始めたことを計上します。</span>
+<span id="L108" class="ln">   108  </span><span class="comment">// resumed は cursor を伴う張り直しです。</span>
+<span id="L109" class="ln">   109  </span>func (m *RealtimeMetrics) ConnectionEstablished(ctx context.Context, resumed bool) {
+<span id="L110" class="ln">   110  </span>	m.connectionsAccepted.Add(ctx, 1)
+<span id="L111" class="ln">   111  </span>	if resumed {
+<span id="L112" class="ln">   112  </span>		m.connectionsReconnects.Add(ctx, 1)
+<span id="L113" class="ln">   113  </span>	}
+<span id="L114" class="ln">   114  </span>}
+<span id="L115" class="ln">   115  </span>
+<span id="L116" class="ln">   116  </span><span class="comment">// ConnectionRejected は、確定せず 503 で断ったことを理由別に計上します。</span>
+<span id="L117" class="ln">   117  </span>func (m *RealtimeMetrics) ConnectionRejected(ctx context.Context, reason string) {
+<span id="L118" class="ln">   118  </span>	m.connectionsRejected.Add(ctx, 1, metric.WithAttributes(attribute.String(attrReason, reason)))
+<span id="L119" class="ln">   119  </span>}
+<span id="L120" class="ln">   120  </span>
+<span id="L121" class="ln">   121  </span><span class="comment">// ConnectionClosed は、索引から外れた接続を理由別に計上し、索引に居た時間を記録します。</span>
+<span id="L122" class="ln">   122  </span>func (m *RealtimeMetrics) ConnectionClosed(ctx context.Context, reason string, durationMs float64) {
+<span id="L123" class="ln">   123  </span>	m.connectionsActive.Add(ctx, -1)
+<span id="L124" class="ln">   124  </span>	m.connectionsClosed.Add(ctx, 1, metric.WithAttributes(attribute.String(attrReason, reason)))
+<span id="L125" class="ln">   125  </span>	m.connectionDurationMs.Record(ctx, durationMs)
+<span id="L126" class="ln">   126  </span>}
+<span id="L127" class="ln">   127  </span>
+<span id="L128" class="ln">   128  </span><span class="comment">// ReplayExecuted は、1 回の読み進めを契機別に計上し、送出できた event 数を記録します。</span>
+<span id="L129" class="ln">   129  </span>func (m *RealtimeMetrics) ReplayExecuted(ctx context.Context, trigger string, events int64) {
+<span id="L130" class="ln">   130  </span>	attrs := metric.WithAttributes(attribute.String(attrTrigger, trigger))
+<span id="L131" class="ln">   131  </span>	m.replayExecutions.Add(ctx, 1, attrs)
+<span id="L132" class="ln">   132  </span>	m.replayEvents.Add(ctx, events, attrs)
+<span id="L133" class="ln">   133  </span>	m.replayDepth.Record(ctx, events, attrs)
+<span id="L134" class="ln">   134  </span>}
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span><span class="comment">// ReplayFailed は、EventLog の読み取り失敗を計上します。</span>
+<span id="L137" class="ln">   137  </span>func (m *RealtimeMetrics) ReplayFailed(ctx context.Context) { m.replayFailures.Add(ctx, 1) }
+<span id="L138" class="ln">   138  </span>
+<span id="L139" class="ln">   139  </span><span class="comment">// ReplayStarted は、読み進めが 1 本始まったことを記録します。</span>
+<span id="L140" class="ln">   140  </span>func (m *RealtimeMetrics) ReplayStarted(ctx context.Context) { m.replayInFlight.Add(ctx, 1) }
+<span id="L141" class="ln">   141  </span>
+<span id="L142" class="ln">   142  </span><span class="comment">// ReplayFinished は、読み進めが 1 本終わったことを記録します。</span>
+<span id="L143" class="ln">   143  </span>func (m *RealtimeMetrics) ReplayFinished(ctx context.Context) { m.replayInFlight.Add(ctx, -1) }
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span><span class="comment">// ReplayAdmissionTimedOut は、初回 replay の枠を待ち切れなかったことを計上します。</span>
+<span id="L146" class="ln">   146  </span>func (m *RealtimeMetrics) ReplayAdmissionTimedOut(ctx context.Context) {
+<span id="L147" class="ln">   147  </span>	m.replayAdmissionTimeouts.Add(ctx, 1)
+<span id="L148" class="ln">   148  </span>}
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span><span class="comment">// CatchUpLag は、wakeup を受け取ってから読み終わるまでの時間を記録します。</span>
+<span id="L151" class="ln">   151  </span>func (m *RealtimeMetrics) CatchUpLag(ctx context.Context, lagMs float64) {
+<span id="L152" class="ln">   152  </span>	m.catchUpLagMs.Record(ctx, lagMs)
+<span id="L153" class="ln">   153  </span>}
+<span id="L154" class="ln">   154  </span>
+<span id="L155" class="ln">   155  </span><span class="comment">// DeliveryLatency は、event の発生から SSE へ書き終わるまでの時間を記録します。</span>
+<span id="L156" class="ln">   156  </span><span class="comment">// 2 つの instance をまたぐ差分なので、時計のずれを含む近似です。</span>
+<span id="L157" class="ln">   157  </span>func (m *RealtimeMetrics) DeliveryLatency(ctx context.Context, latencyMs float64) {
+<span id="L158" class="ln">   158  </span>	m.deliveryLatencyMs.Record(ctx, latencyMs)
+<span id="L159" class="ln">   159  </span>}
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span><span class="comment">// EventLogAppended は、EventLog への追記を結果別に計上します。</span>
+<span id="L162" class="ln">   162  </span>func (m *RealtimeMetrics) EventLogAppended(ctx context.Context, result string) {
+<span id="L163" class="ln">   163  </span>	m.eventLogAppends.Add(ctx, 1, metric.WithAttributes(attribute.String(attrResult, result)))
+<span id="L164" class="ln">   164  </span>}
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span><span class="comment">// EventLogLag は、outbox 行の作成から EventLog 追記までの時間を記録します。</span>
+<span id="L167" class="ln">   167  </span>func (m *RealtimeMetrics) EventLogLag(ctx context.Context, lagMs float64) {
+<span id="L168" class="ln">   168  </span>	m.eventLogLagMs.Record(ctx, lagMs)
+<span id="L169" class="ln">   169  </span>}
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span><span class="comment">// WakeupPublishFailed は、wakeup の publish 失敗を計上します。</span>
+<span id="L172" class="ln">   172  </span>func (m *RealtimeMetrics) WakeupPublishFailed(ctx context.Context) {
+<span id="L173" class="ln">   173  </span>	m.wakeupPublishFailures.Add(ctx, 1)
+<span id="L174" class="ln">   174  </span>}
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span><span class="comment">// RecoveryExecuted は、消えた受信先の作り直しを結果別に計上します。</span>
+<span id="L177" class="ln">   177  </span>func (m *RealtimeMetrics) RecoveryExecuted(ctx context.Context, result string) {
+<span id="L178" class="ln">   178  </span>	m.recoveryExecutions.Add(ctx, 1, metric.WithAttributes(attribute.String(attrResult, result)))
+<span id="L179" class="ln">   179  </span>}
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span><span class="comment">// LeaseHeartbeatFailed は、instance lease の heartbeat 失敗を計上します。</span>
+<span id="L182" class="ln">   182  </span>func (m *RealtimeMetrics) LeaseHeartbeatFailed(ctx context.Context) {
+<span id="L183" class="ln">   183  </span>	m.leaseHeartbeatFailures.Add(ctx, 1)
+<span id="L184" class="ln">   184  </span>}
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span><span class="comment">// CleanupExecuted は、orphan cleanup ジョブ 1 回の実行を結果別に計上します。</span>
+<span id="L187" class="ln">   187  </span>func (m *RealtimeMetrics) CleanupExecuted(ctx context.Context, result string) {
+<span id="L188" class="ln">   188  </span>	m.cleanupExecutions.Add(ctx, 1, metric.WithAttributes(attribute.String(attrResult, result)))
+<span id="L189" class="ln">   189  </span>}
+<span id="L190" class="ln">   190  </span>
+<span id="L191" class="ln">   191  </span><span class="comment">// CleanupInstances は、orphan cleanup が扱った instance 数を処理のされ方別に計上します。</span>
+<span id="L192" class="ln">   192  </span>func (m *RealtimeMetrics) CleanupInstances(ctx context.Context, outcome string, n int64) {
+<span id="L193" class="ln">   193  </span>	m.cleanupInstances.Add(ctx, n, metric.WithAttributes(attribute.String(attrOutcome, outcome)))
+<span id="L194" class="ln">   194  </span>}
+<span id="L195" class="ln">   195  </span>
+</pre><p><a href="../../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

@@ -3,7 +3,9 @@ package event_test
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
+	"go-boilerplate/internal/apperror"
 	"go-boilerplate/internal/domain/lexicon/money"
 	domainpurchase "go-boilerplate/internal/domain/purchase"
 	"go-boilerplate/internal/usecase/purchase/event"
@@ -13,6 +15,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// testOrderedAt は、書き込み後に読み直した集約が持つ注文日時です（DB が採番する値の代役）。
+var testOrderedAt = time.Date(2026, time.July, 23, 9, 30, 0, 0, time.UTC)
+
+// asReread は、New で組み立てた集約を「書き込み後に読み直した」形へ写します。
+// 注文日時は DB 採番なので New 直後の集約には載っておらず、BuildCreated は読み直した集約を受け取ります。
+func asReread(t *testing.T, p *domainpurchase.Purchase) *domainpurchase.Purchase {
+	t.Helper()
+	r, err := domainpurchase.Reconstruct(p.ID(), domainpurchase.Attributes{
+		Code:           p.Code(),
+		UserID:         p.UserID(),
+		StatusID:       uuidtestkit.NewTestFromSalt(t, "reread_status"),
+		StatusCode:     p.StatusCode(),
+		SubtotalAmount: p.SubtotalAmount(),
+		DiscountAmount: p.DiscountAmount(),
+		CouponID:       p.CouponID(),
+		TaxAmount:      p.TaxAmount(),
+		ShippingFee:    p.ShippingFee(),
+		TotalAmount:    p.TotalAmount(),
+		Details:        p.Details(),
+		OrderedAt:      testOrderedAt,
+	})
+	require.NoError(t, err)
+
+	return r
+}
 
 // mustPrice は、テスト用に十進文字列（ドル）から非負の money.Price を構築します。
 //
@@ -43,7 +71,7 @@ func TestBuildCreated(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			payload, perr := event.BuildCreated(entity)
+			payload, perr := event.BuildCreated(asReread(t, entity))
 			require.NoError(t, perr)
 
 			var decoded struct {
@@ -55,6 +83,7 @@ func TestBuildCreated(t *testing.T) {
 				TaxAmount      int    `json:"taxAmount"`
 				ShippingFee    int    `json:"shippingFee"`
 				TotalAmount    int    `json:"totalAmount"`
+				OrderedAt      string `json:"orderedAt"`
 				Details        []struct {
 					ProductID string `json:"productId"`
 					Quantity  int    `json:"quantity"`
@@ -71,6 +100,7 @@ func TestBuildCreated(t *testing.T) {
 			assert.Equal(t, 16000, decoded.TaxAmount)
 			assert.Equal(t, 500, decoded.ShippingFee)
 			assert.Equal(t, 176500, decoded.TotalAmount)
+			assert.Equal(t, testOrderedAt.Format(time.RFC3339Nano), decoded.OrderedAt)
 			require.Len(t, decoded.Details, 1)
 			assert.Equal(t, productA.String(), decoded.Details[0].ProductID)
 			assert.Equal(t, 2, decoded.Details[0].Quantity)
@@ -92,7 +122,7 @@ func TestBuildCreated(t *testing.T) {
 			couponID := uuidtestkit.NewTestFromSalt(t, "bpc_coupon")
 			require.NoError(t, entity.ApplyCoupon(couponID, 16000))
 
-			payload, perr := event.BuildCreated(entity)
+			payload, perr := event.BuildCreated(asReread(t, entity))
 			require.NoError(t, perr)
 
 			var decoded struct {
@@ -113,6 +143,9 @@ func TestBuildCreated(t *testing.T) {
 			assert.Equal(t, 500, decoded.ShippingFee)
 			assert.Equal(t, 158900, decoded.TotalAmount)
 			// 購読側が snapshot だけで合計を組み立て直せることを固定する。
+			// 直前のリテラル群から算術的に導けるので単独で赤くなることは無いが、
+			// ADR-0113 が「内訳を運ぶ snapshot は算術を全項非 0 で固定する」を規約に
+			// しているため、規約を満たしている証拠としてここに置く。
 			assert.Equal(t,
 				decoded.TotalAmount,
 				decoded.SubtotalAmount-decoded.DiscountAmount+decoded.TaxAmount+decoded.ShippingFee,
@@ -132,7 +165,7 @@ func TestBuildCreated(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			payload, perr := event.BuildCreated(entity)
+			payload, perr := event.BuildCreated(asReread(t, entity))
 			require.NoError(t, perr)
 
 			var decoded struct {
@@ -142,6 +175,31 @@ func TestBuildCreated(t *testing.T) {
 			require.NoError(t, json.Unmarshal(payload, &decoded))
 			assert.Equal(t, 0, decoded.DiscountAmount)
 			assert.Nil(t, decoded.CouponID)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("注文日時を持たない集約はエラーにする", func(t *testing.T) {
+			t.Parallel()
+
+			// 生成直後の集約をそのまま渡すと 0001-01-01 が snapshot に載る。
+			// 型では読み直し済みかどうかを区別できないので、ここが唯一の歯止めになる。
+			productA := uuidtestkit.NewTestFromSalt(t, "bpz_product")
+			entity, err := domainpurchase.New(
+				uuidtestkit.NewTestFromSalt(t, "bpz_id"),
+				"bpz-code",
+				uuidtestkit.NewTestFromSalt(t, "bpz_user"),
+				[]domainpurchase.DetailInput{{ID: uuidtestkit.NewTestFromSalt(t, "bpz_d"), ProductID: productA, Quantity: 1}},
+				[]domainpurchase.LockedProduct{domainpurchase.NewLockedProduct(productA, mustPrice(t, "800"), 20)},
+			)
+			require.NoError(t, err)
+			require.True(t, entity.OrderedAt().IsZero())
+
+			_, perr := event.BuildCreated(entity)
+
+			require.ErrorIs(t, perr, apperror.ErrInternal)
 		})
 	})
 }

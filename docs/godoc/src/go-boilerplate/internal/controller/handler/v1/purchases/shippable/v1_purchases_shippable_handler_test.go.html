@@ -243,90 +243,92 @@
 <span id="L186" class="ln">   186  </span>					require.NoError(t, uerr)
 <span id="L187" class="ln">   187  </span>					assert.Equal(t, userID, uid)
 <span id="L188" class="ln">   188  </span>					return purchaseuc.PurchaseShippableListView{}, nil
-<span id="L189" class="ln">   189  </span>				})
-<span id="L190" class="ln">   190  </span>
-<span id="L191" class="ln">   191  </span>			_, err := s.GetPurchasesShippable(
-<span id="L192" class="ln">   192  </span>				authnContext(t, userID),
-<span id="L193" class="ln">   193  </span>				gen.GetPurchasesShippableRequestObject{
-<span id="L194" class="ln">   194  </span>					Params: gen.GetPurchasesShippableParams{Limit: ptr.To(7)},
-<span id="L195" class="ln">   195  </span>				},
-<span id="L196" class="ln">   196  </span>			)
-<span id="L197" class="ln">   197  </span>			require.NoError(t, err)
-<span id="L198" class="ln">   198  </span>			assert.Equal(t, 7, captured.Limit)
-<span id="L199" class="ln">   199  </span>		})
-<span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>		t.Run(&#34;limit未指定の場合、既定件数を意味する0がユースケースへ渡る&#34;, func(t *testing.T) {
-<span id="L202" class="ln">   202  </span>			t.Parallel()
-<span id="L203" class="ln">   203  </span>
-<span id="L204" class="ln">   204  </span>			s, mockUC := newServer(t)
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>			var captured purchaseuc.ListShippablePurchasesParams
-<span id="L207" class="ln">   207  </span>			mockUC.EXPECT().ListShippablePurchases(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L208" class="ln">   208  </span>				func(
-<span id="L209" class="ln">   209  </span>					_ context.Context, _ *auth.Authn, params purchaseuc.ListShippablePurchasesParams,
-<span id="L210" class="ln">   210  </span>				) (purchaseuc.PurchaseShippableListView, error) {
-<span id="L211" class="ln">   211  </span>					captured = params
-<span id="L212" class="ln">   212  </span>					return purchaseuc.PurchaseShippableListView{}, nil
-<span id="L213" class="ln">   213  </span>				})
-<span id="L214" class="ln">   214  </span>
-<span id="L215" class="ln">   215  </span>			_, err := s.GetPurchasesShippable(
-<span id="L216" class="ln">   216  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;h_nolimit_admin&#34;)),
-<span id="L217" class="ln">   217  </span>				gen.GetPurchasesShippableRequestObject{Params: gen.GetPurchasesShippableParams{}},
-<span id="L218" class="ln">   218  </span>			)
-<span id="L219" class="ln">   219  </span>			require.NoError(t, err)
-<span id="L220" class="ln">   220  </span>			assert.Equal(t, 0, captured.Limit)
-<span id="L221" class="ln">   221  </span>		})
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>		t.Run(&#34;発送待ちの購入が無い場合、空配列のレスポンスが返る&#34;, func(t *testing.T) {
-<span id="L224" class="ln">   224  </span>			t.Parallel()
-<span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>			s, mockUC := newServer(t)
-<span id="L227" class="ln">   227  </span>			mockUC.EXPECT().ListShippablePurchases(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L228" class="ln">   228  </span>				Return(purchaseuc.PurchaseShippableListView{}, nil)
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			resp, err := s.GetPurchasesShippable(
-<span id="L231" class="ln">   231  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;h_empty_admin&#34;)),
-<span id="L232" class="ln">   232  </span>				gen.GetPurchasesShippableRequestObject{},
-<span id="L233" class="ln">   233  </span>			)
-<span id="L234" class="ln">   234  </span>			require.NoError(t, err)
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>			actual, ok := resp.(gen.GetPurchasesShippable200JSONResponse)
-<span id="L237" class="ln">   237  </span>			require.True(t, ok)
-<span id="L238" class="ln">   238  </span>			assert.Empty(t, actual.Groups)
-<span id="L239" class="ln">   239  </span>		})
-<span id="L240" class="ln">   240  </span>	})
-<span id="L241" class="ln">   241  </span>
-<span id="L242" class="ln">   242  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L243" class="ln">   243  </span>		t.Parallel()
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>		t.Run(&#34;認証情報が取得できない場合、ErrUnauthenticatedUserを返しユースケースを呼ばない&#34;, func(t *testing.T) {
-<span id="L246" class="ln">   246  </span>			t.Parallel()
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>			s, mockUC := newServer(t)
-<span id="L249" class="ln">   249  </span>			mockUC.EXPECT().ListShippablePurchases(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>			resp, err := s.GetPurchasesShippable(context.Background(), gen.GetPurchasesShippableRequestObject{})
-<span id="L252" class="ln">   252  </span>			assert.Nil(t, resp)
-<span id="L253" class="ln">   253  </span>			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
-<span id="L254" class="ln">   254  </span>		})
-<span id="L255" class="ln">   255  </span>
-<span id="L256" class="ln">   256  </span>		t.Run(&#34;ユースケースが権限エラーを返した場合、そのまま伝播する&#34;, func(t *testing.T) {
-<span id="L257" class="ln">   257  </span>			t.Parallel()
-<span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>			s, mockUC := newServer(t)
-<span id="L260" class="ln">   260  </span>			mockUC.EXPECT().ListShippablePurchases(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L261" class="ln">   261  </span>				Return(purchaseuc.PurchaseShippableListView{}, apperror.ErrPermissionDenied)
-<span id="L262" class="ln">   262  </span>
-<span id="L263" class="ln">   263  </span>			resp, err := s.GetPurchasesShippable(
-<span id="L264" class="ln">   264  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;h_forbidden_admin&#34;)),
-<span id="L265" class="ln">   265  </span>				gen.GetPurchasesShippableRequestObject{},
-<span id="L266" class="ln">   266  </span>			)
-<span id="L267" class="ln">   267  </span>			assert.Nil(t, resp)
-<span id="L268" class="ln">   268  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
-<span id="L269" class="ln">   269  </span>		})
-<span id="L270" class="ln">   270  </span>	})
-<span id="L271" class="ln">   271  </span>}
-<span id="L272" class="ln">   272  </span>
+<span id="L189" class="ln">   189  </span>				},
+<span id="L190" class="ln">   190  </span>			)
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>			_, err := s.GetPurchasesShippable(
+<span id="L193" class="ln">   193  </span>				authnContext(t, userID),
+<span id="L194" class="ln">   194  </span>				gen.GetPurchasesShippableRequestObject{
+<span id="L195" class="ln">   195  </span>					Params: gen.GetPurchasesShippableParams{Limit: ptr.To(7)},
+<span id="L196" class="ln">   196  </span>				},
+<span id="L197" class="ln">   197  </span>			)
+<span id="L198" class="ln">   198  </span>			require.NoError(t, err)
+<span id="L199" class="ln">   199  </span>			assert.Equal(t, 7, captured.Limit)
+<span id="L200" class="ln">   200  </span>		})
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>		t.Run(&#34;limit未指定の場合、既定件数を意味する0がユースケースへ渡る&#34;, func(t *testing.T) {
+<span id="L203" class="ln">   203  </span>			t.Parallel()
+<span id="L204" class="ln">   204  </span>
+<span id="L205" class="ln">   205  </span>			s, mockUC := newServer(t)
+<span id="L206" class="ln">   206  </span>
+<span id="L207" class="ln">   207  </span>			var captured purchaseuc.ListShippablePurchasesParams
+<span id="L208" class="ln">   208  </span>			mockUC.EXPECT().ListShippablePurchases(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L209" class="ln">   209  </span>				func(
+<span id="L210" class="ln">   210  </span>					_ context.Context, _ *auth.Authn, params purchaseuc.ListShippablePurchasesParams,
+<span id="L211" class="ln">   211  </span>				) (purchaseuc.PurchaseShippableListView, error) {
+<span id="L212" class="ln">   212  </span>					captured = params
+<span id="L213" class="ln">   213  </span>					return purchaseuc.PurchaseShippableListView{}, nil
+<span id="L214" class="ln">   214  </span>				},
+<span id="L215" class="ln">   215  </span>			)
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span>			_, err := s.GetPurchasesShippable(
+<span id="L218" class="ln">   218  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;h_nolimit_admin&#34;)),
+<span id="L219" class="ln">   219  </span>				gen.GetPurchasesShippableRequestObject{Params: gen.GetPurchasesShippableParams{}},
+<span id="L220" class="ln">   220  </span>			)
+<span id="L221" class="ln">   221  </span>			require.NoError(t, err)
+<span id="L222" class="ln">   222  </span>			assert.Equal(t, 0, captured.Limit)
+<span id="L223" class="ln">   223  </span>		})
+<span id="L224" class="ln">   224  </span>
+<span id="L225" class="ln">   225  </span>		t.Run(&#34;発送待ちの購入が無い場合、空配列のレスポンスが返る&#34;, func(t *testing.T) {
+<span id="L226" class="ln">   226  </span>			t.Parallel()
+<span id="L227" class="ln">   227  </span>
+<span id="L228" class="ln">   228  </span>			s, mockUC := newServer(t)
+<span id="L229" class="ln">   229  </span>			mockUC.EXPECT().ListShippablePurchases(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L230" class="ln">   230  </span>				Return(purchaseuc.PurchaseShippableListView{}, nil)
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>			resp, err := s.GetPurchasesShippable(
+<span id="L233" class="ln">   233  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;h_empty_admin&#34;)),
+<span id="L234" class="ln">   234  </span>				gen.GetPurchasesShippableRequestObject{},
+<span id="L235" class="ln">   235  </span>			)
+<span id="L236" class="ln">   236  </span>			require.NoError(t, err)
+<span id="L237" class="ln">   237  </span>
+<span id="L238" class="ln">   238  </span>			actual, ok := resp.(gen.GetPurchasesShippable200JSONResponse)
+<span id="L239" class="ln">   239  </span>			require.True(t, ok)
+<span id="L240" class="ln">   240  </span>			assert.Empty(t, actual.Groups)
+<span id="L241" class="ln">   241  </span>		})
+<span id="L242" class="ln">   242  </span>	})
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L245" class="ln">   245  </span>		t.Parallel()
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>		t.Run(&#34;認証情報が取得できない場合、ErrUnauthenticatedUserを返しユースケースを呼ばない&#34;, func(t *testing.T) {
+<span id="L248" class="ln">   248  </span>			t.Parallel()
+<span id="L249" class="ln">   249  </span>
+<span id="L250" class="ln">   250  </span>			s, mockUC := newServer(t)
+<span id="L251" class="ln">   251  </span>			mockUC.EXPECT().ListShippablePurchases(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span>			resp, err := s.GetPurchasesShippable(context.Background(), gen.GetPurchasesShippableRequestObject{})
+<span id="L254" class="ln">   254  </span>			assert.Nil(t, resp)
+<span id="L255" class="ln">   255  </span>			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
+<span id="L256" class="ln">   256  </span>		})
+<span id="L257" class="ln">   257  </span>
+<span id="L258" class="ln">   258  </span>		t.Run(&#34;ユースケースが権限エラーを返した場合、そのまま伝播する&#34;, func(t *testing.T) {
+<span id="L259" class="ln">   259  </span>			t.Parallel()
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span>			s, mockUC := newServer(t)
+<span id="L262" class="ln">   262  </span>			mockUC.EXPECT().ListShippablePurchases(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L263" class="ln">   263  </span>				Return(purchaseuc.PurchaseShippableListView{}, apperror.ErrPermissionDenied)
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>			resp, err := s.GetPurchasesShippable(
+<span id="L266" class="ln">   266  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;h_forbidden_admin&#34;)),
+<span id="L267" class="ln">   267  </span>				gen.GetPurchasesShippableRequestObject{},
+<span id="L268" class="ln">   268  </span>			)
+<span id="L269" class="ln">   269  </span>			assert.Nil(t, resp)
+<span id="L270" class="ln">   270  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
+<span id="L271" class="ln">   271  </span>		})
+<span id="L272" class="ln">   272  </span>	})
+<span id="L273" class="ln">   273  </span>}
+<span id="L274" class="ln">   274  </span>
 </pre><p><a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/shippable/v1_purchases_shippable_handler_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -1,7 +1,5 @@
 # extension
 
-English | [日本語](README.ja.md)
-
 An **extension layer that centrally manages the application of middleware and configurators** to the Echo server.
 
 Uses Uber FX DI groups to extend the server through three channels: `middlewares.pre`, `middlewares.use`, and `server.configurators`.

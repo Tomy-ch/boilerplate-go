@@ -1,7 +1,5 @@
 ## sqlc Package
 
-English | [日本語](README.ja.md)
-
 This directory provides the result of generating Go code from SQL using [sqlc](https://docs.sqlc.dev/), and  
 **SQL execution-related utilities** that support them.
 

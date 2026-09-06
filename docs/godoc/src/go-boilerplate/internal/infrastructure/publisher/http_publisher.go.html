@@ -71,7 +71,7 @@
 <span id="L14" class="ln">    14  </span><span class="comment">// downstream は、profile / breaker / metrics / budget の論理依存名です。</span>
 <span id="L15" class="ln">    15  </span>const downstream httpclient.Downstream = &#34;outbox&#34;
 <span id="L16" class="ln">    16  </span>
-<span id="L17" class="ln">    17  </span><span class="comment">// Endpoint は、メッセージの送信先エンドポイント URL です（構築時に config から固定注入）。</span>
+<span id="L17" class="ln">    17  </span><span class="comment">// Endpoint は、メッセージの送信先エンドポイント URL です。</span>
 <span id="L18" class="ln">    18  </span>type Endpoint string
 <span id="L19" class="ln">    19  </span>
 <span id="L20" class="ln">    20  </span><span class="comment">// httpPublisher は、boundary.Publisher の HTTP 実装です。</span>
@@ -93,8 +93,8 @@
 <span id="L36" class="ln">    36  </span>}
 <span id="L37" class="ln">    37  </span>
 <span id="L38" class="ln">    38  </span><span class="comment">// RequiredDownstream は、本 publisher が使用する Downstream を返します。</span>
-<span id="L39" class="ln">    39  </span><span class="comment">// required_downstreams へ供給することで、対応 profile が未登録のまま起動した場合に</span>
-<span id="L40" class="ln">    40  </span><span class="comment">// silent な DefaultProfile fallback ではなく loud な起動失敗になることを保証します。</span>
+<span id="L39" class="ln">    39  </span><span class="comment">// required_downstreams へ供給し、profile 未登録時は fallback ではなく起動失敗にします</span>
+<span id="L40" class="ln">    40  </span><span class="comment">// （仕組みは httpclient の README の Design Policy を参照）。</span>
 <span id="L41" class="ln">    41  </span>func RequiredDownstream() httpclient.Downstream {
 <span id="L42" class="ln">    42  </span>	return downstream
 <span id="L43" class="ln">    43  </span>}
@@ -114,7 +114,7 @@
 <span id="L57" class="ln">    57  </span>
 <span id="L58" class="ln">    58  </span><span class="comment">// Publish は、メッセージを受信エンドポイントへ POST します。</span>
 <span id="L59" class="ln">    59  </span><span class="comment">// message_id を Idempotency-Key として伝搬します。非 2xx / transport 失敗は substrate が</span>
-<span id="L60" class="ln">    60  </span><span class="comment">// apperror へ写像して返します。</span>
+<span id="L60" class="ln">    60  </span><span class="comment">// apperror へ写像し、本メソッドがさらに永久失敗 / 一時失敗の分類を付けて返します。</span>
 <span id="L61" class="ln">    61  </span>func (p *httpPublisher) Publish(ctx context.Context, m boundary.Message) error {
 <span id="L62" class="ln">    62  </span>	ctx, endSpan := p.tracer.Start(ctx)
 <span id="L63" class="ln">    63  </span>	defer endSpan()
@@ -128,13 +128,13 @@
 <span id="L71" class="ln">    71  </span>		header[k] = []string{v}
 <span id="L72" class="ln">    72  </span>	}
 <span id="L73" class="ln">    73  </span>
-<span id="L74" class="ln">    74  </span>	_, err := p.client.Do(ctx, httpclient.NewRequest(
+<span id="L74" class="ln">    74  </span>	resp, err := p.client.Do(ctx, httpclient.NewRequest(
 <span id="L75" class="ln">    75  </span>		httpclient.MethodPost(), downstream, string(p.endpoint),
 <span id="L76" class="ln">    76  </span>		httpclient.WithHeader(header),
 <span id="L77" class="ln">    77  </span>		httpclient.WithBody(m.Payload),
 <span id="L78" class="ln">    78  </span>		httpclient.WithIdempotencyKey(m.MessageID.String()),
 <span id="L79" class="ln">    79  </span>	))
-<span id="L80" class="ln">    80  </span>	return err
+<span id="L80" class="ln">    80  </span>	return classifyOutcome(resp, err)
 <span id="L81" class="ln">    81  </span>}
 <span id="L82" class="ln">    82  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?m=text">View as plain text</a></p>

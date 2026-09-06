@@ -1,7 +1,5 @@
 # インフラ層のRDB（`internal/infrastructure/rdb`）ガイド
 
-[English](README.md) | 日本語
-
 ## 役割
 
 `internal/infrastructure/rdb` は **RDB（PostgreSQL）を利用するための Infrastructure サブシステム**です。
@@ -200,13 +198,16 @@ Repository / QueryService とは異なり、ビジネスドメインに属さな
 インターフェースは QueryService と並んで Usecase 層に、実装はここに置きます。単一トランザクションでの
 原子性を要する複数集約への書き込みのために予約されています
 （[ADR-0032 (lightweight-cqrs)](../../../docs/adr/0032-lightweight-cqrs.md) /
+[ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md)）。書き込み順序は
+[ADR-0036 (ordered-pessimistic-row-locks)](../../../docs/adr/0036-ordered-pessimistic-row-locks.md) に従います。
+
 <!-- sample-api:replace-begin -->
-[ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md)）。最初の実装は
-`command_service/purchase`（在庫減算 + 購入 / 明細 INSERT。
-[ADR-0036 (ordered-pessimistic-row-locks)](../../../docs/adr/0036-ordered-pessimistic-row-locks.md) 参照）です。
+このカテゴリに現在実装はありません。対象行を identity で名指しできる書き込みはロックできるため
+Repository 呼び出しで構成した usecase へ分解でき、購入の経路が CommandService を使わないのはこの理由です。
+このカテゴリが待っているのは、対象集合が述語でしか決まらない書き込みです。
+[issue #1461](https://github.com/Tomy-ch/go-boilerplate/issues/1461) を参照してください。
 <!-- sample-api:replace-with -->
-<!-- = [ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md)）。書き込み順序は -->
-<!-- = [ADR-0036 (ordered-pessimistic-row-locks)](../../../docs/adr/0036-ordered-pessimistic-row-locks.md) に従います。 -->
+<!-- = 基準を満たす書き込みが現れるまで、このカテゴリに実装はありません。 -->
 <!-- sample-api:replace-end -->
 
 CommandService は `ctx` で渡されたトランザクション上で書き込みを実行し（自前では開かない。境界は
@@ -330,8 +331,8 @@ CommandService テストは加えて次を検証します:
 |`repository/product/product_repository.go`|`Update`|`safecast.IntToInt32(p.Quantity())` のエラー|同上|
 |`repository/product/product_repository.go`|`Update`|`safecast.IntPtrToInt32Ptr(p.StockWarningThreshold())` のエラー|同上|
 |`repository/product/product_repository.go`|`UpdateStock`|`safecast.IntToInt32(p.Quantity())` のエラー|同上|
-|`repository/product/product_repository.go`|`insertImages`|`safecast.IntToInt16(img.SortKey())` のエラー|`product` が `sortKey` を `[1, math.MaxInt16]` に検証済み|
-|`repository/product/product_repository.go`|`syncImages`|`safecast.IntToInt16(img.SortKey())` のエラー|同上|
+|`repository/product/product_repository.go`|`insertImages`|`safecast.IntToInt16(img.DisplaySort())` のエラー|`product` が `displaySort` を `[1, math.MaxInt16]` に検証済み|
+|`repository/product/product_repository.go`|`syncImages`|`safecast.IntToInt16(img.DisplaySort())` のエラー|同上|
 <!-- sample-api:replace-with -->
 <!-- = |ファイル|関数|未被覆の分岐|到達不能な理由| -->
 <!-- = |---|---|---|---| -->

@@ -1,7 +1,5 @@
 # oapi/auth
 
-English | [日本語](README.ja.md)
-
 OpenAPI authentication function that extracts a Bearer token from the `Authorization` header, validates it via boundary `Authenticator`, and stores the result in the request context (an authn slot). Cookie-based extraction is not supported (Bearer / Resource Server model).
 
 ## Token Extraction Flow
@@ -47,6 +45,43 @@ cannot carry that — see the fail-closed section in [`../README.md`](../README.
 credential is not a failure and is never recorded, so an operation that admits anonymous
 callers still admits them.
 
+## Scheme dispatch
+
+The validator calls one `AuthenticationFunc` for every security requirement and names the scheme it
+is evaluating (`input.SecuritySchemeName`). `NewAuthenticator` takes, besides the Bearer
+`Authenticator` / `IdentityResolver`, a list of `SchemeAuthenticator` collected through the fx group
+`SchemeGroup` (`oapi.security.schemes`):
+
+```mermaid
+flowchart TB
+    In["AuthenticationInput (scheme name + declaration)"]
+    Named{"a SchemeAuthenticator owns this name?"}
+    Delegate["delegate — the authenticator writes its own context slot"]
+    Bearer{"declaration is http / bearer (or absent)?"}
+    BearerFlow["Bearer flow above"]
+    Reject["ErrUnauthorizedSchemeUnsupported → 401 (fail-closed)"]
+
+    In --> Named
+    Named -- yes --> Delegate
+    Named -- no --> Bearer
+    Bearer -- yes --> BearerFlow
+    Bearer -- no --> Reject
+```
+
+- A scheme with a registered authenticator is delegated by **name** (the key under
+  `components.securitySchemes`), never by shape — two schemes of the same shape stay distinguishable.
+- A scheme with no authenticator that is not Bearer is refused: a credential nobody can verify is
+  not accepted (ADR-0021 (optional-authentication-fail-closed)). This is what a `serve` graph without
+  the Realtime module answers to a stream ticket.
+- Every failure, delegated or not, is recorded with `ctxhelper.SetAuthnFailure` and carries an HTTP
+  status, exactly like the Bearer flow.
+
+The spec also declares `BasicAuth` for `/metrics`; that operation never reaches this function because the ops skipper keeps it out of the validation pipeline (ADR-0020 (metrics-endpoint-auth-exception)). A non-ops operation declaring `BasicAuth` would be refused here until a `SchemeAuthenticator` for it exists.
+
+The only `SchemeAuthenticator` today is the stream ticket (`internal/controller/stream/auth`,
+ADR-0074 (query-ticket-stream-authentication)); it writes the verified bindings into the
+`StreamGrant` slot that `oapi.Middleware` seeds beside the `Authn` slot.
+
 ## Errors
 
 |Error|Base Error|Description|
@@ -54,6 +89,7 @@ callers still admits them.
 |`ErrUnauthorizedInvalidToken`|`ErrUnauthenticated`|Token validation failed by `Authenticator`|
 |`ErrUnauthorizedTokenNotProvided`|`ErrUnauthenticated`|No token found in the `Authorization` header|
 |`ErrUnauthorizedTokenMissing`|`ErrUnauthenticated`|Authorization token is missing (**reserved** — not currently returned; see Notes)|
+|`ErrUnauthorizedSchemeUnsupported`|`ErrUnauthenticated`|The operation declares a non-Bearer scheme and no `SchemeAuthenticator` owns it — the credential cannot be verified, so it is refused|
 |`ErrAuthnSlotNotFound`|`ErrInternal`|Authn slot not found in the request context (slot not seeded by `oapi.Middleware`) — a wiring defect, unrelated to the credential|
 |`ErrInvalidAuthDefaultMode`|`ErrInternal`|Default auth policy not found (**reserved** — not currently returned; see Notes)|
 

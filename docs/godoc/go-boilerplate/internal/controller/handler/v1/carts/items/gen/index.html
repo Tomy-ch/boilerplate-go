@@ -493,7 +493,7 @@ including any per-operation middleware.
 		
 			
 			
-			</p><h2 id="BadRequest400">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8352:8386#L179">BadRequest400</a>
+			</p><h2 id="BadRequest400">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8622:8656#L184">BadRequest400</a>
 				<a class="permalink" href="#BadRequest400">¶</a>
 				
 				
@@ -538,7 +538,7 @@ including any per-operation middleware.
 		
 			
 			
-			<h2 id="CartItemIssue">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=1527:1552#L38">CartItemIssue</a>
+			<h2 id="CartItemIssue">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=1797:1822#L43">CartItemIssue</a>
 				<a class="permalink" href="#CartItemIssue">¶</a>
 				
 				
@@ -546,6 +546,8 @@ including any per-operation middleware.
 			<p>CartItemIssue カート明細の再評価結果。取得のたびに商品の現在値と突き合わせて判定される。
 1 つの明細に複数同時に立ちうるが、notFound は単独で立ち（商品が引けない以上、在庫も価格も
 判定材料が無い）、outOfStock と insufficientStock は排他（在庫 0 は「不足」ではなく「無い」）。
+discontinued と unpublished も排他で、廃番の明細には discontinued だけが立つ
+（廃番は非公開を伴うが、より具体的なほうだけを立てる）。
 いずれの値もカートの取得を失敗にしない。買えない明細があることは要求の不正ではないため。
 </p><p>Example: outOfStock
 
@@ -555,6 +557,7 @@ including any per-operation middleware.
 				<p>Defines values for CartItemIssue.
 
 				</p><pre>const (
+    <span id="Discontinued">Discontinued</span>      <a href="#CartItemIssue">CartItemIssue</a> = &#34;discontinued&#34;
     <span id="InsufficientStock">InsufficientStock</span> <a href="#CartItemIssue">CartItemIssue</a> = &#34;insufficientStock&#34;
     <span id="NotFound">NotFound</span>          <a href="#CartItemIssue">CartItemIssue</a> = &#34;notFound&#34;
     <span id="OutOfStock">OutOfStock</span>        <a href="#CartItemIssue">CartItemIssue</a> = &#34;outOfStock&#34;
@@ -574,7 +577,7 @@ including any per-operation middleware.
 
 			
 				
-				<h3 id="CartItemIssue.Valid">func (CartItemIssue) <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=687:722#L13">Valid</a>
+				<h3 id="CartItemIssue.Valid">func (CartItemIssue) <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=737:772#L14">Valid</a>
 					<a class="permalink" href="#CartItemIssue.Valid">¶</a>
 					
 					
@@ -589,7 +592,7 @@ including any per-operation middleware.
 		
 			
 			
-			</p><h2 id="CartItemPutRequest">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=1957:2235#L43">CartItemPutRequest</a>
+			</p><h2 id="CartItemPutRequest">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=2227:2505#L48">CartItemPutRequest</a>
 				<a class="permalink" href="#CartItemPutRequest">¶</a>
 				
 				
@@ -620,7 +623,7 @@ including any per-operation middleware.
 		
 			
 			
-			<h2 id="CartItemResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=2625:4542#L53">CartItemResponse</a>
+			<h2 id="CartItemResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=2895:4812#L58">CartItemResponse</a>
 				<a class="permalink" href="#CartItemResponse">¶</a>
 				
 				
@@ -688,7 +691,7 @@ including any per-operation middleware.
 		
 			
 			
-			<h2 id="CartResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=4863:6422#L100">CartResponse</a>
+			<h2 id="CartResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=5133:6692#L105">CartResponse</a>
 				<a class="permalink" href="#CartResponse">¶</a>
 				
 				
@@ -743,7 +746,7 @@ including any per-operation middleware.
 		
 			
 			
-			<h2 id="CartSessionParam">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8026:8056#L173">CartSessionParam</a>
+			<h2 id="CartSessionParam">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8296:8326#L178">CartSessionParam</a>
 				<a class="permalink" href="#CartSessionParam">¶</a>
 				
 				
@@ -766,7 +769,7 @@ including any per-operation middleware.
 		
 			
 			
-			<h2 id="Conflict409">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8574:8606#L182">Conflict409</a>
+			<h2 id="Conflict409">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8844:8876#L187">Conflict409</a>
 				<a class="permalink" href="#Conflict409">¶</a>
 				
 				
@@ -1028,7 +1031,7 @@ including any per-operation middleware.
 		
 			
 			
-			<h2 id="DeleteCartsMeItemParams">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9984:10527#L200">DeleteCartsMeItemParams</a>
+			<h2 id="DeleteCartsMeItemParams">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=10254:10797#L205">DeleteCartsMeItemParams</a>
 				<a class="permalink" href="#DeleteCartsMeItemParams">¶</a>
 				
 				
@@ -1143,7 +1146,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ErrorResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=6612:7014#L132">ErrorResponse</a>
+			<h2 id="ErrorResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=6882:7284#L137">ErrorResponse</a>
 				<a class="permalink" href="#ErrorResponse">¶</a>
 				
 				
@@ -1182,7 +1185,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ErrorResponseWithDetails">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=7323:7951#L150">ErrorResponseWithDetails</a>
+			<h2 id="ErrorResponseWithDetails">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=7593:8221#L155">ErrorResponseWithDetails</a>
 				<a class="permalink" href="#ErrorResponseWithDetails">¶</a>
 				
 				
@@ -1226,7 +1229,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="InternalServerError500">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8805:8848#L185">InternalServerError500</a>
+			<h2 id="InternalServerError500">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9075:9118#L190">InternalServerError500</a>
 				<a class="permalink" href="#InternalServerError500">¶</a>
 				
 				
@@ -1271,7 +1274,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="MethodNotAllowed405">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9044:9084#L188">MethodNotAllowed405</a>
+			<h2 id="MethodNotAllowed405">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9314:9354#L193">MethodNotAllowed405</a>
 				<a class="permalink" href="#MethodNotAllowed405">¶</a>
 				
 				
@@ -1316,7 +1319,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ProductIdParam">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8122:8162#L176">ProductIdParam</a>
+			<h2 id="ProductIdParam">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=8392:8432#L181">ProductIdParam</a>
 				<a class="permalink" href="#ProductIdParam">¶</a>
 				
 				
@@ -1626,7 +1629,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="PutCartsMeItemJSONRequestBody">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=11233:11288#L218">PutCartsMeItemJSONRequestBody</a>
+			<h2 id="PutCartsMeItemJSONRequestBody">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=11503:11558#L223">PutCartsMeItemJSONRequestBody</a>
 				<a class="permalink" href="#PutCartsMeItemJSONRequestBody">¶</a>
 				
 				
@@ -1649,7 +1652,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="PutCartsMeItemParams">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=10592:11132#L209">PutCartsMeItemParams</a>
+			<h2 id="PutCartsMeItemParams">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=10862:11402#L214">PutCartsMeItemParams</a>
 				<a class="permalink" href="#PutCartsMeItemParams">¶</a>
 				
 				
@@ -1857,7 +1860,7 @@ either of them for path registration
 		
 			
 			
-			</p><h2 id="ServiceUnavailable503">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9282:9324#L191">ServiceUnavailable503</a>
+			</p><h2 id="ServiceUnavailable503">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9552:9594#L196">ServiceUnavailable503</a>
 				<a class="permalink" href="#ServiceUnavailable503">¶</a>
 				
 				
@@ -1976,7 +1979,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="Unauthorized401">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9516:9552#L194">Unauthorized401</a>
+			<h2 id="Unauthorized401">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9786:9822#L199">Unauthorized401</a>
 				<a class="permalink" href="#Unauthorized401">¶</a>
 				
 				
@@ -2021,7 +2024,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="UnprocessableEntity422">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=9859:9913#L197">UnprocessableEntity422</a>
+			<h2 id="UnprocessableEntity422">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/items/gen/type.gen.go.html?s=10129:10183#L202">UnprocessableEntity422</a>
 				<a class="permalink" href="#UnprocessableEntity422">¶</a>
 				
 				

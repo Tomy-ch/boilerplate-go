@@ -1,7 +1,5 @@
 # genctxkey
 
-[English](README.md) | 日本語
-
 `genctxkey` は、`context.Context` および `*echo.Context` に対する値の受け渡しを型安全に行うためのコードを生成するツールです。
 
 ## 概要

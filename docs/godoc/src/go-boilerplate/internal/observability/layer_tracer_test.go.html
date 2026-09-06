@@ -208,122 +208,220 @@
 <span id="L151" class="ln">   151  </span>				context.Background(), lt, Usecase, &#34;pkg&#34;, &#34;Func&#34;,
 <span id="L152" class="ln">   152  </span>				func(_ context.Context) (string, error) {
 <span id="L153" class="ln">   153  </span>					return &#34;ok&#34;, nil
-<span id="L154" class="ln">   154  </span>				})
-<span id="L155" class="ln">   155  </span>			require.NoError(t, err)
-<span id="L156" class="ln">   156  </span>			assert.Equal(t, &#34;ok&#34;, v)
-<span id="L157" class="ln">   157  </span>			require.NotNil(t, ctx)
-<span id="L158" class="ln">   158  </span>		})
-<span id="L159" class="ln">   159  </span>	})
-<span id="L160" class="ln">   160  </span>
-<span id="L161" class="ln">   161  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L162" class="ln">   162  </span>		t.Parallel()
-<span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span>		t.Run(&#34;コールバックがエラーを返した場合、ゼロ値とエラーを返す&#34;, func(t *testing.T) {
-<span id="L165" class="ln">   165  </span>			t.Parallel()
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>			tracer, shutdown := newTestTracer(t)
-<span id="L168" class="ln">   168  </span>			defer shutdown()
-<span id="L169" class="ln">   169  </span>
-<span id="L170" class="ln">   170  </span>			lt := LayerTracer{tracer: tracer}
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>			ctx, v, err := RunWithSpan(
-<span id="L173" class="ln">   173  </span>				context.Background(), lt, Usecase, &#34;pkg&#34;, &#34;Func&#34;,
-<span id="L174" class="ln">   174  </span>				func(_ context.Context) (string, error) {
-<span id="L175" class="ln">   175  </span>					return &#34;&#34;, xerrors.New(&#34;failure&#34;)
-<span id="L176" class="ln">   176  </span>				})
-<span id="L177" class="ln">   177  </span>
-<span id="L178" class="ln">   178  </span>			require.Error(t, err)
-<span id="L179" class="ln">   179  </span>			assert.Empty(t, v)
-<span id="L180" class="ln">   180  </span>			require.NotNil(t, ctx)
-<span id="L181" class="ln">   181  </span>		})
-<span id="L182" class="ln">   182  </span>	})
-<span id="L183" class="ln">   183  </span>}
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>func TestLayerTracer_makeSpanName(t *testing.T) {
-<span id="L186" class="ln">   186  </span>	t.Parallel()
-<span id="L187" class="ln">   187  </span>
-<span id="L188" class="ln">   188  </span>	expectedLayer := &#34;layer&#34;
-<span id="L189" class="ln">   189  </span>	expectedPkgName := &#34;pkg&#34;
-<span id="L190" class="ln">   190  </span>	expectedFuncName := &#34;func&#34;
-<span id="L191" class="ln">   191  </span>	optionalName := &#34;extra&#34;
-<span id="L192" class="ln">   192  </span>	expected := expectedLayer + delimiter + expectedPkgName + delimiter + expectedFuncName
-<span id="L193" class="ln">   193  </span>
-<span id="L194" class="ln">   194  </span>	lt := LayerTracer{layer: layerName(expectedLayer), pkgName: expectedPkgName, funcName: expectedFuncName}
+<span id="L154" class="ln">   154  </span>				},
+<span id="L155" class="ln">   155  </span>			)
+<span id="L156" class="ln">   156  </span>			require.NoError(t, err)
+<span id="L157" class="ln">   157  </span>			assert.Equal(t, &#34;ok&#34;, v)
+<span id="L158" class="ln">   158  </span>			require.NotNil(t, ctx)
+<span id="L159" class="ln">   159  </span>		})
+<span id="L160" class="ln">   160  </span>	})
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L163" class="ln">   163  </span>		t.Parallel()
+<span id="L164" class="ln">   164  </span>
+<span id="L165" class="ln">   165  </span>		t.Run(&#34;コールバックがエラーを返した場合、ゼロ値とエラーを返す&#34;, func(t *testing.T) {
+<span id="L166" class="ln">   166  </span>			t.Parallel()
+<span id="L167" class="ln">   167  </span>
+<span id="L168" class="ln">   168  </span>			tracer, shutdown := newTestTracer(t)
+<span id="L169" class="ln">   169  </span>			defer shutdown()
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>			lt := LayerTracer{tracer: tracer}
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>			ctx, v, err := RunWithSpan(
+<span id="L174" class="ln">   174  </span>				context.Background(), lt, Usecase, &#34;pkg&#34;, &#34;Func&#34;,
+<span id="L175" class="ln">   175  </span>				func(_ context.Context) (string, error) {
+<span id="L176" class="ln">   176  </span>					return &#34;&#34;, xerrors.New(&#34;failure&#34;)
+<span id="L177" class="ln">   177  </span>				},
+<span id="L178" class="ln">   178  </span>			)
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span>			require.Error(t, err)
+<span id="L181" class="ln">   181  </span>			assert.Empty(t, v)
+<span id="L182" class="ln">   182  </span>			require.NotNil(t, ctx)
+<span id="L183" class="ln">   183  </span>		})
+<span id="L184" class="ln">   184  </span>	})
+<span id="L185" class="ln">   185  </span>}
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>func TestLayerTracer_makeSpanName(t *testing.T) {
+<span id="L188" class="ln">   188  </span>	t.Parallel()
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>	expectedLayer := &#34;layer&#34;
+<span id="L191" class="ln">   191  </span>	expectedPkgName := &#34;pkg&#34;
+<span id="L192" class="ln">   192  </span>	expectedFuncName := &#34;func&#34;
+<span id="L193" class="ln">   193  </span>	optionalName := &#34;extra&#34;
+<span id="L194" class="ln">   194  </span>	expected := expectedLayer + delimiter + expectedPkgName + delimiter + expectedFuncName
 <span id="L195" class="ln">   195  </span>
-<span id="L196" class="ln">   196  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L197" class="ln">   197  </span>		t.Parallel()
-<span id="L198" class="ln">   198  </span>
-<span id="L199" class="ln">   199  </span>		t.Run(&#34;optionalNameが空の場合、layer.pkg.funcのみを返す&#34;, func(t *testing.T) {
-<span id="L200" class="ln">   200  </span>			t.Parallel()
-<span id="L201" class="ln">   201  </span>			assert.Equal(t, expected, lt.makeSpanName(&#34;&#34;))
-<span id="L202" class="ln">   202  </span>		})
-<span id="L203" class="ln">   203  </span>
-<span id="L204" class="ln">   204  </span>		t.Run(&#34;optionalNameが指定された場合、layer.pkg.func.optionalを返す&#34;, func(t *testing.T) {
-<span id="L205" class="ln">   205  </span>			t.Parallel()
-<span id="L206" class="ln">   206  </span>			assert.Equal(t, expected+delimiter+optionalName, lt.makeSpanName(optionalName))
-<span id="L207" class="ln">   207  </span>		})
-<span id="L208" class="ln">   208  </span>	})
-<span id="L209" class="ln">   209  </span>}
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>func newTestTracer(t *testing.T) (trace.Tracer, func()) {
-<span id="L212" class="ln">   212  </span>	t.Helper()
-<span id="L213" class="ln">   213  </span>	tp := sdktrace.NewTracerProvider()
-<span id="L214" class="ln">   214  </span>	tracer := tp.Tracer(&#34;test&#34;)
-<span id="L215" class="ln">   215  </span>	return tracer, func() { _ = tp.Shutdown(context.Background()) }
-<span id="L216" class="ln">   216  </span>}
-<span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span>func TestLayerTracer_startSpan(t *testing.T) {
-<span id="L219" class="ln">   219  </span>	t.Parallel()
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L222" class="ln">   222  </span>		t.Parallel()
-<span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span>		t.Run(&#34;optionalNameを付与したspan名で子spanを開始し終了関数を返す&#34;, func(t *testing.T) {
-<span id="L225" class="ln">   225  </span>			t.Parallel()
-<span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span>			exp := &amp;recordingExporter{}
-<span id="L228" class="ln">   228  </span>			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exp))
-<span id="L229" class="ln">   229  </span>			defer func() { _ = tp.Shutdown(context.Background()) }()
-<span id="L230" class="ln">   230  </span>
-<span id="L231" class="ln">   231  </span>			lt := LayerTracer{
-<span id="L232" class="ln">   232  </span>				tracer: tp.Tracer(&#34;test&#34;),
-<span id="L233" class="ln">   233  </span>				layer:  Usecase, pkgName: &#34;pkg&#34;, funcName: &#34;func&#34;,
-<span id="L234" class="ln">   234  </span>			}
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>			spanCtx, end := lt.startSpan(context.Background(), &#34;optional&#34;)
+<span id="L196" class="ln">   196  </span>	lt := LayerTracer{layer: layerName(expectedLayer), pkgName: expectedPkgName, funcName: expectedFuncName}
+<span id="L197" class="ln">   197  </span>
+<span id="L198" class="ln">   198  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L199" class="ln">   199  </span>		t.Parallel()
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>		t.Run(&#34;optionalNameが空の場合、layer.pkg.funcのみを返す&#34;, func(t *testing.T) {
+<span id="L202" class="ln">   202  </span>			t.Parallel()
+<span id="L203" class="ln">   203  </span>			assert.Equal(t, expected, lt.makeSpanName(&#34;&#34;))
+<span id="L204" class="ln">   204  </span>		})
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>		t.Run(&#34;optionalNameが指定された場合、layer.pkg.func.optionalを返す&#34;, func(t *testing.T) {
+<span id="L207" class="ln">   207  </span>			t.Parallel()
+<span id="L208" class="ln">   208  </span>			assert.Equal(t, expected+delimiter+optionalName, lt.makeSpanName(optionalName))
+<span id="L209" class="ln">   209  </span>		})
+<span id="L210" class="ln">   210  </span>	})
+<span id="L211" class="ln">   211  </span>}
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>func newTestTracer(t *testing.T) (trace.Tracer, func()) {
+<span id="L214" class="ln">   214  </span>	t.Helper()
+<span id="L215" class="ln">   215  </span>	tp := sdktrace.NewTracerProvider()
+<span id="L216" class="ln">   216  </span>	tracer := tp.Tracer(&#34;test&#34;)
+<span id="L217" class="ln">   217  </span>	return tracer, func() { _ = tp.Shutdown(context.Background()) }
+<span id="L218" class="ln">   218  </span>}
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>func TestLayerTracer_startSpan(t *testing.T) {
+<span id="L221" class="ln">   221  </span>	t.Parallel()
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>		t.Parallel()
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>		t.Run(&#34;optionalNameを付与したspan名で子spanを開始し終了関数を返す&#34;, func(t *testing.T) {
+<span id="L227" class="ln">   227  </span>			t.Parallel()
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>			exp := &amp;recordingExporter{}
+<span id="L230" class="ln">   230  </span>			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exp))
+<span id="L231" class="ln">   231  </span>			defer func() { _ = tp.Shutdown(context.Background()) }()
+<span id="L232" class="ln">   232  </span>
+<span id="L233" class="ln">   233  </span>			lt := LayerTracer{
+<span id="L234" class="ln">   234  </span>				tracer: tp.Tracer(&#34;test&#34;),
+<span id="L235" class="ln">   235  </span>				layer:  Usecase, pkgName: &#34;pkg&#34;, funcName: &#34;func&#34;,
+<span id="L236" class="ln">   236  </span>			}
 <span id="L237" class="ln">   237  </span>
-<span id="L238" class="ln">   238  </span>			assert.Empty(t, exp.recorded())
-<span id="L239" class="ln">   239  </span>			end()
-<span id="L240" class="ln">   240  </span>
-<span id="L241" class="ln">   241  </span>			assert.True(t, trace.SpanFromContext(spanCtx).SpanContext().IsValid())
-<span id="L242" class="ln">   242  </span>			assert.Equal(t, []string{&#34;usecase.pkg.func.optional&#34;}, exp.recorded())
-<span id="L243" class="ln">   243  </span>		})
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>		t.Run(&#34;親spanのある場合は同一traceの子spanになる&#34;, func(t *testing.T) {
-<span id="L246" class="ln">   246  </span>			t.Parallel()
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>			exp := &amp;recordingExporter{}
-<span id="L249" class="ln">   249  </span>			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exp))
-<span id="L250" class="ln">   250  </span>			defer func() { _ = tp.Shutdown(context.Background()) }()
-<span id="L251" class="ln">   251  </span>
-<span id="L252" class="ln">   252  </span>			lt := LayerTracer{
-<span id="L253" class="ln">   253  </span>				tracer: tp.Tracer(&#34;test&#34;),
-<span id="L254" class="ln">   254  </span>				layer:  Infra, pkgName: &#34;pkg&#34;, funcName: &#34;func&#34;,
-<span id="L255" class="ln">   255  </span>			}
-<span id="L256" class="ln">   256  </span>			parentCtx, parentSpan := tp.Tracer(&#34;test&#34;).Start(context.Background(), &#34;parent&#34;)
-<span id="L257" class="ln">   257  </span>			defer parentSpan.End()
-<span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>			spanCtx, end := lt.startSpan(parentCtx, &#34;&#34;)
-<span id="L260" class="ln">   260  </span>			end()
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>			childSC := trace.SpanFromContext(spanCtx).SpanContext()
-<span id="L263" class="ln">   263  </span>			assert.Equal(t, parentSpan.SpanContext().TraceID(), childSC.TraceID())
-<span id="L264" class="ln">   264  </span>			assert.NotEqual(t, parentSpan.SpanContext().SpanID(), childSC.SpanID())
-<span id="L265" class="ln">   265  </span>			assert.Equal(t, []string{&#34;infrastructure.pkg.func&#34;}, exp.recorded())
-<span id="L266" class="ln">   266  </span>		})
-<span id="L267" class="ln">   267  </span>	})
-<span id="L268" class="ln">   268  </span>}
-<span id="L269" class="ln">   269  </span>
+<span id="L238" class="ln">   238  </span>			spanCtx, end := lt.startSpan(context.Background(), &#34;optional&#34;)
+<span id="L239" class="ln">   239  </span>
+<span id="L240" class="ln">   240  </span>			assert.Empty(t, exp.recorded())
+<span id="L241" class="ln">   241  </span>			end()
+<span id="L242" class="ln">   242  </span>
+<span id="L243" class="ln">   243  </span>			assert.True(t, trace.SpanFromContext(spanCtx).SpanContext().IsValid())
+<span id="L244" class="ln">   244  </span>			assert.Equal(t, []string{&#34;usecase.pkg.func.optional&#34;}, exp.recorded())
+<span id="L245" class="ln">   245  </span>		})
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>		t.Run(&#34;親spanのある場合は同一traceの子spanになる&#34;, func(t *testing.T) {
+<span id="L248" class="ln">   248  </span>			t.Parallel()
+<span id="L249" class="ln">   249  </span>
+<span id="L250" class="ln">   250  </span>			exp := &amp;recordingExporter{}
+<span id="L251" class="ln">   251  </span>			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exp))
+<span id="L252" class="ln">   252  </span>			defer func() { _ = tp.Shutdown(context.Background()) }()
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>			lt := LayerTracer{
+<span id="L255" class="ln">   255  </span>				tracer: tp.Tracer(&#34;test&#34;),
+<span id="L256" class="ln">   256  </span>				layer:  Infra, pkgName: &#34;pkg&#34;, funcName: &#34;func&#34;,
+<span id="L257" class="ln">   257  </span>			}
+<span id="L258" class="ln">   258  </span>			parentCtx, parentSpan := tp.Tracer(&#34;test&#34;).Start(context.Background(), &#34;parent&#34;)
+<span id="L259" class="ln">   259  </span>			defer parentSpan.End()
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span>			spanCtx, end := lt.startSpan(parentCtx, &#34;&#34;)
+<span id="L262" class="ln">   262  </span>			end()
+<span id="L263" class="ln">   263  </span>
+<span id="L264" class="ln">   264  </span>			childSC := trace.SpanFromContext(spanCtx).SpanContext()
+<span id="L265" class="ln">   265  </span>			assert.Equal(t, parentSpan.SpanContext().TraceID(), childSC.TraceID())
+<span id="L266" class="ln">   266  </span>			assert.NotEqual(t, parentSpan.SpanContext().SpanID(), childSC.SpanID())
+<span id="L267" class="ln">   267  </span>			assert.Equal(t, []string{&#34;infrastructure.pkg.func&#34;}, exp.recorded())
+<span id="L268" class="ln">   268  </span>		})
+<span id="L269" class="ln">   269  </span>	})
+<span id="L270" class="ln">   270  </span>}
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>func TestLayerTracer_StartWithLink(t *testing.T) {
+<span id="L273" class="ln">   273  </span>	t.Parallel()
+<span id="L274" class="ln">   274  </span>
+<span id="L275" class="ln">   275  </span>	<span class="comment">// 起点となる trace の識別子。W3C の traceparent 形式（version-traceid-spanid-flags）。</span>
+<span id="L276" class="ln">   276  </span>	const originTraceID = &#34;4bf92f3577b34da6a3ce929d0e0e4736&#34;
+<span id="L277" class="ln">   277  </span>	const originCarrier = &#34;00-&#34; + originTraceID + &#34;-00f067aa0ba902b7-01&#34;
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L280" class="ln">   280  </span>		t.Parallel()
+<span id="L281" class="ln">   281  </span>
+<span id="L282" class="ln">   282  </span>		t.Run(&#34;carrier が指す trace への link を持つ span を開く&#34;, func(t *testing.T) {
+<span id="L283" class="ln">   283  </span>			t.Parallel()
+<span id="L284" class="ln">   284  </span>
+<span id="L285" class="ln">   285  </span>			tp, recorded := NewRecordingTracerProvider(t)
+<span id="L286" class="ln">   286  </span>			lt := NewTracerFactory(tp).Controller()
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>			_, endSpan := lt.StartWithLink(context.Background(), map[string]string{&#34;traceparent&#34;: originCarrier})
+<span id="L289" class="ln">   289  </span>			endSpan()
+<span id="L290" class="ln">   290  </span>
+<span id="L291" class="ln">   291  </span>			spans := recorded()
+<span id="L292" class="ln">   292  </span>			require.Len(t, spans, 1)
+<span id="L293" class="ln">   293  </span>			require.Len(t, spans[0].Links(), 1, &#34;起点 trace への link が 1 本張られること&#34;)
+<span id="L294" class="ln">   294  </span>			assert.Equal(t, originTraceID, spans[0].Links()[0].SpanContext.TraceID().String())
+<span id="L295" class="ln">   295  </span>		})
+<span id="L296" class="ln">   296  </span>
+<span id="L297" class="ln">   297  </span>		t.Run(&#34;link を張っても親は呼び出し側の trace のまま&#34;, func(t *testing.T) {
+<span id="L298" class="ln">   298  </span>			t.Parallel()
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>			tp, recorded := NewRecordingTracerProvider(t)
+<span id="L301" class="ln">   301  </span>			lt := NewTracerFactory(tp).Controller()
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span>			parentCtx, endParent := lt.Start(context.Background())
+<span id="L304" class="ln">   304  </span>			_, endChild := lt.StartWithLink(parentCtx, map[string]string{&#34;traceparent&#34;: originCarrier})
+<span id="L305" class="ln">   305  </span>			endChild()
+<span id="L306" class="ln">   306  </span>			endParent()
+<span id="L307" class="ln">   307  </span>
+<span id="L308" class="ln">   308  </span>			spans := recorded()
+<span id="L309" class="ln">   309  </span>			require.Len(t, spans, 2)
+<span id="L310" class="ln">   310  </span>			<span class="comment">// 起点 trace の子にしてしまうと、接続が続く限り起点の trace が閉じない。</span>
+<span id="L311" class="ln">   311  </span>			assert.NotEqual(t, originTraceID, spans[0].SpanContext().TraceID().String())
+<span id="L312" class="ln">   312  </span>			assert.Equal(t, spans[1].SpanContext().TraceID(), spans[0].SpanContext().TraceID())
+<span id="L313" class="ln">   313  </span>		})
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>		t.Run(&#34;carrier が空なら link 無しの span を開く&#34;, func(t *testing.T) {
+<span id="L316" class="ln">   316  </span>			t.Parallel()
+<span id="L317" class="ln">   317  </span>
+<span id="L318" class="ln">   318  </span>			tp, recorded := NewRecordingTracerProvider(t)
+<span id="L319" class="ln">   319  </span>			lt := NewTracerFactory(tp).Controller()
+<span id="L320" class="ln">   320  </span>
+<span id="L321" class="ln">   321  </span>			_, endSpan := lt.StartWithLink(context.Background(), map[string]string{&#34;traceparent&#34;: &#34;&#34;})
+<span id="L322" class="ln">   322  </span>			endSpan()
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span>			spans := recorded()
+<span id="L325" class="ln">   325  </span>			require.Len(t, spans, 1)
+<span id="L326" class="ln">   326  </span>			assert.Empty(t, spans[0].Links(), &#34;伝搬が途切れた event は link 無しで済ませること&#34;)
+<span id="L327" class="ln">   327  </span>		})
+<span id="L328" class="ln">   328  </span>	})
+<span id="L329" class="ln">   329  </span>}
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>func Test_linkFromCarrier(t *testing.T) {
+<span id="L332" class="ln">   332  </span>	t.Parallel()
+<span id="L333" class="ln">   333  </span>
+<span id="L334" class="ln">   334  </span>	const originCarrier = &#34;00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01&#34;
+<span id="L335" class="ln">   335  </span>
+<span id="L336" class="ln">   336  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L337" class="ln">   337  </span>		t.Parallel()
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>		t.Run(&#34;carrier の trace context を link に変える&#34;, func(t *testing.T) {
+<span id="L340" class="ln">   340  </span>			t.Parallel()
+<span id="L341" class="ln">   341  </span>
+<span id="L342" class="ln">   342  </span>			link, ok := linkFromCarrier(map[string]string{&#34;traceparent&#34;: originCarrier})
+<span id="L343" class="ln">   343  </span>
+<span id="L344" class="ln">   344  </span>			require.True(t, ok)
+<span id="L345" class="ln">   345  </span>			assert.Equal(t, &#34;4bf92f3577b34da6a3ce929d0e0e4736&#34;, link.SpanContext.TraceID().String())
+<span id="L346" class="ln">   346  </span>		})
+<span id="L347" class="ln">   347  </span>	})
+<span id="L348" class="ln">   348  </span>
+<span id="L349" class="ln">   349  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L350" class="ln">   350  </span>		t.Parallel()
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span>		t.Run(&#34;読めない carrier では link を作らない&#34;, func(t *testing.T) {
+<span id="L353" class="ln">   353  </span>			t.Parallel()
+<span id="L354" class="ln">   354  </span>
+<span id="L355" class="ln">   355  </span>			<span class="comment">// 空だけでなく「形が崩れている」も link 無しに落ちること。doc が両方を約束している。</span>
+<span id="L356" class="ln">   356  </span>			for _, carrier := range []map[string]string{
+<span id="L357" class="ln">   357  </span>				nil,
+<span id="L358" class="ln">   358  </span>				{&#34;traceparent&#34;: &#34;&#34;},
+<span id="L359" class="ln">   359  </span>				{&#34;traceparent&#34;: &#34;garbage&#34;},
+<span id="L360" class="ln">   360  </span>			} {
+<span id="L361" class="ln">   361  </span>				_, ok := linkFromCarrier(carrier)
+<span id="L362" class="ln">   362  </span>				assert.False(t, ok)
+<span id="L363" class="ln">   363  </span>			}
+<span id="L364" class="ln">   364  </span>		})
+<span id="L365" class="ln">   365  </span>	})
+<span id="L366" class="ln">   366  </span>}
+<span id="L367" class="ln">   367  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/observability/layer_tracer_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

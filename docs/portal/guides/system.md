@@ -1,7 +1,5 @@
 # internal/system
 
-English | [日本語](README.ja.md)
-
 `internal/system` is a package that provides **runtime metadata (build information)** for the application.
 
 This package handles **process metadata** that is independent of business logic and infrastructure.  

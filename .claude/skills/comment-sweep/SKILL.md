@@ -1,7 +1,7 @@
 ---
 name: comment-sweep
 description: >-
-  Sweep the EXISTING STOCK of source-code comments in a chosen scope and decide whether each comment's content is in the right place — the jurisdiction question that no other reviewer asks — and, reading each file's comments as one body, which single site owns a Why that has been written in several of them. It is the sole owner of the comment subject — no review skill carries a comment lens — and it runs over accumulated code with two verdicts a diff-scoped reader cannot reach: 移設 (relocate a design rationale out of the comment and into `docs/adr/` / `docs/design/**` / `docs/spec/**` / a package README, leaving only the operative residue plus a link — while refusing the two classic misroutes, since a library's specific behavior stays in the code and business knowledge goes to spec, never to an ADR) and 集約 (a set-valued verdict for scattered duplication, fragmentation, and aggregate over-explanation inside one file: one site keeps the content, the rest shrink to a pointer, approved as a single indivisible decision). Use it whenever comments feel bloated, verbose, over-explained, or essay-like even though each line is individually true; whenever the same reason appears at several declarations and no one place is authoritative; whenever a doc comment has grown into a design argument, threat-model analysis, or rejected-alternative discussion; for a periodic hygiene sweep of a package / layer / whole repo; before a large PR or a template cut where accumulated commentary would burden downstream readers; and when someone asks 「コメントが長すぎる」「コメントを整理して」「この Why はコードに置くべきか」「コメントを ADR に移したい」. It reads the Comment Rules in `docs/rules.md` and the destination table in `docs/adr/README.md` at runtime as the single source of truth and hardcodes no policy, fans out read-only auditors per package, then applies the result in one of three modes picked in Step 0 or fixed by a flag — 確認して適用 (default; per-item approval, then write), 自動適用 (`--apply`; writes 短縮 / 削除 / high-confidence 集約 with no per-item question and withholds any 移設 that needs a document write, because ADR immutability makes new-record-vs-rewrite a repository-policy call that a no-question mode has no way to ask), and 報告のみ (`--report-only`; renders every finding in full and writes nothing) — performing the code + destination-document writes itself so a relocated rationale never loses its home. It is invoked in its own right, never from inside another review skill: `/impl-review` (the change) and `/test-review` (the tests) are its peers under the Review Phase Protocol in `AGENTS.md`, asked for separately and never delegating to one another. Do NOT use it to judge README / docs prose quality (`doc-reviewer`), to fix README↔code structural drift (`back-prop` / `sync-readme`), or to delete `// Name は、〜です。` field comments — that repo convention is deliberately preserved and out of scope here.
+  Sweep the EXISTING STOCK of source-code comments in a chosen scope and decide whether each comment's content is in the right place — the jurisdiction question that no other reviewer asks — and, reading a package's comments as one body — and then scanning mechanically for the same line repeated across packages, which no single auditor can see — which single site owns a Why that has been written at several declarations. It is the sole owner of the comment subject — no review skill carries a comment lens — and it runs over accumulated code with two verdicts a diff-scoped reader cannot reach: 移設 (relocate a design rationale out of the comment and into `docs/adr/` / `docs/design/**` / `docs/spec/**` / a package README, leaving only the operative residue plus a link — while refusing the two classic misroutes, since a library's specific behavior stays in the code and business knowledge goes to spec, never to an ADR) and 集約 (a set-valued verdict for scattered duplication, fragmentation, and aggregate over-explanation across a package: one site keeps the content, the rest shrink to a pointer, approved as a single indivisible decision). Use it whenever comments feel bloated, verbose, over-explained, or essay-like even though each line is individually true; whenever the same reason appears at several declarations and no one place is authoritative; whenever a doc comment has grown into a design argument, threat-model analysis, or rejected-alternative discussion; for a periodic hygiene sweep of a package / layer / whole repo; before a large PR or a template cut where accumulated commentary would burden downstream readers; and when someone asks 「コメントが長すぎる」「コメントを整理して」「この Why はコードに置くべきか」「コメントを ADR に移したい」. It reads the Comment Rules in `docs/rules.md` and the destination table in `docs/adr/README.md` at runtime as the single source of truth and hardcodes no policy, fans out read-only auditors per package, then applies the result in one of three modes picked in Step 0 or fixed by a flag — 確認して適用 (default; per-item approval, then write), 自動適用 (`--apply`; writes 短縮 / 削除 / high-confidence 集約 with no per-item question and withholds any 移設 that needs a document write, because ADR immutability makes new-record-vs-rewrite a repository-policy call that a no-question mode has no way to ask), and 報告のみ (`--report-only`; renders every finding in full and writes nothing) — performing the code + destination-document writes itself so a relocated rationale never loses its home. It is invoked in its own right, never from inside another review skill: `/impl-review` (the change) and `/test-review` (the tests) are its peers under the Review Phase Protocol in `AGENTS.md`, asked for separately and never delegating to one another. Do NOT use it to judge README / docs prose quality (`doc-reviewer`), to fix README↔code structural drift (`back-prop` / `sync-readme`), or to delete `// Name は、〜です。` field comments — that repo convention is deliberately preserved and out of scope here.
 ---
 
 # Comment Sweep
@@ -52,11 +52,13 @@ Jurisdiction is asked of a single comment, and that leaves a blind spot with the
 above. When the same Why is written at three call sites, **each copy passes the jurisdiction test
 independently** — each is non-obvious, each sits at the site whose premise it states, each is
 individually defensible. Judged one at a time they are three 維持. The redundancy is only visible when
-the file is read as a whole, so a per-comment pass cannot find it no matter how carefully it is run.
+the surrounding comments are read as one body, so a per-comment pass cannot find it no matter how
+carefully it is run.
 
-So every audit asks a second question of the file's comment stock as a unit:
+So every audit asks a second question of its **whole assigned package's** comment stock as a unit:
 
-> **Is this content already carried somewhere else in this file, and if so, which single site owns it?**
+> **Is this content already carried at another declaration in this package, and if so, which single
+> site owns it?**
 
 Three shapes answer to it, and none of them is reachable per comment:
 
@@ -64,11 +66,43 @@ Three shapes answer to it, and none of them is reachable per comment:
   rest shrink to a pointer.
 - **Fragmentation** — a constraint split across declarations so that no single place states it, and a
   reader has to assemble it. The fix is to make one site whole, not to add a fourth fragment.
-- **Aggregate over-explanation** — every comment is individually correct, yet the file's total
+- **Aggregate over-explanation** — every comment is individually correct, yet the package's total
   commentary costs more to read than the code it explains.
 
 This is the same trap as the diff-scope one, one level down: the argument to keep each copy wins every
 time it is asked in isolation, so nothing ever consolidates. Ask it of the set instead.
+
+### The third question: what one package at a time cannot see
+
+The trap recurs at the next level out, and it is the reason the second question is asked of a package
+rather than a file. A Why repeated across *packages* passes the second question in every auditor
+independently, because each auditor sees only its own scope. Nobody is looking at the relation.
+
+This is not hypothetical. A sweep of this repository found the same sentence, verbatim, at six
+declarations in three packages; each auditor could only report its own two or four copies as separate
+findings, and the run that produced the sentence had written it six times without ever being asked
+once whether it belonged in the code at all.
+
+**Only the integrator sees every package, so the third question is the integrator's** (Step 2.5). It
+is asked mechanically rather than by judgment, because the auditors report 維持 as a count and their
+content is therefore not comparable across reports:
+
+> **Does the same comment line appear at declarations the auditors will judge separately?**
+
+A cluster found this way is not automatically a 集約. Resolve it by jurisdiction first, and the answer
+is usually different from the within-package case:
+
+- **The repeated content's jurisdiction is a document** — then it is **移設 at every site** (or 短縮,
+  when the document already says it). No declaration owns a concept that spans packages, so there is
+  no site to consolidate into. What detecting the cluster buys is that N independent "keep" judgments
+  become one visible decision.
+- **One declaration genuinely owns the concept and the others can name it** — then it is a 集約 whose
+  members span files. The pointer must name the owning declaration, because a reader in another
+  package cannot find it by proximity.
+
+Limit worth stating: a mechanical scan finds repeated *lines*, so it catches verbatim repetition and
+misses paraphrase. Verbatim is the dominant shape — the same sentence gets copied, not re-derived —
+and a scan that never claims to find paraphrase is more useful than a judgment call nobody performs.
 
 ## Authoritative sources — read at runtime, hardcode nothing
 
@@ -173,9 +207,10 @@ all in a **single message with multiple tool calls** so they run concurrently. G
 into the spawn prompt, or the two will drift and the auditors will disagree with each other.
 
 Each auditor runs **both passes** described in *Why this skill exists* — the per-comment jurisdiction
-question and the per-file stock question — over the same files it has already read. The second pass
+question and the per-package stock question — over the same files it has already read. The second pass
 costs reading no extra material; what it adds is a question, and the findings it produces (verdict
-**集約**) name a *set* of comments rather than one.
+**集約**) name a *set* of comments rather than one. Hand each auditor any cross-package cluster from
+Step 2.5 that touches its files, so it judges those comments knowing they are repeated elsewhere.
 
 Auditors are **strictly read-only**. They surface verdicts with evidence and a proposed landing
 form; they never call `AskUserQuestion` and never write. Approval and every write happen in this
@@ -183,6 +218,40 @@ integrator, single-threaded, so parallel auditors cannot contend.
 
 If subagents cannot be spawned in the current environment, follow `references/audit-prompt.md`
 inline per package instead; the rest of the flow is unchanged.
+
+## Step 2.5 — Scan for repetition across packages (integrator, mechanical)
+
+Run this in the same message as the fan-out, before the auditors report. It is the third question from
+*Why this skill exists*, and it belongs here because no auditor can see another auditor's scope.
+
+Collect the comment lines of every resolved file, normalise away leading markers and indentation, drop
+lines shorter than a clause, and report any text that appears at declarations in **more than one
+file**:
+
+```sh
+for f in <resolved files>; do
+  grep -hE '^[[:space:]]*(//|#|--)' "$f" \
+    | sed -E 's@^[[:space:]]*(//|#|--)[[:space:]]?@@' \
+    | awk -v f="$f" 'length($0) > 30 { print f "\t" $0 }'
+done | sort -t$'\t' -k2 \
+  | awk -F'\t' '{ n[$2]++; src[$2] = src[$2] "\n    " $1 }
+                 END { for (k in n) if (n[k] > 1) print "[" n[k] "] " k src[k] }'
+```
+
+The `grep` is load-bearing: without it the pipeline clusters code and blank lines too, and every run
+reports one enormous meaningless cluster. That is not a hypothetical — it is what the first draft of
+this step did.
+
+The exact pipeline matters less than the property: it is **deterministic and cheap**, so it runs on
+every sweep rather than when someone suspects duplication. Tune the length floor to the scope — too
+low and boilerplate field comments dominate, too high and a one-line Why slips through.
+
+Each cluster is then resolved by the rule in *The third question*: jurisdiction first (usually 移設 /
+短縮 at every site), 集約 across files only when one declaration genuinely owns the concept. Clusters
+whose members all sit in one package belong to that package's auditor; carry the rest yourself.
+
+**A cluster is a finding even when every member is individually correct.** That is the whole point —
+each copy already passed jurisdiction on its own, which is why nobody had noticed.
 
 ## Step 3 — Aggregate (read-only checkpoint)
 
@@ -197,6 +266,7 @@ comment-sweep 検出結果（scope: <X>, 対象 <n> ファイル / <m> パッケ
 
 移設先の内訳: docs/adr/ <p> 件 / docs/design/ <q> 件 / パッケージ README <r> 件
 集約: <e> 件（対象コメント計 <t> 箇所 / 内訳 重複 <u> ・分散 <v> ・総量過多 <w>）
+パッケージ横断の重複: <x> クラスタ（対象コメント計 <y> 箇所 / <z> パッケージにまたがる）
 総 finding: <sum>（うち要判断 <k>）。<確認して適用のときだけ「これから 1 件ずつ確認します。」を続ける>
 ```
 
@@ -231,14 +301,17 @@ applied. Three exclusions come off that set first:
   an auditor that misread a section would strip the rationale from the code and point the residue at
   a document that never says it. When the check fails, report the finding instead of applying it.
 
-- **A 集約 is applied only at `確度: high`.** 短縮 risks the wrong wording at one site; a consolidation
-  additionally picks *which declaration owns the concept*, and it has already shrunk the other sites
-  by the time a wrong pick becomes visible. That is markedly harder to undo, so anything the auditor
-  itself rated `medium` or `low` is reported for 確認して適用 instead of applied.
+- **A 集約 is applied only at `確度: high`, and only when its members share one file.** 短縮 risks the
+  wrong wording at one site; a consolidation additionally picks *which declaration owns the concept*,
+  and it has already shrunk the other sites by the time a wrong pick becomes visible. That is markedly
+  harder to undo, so anything the auditor itself rated `medium` or `low` is reported for 確認して適用
+  instead of applied. A 集約 whose members span files is withheld for the same reason one level up:
+  the pointer has to name a declaration a reader cannot reach by proximity, and whether that
+  declaration is really the owner is exactly the judgment a no-question mode cannot make.
 
 A `追記なし` 移設 that survives the check is applied: the destination already states the content, so the
-finding is really a 短縮 to the residue plus a link and touches no document. A 集約 likewise writes no
-document — it only moves content between comments in one file — which is why it belongs to this mode
+finding is really a 短縮 to the residue plus a link and touches no document. A same-file 集約 likewise
+writes no document — it only moves content between comments — which is why it belongs to this mode
 at all.
 
 **Do not apply a 移設 that would write to a destination document.** Report those with their count and
@@ -293,10 +366,12 @@ because no human read the edits one at a time.
 - Re-read each edited comment once: does the residue still stand on its own for someone who does not
   follow the link? A residue that only makes sense after reading the ADR has been cut too far, and
   that failure is invisible to every linter.
-- After a 集約, read the file top to bottom rather than each edited site in isolation — the finding was
-  about the file, so the check has to be too. Two failures show up only this way: the surviving site
-  does not actually carry what the shrunk ones gave up, and a pointer names a declaration a reader
-  cannot find from where they are standing.
+- After a 集約, read every file it touched top to bottom rather than each edited site in isolation —
+  the finding was about a body of comments, so the check has to be too. Two failures show up only this
+  way: the surviving site does not actually carry what the shrunk ones gave up, and a pointer names a
+  declaration a reader cannot find from where they are standing. When the members spanned packages,
+  read the pointer from the *other* package's side: a reference that is obvious next to the owning
+  declaration is often unnavigable from three directories away.
 
 ## Explicitly out of scope
 
@@ -322,7 +397,7 @@ because no human read the edits one at a time.
 
 This skill is invoked in its own right, never from inside another review skill. `/impl-review` audits the change and `/test-review` the tests; the three are peers under the Review Phase Protocol in `AGENTS.md`, each asked for separately, and none of them delegates to another. A review skill that offers to run the next one makes the three subjects stop being independently answerable and lets one skill's drift silently drop the others from every flow that went through it.
 
-That independence is also what keeps the sweep file-level. Nothing hands it a diff, nothing filters which comments its auditors may read, and nothing removes a comment from a file before the per-file pass sees it — so the duplication that lives *between* comments stays visible. A sweep that received only changed regions would be a second diff review wearing the word "stock".
+That independence is also what keeps the sweep stock-level. Nothing hands it a diff, nothing filters which comments its auditors may read, and nothing removes a comment from a package before the stock pass sees it — so the duplication that lives *between* comments stays visible, whether it sits in one file, one package, or across three. A sweep that received only changed regions would be a second diff review wearing the word "stock".
 
 The comment subject therefore has exactly one owner. When a diff's newly added comments need judging, they are judged here, as part of the file they now live in.
 
@@ -331,7 +406,7 @@ The comment subject therefore has exactly one owner. When a diff's newly added c
 | | Unit judged | Verdicts | Owns |
 | --- | --- | --- | --- |
 | `doc-reviewer` | `README*` / `docs/**` | content findings | quality of docs prose |
-| **`comment-sweep`** (this skill) | **one comment, and the file's whole stock** | **維持 / 短縮 / 削除 / 移設 / 集約** | **jurisdiction — where content belongs, and which single site owns it** |
+| **`comment-sweep`** (this skill) | **one comment, a package's whole stock, and repetition across packages** | **維持 / 短縮 / 削除 / 移設 / 集約** | **jurisdiction — where content belongs, and which single site owns it** |
 
 No review skill carries a comment lens any more, so this is where the whole subject is answered —
 both the comments a change just added and the ones the file was already carrying, judged together as

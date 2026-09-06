@@ -1,0 +1,1274 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>coupon - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package coupon
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/domain/coupon&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package coupon は、クーポンドメインを定義します。値引き（Discount）と適用範囲（Scope）という
+直交する 2 つの値オブジェクトを持つ Coupon エンティティを提供します。
+</p><p>種別はマスタ表ではなくドメインが閉じた集合として持ち切ります。「定額か定率か」「全体かカテゴリか商品か」は
+業務の語彙であってデータではなく、行として編集できることに意味がないためです（purchase.Status と同じ形）。
+</p><p>1 枚のクーポンは 1 つの値引きと 1 つの適用範囲を持ちます。複数枚の併用も、複数の適用範囲の合成も
+表しません。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+			
+				
+				<dd><a href="#Attributes">type Attributes</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Coupon">type Coupon</a></dd>
+				
+					
+					<dd>    <a href="#New">func New(id uuid.UUID, attrs Attributes) (*Coupon, error)</a></dd>
+				
+					
+					<dd>    <a href="#Reconstruct">func Reconstruct(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#Coupon.Discount">func (c *Coupon) Discount() Discount</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.DiscountFor">func (c *Coupon) DiscountFor(lines []Line) (int, error)</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.ExpiresAt">func (c *Coupon) ExpiresAt() time.Time</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.ID">func (c *Coupon) ID() uuid.UUID</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.IsExpired">func (c *Coupon) IsExpired(now time.Time) bool</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.IsHeldBy">func (c *Coupon) IsHeldBy(userID uuid.UUID) bool</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.IsUsed">func (c *Coupon) IsUsed() bool</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.IssuedAt">func (c *Coupon) IssuedAt() time.Time</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.Redeem">func (c *Coupon) Redeem(now time.Time) error</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.Scope">func (c *Coupon) Scope() Scope</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.UsedAt">func (c *Coupon) UsedAt() *time.Time</a></dd>
+				
+					
+					<dd>    <a href="#Coupon.UserID">func (c *Coupon) UserID() uuid.UUID</a></dd>
+				
+			
+				
+				<dd><a href="#Coupons">type Coupons</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Discount">type Discount</a></dd>
+				
+					
+					<dd>    <a href="#NewFlatDiscount">func NewFlatDiscount(amount decimal.Decimal) (Discount, error)</a></dd>
+				
+					
+					<dd>    <a href="#NewRateDiscount">func NewRateDiscount(rate decimal.Decimal) (Discount, error)</a></dd>
+				
+					
+					<dd>    <a href="#ReconstructDiscount">func ReconstructDiscount(kind DiscountKind, value decimal.Decimal) (Discount, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#Discount.Apply">func (d Discount) Apply(eligible decimal.Decimal) decimal.Decimal</a></dd>
+				
+					
+					<dd>    <a href="#Discount.IsZero">func (d Discount) IsZero() bool</a></dd>
+				
+					
+					<dd>    <a href="#Discount.Kind">func (d Discount) Kind() DiscountKind</a></dd>
+				
+					
+					<dd>    <a href="#Discount.Value">func (d Discount) Value() decimal.Decimal</a></dd>
+				
+			
+				
+				<dd><a href="#DiscountKind">type DiscountKind</a></dd>
+				
+					
+					<dd>    <a href="#NewDiscountKind">func NewDiscountKind(code int) (DiscountKind, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#DiscountKind.Code">func (k DiscountKind) Code() int</a></dd>
+				
+					
+					<dd>    <a href="#DiscountKind.IsZero">func (k DiscountKind) IsZero() bool</a></dd>
+				
+					
+					<dd>    <a href="#DiscountKind.Name">func (k DiscountKind) Name() string</a></dd>
+				
+			
+				
+				<dd><a href="#Line">type Line</a></dd>
+				
+					
+					<dd>    <a href="#NewLine">func NewLine(attrs LineAttributes) Line</a></dd>
+				
+				
+					
+					<dd>    <a href="#Line.CategoryID">func (l Line) CategoryID() uuid.UUID</a></dd>
+				
+					
+					<dd>    <a href="#Line.ProductID">func (l Line) ProductID() uuid.UUID</a></dd>
+				
+					
+					<dd>    <a href="#Line.Subtotal">func (l Line) Subtotal() decimal.Decimal</a></dd>
+				
+			
+				
+				<dd><a href="#LineAttributes">type LineAttributes</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Repository">type Repository</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Scope">type Scope</a></dd>
+				
+					
+					<dd>    <a href="#NewAllScope">func NewAllScope() Scope</a></dd>
+				
+					
+					<dd>    <a href="#NewCategoryScope">func NewCategoryScope(categoryID uuid.UUID) (Scope, error)</a></dd>
+				
+					
+					<dd>    <a href="#NewProductScope">func NewProductScope(productID uuid.UUID) (Scope, error)</a></dd>
+				
+					
+					<dd>    <a href="#ReconstructScope">func ReconstructScope(kind ScopeKind, targetID *uuid.UUID) (Scope, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#Scope.Covers">func (s Scope) Covers(line Line) bool</a></dd>
+				
+					
+					<dd>    <a href="#Scope.IsZero">func (s Scope) IsZero() bool</a></dd>
+				
+					
+					<dd>    <a href="#Scope.Kind">func (s Scope) Kind() ScopeKind</a></dd>
+				
+					
+					<dd>    <a href="#Scope.TargetID">func (s Scope) TargetID() *uuid.UUID</a></dd>
+				
+			
+				
+				<dd><a href="#ScopeKind">type ScopeKind</a></dd>
+				
+					
+					<dd>    <a href="#NewScopeKind">func NewScopeKind(code int) (ScopeKind, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#ScopeKind.Code">func (k ScopeKind) Code() int</a></dd>
+				
+					
+					<dd>    <a href="#ScopeKind.IsZero">func (k ScopeKind) IsZero() bool</a></dd>
+				
+					
+					<dd>    <a href="#ScopeKind.Name">func (k ScopeKind) Name() string</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/coupon/constant.go.html">constant.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html">coupon_domain.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_repository.go.html">coupon_repository.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html">discount.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/coupon/error.go.html">error.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/coupon/line.go.html">line.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html">scope.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				
+				<pre>const (
+
+    <span class="comment">// FieldCouponID は、クーポン ID フィールドの識別子です。</span>
+    <span id="FieldCouponID">FieldCouponID</span> = &#34;couponId&#34;
+)</pre>
+			
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>既知の値引き種別。
+
+				</p><pre>var (
+    <span class="comment">// DiscountKindFlat は、金額を直接差し引く「定額」です。</span>
+    <span id="DiscountKindFlat">DiscountKindFlat</span> = <a href="#DiscountKind">DiscountKind</a>{<span class="comment">/* contains filtered or unexported fields */</span>}
+    <span class="comment">// DiscountKindRate は、対象額に率を掛けて差し引く「定率」です。</span>
+    <span id="DiscountKindRate">DiscountKindRate</span> = <a href="#DiscountKind">DiscountKind</a>{<span class="comment">/* contains filtered or unexported fields */</span>}
+)</pre>
+			
+				
+				<pre>var (
+
+    <span class="comment">// ErrInvalidID は、クーポン ID の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidID">ErrInvalidID</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;id failed&#34;)
+    <span class="comment">// ErrInvalidUserID は、受給者のユーザー ID の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidUserID">ErrInvalidUserID</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;userID failed&#34;)
+    <span class="comment">// ErrInvalidDiscountKind は、値引き種別の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidDiscountKind">ErrInvalidDiscountKind</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;discountKind failed&#34;)
+    <span class="comment">// ErrInvalidDiscountValue は、値引きの値の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidDiscountValue">ErrInvalidDiscountValue</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;discountValue failed&#34;)
+    <span class="comment">// ErrInvalidScopeKind は、適用範囲種別の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidScopeKind">ErrInvalidScopeKind</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;scopeKind failed&#34;)
+    <span class="comment">// ErrInvalidScopeTarget は、適用範囲が絞る対象の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidScopeTarget">ErrInvalidScopeTarget</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;scopeTarget failed&#34;)
+    <span class="comment">// ErrInvalidDiscount は、値引きが未設定の場合のエラーです。</span>
+    <span id="ErrInvalidDiscount">ErrInvalidDiscount</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;discount is required&#34;)
+    <span class="comment">// ErrInvalidScope は、適用範囲が未設定の場合のエラーです。</span>
+    <span id="ErrInvalidScope">ErrInvalidScope</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;scope is required&#34;)
+    <span class="comment">// ErrInvalidExpiresAt は、有効期限の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidExpiresAt">ErrInvalidExpiresAt</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;expiresAt failed&#34;)
+    <span class="comment">// ErrInvalidIssuedAt は、発行日時の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidIssuedAt">ErrInvalidIssuedAt</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;issuedAt failed&#34;)
+    <span class="comment">// ErrAlreadyUsed は、使用済みのクーポンを引き換えようとした場合のエラーです。</span>
+    <span class="comment">// 同じ内容の再送でも時間の経過でも解消しません。</span>
+    <span id="ErrAlreadyUsed">ErrAlreadyUsed</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;coupon is already used&#34;)
+    <span class="comment">// ErrExpired は、失効したクーポンを引き換えようとした場合のエラーです。</span>
+    <span id="ErrExpired">ErrExpired</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;coupon is expired&#34;)
+    <span class="comment">// ErrNotHeld は、その利用者が保有していないクーポンを指した場合のエラーです。</span>
+    <span class="comment">// 存在しないクーポンもこのエラーに畳みます。区別できると保有していないクーポンの存在が漏れるためです</span>
+    <span class="comment">// （docs/spec/usecase/purchase.md の CreatePurchase）。</span>
+    <span id="ErrNotHeld">ErrNotHeld</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;coupon is not held by the user&#34;)
+    <span class="comment">// ErrUsedConcurrently は、引き換えの最中に他の書き手が同じクーポンを消費した場合のエラーです</span>
+    <span class="comment">// （到達条件は docs/spec/domain/coupon.md の Repository Methods &gt; UpdateUsed を参照）。</span>
+    <span id="ErrUsedConcurrently">ErrUsedConcurrently</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrConflict">ErrConflict</a>, &#34;coupon was used concurrently&#34;)
+)</pre>
+			
+				<p>既知の適用範囲種別。
+
+				</p><pre>var (
+    <span class="comment">// ScopeKindAll は、対象を絞らない「全体」です。</span>
+    <span id="ScopeKindAll">ScopeKindAll</span> = <a href="#ScopeKind">ScopeKind</a>{<span class="comment">/* contains filtered or unexported fields */</span>}
+    <span class="comment">// ScopeKindCategory は、特定のカテゴリに属する明細だけを対象とする「カテゴリ限定」です。</span>
+    <span id="ScopeKindCategory">ScopeKindCategory</span> = <a href="#ScopeKind">ScopeKind</a>{<span class="comment">/* contains filtered or unexported fields */</span>}
+    <span class="comment">// ScopeKindProduct は、特定の商品の明細だけを対象とする「商品限定」です。</span>
+    <span id="ScopeKindProduct">ScopeKindProduct</span> = <a href="#ScopeKind">ScopeKind</a>{<span class="comment">/* contains filtered or unexported fields */</span>}
+)</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="Attributes">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=1560:1893#L27">Attributes</a>
+				<a class="permalink" href="#Attributes">¶</a>
+				
+				
+			</h2>
+			<p>Attributes は、クーポンの属性一式です。ExpiresAt と IssuedAt が同型のため構造体で受けます
+（基準は docs/rules.md の Function Signature Rules）。
+
+			</p><pre>type Attributes struct {
+<span id="Attributes.UserID"></span>    <span class="comment">// UserID は、受給者です。</span>
+    UserID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="Attributes.Discount"></span>    <span class="comment">// Discount は、いくら引くかです。</span>
+    Discount <a href="#Discount">Discount</a>
+<span id="Attributes.Scope"></span>    <span class="comment">// Scope は、どの明細が対象かです。</span>
+    Scope <a href="#Scope">Scope</a>
+<span id="Attributes.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、有効期限です。</span>
+    ExpiresAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="Attributes.IssuedAt"></span>    <span class="comment">// IssuedAt は、発行日時です。</span>
+    IssuedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Coupon">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=1206:1371#L15">Coupon</a>
+				<a class="permalink" href="#Coupon">¶</a>
+				
+				
+			</h2>
+			<p>Coupon は、クーポンを表すドメインエンティティです。受給者は発行時に確定し、以後移りません。
+譲渡を表さない理由は docs/spec/domain/coupon.md の Overview を参照してください。
+
+			</p><pre>type Coupon struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=2304:2361#L44">New</a>
+					<a class="permalink" href="#New">¶</a>
+					
+					
+				</h3>
+				<pre>func New(id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, attrs <a href="#Attributes">Attributes</a>) (*<a href="#Coupon">Coupon</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>New は、クーポンエンティティの検証と生成を行います。生成直後は未使用です。
+id・UserID が未設定、Discount・Scope が未設定、ExpiresAt・IssuedAt がゼロ値の場合は検証エラーを返します。
+有効期限は発行日時より後である必要があります（理由は docs/spec/domain/coupon.md の
+Cross-field Invariants を参照）。
+
+				
+				
+			
+				
+				</p><h3 id="Reconstruct">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=2597:2681#L50">Reconstruct</a>
+					<a class="permalink" href="#Reconstruct">¶</a>
+					
+					
+				</h3>
+				<pre>func Reconstruct(id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, attrs <a href="#Attributes">Attributes</a>, usedAt *<a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>) (*<a href="#Coupon">Coupon</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>Reconstruct は、永続化済みのクーポンを再構築します。usedAt は使用済みなら使用日時、
+未使用なら nil です。その他の検証は New と同一です。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Coupon.Discount">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4065:4101#L98">Discount</a>
+					<a class="permalink" href="#Coupon.Discount">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) Discount() <a href="#Discount">Discount</a></pre>
+				<p>Discount は、値引きを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.DiscountFor">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=5545:5600#L124">DiscountFor</a>
+					<a class="permalink" href="#Coupon.DiscountFor">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) DiscountFor(lines []<a href="#Line">Line</a>) (<a href="../../../../builtin/#int">int</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>DiscountFor は、渡された明細のうち適用範囲に入るものを対象として、差し引く額を決済スケールの
+整数（USD セント）で返します。対象が 1 件も無い場合と、差し引く額が最小単位に満たない場合は 0 です。
+</p><p>丸めはこのメソッドでのみ行います（<a href="#Discount.Apply">Discount.Apply</a> は丸めません。ADR-0038 (two-scale-quantity-model)）。
+根拠は docs/spec/domain/coupon.md の Behavior Methods &gt; DiscountFor を参照してください。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.ExpiresAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4272:4310#L104">ExpiresAt</a>
+					<a class="permalink" href="#Coupon.ExpiresAt">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) ExpiresAt() <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a></pre>
+				<p>ExpiresAt は、有効期限を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.ID">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=3850:3881#L92">ID</a>
+					<a class="permalink" href="#Coupon.ID">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) ID() <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>ID は、クーポン ID を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.IsExpired">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=6798:6844#L159">IsExpired</a>
+					<a class="permalink" href="#Coupon.IsExpired">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) IsExpired(now <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>IsExpired は、渡された時点でクーポンが失効しているかどうかを返します。有効期限ちょうども
+失効として扱います。判定の設計は docs/spec/domain/coupon.md の Behavior Methods を参照してください。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.IsHeldBy">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4937:4985#L117">IsHeldBy</a>
+					<a class="permalink" href="#Coupon.IsHeldBy">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) IsHeldBy(userID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>IsHeldBy は、そのユーザーがこのクーポンの受給者かどうかを返します。
+受給者は変わらないため（<a href="#Coupon">Coupon</a> を参照）、判定は等値比較だけで足ります。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.IsUsed">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4669:4699#L113">IsUsed</a>
+					<a class="permalink" href="#Coupon.IsUsed">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) IsUsed() <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>IsUsed は、クーポンが使用済みかどうかを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.IssuedAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4384:4421#L107">IssuedAt</a>
+					<a class="permalink" href="#Coupon.IssuedAt">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) IssuedAt() <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a></pre>
+				<p>IssuedAt は、発行日時を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.Redeem">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=6365:6409#L144">Redeem</a>
+					<a class="permalink" href="#Coupon.Redeem">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) Redeem(now <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>) <a href="../../../../builtin/#error">error</a></pre>
+				<p>Redeem は、クーポンを使用済みにします。使用済みへの遷移は一度きりで、取り消せません。
+</p><p>既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えません。
+日時は引数で受け取ります（internal/domain/README.md の Handling time and ID を参照）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.Scope">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4171:4201#L101">Scope</a>
+					<a class="permalink" href="#Coupon.Scope">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) Scope() <a href="#Scope">Scope</a></pre>
+				<p>Scope は、適用範囲を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.UsedAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4527:4563#L110">UsedAt</a>
+					<a class="permalink" href="#Coupon.UsedAt">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) UsedAt() *<a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a></pre>
+				<p>UsedAt は、使用日時を返します。未使用の場合は nil です。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.UserID">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=3962:3997#L95">UserID</a>
+					<a class="permalink" href="#Coupon.UserID">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) UserID() <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>UserID は、受給者のユーザー ID を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="Coupons">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=940:962#L11">Coupons</a>
+				<a class="permalink" href="#Coupons">¶</a>
+				
+				
+			</h2>
+			<p>Coupons は、Coupon エンティティのスライス型です。
+
+			</p><pre>type Coupons []*<a href="#Coupon">Coupon</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Discount">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=1526:1593#L30">Discount</a>
+				<a class="permalink" href="#Discount">¶</a>
+				
+				
+			</h2>
+			<p>Discount は、値引きを表す値オブジェクトです。決まり方（種別）と、その種別における値の組です。
+</p><p>定額では value が差し引く金額（USD ドルの十進量）、定率では value が対象額に掛ける率です。
+適用範囲は関知しません。どの明細が対象かは <a href="#Scope">Scope</a> が答えます。
+
+			</p><pre>type Discount struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewFlatDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2899:2961#L62">NewFlatDiscount</a>
+					<a class="permalink" href="#NewFlatDiscount">¶</a>
+					
+					
+				</h3>
+				<pre>func NewFlatDiscount(amount <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>) (<a href="#Discount">Discount</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewFlatDiscount は、定額の値引きを生成します。amount は正の十進量である必要があります。
+0 以下は値引きにならないため ErrInvalidDiscountValue を返します。
+
+				
+				
+			
+				
+				</p><h3 id="NewRateDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=3412:3472#L71">NewRateDiscount</a>
+					<a class="permalink" href="#NewRateDiscount">¶</a>
+					
+					
+				</h3>
+				<pre>func NewRateDiscount(rate <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>) (<a href="#Discount">Discount</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewRateDiscount は、定率の値引きを生成します。rate は 0 より大きく 1 以下である必要があります。
+範囲外は ErrInvalidDiscountValue を返します（上限の根拠は docs/spec/domain/coupon.md の Discount）。
+
+				
+				
+			
+				
+				</p><h3 id="ReconstructDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=3839:3923#L80">ReconstructDiscount</a>
+					<a class="permalink" href="#ReconstructDiscount">¶</a>
+					
+					
+				</h3>
+				<pre>func ReconstructDiscount(kind <a href="#DiscountKind">DiscountKind</a>, value <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>) (<a href="#Discount">Discount</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>ReconstructDiscount は、永続化されている種別と値から値引きを再構築します。
+検証は生成時と同一です。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Discount.Apply">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=5166:5231#L108">Apply</a>
+					<a class="permalink" href="#Discount.Apply">¶</a>
+					
+					
+				</h3>
+				<pre>func (d <a href="#Discount">Discount</a>) Apply(eligible <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>) <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a></pre>
+				<p>Apply は、対象額に対して差し引く額を価格スケールの十進量で返します。
+</p><p>「いくら引くか」の定義はこのメソッドが持ちます。定額は対象額を上限に切り詰め、定率は対象額に
+率を掛けます。どちらも対象額を超えないため、請求額が負になることはありません。
+対象額が 0 以下なら差し引く額も 0 です。
+</p><p>丸めません。決済スケールへの丸めは <a href="#Coupon.DiscountFor">Coupon.DiscountFor</a> が 1 箇所で行います
+（ADR-0038 (two-scale-quantity-model)）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Discount.IsZero">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=4521:4552#L98">IsZero</a>
+					<a class="permalink" href="#Discount.IsZero">¶</a>
+					
+					
+				</h3>
+				<pre>func (d <a href="#Discount">Discount</a>) IsZero() <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>IsZero は、未設定の値引きかどうかを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Discount.Kind">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=4213:4250#L92">Kind</a>
+					<a class="permalink" href="#Discount.Kind">¶</a>
+					
+					
+				</h3>
+				<pre>func (d <a href="#Discount">Discount</a>) Kind() <a href="#DiscountKind">DiscountKind</a></pre>
+				<p>Kind は、値引きの決まり方を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Discount.Value">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=4391:4432#L95">Value</a>
+					<a class="permalink" href="#Discount.Value">¶</a>
+					
+					
+				</h3>
+				<pre>func (d <a href="#Discount">Discount</a>) Value() <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a></pre>
+				<p>Value は、種別における値を返します。定額なら差し引く金額、定率なら掛ける率です。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="DiscountKind">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=1107:1158#L21">DiscountKind</a>
+				<a class="permalink" href="#DiscountKind">¶</a>
+				
+				
+			</h2>
+			<p>DiscountKind は、値引きの決まり方を表す値オブジェクトです。
+</p><p>内側に持つ code は永続化と外部公開のための業務キーであり、種別の間に順序はありません。
+マスタ表を持たない理由は docs/spec/domain/coupon.md の Overview を参照してください。
+
+			</p><pre>type DiscountKind struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewDiscountKind">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=1970:2022#L42">NewDiscountKind</a>
+					<a class="permalink" href="#NewDiscountKind">¶</a>
+					
+					
+				</h3>
+				<pre>func NewDiscountKind(code <a href="../../../../builtin/#int">int</a>) (<a href="#DiscountKind">DiscountKind</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewDiscountKind は、永続化されている code から値引き種別を解決します。
+既知でない code は ErrInvalidDiscountKind を返します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="DiscountKind.Code">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2309:2341#L52">Code</a>
+					<a class="permalink" href="#DiscountKind.Code">¶</a>
+					
+					
+				</h3>
+				<pre>func (k <a href="#DiscountKind">DiscountKind</a>) Code() <a href="../../../../builtin/#int">int</a></pre>
+				<p>Code は、永続化と外部公開に用いる業務キーを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="DiscountKind.IsZero">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2628:2663#L58">IsZero</a>
+					<a class="permalink" href="#DiscountKind.IsZero">¶</a>
+					
+					
+				</h3>
+				<pre>func (k <a href="#DiscountKind">DiscountKind</a>) IsZero() <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>IsZero は、未設定の値引き種別かどうかを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="DiscountKind.Name">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2499:2534#L55">Name</a>
+					<a class="permalink" href="#DiscountKind.Name">¶</a>
+					
+					
+				</h3>
+				<pre>func (k <a href="#DiscountKind">DiscountKind</a>) Name() <a href="../../../../builtin/#string">string</a></pre>
+				<p>Name は、値引き種別の名前を返します。外部へ種別を伝えるときは code ではなくこちらを用います。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="Line">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/line.go.html?s=506:598#L3">Line</a>
+				<a class="permalink" href="#Line">¶</a>
+				
+				
+			</h2>
+			<p>Line は、値引きの対象になりうる明細 1 件の観測値です。
+</p><p>クーポンはカート集約も購入集約も参照しないため、どちらの明細もこの形に写してから渡します
+（集約をまたぐ参照は識別子に限る。internal/domain/README.md の Aggregate Design）。
+商品カテゴリを持つのは、適用範囲がカテゴリで絞れるためです。
+
+			</p><pre>type Line struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewLine">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/line.go.html?s=1303:1342#L22">NewLine</a>
+					<a class="permalink" href="#NewLine">¶</a>
+					
+					
+				</h3>
+				<pre>func NewLine(attrs <a href="#LineAttributes">LineAttributes</a>) <a href="#Line">Line</a></pre>
+				<p>NewLine は、明細の観測値を組み立てます。検証は持ちません
+（理由は docs/spec/domain/coupon.md の Value Objects &gt; Line を参照）。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Line.CategoryID">func (Line) <a href="../../../../src/go-boilerplate/internal/domain/coupon/line.go.html?s=1681:1717#L34">CategoryID</a>
+					<a class="permalink" href="#Line.CategoryID">¶</a>
+					
+					
+				</h3>
+				<pre>func (l <a href="#Line">Line</a>) CategoryID() <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>CategoryID は、明細が指す商品の属する商品カテゴリの ID を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Line.ProductID">func (Line) <a href="../../../../src/go-boilerplate/internal/domain/coupon/line.go.html?s=1524:1559#L31">ProductID</a>
+					<a class="permalink" href="#Line.ProductID">¶</a>
+					
+					
+				</h3>
+				<pre>func (l <a href="#Line">Line</a>) ProductID() <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>ProductID は、明細が指す商品の ID を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Line.Subtotal">func (Line) <a href="../../../../src/go-boilerplate/internal/domain/coupon/line.go.html?s=1795:1835#L37">Subtotal</a>
+					<a class="permalink" href="#Line.Subtotal">¶</a>
+					
+					
+				</h3>
+				<pre>func (l <a href="#Line">Line</a>) Subtotal() <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a></pre>
+				<p>Subtotal は、明細の小計を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="LineAttributes">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/line.go.html?s=790:1133#L11">LineAttributes</a>
+				<a class="permalink" href="#LineAttributes">¶</a>
+				
+				
+			</h2>
+			<p>LineAttributes は、明細の観測値一式です。productID と categoryID が同型のため構造体で受けます
+（基準は docs/rules.md の Function Signature Rules）。
+
+			</p><pre>type LineAttributes struct {
+<span id="LineAttributes.ProductID"></span>    <span class="comment">// ProductID は、明細が指す商品です。</span>
+    ProductID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="LineAttributes.CategoryID"></span>    <span class="comment">// CategoryID は、その商品が属する商品カテゴリです。</span>
+    CategoryID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="LineAttributes.Subtotal"></span>    <span class="comment">// Subtotal は、明細の小計（単価 × 数量）です。価格スケールの十進量で、丸めません。</span>
+    Subtotal <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Repository">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_repository.go.html?s=302:1258#L2">Repository</a>
+				<a class="permalink" href="#Repository">¶</a>
+				
+				
+			</h2>
+			<p>Repository は、クーポンの永続化操作を定義するドメインリポジトリインターフェースです。
+
+			</p><pre>type Repository interface {
+    <span class="comment">// FindByUserID は、指定利用者が保有するクーポンを発行日時の新しい順で返します。</span>
+    <span class="comment">// 使用済み・失効済みも含みます。1 枚も持たない場合は空を返します。</span>
+    FindByUserID(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, userID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#Coupons">Coupons</a>, <a href="../../../../builtin/#error">error</a>)
+    <span class="comment">// LockByID は、引き換えのために ID からクーポンを取得します。存在しない場合は NotFound を返します。</span>
+    <span class="comment">// 同一クーポンへの並行更新は、先行する更新が終わるまで待機したうえで最新の状態を取得します。</span>
+    LockByID(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (*<a href="#Coupon">Coupon</a>, <a href="../../../../builtin/#error">error</a>)
+    <span class="comment">// UpdateUsed は、クーポンを使用済みにします。対象は LockByID で取得し [Coupon.Redeem] で</span>
+    <span class="comment">// 検証済みです。他の書き手が先に消費していた場合は ErrUsedConcurrently を返します。</span>
+    UpdateUsed(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, usedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>) <a href="../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Scope">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=1408:1601#L28">Scope</a>
+				<a class="permalink" href="#Scope">¶</a>
+				
+				
+			</h2>
+			<p>Scope は、値引きの対象になる明細の範囲を表す値オブジェクトです。
+</p><p>対象は商品カテゴリ ID または商品 ID で名指しします。クーポンは商品集約もカテゴリ集約も参照せず、
+識別子だけを持ちます（集約をまたぐ参照は識別子に限る。internal/domain/README.md の Aggregate Design）。
+
+			</p><pre>type Scope struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewAllScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2673:2697#L60">NewAllScope</a>
+					<a class="permalink" href="#NewAllScope">¶</a>
+					
+					
+				</h3>
+				<pre>func NewAllScope() <a href="#Scope">Scope</a></pre>
+				<p>NewAllScope は、対象を絞らない適用範囲を生成します。
+
+				
+				
+			
+				
+				</p><h3 id="NewCategoryScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2903:2961#L64">NewCategoryScope</a>
+					<a class="permalink" href="#NewCategoryScope">¶</a>
+					
+					
+				</h3>
+				<pre>func NewCategoryScope(categoryID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#Scope">Scope</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewCategoryScope は、商品カテゴリで絞る適用範囲を生成します。
+categoryID が未設定の場合は ErrInvalidScopeTarget を返します。
+
+				
+				
+			
+				
+				</p><h3 id="NewProductScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=3316:3372#L73">NewProductScope</a>
+					<a class="permalink" href="#NewProductScope">¶</a>
+					
+					
+				</h3>
+				<pre>func NewProductScope(productID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#Scope">Scope</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewProductScope は、商品で絞る適用範囲を生成します。
+productID が未設定の場合は ErrInvalidScopeTarget を返します。
+
+				
+				
+			
+				
+				</p><h3 id="ReconstructScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=3788:3861#L82">ReconstructScope</a>
+					<a class="permalink" href="#ReconstructScope">¶</a>
+					
+					
+				</h3>
+				<pre>func ReconstructScope(kind <a href="#ScopeKind">ScopeKind</a>, targetID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#Scope">Scope</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>ReconstructScope は、永続化されている種別と対象 ID から適用範囲を再構築します。
+検証は生成時と同一です。全体の適用範囲は対象 ID を持ってはなりません。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Scope.Covers">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=5377:5414#L118">Covers</a>
+					<a class="permalink" href="#Scope.Covers">¶</a>
+					
+					
+				</h3>
+				<pre>func (s <a href="#Scope">Scope</a>) Covers(line <a href="#Line">Line</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>Covers は、明細がこの適用範囲に入るかどうかを返します。
+</p><p>「どの明細が対象か」の定義はこのメソッドが持ちます。全体はすべての明細を対象とし、
+カテゴリ限定は明細の商品カテゴリが、商品限定は明細の商品が、それぞれ対象と一致するときだけ対象です。
+未設定の適用範囲はどの明細も対象にしません。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Scope.IsZero">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=4883:4911#L111">IsZero</a>
+					<a class="permalink" href="#Scope.IsZero">¶</a>
+					
+					
+				</h3>
+				<pre>func (s <a href="#Scope">Scope</a>) IsZero() <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>IsZero は、未設定の適用範囲かどうかを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Scope.Kind">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=4580:4611#L105">Kind</a>
+					<a class="permalink" href="#Scope.Kind">¶</a>
+					
+					
+				</h3>
+				<pre>func (s <a href="#Scope">Scope</a>) Kind() <a href="#ScopeKind">ScopeKind</a></pre>
+				<p>Kind は、適用範囲の決まり方を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Scope.TargetID">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=4742:4778#L108">TargetID</a>
+					<a class="permalink" href="#Scope.TargetID">¶</a>
+					
+					
+				</h3>
+				<pre>func (s <a href="#Scope">Scope</a>) TargetID() *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>TargetID は、範囲を絞る対象の識別子を返します。全体の適用範囲では nil です。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="ScopeKind">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=977:1025#L19">ScopeKind</a>
+				<a class="permalink" href="#ScopeKind">¶</a>
+				
+				
+			</h2>
+			<p>ScopeKind は、適用範囲の決まり方を表す値オブジェクトです。code の扱いは <a href="#DiscountKind">DiscountKind</a> と同じです。
+
+			</p><pre>type ScopeKind struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewScopeKind">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=1981:2027#L41">NewScopeKind</a>
+					<a class="permalink" href="#NewScopeKind">¶</a>
+					
+					
+				</h3>
+				<pre>func NewScopeKind(code <a href="../../../../builtin/#int">int</a>) (<a href="#ScopeKind">ScopeKind</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewScopeKind は、永続化されている code から適用範囲種別を解決します。
+既知でない code は ErrInvalidScopeKind を返します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="ScopeKind.Code">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2302:2331#L51">Code</a>
+					<a class="permalink" href="#ScopeKind.Code">¶</a>
+					
+					
+				</h3>
+				<pre>func (k <a href="#ScopeKind">ScopeKind</a>) Code() <a href="../../../../builtin/#int">int</a></pre>
+				<p>Code は、永続化と外部公開に用いる業務キーを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="ScopeKind.IsZero">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2540:2572#L57">IsZero</a>
+					<a class="permalink" href="#ScopeKind.IsZero">¶</a>
+					
+					
+				</h3>
+				<pre>func (k <a href="#ScopeKind">ScopeKind</a>) IsZero() <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>IsZero は、未設定の適用範囲種別かどうかを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="ScopeKind.Name">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2411:2443#L54">Name</a>
+					<a class="permalink" href="#ScopeKind.Name">¶</a>
+					
+					
+				</h3>
+				<pre>func (k <a href="#ScopeKind">ScopeKind</a>) Name() <a href="../../../../builtin/#string">string</a></pre>
+				<p>Name は、適用範囲種別の名前を返します。
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		</p><h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

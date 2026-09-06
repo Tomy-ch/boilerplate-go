@@ -1,7 +1,5 @@
 # pkg
 
-English | [日本語](README.ja.md)
-
 `pkg/` is the directory for **shared utility packages** used across the entire application.
 
 ## Policy

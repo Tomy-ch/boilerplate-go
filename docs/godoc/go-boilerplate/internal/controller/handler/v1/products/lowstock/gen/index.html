@@ -396,7 +396,7 @@ including any per-operation middleware.
 		
 			
 			
-			</p><h2 id="BadRequest400">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=4576:4610#L122">BadRequest400</a>
+			</p><h2 id="BadRequest400">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5119:5153#L127">BadRequest400</a>
 				<a class="permalink" href="#BadRequest400">¶</a>
 				
 				
@@ -515,7 +515,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="Forbidden403">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=4799:4832#L125">Forbidden403</a>
+			<h2 id="Forbidden403">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5342:5375#L130">Forbidden403</a>
 				<a class="permalink" href="#Forbidden403">¶</a>
 				
 				
@@ -810,7 +810,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="GetProductsLowStockParams">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5853:6065#L140">GetProductsLowStockParams</a>
+			<h2 id="GetProductsLowStockParams">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=6396:6608#L145">GetProductsLowStockParams</a>
 				<a class="permalink" href="#GetProductsLowStockParams">¶</a>
 				
 				
@@ -886,7 +886,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="InternalServerError500">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5031:5074#L128">InternalServerError500</a>
+			<h2 id="InternalServerError500">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5574:5617#L133">InternalServerError500</a>
 				<a class="permalink" href="#InternalServerError500">¶</a>
 				
 				
@@ -931,7 +931,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="LowStockLimitParam">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=4357:4386#L119">LowStockLimitParam</a>
+			<h2 id="LowStockLimitParam">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=4900:4929#L124">LowStockLimitParam</a>
 				<a class="permalink" href="#LowStockLimitParam">¶</a>
 				
 				
@@ -954,7 +954,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="MethodNotAllowed405">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5270:5310#L131">MethodNotAllowed405</a>
+			<h2 id="MethodNotAllowed405">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5813:5853#L136">MethodNotAllowed405</a>
 				<a class="permalink" href="#MethodNotAllowed405">¶</a>
 				
 				
@@ -1095,7 +1095,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ProductResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=2105:4012#L54">ProductResponse</a>
+			<h2 id="ProductResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=2105:4555#L54">ProductResponse</a>
 				<a class="permalink" href="#ProductResponse">¶</a>
 				
 				
@@ -1110,6 +1110,11 @@ either of them for path registration
     <span class="comment">//</span>
     <span class="comment">// Example: ノイズキャンセリング対応の Bluetooth イヤホン</span>
     Description *<a href="../../../../../../../../builtin/#string">string</a> `json:&#34;description&#34;`
+
+<span id="ProductResponse.DiscontinuedAt"></span>    <span class="comment">// DiscontinuedAt 廃番日時。廃番でない場合は null です。廃番は取り消せず、廃番の商品は公開日時を持てません （publishedAt は必ず null になります）。 廃番にする操作は日時を受け取らずサーバーの時刻で確定するため、**未来の日時にはなりません**。 したがって廃番かどうかは現在時刻との比較ではなく null かどうかで判定できます。</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: 2026-01-01T00:00:00Z</span>
+    DiscontinuedAt *<a href="../../../../../../../../time/">time</a>.<a href="../../../../../../../../time/#Time">Time</a> `json:&#34;discontinuedAt&#34;`
 
 <span id="ProductResponse.Id"></span>    <span class="comment">// Id 商品ID</span>
     <span class="comment">//</span>
@@ -1168,7 +1173,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ProductStatusRef">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=4077:4321#L106">ProductStatusRef</a>
+			<h2 id="ProductStatusRef">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=4620:4864#L111">ProductStatusRef</a>
 				<a class="permalink" href="#ProductStatusRef">¶</a>
 				
 				
@@ -1313,7 +1318,7 @@ either of them for path registration
 		
 			
 			
-			</p><h2 id="ServiceUnavailable503">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5508:5550#L134">ServiceUnavailable503</a>
+			</p><h2 id="ServiceUnavailable503">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=6051:6093#L139">ServiceUnavailable503</a>
 				<a class="permalink" href="#ServiceUnavailable503">¶</a>
 				
 				
@@ -1429,7 +1434,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="Unauthorized401">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=5742:5778#L137">Unauthorized401</a>
+			<h2 id="Unauthorized401">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/gen/type.gen.go.html?s=6285:6321#L142">Unauthorized401</a>
 				<a class="permalink" href="#Unauthorized401">¶</a>
 				
 				

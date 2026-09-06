@@ -113,133 +113,136 @@
 <span id="L56" class="ln">    56  </span>	Window timewindow.Window
 <span id="L57" class="ln">    57  </span>	<span class="comment">// StatusCodes は、購入ステータスの業務キーによる絞り込みです。空の場合は全ステータスが対象です。</span>
 <span id="L58" class="ln">    58  </span>	StatusCodes []int16
-<span id="L59" class="ln">    59  </span>	<span class="comment">// IncludeOtherUsers は、他ユーザーの購入も母集団に含める場合に true です。指定は admin のみが通ります。</span>
-<span id="L60" class="ln">    60  </span>	IncludeOtherUsers bool
-<span id="L61" class="ln">    61  </span>}
-<span id="L62" class="ln">    62  </span>
-<span id="L63" class="ln">    63  </span><span class="comment">// GetPurchases は、既定では所有権の絞り込みを QueryService に委ね、usecase 側では所有者を再判定しません。</span>
-<span id="L64" class="ln">    64  </span><span class="comment">// 対象が無い場合は QueryService が空一覧を返すため、他ユーザーの購入が混ざる経路は存在しません</span>
-<span id="L65" class="ln">    65  </span><span class="comment">// （母集団の切り替え条件は Usecase.GetPurchases のインターフェース doc を参照）。</span>
-<span id="L66" class="ln">    66  </span><span class="comment">// 母集団が変わっても並び順の軸は変わらないため、カーソルの解釈は共通です。</span>
-<span id="L67" class="ln">    67  </span><span class="comment">// 注文日時の対象期間は params.Window をそのまま QueryService へ渡し、境界を持たない側には条件を付けません。</span>
-<span id="L68" class="ln">    68  </span>func (u *usecase) GetPurchases(
-<span id="L69" class="ln">    69  </span>	ctx context.Context, authn *auth.Authn, params ListPurchasesParams,
-<span id="L70" class="ln">    70  </span>) (*PurchaseListView, error) {
-<span id="L71" class="ln">    71  </span>	if params.Cursor == nil {
-<span id="L72" class="ln">    72  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;cursor must not be nil&#34;)
-<span id="L73" class="ln">    73  </span>	}
-<span id="L74" class="ln">    74  </span>	if authn == nil {
-<span id="L75" class="ln">    75  </span>		return nil, apperror.ErrUnauthenticated
-<span id="L76" class="ln">    76  </span>	}
-<span id="L77" class="ln">    77  </span>
-<span id="L78" class="ln">    78  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L79" class="ln">    79  </span>	defer endSpan()
-<span id="L80" class="ln">    80  </span>
-<span id="L81" class="ln">    81  </span>	cursor := params.Cursor
-<span id="L82" class="ln">    82  </span>	after, err := decodePurchaseCursor(cursor)
-<span id="L83" class="ln">    83  </span>	if err != nil {
-<span id="L84" class="ln">    84  </span>		return nil, err
-<span id="L85" class="ln">    85  </span>	}
-<span id="L86" class="ln">    86  </span>
-<span id="L87" class="ln">    87  </span>	feedParams := query.ListFeedParams{
-<span id="L88" class="ln">    88  </span>		Limit:       cursor.Limit32() + 1,
-<span id="L89" class="ln">    89  </span>		Window:      params.Window,
-<span id="L90" class="ln">    90  </span>		StatusCodes: params.StatusCodes,
-<span id="L91" class="ln">    91  </span>	}
-<span id="L92" class="ln">    92  </span>	if after != nil {
-<span id="L93" class="ln">    93  </span>		feedParams.AfterOrderedAt = &amp;after.orderedAt
-<span id="L94" class="ln">    94  </span>		feedParams.AfterID = &amp;after.id
-<span id="L95" class="ln">    95  </span>	}
-<span id="L96" class="ln">    96  </span>
-<span id="L97" class="ln">    97  </span>	feed, err := u.findFeedPage(ctx, authn, params.IncludeOtherUsers, feedParams)
-<span id="L98" class="ln">    98  </span>	if err != nil {
-<span id="L99" class="ln">    99  </span>		return nil, err
-<span id="L100" class="ln">   100  </span>	}
-<span id="L101" class="ln">   101  </span>
-<span id="L102" class="ln">   102  </span>	limit := cursor.Limit()
-<span id="L103" class="ln">   103  </span>	hasNext := len(feed) &gt; limit
-<span id="L104" class="ln">   104  </span>	if hasNext {
-<span id="L105" class="ln">   105  </span>		feed = feed[:limit]
-<span id="L106" class="ln">   106  </span>	}
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span>	items := make([]PurchaseSummaryView, len(feed))
-<span id="L109" class="ln">   109  </span>	for i, f := range feed {
-<span id="L110" class="ln">   110  </span>		items[i] = PurchaseSummaryView{
-<span id="L111" class="ln">   111  </span>			Code:          f.Code,
-<span id="L112" class="ln">   112  </span>			TotalAmount:   f.TotalAmount,
-<span id="L113" class="ln">   113  </span>			StatusID:      f.StatusID,
-<span id="L114" class="ln">   114  </span>			StatusCode:    f.StatusCode,
-<span id="L115" class="ln">   115  </span>			StatusName:    f.StatusName,
-<span id="L116" class="ln">   116  </span>			FirstItemName: f.FirstItemName,
-<span id="L117" class="ln">   117  </span>			ItemCount:     f.ItemCount,
-<span id="L118" class="ln">   118  </span>			OrderedAt:     f.OrderedAt,
-<span id="L119" class="ln">   119  </span>		}
-<span id="L120" class="ln">   120  </span>	}
-<span id="L121" class="ln">   121  </span>
-<span id="L122" class="ln">   122  </span>	var nextCursor *string
-<span id="L123" class="ln">   123  </span>	if hasNext &amp;&amp; len(feed) &gt; 0 {
-<span id="L124" class="ln">   124  </span>		<span class="comment">// len 判定は防御的な安全弁。hasNext は len &gt; limit なので limit &gt;= 1 の下では冗長だが、</span>
-<span id="L125" class="ln">   125  </span>		<span class="comment">// limit の下限保証は paging.NewCursor 依存であり、ゼロ値 Cursor 混入時の feed[-1] panic を防ぐ。</span>
-<span id="L126" class="ln">   126  </span>		encoded := encodePurchaseCursor(feed[len(feed)-1])
-<span id="L127" class="ln">   127  </span>		nextCursor = &amp;encoded
-<span id="L128" class="ln">   128  </span>	}
-<span id="L129" class="ln">   129  </span>
-<span id="L130" class="ln">   130  </span>	return &amp;PurchaseListView{Items: items, NextCursor: nextCursor}, nil
-<span id="L131" class="ln">   131  </span>}
+<span id="L59" class="ln">    59  </span>	<span class="comment">// ProductID は、指定商品を含む購入だけに絞る条件です。nil の場合は絞り込みません。</span>
+<span id="L60" class="ln">    60  </span>	ProductID *uuid.UUID
+<span id="L61" class="ln">    61  </span>	<span class="comment">// IncludeOtherUsers は、他ユーザーの購入も母集団に含める場合に true です。指定は admin のみが通ります。</span>
+<span id="L62" class="ln">    62  </span>	IncludeOtherUsers bool
+<span id="L63" class="ln">    63  </span>}
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span><span class="comment">// GetPurchases は、既定では所有権の絞り込みを QueryService に委ね、usecase 側では所有者を再判定しません。</span>
+<span id="L66" class="ln">    66  </span><span class="comment">// 対象が無い場合は QueryService が空一覧を返すため、他ユーザーの購入が混ざる経路は存在しません</span>
+<span id="L67" class="ln">    67  </span><span class="comment">// （母集団の切り替え条件は Usecase.GetPurchases のインターフェース doc を参照）。</span>
+<span id="L68" class="ln">    68  </span><span class="comment">// 母集団が変わっても並び順の軸は変わらないため、カーソルの解釈は共通です。</span>
+<span id="L69" class="ln">    69  </span><span class="comment">// 注文日時の対象期間は params.Window をそのまま QueryService へ渡し、境界を持たない側には条件を付けません。</span>
+<span id="L70" class="ln">    70  </span>func (u *usecase) GetPurchases(
+<span id="L71" class="ln">    71  </span>	ctx context.Context, authn *auth.Authn, params ListPurchasesParams,
+<span id="L72" class="ln">    72  </span>) (*PurchaseListView, error) {
+<span id="L73" class="ln">    73  </span>	if params.Cursor == nil {
+<span id="L74" class="ln">    74  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;cursor must not be nil&#34;)
+<span id="L75" class="ln">    75  </span>	}
+<span id="L76" class="ln">    76  </span>	if authn == nil {
+<span id="L77" class="ln">    77  </span>		return nil, apperror.ErrUnauthenticated
+<span id="L78" class="ln">    78  </span>	}
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L81" class="ln">    81  </span>	defer endSpan()
+<span id="L82" class="ln">    82  </span>
+<span id="L83" class="ln">    83  </span>	cursor := params.Cursor
+<span id="L84" class="ln">    84  </span>	after, err := decodePurchaseCursor(cursor)
+<span id="L85" class="ln">    85  </span>	if err != nil {
+<span id="L86" class="ln">    86  </span>		return nil, err
+<span id="L87" class="ln">    87  </span>	}
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span>	feedParams := query.ListFeedParams{
+<span id="L90" class="ln">    90  </span>		Limit:       cursor.Limit32() + 1,
+<span id="L91" class="ln">    91  </span>		Window:      params.Window,
+<span id="L92" class="ln">    92  </span>		StatusCodes: params.StatusCodes,
+<span id="L93" class="ln">    93  </span>		ProductID:   params.ProductID,
+<span id="L94" class="ln">    94  </span>	}
+<span id="L95" class="ln">    95  </span>	if after != nil {
+<span id="L96" class="ln">    96  </span>		feedParams.AfterOrderedAt = &amp;after.orderedAt
+<span id="L97" class="ln">    97  </span>		feedParams.AfterID = &amp;after.id
+<span id="L98" class="ln">    98  </span>	}
+<span id="L99" class="ln">    99  </span>
+<span id="L100" class="ln">   100  </span>	feed, err := u.findFeedPage(ctx, authn, params.IncludeOtherUsers, feedParams)
+<span id="L101" class="ln">   101  </span>	if err != nil {
+<span id="L102" class="ln">   102  </span>		return nil, err
+<span id="L103" class="ln">   103  </span>	}
+<span id="L104" class="ln">   104  </span>
+<span id="L105" class="ln">   105  </span>	limit := cursor.Limit()
+<span id="L106" class="ln">   106  </span>	hasNext := len(feed) &gt; limit
+<span id="L107" class="ln">   107  </span>	if hasNext {
+<span id="L108" class="ln">   108  </span>		feed = feed[:limit]
+<span id="L109" class="ln">   109  </span>	}
+<span id="L110" class="ln">   110  </span>
+<span id="L111" class="ln">   111  </span>	items := make([]PurchaseSummaryView, len(feed))
+<span id="L112" class="ln">   112  </span>	for i, f := range feed {
+<span id="L113" class="ln">   113  </span>		items[i] = PurchaseSummaryView{
+<span id="L114" class="ln">   114  </span>			Code:          f.Code,
+<span id="L115" class="ln">   115  </span>			TotalAmount:   f.TotalAmount,
+<span id="L116" class="ln">   116  </span>			StatusID:      f.StatusID,
+<span id="L117" class="ln">   117  </span>			StatusCode:    f.StatusCode,
+<span id="L118" class="ln">   118  </span>			StatusName:    f.StatusName,
+<span id="L119" class="ln">   119  </span>			FirstItemName: f.FirstItemName,
+<span id="L120" class="ln">   120  </span>			ItemCount:     f.ItemCount,
+<span id="L121" class="ln">   121  </span>			OrderedAt:     f.OrderedAt,
+<span id="L122" class="ln">   122  </span>		}
+<span id="L123" class="ln">   123  </span>	}
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>	var nextCursor *string
+<span id="L126" class="ln">   126  </span>	if hasNext &amp;&amp; len(feed) &gt; 0 {
+<span id="L127" class="ln">   127  </span>		<span class="comment">// len 判定は防御的な安全弁。hasNext は len &gt; limit なので limit &gt;= 1 の下では冗長だが、</span>
+<span id="L128" class="ln">   128  </span>		<span class="comment">// limit の下限保証は paging.NewCursor 依存であり、ゼロ値 Cursor 混入時の feed[-1] panic を防ぐ。</span>
+<span id="L129" class="ln">   129  </span>		encoded := encodePurchaseCursor(feed[len(feed)-1])
+<span id="L130" class="ln">   130  </span>		nextCursor = &amp;encoded
+<span id="L131" class="ln">   131  </span>	}
 <span id="L132" class="ln">   132  </span>
-<span id="L133" class="ln">   133  </span><span class="comment">// findFeedPage は、可視範囲に応じた読み取りでフィードの 1 ページを取得します。既定（自分の購入のみ）は</span>
-<span id="L134" class="ln">   134  </span><span class="comment">// 認証済みであること以上を要求せず、他ユーザーを含める指定のときだけ admin の能力を要求します</span>
-<span id="L135" class="ln">   135  </span><span class="comment">// （設計意図: docs/spec/purchase/usecase.md § GET 一覧）。</span>
-<span id="L136" class="ln">   136  </span>func (u *usecase) findFeedPage(
-<span id="L137" class="ln">   137  </span>	ctx context.Context, authn *auth.Authn, includeOtherUsers bool, params query.ListFeedParams,
-<span id="L138" class="ln">   138  </span>) ([]query.PurchaseFeedReadModel, error) {
-<span id="L139" class="ln">   139  </span>	if !includeOtherUsers {
-<span id="L140" class="ln">   140  </span>		userID, err := authn.UserID()
-<span id="L141" class="ln">   141  </span>		if err != nil {
-<span id="L142" class="ln">   142  </span>			return nil, xerrors.Wrap(err, &#34;failed to get user ID from authn&#34;)
-<span id="L143" class="ln">   143  </span>		}
-<span id="L144" class="ln">   144  </span>		return u.feedQS.FindFeedByUserID(ctx, userID, params)
-<span id="L145" class="ln">   145  </span>	}
-<span id="L146" class="ln">   146  </span>
-<span id="L147" class="ln">   147  </span>	if err := u.authorizer.Authorize(
-<span id="L148" class="ln">   148  </span>		ctx, authn, authz.ActionPurchaseReadAll, authz.NewResource(&#34;purchase&#34;, nil),
-<span id="L149" class="ln">   149  </span>	); err != nil {
-<span id="L150" class="ln">   150  </span>		return nil, err
-<span id="L151" class="ln">   151  </span>	}
-<span id="L152" class="ln">   152  </span>
-<span id="L153" class="ln">   153  </span>	return u.feedQS.FindFeedAll(ctx, params)
-<span id="L154" class="ln">   154  </span>}
+<span id="L133" class="ln">   133  </span>	return &amp;PurchaseListView{Items: items, NextCursor: nextCursor}, nil
+<span id="L134" class="ln">   134  </span>}
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span><span class="comment">// findFeedPage は、可視範囲に応じた読み取りでフィードの 1 ページを取得します。既定（自分の購入のみ）は</span>
+<span id="L137" class="ln">   137  </span><span class="comment">// 認証済みであること以上を要求せず、他ユーザーを含める指定のときだけ admin の能力を要求します</span>
+<span id="L138" class="ln">   138  </span><span class="comment">// （設計意図: docs/spec/usecase/purchase.md § GET 一覧）。</span>
+<span id="L139" class="ln">   139  </span>func (u *usecase) findFeedPage(
+<span id="L140" class="ln">   140  </span>	ctx context.Context, authn *auth.Authn, includeOtherUsers bool, params query.ListFeedParams,
+<span id="L141" class="ln">   141  </span>) ([]query.PurchaseFeedReadModel, error) {
+<span id="L142" class="ln">   142  </span>	if !includeOtherUsers {
+<span id="L143" class="ln">   143  </span>		userID, err := authn.UserID()
+<span id="L144" class="ln">   144  </span>		if err != nil {
+<span id="L145" class="ln">   145  </span>			return nil, xerrors.Wrap(err, &#34;failed to get user ID from authn&#34;)
+<span id="L146" class="ln">   146  </span>		}
+<span id="L147" class="ln">   147  </span>		return u.feedQS.FindFeedByUserID(ctx, userID, params)
+<span id="L148" class="ln">   148  </span>	}
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span>	if err := u.authorizer.Authorize(
+<span id="L151" class="ln">   151  </span>		ctx, authn, authz.ActionPurchaseReadAll, authz.NewResource(&#34;purchase&#34;, nil),
+<span id="L152" class="ln">   152  </span>	); err != nil {
+<span id="L153" class="ln">   153  </span>		return nil, err
+<span id="L154" class="ln">   154  </span>	}
 <span id="L155" class="ln">   155  </span>
-<span id="L156" class="ln">   156  </span><span class="comment">// decodePurchaseCursor は、cursor の不透明キー列を keyset 境界（purchaseCursor）へ解釈します。</span>
-<span id="L157" class="ln">   157  </span><span class="comment">// 先頭ページ（カーソル無し）の場合は nil を返します。キーの個数・型が不正な場合は ErrInvalidArgument を返します。</span>
-<span id="L158" class="ln">   158  </span>func decodePurchaseCursor(cursor *paging.Cursor) (*purchaseCursor, error) {
-<span id="L159" class="ln">   159  </span>	if !cursor.HasCursor() {
-<span id="L160" class="ln">   160  </span>		return nil, nil <span class="comment">//nolint:nilnil // 先頭ページは境界なし（nil）を正常値として返す</span>
-<span id="L161" class="ln">   161  </span>	}
-<span id="L162" class="ln">   162  </span>
-<span id="L163" class="ln">   163  </span>	keys := cursor.Keys()
-<span id="L164" class="ln">   164  </span>	if len(keys) != purchaseCursorKeyCount {
-<span id="L165" class="ln">   165  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, fmt.Sprintf(&#34;invalid cursor: expected %d keys&#34;, purchaseCursorKeyCount))
-<span id="L166" class="ln">   166  </span>	}
-<span id="L167" class="ln">   167  </span>
-<span id="L168" class="ln">   168  </span>	orderedAt, err := time.Parse(time.RFC3339Nano, keys[0])
-<span id="L169" class="ln">   169  </span>	if err != nil {
-<span id="L170" class="ln">   170  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;invalid cursor: ordered_at is not RFC3339Nano&#34;)
-<span id="L171" class="ln">   171  </span>	}
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>	id, err := uuid.Parse(keys[1])
-<span id="L174" class="ln">   174  </span>	if err != nil {
-<span id="L175" class="ln">   175  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;invalid cursor: id is not a valid UUID&#34;)
-<span id="L176" class="ln">   176  </span>	}
-<span id="L177" class="ln">   177  </span>
-<span id="L178" class="ln">   178  </span>	return &amp;purchaseCursor{orderedAt: orderedAt, id: id}, nil
-<span id="L179" class="ln">   179  </span>}
+<span id="L156" class="ln">   156  </span>	return u.feedQS.FindFeedAll(ctx, params)
+<span id="L157" class="ln">   157  </span>}
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span><span class="comment">// decodePurchaseCursor は、cursor の不透明キー列を keyset 境界（purchaseCursor）へ解釈します。</span>
+<span id="L160" class="ln">   160  </span><span class="comment">// 先頭ページ（カーソル無し）の場合は nil を返します。キーの個数・型が不正な場合は ErrInvalidArgument を返します。</span>
+<span id="L161" class="ln">   161  </span>func decodePurchaseCursor(cursor *paging.Cursor) (*purchaseCursor, error) {
+<span id="L162" class="ln">   162  </span>	if !cursor.HasCursor() {
+<span id="L163" class="ln">   163  </span>		return nil, nil <span class="comment">//nolint:nilnil // 先頭ページは境界なし（nil）を正常値として返す</span>
+<span id="L164" class="ln">   164  </span>	}
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>	keys := cursor.Keys()
+<span id="L167" class="ln">   167  </span>	if len(keys) != purchaseCursorKeyCount {
+<span id="L168" class="ln">   168  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, fmt.Sprintf(&#34;invalid cursor: expected %d keys&#34;, purchaseCursorKeyCount))
+<span id="L169" class="ln">   169  </span>	}
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>	orderedAt, err := time.Parse(time.RFC3339Nano, keys[0])
+<span id="L172" class="ln">   172  </span>	if err != nil {
+<span id="L173" class="ln">   173  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;invalid cursor: ordered_at is not RFC3339Nano&#34;)
+<span id="L174" class="ln">   174  </span>	}
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>	id, err := uuid.Parse(keys[1])
+<span id="L177" class="ln">   177  </span>	if err != nil {
+<span id="L178" class="ln">   178  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;invalid cursor: id is not a valid UUID&#34;)
+<span id="L179" class="ln">   179  </span>	}
 <span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span><span class="comment">// encodePurchaseCursor は、現在ページ末尾のソートキー（注文日時, ID）から次ページ用の不透明カーソルを生成します。</span>
-<span id="L182" class="ln">   182  </span>func encodePurchaseCursor(last query.PurchaseFeedReadModel) string {
-<span id="L183" class="ln">   183  </span>	return paging.EncodeCursor(last.OrderedAt.Format(time.RFC3339Nano), last.ID.String())
-<span id="L184" class="ln">   184  </span>}
-<span id="L185" class="ln">   185  </span>
+<span id="L181" class="ln">   181  </span>	return &amp;purchaseCursor{orderedAt: orderedAt, id: id}, nil
+<span id="L182" class="ln">   182  </span>}
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span><span class="comment">// encodePurchaseCursor は、現在ページ末尾のソートキー（注文日時, ID）から次ページ用の不透明カーソルを生成します。</span>
+<span id="L185" class="ln">   185  </span>func encodePurchaseCursor(last query.PurchaseFeedReadModel) string {
+<span id="L186" class="ln">   186  </span>	return paging.EncodeCursor(last.OrderedAt.Format(time.RFC3339Nano), last.ID.String())
+<span id="L187" class="ln">   187  </span>}
+<span id="L188" class="ln">   188  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/purchase/purchase_feed_usecase.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

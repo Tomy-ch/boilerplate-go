@@ -1,0 +1,109 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>coupon - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/domain">domain</a>/<a href="../../../../../src/go-boilerplate/internal/domain/coupon">coupon</a>/<span class="text-muted">error.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/domain/coupon">go-boilerplate/internal/domain/coupon</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package coupon
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L5" class="ln">     5  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L6" class="ln">     6  </span>)
+<span id="L7" class="ln">     7  </span>
+<span id="L8" class="ln">     8  </span>var (
+<span id="L9" class="ln">     9  </span>	errInvalid = xerrors.Wrap(apperror.ErrValidation, &#34;invalid coupon&#34;)
+<span id="L10" class="ln">    10  </span>	<span class="comment">// ErrInvalidID は、クーポン ID の検証に失敗した場合のエラーです。</span>
+<span id="L11" class="ln">    11  </span>	ErrInvalidID = xerrors.Wrap(errInvalid, &#34;id failed&#34;)
+<span id="L12" class="ln">    12  </span>	<span class="comment">// ErrInvalidUserID は、受給者のユーザー ID の検証に失敗した場合のエラーです。</span>
+<span id="L13" class="ln">    13  </span>	ErrInvalidUserID = xerrors.Wrap(errInvalid, &#34;userID failed&#34;)
+<span id="L14" class="ln">    14  </span>	<span class="comment">// ErrInvalidDiscountKind は、値引き種別の検証に失敗した場合のエラーです。</span>
+<span id="L15" class="ln">    15  </span>	ErrInvalidDiscountKind = xerrors.Wrap(errInvalid, &#34;discountKind failed&#34;)
+<span id="L16" class="ln">    16  </span>	<span class="comment">// ErrInvalidDiscountValue は、値引きの値の検証に失敗した場合のエラーです。</span>
+<span id="L17" class="ln">    17  </span>	ErrInvalidDiscountValue = xerrors.Wrap(errInvalid, &#34;discountValue failed&#34;)
+<span id="L18" class="ln">    18  </span>	<span class="comment">// ErrInvalidScopeKind は、適用範囲種別の検証に失敗した場合のエラーです。</span>
+<span id="L19" class="ln">    19  </span>	ErrInvalidScopeKind = xerrors.Wrap(errInvalid, &#34;scopeKind failed&#34;)
+<span id="L20" class="ln">    20  </span>	<span class="comment">// ErrInvalidScopeTarget は、適用範囲が絞る対象の検証に失敗した場合のエラーです。</span>
+<span id="L21" class="ln">    21  </span>	ErrInvalidScopeTarget = xerrors.Wrap(errInvalid, &#34;scopeTarget failed&#34;)
+<span id="L22" class="ln">    22  </span>	<span class="comment">// ErrInvalidDiscount は、値引きが未設定の場合のエラーです。</span>
+<span id="L23" class="ln">    23  </span>	ErrInvalidDiscount = xerrors.Wrap(errInvalid, &#34;discount is required&#34;)
+<span id="L24" class="ln">    24  </span>	<span class="comment">// ErrInvalidScope は、適用範囲が未設定の場合のエラーです。</span>
+<span id="L25" class="ln">    25  </span>	ErrInvalidScope = xerrors.Wrap(errInvalid, &#34;scope is required&#34;)
+<span id="L26" class="ln">    26  </span>	<span class="comment">// ErrInvalidExpiresAt は、有効期限の検証に失敗した場合のエラーです。</span>
+<span id="L27" class="ln">    27  </span>	ErrInvalidExpiresAt = xerrors.Wrap(errInvalid, &#34;expiresAt failed&#34;)
+<span id="L28" class="ln">    28  </span>	<span class="comment">// ErrInvalidIssuedAt は、発行日時の検証に失敗した場合のエラーです。</span>
+<span id="L29" class="ln">    29  </span>	ErrInvalidIssuedAt = xerrors.Wrap(errInvalid, &#34;issuedAt failed&#34;)
+<span id="L30" class="ln">    30  </span>	<span class="comment">// ErrAlreadyUsed は、使用済みのクーポンを引き換えようとした場合のエラーです。</span>
+<span id="L31" class="ln">    31  </span>	<span class="comment">// 同じ内容の再送でも時間の経過でも解消しません。</span>
+<span id="L32" class="ln">    32  </span>	ErrAlreadyUsed = xerrors.Wrap(errInvalid, &#34;coupon is already used&#34;)
+<span id="L33" class="ln">    33  </span>	<span class="comment">// ErrExpired は、失効したクーポンを引き換えようとした場合のエラーです。</span>
+<span id="L34" class="ln">    34  </span>	ErrExpired = xerrors.Wrap(errInvalid, &#34;coupon is expired&#34;)
+<span id="L35" class="ln">    35  </span>	<span class="comment">// ErrNotHeld は、その利用者が保有していないクーポンを指した場合のエラーです。</span>
+<span id="L36" class="ln">    36  </span>	<span class="comment">// 存在しないクーポンもこのエラーに畳みます。区別できると保有していないクーポンの存在が漏れるためです</span>
+<span id="L37" class="ln">    37  </span>	<span class="comment">// （docs/spec/usecase/purchase.md の CreatePurchase）。</span>
+<span id="L38" class="ln">    38  </span>	ErrNotHeld = xerrors.Wrap(errInvalid, &#34;coupon is not held by the user&#34;)
+<span id="L39" class="ln">    39  </span>	<span class="comment">// ErrUsedConcurrently は、引き換えの最中に他の書き手が同じクーポンを消費した場合のエラーです</span>
+<span id="L40" class="ln">    40  </span>	<span class="comment">// （到達条件は docs/spec/domain/coupon.md の Repository Methods &gt; UpdateUsed を参照）。</span>
+<span id="L41" class="ln">    41  </span>	ErrUsedConcurrently = xerrors.Wrap(apperror.ErrConflict, &#34;coupon was used concurrently&#34;)
+<span id="L42" class="ln">    42  </span>)
+<span id="L43" class="ln">    43  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/domain/coupon/error.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

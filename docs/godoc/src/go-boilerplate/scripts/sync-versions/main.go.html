@@ -286,134 +286,142 @@
 <span id="L229" class="ln">   229  </span>			&#34;docker/README.md (node image)&#34;, nodeImageRe, v.Node),
 <span id="L230" class="ln">   230  </span>		readmeRule(&#34;docker/README.md&#34;,
 <span id="L231" class="ln">   231  </span>			&#34;docker/README.md (python image)&#34;, pythonImageRe, v.Python),
-<span id="L232" class="ln">   232  </span>		readmeRule(&#34;docker/README.ja.md&#34;,
-<span id="L233" class="ln">   233  </span>			&#34;docker/README.ja.md (golang image)&#34;, golangImageRe, v.Go),
-<span id="L234" class="ln">   234  </span>		readmeRule(&#34;docker/README.ja.md&#34;,
-<span id="L235" class="ln">   235  </span>			&#34;docker/README.ja.md (node image)&#34;, nodeImageRe, v.Node),
-<span id="L236" class="ln">   236  </span>		readmeRule(&#34;docker/README.ja.md&#34;,
-<span id="L237" class="ln">   237  </span>			&#34;docker/README.ja.md (python image)&#34;, pythonImageRe, v.Python),
-<span id="L238" class="ln">   238  </span>		readmeRule(&#34;docker/server/README.md&#34;,
-<span id="L239" class="ln">   239  </span>			&#34;docker/server/README.md (golang image)&#34;, golangImageRe, v.Go),
-<span id="L240" class="ln">   240  </span>		readmeRule(&#34;docker/server/README.ja.md&#34;,
-<span id="L241" class="ln">   241  </span>			&#34;docker/server/README.ja.md (golang image)&#34;, golangImageRe, v.Go),
-<span id="L242" class="ln">   242  </span>		readmeRule(&#34;docker/tools/README.md&#34;,
-<span id="L243" class="ln">   243  </span>			&#34;docker/tools/README.md (golang image)&#34;, golangImageRe, v.Go),
-<span id="L244" class="ln">   244  </span>		readmeRule(&#34;docker/tools/README.md&#34;,
-<span id="L245" class="ln">   245  </span>			&#34;docker/tools/README.md (node image)&#34;, nodeImageRe, v.Node),
+<span id="L232" class="ln">   232  </span>		<span class="comment">// doc-pair:begin</span>
+<span id="L233" class="ln">   233  </span>		readmeRule(&#34;docker/README.ja.md&#34;,
+<span id="L234" class="ln">   234  </span>			&#34;docker/README.ja.md (golang image)&#34;, golangImageRe, v.Go),
+<span id="L235" class="ln">   235  </span>		readmeRule(&#34;docker/README.ja.md&#34;,
+<span id="L236" class="ln">   236  </span>			&#34;docker/README.ja.md (node image)&#34;, nodeImageRe, v.Node),
+<span id="L237" class="ln">   237  </span>		readmeRule(&#34;docker/README.ja.md&#34;,
+<span id="L238" class="ln">   238  </span>			&#34;docker/README.ja.md (python image)&#34;, pythonImageRe, v.Python),
+<span id="L239" class="ln">   239  </span>		<span class="comment">// doc-pair:end</span>
+<span id="L240" class="ln">   240  </span>		readmeRule(&#34;docker/server/README.md&#34;,
+<span id="L241" class="ln">   241  </span>			&#34;docker/server/README.md (golang image)&#34;, golangImageRe, v.Go),
+<span id="L242" class="ln">   242  </span>		<span class="comment">// doc-pair:begin</span>
+<span id="L243" class="ln">   243  </span>		readmeRule(&#34;docker/server/README.ja.md&#34;,
+<span id="L244" class="ln">   244  </span>			&#34;docker/server/README.ja.md (golang image)&#34;, golangImageRe, v.Go),
+<span id="L245" class="ln">   245  </span>		<span class="comment">// doc-pair:end</span>
 <span id="L246" class="ln">   246  </span>		readmeRule(&#34;docker/tools/README.md&#34;,
-<span id="L247" class="ln">   247  </span>			&#34;docker/tools/README.md (python image)&#34;, pythonImageRe, v.Python),
-<span id="L248" class="ln">   248  </span>		readmeRule(&#34;docker/tools/README.ja.md&#34;,
-<span id="L249" class="ln">   249  </span>			&#34;docker/tools/README.ja.md (golang image)&#34;, golangImageRe, v.Go),
-<span id="L250" class="ln">   250  </span>		readmeRule(&#34;docker/tools/README.ja.md&#34;,
-<span id="L251" class="ln">   251  </span>			&#34;docker/tools/README.ja.md (node image)&#34;, nodeImageRe, v.Node),
-<span id="L252" class="ln">   252  </span>		readmeRule(&#34;docker/tools/README.ja.md&#34;,
-<span id="L253" class="ln">   253  </span>			&#34;docker/tools/README.ja.md (python image)&#34;, pythonImageRe, v.Python),
-<span id="L254" class="ln">   254  </span>		dockerfileRule(&#34;docker/tools/Dockerfile&#34;,
-<span id="L255" class="ln">   255  </span>			&#34;docker/tools/Dockerfile (mise version)&#34;, miseDockerfileRe, v.Mise, 1),
-<span id="L256" class="ln">   256  </span>		dockerfileRule(&#34;docker/server/Dockerfile&#34;,
-<span id="L257" class="ln">   257  </span>			&#34;docker/server/Dockerfile (mise version)&#34;, miseDockerfileRe, v.Mise, 1),
-<span id="L258" class="ln">   258  </span>		dockerfileRule(&#34;docker-compose.yaml&#34;,
-<span id="L259" class="ln">   259  </span>			&#34;docker-compose.yaml (otel-lgtm image)&#34;, otelLgtmImageRe, v.OtelLgtm, 1),
-<span id="L260" class="ln">   260  </span>	}
-<span id="L261" class="ln">   261  </span>}
-<span id="L262" class="ln">   262  </span>
-<span id="L263" class="ln">   263  </span><span class="comment">// fromReplacer は 2 capture group regex の version 部分だけを置換し、prefix / suffix を保持する replace 関数を返す。</span>
-<span id="L264" class="ln">   264  </span>func fromReplacer(re *regexp.Regexp, version string) func(string) string {
-<span id="L265" class="ln">   265  </span>	return func(match string) string {
-<span id="L266" class="ln">   266  </span>		sub := re.FindStringSubmatch(match)
-<span id="L267" class="ln">   267  </span>		if len(sub) &lt; fromRegexpGroups {
-<span id="L268" class="ln">   268  </span>			return match
-<span id="L269" class="ln">   269  </span>		}
-<span id="L270" class="ln">   270  </span>		return sub[1] + version + sub[2]
-<span id="L271" class="ln">   271  </span>	}
-<span id="L272" class="ln">   272  </span>}
-<span id="L273" class="ln">   273  </span>
-<span id="L274" class="ln">   274  </span><span class="comment">// validateRules は version 未設定の rule とファイル不在の rule をエラーリストで返す。</span>
-<span id="L275" class="ln">   275  </span>func validateRules(rules []rule, root string) []string {
-<span id="L276" class="ln">   276  </span>	var errs []string
-<span id="L277" class="ln">   277  </span>	for _, r := range rules {
-<span id="L278" class="ln">   278  </span>		if r.version == &#34;&#34; {
-<span id="L279" class="ln">   279  </span>			errs = append(errs, r.label+&#34;: mise.toml に対応する version が未設定&#34;)
-<span id="L280" class="ln">   280  </span>		}
-<span id="L281" class="ln">   281  </span>	}
-<span id="L282" class="ln">   282  </span>	for _, r := range rules {
-<span id="L283" class="ln">   283  </span>		if _, err := os.Stat(filepath.Join(root, r.file)); err != nil {
-<span id="L284" class="ln">   284  </span>			errs = append(errs, fmt.Sprintf(
-<span id="L285" class="ln">   285  </span>				&#34;%s: %s が見つかりません&#34;, r.label, r.file))
+<span id="L247" class="ln">   247  </span>			&#34;docker/tools/README.md (golang image)&#34;, golangImageRe, v.Go),
+<span id="L248" class="ln">   248  </span>		readmeRule(&#34;docker/tools/README.md&#34;,
+<span id="L249" class="ln">   249  </span>			&#34;docker/tools/README.md (node image)&#34;, nodeImageRe, v.Node),
+<span id="L250" class="ln">   250  </span>		readmeRule(&#34;docker/tools/README.md&#34;,
+<span id="L251" class="ln">   251  </span>			&#34;docker/tools/README.md (python image)&#34;, pythonImageRe, v.Python),
+<span id="L252" class="ln">   252  </span>		<span class="comment">// doc-pair:begin</span>
+<span id="L253" class="ln">   253  </span>		readmeRule(&#34;docker/tools/README.ja.md&#34;,
+<span id="L254" class="ln">   254  </span>			&#34;docker/tools/README.ja.md (golang image)&#34;, golangImageRe, v.Go),
+<span id="L255" class="ln">   255  </span>		readmeRule(&#34;docker/tools/README.ja.md&#34;,
+<span id="L256" class="ln">   256  </span>			&#34;docker/tools/README.ja.md (node image)&#34;, nodeImageRe, v.Node),
+<span id="L257" class="ln">   257  </span>		readmeRule(&#34;docker/tools/README.ja.md&#34;,
+<span id="L258" class="ln">   258  </span>			&#34;docker/tools/README.ja.md (python image)&#34;, pythonImageRe, v.Python),
+<span id="L259" class="ln">   259  </span>		<span class="comment">// doc-pair:end</span>
+<span id="L260" class="ln">   260  </span>		dockerfileRule(&#34;docker/tools/Dockerfile&#34;,
+<span id="L261" class="ln">   261  </span>			&#34;docker/tools/Dockerfile (mise version)&#34;, miseDockerfileRe, v.Mise, 1),
+<span id="L262" class="ln">   262  </span>		dockerfileRule(&#34;docker/server/Dockerfile&#34;,
+<span id="L263" class="ln">   263  </span>			&#34;docker/server/Dockerfile (mise version)&#34;, miseDockerfileRe, v.Mise, 1),
+<span id="L264" class="ln">   264  </span>		dockerfileRule(&#34;docker-compose.yaml&#34;,
+<span id="L265" class="ln">   265  </span>			&#34;docker-compose.yaml (otel-lgtm image)&#34;, otelLgtmImageRe, v.OtelLgtm, 1),
+<span id="L266" class="ln">   266  </span>	}
+<span id="L267" class="ln">   267  </span>}
+<span id="L268" class="ln">   268  </span>
+<span id="L269" class="ln">   269  </span><span class="comment">// fromReplacer は 2 capture group regex の version 部分だけを置換し、prefix / suffix を保持する replace 関数を返す。</span>
+<span id="L270" class="ln">   270  </span>func fromReplacer(re *regexp.Regexp, version string) func(string) string {
+<span id="L271" class="ln">   271  </span>	return func(match string) string {
+<span id="L272" class="ln">   272  </span>		sub := re.FindStringSubmatch(match)
+<span id="L273" class="ln">   273  </span>		if len(sub) &lt; fromRegexpGroups {
+<span id="L274" class="ln">   274  </span>			return match
+<span id="L275" class="ln">   275  </span>		}
+<span id="L276" class="ln">   276  </span>		return sub[1] + version + sub[2]
+<span id="L277" class="ln">   277  </span>	}
+<span id="L278" class="ln">   278  </span>}
+<span id="L279" class="ln">   279  </span>
+<span id="L280" class="ln">   280  </span><span class="comment">// validateRules は version 未設定の rule とファイル不在の rule をエラーリストで返す。</span>
+<span id="L281" class="ln">   281  </span>func validateRules(rules []rule, root string) []string {
+<span id="L282" class="ln">   282  </span>	var errs []string
+<span id="L283" class="ln">   283  </span>	for _, r := range rules {
+<span id="L284" class="ln">   284  </span>		if r.version == &#34;&#34; {
+<span id="L285" class="ln">   285  </span>			errs = append(errs, r.label+&#34;: mise.toml に対応する version が未設定&#34;)
 <span id="L286" class="ln">   286  </span>		}
 <span id="L287" class="ln">   287  </span>	}
-<span id="L288" class="ln">   288  </span>	return errs
-<span id="L289" class="ln">   289  </span>}
-<span id="L290" class="ln">   290  </span>
-<span id="L291" class="ln">   291  </span><span class="comment">// computeChanges は各 file の最終内容を計算する（書き出しは行わない）。期待マッチ数未満の rule があればエラーを返す。</span>
-<span id="L292" class="ln">   292  </span>func computeChanges(rules []rule, root string) (map[string]*fileState, []string) {
-<span id="L293" class="ln">   293  </span>	states := map[string]*fileState{}
-<span id="L294" class="ln">   294  </span>	var errs []string
-<span id="L295" class="ln">   295  </span>	for _, r := range rules {
-<span id="L296" class="ln">   296  </span>		st, ok := states[r.file]
-<span id="L297" class="ln">   297  </span>		if !ok {
-<span id="L298" class="ln">   298  </span>			data, err := os.ReadFile(filepath.Join(root, r.file)) <span class="comment">//nolint:gosec // path from cwd + rule.file</span>
-<span id="L299" class="ln">   299  </span>			if err != nil {
-<span id="L300" class="ln">   300  </span>				errs = append(errs, fmt.Sprintf(&#34;%s: read %s: %v&#34;, r.label, r.file, err))
-<span id="L301" class="ln">   301  </span>				continue
-<span id="L302" class="ln">   302  </span>			}
-<span id="L303" class="ln">   303  </span>			st = &amp;fileState{original: string(data), current: string(data)}
-<span id="L304" class="ln">   304  </span>			states[r.file] = st
-<span id="L305" class="ln">   305  </span>		}
-<span id="L306" class="ln">   306  </span>		matches := r.re.FindAllStringIndex(st.current, -1)
-<span id="L307" class="ln">   307  </span>		if len(matches) &lt; r.expectedCount {
-<span id="L308" class="ln">   308  </span>			errs = append(errs, fmt.Sprintf(
-<span id="L309" class="ln">   309  </span>				&#34;%s: マッチ件数 %d が期待値 %d 未満（regex: %s）&#34;,
-<span id="L310" class="ln">   310  </span>				r.label, len(matches), r.expectedCount, r.re))
-<span id="L311" class="ln">   311  </span>			continue
+<span id="L288" class="ln">   288  </span>	for _, r := range rules {
+<span id="L289" class="ln">   289  </span>		if _, err := os.Stat(filepath.Join(root, r.file)); err != nil {
+<span id="L290" class="ln">   290  </span>			errs = append(errs, fmt.Sprintf(
+<span id="L291" class="ln">   291  </span>				&#34;%s: %s が見つかりません&#34;, r.label, r.file,
+<span id="L292" class="ln">   292  </span>			))
+<span id="L293" class="ln">   293  </span>		}
+<span id="L294" class="ln">   294  </span>	}
+<span id="L295" class="ln">   295  </span>	return errs
+<span id="L296" class="ln">   296  </span>}
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span><span class="comment">// computeChanges は各 file の最終内容を計算する（書き出しは行わない）。期待マッチ数未満の rule があればエラーを返す。</span>
+<span id="L299" class="ln">   299  </span>func computeChanges(rules []rule, root string) (map[string]*fileState, []string) {
+<span id="L300" class="ln">   300  </span>	states := map[string]*fileState{}
+<span id="L301" class="ln">   301  </span>	var errs []string
+<span id="L302" class="ln">   302  </span>	for _, r := range rules {
+<span id="L303" class="ln">   303  </span>		st, ok := states[r.file]
+<span id="L304" class="ln">   304  </span>		if !ok {
+<span id="L305" class="ln">   305  </span>			data, err := os.ReadFile(filepath.Join(root, r.file)) <span class="comment">//nolint:gosec // path from cwd + rule.file</span>
+<span id="L306" class="ln">   306  </span>			if err != nil {
+<span id="L307" class="ln">   307  </span>				errs = append(errs, fmt.Sprintf(&#34;%s: read %s: %v&#34;, r.label, r.file, err))
+<span id="L308" class="ln">   308  </span>				continue
+<span id="L309" class="ln">   309  </span>			}
+<span id="L310" class="ln">   310  </span>			st = &amp;fileState{original: string(data), current: string(data)}
+<span id="L311" class="ln">   311  </span>			states[r.file] = st
 <span id="L312" class="ln">   312  </span>		}
-<span id="L313" class="ln">   313  </span>		st.current = r.re.ReplaceAllStringFunc(st.current, r.replace)
-<span id="L314" class="ln">   314  </span>		st.applied = append(st.applied, fmt.Sprintf(&#34;%s x%d&#34;, r.label, len(matches)))
-<span id="L315" class="ln">   315  </span>	}
-<span id="L316" class="ln">   316  </span>	return states, errs
-<span id="L317" class="ln">   317  </span>}
-<span id="L318" class="ln">   318  </span>
-<span id="L319" class="ln">   319  </span><span class="comment">// writeChanges は各 file を 1 回ずつ書き出す。変更が無いファイルは skip する。</span>
-<span id="L320" class="ln">   320  </span>func writeChanges(states map[string]*fileState, root string) error {
-<span id="L321" class="ln">   321  </span>	anyChange := false
-<span id="L322" class="ln">   322  </span>	for file, st := range states {
-<span id="L323" class="ln">   323  </span>		if st.original == st.current {
-<span id="L324" class="ln">   324  </span>			log.Printf(&#34;No change: %s&#34;, file)
-<span id="L325" class="ln">   325  </span>			continue
-<span id="L326" class="ln">   326  </span>		}
-<span id="L327" class="ln">   327  </span>		if err := os.WriteFile(
-<span id="L328" class="ln">   328  </span>			filepath.Join(root, file), []byte(st.current), filePerm,
-<span id="L329" class="ln">   329  </span>		); err != nil {
-<span id="L330" class="ln">   330  </span>			return xerrors.Wrap(err, &#34;write &#34;+file)
-<span id="L331" class="ln">   331  </span>		}
-<span id="L332" class="ln">   332  </span>		log.Printf(&#34;Updated: %s [%s]&#34;, file, strings.Join(st.applied, &#34;, &#34;))
-<span id="L333" class="ln">   333  </span>		anyChange = true
-<span id="L334" class="ln">   334  </span>	}
-<span id="L335" class="ln">   335  </span>	if anyChange {
-<span id="L336" class="ln">   336  </span>		log.Println(&#34;Done.&#34;)
-<span id="L337" class="ln">   337  </span>	} else {
-<span id="L338" class="ln">   338  </span>		log.Println(&#34;Done (no changes).&#34;)
-<span id="L339" class="ln">   339  </span>	}
-<span id="L340" class="ln">   340  </span>	return nil
-<span id="L341" class="ln">   341  </span>}
-<span id="L342" class="ln">   342  </span>
-<span id="L343" class="ln">   343  </span><span class="comment">// reportProblems は、書き換えへ進めない理由を一覧で表示する。件数が可変で複数行になるため、</span>
-<span id="L344" class="ln">   344  </span><span class="comment">// エラーのメッセージへ畳み込まず、中止そのものは errAborted で表す。</span>
-<span id="L345" class="ln">   345  </span>func reportProblems(title string, errs []string) {
-<span id="L346" class="ln">   346  </span>	log.Println(&#34;&#34;)
-<span id="L347" class="ln">   347  </span>	log.Printf(&#34;❌ %s:&#34;, title)
-<span id="L348" class="ln">   348  </span>	for _, e := range errs {
-<span id="L349" class="ln">   349  </span>		log.Printf(&#34;  - %s&#34;, e)
-<span id="L350" class="ln">   350  </span>	}
-<span id="L351" class="ln">   351  </span>}
-<span id="L352" class="ln">   352  </span>
-<span id="L353" class="ln">   353  </span>func emptyAs(s string) string {
-<span id="L354" class="ln">   354  </span>	if s == &#34;&#34; {
-<span id="L355" class="ln">   355  </span>		return &#34;(unset)&#34;
-<span id="L356" class="ln">   356  </span>	}
-<span id="L357" class="ln">   357  </span>	return s
-<span id="L358" class="ln">   358  </span>}
-<span id="L359" class="ln">   359  </span>
+<span id="L313" class="ln">   313  </span>		matches := r.re.FindAllStringIndex(st.current, -1)
+<span id="L314" class="ln">   314  </span>		if len(matches) &lt; r.expectedCount {
+<span id="L315" class="ln">   315  </span>			errs = append(errs, fmt.Sprintf(
+<span id="L316" class="ln">   316  </span>				&#34;%s: マッチ件数 %d が期待値 %d 未満（regex: %s）&#34;,
+<span id="L317" class="ln">   317  </span>				r.label, len(matches), r.expectedCount, r.re,
+<span id="L318" class="ln">   318  </span>			))
+<span id="L319" class="ln">   319  </span>			continue
+<span id="L320" class="ln">   320  </span>		}
+<span id="L321" class="ln">   321  </span>		st.current = r.re.ReplaceAllStringFunc(st.current, r.replace)
+<span id="L322" class="ln">   322  </span>		st.applied = append(st.applied, fmt.Sprintf(&#34;%s x%d&#34;, r.label, len(matches)))
+<span id="L323" class="ln">   323  </span>	}
+<span id="L324" class="ln">   324  </span>	return states, errs
+<span id="L325" class="ln">   325  </span>}
+<span id="L326" class="ln">   326  </span>
+<span id="L327" class="ln">   327  </span><span class="comment">// writeChanges は各 file を 1 回ずつ書き出す。変更が無いファイルは skip する。</span>
+<span id="L328" class="ln">   328  </span>func writeChanges(states map[string]*fileState, root string) error {
+<span id="L329" class="ln">   329  </span>	anyChange := false
+<span id="L330" class="ln">   330  </span>	for file, st := range states {
+<span id="L331" class="ln">   331  </span>		if st.original == st.current {
+<span id="L332" class="ln">   332  </span>			log.Printf(&#34;No change: %s&#34;, file)
+<span id="L333" class="ln">   333  </span>			continue
+<span id="L334" class="ln">   334  </span>		}
+<span id="L335" class="ln">   335  </span>		if err := os.WriteFile(
+<span id="L336" class="ln">   336  </span>			filepath.Join(root, file), []byte(st.current), filePerm,
+<span id="L337" class="ln">   337  </span>		); err != nil {
+<span id="L338" class="ln">   338  </span>			return xerrors.Wrap(err, &#34;write &#34;+file)
+<span id="L339" class="ln">   339  </span>		}
+<span id="L340" class="ln">   340  </span>		log.Printf(&#34;Updated: %s [%s]&#34;, file, strings.Join(st.applied, &#34;, &#34;))
+<span id="L341" class="ln">   341  </span>		anyChange = true
+<span id="L342" class="ln">   342  </span>	}
+<span id="L343" class="ln">   343  </span>	if anyChange {
+<span id="L344" class="ln">   344  </span>		log.Println(&#34;Done.&#34;)
+<span id="L345" class="ln">   345  </span>	} else {
+<span id="L346" class="ln">   346  </span>		log.Println(&#34;Done (no changes).&#34;)
+<span id="L347" class="ln">   347  </span>	}
+<span id="L348" class="ln">   348  </span>	return nil
+<span id="L349" class="ln">   349  </span>}
+<span id="L350" class="ln">   350  </span>
+<span id="L351" class="ln">   351  </span><span class="comment">// reportProblems は、書き換えへ進めない理由を一覧で表示する。件数が可変で複数行になるため、</span>
+<span id="L352" class="ln">   352  </span><span class="comment">// エラーのメッセージへ畳み込まず、中止そのものは errAborted で表す。</span>
+<span id="L353" class="ln">   353  </span>func reportProblems(title string, errs []string) {
+<span id="L354" class="ln">   354  </span>	log.Println(&#34;&#34;)
+<span id="L355" class="ln">   355  </span>	log.Printf(&#34;❌ %s:&#34;, title)
+<span id="L356" class="ln">   356  </span>	for _, e := range errs {
+<span id="L357" class="ln">   357  </span>		log.Printf(&#34;  - %s&#34;, e)
+<span id="L358" class="ln">   358  </span>	}
+<span id="L359" class="ln">   359  </span>}
+<span id="L360" class="ln">   360  </span>
+<span id="L361" class="ln">   361  </span>func emptyAs(s string) string {
+<span id="L362" class="ln">   362  </span>	if s == &#34;&#34; {
+<span id="L363" class="ln">   363  </span>		return &#34;(unset)&#34;
+<span id="L364" class="ln">   364  </span>	}
+<span id="L365" class="ln">   365  </span>	return s
+<span id="L366" class="ln">   366  </span>}
+<span id="L367" class="ln">   367  </span>
 </pre><p><a href="../../../../src/go-boilerplate/scripts/sync-versions/main.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

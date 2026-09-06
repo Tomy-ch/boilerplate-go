@@ -11,7 +11,7 @@ import (
 // TypeDelivered は、購入配達完了の outbox イベント種別（version 込み）です。
 const TypeDelivered = "purchase.delivered.v1"
 
-// delivered は、purchase.delivered.v1 の自己完結 snapshot payload です。
+// delivered は、purchase.delivered.v1 の通知 payload です（payload_parity.yaml の kind: notification）。
 type delivered struct {
 	PurchaseID  string `json:"purchaseId"`
 	Code        string `json:"code"`
@@ -20,7 +20,7 @@ type delivered struct {
 	DeliveredAt string `json:"deliveredAt"`
 }
 
-// BuildDelivered は、購入集約から purchase.delivered.v1 の自己完結 snapshot payload を marshal します。
+// BuildDelivered は、購入集約から purchase.delivered.v1 の通知 payload を marshal します。
 func BuildDelivered(p *purchase.Purchase) ([]byte, error) {
 	var deliveredAt string
 	if at := p.DeliveredAt(); at != nil {

@@ -1,0 +1,439 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>stream - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/controller">controller</a>/<a href="../../../../../src/go-boilerplate/internal/controller/stream">stream</a>/<span class="text-muted">connection.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/controller/stream">go-boilerplate/internal/controller/stream</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package stream
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;net&#34;
+<span id="L6" class="ln">     6  </span>	&#34;sync&#34;
+<span id="L7" class="ln">     7  </span>	&#34;sync/atomic&#34;
+<span id="L8" class="ln">     8  </span>	&#34;time&#34;
+<span id="L9" class="ln">     9  </span>
+<span id="L10" class="ln">    10  </span>	&#34;golang.org/x/sync/semaphore&#34;
+<span id="L11" class="ln">    11  </span>
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/controller/stream/gen&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/logging&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/usecase/boundary/clock&#34;
+<span id="L16" class="ln">    16  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L17" class="ln">    17  </span>	ucrealtime &#34;go-boilerplate/internal/usecase/realtime&#34;
+<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/pkg/retry&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L20" class="ln">    20  </span>)
+<span id="L21" class="ln">    21  </span>
+<span id="L22" class="ln">    22  </span><span class="comment">// 接続が閉じた理由。構造化ログの値であり、realtime.connections.closed の reason label でもあります。</span>
+<span id="L23" class="ln">    23  </span>const (
+<span id="L24" class="ln">    24  </span>	<span class="comment">// closeReasonClientGone は、client 側が読むのをやめた（切断・EOF）ことを表します。</span>
+<span id="L25" class="ln">    25  </span>	closeReasonClientGone = &#34;client_gone&#34;
+<span id="L26" class="ln">    26  </span>	<span class="comment">// closeReasonSlowClient は、client が追いつけず送出 buffer が溢れたか、書き込みが期限切れしたことを表します。</span>
+<span id="L27" class="ln">    27  </span>	closeReasonSlowClient = &#34;slow_client&#34;
+<span id="L28" class="ln">    28  </span>	<span class="comment">// closeReasonLifetime は、connection maximum lifetime に到達したことを表します。</span>
+<span id="L29" class="ln">    29  </span>	closeReasonLifetime = &#34;lifetime&#34;
+<span id="L30" class="ln">    30  </span>	<span class="comment">// closeReasonRevoked は、subject の権利が取り下げられたことを表します。</span>
+<span id="L31" class="ln">    31  </span>	closeReasonRevoked = &#34;revoked&#34;
+<span id="L32" class="ln">    32  </span>	<span class="comment">// closeReasonDraining は、instance が停止に入ったことを表します。</span>
+<span id="L33" class="ln">    33  </span>	closeReasonDraining = &#34;draining&#34;
+<span id="L34" class="ln">    34  </span>	<span class="comment">// closeReasonResync は、cursor の続きが EventLog に無く、正本からの取り直しが要ることを表します。</span>
+<span id="L35" class="ln">    35  </span>	closeReasonResync = &#34;resync&#34;
+<span id="L36" class="ln">    36  </span>	<span class="comment">// closeReasonCanceled は、request context が終わった（client 切断か shutdown）ことを表します。</span>
+<span id="L37" class="ln">    37  </span>	closeReasonCanceled = &#34;canceled&#34;
+<span id="L38" class="ln">    38  </span>	<span class="comment">// closeReasonCommitFailed は、レスポンスを確定できずに終わったことを表します。</span>
+<span id="L39" class="ln">    39  </span>	closeReasonCommitFailed = &#34;commit_failed&#34;
+<span id="L40" class="ln">    40  </span>	<span class="comment">// closeReasonRevalidationFailed は、索引へ載せた直後の ticket 再検証が通らなかったことを表します。</span>
+<span id="L41" class="ln">    41  </span>	<span class="comment">// closeReasonRevoked と分けるのは、こちらが「確定前に断った」であり、failure が</span>
+<span id="L42" class="ln">    42  </span>	<span class="comment">// 失効とは限らない（store に届かない場合も含む）ためです。</span>
+<span id="L43" class="ln">    43  </span>	closeReasonRevalidationFailed = &#34;revalidation_failed&#34;
+<span id="L44" class="ln">    44  </span>)
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span><span class="comment">// 確定前に接続を断った理由。realtime.connections.rejected の reason label に載る安定値です。</span>
+<span id="L47" class="ln">    47  </span><span class="comment">// 停止中の拒否は closeReasonDraining と同じ語を使います（同じ事情の別の現れ方のため）。</span>
+<span id="L48" class="ln">    48  </span>const (
+<span id="L49" class="ln">    49  </span>	<span class="comment">// rejectReasonCapacity は、この instance の接続数が上限に達していたことを表します。</span>
+<span id="L50" class="ln">    50  </span>	rejectReasonCapacity = &#34;capacity&#34;
+<span id="L51" class="ln">    51  </span>	<span class="comment">// rejectReasonAdmission は、初回 replay の枠が空くのを待ち切れなかったことを表します。</span>
+<span id="L52" class="ln">    52  </span>	rejectReasonAdmission = &#34;admission&#34;
+<span id="L53" class="ln">    53  </span>	<span class="comment">// rejectReasonDegraded は、Realtime の依存が不調で新規接続を受けられないことを表します。</span>
+<span id="L54" class="ln">    54  </span>	rejectReasonDegraded = &#34;degraded&#34;
+<span id="L55" class="ln">    55  </span>)
+<span id="L56" class="ln">    56  </span>
+<span id="L57" class="ln">    57  </span><span class="comment">// 読み進めを起こした契機。realtime.replay.* の trigger label に載る安定値です。</span>
+<span id="L58" class="ln">    58  </span>const (
+<span id="L59" class="ln">    59  </span>	<span class="comment">// triggerInitial は、接続を確定する前の初回 replay です。</span>
+<span id="L60" class="ln">    60  </span>	triggerInitial = &#34;initial&#34;
+<span id="L61" class="ln">    61  </span>	<span class="comment">// triggerWakeup は、fan-out で届いた通知です。</span>
+<span id="L62" class="ln">    62  </span>	triggerWakeup = &#34;wakeup&#34;
+<span id="L63" class="ln">    63  </span>	<span class="comment">// triggerCatchUp は、通知の欠落を埋める周期の読み直しです。</span>
+<span id="L64" class="ln">    64  </span>	triggerCatchUp = &#34;catchup&#34;
+<span id="L65" class="ln">    65  </span>)
+<span id="L66" class="ln">    66  </span>
+<span id="L67" class="ln">    67  </span><span class="comment">// connection は、確定済みの 1 本の SSE 接続です。読む側（fetcher）と書く側（pump）の 2 つの goroutine が</span>
+<span id="L68" class="ln">    68  </span><span class="comment">// channel だけで繋がります（README「Runtime」）。</span>
+<span id="L69" class="ln">    69  </span>type connection struct {
+<span id="L70" class="ln">    70  </span>	<span class="comment">// id は、registry の索引に使う instance 内で一意な番号です。</span>
+<span id="L71" class="ln">    71  </span>	id uint64
+<span id="L72" class="ln">    72  </span>	<span class="comment">// subject は、ticket が束縛された subject です。失効通知はこれで接続を引きます。</span>
+<span id="L73" class="ln">    73  </span>	subject string
+<span id="L74" class="ln">    74  </span>	<span class="comment">// stream は、この接続が配信する stream です。wakeup はこれで接続を引きます。</span>
+<span id="L75" class="ln">    75  </span>	stream rt.StreamID
+<span id="L76" class="ln">    76  </span>	<span class="comment">// openedAt は、索引に載った時刻です。閉じるときに滞在時間へ変えます。</span>
+<span id="L77" class="ln">    77  </span>	openedAt time.Time
+<span id="L78" class="ln">    78  </span>
+<span id="L79" class="ln">    79  </span>	<span class="comment">// events は、読んだ event を送出まで待たせる buffer です。溢れたら接続を閉じます。</span>
+<span id="L80" class="ln">    80  </span>	events chan rt.DeliveryEvent
+<span id="L81" class="ln">    81  </span>	<span class="comment">// control は、client へ渡す最後の指示を 1 つだけ積みます。到達は保証されません（設計 §4.3）。</span>
+<span id="L82" class="ln">    82  </span>	control chan gen.ControlEvent
+<span id="L83" class="ln">    83  </span>	<span class="comment">// signal は、wakeup が届いたことを fetcher へ伝えます。</span>
+<span id="L84" class="ln">    84  </span>	signal chan struct{}
+<span id="L85" class="ln">    85  </span>	<span class="comment">// pending は、wakeup が伝えてきた最大の位置です。fetcher が追いついていれば読み直しません。</span>
+<span id="L86" class="ln">    86  </span>	pending atomic.Int64
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span>	<span class="comment">// quit は、接続を閉じると決まったときに閉じられます。</span>
+<span id="L89" class="ln">    89  </span>	quit chan struct{}
+<span id="L90" class="ln">    90  </span>	<span class="comment">// done は、pump が戻って接続が実際に終わったときに閉じられます。drain はこれを待ちます。</span>
+<span id="L91" class="ln">    91  </span>	done chan struct{}
+<span id="L92" class="ln">    92  </span>
+<span id="L93" class="ln">    93  </span>	quitOnce sync.Once
+<span id="L94" class="ln">    94  </span>	<span class="comment">// reason は、最初に close を呼んだ側が記録した理由です。quitOnce の完了後にだけ読みます。</span>
+<span id="L95" class="ln">    95  </span>	reason string
+<span id="L96" class="ln">    96  </span>}
+<span id="L97" class="ln">    97  </span>
+<span id="L98" class="ln">    98  </span><span class="comment">// fetcher は、1 接続ぶんの読み直しを回します。読んだ位置はこの goroutine だけが持つので、</span>
+<span id="L99" class="ln">    99  </span><span class="comment">// 位置の同期は要りません。</span>
+<span id="L100" class="ln">   100  </span>type fetcher struct {
+<span id="L101" class="ln">   101  </span>	conn     *connection
+<span id="L102" class="ln">   102  </span>	replayer ucrealtime.Replayer
+<span id="L103" class="ln">   103  </span>	sem      *semaphore.Weighted
+<span id="L104" class="ln">   104  </span>	sleeper  clock.Sleeper
+<span id="L105" class="ln">   105  </span>	log      logging.Logger
+<span id="L106" class="ln">   106  </span>	metrics  *observability.RealtimeMetrics
+<span id="L107" class="ln">   107  </span>	<span class="comment">// fetched は、buffer へ入れ終えた位置です。次の読み取りはこの後ろから始めます。</span>
+<span id="L108" class="ln">   108  </span>	fetched rt.Sequence
+<span id="L109" class="ln">   109  </span>	<span class="comment">// holdsSlot は、初回 replay のために Stream が確保した枠をまだ持っているかどうかです。</span>
+<span id="L110" class="ln">   110  </span>	holdsSlot bool
+<span id="L111" class="ln">   111  </span>}
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span><span class="comment">// newConnection は、subject × stream の接続を生成します。</span>
+<span id="L114" class="ln">   114  </span>func newConnection(id uint64, subject string, stream rt.StreamID) *connection {
+<span id="L115" class="ln">   115  </span>	return &amp;connection{
+<span id="L116" class="ln">   116  </span>		id:       id,
+<span id="L117" class="ln">   117  </span>		subject:  subject,
+<span id="L118" class="ln">   118  </span>		stream:   stream,
+<span id="L119" class="ln">   119  </span>		openedAt: time.Now(),
+<span id="L120" class="ln">   120  </span>		events:   make(chan rt.DeliveryEvent, connectionBuffer),
+<span id="L121" class="ln">   121  </span>		control:  make(chan gen.ControlEvent, 1),
+<span id="L122" class="ln">   122  </span>		signal:   make(chan struct{}, 1),
+<span id="L123" class="ln">   123  </span>		quit:     make(chan struct{}),
+<span id="L124" class="ln">   124  </span>		done:     make(chan struct{}),
+<span id="L125" class="ln">   125  </span>	}
+<span id="L126" class="ln">   126  </span>}
+<span id="L127" class="ln">   127  </span>
+<span id="L128" class="ln">   128  </span><span class="comment">// close は、接続を閉じると決めます。最初の呼び出しの reason だけが記録され、以降は無視されます。</span>
+<span id="L129" class="ln">   129  </span>func (c *connection) close(reason string) {
+<span id="L130" class="ln">   130  </span>	c.quitOnce.Do(func() {
+<span id="L131" class="ln">   131  </span>		c.reason = reason
+<span id="L132" class="ln">   132  </span>		close(c.quit)
+<span id="L133" class="ln">   133  </span>	})
+<span id="L134" class="ln">   134  </span>}
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span><span class="comment">// closeWith は、client へ渡す指示を積んでから接続を閉じます。理由の確定を指示の積載より前に置くので、</span>
+<span id="L137" class="ln">   137  </span><span class="comment">// pump が指示を先に拾って戻り、Stream の後片付けが先に close を呼んでも、記録される理由はこちらのままです。</span>
+<span id="L138" class="ln">   138  </span>func (c *connection) closeWith(ev gen.ControlEvent, reason string) {
+<span id="L139" class="ln">   139  </span>	c.quitOnce.Do(func() {
+<span id="L140" class="ln">   140  </span>		c.reason = reason
+<span id="L141" class="ln">   141  </span>		c.signalControl(ev)
+<span id="L142" class="ln">   142  </span>		close(c.quit)
+<span id="L143" class="ln">   143  </span>	})
+<span id="L144" class="ln">   144  </span>}
+<span id="L145" class="ln">   145  </span>
+<span id="L146" class="ln">   146  </span><span class="comment">// signalControl は、client へ渡す指示を 1 つ積みます。既に積まれていれば捨てます。</span>
+<span id="L147" class="ln">   147  </span>func (c *connection) signalControl(ev gen.ControlEvent) {
+<span id="L148" class="ln">   148  </span>	select {
+<span id="L149" class="ln">   149  </span>	case c.control &lt;- ev:
+<span id="L150" class="ln">   150  </span>	default:
+<span id="L151" class="ln">   151  </span>	}
+<span id="L152" class="ln">   152  </span>}
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span><span class="comment">// takeControl は、積まれている指示があれば取り出します。</span>
+<span id="L155" class="ln">   155  </span>func (c *connection) takeControl() (gen.ControlEvent, bool) {
+<span id="L156" class="ln">   156  </span>	select {
+<span id="L157" class="ln">   157  </span>	case ev := &lt;-c.control:
+<span id="L158" class="ln">   158  </span>		return ev, true
+<span id="L159" class="ln">   159  </span>	default:
+<span id="L160" class="ln">   160  </span>		return gen.ControlEvent{}, false
+<span id="L161" class="ln">   161  </span>	}
+<span id="L162" class="ln">   162  </span>}
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span><span class="comment">// wake は、stream の位置が upTo まで進んだことを伝えます。重複と後戻りは冪等に吸収し、</span>
+<span id="L165" class="ln">   165  </span><span class="comment">// batch をまたぐ通知は pending の最大値へ畳まれます（ADR-0073）。</span>
+<span id="L166" class="ln">   166  </span>func (c *connection) wake(upTo rt.Sequence) {
+<span id="L167" class="ln">   167  </span>	for {
+<span id="L168" class="ln">   168  </span>		cur := c.pending.Load()
+<span id="L169" class="ln">   169  </span>		if int64(upTo) &lt;= cur {
+<span id="L170" class="ln">   170  </span>			break
+<span id="L171" class="ln">   171  </span>		}
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>		if c.pending.CompareAndSwap(cur, int64(upTo)) {
+<span id="L174" class="ln">   174  </span>			break
+<span id="L175" class="ln">   175  </span>		}
+<span id="L176" class="ln">   176  </span>	}
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>	select {
+<span id="L179" class="ln">   179  </span>	case c.signal &lt;- struct{}{}:
+<span id="L180" class="ln">   180  </span>	default:
+<span id="L181" class="ln">   181  </span>	}
+<span id="L182" class="ln">   182  </span>}
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span><span class="comment">// startTicker は、sleeper で interval() ごとに tick を送る goroutine を起こします。</span>
+<span id="L185" class="ln">   185  </span><span class="comment">// 受け手が遅れた分の tick は畳まれ、goroutine は詰まりません。ctx が終わると goroutine も終わります。</span>
+<span id="L186" class="ln">   186  </span>func startTicker(ctx context.Context, sleeper clock.Sleeper, interval func() time.Duration) &lt;-chan struct{} {
+<span id="L187" class="ln">   187  </span>	ch := make(chan struct{}, 1)
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>	go func() {
+<span id="L190" class="ln">   190  </span>		for {
+<span id="L191" class="ln">   191  </span>			if err := sleeper.Sleep(ctx, interval()); err != nil {
+<span id="L192" class="ln">   192  </span>				return
+<span id="L193" class="ln">   193  </span>			}
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>			select {
+<span id="L196" class="ln">   196  </span>			case ch &lt;- struct{}{}:
+<span id="L197" class="ln">   197  </span>			default:
+<span id="L198" class="ln">   198  </span>			}
+<span id="L199" class="ln">   199  </span>		}
+<span id="L200" class="ln">   200  </span>	}()
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>	return ch
+<span id="L203" class="ln">   203  </span>}
+<span id="L204" class="ln">   204  </span>
+<span id="L205" class="ln">   205  </span><span class="comment">// jitteredCatchUp は、次の周期 catch-up までの待ち時間を返します。全接続が同じ時刻に</span>
+<span id="L206" class="ln">   206  </span><span class="comment">// EventLog を読みに行かないよう、固定周期に full jitter を上乗せします。</span>
+<span id="L207" class="ln">   207  </span>func jitteredCatchUp() time.Duration {
+<span id="L208" class="ln">   208  </span>	return catchUpInterval + retry.Full(catchUpJitter)
+<span id="L209" class="ln">   209  </span>}
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span><span class="comment">// writeFailureReason は、書き込みの失敗を close の理由に写します。期限切れは追いつけない client、</span>
+<span id="L212" class="ln">   212  </span><span class="comment">// それ以外は既に居ない client として扱います。</span>
+<span id="L213" class="ln">   213  </span>func writeFailureReason(err error) string {
+<span id="L214" class="ln">   214  </span>	var netErr net.Error
+<span id="L215" class="ln">   215  </span>	if xerrors.As(err, &amp;netErr) &amp;&amp; netErr.Timeout() {
+<span id="L216" class="ln">   216  </span>		return closeReasonSlowClient
+<span id="L217" class="ln">   217  </span>	}
+<span id="L218" class="ln">   218  </span>
+<span id="L219" class="ln">   219  </span>	return closeReasonClientGone
+<span id="L220" class="ln">   220  </span>}
+<span id="L221" class="ln">   221  </span>
+<span id="L222" class="ln">   222  </span><span class="comment">// run は、初回 replay を Stream が確保した枠のまま走らせ、以降は wakeup と周期 catch-up で読み直します。</span>
+<span id="L223" class="ln">   223  </span>func (f *fetcher) run(ctx context.Context) {
+<span id="L224" class="ln">   224  </span>	defer f.releaseSlot()
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>	f.drainPages(ctx, triggerInitial)
+<span id="L227" class="ln">   227  </span>	f.releaseSlot()
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>	catchUp := startTicker(ctx, f.sleeper, jitteredCatchUp)
+<span id="L230" class="ln">   230  </span>	for {
+<span id="L231" class="ln">   231  </span>		trigger, ok := f.awaitTrigger(ctx, catchUp)
+<span id="L232" class="ln">   232  </span>		if !ok {
+<span id="L233" class="ln">   233  </span>			return
+<span id="L234" class="ln">   234  </span>		}
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>		<span class="comment">// CatchUpLag は通知を受けてから追いつき終わるまで — client から見た遅れ — なので、計測は枠を取る前から</span>
+<span id="L237" class="ln">   237  </span>		<span class="comment">// 始めます。枠待ちも設計 §2.6 が縮退の一形態として挙げる遅れです。</span>
+<span id="L238" class="ln">   238  </span>		startedAt := time.Now()
+<span id="L239" class="ln">   239  </span>
+<span id="L240" class="ln">   240  </span>		if err := f.sem.Acquire(ctx, 1); err != nil {
+<span id="L241" class="ln">   241  </span>			return
+<span id="L242" class="ln">   242  </span>		}
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>		f.drainPages(ctx, trigger)
+<span id="L245" class="ln">   245  </span>		f.sem.Release(1)
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>		if trigger == triggerWakeup {
+<span id="L248" class="ln">   248  </span>			f.metrics.CatchUpLag(ctx, float64(time.Since(startedAt).Milliseconds()))
+<span id="L249" class="ln">   249  </span>		}
+<span id="L250" class="ln">   250  </span>	}
+<span id="L251" class="ln">   251  </span>}
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span><span class="comment">// awaitTrigger は、次に読み直す契機を待ち、その契機を返します。接続が終わるなら false を返します。</span>
+<span id="L254" class="ln">   254  </span><span class="comment">// wakeup は既に追いついていれば読み直さず、周期 catch-up は通知の欠落を埋めるため常に読みます。</span>
+<span id="L255" class="ln">   255  </span>func (f *fetcher) awaitTrigger(ctx context.Context, catchUp &lt;-chan struct{}) (string, bool) {
+<span id="L256" class="ln">   256  </span>	for {
+<span id="L257" class="ln">   257  </span>		select {
+<span id="L258" class="ln">   258  </span>		case &lt;-ctx.Done():
+<span id="L259" class="ln">   259  </span>			return &#34;&#34;, false
+<span id="L260" class="ln">   260  </span>		case &lt;-f.conn.quit:
+<span id="L261" class="ln">   261  </span>			return &#34;&#34;, false
+<span id="L262" class="ln">   262  </span>		case &lt;-catchUp:
+<span id="L263" class="ln">   263  </span>			return triggerCatchUp, true
+<span id="L264" class="ln">   264  </span>		case &lt;-f.conn.signal:
+<span id="L265" class="ln">   265  </span>			if f.conn.pending.Load() &gt; int64(f.fetched) {
+<span id="L266" class="ln">   266  </span>				return triggerWakeup, true
+<span id="L267" class="ln">   267  </span>			}
+<span id="L268" class="ln">   268  </span>		}
+<span id="L269" class="ln">   269  </span>	}
+<span id="L270" class="ln">   270  </span>}
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span><span class="comment">// drainPages は、追いつくまで EventLog を読み進めます。semaphore の枠を持った状態で呼びます。</span>
+<span id="L273" class="ln">   273  </span><span class="comment">// trigger は、この読み進めを起こした契機です。</span>
+<span id="L274" class="ln">   274  </span>func (f *fetcher) drainPages(ctx context.Context, trigger string) {
+<span id="L275" class="ln">   275  </span>	f.metrics.ReplayStarted(ctx)
+<span id="L276" class="ln">   276  </span>
+<span id="L277" class="ln">   277  </span>	var replayed int64
+<span id="L278" class="ln">   278  </span>	defer func() {
+<span id="L279" class="ln">   279  </span>		f.metrics.ReplayFinished(ctx)
+<span id="L280" class="ln">   280  </span>		f.metrics.ReplayExecuted(ctx, trigger, replayed)
+<span id="L281" class="ln">   281  </span>	}()
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span>	for {
+<span id="L284" class="ln">   284  </span>		events, hasMore, err := f.replayer.ReadPage(ctx, f.conn.stream, f.fetched)
+<span id="L285" class="ln">   285  </span>		if err != nil {
+<span id="L286" class="ln">   286  </span>			<span class="comment">// 依存の不調でこの接続は閉じず、次の catch-up に委ねます（docs/design/realtime-delivery.md §2.6）。</span>
+<span id="L287" class="ln">   287  </span>			f.log.Warn(ctx, &#34;failed to read the event log for a stream connection&#34;,
+<span id="L288" class="ln">   288  </span>				logging.String(logging.StreamIDKey, string(f.conn.stream)),
+<span id="L289" class="ln">   289  </span>				logging.Error(logging.ErrorKey, err))
+<span id="L290" class="ln">   290  </span>			f.metrics.ReplayFailed(ctx)
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span>			return
+<span id="L293" class="ln">   293  </span>		}
+<span id="L294" class="ln">   294  </span>
+<span id="L295" class="ln">   295  </span>		if len(events) == 0 {
+<span id="L296" class="ln">   296  </span>			return
+<span id="L297" class="ln">   297  </span>		}
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>		if events[0].Sequence != f.fetched+1 {
+<span id="L300" class="ln">   300  </span>			f.conn.closeWith(resyncControl(), closeReasonResync)
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>			return
+<span id="L303" class="ln">   303  </span>		}
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>		pushed := f.push(events)
+<span id="L306" class="ln">   306  </span>		replayed += int64(pushed)
+<span id="L307" class="ln">   307  </span>
+<span id="L308" class="ln">   308  </span>		if pushed &lt; len(events) || !hasMore {
+<span id="L309" class="ln">   309  </span>			return
+<span id="L310" class="ln">   310  </span>		}
+<span id="L311" class="ln">   311  </span>	}
+<span id="L312" class="ln">   312  </span>}
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span><span class="comment">// push は、読んだ event を送出 buffer へ入れ、入れられた件数を返します。</span>
+<span id="L315" class="ln">   315  </span><span class="comment">// 満杯なら event を捨てずに RETRY_LATER を試みて接続を閉じます（README「Runtime」）。</span>
+<span id="L316" class="ln">   316  </span>func (f *fetcher) push(events []rt.DeliveryEvent) int {
+<span id="L317" class="ln">   317  </span>	for i, e := range events {
+<span id="L318" class="ln">   318  </span>		select {
+<span id="L319" class="ln">   319  </span>		case f.conn.events &lt;- e:
+<span id="L320" class="ln">   320  </span>			f.fetched = e.Sequence
+<span id="L321" class="ln">   321  </span>		case &lt;-f.conn.quit:
+<span id="L322" class="ln">   322  </span>			return i
+<span id="L323" class="ln">   323  </span>		default:
+<span id="L324" class="ln">   324  </span>			f.conn.closeWith(retryLaterControl(), closeReasonSlowClient)
+<span id="L325" class="ln">   325  </span>
+<span id="L326" class="ln">   326  </span>			return i
+<span id="L327" class="ln">   327  </span>		}
+<span id="L328" class="ln">   328  </span>	}
+<span id="L329" class="ln">   329  </span>
+<span id="L330" class="ln">   330  </span>	return len(events)
+<span id="L331" class="ln">   331  </span>}
+<span id="L332" class="ln">   332  </span>
+<span id="L333" class="ln">   333  </span><span class="comment">// releaseSlot は、初回 replay の枠を返します。2 度目以降は何もしません。</span>
+<span id="L334" class="ln">   334  </span>func (f *fetcher) releaseSlot() {
+<span id="L335" class="ln">   335  </span>	if !f.holdsSlot {
+<span id="L336" class="ln">   336  </span>		return
+<span id="L337" class="ln">   337  </span>	}
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>	f.holdsSlot = false
+<span id="L340" class="ln">   340  </span>	f.sem.Release(1)
+<span id="L341" class="ln">   341  </span>}
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span><span class="comment">// control 指示の構築子。action と reason の対応はここが唯一の定義で、client 契約</span>
+<span id="L344" class="ln">   344  </span><span class="comment">// （docs/design/realtime-delivery.md §4.3）の reason code に 1 対 1 で対応します。</span>
+<span id="L345" class="ln">   345  </span><span class="comment">// STREAM_RECOVERY_FAILED は意図的に現れません（README「Reason codes this package sends」参照）。</span>
+<span id="L346" class="ln">   346  </span>
+<span id="L347" class="ln">   347  </span><span class="comment">// reconnectControl は、instance が停止に入ったので繋ぎ直すよう伝えます。</span>
+<span id="L348" class="ln">   348  </span>func reconnectControl() gen.ControlEvent {
+<span id="L349" class="ln">   349  </span>	return gen.ControlEvent{Action: gen.RECONNECT, Reason: gen.SERVERDRAINING}
+<span id="L350" class="ln">   350  </span>}
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span><span class="comment">// retryLaterControl は、送出が追いつかないので間を置いて繋ぎ直すよう伝えます。</span>
+<span id="L353" class="ln">   353  </span>func retryLaterControl() gen.ControlEvent {
+<span id="L354" class="ln">   354  </span>	ms := int(retryAfterHint.Milliseconds())
+<span id="L355" class="ln">   355  </span>
+<span id="L356" class="ln">   356  </span>	return gen.ControlEvent{Action: gen.RETRYLATER, Reason: gen.TEMPORARILYOVERLOADED, RetryAfterMs: &amp;ms}
+<span id="L357" class="ln">   357  </span>}
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span><span class="comment">// reauthenticateControl は、接続の寿命が尽きたので新しい ticket で繋ぎ直すよう伝えます。</span>
+<span id="L360" class="ln">   360  </span>func reauthenticateControl() gen.ControlEvent {
+<span id="L361" class="ln">   361  </span>	return gen.ControlEvent{Action: gen.REAUTHENTICATE, Reason: gen.AUTHREFRESHREQUIRED}
+<span id="L362" class="ln">   362  </span>}
+<span id="L363" class="ln">   363  </span>
+<span id="L364" class="ln">   364  </span><span class="comment">// resyncControl は、cursor の続きが EventLog に無いので正本を取り直すよう伝えます。</span>
+<span id="L365" class="ln">   365  </span>func resyncControl() gen.ControlEvent {
+<span id="L366" class="ln">   366  </span>	return gen.ControlEvent{Action: gen.RESYNC, Reason: gen.CURSORTOOOLD}
+<span id="L367" class="ln">   367  </span>}
+<span id="L368" class="ln">   368  </span>
+<span id="L369" class="ln">   369  </span><span class="comment">// stopControl は、権利が取り下げられたので繋ぎ直さないよう伝えます。</span>
+<span id="L370" class="ln">   370  </span>func stopControl() gen.ControlEvent {
+<span id="L371" class="ln">   371  </span>	return gen.ControlEvent{Action: gen.STOP, Reason: gen.AUTHORIZATIONREVOKED}
+<span id="L372" class="ln">   372  </span>}
+<span id="L373" class="ln">   373  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/controller/stream/connection.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

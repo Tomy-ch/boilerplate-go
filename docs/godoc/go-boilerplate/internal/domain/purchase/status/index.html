@@ -1,0 +1,400 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>status - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package status
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/domain/purchase/status&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package status は、購入ステータスマスタドメインを定義します。ID・名称・コード・表示順（sortKey）の不変条件を持つ Status エンティティと Repository インターフェースを提供します。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+			
+				
+				<dd><a href="#Attributes">type Attributes</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Repository">type Repository</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Status">type Status</a></dd>
+				
+					
+					<dd>    <a href="#New">func New(id uuid.UUID, attrs Attributes) (*Status, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#Status.Code">func (p *Status) Code() int</a></dd>
+				
+					
+					<dd>    <a href="#Status.ID">func (p *Status) ID() uuid.UUID</a></dd>
+				
+					
+					<dd>    <a href="#Status.Name">func (p *Status) Name() string</a></dd>
+				
+					
+					<dd>    <a href="#Status.SortKey">func (p *Status) SortKey() int</a></dd>
+				
+			
+				
+				<dd><a href="#Statuses">type Statuses</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/constant.go.html">constant.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/error.go.html">error.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html">status_domain.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_repository.go.html">status_repository.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				
+				<pre>var (
+
+    <span class="comment">// ErrInvalidID は、購入ステータス ID の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidID">ErrInvalidID</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;id failed&#34;)
+    <span class="comment">// ErrInvalidName は、購入ステータス名の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidName">ErrInvalidName</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;name failed&#34;)
+    <span class="comment">// ErrInvalidCode は、購入ステータスコードの検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidCode">ErrInvalidCode</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;code failed&#34;)
+    <span class="comment">// ErrInvalidSortKey は、購入ステータスの表示順の検証に失敗した場合のエラーです。</span>
+    <span id="ErrInvalidSortKey">ErrInvalidSortKey</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;sort key failed&#34;)
+)</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="Attributes">type <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html?s=828:896#L15">Attributes</a>
+				<a class="permalink" href="#Attributes">¶</a>
+				
+				
+			</h2>
+			<p>Attributes は、購入ステータスの属性一式です。Code と SortKey が同型のため構造体で受けます
+（基準は docs/rules.md の Function Signature Rules）。
+
+			</p><pre>type Attributes struct {
+<span id="Attributes.Name"></span>    Name    <a href="../../../../../builtin/#string">string</a>
+<span id="Attributes.Code"></span>    Code    <a href="../../../../../builtin/#int">int</a>
+<span id="Attributes.SortKey"></span>    SortKey <a href="../../../../../builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Repository">type <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_repository.go.html?s=275:434#L1">Repository</a>
+				<a class="permalink" href="#Repository">¶</a>
+				
+				
+			</h2>
+			<p>Repository は、購入ステータスの永続化操作を定義するドメインリポジトリインターフェースです。
+
+			</p><pre>type Repository interface {
+    <span class="comment">// FindAll は、全購入ステータスを sortKey 昇順で取得します。</span>
+    FindAll(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) (<a href="#Statuses">Statuses</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Status">type <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html?s=553:636#L6">Status</a>
+				<a class="permalink" href="#Status">¶</a>
+				
+				
+			</h2>
+			<p>Status は、購入ステータスを表すドメインエンティティです。
+
+			</p><pre>type Status struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="New">func <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html?s=1237:1294#L24">New</a>
+					<a class="permalink" href="#New">¶</a>
+					
+					
+				</h3>
+				<pre>func New(id <a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, attrs <a href="#Attributes">Attributes</a>) (*<a href="#Status">Status</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>New は、購入ステータスエンティティの検証と生成を行います。Code・SortKey は 1〜32767 の整数である
+必要があります。id が nil の場合は ErrInvalidID、名前長・Code 範囲・SortKey 範囲の
+違反の場合は ErrInvalidName / ErrInvalidCode / ErrInvalidSortKey を返します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Status.Code">func (*Status) <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html?s=2323:2350#L59">Code</a>
+					<a class="permalink" href="#Status.Code">¶</a>
+					
+					
+				</h3>
+				<pre>func (p *<a href="#Status">Status</a>) Code() <a href="../../../../../builtin/#int">int</a></pre>
+				<p>Code は、購入ステータスコードを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Status.ID">func (*Status) <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html?s=2104:2135#L53">ID</a>
+					<a class="permalink" href="#Status.ID">¶</a>
+					
+					
+				</h3>
+				<pre>func (p *<a href="#Status">Status</a>) ID() <a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>ID は、購入ステータスのIDを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Status.Name">func (*Status) <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html?s=2210:2240#L56">Name</a>
+					<a class="permalink" href="#Status.Name">¶</a>
+					
+					
+				</h3>
+				<pre>func (p *<a href="#Status">Status</a>) Name() <a href="../../../../../builtin/#string">string</a></pre>
+				<p>Name は、購入ステータス名を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Status.SortKey">func (*Status) <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html?s=2439:2469#L62">SortKey</a>
+					<a class="permalink" href="#Status.SortKey">¶</a>
+					
+					
+				</h3>
+				<pre>func (p *<a href="#Status">Status</a>) SortKey() <a href="../../../../../builtin/#int">int</a></pre>
+				<p>SortKey は、購入ステータスの表示順を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="Statuses">type <a href="../../../../../src/go-boilerplate/internal/domain/purchase/status/status_domain.go.html?s=442:465#L3">Statuses</a>
+				<a class="permalink" href="#Statuses">¶</a>
+				
+				
+			</h2>
+			<p>Statuses は、Status エンティティのスライス型です。
+
+			</p><pre>type Statuses []*<a href="#Status">Status</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

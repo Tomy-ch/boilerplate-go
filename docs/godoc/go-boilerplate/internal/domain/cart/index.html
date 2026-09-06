@@ -248,11 +248,16 @@
 				<dd><a href="#ProductSnapshot">type ProductSnapshot</a></dd>
 				
 					
-					<dd>    <a href="#NewProductSnapshot">func NewProductSnapshot(quantity int, price money.Price, published bool) ProductSnapshot</a></dd>
+					<dd>    <a href="#NewProductSnapshot">func NewProductSnapshot(attrs ProductSnapshotAttributes) ProductSnapshot</a></dd>
 				
 				
 					
 					<dd>    <a href="#ProductSnapshot.Price">func (s ProductSnapshot) Price() money.Price</a></dd>
+				
+			
+				
+				<dd><a href="#ProductSnapshotAttributes">type ProductSnapshotAttributes</a></dd>
+				
 				
 			
 				
@@ -571,7 +576,7 @@ NewForGuest / NewForOwner と同じ不変条件を課します。保存済みデ
 				<p>MarkSeen は、利用者へ提示した価格を明細へ記録します。
 prices に現れない商品の明細は変更しません（非公開化などで価格を引けなかった場合）。
 </p><p>ここに記録される値は表示の履歴であって約束ではありません
-（詳細: docs/spec/cart/domain.md の Behavior Methods の MarkSeen）。
+（詳細: docs/spec/domain/cart.md の Behavior Methods の MarkSeen）。
 
 				
 				
@@ -588,7 +593,7 @@ prices に現れない商品の明細は変更しません（非公開化など�
 </p><p>同一商品は数量を合算し、上限を超える場合は上限へクランプします。自身に無い商品は追加し、明細数の
 上限を超える分は追加が新しいものから切り捨てます（先に入っていたものを優先して残す）。
 失われた分は戻り値で報告されます。
-</p><p>error を返しません（理由: docs/spec/cart/domain.md の Behavior Methods の Merge）。
+</p><p>error を返しません（理由: docs/spec/domain/cart.md の Behavior Methods の Merge）。
 取り込み元は変更しません。
 
 				
@@ -750,7 +755,7 @@ money.Price の構築時に保証されるため）。合計を偽らずに返�
 				
 			
 				
-				</p><h3 id="CartItem.Evaluate">func (CartItem) <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=3265:3329#L63">Evaluate</a>
+				</p><h3 id="CartItem.Evaluate">func (CartItem) <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=3873:3937#L81">Evaluate</a>
 					<a class="permalink" href="#CartItem.Evaluate">¶</a>
 					
 					
@@ -876,7 +881,7 @@ uuid.UUID で、位置引数のままだと取り違えてもコンパイルも�
 		
 			
 			
-			<h2 id="Evaluation">type <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=1497:1574#L29">Evaluation</a>
+			<h2 id="Evaluation">type <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=1784:1861#L33">Evaluation</a>
 				<a class="permalink" href="#Evaluation">¶</a>
 				
 				
@@ -900,7 +905,7 @@ uuid.UUID で、位置引数のままだと取り違えてもコンパイルも�
 
 			
 				
-				<h3 id="Evaluation.AvailableQuantity">func (Evaluation) <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=2281:2325#L51">AvailableQuantity</a>
+				<h3 id="Evaluation.AvailableQuantity">func (Evaluation) <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=2968:3012#L69">AvailableQuantity</a>
 					<a class="permalink" href="#Evaluation.AvailableQuantity">¶</a>
 					
 					
@@ -913,13 +918,13 @@ uuid.UUID で、位置引数のままだと取り違えてもコンパイルも�
 				
 			
 				
-				</p><h3 id="Evaluation.Issues">func (Evaluation) <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=2031:2067#L43">Issues</a>
+				</p><h3 id="Evaluation.Issues">func (Evaluation) <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=2718:2754#L61">Issues</a>
 					<a class="permalink" href="#Evaluation.Issues">¶</a>
 					
 					
 				</h3>
 				<pre>func (e <a href="#Evaluation">Evaluation</a>) Issues() []<a href="#Issue">Issue</a></pre>
-				<p>Issues は、立った issue を返します。空なら現時点で購入可能です。
+				<p>Issues は、立った issue を返します。空なら issue が 1 つも立っていません。
 
 				
 				
@@ -928,7 +933,7 @@ uuid.UUID で、位置引数のままだと取り違えてもコンパイルも�
 		
 			
 			
-			</p><h2 id="Issue">type <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=1176:1193#L18">Issue</a>
+			</p><h2 id="Issue">type <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=1435:1452#L21">Issue</a>
 				<a class="permalink" href="#Issue">¶</a>
 				
 				
@@ -944,6 +949,8 @@ uuid.UUID で、位置引数のままだと取り違えてもコンパイルも�
     <span id="IssueNotFound">IssueNotFound</span> <a href="#Issue">Issue</a> = &#34;notFound&#34;
     <span class="comment">// IssueUnpublished は、商品が非公開であることを表します。</span>
     <span id="IssueUnpublished">IssueUnpublished</span> <a href="#Issue">Issue</a> = &#34;unpublished&#34;
+    <span class="comment">// IssueDiscontinued は、商品が廃番になったことを表します。</span>
+    <span id="IssueDiscontinued">IssueDiscontinued</span> <a href="#Issue">Issue</a> = &#34;discontinued&#34;
     <span class="comment">// IssueOutOfStock は、在庫が無いことを表します。</span>
     <span id="IssueOutOfStock">IssueOutOfStock</span> <a href="#Issue">Issue</a> = &#34;outOfStock&#34;
     <span class="comment">// IssueInsufficientStock は、在庫が要求数量に満たないことを表します。</span>
@@ -1019,13 +1026,13 @@ uuid.UUID で、位置引数のままだと取り違えてもコンパイルも�
 		
 			
 			
-			</p><h2 id="ProductSnapshot">type <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=1350:1435#L22">ProductSnapshot</a>
+			</p><h2 id="ProductSnapshot">type <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=1609:1722#L25">ProductSnapshot</a>
 				<a class="permalink" href="#ProductSnapshot">¶</a>
 				
 				
 			</h2>
 			<p>ProductSnapshot は、再評価した時点で観測した商品の値です（設計意図は
-docs/spec/cart/domain.md の Overview を参照）。
+docs/spec/domain/cart.md の Overview を参照）。
 
 			</p><pre>type ProductSnapshot struct {
     <span class="comment">// contains filtered or unexported fields</span>
@@ -1042,12 +1049,12 @@ docs/spec/cart/domain.md の Overview を参照）。
 
 			
 				
-				<h3 id="NewProductSnapshot">func <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=1647:1735#L35">NewProductSnapshot</a>
+				<h3 id="NewProductSnapshot">func <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=2262:2334#L48">NewProductSnapshot</a>
 					<a class="permalink" href="#NewProductSnapshot">¶</a>
 					
 					
 				</h3>
-				<pre>func NewProductSnapshot(quantity <a href="../../../../builtin/#int">int</a>, price <a href="../../../../go-boilerplate/internal/domain/lexicon/money/">money</a>.<a href="../../../../go-boilerplate/internal/domain/lexicon/money/#Price">Price</a>, published <a href="../../../../builtin/#bool">bool</a>) <a href="#ProductSnapshot">ProductSnapshot</a></pre>
+				<pre>func NewProductSnapshot(attrs <a href="#ProductSnapshotAttributes">ProductSnapshotAttributes</a>) <a href="#ProductSnapshot">ProductSnapshot</a></pre>
 				<p>NewProductSnapshot は、商品の観測値を組み立てます。
 
 				
@@ -1056,7 +1063,7 @@ docs/spec/cart/domain.md の Overview を参照）。
 
 			
 				
-				</p><h3 id="ProductSnapshot.Price">func (ProductSnapshot) <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=1873:1917#L40">Price</a>
+				</p><h3 id="ProductSnapshot.Price">func (ProductSnapshot) <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=2550:2594#L58">Price</a>
 					<a class="permalink" href="#ProductSnapshot.Price">¶</a>
 					
 					
@@ -1071,19 +1078,49 @@ docs/spec/cart/domain.md の Overview を参照）。
 		
 			
 			
-			</p><h2 id="Repository">type <a href="../../../../src/go-boilerplate/internal/domain/cart/cart_repository.go.html?s=452:4044#L4">Repository</a>
+			</p><h2 id="ProductSnapshotAttributes">type <a href="../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?s=2066:2189#L40">ProductSnapshotAttributes</a>
+				<a class="permalink" href="#ProductSnapshotAttributes">¶</a>
+				
+				
+			</h2>
+			<p>ProductSnapshotAttributes は、商品の観測値一式です。published と discontinued が同型のため
+構造体で受けます（基準は docs/rules.md の Function Signature Rules）。
+
+			</p><pre>type ProductSnapshotAttributes struct {
+<span id="ProductSnapshotAttributes.Quantity"></span>    Quantity     <a href="../../../../builtin/#int">int</a>
+<span id="ProductSnapshotAttributes.Price"></span>    Price        <a href="../../../../go-boilerplate/internal/domain/lexicon/money/">money</a>.<a href="../../../../go-boilerplate/internal/domain/lexicon/money/#Price">Price</a>
+<span id="ProductSnapshotAttributes.Published"></span>    Published    <a href="../../../../builtin/#bool">bool</a>
+<span id="ProductSnapshotAttributes.Discontinued"></span>    Discontinued <a href="../../../../builtin/#bool">bool</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Repository">type <a href="../../../../src/go-boilerplate/internal/domain/cart/cart_repository.go.html?s=452:4044#L4">Repository</a>
 				<a class="permalink" href="#Repository">¶</a>
 				
 				
 			</h2>
 			<p>Repository は、カート集約の永続化を抽象化します。書き込みは集約単位で Create と Update の
 2 つに閉じ、明細だけを対象とする操作は持ちません
-（理由: docs/spec/cart/domain.md の Repository Methods の Update）。
+（理由: docs/spec/domain/cart.md の Repository Methods の Update）。
 
 			</p><pre>type Repository interface {
     <span class="comment">// FindBySessionToken は、セッショントークンからカートを明細込みで取得します。</span>
     <span class="comment">// 存在しない場合は NotFound を返します。所有者が確定したカートは引けません</span>
-    <span class="comment">// （理由: docs/spec/cart/domain.md の Repository Methods の FindBySessionToken）。</span>
+    <span class="comment">// （理由: docs/spec/domain/cart.md の Repository Methods の FindBySessionToken）。</span>
     FindBySessionToken(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, token <a href="#SessionToken">SessionToken</a>) (*<a href="#Cart">Cart</a>, <a href="../../../../builtin/#error">error</a>)
 
     <span class="comment">// FindByOwnerID は、所有者からカートを明細込みで取得します。</span>

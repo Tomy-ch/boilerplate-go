@@ -1,7 +1,5 @@
 # database/dml
 
-English | [日本語](README.ja.md)
-
 `database/dml` stores **SQL source files for sqlc code generation**.
 
 SQL files placed here are converted to Go code (`internal/infrastructure/rdb/sqlc/gen/`) via `make gen-query`.

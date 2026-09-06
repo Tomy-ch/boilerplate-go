@@ -201,165 +201,163 @@
 <span id="L144" class="ln">   144  </span>func startRotationServer(t *testing.T, src httpclient.Client, clk *rotClock) *Server {
 <span id="L145" class="ln">   145  </span>	t.Helper()
 <span id="L146" class="ln">   146  </span>	authenticator, err := authjwt.NewJWKS(authjwt.JWKSParams{
-<span id="L147" class="ln">   147  </span>		Params: authjwt.Params{
-<span id="L148" class="ln">   148  </span>			Issuer:       jwtTestIssuer,
-<span id="L149" class="ln">   149  </span>			Audience:     jwtTestAudience,
-<span id="L150" class="ln">   150  </span>			ExpectedType: jwtAccessTokenType,
-<span id="L151" class="ln">   151  </span>			Clock:        clk,
-<span id="L152" class="ln">   152  </span>		},
-<span id="L153" class="ln">   153  </span>		JWKSURL:          &#34;http://mock-auth.example.test/jwks.json&#34;,
-<span id="L154" class="ln">   154  </span>		AllowInsecureURL: true,
-<span id="L155" class="ln">   155  </span>	}, src)
-<span id="L156" class="ln">   156  </span>	require.NoError(t, err)
-<span id="L157" class="ln">   157  </span>	return newProtectedServer(t, authenticator)
-<span id="L158" class="ln">   158  </span>}
-<span id="L159" class="ln">   159  </span>
-<span id="L160" class="ln">   160  </span>func TestJWKSRotationIntegration(t *testing.T) {
-<span id="L161" class="ln">   161  </span>	t.Parallel()
-<span id="L162" class="ln">   162  </span>
-<span id="L163" class="ln">   163  </span>	keyA := loadProviderKey(t, rotKIDPrimary)
-<span id="L164" class="ln">   164  </span>	keyB := loadProviderKey(t, rotKIDRotation)
-<span id="L165" class="ln">   165  </span>	phase1, phase2, phase3 := loadGoldenJWKS(t, 1), loadGoldenJWKS(t, 2), loadGoldenJWKS(t, 3)
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>	<span class="comment">// get は Bearer トークンで GET /protected を叩き、HTTP レスポンスを返す。</span>
-<span id="L168" class="ln">   168  </span>	get := func(srv *Server, token string) *http.Response {
-<span id="L169" class="ln">   169  </span>		return srv.DoJSON(http.MethodGet, &#34;/protected&#34;, nil, bearerHeader(token))
-<span id="L170" class="ln">   170  </span>	}
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L173" class="ln">   173  </span>		t.Parallel()
-<span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>		t.Run(&#34;Phase 遷移で新旧 Token を検証し、退役鍵を拒否する&#34;, func(t *testing.T) {
-<span id="L176" class="ln">   176  </span>			t.Parallel()
-<span id="L177" class="ln">   177  </span>			clk := &amp;rotClock{now: time.Now()}
-<span id="L178" class="ln">   178  </span>			src := &amp;rotatingJWKS{body: phase1}
-<span id="L179" class="ln">   179  </span>			srv := startRotationServer(t, src, clk)
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>			<span class="comment">// Phase1: key-a 署名 Token を受理。初回の 1 回だけ JWKS を取得する。</span>
-<span id="L182" class="ln">   182  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyA, rotKIDPrimary, clk)).StatusCode)
-<span id="L183" class="ln">   183  </span>			require.Equal(t, 1, src.count())
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyA, rotKIDPrimary, clk)).StatusCode)
-<span id="L186" class="ln">   186  </span>			require.Equal(t, 1, src.count(), &#34;既知 kid の通常リクエストで再取得しない&#34;)
-<span id="L187" class="ln">   187  </span>
-<span id="L188" class="ln">   188  </span>			clk.advance(rotCooldown + time.Second)
-<span id="L189" class="ln">   189  </span>			src.setPhase(phase2)
-<span id="L190" class="ln">   190  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyB, rotKIDRotation, clk)).StatusCode)
-<span id="L191" class="ln">   191  </span>			require.Equal(t, 2, src.count(), &#34;未知 kid の初回のみ再取得する&#34;)
-<span id="L192" class="ln">   192  </span>
-<span id="L193" class="ln">   193  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyA, rotKIDPrimary, clk)).StatusCode)
-<span id="L194" class="ln">   194  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyB, rotKIDRotation, clk)).StatusCode)
-<span id="L195" class="ln">   195  </span>			require.Equal(t, 2, src.count(), &#34;移行期の新旧受理で再取得しない&#34;)
-<span id="L196" class="ln">   196  </span>
-<span id="L197" class="ln">   197  </span>			clk.advance(time.Hour + time.Minute)
-<span id="L198" class="ln">   198  </span>			src.setPhase(phase3)
-<span id="L199" class="ln">   199  </span>			AssertErrorResponse(t, get(srv, mintRotToken(t, keyA, rotKIDPrimary, clk)), http.StatusUnauthorized)
-<span id="L200" class="ln">   200  </span>			require.Equal(t, 3, src.count(), &#34;cacheTTL 経過後に再取得して退役を反映する&#34;)
-<span id="L201" class="ln">   201  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyB, rotKIDRotation, clk)).StatusCode)
-<span id="L202" class="ln">   202  </span>		})
-<span id="L203" class="ln">   203  </span>
-<span id="L204" class="ln">   204  </span>		t.Run(&#34;同時の未知 kid 検証は JWKS 更新を 1 回に抑制する（受入条件 5）&#34;, func(t *testing.T) {
-<span id="L205" class="ln">   205  </span>			t.Parallel()
-<span id="L206" class="ln">   206  </span>			clk := &amp;rotClock{now: time.Now()}
-<span id="L207" class="ln">   207  </span>			src := &amp;rotatingJWKS{body: phase1}
-<span id="L208" class="ln">   208  </span>			srv := startRotationServer(t, src, clk)
-<span id="L209" class="ln">   209  </span>
-<span id="L210" class="ln">   210  </span>			var wg sync.WaitGroup
-<span id="L211" class="ln">   211  </span>			for range 8 {
-<span id="L212" class="ln">   212  </span>				wg.Go(func() {
-<span id="L213" class="ln">   213  </span>					_ = get(srv, mintRotToken(t, keyB, rotKIDRotation, clk)).Body.Close()
-<span id="L214" class="ln">   214  </span>				})
-<span id="L215" class="ln">   215  </span>			}
-<span id="L216" class="ln">   216  </span>			wg.Wait()
-<span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span>			assert.Equal(t, 1, src.count(), &#34;同時 JWKS 更新は singleflight で 1 回に抑制される&#34;)
-<span id="L219" class="ln">   219  </span>		})
-<span id="L220" class="ln">   220  </span>	})
-<span id="L221" class="ln">   221  </span>
-<span id="L222" class="ln">   222  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L223" class="ln">   223  </span>		t.Parallel()
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>		t.Run(&#34;JWKS に存在しない kid の Token を拒否する（unknown-kid / old-key profile 相当）&#34;, func(t *testing.T) {
-<span id="L226" class="ln">   226  </span>			t.Parallel()
-<span id="L227" class="ln">   227  </span>			clk := &amp;rotClock{now: time.Now()}
-<span id="L228" class="ln">   228  </span>			src := &amp;rotatingJWKS{body: phase1}
-<span id="L229" class="ln">   229  </span>			srv := startRotationServer(t, src, clk)
-<span id="L230" class="ln">   230  </span>
-<span id="L231" class="ln">   231  </span>			<span class="comment">// 有効な鍵で署名しても、JWKS に無い kid では鍵解決に失敗し 401。</span>
-<span id="L232" class="ln">   232  </span>			token := mintRotToken(t, keyA, &#34;mock-key-retired&#34;, clk)
-<span id="L233" class="ln">   233  </span>			AssertErrorResponse(t, get(srv, token), http.StatusUnauthorized)
-<span id="L234" class="ln">   234  </span>		})
-<span id="L235" class="ln">   235  </span>	})
-<span id="L236" class="ln">   236  </span>}
-<span id="L237" class="ln">   237  </span>
-<span id="L238" class="ln">   238  </span>func (s *blockingJWKS) Do(ctx context.Context, _ *httpclient.Request) (*httpclient.Response, error) {
-<span id="L239" class="ln">   239  </span>	s.mu.Lock()
-<span id="L240" class="ln">   240  </span>	s.calls++
-<span id="L241" class="ln">   241  </span>	first := s.calls == 1
-<span id="L242" class="ln">   242  </span>	s.mu.Unlock()
-<span id="L243" class="ln">   243  </span>
-<span id="L244" class="ln">   244  </span>	if first {
-<span id="L245" class="ln">   245  </span>		close(s.entered)
-<span id="L246" class="ln">   246  </span>	}
-<span id="L247" class="ln">   247  </span>	select {
-<span id="L248" class="ln">   248  </span>	case &lt;-ctx.Done():
-<span id="L249" class="ln">   249  </span>		<span class="comment">// 実 substrate が返す分類に揃える（httpclient.normalizeTransportError と同じ写像）。</span>
-<span id="L250" class="ln">   250  </span>		return nil, xerrors.Wrap(apperror.ErrCanceled, &#34;canceled&#34;)
-<span id="L251" class="ln">   251  </span>	case &lt;-s.release:
-<span id="L252" class="ln">   252  </span>		return &amp;httpclient.Response{StatusCode: 200, Body: s.body}, nil
-<span id="L253" class="ln">   253  </span>	}
-<span id="L254" class="ln">   254  </span>}
-<span id="L255" class="ln">   255  </span>
-<span id="L256" class="ln">   256  </span>func (s *blockingJWKS) count() int {
-<span id="L257" class="ln">   257  </span>	s.mu.Lock()
-<span id="L258" class="ln">   258  </span>	defer s.mu.Unlock()
-<span id="L259" class="ln">   259  </span>	return s.calls
-<span id="L260" class="ln">   260  </span>}
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>func TestJWKSRefreshDetachIntegration(t *testing.T) {
-<span id="L263" class="ln">   263  </span>	t.Parallel()
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L266" class="ln">   266  </span>		t.Parallel()
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>		t.Run(&#34;クライアントが切断しても JWKS 取得は完走し cooldown が次の取得を抑える&#34;, func(t *testing.T) {
-<span id="L269" class="ln">   269  </span>			t.Parallel()
-<span id="L270" class="ln">   270  </span>			keyA := loadProviderKey(t, rotKIDPrimary)
-<span id="L271" class="ln">   271  </span>			clk := &amp;rotClock{now: time.Now()}
-<span id="L272" class="ln">   272  </span>			src := &amp;blockingJWKS{body: loadGoldenJWKS(t, 1), entered: make(chan struct{}), release: make(chan struct{})}
-<span id="L273" class="ln">   273  </span>			srv := startRotationServer(t, src, clk)
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>			<span class="comment">// 実クライアントが、JWKS 取得の最中に接続を切る。</span>
-<span id="L276" class="ln">   276  </span>			ctx, cancel := context.WithCancel(t.Context())
-<span id="L277" class="ln">   277  </span>			req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.baseURL+&#34;/protected&#34;, nil)
-<span id="L278" class="ln">   278  </span>			require.NoError(t, err)
-<span id="L279" class="ln">   279  </span>			req.Header.Set(&#34;Authorization&#34;, &#34;Bearer &#34;+mintRotToken(t, keyA, rotKIDPrimary, clk))
-<span id="L280" class="ln">   280  </span>
-<span id="L281" class="ln">   281  </span>			aborted := make(chan struct{})
-<span id="L282" class="ln">   282  </span>			go func() {
-<span id="L283" class="ln">   283  </span>				defer close(aborted)
-<span id="L284" class="ln">   284  </span>				res, doErr := srv.client.Do(req)
-<span id="L285" class="ln">   285  </span>				assert.Error(t, doErr, &#34;切断したリクエストは応答を受け取らない&#34;)
-<span id="L286" class="ln">   286  </span>				assert.Nil(t, res)
-<span id="L287" class="ln">   287  </span>			}()
-<span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>			&lt;-src.entered
-<span id="L290" class="ln">   290  </span>			cancel()
-<span id="L291" class="ln">   291  </span>			&lt;-aborted
-<span id="L292" class="ln">   292  </span>
-<span id="L293" class="ln">   293  </span>			<span class="comment">// 切断がサーバへ伝わる猶予。取得が呼び出し元の ctx を継いでいれば、この間に打ち切られる。</span>
-<span id="L294" class="ln">   294  </span>			time.Sleep(200 * time.Millisecond)
-<span id="L295" class="ln">   295  </span>			close(src.release)
-<span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>			<span class="comment">// 切断された取得が完走していれば鍵集合はキャッシュ済みで、後続は追加取得なしで検証できる。</span>
-<span id="L298" class="ln">   298  </span>			<span class="comment">// このリクエストは取得権の獲得で先行取得の完了を待つため、判定は待ち合わせ済みの状態で行われる。</span>
-<span id="L299" class="ln">   299  </span>			res := srv.DoJSON(http.MethodGet, &#34;/protected&#34;, nil, bearerHeader(mintRotToken(t, keyA, rotKIDPrimary, clk)))
-<span id="L300" class="ln">   300  </span>			require.Equal(t, http.StatusOK, res.StatusCode, &#34;切断された取得の結果が次のリクエストで使える&#34;)
-<span id="L301" class="ln">   301  </span>			assert.Equal(t, 1, src.count(), &#34;cooldown が起動しており再取得しない&#34;)
-<span id="L302" class="ln">   302  </span>		})
-<span id="L303" class="ln">   303  </span>	})
-<span id="L304" class="ln">   304  </span>}
-<span id="L305" class="ln">   305  </span>
+<span id="L147" class="ln">   147  </span>		Issuer:           jwtTestIssuer,
+<span id="L148" class="ln">   148  </span>		Audience:         jwtTestAudience,
+<span id="L149" class="ln">   149  </span>		ExpectedType:     jwtAccessTokenType,
+<span id="L150" class="ln">   150  </span>		Clock:            clk,
+<span id="L151" class="ln">   151  </span>		JWKSURL:          &#34;http://mock-auth.example.test/jwks.json&#34;,
+<span id="L152" class="ln">   152  </span>		AllowInsecureURL: true,
+<span id="L153" class="ln">   153  </span>	}, src)
+<span id="L154" class="ln">   154  </span>	require.NoError(t, err)
+<span id="L155" class="ln">   155  </span>	return newProtectedServer(t, authenticator)
+<span id="L156" class="ln">   156  </span>}
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>func TestJWKSRotationIntegration(t *testing.T) {
+<span id="L159" class="ln">   159  </span>	t.Parallel()
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span>	keyA := loadProviderKey(t, rotKIDPrimary)
+<span id="L162" class="ln">   162  </span>	keyB := loadProviderKey(t, rotKIDRotation)
+<span id="L163" class="ln">   163  </span>	phase1, phase2, phase3 := loadGoldenJWKS(t, 1), loadGoldenJWKS(t, 2), loadGoldenJWKS(t, 3)
+<span id="L164" class="ln">   164  </span>
+<span id="L165" class="ln">   165  </span>	<span class="comment">// get は Bearer トークンで GET /protected を叩き、HTTP レスポンスを返す。</span>
+<span id="L166" class="ln">   166  </span>	get := func(srv *Server, token string) *http.Response {
+<span id="L167" class="ln">   167  </span>		return srv.DoJSON(http.MethodGet, &#34;/protected&#34;, nil, bearerHeader(token))
+<span id="L168" class="ln">   168  </span>	}
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L171" class="ln">   171  </span>		t.Parallel()
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>		t.Run(&#34;Phase 遷移で新旧 Token を検証し、退役鍵を拒否する&#34;, func(t *testing.T) {
+<span id="L174" class="ln">   174  </span>			t.Parallel()
+<span id="L175" class="ln">   175  </span>			clk := &amp;rotClock{now: time.Now()}
+<span id="L176" class="ln">   176  </span>			src := &amp;rotatingJWKS{body: phase1}
+<span id="L177" class="ln">   177  </span>			srv := startRotationServer(t, src, clk)
+<span id="L178" class="ln">   178  </span>
+<span id="L179" class="ln">   179  </span>			<span class="comment">// Phase1: key-a 署名 Token を受理。初回の 1 回だけ JWKS を取得する。</span>
+<span id="L180" class="ln">   180  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyA, rotKIDPrimary, clk)).StatusCode)
+<span id="L181" class="ln">   181  </span>			require.Equal(t, 1, src.count())
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyA, rotKIDPrimary, clk)).StatusCode)
+<span id="L184" class="ln">   184  </span>			require.Equal(t, 1, src.count(), &#34;既知 kid の通常リクエストで再取得しない&#34;)
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span>			clk.advance(rotCooldown + time.Second)
+<span id="L187" class="ln">   187  </span>			src.setPhase(phase2)
+<span id="L188" class="ln">   188  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyB, rotKIDRotation, clk)).StatusCode)
+<span id="L189" class="ln">   189  </span>			require.Equal(t, 2, src.count(), &#34;未知 kid の初回のみ再取得する&#34;)
+<span id="L190" class="ln">   190  </span>
+<span id="L191" class="ln">   191  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyA, rotKIDPrimary, clk)).StatusCode)
+<span id="L192" class="ln">   192  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyB, rotKIDRotation, clk)).StatusCode)
+<span id="L193" class="ln">   193  </span>			require.Equal(t, 2, src.count(), &#34;移行期の新旧受理で再取得しない&#34;)
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>			clk.advance(time.Hour + time.Minute)
+<span id="L196" class="ln">   196  </span>			src.setPhase(phase3)
+<span id="L197" class="ln">   197  </span>			AssertErrorResponse(t, get(srv, mintRotToken(t, keyA, rotKIDPrimary, clk)), http.StatusUnauthorized)
+<span id="L198" class="ln">   198  </span>			require.Equal(t, 3, src.count(), &#34;cacheTTL 経過後に再取得して退役を反映する&#34;)
+<span id="L199" class="ln">   199  </span>			require.Equal(t, http.StatusOK, get(srv, mintRotToken(t, keyB, rotKIDRotation, clk)).StatusCode)
+<span id="L200" class="ln">   200  </span>		})
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>		t.Run(&#34;同時の未知 kid 検証は JWKS 更新を 1 回に抑制する（受入条件 5）&#34;, func(t *testing.T) {
+<span id="L203" class="ln">   203  </span>			t.Parallel()
+<span id="L204" class="ln">   204  </span>			clk := &amp;rotClock{now: time.Now()}
+<span id="L205" class="ln">   205  </span>			src := &amp;rotatingJWKS{body: phase1}
+<span id="L206" class="ln">   206  </span>			srv := startRotationServer(t, src, clk)
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>			var wg sync.WaitGroup
+<span id="L209" class="ln">   209  </span>			for range 8 {
+<span id="L210" class="ln">   210  </span>				wg.Go(func() {
+<span id="L211" class="ln">   211  </span>					_ = get(srv, mintRotToken(t, keyB, rotKIDRotation, clk)).Body.Close()
+<span id="L212" class="ln">   212  </span>				})
+<span id="L213" class="ln">   213  </span>			}
+<span id="L214" class="ln">   214  </span>			wg.Wait()
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>			assert.Equal(t, 1, src.count(), &#34;同時 JWKS 更新は singleflight で 1 回に抑制される&#34;)
+<span id="L217" class="ln">   217  </span>		})
+<span id="L218" class="ln">   218  </span>	})
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L221" class="ln">   221  </span>		t.Parallel()
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>		t.Run(&#34;JWKS に存在しない kid の Token を拒否する（unknown-kid / old-key profile 相当）&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L225" class="ln">   225  </span>			clk := &amp;rotClock{now: time.Now()}
+<span id="L226" class="ln">   226  </span>			src := &amp;rotatingJWKS{body: phase1}
+<span id="L227" class="ln">   227  </span>			srv := startRotationServer(t, src, clk)
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>			<span class="comment">// 有効な鍵で署名しても、JWKS に無い kid では鍵解決に失敗し 401。</span>
+<span id="L230" class="ln">   230  </span>			token := mintRotToken(t, keyA, &#34;mock-key-retired&#34;, clk)
+<span id="L231" class="ln">   231  </span>			AssertErrorResponse(t, get(srv, token), http.StatusUnauthorized)
+<span id="L232" class="ln">   232  </span>		})
+<span id="L233" class="ln">   233  </span>	})
+<span id="L234" class="ln">   234  </span>}
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>func (s *blockingJWKS) Do(ctx context.Context, _ *httpclient.Request) (*httpclient.Response, error) {
+<span id="L237" class="ln">   237  </span>	s.mu.Lock()
+<span id="L238" class="ln">   238  </span>	s.calls++
+<span id="L239" class="ln">   239  </span>	first := s.calls == 1
+<span id="L240" class="ln">   240  </span>	s.mu.Unlock()
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>	if first {
+<span id="L243" class="ln">   243  </span>		close(s.entered)
+<span id="L244" class="ln">   244  </span>	}
+<span id="L245" class="ln">   245  </span>	select {
+<span id="L246" class="ln">   246  </span>	case &lt;-ctx.Done():
+<span id="L247" class="ln">   247  </span>		<span class="comment">// 実 substrate が返す分類に揃える（httpclient.normalizeTransportError と同じ写像）。</span>
+<span id="L248" class="ln">   248  </span>		return nil, xerrors.Wrap(apperror.ErrCanceled, &#34;canceled&#34;)
+<span id="L249" class="ln">   249  </span>	case &lt;-s.release:
+<span id="L250" class="ln">   250  </span>		return &amp;httpclient.Response{StatusCode: 200, Body: s.body}, nil
+<span id="L251" class="ln">   251  </span>	}
+<span id="L252" class="ln">   252  </span>}
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>func (s *blockingJWKS) count() int {
+<span id="L255" class="ln">   255  </span>	s.mu.Lock()
+<span id="L256" class="ln">   256  </span>	defer s.mu.Unlock()
+<span id="L257" class="ln">   257  </span>	return s.calls
+<span id="L258" class="ln">   258  </span>}
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>func TestJWKSRefreshDetachIntegration(t *testing.T) {
+<span id="L261" class="ln">   261  </span>	t.Parallel()
+<span id="L262" class="ln">   262  </span>
+<span id="L263" class="ln">   263  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L264" class="ln">   264  </span>		t.Parallel()
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>		t.Run(&#34;クライアントが切断しても JWKS 取得は完走し cooldown が次の取得を抑える&#34;, func(t *testing.T) {
+<span id="L267" class="ln">   267  </span>			t.Parallel()
+<span id="L268" class="ln">   268  </span>			keyA := loadProviderKey(t, rotKIDPrimary)
+<span id="L269" class="ln">   269  </span>			clk := &amp;rotClock{now: time.Now()}
+<span id="L270" class="ln">   270  </span>			src := &amp;blockingJWKS{body: loadGoldenJWKS(t, 1), entered: make(chan struct{}), release: make(chan struct{})}
+<span id="L271" class="ln">   271  </span>			srv := startRotationServer(t, src, clk)
+<span id="L272" class="ln">   272  </span>
+<span id="L273" class="ln">   273  </span>			<span class="comment">// 実クライアントが、JWKS 取得の最中に接続を切る。</span>
+<span id="L274" class="ln">   274  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L275" class="ln">   275  </span>			req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.baseURL+&#34;/protected&#34;, nil)
+<span id="L276" class="ln">   276  </span>			require.NoError(t, err)
+<span id="L277" class="ln">   277  </span>			req.Header.Set(&#34;Authorization&#34;, &#34;Bearer &#34;+mintRotToken(t, keyA, rotKIDPrimary, clk))
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>			aborted := make(chan struct{})
+<span id="L280" class="ln">   280  </span>			go func() {
+<span id="L281" class="ln">   281  </span>				defer close(aborted)
+<span id="L282" class="ln">   282  </span>				res, doErr := srv.client.Do(req)
+<span id="L283" class="ln">   283  </span>				assert.Error(t, doErr, &#34;切断したリクエストは応答を受け取らない&#34;)
+<span id="L284" class="ln">   284  </span>				assert.Nil(t, res)
+<span id="L285" class="ln">   285  </span>			}()
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>			&lt;-src.entered
+<span id="L288" class="ln">   288  </span>			cancel()
+<span id="L289" class="ln">   289  </span>			&lt;-aborted
+<span id="L290" class="ln">   290  </span>
+<span id="L291" class="ln">   291  </span>			<span class="comment">// 切断がサーバへ伝わる猶予。取得が呼び出し元の ctx を継いでいれば、この間に打ち切られる。</span>
+<span id="L292" class="ln">   292  </span>			time.Sleep(200 * time.Millisecond)
+<span id="L293" class="ln">   293  </span>			close(src.release)
+<span id="L294" class="ln">   294  </span>
+<span id="L295" class="ln">   295  </span>			<span class="comment">// 切断された取得が完走していれば鍵集合はキャッシュ済みで、後続は追加取得なしで検証できる。</span>
+<span id="L296" class="ln">   296  </span>			<span class="comment">// このリクエストは取得権の獲得で先行取得の完了を待つため、判定は待ち合わせ済みの状態で行われる。</span>
+<span id="L297" class="ln">   297  </span>			res := srv.DoJSON(http.MethodGet, &#34;/protected&#34;, nil, bearerHeader(mintRotToken(t, keyA, rotKIDPrimary, clk)))
+<span id="L298" class="ln">   298  </span>			require.Equal(t, http.StatusOK, res.StatusCode, &#34;切断された取得の結果が次のリクエストで使える&#34;)
+<span id="L299" class="ln">   299  </span>			assert.Equal(t, 1, src.count(), &#34;cooldown が起動しており再取得しない&#34;)
+<span id="L300" class="ln">   300  </span>		})
+<span id="L301" class="ln">   301  </span>	})
+<span id="L302" class="ln">   302  </span>}
+<span id="L303" class="ln">   303  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/integration/jwks_rotation_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -1,7 +1,5 @@
 # Database 初期化用 SQL
 
-[English](README.md) | 日本語
-
 `docker/database/sql/` は、**データベース環境を初期化するための SQL ファイル**を格納するディレクトリです。
 
 PostgreSQL コンテナの起動時に `docker-entrypoint-initdb.d` 経由で実行され、マイグレーション**以前**に必要なセットアップ（データベース作成、拡張機能の有効化等）を行います。

@@ -249,41 +249,42 @@
 <span id="L192" class="ln">   192  </span>			}
 <span id="L193" class="ln">   193  </span>
 <span id="L194" class="ln">   194  </span>			return prefectureMap, nil
-<span id="L195" class="ln">   195  </span>		})
-<span id="L196" class="ln">   196  </span>	if err != nil {
-<span id="L197" class="ln">   197  </span>		return nil, err
-<span id="L198" class="ln">   198  </span>	}
-<span id="L199" class="ln">   199  </span>
-<span id="L200" class="ln">   200  </span>	results := make(UserSearchResults, len(us))
-<span id="L201" class="ln">   201  </span>	for i, ue := range us {
-<span id="L202" class="ln">   202  </span>		p, ok := prefectureMap[ue.PrefectureID()]
-<span id="L203" class="ln">   203  </span>		if !ok {
-<span id="L204" class="ln">   204  </span>			return nil, errOrphanPrefecture
-<span id="L205" class="ln">   205  </span>		}
-<span id="L206" class="ln">   206  </span>		results[i] = toSearchResult(ue, p.Name())
-<span id="L207" class="ln">   207  </span>	}
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>	return results, nil
-<span id="L210" class="ln">   210  </span>}
-<span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span><span class="comment">// toSearchResult は、ユーザーエンティティと都道府県名から検索結果 DTO を構築します。</span>
-<span id="L213" class="ln">   213  </span>func toSearchResult(u *user.User, prefectureName string) *UserSearchResult {
-<span id="L214" class="ln">   214  </span>	return &amp;UserSearchResult{
-<span id="L215" class="ln">   215  </span>		ID:             u.ID(),
-<span id="L216" class="ln">   216  </span>		FirstName:      u.FirstName(),
-<span id="L217" class="ln">   217  </span>		LastName:       u.LastName(),
-<span id="L218" class="ln">   218  </span>		Email:          u.Email(),
-<span id="L219" class="ln">   219  </span>		Phone:          u.Phone(),
-<span id="L220" class="ln">   220  </span>		PostalCode:     u.PostalCode(),
-<span id="L221" class="ln">   221  </span>		PrefectureName: prefectureName,
-<span id="L222" class="ln">   222  </span>		City:           u.City(),
-<span id="L223" class="ln">   223  </span>		Street:         u.Street(),
-<span id="L224" class="ln">   224  </span>		Building:       u.Building(),
-<span id="L225" class="ln">   225  </span>		RegisteredAt:   u.CreatedAt(),
-<span id="L226" class="ln">   226  </span>		DeletedAt:      u.DeletedAt(),
-<span id="L227" class="ln">   227  </span>	}
-<span id="L228" class="ln">   228  </span>}
-<span id="L229" class="ln">   229  </span>
+<span id="L195" class="ln">   195  </span>		},
+<span id="L196" class="ln">   196  </span>	)
+<span id="L197" class="ln">   197  </span>	if err != nil {
+<span id="L198" class="ln">   198  </span>		return nil, err
+<span id="L199" class="ln">   199  </span>	}
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>	results := make(UserSearchResults, len(us))
+<span id="L202" class="ln">   202  </span>	for i, ue := range us {
+<span id="L203" class="ln">   203  </span>		p, ok := prefectureMap[ue.PrefectureID()]
+<span id="L204" class="ln">   204  </span>		if !ok {
+<span id="L205" class="ln">   205  </span>			return nil, errOrphanPrefecture
+<span id="L206" class="ln">   206  </span>		}
+<span id="L207" class="ln">   207  </span>		results[i] = toSearchResult(ue, p.Name())
+<span id="L208" class="ln">   208  </span>	}
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>	return results, nil
+<span id="L211" class="ln">   211  </span>}
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span><span class="comment">// toSearchResult は、ユーザーエンティティと都道府県名から検索結果 DTO を構築します。</span>
+<span id="L214" class="ln">   214  </span>func toSearchResult(u *user.User, prefectureName string) *UserSearchResult {
+<span id="L215" class="ln">   215  </span>	return &amp;UserSearchResult{
+<span id="L216" class="ln">   216  </span>		ID:             u.ID(),
+<span id="L217" class="ln">   217  </span>		FirstName:      u.FirstName(),
+<span id="L218" class="ln">   218  </span>		LastName:       u.LastName(),
+<span id="L219" class="ln">   219  </span>		Email:          u.Email(),
+<span id="L220" class="ln">   220  </span>		Phone:          u.Phone(),
+<span id="L221" class="ln">   221  </span>		PostalCode:     u.PostalCode(),
+<span id="L222" class="ln">   222  </span>		PrefectureName: prefectureName,
+<span id="L223" class="ln">   223  </span>		City:           u.City(),
+<span id="L224" class="ln">   224  </span>		Street:         u.Street(),
+<span id="L225" class="ln">   225  </span>		Building:       u.Building(),
+<span id="L226" class="ln">   226  </span>		RegisteredAt:   u.CreatedAt(),
+<span id="L227" class="ln">   227  </span>		DeletedAt:      u.DeletedAt(),
+<span id="L228" class="ln">   228  </span>	}
+<span id="L229" class="ln">   229  </span>}
+<span id="L230" class="ln">   230  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/user/search/user_search_usecase.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

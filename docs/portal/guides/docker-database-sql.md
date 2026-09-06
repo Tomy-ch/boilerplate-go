@@ -1,7 +1,5 @@
 # Database Initialization SQL
 
-English | [日本語](README.ja.md)
-
 `docker/database/sql/` stores SQL files for **initializing the database environment**.
 
 These files are executed on PostgreSQL container startup via `docker-entrypoint-initdb.d` and perform setup required **before** migrations (database creation, extension installation, etc.).

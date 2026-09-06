@@ -1,0 +1,113 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase">usecase</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase/boundary">boundary</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime">realtime</a>/<span class="text-muted">eventlog.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime">go-boilerplate/internal/usecase/boundary/realtime</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">//go:generate mockgen -source=$GOFILE -destination=mock/mock_$GOFILE.gen.go -package=mock_$GOPACKAGE</span>
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>package realtime
+<span id="L4" class="ln">     4  </span>
+<span id="L5" class="ln">     5  </span>import &#34;context&#34;
+<span id="L6" class="ln">     6  </span>
+<span id="L7" class="ln">     7  </span><span class="comment">// EventLogStore は、stream ごとに sequence 順で event を保持する有界の replay store です</span>
+<span id="L8" class="ln">     8  </span><span class="comment">// （ADR-0072: 現在状態の正本ではなく、保持期間内の replay のためだけに置く）。</span>
+<span id="L9" class="ln">     9  </span><span class="comment">// 失敗は apperror sentinel（読めない・書けないは ErrUnavailable）で返します。</span>
+<span id="L10" class="ln">    10  </span>type EventLogStore interface {
+<span id="L11" class="ln">    11  </span>	<span class="comment">// Append は、event を (StreamID, Sequence) の位置へ 1 度だけ書きます。</span>
+<span id="L12" class="ln">    12  </span>	<span class="comment">// 同じ位置に同じ EventID の event が既にあれば成功として返します。</span>
+<span id="L13" class="ln">    13  </span>	<span class="comment">// 同じ位置に異なる EventID の event があれば ErrSequenceConflict を返します。</span>
+<span id="L14" class="ln">    14  </span>	<span class="comment">// 実装は書く前に event.Validate() を呼び、不正な封筒を保存しません。</span>
+<span id="L15" class="ln">    15  </span>	Append(ctx context.Context, event DeliveryEvent) error
+<span id="L16" class="ln">    16  </span>	<span class="comment">// ReadAfter は、q.After より後ろの event を sequence 昇順に、最大 q.Limit 件返します。</span>
+<span id="L17" class="ln">    17  </span>	<span class="comment">// 書き込み直後の読み取りでも取りこぼさない（強い一貫性の）読み取りです。</span>
+<span id="L18" class="ln">    18  </span>	<span class="comment">// 続きがあれば HasMore が true になり、呼び出し側は最後の event の Sequence を次の After に渡します。</span>
+<span id="L19" class="ln">    19  </span>	ReadAfter(ctx context.Context, q ReadAfterQuery) (ReadAfterResult, error)
+<span id="L20" class="ln">    20  </span>	<span class="comment">// Latest は、stream の最後の event を返します。1 件も無ければ ok=false を返します。</span>
+<span id="L21" class="ln">    21  </span>	Latest(ctx context.Context, streamID StreamID) (DeliveryEvent, bool, error)
+<span id="L22" class="ln">    22  </span>	<span class="comment">// Find は、stream の指定 sequence の event を返します。無ければ ok=false を返します。</span>
+<span id="L23" class="ln">    23  </span>	Find(ctx context.Context, streamID StreamID, seq Sequence) (DeliveryEvent, bool, error)
+<span id="L24" class="ln">    24  </span>	<span class="comment">// AppendedThrough は、この stream へ追記した最大の位置を返します。1 度も追記していなければ 0 です</span>
+<span id="L25" class="ln">    25  </span>	<span class="comment">// （この値の使い方は docs/design/realtime-delivery.md の Glossary「append watermark」）。</span>
+<span id="L26" class="ln">    26  </span>	AppendedThrough(ctx context.Context, streamID StreamID) (Sequence, error)
+<span id="L27" class="ln">    27  </span>}
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span><span class="comment">// ReadAfterQuery は、cursor 以降の読み取り条件です。</span>
+<span id="L30" class="ln">    30  </span>type ReadAfterQuery struct {
+<span id="L31" class="ln">    31  </span>	<span class="comment">// StreamID は、読む stream です。</span>
+<span id="L32" class="ln">    32  </span>	StreamID StreamID
+<span id="L33" class="ln">    33  </span>	<span class="comment">// After は、この位置より後ろを読みます。0 なら stream の先頭から読みます。</span>
+<span id="L34" class="ln">    34  </span>	After Sequence
+<span id="L35" class="ln">    35  </span>	<span class="comment">// Limit は、1 回で返す最大件数です。0 以下なら実装の既定値になります。</span>
+<span id="L36" class="ln">    36  </span>	Limit int32
+<span id="L37" class="ln">    37  </span>}
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span><span class="comment">// ReadAfterResult は、1 回分の読み取り結果です。</span>
+<span id="L40" class="ln">    40  </span>type ReadAfterResult struct {
+<span id="L41" class="ln">    41  </span>	<span class="comment">// Events は、sequence 昇順の event です。gap はありません。</span>
+<span id="L42" class="ln">    42  </span>	Events []DeliveryEvent
+<span id="L43" class="ln">    43  </span>	<span class="comment">// HasMore は、Limit（または store の 1 回の読み取り上限）で打ち切られたことを示します。true でも次の読み取りが</span>
+<span id="L44" class="ln">    44  </span>	<span class="comment">// 0 件のことはあり、false なら続きは無い、という片方向の保証です。</span>
+<span id="L45" class="ln">    45  </span>	HasMore bool
+<span id="L46" class="ln">    46  </span>}
+<span id="L47" class="ln">    47  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/eventlog.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

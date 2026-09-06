@@ -124,10 +124,19 @@
 				<dd><a href="#GetRecoveredFromEcho">func GetRecoveredFromEcho(c *echo.Context) (bool, bool)</a></dd>
 			
 				
+				<dd><a href="#GetStreamGrant">func GetStreamGrant(ctx context.Context) (rt.StreamGrant, bool)</a></dd>
+			
+				
+				<dd><a href="#GetStreamRevalidator">func GetStreamRevalidator(ctx context.Context) (func(ctx context.Context) error, bool)</a></dd>
+			
+				
 				<dd><a href="#OptionalAuthn">func OptionalAuthn(ctx context.Context) *auth.Authn</a></dd>
 			
 				
 				<dd><a href="#RequireAuthn">func RequireAuthn(ctx context.Context) (auth.Authn, error)</a></dd>
+			
+				
+				<dd><a href="#RequireStreamGrant">func RequireStreamGrant(ctx context.Context) (rt.StreamGrant, error)</a></dd>
 			
 				
 				<dd><a href="#RequireUserID">func RequireUserID(ctx context.Context) (uuid.UUID, error)</a></dd>
@@ -151,7 +160,16 @@
 				<dd><a href="#SetRecoveredToEcho">func SetRecoveredToEcho(c *echo.Context, val bool)</a></dd>
 			
 				
+				<dd><a href="#SetStreamGrant">func SetStreamGrant(ctx context.Context, grant rt.StreamGrant) bool</a></dd>
+			
+				
+				<dd><a href="#SetStreamRevalidator">func SetStreamRevalidator(ctx context.Context, revalidate func(ctx context.Context) error) bool</a></dd>
+			
+				
 				<dd><a href="#WithAuthn">func WithAuthn(ctx context.Context) context.Context</a></dd>
+			
+				
+				<dd><a href="#WithStreamGrant">func WithStreamGrant(ctx context.Context) context.Context</a></dd>
 			
 			
 			
@@ -173,6 +191,8 @@
 			
 				<a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/recovered_ctx.gen.go.html">recovered_ctx.gen.go</a>
 			
+				<a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/stream_grant.go.html">stream_grant.go</a>
+			
 			</span>
 			</p>
 		
@@ -184,6 +204,10 @@
 		
 		
 			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrStreamGrantMissing は、検証済みの stream ticket が無い場合のエラーです。
+
+				</p><pre>var <span id="ErrStreamGrantMissing">ErrStreamGrantMissing</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrUnauthenticated">ErrUnauthenticated</a>, &#34;requires a verified stream ticket&#34;)</pre>
 			
 				<p>ErrUnauthenticatedUser は、認証ユーザー情報が取得できない場合のエラーです。
 
@@ -274,7 +298,35 @@
 		
 			
 			
-			<h2 id="OptionalAuthn">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/authn.go.html?s=3091:3142#L74">OptionalAuthn</a>
+			<h2 id="GetStreamGrant">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/stream_grant.go.html?s=1622:1685#L32">GetStreamGrant</a>
+				<a class="permalink" href="#GetStreamGrant">¶</a>
+				
+				
+			</h2>
+			<pre>func GetStreamGrant(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) (<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamGrant">StreamGrant</a>, <a href="../../../../builtin/#bool">bool</a>)</pre>
+			<p>GetStreamGrant は、ctx のスロットから検証済み ticket を読む。未設定なら ok=false。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="GetStreamRevalidator">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/stream_grant.go.html?s=3236:3322#L65">GetStreamRevalidator</a>
+				<a class="permalink" href="#GetStreamRevalidator">¶</a>
+				
+				
+			</h2>
+			<pre>func GetStreamRevalidator(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) (func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>, <a href="../../../../builtin/#bool">bool</a>)</pre>
+			<p>GetStreamRevalidator は、ctx のスロットから ticket の再検証手段を読む。未設定なら ok=false。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="OptionalAuthn">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/authn.go.html?s=3091:3142#L74">OptionalAuthn</a>
 				<a class="permalink" href="#OptionalAuthn">¶</a>
 				
 				
@@ -299,6 +351,21 @@ nil は「資格情報が提示されなかった」ことだけを意味しま�
 			<pre>func RequireAuthn(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) (<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, <a href="../../../../builtin/#error">error</a>)</pre>
 			<p>RequireAuthn は、ctx のスロットから Authn を読みます。未設定の場合は ErrUnauthenticatedUser を返します。
 認証済み呼び出し元を前提とするハンドラは、GetAuthn を直接呼ばずこちらを使います。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="RequireStreamGrant">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/stream_grant.go.html?s=2122:2190#L42">RequireStreamGrant</a>
+				<a class="permalink" href="#RequireStreamGrant">¶</a>
+				
+				
+			</h2>
+			<pre>func RequireStreamGrant(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) (<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamGrant">StreamGrant</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+			<p>RequireStreamGrant は、ctx のスロットから検証済み ticket を読みます。未設定の場合は ErrStreamGrantMissing を返します。
+stream ticket による認証を前提とするハンドラは、GetStreamGrant を直接呼ばずこちらを使います。
 
 			
 			
@@ -402,13 +469,58 @@ Authn が未設定の場合は ErrUnauthenticatedUser を、UserID が未解決�
 		
 			
 			
-			<h2 id="WithAuthn">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/authn.go.html?s=722:773#L16">WithAuthn</a>
+			<h2 id="SetStreamGrant">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/stream_grant.go.html?s=1299:1366#L22">SetStreamGrant</a>
+				<a class="permalink" href="#SetStreamGrant">¶</a>
+				
+				
+			</h2>
+			<pre>func SetStreamGrant(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, grant <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamGrant">StreamGrant</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+			<p>SetStreamGrant は、ctx のスロットへ検証済み ticket を書き込む。スロットが無ければ false。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="SetStreamRevalidator">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/stream_grant.go.html?s=2879:2974#L55">SetStreamRevalidator</a>
+				<a class="permalink" href="#SetStreamRevalidator">¶</a>
+				
+				
+			</h2>
+			<pre>func SetStreamRevalidator(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, revalidate func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+			<p>SetStreamRevalidator は、ctx のスロットへ ticket の再検証手段を書き込む。スロットが無ければ false。
+</p><p>接続の確立は「ticket 検証 →（外部 I/O）→ 接続の索引へ登録」の 2 段階で、その間に届いた失効通知は
+まだ索引に無い接続を取りこぼす。登録の直後にもう一度検証できれば、検証が無効化より後なら拒否され、
+前なら登録も無効化より前なので後続の失効通知が拾える（ADR-0074 の「in-service の失効は即時」）。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="WithAuthn">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/authn.go.html?s=722:773#L16">WithAuthn</a>
 				<a class="permalink" href="#WithAuthn">¶</a>
 				
 				
 			</h2>
 			<pre>func WithAuthn(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a></pre>
 			<p>WithAuthn は、空の Authn スロットを ctx に仕込む。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="WithStreamGrant">func <a href="../../../../src/go-boilerplate/internal/controller/ctxhelper/stream_grant.go.html?s=1042:1099#L17">WithStreamGrant</a>
+				<a class="permalink" href="#WithStreamGrant">¶</a>
+				
+				
+			</h2>
+			<pre>func WithStreamGrant(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a></pre>
+			<p>WithStreamGrant は、空の StreamGrant スロットを ctx に仕込む。
 
 			
 			

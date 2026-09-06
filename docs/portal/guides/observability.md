@@ -1,7 +1,5 @@
 # internal/observability
 
-English | [日本語](README.ja.md)
-
 `internal/observability` is a package that provides **tracing and observability logging integration** for this project.
 
 This package provides a **tracing mechanism based on OpenTelemetry**, and  
@@ -79,6 +77,7 @@ Roles of each component:
 |`shutdown.go`|`ProviderShutdowner` (otel-agnostic shutdown handle) + `NewProviderShutdowner`, consumed by the DI shutdown hook|
 |`ProvideTracerProvider` / `ProvideMeterProvider`|Adapters exposing the concrete providers as the `trace.TracerProvider` / `metric.MeterProvider` interfaces (in `provider.go`)|
 |`NewPgxTracer`|`otelpgx` tracer for DB spans + metrics, with connection details suppressed (in `pgx_tracer.go`)|
+|`LayerTracer.StartWithLink`|A span whose parent is the caller but whose **link** is the trace carried in a `map[string]string`; for work that happens later and elsewhere than the trace that caused it (SSE delivery, replay)|
 |`NewHTTPClientTransport` / `NewHTTPClientMetrics`|SSRF-guarded, instrumented outbound HTTP transport + its RED metrics (in `http_client_transport.go` / `http_client_metrics.go`)|
 |`propagation.go`|Cross-service / cross-carrier trace propagation (`ExtractFromCarrier` / `InjectTraceContextToCarrier`)|
 |`TracerFactory`|Generate tracers per layer|
@@ -357,6 +356,10 @@ Available test tracers
 |`NewMockInfraLayerTracer`|For Infrastructure|
 |`NewNoopLayerTracer`|Generic|
 |`NewStubSpanContext`|Generate Context with a valid Span|
+|`NewRecordingTracerProvider`|A `TracerProvider` that keeps every ended span, plus a function returning them — for asserting what an instrumentation put on a span|
+|`InstallRecordingTracerProvider`|The same provider installed as the otel global for the test's lifetime (restored on cleanup) — for instrumentation that takes its tracer from the global, such as the HTTP OTel middleware|
+|`NewRecordingTracerFactory`|`NewRecordingTracerProvider` wrapped as a `TracerFactory`, for a caller that needs a `LayerTracer` and the recorded spans together|
+|`SpanAttributeValues`|Every value of one attribute across the recorded spans, for asserting that a value never reached a span|
 
 ### StubSpanContext
 
@@ -382,6 +385,8 @@ a no-op `MeterProvider` / `TracerProvider` are provided.
 |`NewNoopHTTPClientTransport`|`HTTPClientTransport` with the SSRF guard disabled (allows loopback / httptest targets)|
 |`NewGuardedHTTPClientTransport`|`HTTPClientTransport` with the SSRF guard left **enabled**, for tests that assert the guard itself|
 |`NewObservedHTTPClientMetrics`|`HTTPClientMetrics` whose recorded values can be read back via `LabelValues`|
+|`NewNoopRealtimeMetrics`|`RealtimeMetrics` on a no-op meter|
+|`NewObservedRealtimeMetrics`|`RealtimeMetrics` whose recorded values can be read back via `CounterValue` / `HistogramCount`|
 
 ## Design Policy
 
@@ -485,10 +490,11 @@ Each subsystem owns its meter and instruments, constructed from the injected
 
 |Meter (`go-boilerplate/...`)|Instruments|Owner|
 |---|---|---|
-|`/outbox`|`outbox.lag_seconds` (gauge), `outbox.dead` (counter)|outbox relay|
+|`/outbox`|`outbox.lag_seconds` (gauge), `outbox.dead` (counter), `outbox.blocked_streams` (gauge); all labelled by `channel`|outbox relay|
 |`/worker`|`received` / `processed` / `failed` / `retried` / `dlq` / poll & extend errors (counters), latency (histogram), in-flight (up-down)|worker engine (broker-agnostic)|
 |`/idempotency`|`requests` / `failures` / `expiredCleanup` (counters); labels limited to `operation_id` / `result` / `phase` / `job`|idempotency subsystem|
 |`/httpclient`|RED (`requests` / `errors`, latency histogram) + `retries`, in-flight, `breakerState` gauge|outbound HTTP client substrate|
+|`/realtime`|connection (active / accepted / reconnects / rejected / closed / duration), replay & catch-up (executions / events / depth / failures / in-flight / admission timeouts / lag), delivery (latency, EventLog appends & lag, wakeup publish failures, recovery), cleanup (lease heartbeat failures, executions, instances); labels limited to `reason` / `trigger` / `result` / `outcome`|Realtime Delivery (serve, relay and the cleanup job share the meter; each process's DI module provides it)|
 
 DB spans and metrics are additionally emitted by `NewPgxTracer` (`otelpgx`), and Go
 **runtime metrics** are collected when `MetricsEnabled()`.
@@ -543,5 +549,7 @@ Telemetry has no user-visible behavior, so "it did not crash" is not a result. T
 - **Attribute cardinality is part of the contract** — where the design bounds a label set, assert that an unbounded input (a raw path, an ID) does not reach the attribute. A cardinality regression is invisible locally and expensive in production.
 - **Redaction vs propagation** — the outbound HTTP transport redacts secrets from the span while leaving the actual request untouched. Assert **both** halves in the same test; asserting only the redaction cannot distinguish it from having mangled the request.
 - **Conditional propagator** — the two directions are not symmetric, and the asymmetry is the contract: `Inject` branches on the flag (suppressed only when it is explicitly false) and needs both sides asserted, because the suppressed branch is the one that silently drops trace continuity; `Extract` delegates unconditionally, so assert the delegation rather than inventing a second branch for it.
+
+- **Where an instrumentation is *called* is the caller's test, not this package's** — this package owns that an instrument exists, is named correctly, and carries the right attribute set. Whether a given call site records at the right moment, with the right label, and not at all on the paths that must stay silent is a contract of the layer holding the call, so it is asserted there with `NewObservedRealtimeMetrics` / `NewObservedHTTPClientMetrics` rather than deferred to an integration test. An integration test observes the aggregate and cannot distinguish a missing call from one made with the wrong label.
 
 Two neighbouring sections govern the rest and must not be duplicated here: the helpers this package offers other layers are in [Test Support](#test-support), and the approved uncovered branches — plus the sign-off rule for adding one — are in [Test coverage exception (extraordinary measure)](#test-coverage-exception-extraordinary-measure).

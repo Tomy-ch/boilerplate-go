@@ -16,13 +16,14 @@ const TypeWithdrawn = "user.withdrawn.v1"
 // ErrInvalidWithdrawn は、user.withdrawn.v1 の payload として読めないことを示すエラーです。
 var ErrInvalidWithdrawn = xerrors.Wrap(apperror.ErrInvalidArgument, "invalid user.withdrawn payload")
 
-// Withdrawn は、user.withdrawn.v1 の自己完結 snapshot payload です。
+// Withdrawn は、user.withdrawn.v1 の通知 payload です（payload_parity.yaml の kind: notification）。
+// 他の payload と違って公開しているのは、退会アーカイブのワーカーが ParseWithdrawn で読み戻すためです。
 type Withdrawn struct {
 	UserID    string `json:"userId"`
 	DeletedAt string `json:"deletedAt"`
 }
 
-// BuildWithdrawn は、ユーザー集約から user.withdrawn.v1 の自己完結 snapshot payload を marshal します。
+// BuildWithdrawn は、ユーザー集約から user.withdrawn.v1 の通知 payload を marshal します。
 // 退会していないユーザーを渡した場合、payload の deletedAt は空文字列になります。
 func BuildWithdrawn(u *user.User) ([]byte, error) {
 	var deletedAt string

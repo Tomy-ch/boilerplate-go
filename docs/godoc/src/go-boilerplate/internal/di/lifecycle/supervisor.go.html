@@ -69,52 +69,61 @@
 <span id="L12" class="ln">    12  </span><span class="comment">//   - OnStop:  実行 context をキャンセルし、Body の完了を stopCtx（grace）の範囲で待ち、</span>
 <span id="L13" class="ln">    13  </span><span class="comment">//     その後 [SupervisedRunner.OnStopAux]（任意）を実行する。</span>
 <span id="L14" class="ln">    14  </span><span class="comment">//</span>
-<span id="L15" class="ln">    15  </span><span class="comment">// Body に渡される実行 context は startCtx とは独立しており、OnStop でのみキャンセルされます。これにより</span>
-<span id="L16" class="ln">    16  </span><span class="comment">//   - OnStart 完了後に fx が startCtx をキャンセルしても Body は巻き込まれず（detached）、</span>
-<span id="L17" class="ln">    17  </span><span class="comment">//   - OnStop の cancel でのみ Body の context が切れて中断できる（停止時キャンセル）。</span>
-<span id="L18" class="ln">    18  </span>type SupervisedRunner struct {
-<span id="L19" class="ln">    19  </span>	<span class="comment">// Body は、background ループ本体です。渡される context は OnStop でキャンセルされます。</span>
-<span id="L20" class="ln">    20  </span>	<span class="comment">// nil の場合は何も起動しません。</span>
-<span id="L21" class="ln">    21  </span>	Body func(ctx context.Context)
-<span id="L22" class="ln">    22  </span>	<span class="comment">// OnStartAux は、Body 起動前に OnStart 内で同期実行される任意の処理です（例: health listener 起動）。</span>
-<span id="L23" class="ln">    23  </span>	OnStartAux func()
-<span id="L24" class="ln">    24  </span>	<span class="comment">// OnStopAux は、drain 完了後に実行される任意の処理です（例: health listener 停止）。</span>
-<span id="L25" class="ln">    25  </span>	<span class="comment">// 引数の stopCtx は OnStop の grace context です。</span>
-<span id="L26" class="ln">    26  </span>	OnStopAux func(stopCtx context.Context)
-<span id="L27" class="ln">    27  </span>}
-<span id="L28" class="ln">    28  </span>
-<span id="L29" class="ln">    29  </span><span class="comment">// Register は、SupervisedRunner を reg のライフサイクルへ登録します。</span>
-<span id="L30" class="ln">    30  </span>func (s SupervisedRunner) Register(reg Registrar) {
-<span id="L31" class="ln">    31  </span>	<span class="comment">// 実行 context は startCtx に紐づけない（[SupervisedRunner] の detached 契約）。</span>
-<span id="L32" class="ln">    32  </span>	runCtx, cancel := context.WithCancel(context.Background())
-<span id="L33" class="ln">    33  </span>	done := make(chan struct{})
-<span id="L34" class="ln">    34  </span>
-<span id="L35" class="ln">    35  </span>	reg.RegisterStart(func(_ context.Context) error {
-<span id="L36" class="ln">    36  </span>		if s.OnStartAux != nil {
-<span id="L37" class="ln">    37  </span>			s.OnStartAux()
-<span id="L38" class="ln">    38  </span>		}
-<span id="L39" class="ln">    39  </span>		go func() {
-<span id="L40" class="ln">    40  </span>			defer close(done)
-<span id="L41" class="ln">    41  </span>			if s.Body != nil {
-<span id="L42" class="ln">    42  </span>				s.Body(runCtx)
-<span id="L43" class="ln">    43  </span>			}
-<span id="L44" class="ln">    44  </span>		}()
-<span id="L45" class="ln">    45  </span>		return nil
-<span id="L46" class="ln">    46  </span>	})
-<span id="L47" class="ln">    47  </span>
-<span id="L48" class="ln">    48  </span>	reg.RegisterStop(func(stopCtx context.Context) error {
-<span id="L49" class="ln">    49  </span>		cancel()
-<span id="L50" class="ln">    50  </span>		select {
-<span id="L51" class="ln">    51  </span>		case &lt;-done: <span class="comment">// Body 完了（drain 完了）</span>
-<span id="L52" class="ln">    52  </span>		case &lt;-stopCtx.Done(): <span class="comment">// 猶予切れ</span>
-<span id="L53" class="ln">    53  </span>		}
-<span id="L54" class="ln">    54  </span>		if s.OnStopAux != nil {
-<span id="L55" class="ln">    55  </span>			s.OnStopAux(stopCtx)
-<span id="L56" class="ln">    56  </span>		}
-<span id="L57" class="ln">    57  </span>		return nil
-<span id="L58" class="ln">    58  </span>	})
-<span id="L59" class="ln">    59  </span>}
-<span id="L60" class="ln">    60  </span>
+<span id="L15" class="ln">    15  </span><span class="comment">// Body に渡される実行 context は startCtx とは独立しており、OnStop でのみキャンセルされます（detached）。</span>
+<span id="L16" class="ln">    16  </span>type SupervisedRunner struct {
+<span id="L17" class="ln">    17  </span>	<span class="comment">// Body は、background ループ本体です。渡される context は OnStop でキャンセルされます。</span>
+<span id="L18" class="ln">    18  </span>	<span class="comment">// nil の場合は何も起動しません。</span>
+<span id="L19" class="ln">    19  </span>	Body func(ctx context.Context)
+<span id="L20" class="ln">    20  </span>	<span class="comment">// OnStartAux は、Body 起動前に OnStart 内で同期実行される任意の処理です（例: health listener 起動）。</span>
+<span id="L21" class="ln">    21  </span>	OnStartAux func()
+<span id="L22" class="ln">    22  </span>	<span class="comment">// OnStopAux は、drain 完了後に実行される任意の処理です（例: health listener 停止）。</span>
+<span id="L23" class="ln">    23  </span>	<span class="comment">// 引数の stopCtx は OnStop の grace context です。</span>
+<span id="L24" class="ln">    24  </span>	OnStopAux func(stopCtx context.Context)
+<span id="L25" class="ln">    25  </span>}
+<span id="L26" class="ln">    26  </span>
+<span id="L27" class="ln">    27  </span><span class="comment">// Register は、SupervisedRunner を reg のライフサイクルへ登録します。</span>
+<span id="L28" class="ln">    28  </span>func (s SupervisedRunner) Register(reg Registrar) {
+<span id="L29" class="ln">    29  </span>	start, stop := s.Bind()
+<span id="L30" class="ln">    30  </span>	reg.RegisterStart(start)
+<span id="L31" class="ln">    31  </span>	reg.RegisterStop(stop)
+<span id="L32" class="ln">    32  </span>}
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span><span class="comment">// Bind は、SupervisedRunner の start / stop 関数を返します。順序を呼び出し側で決めたいときに使い、</span>
+<span id="L35" class="ln">    35  </span><span class="comment">// Register はこれを 1 組ずつ登録します。1 度の Bind で返る組は 1 つの実行 context を共有するので、</span>
+<span id="L36" class="ln">    36  </span><span class="comment">// start は 1 回だけ呼びます。</span>
+<span id="L37" class="ln">    37  </span>func (s SupervisedRunner) Bind() (func(ctx context.Context) error, func(ctx context.Context) error) {
+<span id="L38" class="ln">    38  </span>	<span class="comment">// 実行 context は startCtx に紐づけない（[SupervisedRunner] の detached 契約）。</span>
+<span id="L39" class="ln">    39  </span>	runCtx, cancel := context.WithCancel(context.Background())
+<span id="L40" class="ln">    40  </span>	done := make(chan struct{})
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span>	start := func(_ context.Context) error {
+<span id="L43" class="ln">    43  </span>		if s.OnStartAux != nil {
+<span id="L44" class="ln">    44  </span>			s.OnStartAux()
+<span id="L45" class="ln">    45  </span>		}
+<span id="L46" class="ln">    46  </span>		go func() {
+<span id="L47" class="ln">    47  </span>			defer close(done)
+<span id="L48" class="ln">    48  </span>			if s.Body != nil {
+<span id="L49" class="ln">    49  </span>				s.Body(runCtx)
+<span id="L50" class="ln">    50  </span>			}
+<span id="L51" class="ln">    51  </span>		}()
+<span id="L52" class="ln">    52  </span>		return nil
+<span id="L53" class="ln">    53  </span>	}
+<span id="L54" class="ln">    54  </span>
+<span id="L55" class="ln">    55  </span>	stop := func(stopCtx context.Context) error {
+<span id="L56" class="ln">    56  </span>		cancel()
+<span id="L57" class="ln">    57  </span>		select {
+<span id="L58" class="ln">    58  </span>		case &lt;-done: <span class="comment">// Body 完了（drain 完了）</span>
+<span id="L59" class="ln">    59  </span>		case &lt;-stopCtx.Done(): <span class="comment">// 猶予切れ</span>
+<span id="L60" class="ln">    60  </span>		}
+<span id="L61" class="ln">    61  </span>		if s.OnStopAux != nil {
+<span id="L62" class="ln">    62  </span>			s.OnStopAux(stopCtx)
+<span id="L63" class="ln">    63  </span>		}
+<span id="L64" class="ln">    64  </span>		return nil
+<span id="L65" class="ln">    65  </span>	}
+<span id="L66" class="ln">    66  </span>
+<span id="L67" class="ln">    67  </span>	return start, stop
+<span id="L68" class="ln">    68  </span>}
+<span id="L69" class="ln">    69  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/di/lifecycle/supervisor.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

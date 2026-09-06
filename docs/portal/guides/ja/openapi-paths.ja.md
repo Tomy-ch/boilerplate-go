@@ -1,7 +1,5 @@
 # OpenAPI Paths
 
-[English](README.md) | 日本語
-
 `openapi/paths/` は、**API エンドポイントのルーティング定義**をリソース・バージョン単位で格納するディレクトリです。
 
 ## ディレクトリ構成
@@ -44,6 +42,8 @@
 <!-- sample-api:replace-end -->
 
 > `v1/` の内容は**サンプル実装**です。サービス構築時には独自のリソースに置き換えてください。
+
+`v1/` の中で 1 つだけ sample ではない path がある。`/v1/streams/{destination}`（`v1/streams/destination.yaml`）は Realtime Delivery 機構の generic な SSE endpoint で、sample 削除後も残り、Bearer ではなく query の `StreamTicket` scheme で認証し、`strict-server` 無しで生成される唯一の operation である。handler は `handler/` の下ではなく隣の `internal/controller/stream/` にある（同 package の README と `docs/design/realtime-delivery.md` §3.1 を参照）。
 
 #### バージョニング戦略
 

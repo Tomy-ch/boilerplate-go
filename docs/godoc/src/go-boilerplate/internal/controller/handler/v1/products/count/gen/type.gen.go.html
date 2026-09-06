@@ -96,98 +96,108 @@
 <span id="L39" class="ln">    39  </span><span class="comment">// CategoryIdParam Example: 5dd52d84-78eb-4a52-ba0b-2e11c95c2af2</span>
 <span id="L40" class="ln">    40  </span>type CategoryIdParam = openapi_types.UUID
 <span id="L41" class="ln">    41  </span>
-<span id="L42" class="ln">    42  </span><span class="comment">// IncludeUnpublishedParam Example: false</span>
-<span id="L43" class="ln">    43  </span>type IncludeUnpublishedParam = bool
+<span id="L42" class="ln">    42  </span><span class="comment">// DiscontinuedParam Example: true</span>
+<span id="L43" class="ln">    43  </span>type DiscontinuedParam = bool
 <span id="L44" class="ln">    44  </span>
-<span id="L45" class="ln">    45  </span><span class="comment">// KeywordParam Example: example keyword</span>
-<span id="L46" class="ln">    46  </span>type KeywordParam = string
+<span id="L45" class="ln">    45  </span><span class="comment">// IncludeUnpublishedParam Example: false</span>
+<span id="L46" class="ln">    46  </span>type IncludeUnpublishedParam = bool
 <span id="L47" class="ln">    47  </span>
-<span id="L48" class="ln">    48  </span><span class="comment">// MaxPriceParam defines model for MaxPriceParam.</span>
-<span id="L49" class="ln">    49  </span>type MaxPriceParam = string
+<span id="L48" class="ln">    48  </span><span class="comment">// KeywordParam Example: example keyword</span>
+<span id="L49" class="ln">    49  </span>type KeywordParam = string
 <span id="L50" class="ln">    50  </span>
-<span id="L51" class="ln">    51  </span><span class="comment">// MaxQuantityParam defines model for MaxQuantityParam.</span>
-<span id="L52" class="ln">    52  </span>type MaxQuantityParam = int32
+<span id="L51" class="ln">    51  </span><span class="comment">// MaxPriceParam defines model for MaxPriceParam.</span>
+<span id="L52" class="ln">    52  </span>type MaxPriceParam = string
 <span id="L53" class="ln">    53  </span>
-<span id="L54" class="ln">    54  </span><span class="comment">// MinPriceParam defines model for MinPriceParam.</span>
-<span id="L55" class="ln">    55  </span>type MinPriceParam = string
+<span id="L54" class="ln">    54  </span><span class="comment">// MaxQuantityParam defines model for MaxQuantityParam.</span>
+<span id="L55" class="ln">    55  </span>type MaxQuantityParam = int32
 <span id="L56" class="ln">    56  </span>
-<span id="L57" class="ln">    57  </span><span class="comment">// MinQuantityParam defines model for MinQuantityParam.</span>
-<span id="L58" class="ln">    58  </span>type MinQuantityParam = int32
+<span id="L57" class="ln">    57  </span><span class="comment">// MinPriceParam defines model for MinPriceParam.</span>
+<span id="L58" class="ln">    58  </span>type MinPriceParam = string
 <span id="L59" class="ln">    59  </span>
-<span id="L60" class="ln">    60  </span><span class="comment">// StatusCodesParam Example: [1,5]</span>
-<span id="L61" class="ln">    61  </span>type StatusCodesParam = []int32
+<span id="L60" class="ln">    60  </span><span class="comment">// MinQuantityParam defines model for MinQuantityParam.</span>
+<span id="L61" class="ln">    61  </span>type MinQuantityParam = int32
 <span id="L62" class="ln">    62  </span>
-<span id="L63" class="ln">    63  </span><span class="comment">// StatusIdParam Example: 093170fb-83a2-4864-a2b3-53236eaf3597</span>
-<span id="L64" class="ln">    64  </span>type StatusIdParam = openapi_types.UUID
+<span id="L63" class="ln">    63  </span><span class="comment">// StatusCodesParam Example: [1,5]</span>
+<span id="L64" class="ln">    64  </span>type StatusCodesParam = []int32
 <span id="L65" class="ln">    65  </span>
-<span id="L66" class="ln">    66  </span><span class="comment">// BadRequest400 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
-<span id="L67" class="ln">    67  </span>type BadRequest400 = ErrorResponse
+<span id="L66" class="ln">    66  </span><span class="comment">// StatusIdParam Example: 093170fb-83a2-4864-a2b3-53236eaf3597</span>
+<span id="L67" class="ln">    67  </span>type StatusIdParam = openapi_types.UUID
 <span id="L68" class="ln">    68  </span>
-<span id="L69" class="ln">    69  </span><span class="comment">// Forbidden403 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
-<span id="L70" class="ln">    70  </span>type Forbidden403 = ErrorResponse
+<span id="L69" class="ln">    69  </span><span class="comment">// BadRequest400 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
+<span id="L70" class="ln">    70  </span>type BadRequest400 = ErrorResponse
 <span id="L71" class="ln">    71  </span>
-<span id="L72" class="ln">    72  </span><span class="comment">// InternalServerError500 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
-<span id="L73" class="ln">    73  </span>type InternalServerError500 = ErrorResponse
+<span id="L72" class="ln">    72  </span><span class="comment">// Forbidden403 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
+<span id="L73" class="ln">    73  </span>type Forbidden403 = ErrorResponse
 <span id="L74" class="ln">    74  </span>
-<span id="L75" class="ln">    75  </span><span class="comment">// MethodNotAllowed405 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
-<span id="L76" class="ln">    76  </span>type MethodNotAllowed405 = ErrorResponse
+<span id="L75" class="ln">    75  </span><span class="comment">// InternalServerError500 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
+<span id="L76" class="ln">    76  </span>type InternalServerError500 = ErrorResponse
 <span id="L77" class="ln">    77  </span>
-<span id="L78" class="ln">    78  </span><span class="comment">// ServiceUnavailable503 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
-<span id="L79" class="ln">    79  </span>type ServiceUnavailable503 = ErrorResponse
+<span id="L78" class="ln">    78  </span><span class="comment">// MethodNotAllowed405 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
+<span id="L79" class="ln">    79  </span>type MethodNotAllowed405 = ErrorResponse
 <span id="L80" class="ln">    80  </span>
-<span id="L81" class="ln">    81  </span><span class="comment">// Unauthorized401 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
-<span id="L82" class="ln">    82  </span>type Unauthorized401 = ErrorResponse
+<span id="L81" class="ln">    81  </span><span class="comment">// ServiceUnavailable503 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
+<span id="L82" class="ln">    82  </span>type ServiceUnavailable503 = ErrorResponse
 <span id="L83" class="ln">    83  </span>
-<span id="L84" class="ln">    84  </span><span class="comment">// GetProductsCountParams defines parameters for GetProductsCount.</span>
-<span id="L85" class="ln">    85  </span>type GetProductsCountParams struct {
-<span id="L86" class="ln">    86  </span>	<span class="comment">// CategoryId 商品カテゴリIDでフィルタします。指定しない場合は全カテゴリを対象とします。</span>
-<span id="L87" class="ln">    87  </span>	<span class="comment">// 後継は categoryCodes で、マスタ行を指すのは UUID ではなく code です。categoryCodes と</span>
-<span id="L88" class="ln">    88  </span>	<span class="comment">// 同時に指定した場合は 400 を返します。</span>
-<span id="L89" class="ln">    89  </span>	<span class="comment">// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set</span>
-<span id="L90" class="ln">    90  </span>	CategoryId *CategoryIdParam `form:&#34;categoryId,omitempty&#34; json:&#34;categoryId,omitempty&#34;`
-<span id="L91" class="ln">    91  </span>
-<span id="L92" class="ln">    92  </span>	<span class="comment">// StatusId 商品ステータスIDでフィルタします。指定しない場合は全ステータスを対象とします。</span>
-<span id="L93" class="ln">    93  </span>	<span class="comment">// 後継は statusCodes で、マスタ行を指すのは UUID ではなく code です。statusCodes と</span>
-<span id="L94" class="ln">    94  </span>	<span class="comment">// 同時に指定した場合は 400 を返します。</span>
-<span id="L95" class="ln">    95  </span>	<span class="comment">// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set</span>
-<span id="L96" class="ln">    96  </span>	StatusId *StatusIdParam `form:&#34;statusId,omitempty&#34; json:&#34;statusId,omitempty&#34;`
-<span id="L97" class="ln">    97  </span>
-<span id="L98" class="ln">    98  </span>	<span class="comment">// CategoryCodes 商品カテゴリコードでフィルタします（複数指定は同じ名前を繰り返します: `categoryCodes=1&amp;categoryCodes=2`）。</span>
-<span id="L99" class="ln">    99  </span>	<span class="comment">// 指定したコードのいずれかに一致する商品を返します。</span>
-<span id="L100" class="ln">   100  </span>	<span class="comment">// 指定しない場合は全カテゴリを対象とします。存在しないコードは 0 件として扱い、エラーにはしません。</span>
-<span id="L101" class="ln">   101  </span>	<span class="comment">// コードは商品カテゴリマスタ（GET /v1/products/categories）が返す code で、マスタ行を指す静的な別名です。</span>
-<span id="L102" class="ln">   102  </span>	<span class="comment">// 非推奨の categoryId と同時に指定した場合は 400 を返します。</span>
-<span id="L103" class="ln">   103  </span>	CategoryCodes *CategoryCodesParam `form:&#34;categoryCodes,omitempty&#34; json:&#34;categoryCodes,omitempty&#34;`
-<span id="L104" class="ln">   104  </span>
-<span id="L105" class="ln">   105  </span>	<span class="comment">// StatusCodes 商品ステータスコードでフィルタします（複数指定は同じ名前を繰り返します: `statusCodes=1&amp;statusCodes=5`）。</span>
-<span id="L106" class="ln">   106  </span>	<span class="comment">// 指定したコードのいずれかに一致する商品を返します。</span>
-<span id="L107" class="ln">   107  </span>	<span class="comment">// 指定しない場合は全ステータスを対象とします。存在しないコードは 0 件として扱い、エラーにはしません。</span>
-<span id="L108" class="ln">   108  </span>	<span class="comment">// コードは商品ステータスマスタ（GET /v1/products/statuses）が返す code で、マスタ行を指す静的な別名です。</span>
-<span id="L109" class="ln">   109  </span>	<span class="comment">// 非推奨の statusId と同時に指定した場合は 400 を返します。</span>
-<span id="L110" class="ln">   110  </span>	StatusCodes *StatusCodesParam `form:&#34;statusCodes,omitempty&#34; json:&#34;statusCodes,omitempty&#34;`
-<span id="L111" class="ln">   111  </span>
-<span id="L112" class="ln">   112  </span>	<span class="comment">// Keyword 全文検索キーワード。商品名・商品説明への部分一致で絞り込みます。</span>
-<span id="L113" class="ln">   113  </span>	Keyword *KeywordParam `form:&#34;keyword,omitempty&#34; json:&#34;keyword,omitempty&#34;`
+<span id="L84" class="ln">    84  </span><span class="comment">// Unauthorized401 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。</span>
+<span id="L85" class="ln">    85  </span>type Unauthorized401 = ErrorResponse
+<span id="L86" class="ln">    86  </span>
+<span id="L87" class="ln">    87  </span><span class="comment">// GetProductsCountParams defines parameters for GetProductsCount.</span>
+<span id="L88" class="ln">    88  </span>type GetProductsCountParams struct {
+<span id="L89" class="ln">    89  </span>	<span class="comment">// CategoryId 商品カテゴリIDでフィルタします。指定しない場合は全カテゴリを対象とします。</span>
+<span id="L90" class="ln">    90  </span>	<span class="comment">// 後継は categoryCodes で、マスタ行を指すのは UUID ではなく code です。categoryCodes と</span>
+<span id="L91" class="ln">    91  </span>	<span class="comment">// 同時に指定した場合は 400 を返します。</span>
+<span id="L92" class="ln">    92  </span>	<span class="comment">// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set</span>
+<span id="L93" class="ln">    93  </span>	CategoryId *CategoryIdParam `form:&#34;categoryId,omitempty&#34; json:&#34;categoryId,omitempty&#34;`
+<span id="L94" class="ln">    94  </span>
+<span id="L95" class="ln">    95  </span>	<span class="comment">// StatusId 商品ステータスIDでフィルタします。指定しない場合は全ステータスを対象とします。</span>
+<span id="L96" class="ln">    96  </span>	<span class="comment">// 後継は statusCodes で、マスタ行を指すのは UUID ではなく code です。statusCodes と</span>
+<span id="L97" class="ln">    97  </span>	<span class="comment">// 同時に指定した場合は 400 を返します。</span>
+<span id="L98" class="ln">    98  </span>	<span class="comment">// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set</span>
+<span id="L99" class="ln">    99  </span>	StatusId *StatusIdParam `form:&#34;statusId,omitempty&#34; json:&#34;statusId,omitempty&#34;`
+<span id="L100" class="ln">   100  </span>
+<span id="L101" class="ln">   101  </span>	<span class="comment">// CategoryCodes 商品カテゴリコードでフィルタします（複数指定は同じ名前を繰り返します: `categoryCodes=1&amp;categoryCodes=2`）。</span>
+<span id="L102" class="ln">   102  </span>	<span class="comment">// 指定したコードのいずれかに一致する商品を返します。</span>
+<span id="L103" class="ln">   103  </span>	<span class="comment">// 指定しない場合は全カテゴリを対象とします。存在しないコードは 0 件として扱い、エラーにはしません。</span>
+<span id="L104" class="ln">   104  </span>	<span class="comment">// コードは商品カテゴリマスタ（GET /v1/products/categories）が返す code で、マスタ行を指す静的な別名です。</span>
+<span id="L105" class="ln">   105  </span>	<span class="comment">// 非推奨の categoryId と同時に指定した場合は 400 を返します。</span>
+<span id="L106" class="ln">   106  </span>	CategoryCodes *CategoryCodesParam `form:&#34;categoryCodes,omitempty&#34; json:&#34;categoryCodes,omitempty&#34;`
+<span id="L107" class="ln">   107  </span>
+<span id="L108" class="ln">   108  </span>	<span class="comment">// StatusCodes 商品ステータスコードでフィルタします（複数指定は同じ名前を繰り返します: `statusCodes=1&amp;statusCodes=5`）。</span>
+<span id="L109" class="ln">   109  </span>	<span class="comment">// 指定したコードのいずれかに一致する商品を返します。</span>
+<span id="L110" class="ln">   110  </span>	<span class="comment">// 指定しない場合は全ステータスを対象とします。存在しないコードは 0 件として扱い、エラーにはしません。</span>
+<span id="L111" class="ln">   111  </span>	<span class="comment">// コードは商品ステータスマスタ（GET /v1/products/statuses）が返す code で、マスタ行を指す静的な別名です。</span>
+<span id="L112" class="ln">   112  </span>	<span class="comment">// 非推奨の statusId と同時に指定した場合は 400 を返します。</span>
+<span id="L113" class="ln">   113  </span>	StatusCodes *StatusCodesParam `form:&#34;statusCodes,omitempty&#34; json:&#34;statusCodes,omitempty&#34;`
 <span id="L114" class="ln">   114  </span>
-<span id="L115" class="ln">   115  </span>	<span class="comment">// MinPrice 最低価格（この値以上）。負でない十進文字列で指定します。</span>
-<span id="L116" class="ln">   116  </span>	MinPrice *MinPriceParam `form:&#34;minPrice,omitempty&#34; json:&#34;minPrice,omitempty&#34;`
+<span id="L115" class="ln">   115  </span>	<span class="comment">// Keyword 全文検索キーワード。商品名・商品説明への部分一致で絞り込みます。</span>
+<span id="L116" class="ln">   116  </span>	Keyword *KeywordParam `form:&#34;keyword,omitempty&#34; json:&#34;keyword,omitempty&#34;`
 <span id="L117" class="ln">   117  </span>
-<span id="L118" class="ln">   118  </span>	<span class="comment">// MaxPrice 最高価格（この値以下）。負でない十進文字列で指定します。</span>
-<span id="L119" class="ln">   119  </span>	MaxPrice *MaxPriceParam `form:&#34;maxPrice,omitempty&#34; json:&#34;maxPrice,omitempty&#34;`
+<span id="L118" class="ln">   118  </span>	<span class="comment">// MinPrice 最低価格（この値以上）。負でない十進文字列で指定します。</span>
+<span id="L119" class="ln">   119  </span>	MinPrice *MinPriceParam `form:&#34;minPrice,omitempty&#34; json:&#34;minPrice,omitempty&#34;`
 <span id="L120" class="ln">   120  </span>
-<span id="L121" class="ln">   121  </span>	<span class="comment">// MinQuantity 最低在庫数（この値以上）。</span>
-<span id="L122" class="ln">   122  </span>	MinQuantity *MinQuantityParam `form:&#34;minQuantity,omitempty&#34; json:&#34;minQuantity,omitempty&#34;`
+<span id="L121" class="ln">   121  </span>	<span class="comment">// MaxPrice 最高価格（この値以下）。負でない十進文字列で指定します。</span>
+<span id="L122" class="ln">   122  </span>	MaxPrice *MaxPriceParam `form:&#34;maxPrice,omitempty&#34; json:&#34;maxPrice,omitempty&#34;`
 <span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>	<span class="comment">// MaxQuantity 最高在庫数（この値以下）。</span>
-<span id="L125" class="ln">   125  </span>	MaxQuantity *MaxQuantityParam `form:&#34;maxQuantity,omitempty&#34; json:&#34;maxQuantity,omitempty&#34;`
+<span id="L124" class="ln">   124  </span>	<span class="comment">// MinQuantity 最低在庫数（この値以上）。</span>
+<span id="L125" class="ln">   125  </span>	MinQuantity *MinQuantityParam `form:&#34;minQuantity,omitempty&#34; json:&#34;minQuantity,omitempty&#34;`
 <span id="L126" class="ln">   126  </span>
-<span id="L127" class="ln">   127  </span>	<span class="comment">// IncludeUnpublished 未公開（公開日時が未設定）の商品を母集団に含める場合は true を指定します。既定は false で、</span>
-<span id="L128" class="ln">   128  </span>	<span class="comment">// 指定しない場合の母集団は公開済みの商品のみです。</span>
-<span id="L129" class="ln">   129  </span>	<span class="comment">// true を指定できるのは管理者（admin）だけで、未認証は 401、管理者でなければ 403 で拒否します。</span>
-<span id="L130" class="ln">   130  </span>	<span class="comment">// false を明示した場合は認証を要しません（指定しない場合と同じ扱いです）。</span>
-<span id="L131" class="ln">   131  </span>	IncludeUnpublished *IncludeUnpublishedParam `form:&#34;includeUnpublished,omitempty&#34; json:&#34;includeUnpublished,omitempty&#34;`
-<span id="L132" class="ln">   132  </span>}
-<span id="L133" class="ln">   133  </span>
+<span id="L127" class="ln">   127  </span>	<span class="comment">// MaxQuantity 最高在庫数（この値以下）。</span>
+<span id="L128" class="ln">   128  </span>	MaxQuantity *MaxQuantityParam `form:&#34;maxQuantity,omitempty&#34; json:&#34;maxQuantity,omitempty&#34;`
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>	<span class="comment">// IncludeUnpublished 未公開（公開日時が未設定）の商品を母集団に含める場合は true を指定します。既定は false で、</span>
+<span id="L131" class="ln">   131  </span>	<span class="comment">// 指定しない場合の母集団は公開済みの商品のみです。</span>
+<span id="L132" class="ln">   132  </span>	<span class="comment">// true を指定できるのは管理者（admin）だけで、未認証は 401、管理者でなければ 403 で拒否します。</span>
+<span id="L133" class="ln">   133  </span>	<span class="comment">// false を明示した場合は認証を要しません（指定しない場合と同じ扱いです）。</span>
+<span id="L134" class="ln">   134  </span>	IncludeUnpublished *IncludeUnpublishedParam `form:&#34;includeUnpublished,omitempty&#34; json:&#34;includeUnpublished,omitempty&#34;`
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span>	<span class="comment">// Discontinued 廃番かどうかで母集団を絞ります。true を指定すると廃番の商品だけ、false を指定すると廃番でない</span>
+<span id="L137" class="ln">   137  </span>	<span class="comment">// 商品だけを返します。指定しない場合は絞りません。</span>
+<span id="L138" class="ln">   138  </span>	<span class="comment">// **廃番の商品は非公開になる**ため、この軸が意味を持つのは includeUnpublished=true を指定できる</span>
+<span id="L139" class="ln">   139  </span>	<span class="comment">// 管理者（admin）だけです。既定の母集団（公開済みのみ）に対して true を指定すると常に空になります。</span>
+<span id="L140" class="ln">   140  </span>	<span class="comment">// 廃番かどうかは discontinuedAt が設定されているかで決まります（未来の日時にはなりません）。</span>
+<span id="L141" class="ln">   141  </span>	Discontinued *DiscontinuedParam `form:&#34;discontinued,omitempty&#34; json:&#34;discontinued,omitempty&#34;`
+<span id="L142" class="ln">   142  </span>}
+<span id="L143" class="ln">   143  </span>
 </pre><p><a href="../../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/count/gen/type.gen.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

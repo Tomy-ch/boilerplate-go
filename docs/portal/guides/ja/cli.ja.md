@@ -1,7 +1,5 @@
 # CLI コア
 
-[English](README.md) | 日本語
-
 `internal/cli` は、アプリケーションの CLI コマンドの**純粋でテスト可能なコアロジック**を保持します。
 
 Cobra や infrastructure の結線には依存しません。Cobra コマンド定義と、実依存（config / DB / DI /
@@ -22,6 +20,7 @@ OS シグナル / golang-migrate）を結線する composition root は `cmd/`�
 |`merge-dml`|`mergedml/`|`cmd/merge_dml.go`|DML ディレクトリの SQL ファイルを種別ごとにマージ|
 |`worker`|`worker/`|`cmd/worker.go`|登録済み worker を起動（`worker <worker-name> [args...]`）|
 |`outbox-relay`|`outbox/`|`cmd/outbox_relay.go`|outbox relay を起動。`replay` サブコマンドは dead 行を pending へ戻す|
+|`realtime-init`|`realtimeinit/`|`cmd/realtime_init.go`|Realtime Delivery の table（EventLog / StreamTicket / InstanceLease）を DynamoDB 互換 store に、fan-out の topic を SNS 互換 broker に作る。冪等な one-shot で、application の起動時には走らない|
 |`db-slot`|`dbslot/`|`cmd/db-slot.go`|共有 worktree プールから DB スロットをリースする（`acquire` / `release` / `heartbeat` / `status` / `env` / `require-owner`）|
 
 ## 構造
@@ -58,7 +57,8 @@ OS シグナル / golang-migrate）を結線する composition root は `cmd/`�
   —— [`dbslot/`](dbslot/README.ja.md) を参照。
 - **薄い `cmd/` 殻はカバレッジゲートから除外**（`gen|cmd|mock|apperror|scripts`）。その実行時の正しさは
   CI boot チェックで担保: `app-di-startup-check`（serve → `/ready`）、`job-boot-check`（job dispatch）、
-  `worker-boot-check`（worker dispatch）、`migration-check`（up/down 往復）、`gen-*-artifacts-check`
+  `worker-boot-check`（worker dispatch）、`outbox-relay-boot-check`（relay の起動と drain）、
+  `migration-check`（up/down 往復）、`gen-*-artifacts-check`
   （codegen の dogfooding）——いずれも実 Postgres。
   DB アクセス挙動は実 Postgres に当てた repository テスト（`internal/infrastructure/rdb/testkit`）で担保。
 

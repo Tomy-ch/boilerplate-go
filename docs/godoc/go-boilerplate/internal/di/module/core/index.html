@@ -112,6 +112,9 @@
 				<dd><a href="#BasicAuthModule">func BasicAuthModule() fx.Option</a></dd>
 			
 				
+				<dd><a href="#RedactionModule">func RedactionModule() fx.Option</a></dd>
+			
+				
 				<dd><a href="#SecurityCookieModule">func SecurityCookieModule() fx.Option</a></dd>
 			
 				
@@ -136,6 +139,8 @@
 			
 				<a href="../../../../../src/go-boilerplate/internal/di/module/core/basicauth.go.html">basicauth.go</a>
 			
+				<a href="../../../../../src/go-boilerplate/internal/di/module/core/redaction.go.html">redaction.go</a>
+			
 				<a href="../../../../../src/go-boilerplate/internal/di/module/core/security_cookie.go.html">security_cookie.go</a>
 			
 				<a href="../../../../../src/go-boilerplate/internal/di/module/core/skipper.go.html">skipper.go</a>
@@ -155,7 +160,7 @@
 		
 			
 			
-			<h2 id="AuthnModule">func <a href="../../../../../src/go-boilerplate/internal/di/module/core/auth.go.html?s=2122:2150#L44">AuthnModule</a>
+			<h2 id="AuthnModule">func <a href="../../../../../src/go-boilerplate/internal/di/module/core/auth.go.html?s=1903:1931#L43">AuthnModule</a>
 				<a class="permalink" href="#AuthnModule">¶</a>
 				
 				
@@ -176,6 +181,21 @@
 			</h2>
 			<pre>func BasicAuthModule() <a href="../../../../../go.uber.org/fx/">fx</a>.<a href="../../../../../go.uber.org/fx/#Option">Option</a></pre>
 			<p>BasicAuthModule は Basic 認証機能を提供する Fx モジュールを返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="RedactionModule">func <a href="../../../../../src/go-boilerplate/internal/di/module/core/redaction.go.html?s=387:419#L2">RedactionModule</a>
+				<a class="permalink" href="#RedactionModule">¶</a>
+				
+				
+			</h2>
+			<pre>func RedactionModule() <a href="../../../../../go.uber.org/fx/">fx</a>.<a href="../../../../../go.uber.org/fx/#Option">Option</a></pre>
+			<p>RedactionModule は、ログへ出す前に資格情報を取り除く Redactor を提供する fx モジュールを返します。
+秘匿対象名は OpenAPI spec の securityScheme のうち query の apiKey から導出します。
 
 			
 			

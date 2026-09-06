@@ -1,0 +1,126 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>hook - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/di">di</a>/<a href="../../../../../../src/go-boilerplate/internal/di/server">server</a>/<a href="../../../../../../src/go-boilerplate/internal/di/server/hook">hook</a>/<span class="text-muted">participant.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/di/server/hook">go-boilerplate/internal/di/server/hook</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package hook
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>
+<span id="L6" class="ln">     6  </span>	&#34;go-boilerplate/internal/di/lifecycle&#34;
+<span id="L7" class="ln">     7  </span>)
+<span id="L8" class="ln">     8  </span>
+<span id="L9" class="ln">     9  </span><span class="comment">// serve instance のライフサイクルに参加する値の fx group 名。参加者はどれも任意（値が 1 つも無くてもよい value group。</span>
+<span id="L10" class="ln">    10  </span><span class="comment">// fx の `soft` は付けない — これらの型を他から要求する者が居ないため、soft にすると constructor が走らず group が空になる）で、</span>
+<span id="L11" class="ln">    11  </span><span class="comment">// 1 つも無いときの起動・停止は HTTP サーバーだけの従来どおりです。</span>
+<span id="L12" class="ln">    12  </span>const (
+<span id="L13" class="ln">    13  </span>	<span class="comment">// StartupGroup は、HTTP を listen する前に依存の到達性を確かめる参加者の group です。</span>
+<span id="L14" class="ln">    14  </span>	StartupGroup = &#34;serve.startup&#34;
+<span id="L15" class="ln">    15  </span>	<span class="comment">// ProvisionerGroup は、instance 固有の外部 resource を用意し、停止時に片付ける参加者の group です。</span>
+<span id="L16" class="ln">    16  </span>	ProvisionerGroup = &#34;serve.provisioners&#34;
+<span id="L17" class="ln">    17  </span>	<span class="comment">// RunnerGroup は、listen 中だけ常駐する背景処理の group です。</span>
+<span id="L18" class="ln">    18  </span>	RunnerGroup = &#34;serve.runners&#34;
+<span id="L19" class="ln">    19  </span>	<span class="comment">// DrainerGroup は、HTTP shutdown より前に確定済みの長寿命レスポンスを閉じ切る参加者の group です。</span>
+<span id="L20" class="ln">    20  </span>	DrainerGroup = &#34;serve.drainers&#34;
+<span id="L21" class="ln">    21  </span>)
+<span id="L22" class="ln">    22  </span>
+<span id="L23" class="ln">    23  </span><span class="comment">// StartupProbe は、HTTP を listen する前に依存の到達性を確かめる参加者です。失敗は起動失敗です</span>
+<span id="L24" class="ln">    24  </span><span class="comment">// （Realtime runtime の起動に不可欠な dependency は startup で fail-fast する — docs/design/realtime-delivery.md §2.6）。</span>
+<span id="L25" class="ln">    25  </span>type StartupProbe struct {
+<span id="L26" class="ln">    26  </span>	<span class="comment">// Name は、ログに載せる参加者の名前です。</span>
+<span id="L27" class="ln">    27  </span>	Name string
+<span id="L28" class="ln">    28  </span>	<span class="comment">// Probe は、依存に到達できるかを確かめます。</span>
+<span id="L29" class="ln">    29  </span>	Probe func(ctx context.Context) error
+<span id="L30" class="ln">    30  </span>}
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span><span class="comment">// Provisioner は、instance 固有の外部 resource を起動時に用意し、停止時に片付ける参加者です。</span>
+<span id="L33" class="ln">    33  </span><span class="comment">// 起動が途中で失敗したら、用意済みの参加者は逆順に Teardown されます。</span>
+<span id="L34" class="ln">    34  </span>type Provisioner struct {
+<span id="L35" class="ln">    35  </span>	<span class="comment">// Name は、ログに載せる参加者の名前です。</span>
+<span id="L36" class="ln">    36  </span>	Name string
+<span id="L37" class="ln">    37  </span>	<span class="comment">// Provision は、resource を用意します。</span>
+<span id="L38" class="ln">    38  </span>	Provision func(ctx context.Context) error
+<span id="L39" class="ln">    39  </span>	<span class="comment">// Teardown は、resource を片付けます。Provision していなくても呼べる（何もしない）実装にします。</span>
+<span id="L40" class="ln">    40  </span>	Teardown func(ctx context.Context) error
+<span id="L41" class="ln">    41  </span>}
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span><span class="comment">// Runner は、HTTP を listen している間だけ常駐する背景処理です。契約は lifecycle.SupervisedRunner と同じ</span>
+<span id="L44" class="ln">    44  </span><span class="comment">// （detached、停止時に cancel して完了を猶予の範囲で待つ）。</span>
+<span id="L45" class="ln">    45  </span>type Runner struct {
+<span id="L46" class="ln">    46  </span>	<span class="comment">// Name は、ログに載せる参加者の名前です。</span>
+<span id="L47" class="ln">    47  </span>	Name string
+<span id="L48" class="ln">    48  </span>	<span class="comment">// Runner は、常駐処理の本体です。</span>
+<span id="L49" class="ln">    49  </span>	Runner lifecycle.SupervisedRunner
+<span id="L50" class="ln">    50  </span>}
+<span id="L51" class="ln">    51  </span>
+<span id="L52" class="ln">    52  </span><span class="comment">// Drainer は、HTTP shutdown より前に、確定済みの長寿命レスポンス（SSE 接続）を閉じ切る参加者です。</span>
+<span id="L53" class="ln">    53  </span><span class="comment">// 新規接続の拒否もこの中で行います。Drain が返るまで常駐処理の停止と HTTP shutdown は始まりません。</span>
+<span id="L54" class="ln">    54  </span>type Drainer struct {
+<span id="L55" class="ln">    55  </span>	<span class="comment">// Name は、ログに載せる参加者の名前です。</span>
+<span id="L56" class="ln">    56  </span>	Name string
+<span id="L57" class="ln">    57  </span>	<span class="comment">// Drain は、接続を閉じ切るまで待ちます。ctx の猶予を超えたら残りを諦めて返します。</span>
+<span id="L58" class="ln">    58  </span>	Drain func(ctx context.Context) error
+<span id="L59" class="ln">    59  </span>}
+<span id="L60" class="ln">    60  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/di/server/hook/participant.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

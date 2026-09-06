@@ -65,260 +65,332 @@
 <span id="L8" class="ln">     8  </span>	&#34;slices&#34;
 <span id="L9" class="ln">     9  </span>	&#34;time&#34;
 <span id="L10" class="ln">    10  </span>
-<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/domain/lexicon/money&#34;
-<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/pkg/ptr&#34;
-<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/stringkit&#34;
-<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/uuid&#34;
-<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
-<span id="L16" class="ln">    16  </span>)
-<span id="L17" class="ln">    17  </span>
-<span id="L18" class="ln">    18  </span><span class="comment">// Products は、Product エンティティのスライス型です。</span>
-<span id="L19" class="ln">    19  </span>type Products []*Product
-<span id="L20" class="ln">    20  </span>
-<span id="L21" class="ln">    21  </span><span class="comment">// Product は、商品を表すドメインエンティティです。</span>
-<span id="L22" class="ln">    22  </span>type Product struct {
-<span id="L23" class="ln">    23  </span>	id                    uuid.UUID
-<span id="L24" class="ln">    24  </span>	name                  string
-<span id="L25" class="ln">    25  </span>	description           *string
-<span id="L26" class="ln">    26  </span>	price                 money.Price
-<span id="L27" class="ln">    27  </span>	quantity              int
-<span id="L28" class="ln">    28  </span>	stockWarningThreshold *int
-<span id="L29" class="ln">    29  </span>	status                StatusRef
-<span id="L30" class="ln">    30  </span>	category              CategoryRef
-<span id="L31" class="ln">    31  </span>	publishedAt           *time.Time
-<span id="L32" class="ln">    32  </span>	images                []Image
-<span id="L33" class="ln">    33  </span>	createdAt             time.Time
-<span id="L34" class="ln">    34  </span>	version               int
-<span id="L35" class="ln">    35  </span>}
-<span id="L36" class="ln">    36  </span>
-<span id="L37" class="ln">    37  </span><span class="comment">// Attributes は、商品の属性一式です。</span>
-<span id="L38" class="ln">    38  </span><span class="comment">// ポインタのフィールドは未設定を nil で表し、不変条件は受け取り側が検証します。</span>
-<span id="L39" class="ln">    39  </span>type Attributes struct {
-<span id="L40" class="ln">    40  </span>	Name                  string
-<span id="L41" class="ln">    41  </span>	Description           *string
-<span id="L42" class="ln">    42  </span>	Price                 money.Price
-<span id="L43" class="ln">    43  </span>	Quantity              int
-<span id="L44" class="ln">    44  </span>	StockWarningThreshold *int
-<span id="L45" class="ln">    45  </span>	Status                StatusRef
-<span id="L46" class="ln">    46  </span>	Category              CategoryRef
-<span id="L47" class="ln">    47  </span>	PublishedAt           *time.Time
-<span id="L48" class="ln">    48  </span>	Images                []Image
-<span id="L49" class="ln">    49  </span>}
-<span id="L50" class="ln">    50  </span>
-<span id="L51" class="ln">    51  </span><span class="comment">// New は、商品エンティティの検証と生成を行います。Price は非負の money.Price（非負検証は Price VO が担保）、</span>
-<span id="L52" class="ln">    52  </span><span class="comment">// Quantity と StockWarningThreshold（指定時）は、いずれも在庫が保持できる範囲に収まる必要があります。</span>
-<span id="L53" class="ln">    53  </span><span class="comment">// PublishedAt は nil（未公開）を許容し、Images は空（画像未設定）を許容します。</span>
-<span id="L54" class="ln">    54  </span><span class="comment">// id が nil、Name が長さ制約外、Status / Category がゼロ値の場合はそれぞれ検証エラーを返します。</span>
-<span id="L55" class="ln">    55  </span><span class="comment">// createdAt は商品が登録された日時で、ゼロ値は検証エラーです。</span>
-<span id="L56" class="ln">    56  </span><span class="comment">// 生成直後のバージョンは initialVersion です。</span>
-<span id="L57" class="ln">    57  </span>func New(id uuid.UUID, attrs Attributes, createdAt time.Time) (*Product, error) {
-<span id="L58" class="ln">    58  </span>	return newProduct(id, attrs, initialVersion, createdAt)
-<span id="L59" class="ln">    59  </span>}
-<span id="L60" class="ln">    60  </span>
-<span id="L61" class="ln">    61  </span><span class="comment">// Reconstruct は、永続化済みの商品を再構築します。</span>
-<span id="L62" class="ln">    62  </span><span class="comment">// version は永続化されている楽観ロックのバージョンで、initialVersion 未満の場合は検証エラーを返します。</span>
-<span id="L63" class="ln">    63  </span><span class="comment">// createdAt は永続化されている登録日時です。その他の検証は New と同一です。</span>
-<span id="L64" class="ln">    64  </span>func Reconstruct(id uuid.UUID, attrs Attributes, version int, createdAt time.Time) (*Product, error) {
-<span id="L65" class="ln">    65  </span>	return newProduct(id, attrs, version, createdAt)
-<span id="L66" class="ln">    66  </span>}
-<span id="L67" class="ln">    67  </span>
-<span id="L68" class="ln">    68  </span><span class="comment">// newProduct は、生成・再構築に共通の検証を行い商品エンティティを構築します。</span>
-<span id="L69" class="ln">    69  </span>func newProduct(id uuid.UUID, attrs Attributes, version int, createdAt time.Time) (*Product, error) {
-<span id="L70" class="ln">    70  </span>	if id.IsNil() {
-<span id="L71" class="ln">    71  </span>		return nil, xerrors.Wrap(ErrInvalidID, &#34;id is required&#34;)
-<span id="L72" class="ln">    72  </span>	}
-<span id="L73" class="ln">    73  </span>	if err := validateAttributes(attrs); err != nil {
-<span id="L74" class="ln">    74  </span>		return nil, err
-<span id="L75" class="ln">    75  </span>	}
-<span id="L76" class="ln">    76  </span>	if version &lt; initialVersion {
-<span id="L77" class="ln">    77  </span>		return nil, xerrors.Wrap(
-<span id="L78" class="ln">    78  </span>			ErrInvalidVersion,
-<span id="L79" class="ln">    79  </span>			fmt.Sprintf(&#34;version must be %d or greater, got %d&#34;, initialVersion, version),
-<span id="L80" class="ln">    80  </span>		)
-<span id="L81" class="ln">    81  </span>	}
-<span id="L82" class="ln">    82  </span>	if createdAt.IsZero() {
-<span id="L83" class="ln">    83  </span>		return nil, xerrors.Wrap(ErrInvalidCreatedAt, &#34;createdAt is required&#34;)
-<span id="L84" class="ln">    84  </span>	}
-<span id="L85" class="ln">    85  </span>
-<span id="L86" class="ln">    86  </span>	return &amp;Product{
-<span id="L87" class="ln">    87  </span>		id:                    id,
-<span id="L88" class="ln">    88  </span>		name:                  attrs.Name,
-<span id="L89" class="ln">    89  </span>		description:           ptr.Copy(attrs.Description),
-<span id="L90" class="ln">    90  </span>		price:                 attrs.Price,
-<span id="L91" class="ln">    91  </span>		quantity:              attrs.Quantity,
-<span id="L92" class="ln">    92  </span>		stockWarningThreshold: ptr.Copy(attrs.StockWarningThreshold),
-<span id="L93" class="ln">    93  </span>		status:                attrs.Status,
-<span id="L94" class="ln">    94  </span>		category:              attrs.Category,
-<span id="L95" class="ln">    95  </span>		publishedAt:           ptr.Copy(attrs.PublishedAt),
-<span id="L96" class="ln">    96  </span>		images:                sortImagesByDisplaySort(attrs.Images),
-<span id="L97" class="ln">    97  </span>		createdAt:             createdAt,
-<span id="L98" class="ln">    98  </span>		version:               version,
-<span id="L99" class="ln">    99  </span>	}, nil
-<span id="L100" class="ln">   100  </span>}
-<span id="L101" class="ln">   101  </span>
-<span id="L102" class="ln">   102  </span><span class="comment">// validateAttributes は、商品属性の不変条件を検証します。生成時と更新時で同一の条件を課します。</span>
-<span id="L103" class="ln">   103  </span>func validateAttributes(attrs Attributes) error {
-<span id="L104" class="ln">   104  </span>	if ok, msg := stringkit.ValidateInRange(attrs.Name, minNameLength, maxNameLength); !ok {
-<span id="L105" class="ln">   105  </span>		return xerrors.Wrap(ErrInvalidName, msg)
-<span id="L106" class="ln">   106  </span>	}
-<span id="L107" class="ln">   107  </span>	if err := validateQuantity(int64(attrs.Quantity)); err != nil {
-<span id="L108" class="ln">   108  </span>		return err
-<span id="L109" class="ln">   109  </span>	}
-<span id="L110" class="ln">   110  </span>	if err := validateStockWarningThreshold(attrs.StockWarningThreshold); err != nil {
-<span id="L111" class="ln">   111  </span>		return err
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/domain/lexicon/money&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/ptr&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/stringkit&#34;
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L17" class="ln">    17  </span>)
+<span id="L18" class="ln">    18  </span>
+<span id="L19" class="ln">    19  </span><span class="comment">// Products は、Product エンティティのスライス型です。</span>
+<span id="L20" class="ln">    20  </span>type Products []*Product
+<span id="L21" class="ln">    21  </span>
+<span id="L22" class="ln">    22  </span><span class="comment">// Product は、商品を表すドメインエンティティです。</span>
+<span id="L23" class="ln">    23  </span>type Product struct {
+<span id="L24" class="ln">    24  </span>	id                    uuid.UUID
+<span id="L25" class="ln">    25  </span>	name                  string
+<span id="L26" class="ln">    26  </span>	description           *string
+<span id="L27" class="ln">    27  </span>	price                 money.Price
+<span id="L28" class="ln">    28  </span>	quantity              int
+<span id="L29" class="ln">    29  </span>	stockWarningThreshold *int
+<span id="L30" class="ln">    30  </span>	status                StatusRef
+<span id="L31" class="ln">    31  </span>	category              CategoryRef
+<span id="L32" class="ln">    32  </span>	publishedAt           *time.Time
+<span id="L33" class="ln">    33  </span>	discontinuedAt        *time.Time
+<span id="L34" class="ln">    34  </span>	images                []Image
+<span id="L35" class="ln">    35  </span>	createdAt             time.Time
+<span id="L36" class="ln">    36  </span>	version               int
+<span id="L37" class="ln">    37  </span>}
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span><span class="comment">// Attributes は、商品の属性一式です。</span>
+<span id="L40" class="ln">    40  </span><span class="comment">// ポインタのフィールドは未設定を nil で表し、不変条件は受け取り側が検証します。</span>
+<span id="L41" class="ln">    41  </span>type Attributes struct {
+<span id="L42" class="ln">    42  </span>	Name                  string
+<span id="L43" class="ln">    43  </span>	Description           *string
+<span id="L44" class="ln">    44  </span>	Price                 money.Price
+<span id="L45" class="ln">    45  </span>	Quantity              int
+<span id="L46" class="ln">    46  </span>	StockWarningThreshold *int
+<span id="L47" class="ln">    47  </span>	Status                StatusRef
+<span id="L48" class="ln">    48  </span>	Category              CategoryRef
+<span id="L49" class="ln">    49  </span>	PublishedAt           *time.Time
+<span id="L50" class="ln">    50  </span>	DiscontinuedAt        *time.Time
+<span id="L51" class="ln">    51  </span>	Images                []Image
+<span id="L52" class="ln">    52  </span>}
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span><span class="comment">// New は、商品エンティティの検証と生成を行います。Price は非負の money.Price（非負検証は Price VO が担保）、</span>
+<span id="L55" class="ln">    55  </span><span class="comment">// Quantity と StockWarningThreshold（指定時）は、いずれも在庫が保持できる範囲に収まる必要があります。</span>
+<span id="L56" class="ln">    56  </span><span class="comment">// PublishedAt は nil（未公開）を許容し、Images は空（画像未設定）を許容します。</span>
+<span id="L57" class="ln">    57  </span><span class="comment">// Images が maxImages を超える場合は ErrTooManyImages を返します。</span>
+<span id="L58" class="ln">    58  </span><span class="comment">// id が nil、Name が長さ制約外、Status / Category がゼロ値の場合はそれぞれ検証エラーを返します。</span>
+<span id="L59" class="ln">    59  </span><span class="comment">// createdAt は商品が登録された日時で、ゼロ値は検証エラーです。</span>
+<span id="L60" class="ln">    60  </span><span class="comment">// 生成直後のバージョンは initialVersion です。</span>
+<span id="L61" class="ln">    61  </span>func New(id uuid.UUID, attrs Attributes, createdAt time.Time) (*Product, error) {
+<span id="L62" class="ln">    62  </span>	return newProduct(id, attrs, initialVersion, createdAt)
+<span id="L63" class="ln">    63  </span>}
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span><span class="comment">// Reconstruct は、永続化済みの商品を再構築します。</span>
+<span id="L66" class="ln">    66  </span><span class="comment">// version は永続化されている楽観ロックのバージョンで、initialVersion 未満の場合は検証エラーを返します。</span>
+<span id="L67" class="ln">    67  </span><span class="comment">// createdAt は永続化されている登録日時です。その他の検証は New と同一です。</span>
+<span id="L68" class="ln">    68  </span><span class="comment">// 保存済みデータのための緩和経路はありません。</span>
+<span id="L69" class="ln">    69  </span>func Reconstruct(id uuid.UUID, attrs Attributes, version int, createdAt time.Time) (*Product, error) {
+<span id="L70" class="ln">    70  </span>	return newProduct(id, attrs, version, createdAt)
+<span id="L71" class="ln">    71  </span>}
+<span id="L72" class="ln">    72  </span>
+<span id="L73" class="ln">    73  </span><span class="comment">// newProduct は、生成・再構築に共通の検証を行い商品エンティティを構築します。</span>
+<span id="L74" class="ln">    74  </span>func newProduct(id uuid.UUID, attrs Attributes, version int, createdAt time.Time) (*Product, error) {
+<span id="L75" class="ln">    75  </span>	if id.IsNil() {
+<span id="L76" class="ln">    76  </span>		return nil, xerrors.Wrap(ErrInvalidID, &#34;id is required&#34;)
+<span id="L77" class="ln">    77  </span>	}
+<span id="L78" class="ln">    78  </span>	if err := validateAttributes(attrs); err != nil {
+<span id="L79" class="ln">    79  </span>		return nil, err
+<span id="L80" class="ln">    80  </span>	}
+<span id="L81" class="ln">    81  </span>	if version &lt; initialVersion {
+<span id="L82" class="ln">    82  </span>		return nil, xerrors.Wrap(
+<span id="L83" class="ln">    83  </span>			ErrInvalidVersion,
+<span id="L84" class="ln">    84  </span>			fmt.Sprintf(&#34;version must be %d or greater, got %d&#34;, initialVersion, version),
+<span id="L85" class="ln">    85  </span>		)
+<span id="L86" class="ln">    86  </span>	}
+<span id="L87" class="ln">    87  </span>	if createdAt.IsZero() {
+<span id="L88" class="ln">    88  </span>		return nil, xerrors.Wrap(ErrInvalidCreatedAt, &#34;createdAt is required&#34;)
+<span id="L89" class="ln">    89  </span>	}
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>	return &amp;Product{
+<span id="L92" class="ln">    92  </span>		id:                    id,
+<span id="L93" class="ln">    93  </span>		name:                  attrs.Name,
+<span id="L94" class="ln">    94  </span>		description:           ptr.Copy(attrs.Description),
+<span id="L95" class="ln">    95  </span>		price:                 attrs.Price,
+<span id="L96" class="ln">    96  </span>		quantity:              attrs.Quantity,
+<span id="L97" class="ln">    97  </span>		stockWarningThreshold: ptr.Copy(attrs.StockWarningThreshold),
+<span id="L98" class="ln">    98  </span>		status:                attrs.Status,
+<span id="L99" class="ln">    99  </span>		category:              attrs.Category,
+<span id="L100" class="ln">   100  </span>		publishedAt:           ptr.Copy(attrs.PublishedAt),
+<span id="L101" class="ln">   101  </span>		discontinuedAt:        ptr.Copy(attrs.DiscontinuedAt),
+<span id="L102" class="ln">   102  </span>		images:                sortImagesByDisplaySort(attrs.Images),
+<span id="L103" class="ln">   103  </span>		createdAt:             createdAt,
+<span id="L104" class="ln">   104  </span>		version:               version,
+<span id="L105" class="ln">   105  </span>	}, nil
+<span id="L106" class="ln">   106  </span>}
+<span id="L107" class="ln">   107  </span>
+<span id="L108" class="ln">   108  </span><span class="comment">// validateAttributes は、商品属性の不変条件を検証します。生成時と更新時で同一の条件を課します。</span>
+<span id="L109" class="ln">   109  </span>func validateAttributes(attrs Attributes) error {
+<span id="L110" class="ln">   110  </span>	if ok, msg := stringkit.ValidateInRange(attrs.Name, minNameLength, maxNameLength); !ok {
+<span id="L111" class="ln">   111  </span>		return xerrors.Wrap(ErrInvalidName, msg)
 <span id="L112" class="ln">   112  </span>	}
-<span id="L113" class="ln">   113  </span>	if attrs.Status.id.IsNil() {
-<span id="L114" class="ln">   114  </span>		return xerrors.Wrap(ErrInvalidStatusID, &#34;status is required&#34;)
+<span id="L113" class="ln">   113  </span>	if err := validateQuantity(int64(attrs.Quantity)); err != nil {
+<span id="L114" class="ln">   114  </span>		return err
 <span id="L115" class="ln">   115  </span>	}
-<span id="L116" class="ln">   116  </span>	if attrs.Category.id.IsNil() {
-<span id="L117" class="ln">   117  </span>		return xerrors.Wrap(ErrInvalidCategoryID, &#34;category is required&#34;)
+<span id="L116" class="ln">   116  </span>	if err := validateStockWarningThreshold(attrs.StockWarningThreshold); err != nil {
+<span id="L117" class="ln">   117  </span>		return err
 <span id="L118" class="ln">   118  </span>	}
-<span id="L119" class="ln">   119  </span>	return validateImages(attrs.Images)
-<span id="L120" class="ln">   120  </span>}
-<span id="L121" class="ln">   121  </span>
-<span id="L122" class="ln">   122  </span><span class="comment">// Update は、商品の属性を更新します。生成時と同一の不変条件を課し、違反する場合はエンティティを</span>
-<span id="L123" class="ln">   123  </span><span class="comment">// 変更せずに検証エラーを返します。attrs は部分更新を解決した後の確定値であり、据え置く属性には現在値が渡されます。</span>
-<span id="L124" class="ln">   124  </span><span class="comment">// バージョンは永続化の成否に依存するためここでは進めません（採番は Repository の条件付き更新が行います）。</span>
-<span id="L125" class="ln">   125  </span>func (p *Product) Update(attrs Attributes) error {
-<span id="L126" class="ln">   126  </span>	if err := validateAttributes(attrs); err != nil {
-<span id="L127" class="ln">   127  </span>		return err
-<span id="L128" class="ln">   128  </span>	}
-<span id="L129" class="ln">   129  </span>
-<span id="L130" class="ln">   130  </span>	p.name = attrs.Name
-<span id="L131" class="ln">   131  </span>	p.description = ptr.Copy(attrs.Description)
-<span id="L132" class="ln">   132  </span>	p.price = attrs.Price
-<span id="L133" class="ln">   133  </span>	p.quantity = attrs.Quantity
-<span id="L134" class="ln">   134  </span>	p.stockWarningThreshold = ptr.Copy(attrs.StockWarningThreshold)
-<span id="L135" class="ln">   135  </span>	p.status = attrs.Status
-<span id="L136" class="ln">   136  </span>	p.category = attrs.Category
-<span id="L137" class="ln">   137  </span>	p.publishedAt = ptr.Copy(attrs.PublishedAt)
-<span id="L138" class="ln">   138  </span>	p.images = sortImagesByDisplaySort(attrs.Images)
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>	return nil
-<span id="L141" class="ln">   141  </span>}
+<span id="L119" class="ln">   119  </span>	if attrs.Status.id.IsNil() {
+<span id="L120" class="ln">   120  </span>		return xerrors.Wrap(ErrInvalidStatusID, &#34;status is required&#34;)
+<span id="L121" class="ln">   121  </span>	}
+<span id="L122" class="ln">   122  </span>	if attrs.Category.id.IsNil() {
+<span id="L123" class="ln">   123  </span>		return xerrors.Wrap(ErrInvalidCategoryID, &#34;category is required&#34;)
+<span id="L124" class="ln">   124  </span>	}
+<span id="L125" class="ln">   125  </span>	if err := validateDiscontinuedAt(attrs.DiscontinuedAt, attrs.PublishedAt); err != nil {
+<span id="L126" class="ln">   126  </span>		return err
+<span id="L127" class="ln">   127  </span>	}
+<span id="L128" class="ln">   128  </span>	return validateImages(attrs.Images)
+<span id="L129" class="ln">   129  </span>}
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span><span class="comment">// Update は、商品の属性を更新します。生成時と同一の不変条件を課し、違反する場合はエンティティを</span>
+<span id="L132" class="ln">   132  </span><span class="comment">// 変更せずに検証エラーを返します。attrs は部分更新を解決した後の確定値であり、据え置く属性には</span>
+<span id="L133" class="ln">   133  </span><span class="comment">// 現在値が渡されます。Images は集合ごとの置き換えです。バージョンはここでは進めません</span>
+<span id="L134" class="ln">   134  </span><span class="comment">// （詳細は docs/spec/domain/product.md の Behavior Methods を参照）。</span>
+<span id="L135" class="ln">   135  </span>func (p *Product) Update(attrs Attributes) error {
+<span id="L136" class="ln">   136  </span>	if err := validateAttributes(attrs); err != nil {
+<span id="L137" class="ln">   137  </span>		return err
+<span id="L138" class="ln">   138  </span>	}
+<span id="L139" class="ln">   139  </span>	if err := p.ensureDiscontinuationKept(attrs.DiscontinuedAt); err != nil {
+<span id="L140" class="ln">   140  </span>		return err
+<span id="L141" class="ln">   141  </span>	}
 <span id="L142" class="ln">   142  </span>
-<span id="L143" class="ln">   143  </span><span class="comment">// AdjustStock は、在庫数を delta の分だけ増減します。delta は正で補充、負で差し引きを表します。</span>
-<span id="L144" class="ln">   144  </span><span class="comment">// 増減後の在庫が負になる場合は、在庫を変更せずに検証エラーを返します。</span>
-<span id="L145" class="ln">   145  </span><span class="comment">// バージョンの採番タイミングは Update と同じです。</span>
-<span id="L146" class="ln">   146  </span>func (p *Product) AdjustStock(delta int) error {
-<span id="L147" class="ln">   147  </span>	<span class="comment">// 増減の途中結果は在庫の表現範囲を超えうるため、検証を通すまでは広い幅で保持します。</span>
-<span id="L148" class="ln">   148  </span>	adjusted := int64(p.quantity) + int64(delta)
-<span id="L149" class="ln">   149  </span>	if err := validateQuantity(adjusted); err != nil {
-<span id="L150" class="ln">   150  </span>		return err
-<span id="L151" class="ln">   151  </span>	}
-<span id="L152" class="ln">   152  </span>
-<span id="L153" class="ln">   153  </span>	p.quantity = int(adjusted)
-<span id="L154" class="ln">   154  </span>
-<span id="L155" class="ln">   155  </span>	return nil
-<span id="L156" class="ln">   156  </span>}
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span><span class="comment">// validateQuantity は、在庫数が保持できる範囲に収まることを検証します。</span>
-<span id="L159" class="ln">   159  </span><span class="comment">// 生成・更新・在庫の増減のいずれの変更点でも同一の条件を課します。</span>
-<span id="L160" class="ln">   160  </span>func validateQuantity(quantity int64) error {
-<span id="L161" class="ln">   161  </span>	if quantity &lt; minQuantity || quantity &gt; maxQuantity {
-<span id="L162" class="ln">   162  </span>		return xerrors.Wrap(
-<span id="L163" class="ln">   163  </span>			ErrInvalidQuantity,
-<span id="L164" class="ln">   164  </span>			fmt.Sprintf(&#34;quantity must be between %d and %d, got %d&#34;, minQuantity, maxQuantity, quantity),
-<span id="L165" class="ln">   165  </span>		)
-<span id="L166" class="ln">   166  </span>	}
-<span id="L167" class="ln">   167  </span>	return nil
-<span id="L168" class="ln">   168  </span>}
-<span id="L169" class="ln">   169  </span>
-<span id="L170" class="ln">   170  </span><span class="comment">// validateStockWarningThreshold は、在庫警告閾値が保持できる範囲に収まることを検証します。</span>
-<span id="L171" class="ln">   171  </span><span class="comment">// nil は閾値の未設定を表すため検証を通します。</span>
-<span id="L172" class="ln">   172  </span>func validateStockWarningThreshold(threshold *int) error {
-<span id="L173" class="ln">   173  </span>	if threshold == nil {
-<span id="L174" class="ln">   174  </span>		return nil
-<span id="L175" class="ln">   175  </span>	}
-<span id="L176" class="ln">   176  </span>	if *threshold &lt; minThreshold || *threshold &gt; maxThreshold {
-<span id="L177" class="ln">   177  </span>		return xerrors.Wrap(
-<span id="L178" class="ln">   178  </span>			ErrInvalidStockWarningThreshold,
-<span id="L179" class="ln">   179  </span>			fmt.Sprintf(&#34;stockWarningThreshold must be between %d and %d, got %d&#34;, minThreshold, maxThreshold, *threshold),
-<span id="L180" class="ln">   180  </span>		)
-<span id="L181" class="ln">   181  </span>	}
-<span id="L182" class="ln">   182  </span>	return nil
-<span id="L183" class="ln">   183  </span>}
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span><span class="comment">// EnsureVersion は、更新要求が指すバージョンが現在のバージョンと一致することを確認します。</span>
-<span id="L186" class="ln">   186  </span><span class="comment">// 一致しない場合は、読み込み後に他者が更新したものとして ErrVersionConflict を返します。</span>
-<span id="L187" class="ln">   187  </span>func (p *Product) EnsureVersion(expected int) error {
-<span id="L188" class="ln">   188  </span>	if p.version != expected {
-<span id="L189" class="ln">   189  </span>		return xerrors.Wrap(
-<span id="L190" class="ln">   190  </span>			ErrVersionConflict,
-<span id="L191" class="ln">   191  </span>			fmt.Sprintf(&#34;expected version %d, but current version is %d&#34;, expected, p.version),
-<span id="L192" class="ln">   192  </span>		)
-<span id="L193" class="ln">   193  </span>	}
-<span id="L194" class="ln">   194  </span>	return nil
-<span id="L195" class="ln">   195  </span>}
-<span id="L196" class="ln">   196  </span>
-<span id="L197" class="ln">   197  </span><span class="comment">// ID は、商品の ID を返します。</span>
-<span id="L198" class="ln">   198  </span>func (p *Product) ID() uuid.UUID { return p.id }
-<span id="L199" class="ln">   199  </span>
-<span id="L200" class="ln">   200  </span><span class="comment">// Name は、商品名を返します。</span>
-<span id="L201" class="ln">   201  </span>func (p *Product) Name() string { return p.name }
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span><span class="comment">// Description は、商品説明を返します。未設定の場合は nil です。</span>
-<span id="L204" class="ln">   204  </span>func (p *Product) Description() *string { return ptr.Copy(p.description) }
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span><span class="comment">// Price は、価格（サブセント精度を保持する money.Price）を返します。</span>
-<span id="L207" class="ln">   207  </span>func (p *Product) Price() money.Price { return p.price }
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span><span class="comment">// Quantity は、在庫数を返します。</span>
-<span id="L210" class="ln">   210  </span>func (p *Product) Quantity() int { return p.quantity }
-<span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span><span class="comment">// StockWarningThreshold は、在庫警告閾値を返します。未設定の場合は nil です。</span>
-<span id="L213" class="ln">   213  </span>func (p *Product) StockWarningThreshold() *int { return ptr.Copy(p.stockWarningThreshold) }
-<span id="L214" class="ln">   214  </span>
-<span id="L215" class="ln">   215  </span><span class="comment">// Status は、商品ステータス参照（ID + 名称）を返します。</span>
-<span id="L216" class="ln">   216  </span>func (p *Product) Status() StatusRef { return p.status }
-<span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span><span class="comment">// Category は、商品カテゴリ参照（ID + 名称）を返します。</span>
-<span id="L219" class="ln">   219  </span>func (p *Product) Category() CategoryRef { return p.category }
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span><span class="comment">// PublishedAt は、公開日時を返します。未公開の場合は nil です。</span>
-<span id="L222" class="ln">   222  </span>func (p *Product) PublishedAt() *time.Time { return ptr.Copy(p.publishedAt) }
-<span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span><span class="comment">// CreatedAt は、商品が登録された日時を返します。</span>
-<span id="L225" class="ln">   225  </span>func (p *Product) CreatedAt() time.Time { return p.createdAt }
-<span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span><span class="comment">// Images は、商品画像を表示順の昇順で返します。画像未設定の場合は空です。</span>
-<span id="L228" class="ln">   228  </span>func (p *Product) Images() []Image { return slices.Clone(p.images) }
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span><span class="comment">// PrimaryImage は、商品を 1 枚で表すときに使う代表画像と、それを持つかどうかを返します。</span>
-<span id="L231" class="ln">   231  </span><span class="comment">// 画像を持たない商品は代表画像を持たないため、ok は false です。</span>
-<span id="L232" class="ln">   232  </span><span class="comment">// 何を代表とするかは docs/spec/product/domain.md の PrimaryImage が定めます。</span>
-<span id="L233" class="ln">   233  </span>func (p *Product) PrimaryImage() (Image, bool) {
-<span id="L234" class="ln">   234  </span>	if len(p.images) == 0 {
-<span id="L235" class="ln">   235  </span>		return Image{}, false
-<span id="L236" class="ln">   236  </span>	}
-<span id="L237" class="ln">   237  </span>	return p.images[0], true
-<span id="L238" class="ln">   238  </span>}
-<span id="L239" class="ln">   239  </span>
-<span id="L240" class="ln">   240  </span><span class="comment">// Version は、並行更新による上書き（lost update）を防ぐ楽観ロックのバージョンを返します。</span>
-<span id="L241" class="ln">   241  </span>func (p *Product) Version() int { return p.version }
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span><span class="comment">// IsPublished は、商品が公開中かどうかを返します。公開中とは公開日時が設定されていることを指します。</span>
-<span id="L244" class="ln">   244  </span><span class="comment">// 「公開中」の定義は [IsPublished] が持ちます。SQL の絞り込みとの関係は</span>
-<span id="L245" class="ln">   245  </span><span class="comment">// internal/domain/README.md § Query and Aggregate を参照してください。</span>
-<span id="L246" class="ln">   246  </span>func (p *Product) IsPublished() bool { return IsPublished(p.publishedAt) }
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span><span class="comment">// IsPublished は、公開日時から商品が公開中かどうかを判定します。</span>
-<span id="L249" class="ln">   249  </span><span class="comment">//</span>
-<span id="L250" class="ln">   250  </span><span class="comment">// 「公開中」の定義はここ 1 箇所にあります。集約を再構築しない読み取り——集計や射影を返す経路——にも</span>
-<span id="L251" class="ln">   251  </span><span class="comment">// 同じ定義を当てられるよう、エンティティのメソッドとは別に値に対する形でも公開します。</span>
-<span id="L252" class="ln">   252  </span>func IsPublished(publishedAt *time.Time) bool { return publishedAt != nil }
-<span id="L253" class="ln">   253  </span>
-<span id="L254" class="ln">   254  </span><span class="comment">// IsLowStock は、商品の在庫が補充を要する水準まで減っているかどうかを返します。</span>
-<span id="L255" class="ln">   255  </span><span class="comment">// 在庫警告閾値が未設定の商品は警告対象を持たないため、常に false です。</span>
-<span id="L256" class="ln">   256  </span><span class="comment">//</span>
-<span id="L257" class="ln">   257  </span><span class="comment">// 「在庫僅少」の定義はこのメソッドが持ちます（SQL の絞り込みとの関係は IsPublished と同じ）。</span>
-<span id="L258" class="ln">   258  </span>func (p *Product) IsLowStock() bool {
-<span id="L259" class="ln">   259  </span>	if p.stockWarningThreshold == nil {
-<span id="L260" class="ln">   260  </span>		return false
-<span id="L261" class="ln">   261  </span>	}
-<span id="L262" class="ln">   262  </span>	return p.quantity &lt;= *p.stockWarningThreshold
-<span id="L263" class="ln">   263  </span>}
+<span id="L143" class="ln">   143  </span>	p.name = attrs.Name
+<span id="L144" class="ln">   144  </span>	p.description = ptr.Copy(attrs.Description)
+<span id="L145" class="ln">   145  </span>	p.price = attrs.Price
+<span id="L146" class="ln">   146  </span>	p.quantity = attrs.Quantity
+<span id="L147" class="ln">   147  </span>	p.stockWarningThreshold = ptr.Copy(attrs.StockWarningThreshold)
+<span id="L148" class="ln">   148  </span>	p.status = attrs.Status
+<span id="L149" class="ln">   149  </span>	p.category = attrs.Category
+<span id="L150" class="ln">   150  </span>	p.publishedAt = ptr.Copy(attrs.PublishedAt)
+<span id="L151" class="ln">   151  </span>	p.discontinuedAt = ptr.Copy(attrs.DiscontinuedAt)
+<span id="L152" class="ln">   152  </span>	p.images = sortImagesByDisplaySort(attrs.Images)
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span>	return nil
+<span id="L155" class="ln">   155  </span>}
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span><span class="comment">// AdjustStock は、在庫数を delta の分だけ増減します。delta は正で補充、負で差し引きを表します。</span>
+<span id="L158" class="ln">   158  </span><span class="comment">// 増減後の在庫が負になる場合は、在庫を変更せずに検証エラーを返します。</span>
+<span id="L159" class="ln">   159  </span><span class="comment">// バージョンの採番タイミングは Update と同じです。</span>
+<span id="L160" class="ln">   160  </span>func (p *Product) AdjustStock(delta int) error {
+<span id="L161" class="ln">   161  </span>	<span class="comment">// 増減の途中結果は在庫の表現範囲を超えうるため、検証を通すまでは広い幅で保持します。</span>
+<span id="L162" class="ln">   162  </span>	adjusted := int64(p.quantity) + int64(delta)
+<span id="L163" class="ln">   163  </span>	if err := validateQuantity(adjusted); err != nil {
+<span id="L164" class="ln">   164  </span>		return err
+<span id="L165" class="ln">   165  </span>	}
+<span id="L166" class="ln">   166  </span>
+<span id="L167" class="ln">   167  </span>	p.quantity = int(adjusted)
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>	return nil
+<span id="L170" class="ln">   170  </span>}
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span><span class="comment">// validateQuantity は、在庫数が保持できる範囲に収まることを検証します。</span>
+<span id="L173" class="ln">   173  </span><span class="comment">// 生成・更新・在庫の増減のいずれの変更点でも同一の条件を課します。</span>
+<span id="L174" class="ln">   174  </span>func validateQuantity(quantity int64) error {
+<span id="L175" class="ln">   175  </span>	if quantity &lt; minQuantity || quantity &gt; maxQuantity {
+<span id="L176" class="ln">   176  </span>		return xerrors.Wrap(
+<span id="L177" class="ln">   177  </span>			ErrInvalidQuantity,
+<span id="L178" class="ln">   178  </span>			fmt.Sprintf(&#34;quantity must be between %d and %d, got %d&#34;, minQuantity, maxQuantity, quantity),
+<span id="L179" class="ln">   179  </span>		)
+<span id="L180" class="ln">   180  </span>	}
+<span id="L181" class="ln">   181  </span>	return nil
+<span id="L182" class="ln">   182  </span>}
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span><span class="comment">// validateStockWarningThreshold は、在庫警告閾値が保持できる範囲に収まることを検証します。</span>
+<span id="L185" class="ln">   185  </span><span class="comment">// nil は閾値の未設定を表すため検証を通します。</span>
+<span id="L186" class="ln">   186  </span>func validateStockWarningThreshold(threshold *int) error {
+<span id="L187" class="ln">   187  </span>	if threshold == nil {
+<span id="L188" class="ln">   188  </span>		return nil
+<span id="L189" class="ln">   189  </span>	}
+<span id="L190" class="ln">   190  </span>	if *threshold &lt; minThreshold || *threshold &gt; maxThreshold {
+<span id="L191" class="ln">   191  </span>		return xerrors.Wrap(
+<span id="L192" class="ln">   192  </span>			ErrInvalidStockWarningThreshold,
+<span id="L193" class="ln">   193  </span>			fmt.Sprintf(&#34;stockWarningThreshold must be between %d and %d, got %d&#34;, minThreshold, maxThreshold, *threshold),
+<span id="L194" class="ln">   194  </span>		)
+<span id="L195" class="ln">   195  </span>	}
+<span id="L196" class="ln">   196  </span>	return nil
+<span id="L197" class="ln">   197  </span>}
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span><span class="comment">// EnsureVersion は、更新要求が指すバージョンが現在のバージョンと一致することを確認します。</span>
+<span id="L200" class="ln">   200  </span><span class="comment">// 一致しない場合は、読み込み後に他者が更新したものとして ErrVersionConflict を返します。</span>
+<span id="L201" class="ln">   201  </span>func (p *Product) EnsureVersion(expected int) error {
+<span id="L202" class="ln">   202  </span>	if p.version != expected {
+<span id="L203" class="ln">   203  </span>		return xerrors.Wrap(
+<span id="L204" class="ln">   204  </span>			ErrVersionConflict,
+<span id="L205" class="ln">   205  </span>			fmt.Sprintf(&#34;expected version %d, but current version is %d&#34;, expected, p.version),
+<span id="L206" class="ln">   206  </span>		)
+<span id="L207" class="ln">   207  </span>	}
+<span id="L208" class="ln">   208  </span>	return nil
+<span id="L209" class="ln">   209  </span>}
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span><span class="comment">// ID は、商品の ID を返します。</span>
+<span id="L212" class="ln">   212  </span>func (p *Product) ID() uuid.UUID { return p.id }
+<span id="L213" class="ln">   213  </span>
+<span id="L214" class="ln">   214  </span><span class="comment">// Name は、商品名を返します。</span>
+<span id="L215" class="ln">   215  </span>func (p *Product) Name() string { return p.name }
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span><span class="comment">// Description は、商品説明を返します。未設定の場合は nil です。</span>
+<span id="L218" class="ln">   218  </span>func (p *Product) Description() *string { return ptr.Copy(p.description) }
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span><span class="comment">// Price は、価格（サブセント精度を保持する money.Price）を返します。</span>
+<span id="L221" class="ln">   221  </span>func (p *Product) Price() money.Price { return p.price }
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span><span class="comment">// Quantity は、在庫数を返します。</span>
+<span id="L224" class="ln">   224  </span>func (p *Product) Quantity() int { return p.quantity }
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span><span class="comment">// StockWarningThreshold は、在庫警告閾値を返します。未設定の場合は nil です。</span>
+<span id="L227" class="ln">   227  </span>func (p *Product) StockWarningThreshold() *int { return ptr.Copy(p.stockWarningThreshold) }
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span><span class="comment">// Status は、商品ステータス参照（ID + 名称）を返します。</span>
+<span id="L230" class="ln">   230  </span>func (p *Product) Status() StatusRef { return p.status }
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span><span class="comment">// Category は、商品カテゴリ参照（ID + 名称）を返します。</span>
+<span id="L233" class="ln">   233  </span>func (p *Product) Category() CategoryRef { return p.category }
+<span id="L234" class="ln">   234  </span>
+<span id="L235" class="ln">   235  </span><span class="comment">// PublishedAt は、公開日時を返します。未公開の場合は nil です。</span>
+<span id="L236" class="ln">   236  </span>func (p *Product) PublishedAt() *time.Time { return ptr.Copy(p.publishedAt) }
+<span id="L237" class="ln">   237  </span>
+<span id="L238" class="ln">   238  </span><span class="comment">// DiscontinuedAt は、廃番日時を返します。廃番でない場合は nil です。</span>
+<span id="L239" class="ln">   239  </span>func (p *Product) DiscontinuedAt() *time.Time { return ptr.Copy(p.discontinuedAt) }
+<span id="L240" class="ln">   240  </span>
+<span id="L241" class="ln">   241  </span><span class="comment">// CreatedAt は、商品が登録された日時を返します。</span>
+<span id="L242" class="ln">   242  </span>func (p *Product) CreatedAt() time.Time { return p.createdAt }
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span><span class="comment">// Images は、商品画像を表示順の昇順で返します。画像未設定の場合は空です。</span>
+<span id="L245" class="ln">   245  </span>func (p *Product) Images() []Image { return slices.Clone(p.images) }
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span><span class="comment">// PrimaryImage は、商品を 1 枚で表すときに使う代表画像と、それを持つかどうかを返します。</span>
+<span id="L248" class="ln">   248  </span><span class="comment">// 画像を持たない商品は代表画像を持たないため、ok は false です。</span>
+<span id="L249" class="ln">   249  </span><span class="comment">// 何を代表とするかは docs/spec/domain/product.md の PrimaryImage が定めます。</span>
+<span id="L250" class="ln">   250  </span>func (p *Product) PrimaryImage() (Image, bool) {
+<span id="L251" class="ln">   251  </span>	if len(p.images) == 0 {
+<span id="L252" class="ln">   252  </span>		return Image{}, false
+<span id="L253" class="ln">   253  </span>	}
+<span id="L254" class="ln">   254  </span>	return p.images[0], true
+<span id="L255" class="ln">   255  </span>}
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span><span class="comment">// Version は、並行更新による上書き（lost update）を防ぐ楽観ロックのバージョンを返します。</span>
+<span id="L258" class="ln">   258  </span>func (p *Product) Version() int { return p.version }
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span><span class="comment">// IsPublished は、商品が公開中かどうかを返します。公開中とは公開日時が設定されていることを指します。</span>
+<span id="L261" class="ln">   261  </span><span class="comment">// 「公開中」の定義は [IsPublished] が持ちます。SQL の絞り込みとの関係は</span>
+<span id="L262" class="ln">   262  </span><span class="comment">// internal/domain/README.md § Query and Aggregate を参照してください。</span>
+<span id="L263" class="ln">   263  </span>func (p *Product) IsPublished() bool { return IsPublished(p.publishedAt) }
 <span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span><span class="comment">// IsPublished は、公開日時から商品が公開中かどうかを判定します。</span>
+<span id="L266" class="ln">   266  </span><span class="comment">//</span>
+<span id="L267" class="ln">   267  </span><span class="comment">// 「公開中」の定義はここ 1 箇所にあります。集約を再構築しない読み取り——集計や射影を返す経路——にも</span>
+<span id="L268" class="ln">   268  </span><span class="comment">// 同じ定義を当てられるよう、エンティティのメソッドとは別に値に対する形でも公開します。</span>
+<span id="L269" class="ln">   269  </span>func IsPublished(publishedAt *time.Time) bool { return publishedAt != nil }
+<span id="L270" class="ln">   270  </span>
+<span id="L271" class="ln">   271  </span><span class="comment">// Discontinue は、商品を廃番にします。同時に公開を取り下げます。既に廃番の商品は状態が変わらず、</span>
+<span id="L272" class="ln">   272  </span><span class="comment">// エラーも返しません（理由は docs/spec/domain/product.md の Cross-field Invariants を参照）。</span>
+<span id="L273" class="ln">   273  </span><span class="comment">//</span>
+<span id="L274" class="ln">   274  </span><span class="comment">// 日時は引数で受け取ります。ドメインは時刻へ直接依存せず、時刻境界から供給された now を使うためです。</span>
+<span id="L275" class="ln">   275  </span><span class="comment">// now がゼロ値の場合は ErrInvalidDiscontinuedAt を返します。</span>
+<span id="L276" class="ln">   276  </span>func (p *Product) Discontinue(now time.Time) error {
+<span id="L277" class="ln">   277  </span>	if now.IsZero() {
+<span id="L278" class="ln">   278  </span>		return xerrors.Wrap(ErrInvalidDiscontinuedAt, &#34;now is required&#34;)
+<span id="L279" class="ln">   279  </span>	}
+<span id="L280" class="ln">   280  </span>	if p.IsDiscontinued() {
+<span id="L281" class="ln">   281  </span>		return nil
+<span id="L282" class="ln">   282  </span>	}
+<span id="L283" class="ln">   283  </span>
+<span id="L284" class="ln">   284  </span>	p.discontinuedAt = &amp;now
+<span id="L285" class="ln">   285  </span>	p.publishedAt = nil
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>	return nil
+<span id="L288" class="ln">   288  </span>}
+<span id="L289" class="ln">   289  </span>
+<span id="L290" class="ln">   290  </span><span class="comment">// IsDiscontinued は、商品が廃番かどうかを返します。廃番とは廃番日時が設定されていることを指します。</span>
+<span id="L291" class="ln">   291  </span>func (p *Product) IsDiscontinued() bool { return IsDiscontinued(p.discontinuedAt) }
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span><span class="comment">// IsDiscontinued は、廃番日時から商品が廃番かどうかを判定します。</span>
+<span id="L294" class="ln">   294  </span><span class="comment">//</span>
+<span id="L295" class="ln">   295  </span><span class="comment">// 「廃番」の定義はここ 1 箇所にあります。値に対する形でも公開する理由は [IsPublished] と同じです。</span>
+<span id="L296" class="ln">   296  </span>func IsDiscontinued(discontinuedAt *time.Time) bool { return discontinuedAt != nil }
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span><span class="comment">// validateDiscontinuedAt は、廃番と公開が同時に成り立たないことを検証します。</span>
+<span id="L299" class="ln">   299  </span><span class="comment">// 違反したフィールドとして publishedAt を報告します。理由は docs/spec/domain/product.md の</span>
+<span id="L300" class="ln">   300  </span><span class="comment">// Cross-field Invariants を参照してください。</span>
+<span id="L301" class="ln">   301  </span>func validateDiscontinuedAt(discontinuedAt, publishedAt *time.Time) error {
+<span id="L302" class="ln">   302  </span>	if IsDiscontinued(discontinuedAt) &amp;&amp; IsPublished(publishedAt) {
+<span id="L303" class="ln">   303  </span>		return apperror.WithDetails(
+<span id="L304" class="ln">   304  </span>			xerrors.Wrap(ErrDiscontinuedCannotBePublished, &#34;publishedAt must be nil for a discontinued product&#34;),
+<span id="L305" class="ln">   305  </span>			FieldPublishedAt,
+<span id="L306" class="ln">   306  </span>		)
+<span id="L307" class="ln">   307  </span>	}
+<span id="L308" class="ln">   308  </span>	return nil
+<span id="L309" class="ln">   309  </span>}
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span><span class="comment">// IsLowStock は、商品の在庫が補充を要する水準まで減っているかどうかを返します。</span>
+<span id="L312" class="ln">   312  </span><span class="comment">// 在庫警告閾値が未設定の商品は警告対象を持たないため、常に false です。</span>
+<span id="L313" class="ln">   313  </span><span class="comment">//</span>
+<span id="L314" class="ln">   314  </span><span class="comment">// 「在庫僅少」の定義はこのメソッドが持ちます（SQL の絞り込みとの関係は IsPublished と同じ）。</span>
+<span id="L315" class="ln">   315  </span>func (p *Product) IsLowStock() bool {
+<span id="L316" class="ln">   316  </span>	if p.stockWarningThreshold == nil {
+<span id="L317" class="ln">   317  </span>		return false
+<span id="L318" class="ln">   318  </span>	}
+<span id="L319" class="ln">   319  </span>	return p.quantity &lt;= *p.stockWarningThreshold
+<span id="L320" class="ln">   320  </span>}
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span><span class="comment">// ensureDiscontinuationKept は、廃番の取り消しを拒みます。属性の一括置換は現在値を見ないため、</span>
+<span id="L323" class="ln">   323  </span><span class="comment">// この検証だけがレシーバの現在値と引数を突き合わせます（[Product.EnsureVersion] と同じ形）。</span>
+<span id="L324" class="ln">   324  </span><span class="comment">// 拒む理由は docs/spec/domain/product.md の Cross-field Invariants を参照してください。</span>
+<span id="L325" class="ln">   325  </span><span class="comment">//</span>
+<span id="L326" class="ln">   326  </span><span class="comment">// 未廃番から廃番への向きは拒みません。その向きの検証は [Product.Discontinue] が持ちます。</span>
+<span id="L327" class="ln">   327  </span>func (p *Product) ensureDiscontinuationKept(next *time.Time) error {
+<span id="L328" class="ln">   328  </span>	if p.IsDiscontinued() &amp;&amp; !IsDiscontinued(next) {
+<span id="L329" class="ln">   329  </span>		return apperror.WithDetails(
+<span id="L330" class="ln">   330  </span>			xerrors.Wrap(ErrDiscontinuationIrreversible, &#34;discontinuedAt must not be cleared&#34;),
+<span id="L331" class="ln">   331  </span>			FieldDiscontinuedAt,
+<span id="L332" class="ln">   332  </span>		)
+<span id="L333" class="ln">   333  </span>	}
+<span id="L334" class="ln">   334  </span>	return nil
+<span id="L335" class="ln">   335  </span>}
+<span id="L336" class="ln">   336  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/domain/product/product_domain.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

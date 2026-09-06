@@ -84,8 +84,7 @@
 			</div>
 			<div class="expanded">
 				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
-				<p>Package logging は、HTTPリクエストログに関する定数を提供します。
-</p><p>Package logging は、Echoフレームワークのミドルウェアとしてリクエストのログの出力を提供します。
+				<p>Package logging は、Echoフレームワークのミドルウェアとしてリクエストのログの出力を提供します。
 
 				
 			</p></div>
@@ -107,7 +106,7 @@
 			
 			
 				
-				<dd><a href="#Middleware">func Middleware(logger logging.Logger, lf logging.LogFieldBuilder) echo.MiddlewareFunc</a></dd>
+				<dd><a href="#Middleware">func Middleware(logger logging.Logger, lf logging.LogFieldBuilder, red redaction.Redactor) echo.MiddlewareFunc</a></dd>
 			
 			
 			
@@ -147,15 +146,18 @@
 		
 			
 			
-			<h2 id="Middleware">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/logging/logging.go.html?s=807:893#L14">Middleware</a>
+			<h2 id="Middleware">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/logging/logging.go.html?s=1385:1495#L20">Middleware</a>
 				<a class="permalink" href="#Middleware">¶</a>
 				
 				
 			</h2>
-			<pre>func Middleware(logger <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>, lf <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#LogFieldBuilder">LogFieldBuilder</a>) echo.<a href="#MiddlewareFunc">MiddlewareFunc</a></pre>
+			<pre>func Middleware(logger <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>, lf <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#LogFieldBuilder">LogFieldBuilder</a>, red <a href="../../../../../go-boilerplate/internal/controller/httpstack/redaction/">redaction</a>.<a href="../../../../../go-boilerplate/internal/controller/httpstack/redaction/#Redactor">Redactor</a>) echo.<a href="#MiddlewareFunc">MiddlewareFunc</a></pre>
 			<p>Middleware は、Echoフレームワークのミドルウェアで、リクエストのログを出力します。
-ただし /health, /metrics 等の運用系エンドポイントはログ出力をスキップします。
+ただし /health, /metrics 等の運用系エンドポイントはログ出力をスキップし、SSE として確定した接続は
+応答ログだけをスキップします（その 1 行は接続が閉じるまで出ず、duration もリクエストではなく接続の
+長さになるため）。確定前の拒否は普通のレスポンスなので、要求ログも応答ログもそのまま出ます。
 レスポンスを取り出せない場合はログを出さず素通しします。
+URI と query は red を通してから出すため、query で運ばれる資格情報はログに残りません。
 
 			
 			

@@ -273,8 +273,8 @@
 <span id="L216" class="ln">   216  </span>	return err
 <span id="L217" class="ln">   217  </span>}
 <span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>const deleteUserIdentitiesByUserIDs = `-- name: DeleteUserIdentitiesByUserIDs :exec
-<span id="L220" class="ln">   220  </span>DELETE FROM user_identities
+<span id="L219" class="ln">   219  </span>const deleteCouponsByUserIDs = `-- name: DeleteCouponsByUserIDs :exec
+<span id="L220" class="ln">   220  </span>DELETE FROM coupons
 <span id="L221" class="ln">   221  </span>WHERE user_id IN (
 <span id="L222" class="ln">   222  </span>        SELECT u.id
 <span id="L223" class="ln">   223  </span>        FROM users AS u
@@ -283,882 +283,907 @@
 <span id="L226" class="ln">   226  </span>    )
 <span id="L227" class="ln">   227  </span>`
 <span id="L228" class="ln">   228  </span>
-<span id="L229" class="ln">   229  </span><span class="comment">// === source: database/dml/repository/user/delete_purged_users.sql ===</span>
-<span id="L230" class="ln">   230  </span><span class="comment">// users より先に呼ぶこと（FK 違反を避ける）。論理削除済みに限る条件は DeleteUsersByIDs の</span>
-<span id="L231" class="ln">   231  </span><span class="comment">// WHERE と揃えること — ずれると、削除されないユーザーの従属行だけが失われる。</span>
-<span id="L232" class="ln">   232  </span><span class="comment">//</span>
-<span id="L233" class="ln">   233  </span><span class="comment">//	DELETE FROM user_identities</span>
-<span id="L234" class="ln">   234  </span><span class="comment">//	WHERE user_id IN (</span>
-<span id="L235" class="ln">   235  </span><span class="comment">//	        SELECT u.id</span>
-<span id="L236" class="ln">   236  </span><span class="comment">//	        FROM users AS u</span>
-<span id="L237" class="ln">   237  </span><span class="comment">//	        WHERE u.id = ANY($1::UUID[])</span>
-<span id="L238" class="ln">   238  </span><span class="comment">//	            AND u.deleted_at IS NOT NULL</span>
-<span id="L239" class="ln">   239  </span><span class="comment">//	    )</span>
-<span id="L240" class="ln">   240  </span>func (q *Queries) DeleteUserIdentitiesByUserIDs(ctx context.Context, userIds []uuid.UUID) error {
-<span id="L241" class="ln">   241  </span>	_, err := q.db.Exec(ctx, deleteUserIdentitiesByUserIDs, userIds)
-<span id="L242" class="ln">   242  </span>	return err
-<span id="L243" class="ln">   243  </span>}
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>const deleteUserRolesByUserIDs = `-- name: DeleteUserRolesByUserIDs :exec
-<span id="L246" class="ln">   246  </span>DELETE FROM user_roles
-<span id="L247" class="ln">   247  </span>WHERE user_id IN (
-<span id="L248" class="ln">   248  </span>        SELECT u.id
-<span id="L249" class="ln">   249  </span>        FROM users AS u
-<span id="L250" class="ln">   250  </span>        WHERE u.id = ANY($1::UUID[])
-<span id="L251" class="ln">   251  </span>            AND u.deleted_at IS NOT NULL
-<span id="L252" class="ln">   252  </span>    )
-<span id="L253" class="ln">   253  </span>`
-<span id="L254" class="ln">   254  </span>
-<span id="L255" class="ln">   255  </span><span class="comment">// users より先に呼ぶこと（FK 違反を避ける）。論理削除済みに限る理由は</span>
-<span id="L256" class="ln">   256  </span><span class="comment">// DeleteUserIdentitiesByUserIDs と同じ。</span>
-<span id="L257" class="ln">   257  </span><span class="comment">//</span>
-<span id="L258" class="ln">   258  </span><span class="comment">//	DELETE FROM user_roles</span>
-<span id="L259" class="ln">   259  </span><span class="comment">//	WHERE user_id IN (</span>
-<span id="L260" class="ln">   260  </span><span class="comment">//	        SELECT u.id</span>
-<span id="L261" class="ln">   261  </span><span class="comment">//	        FROM users AS u</span>
-<span id="L262" class="ln">   262  </span><span class="comment">//	        WHERE u.id = ANY($1::UUID[])</span>
-<span id="L263" class="ln">   263  </span><span class="comment">//	            AND u.deleted_at IS NOT NULL</span>
-<span id="L264" class="ln">   264  </span><span class="comment">//	    )</span>
-<span id="L265" class="ln">   265  </span>func (q *Queries) DeleteUserRolesByUserIDs(ctx context.Context, userIds []uuid.UUID) error {
-<span id="L266" class="ln">   266  </span>	_, err := q.db.Exec(ctx, deleteUserRolesByUserIDs, userIds)
-<span id="L267" class="ln">   267  </span>	return err
-<span id="L268" class="ln">   268  </span>}
-<span id="L269" class="ln">   269  </span>
-<span id="L270" class="ln">   270  </span>const deleteUsersByIDs = `-- name: DeleteUsersByIDs :execrows
-<span id="L271" class="ln">   271  </span>DELETE FROM users
-<span id="L272" class="ln">   272  </span>WHERE id = ANY($1::UUID[])
-<span id="L273" class="ln">   273  </span>    AND deleted_at IS NOT NULL
-<span id="L274" class="ln">   274  </span>`
-<span id="L275" class="ln">   275  </span>
-<span id="L276" class="ln">   276  </span><span class="comment">// 削除件数を返す。従属行の削除後に呼ぶこと（参照の残存はここでは検査しない）。</span>
-<span id="L277" class="ln">   277  </span><span class="comment">// 論理削除済みを永続化側でも検査する理由は docs/spec/user/domain.md の PurgeByIDs を参照。</span>
-<span id="L278" class="ln">   278  </span><span class="comment">//</span>
-<span id="L279" class="ln">   279  </span><span class="comment">//	DELETE FROM users</span>
-<span id="L280" class="ln">   280  </span><span class="comment">//	WHERE id = ANY($1::UUID[])</span>
-<span id="L281" class="ln">   281  </span><span class="comment">//	    AND deleted_at IS NOT NULL</span>
-<span id="L282" class="ln">   282  </span>func (q *Queries) DeleteUsersByIDs(ctx context.Context, ids []uuid.UUID) (int64, error) {
-<span id="L283" class="ln">   283  </span>	result, err := q.db.Exec(ctx, deleteUsersByIDs, ids)
-<span id="L284" class="ln">   284  </span>	if err != nil {
-<span id="L285" class="ln">   285  </span>		return 0, err
-<span id="L286" class="ln">   286  </span>	}
-<span id="L287" class="ln">   287  </span>	return result.RowsAffected(), nil
-<span id="L288" class="ln">   288  </span>}
-<span id="L289" class="ln">   289  </span>
-<span id="L290" class="ln">   290  </span>const getUserByID = `-- name: GetUserByID :one
-<span id="L291" class="ln">   291  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L292" class="ln">   292  </span>FROM users AS u
-<span id="L293" class="ln">   293  </span>WHERE u.id = $1
-<span id="L294" class="ln">   294  </span>    AND u.deleted_at IS NULL
-<span id="L295" class="ln">   295  </span>`
-<span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>type GetUserByIDRow struct {
-<span id="L298" class="ln">   298  </span>	Users Users
-<span id="L299" class="ln">   299  </span>}
+<span id="L229" class="ln">   229  </span><span class="comment">// 順序制約と論理削除条件の理由は DeleteUserIdentitiesByUserIDs を参照。</span>
+<span id="L230" class="ln">   230  </span><span class="comment">// クーポンを残さない理由は docs/spec/domain/coupon.md の Notes を参照。</span>
+<span id="L231" class="ln">   231  </span><span class="comment">//</span>
+<span id="L232" class="ln">   232  </span><span class="comment">//	DELETE FROM coupons</span>
+<span id="L233" class="ln">   233  </span><span class="comment">//	WHERE user_id IN (</span>
+<span id="L234" class="ln">   234  </span><span class="comment">//	        SELECT u.id</span>
+<span id="L235" class="ln">   235  </span><span class="comment">//	        FROM users AS u</span>
+<span id="L236" class="ln">   236  </span><span class="comment">//	        WHERE u.id = ANY($1::UUID[])</span>
+<span id="L237" class="ln">   237  </span><span class="comment">//	            AND u.deleted_at IS NOT NULL</span>
+<span id="L238" class="ln">   238  </span><span class="comment">//	    )</span>
+<span id="L239" class="ln">   239  </span>func (q *Queries) DeleteCouponsByUserIDs(ctx context.Context, userIds []uuid.UUID) error {
+<span id="L240" class="ln">   240  </span>	_, err := q.db.Exec(ctx, deleteCouponsByUserIDs, userIds)
+<span id="L241" class="ln">   241  </span>	return err
+<span id="L242" class="ln">   242  </span>}
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>const deleteUserIdentitiesByUserIDs = `-- name: DeleteUserIdentitiesByUserIDs :exec
+<span id="L245" class="ln">   245  </span>DELETE FROM user_identities
+<span id="L246" class="ln">   246  </span>WHERE user_id IN (
+<span id="L247" class="ln">   247  </span>        SELECT u.id
+<span id="L248" class="ln">   248  </span>        FROM users AS u
+<span id="L249" class="ln">   249  </span>        WHERE u.id = ANY($1::UUID[])
+<span id="L250" class="ln">   250  </span>            AND u.deleted_at IS NOT NULL
+<span id="L251" class="ln">   251  </span>    )
+<span id="L252" class="ln">   252  </span>`
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span><span class="comment">// === source: database/dml/repository/user/delete_purged_users.sql ===</span>
+<span id="L255" class="ln">   255  </span><span class="comment">// users より先に呼ぶこと（FK 違反を避ける）。同じ順序制約は本ファイルの DeleteUserRolesByUserIDs /</span>
+<span id="L256" class="ln">   256  </span><span class="comment">// DeleteCouponsByUserIDs も持つ。論理削除済みに限る条件は DeleteUsersByIDs の WHERE と揃えること</span>
+<span id="L257" class="ln">   257  </span><span class="comment">// — ずれると、削除されないユーザーの従属行だけが失われる。</span>
+<span id="L258" class="ln">   258  </span><span class="comment">//</span>
+<span id="L259" class="ln">   259  </span><span class="comment">//	DELETE FROM user_identities</span>
+<span id="L260" class="ln">   260  </span><span class="comment">//	WHERE user_id IN (</span>
+<span id="L261" class="ln">   261  </span><span class="comment">//	        SELECT u.id</span>
+<span id="L262" class="ln">   262  </span><span class="comment">//	        FROM users AS u</span>
+<span id="L263" class="ln">   263  </span><span class="comment">//	        WHERE u.id = ANY($1::UUID[])</span>
+<span id="L264" class="ln">   264  </span><span class="comment">//	            AND u.deleted_at IS NOT NULL</span>
+<span id="L265" class="ln">   265  </span><span class="comment">//	    )</span>
+<span id="L266" class="ln">   266  </span>func (q *Queries) DeleteUserIdentitiesByUserIDs(ctx context.Context, userIds []uuid.UUID) error {
+<span id="L267" class="ln">   267  </span>	_, err := q.db.Exec(ctx, deleteUserIdentitiesByUserIDs, userIds)
+<span id="L268" class="ln">   268  </span>	return err
+<span id="L269" class="ln">   269  </span>}
+<span id="L270" class="ln">   270  </span>
+<span id="L271" class="ln">   271  </span>const deleteUserRolesByUserIDs = `-- name: DeleteUserRolesByUserIDs :exec
+<span id="L272" class="ln">   272  </span>DELETE FROM user_roles
+<span id="L273" class="ln">   273  </span>WHERE user_id IN (
+<span id="L274" class="ln">   274  </span>        SELECT u.id
+<span id="L275" class="ln">   275  </span>        FROM users AS u
+<span id="L276" class="ln">   276  </span>        WHERE u.id = ANY($1::UUID[])
+<span id="L277" class="ln">   277  </span>            AND u.deleted_at IS NOT NULL
+<span id="L278" class="ln">   278  </span>    )
+<span id="L279" class="ln">   279  </span>`
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span><span class="comment">// 順序制約と論理削除条件の理由は DeleteUserIdentitiesByUserIDs を参照。</span>
+<span id="L282" class="ln">   282  </span><span class="comment">//</span>
+<span id="L283" class="ln">   283  </span><span class="comment">//	DELETE FROM user_roles</span>
+<span id="L284" class="ln">   284  </span><span class="comment">//	WHERE user_id IN (</span>
+<span id="L285" class="ln">   285  </span><span class="comment">//	        SELECT u.id</span>
+<span id="L286" class="ln">   286  </span><span class="comment">//	        FROM users AS u</span>
+<span id="L287" class="ln">   287  </span><span class="comment">//	        WHERE u.id = ANY($1::UUID[])</span>
+<span id="L288" class="ln">   288  </span><span class="comment">//	            AND u.deleted_at IS NOT NULL</span>
+<span id="L289" class="ln">   289  </span><span class="comment">//	    )</span>
+<span id="L290" class="ln">   290  </span>func (q *Queries) DeleteUserRolesByUserIDs(ctx context.Context, userIds []uuid.UUID) error {
+<span id="L291" class="ln">   291  </span>	_, err := q.db.Exec(ctx, deleteUserRolesByUserIDs, userIds)
+<span id="L292" class="ln">   292  </span>	return err
+<span id="L293" class="ln">   293  </span>}
+<span id="L294" class="ln">   294  </span>
+<span id="L295" class="ln">   295  </span>const deleteUsersByIDs = `-- name: DeleteUsersByIDs :execrows
+<span id="L296" class="ln">   296  </span>DELETE FROM users
+<span id="L297" class="ln">   297  </span>WHERE id = ANY($1::UUID[])
+<span id="L298" class="ln">   298  </span>    AND deleted_at IS NOT NULL
+<span id="L299" class="ln">   299  </span>`
 <span id="L300" class="ln">   300  </span>
-<span id="L301" class="ln">   301  </span><span class="comment">// === source: database/dml/repository/user/select_user_by_id.sql ===</span>
-<span id="L302" class="ln">   302  </span><span class="comment">//</span>
-<span id="L303" class="ln">   303  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L304" class="ln">   304  </span><span class="comment">//	FROM users AS u</span>
-<span id="L305" class="ln">   305  </span><span class="comment">//	WHERE u.id = $1</span>
-<span id="L306" class="ln">   306  </span><span class="comment">//	    AND u.deleted_at IS NULL</span>
-<span id="L307" class="ln">   307  </span>func (q *Queries) GetUserByID(ctx context.Context, userIDParam uuid.UUID) (*GetUserByIDRow, error) {
-<span id="L308" class="ln">   308  </span>	row := q.db.QueryRow(ctx, getUserByID, userIDParam)
-<span id="L309" class="ln">   309  </span>	var i GetUserByIDRow
-<span id="L310" class="ln">   310  </span>	err := row.Scan(
-<span id="L311" class="ln">   311  </span>		&amp;i.Users.ID,
-<span id="L312" class="ln">   312  </span>		&amp;i.Users.FirstName,
-<span id="L313" class="ln">   313  </span>		&amp;i.Users.LastName,
-<span id="L314" class="ln">   314  </span>		&amp;i.Users.Email,
-<span id="L315" class="ln">   315  </span>		&amp;i.Users.Phone,
-<span id="L316" class="ln">   316  </span>		&amp;i.Users.PrefectureID,
-<span id="L317" class="ln">   317  </span>		&amp;i.Users.City,
-<span id="L318" class="ln">   318  </span>		&amp;i.Users.Street,
-<span id="L319" class="ln">   319  </span>		&amp;i.Users.Building,
-<span id="L320" class="ln">   320  </span>		&amp;i.Users.PostalCode,
-<span id="L321" class="ln">   321  </span>		&amp;i.Users.DeletedAt,
-<span id="L322" class="ln">   322  </span>		&amp;i.Users.CreatedAt,
-<span id="L323" class="ln">   323  </span>		&amp;i.Users.UpdatedAt,
-<span id="L324" class="ln">   324  </span>		&amp;i.Users.SearchText,
-<span id="L325" class="ln">   325  </span>	)
-<span id="L326" class="ln">   326  </span>	return &amp;i, err
-<span id="L327" class="ln">   327  </span>}
-<span id="L328" class="ln">   328  </span>
-<span id="L329" class="ln">   329  </span>const getUserRolesByUserID = `-- name: GetUserRolesByUserID :many
-<span id="L330" class="ln">   330  </span>SELECT
-<span id="L331" class="ln">   331  </span>    r.id,
-<span id="L332" class="ln">   332  </span>    r.name,
-<span id="L333" class="ln">   333  </span>    r.code
-<span id="L334" class="ln">   334  </span>FROM user_roles AS ur
-<span id="L335" class="ln">   335  </span>INNER JOIN roles AS r ON ur.role_id = r.id
-<span id="L336" class="ln">   336  </span>WHERE ur.user_id = $1
-<span id="L337" class="ln">   337  </span>ORDER BY r.sort_key
-<span id="L338" class="ln">   338  </span>`
-<span id="L339" class="ln">   339  </span>
-<span id="L340" class="ln">   340  </span>type GetUserRolesByUserIDRow struct {
-<span id="L341" class="ln">   341  </span>	ID   uuid.UUID
-<span id="L342" class="ln">   342  </span>	Name string
-<span id="L343" class="ln">   343  </span>	Code int16
-<span id="L344" class="ln">   344  </span>}
-<span id="L345" class="ln">   345  </span>
-<span id="L346" class="ln">   346  </span><span class="comment">// === source: database/dml/repository/user/select_roles_by_user_id.sql ===</span>
-<span id="L347" class="ln">   347  </span><span class="comment">// 指定ユーザーのロールをマスタの表示順（sort_key 昇順）で返す。並び順の出所は code ではない。</span>
-<span id="L348" class="ln">   348  </span><span class="comment">//</span>
-<span id="L349" class="ln">   349  </span><span class="comment">//	SELECT</span>
-<span id="L350" class="ln">   350  </span><span class="comment">//	    r.id,</span>
-<span id="L351" class="ln">   351  </span><span class="comment">//	    r.name,</span>
-<span id="L352" class="ln">   352  </span><span class="comment">//	    r.code</span>
-<span id="L353" class="ln">   353  </span><span class="comment">//	FROM user_roles AS ur</span>
-<span id="L354" class="ln">   354  </span><span class="comment">//	INNER JOIN roles AS r ON ur.role_id = r.id</span>
-<span id="L355" class="ln">   355  </span><span class="comment">//	WHERE ur.user_id = $1</span>
-<span id="L356" class="ln">   356  </span><span class="comment">//	ORDER BY r.sort_key</span>
-<span id="L357" class="ln">   357  </span>func (q *Queries) GetUserRolesByUserID(ctx context.Context, userIDParam uuid.UUID) ([]*GetUserRolesByUserIDRow, error) {
-<span id="L358" class="ln">   358  </span>	rows, err := q.db.Query(ctx, getUserRolesByUserID, userIDParam)
-<span id="L359" class="ln">   359  </span>	if err != nil {
-<span id="L360" class="ln">   360  </span>		return nil, err
-<span id="L361" class="ln">   361  </span>	}
-<span id="L362" class="ln">   362  </span>	defer rows.Close()
-<span id="L363" class="ln">   363  </span>	var items []*GetUserRolesByUserIDRow
-<span id="L364" class="ln">   364  </span>	for rows.Next() {
-<span id="L365" class="ln">   365  </span>		var i GetUserRolesByUserIDRow
-<span id="L366" class="ln">   366  </span>		if err := rows.Scan(&amp;i.ID, &amp;i.Name, &amp;i.Code); err != nil {
-<span id="L367" class="ln">   367  </span>			return nil, err
-<span id="L368" class="ln">   368  </span>		}
-<span id="L369" class="ln">   369  </span>		items = append(items, &amp;i)
-<span id="L370" class="ln">   370  </span>	}
-<span id="L371" class="ln">   371  </span>	if err := rows.Err(); err != nil {
-<span id="L372" class="ln">   372  </span>		return nil, err
-<span id="L373" class="ln">   373  </span>	}
-<span id="L374" class="ln">   374  </span>	return items, nil
-<span id="L375" class="ln">   375  </span>}
-<span id="L376" class="ln">   376  </span>
-<span id="L377" class="ln">   377  </span>const listActiveUsers = `-- name: ListActiveUsers :many
-<span id="L378" class="ln">   378  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L379" class="ln">   379  </span>FROM users AS u
-<span id="L380" class="ln">   380  </span>WHERE u.deleted_at IS NULL
-<span id="L381" class="ln">   381  </span>ORDER BY u.created_at DESC
-<span id="L382" class="ln">   382  </span>LIMIT $2 OFFSET $1
-<span id="L383" class="ln">   383  </span>`
-<span id="L384" class="ln">   384  </span>
-<span id="L385" class="ln">   385  </span>type ListActiveUsersParams struct {
-<span id="L386" class="ln">   386  </span>	OffsetParam int32
-<span id="L387" class="ln">   387  </span>	LimitParam  int32
-<span id="L388" class="ln">   388  </span>}
-<span id="L389" class="ln">   389  </span>
-<span id="L390" class="ln">   390  </span>type ListActiveUsersRow struct {
-<span id="L391" class="ln">   391  </span>	Users Users
-<span id="L392" class="ln">   392  </span>}
-<span id="L393" class="ln">   393  </span>
-<span id="L394" class="ln">   394  </span><span class="comment">// ListActiveUsers</span>
-<span id="L395" class="ln">   395  </span><span class="comment">//</span>
-<span id="L396" class="ln">   396  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L397" class="ln">   397  </span><span class="comment">//	FROM users AS u</span>
-<span id="L398" class="ln">   398  </span><span class="comment">//	WHERE u.deleted_at IS NULL</span>
-<span id="L399" class="ln">   399  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
-<span id="L400" class="ln">   400  </span><span class="comment">//	LIMIT $2 OFFSET $1</span>
-<span id="L401" class="ln">   401  </span>func (q *Queries) ListActiveUsers(ctx context.Context, arg *ListActiveUsersParams) ([]*ListActiveUsersRow, error) {
-<span id="L402" class="ln">   402  </span>	rows, err := q.db.Query(ctx, listActiveUsers, arg.OffsetParam, arg.LimitParam)
-<span id="L403" class="ln">   403  </span>	if err != nil {
-<span id="L404" class="ln">   404  </span>		return nil, err
-<span id="L405" class="ln">   405  </span>	}
-<span id="L406" class="ln">   406  </span>	defer rows.Close()
-<span id="L407" class="ln">   407  </span>	var items []*ListActiveUsersRow
-<span id="L408" class="ln">   408  </span>	for rows.Next() {
-<span id="L409" class="ln">   409  </span>		var i ListActiveUsersRow
-<span id="L410" class="ln">   410  </span>		if err := rows.Scan(
-<span id="L411" class="ln">   411  </span>			&amp;i.Users.ID,
-<span id="L412" class="ln">   412  </span>			&amp;i.Users.FirstName,
-<span id="L413" class="ln">   413  </span>			&amp;i.Users.LastName,
-<span id="L414" class="ln">   414  </span>			&amp;i.Users.Email,
-<span id="L415" class="ln">   415  </span>			&amp;i.Users.Phone,
-<span id="L416" class="ln">   416  </span>			&amp;i.Users.PrefectureID,
-<span id="L417" class="ln">   417  </span>			&amp;i.Users.City,
-<span id="L418" class="ln">   418  </span>			&amp;i.Users.Street,
-<span id="L419" class="ln">   419  </span>			&amp;i.Users.Building,
-<span id="L420" class="ln">   420  </span>			&amp;i.Users.PostalCode,
-<span id="L421" class="ln">   421  </span>			&amp;i.Users.DeletedAt,
-<span id="L422" class="ln">   422  </span>			&amp;i.Users.CreatedAt,
-<span id="L423" class="ln">   423  </span>			&amp;i.Users.UpdatedAt,
-<span id="L424" class="ln">   424  </span>			&amp;i.Users.SearchText,
-<span id="L425" class="ln">   425  </span>		); err != nil {
-<span id="L426" class="ln">   426  </span>			return nil, err
-<span id="L427" class="ln">   427  </span>		}
-<span id="L428" class="ln">   428  </span>		items = append(items, &amp;i)
-<span id="L429" class="ln">   429  </span>	}
-<span id="L430" class="ln">   430  </span>	if err := rows.Err(); err != nil {
-<span id="L431" class="ln">   431  </span>		return nil, err
-<span id="L432" class="ln">   432  </span>	}
-<span id="L433" class="ln">   433  </span>	return items, nil
-<span id="L434" class="ln">   434  </span>}
-<span id="L435" class="ln">   435  </span>
-<span id="L436" class="ln">   436  </span>const listDeletedUsers = `-- name: ListDeletedUsers :many
-<span id="L437" class="ln">   437  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L438" class="ln">   438  </span>FROM users AS u
-<span id="L439" class="ln">   439  </span>WHERE u.deleted_at IS NOT NULL
-<span id="L440" class="ln">   440  </span>ORDER BY u.created_at DESC
-<span id="L441" class="ln">   441  </span>LIMIT $2 OFFSET $1
-<span id="L442" class="ln">   442  </span>`
-<span id="L443" class="ln">   443  </span>
-<span id="L444" class="ln">   444  </span>type ListDeletedUsersParams struct {
-<span id="L445" class="ln">   445  </span>	OffsetParam int32
-<span id="L446" class="ln">   446  </span>	LimitParam  int32
-<span id="L447" class="ln">   447  </span>}
-<span id="L448" class="ln">   448  </span>
-<span id="L449" class="ln">   449  </span>type ListDeletedUsersRow struct {
-<span id="L450" class="ln">   450  </span>	Users Users
-<span id="L451" class="ln">   451  </span>}
-<span id="L452" class="ln">   452  </span>
-<span id="L453" class="ln">   453  </span><span class="comment">// ListDeletedUsers</span>
-<span id="L454" class="ln">   454  </span><span class="comment">//</span>
-<span id="L455" class="ln">   455  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L456" class="ln">   456  </span><span class="comment">//	FROM users AS u</span>
-<span id="L457" class="ln">   457  </span><span class="comment">//	WHERE u.deleted_at IS NOT NULL</span>
-<span id="L458" class="ln">   458  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
-<span id="L459" class="ln">   459  </span><span class="comment">//	LIMIT $2 OFFSET $1</span>
-<span id="L460" class="ln">   460  </span>func (q *Queries) ListDeletedUsers(ctx context.Context, arg *ListDeletedUsersParams) ([]*ListDeletedUsersRow, error) {
-<span id="L461" class="ln">   461  </span>	rows, err := q.db.Query(ctx, listDeletedUsers, arg.OffsetParam, arg.LimitParam)
-<span id="L462" class="ln">   462  </span>	if err != nil {
-<span id="L463" class="ln">   463  </span>		return nil, err
-<span id="L464" class="ln">   464  </span>	}
-<span id="L465" class="ln">   465  </span>	defer rows.Close()
-<span id="L466" class="ln">   466  </span>	var items []*ListDeletedUsersRow
-<span id="L467" class="ln">   467  </span>	for rows.Next() {
-<span id="L468" class="ln">   468  </span>		var i ListDeletedUsersRow
-<span id="L469" class="ln">   469  </span>		if err := rows.Scan(
-<span id="L470" class="ln">   470  </span>			&amp;i.Users.ID,
-<span id="L471" class="ln">   471  </span>			&amp;i.Users.FirstName,
-<span id="L472" class="ln">   472  </span>			&amp;i.Users.LastName,
-<span id="L473" class="ln">   473  </span>			&amp;i.Users.Email,
-<span id="L474" class="ln">   474  </span>			&amp;i.Users.Phone,
-<span id="L475" class="ln">   475  </span>			&amp;i.Users.PrefectureID,
-<span id="L476" class="ln">   476  </span>			&amp;i.Users.City,
-<span id="L477" class="ln">   477  </span>			&amp;i.Users.Street,
-<span id="L478" class="ln">   478  </span>			&amp;i.Users.Building,
-<span id="L479" class="ln">   479  </span>			&amp;i.Users.PostalCode,
-<span id="L480" class="ln">   480  </span>			&amp;i.Users.DeletedAt,
-<span id="L481" class="ln">   481  </span>			&amp;i.Users.CreatedAt,
-<span id="L482" class="ln">   482  </span>			&amp;i.Users.UpdatedAt,
-<span id="L483" class="ln">   483  </span>			&amp;i.Users.SearchText,
-<span id="L484" class="ln">   484  </span>		); err != nil {
-<span id="L485" class="ln">   485  </span>			return nil, err
-<span id="L486" class="ln">   486  </span>		}
-<span id="L487" class="ln">   487  </span>		items = append(items, &amp;i)
-<span id="L488" class="ln">   488  </span>	}
-<span id="L489" class="ln">   489  </span>	if err := rows.Err(); err != nil {
-<span id="L490" class="ln">   490  </span>		return nil, err
-<span id="L491" class="ln">   491  </span>	}
-<span id="L492" class="ln">   492  </span>	return items, nil
-<span id="L493" class="ln">   493  </span>}
-<span id="L494" class="ln">   494  </span>
-<span id="L495" class="ln">   495  </span>const listPurgeCandidateUserIDsAfter = `-- name: ListPurgeCandidateUserIDsAfter :many
-<span id="L496" class="ln">   496  </span>SELECT id
-<span id="L497" class="ln">   497  </span>FROM users
-<span id="L498" class="ln">   498  </span>WHERE deleted_at IS NOT NULL
-<span id="L499" class="ln">   499  </span>    AND deleted_at &lt; $1
-<span id="L500" class="ln">   500  </span>    AND id &gt; $2
-<span id="L501" class="ln">   501  </span>ORDER BY id ASC
-<span id="L502" class="ln">   502  </span>LIMIT $3
-<span id="L503" class="ln">   503  </span>`
-<span id="L504" class="ln">   504  </span>
-<span id="L505" class="ln">   505  </span>type ListPurgeCandidateUserIDsAfterParams struct {
-<span id="L506" class="ln">   506  </span>	Cutoff     *time.Time
-<span id="L507" class="ln">   507  </span>	AfterID    uuid.UUID
-<span id="L508" class="ln">   508  </span>	LimitParam int32
-<span id="L509" class="ln">   509  </span>}
-<span id="L510" class="ln">   510  </span>
-<span id="L511" class="ln">   511  </span><span class="comment">// 論理削除日時が cutoff より古いユーザーの ID を、ID 昇順の keyset で最大 limit_param 件取得する（after_id 以降）。</span>
-<span id="L512" class="ln">   512  </span><span class="comment">// 境界を offset でなく ID で受け取る理由は docs/spec/user/domain.md の FindDeletedBefore を参照。</span>
-<span id="L513" class="ln">   513  </span><span class="comment">//</span>
-<span id="L514" class="ln">   514  </span><span class="comment">//	SELECT id</span>
-<span id="L515" class="ln">   515  </span><span class="comment">//	FROM users</span>
-<span id="L516" class="ln">   516  </span><span class="comment">//	WHERE deleted_at IS NOT NULL</span>
-<span id="L517" class="ln">   517  </span><span class="comment">//	    AND deleted_at &lt; $1</span>
-<span id="L518" class="ln">   518  </span><span class="comment">//	    AND id &gt; $2</span>
-<span id="L519" class="ln">   519  </span><span class="comment">//	ORDER BY id ASC</span>
-<span id="L520" class="ln">   520  </span><span class="comment">//	LIMIT $3</span>
-<span id="L521" class="ln">   521  </span>func (q *Queries) ListPurgeCandidateUserIDsAfter(ctx context.Context, arg *ListPurgeCandidateUserIDsAfterParams) ([]uuid.UUID, error) {
-<span id="L522" class="ln">   522  </span>	rows, err := q.db.Query(ctx, listPurgeCandidateUserIDsAfter, arg.Cutoff, arg.AfterID, arg.LimitParam)
-<span id="L523" class="ln">   523  </span>	if err != nil {
-<span id="L524" class="ln">   524  </span>		return nil, err
-<span id="L525" class="ln">   525  </span>	}
-<span id="L526" class="ln">   526  </span>	defer rows.Close()
-<span id="L527" class="ln">   527  </span>	var items []uuid.UUID
-<span id="L528" class="ln">   528  </span>	for rows.Next() {
-<span id="L529" class="ln">   529  </span>		var id uuid.UUID
-<span id="L530" class="ln">   530  </span>		if err := rows.Scan(&amp;id); err != nil {
-<span id="L531" class="ln">   531  </span>			return nil, err
-<span id="L532" class="ln">   532  </span>		}
-<span id="L533" class="ln">   533  </span>		items = append(items, id)
-<span id="L534" class="ln">   534  </span>	}
-<span id="L535" class="ln">   535  </span>	if err := rows.Err(); err != nil {
-<span id="L536" class="ln">   536  </span>		return nil, err
-<span id="L537" class="ln">   537  </span>	}
-<span id="L538" class="ln">   538  </span>	return items, nil
-<span id="L539" class="ln">   539  </span>}
-<span id="L540" class="ln">   540  </span>
-<span id="L541" class="ln">   541  </span>const listPurgeCandidateUserIDsFirst = `-- name: ListPurgeCandidateUserIDsFirst :many
-<span id="L542" class="ln">   542  </span>SELECT id
-<span id="L543" class="ln">   543  </span>FROM users
-<span id="L544" class="ln">   544  </span>WHERE deleted_at IS NOT NULL
-<span id="L545" class="ln">   545  </span>    AND deleted_at &lt; $1
-<span id="L546" class="ln">   546  </span>ORDER BY id ASC
-<span id="L547" class="ln">   547  </span>LIMIT $2
-<span id="L548" class="ln">   548  </span>`
-<span id="L549" class="ln">   549  </span>
-<span id="L550" class="ln">   550  </span>type ListPurgeCandidateUserIDsFirstParams struct {
-<span id="L551" class="ln">   551  </span>	Cutoff     *time.Time
-<span id="L552" class="ln">   552  </span>	LimitParam int32
-<span id="L553" class="ln">   553  </span>}
-<span id="L554" class="ln">   554  </span>
-<span id="L555" class="ln">   555  </span><span class="comment">// === source: database/dml/repository/user/select_purge_candidate_users.sql ===</span>
-<span id="L556" class="ln">   556  </span><span class="comment">// 論理削除日時が cutoff より古いユーザーの ID を、ID 昇順の keyset で最大 limit_param 件取得する（先頭ページ）。</span>
-<span id="L557" class="ln">   557  </span><span class="comment">//</span>
-<span id="L558" class="ln">   558  </span><span class="comment">//	SELECT id</span>
-<span id="L559" class="ln">   559  </span><span class="comment">//	FROM users</span>
-<span id="L560" class="ln">   560  </span><span class="comment">//	WHERE deleted_at IS NOT NULL</span>
-<span id="L561" class="ln">   561  </span><span class="comment">//	    AND deleted_at &lt; $1</span>
-<span id="L562" class="ln">   562  </span><span class="comment">//	ORDER BY id ASC</span>
-<span id="L563" class="ln">   563  </span><span class="comment">//	LIMIT $2</span>
-<span id="L564" class="ln">   564  </span>func (q *Queries) ListPurgeCandidateUserIDsFirst(ctx context.Context, arg *ListPurgeCandidateUserIDsFirstParams) ([]uuid.UUID, error) {
-<span id="L565" class="ln">   565  </span>	rows, err := q.db.Query(ctx, listPurgeCandidateUserIDsFirst, arg.Cutoff, arg.LimitParam)
-<span id="L566" class="ln">   566  </span>	if err != nil {
-<span id="L567" class="ln">   567  </span>		return nil, err
-<span id="L568" class="ln">   568  </span>	}
-<span id="L569" class="ln">   569  </span>	defer rows.Close()
-<span id="L570" class="ln">   570  </span>	var items []uuid.UUID
-<span id="L571" class="ln">   571  </span>	for rows.Next() {
-<span id="L572" class="ln">   572  </span>		var id uuid.UUID
-<span id="L573" class="ln">   573  </span>		if err := rows.Scan(&amp;id); err != nil {
-<span id="L574" class="ln">   574  </span>			return nil, err
-<span id="L575" class="ln">   575  </span>		}
-<span id="L576" class="ln">   576  </span>		items = append(items, id)
-<span id="L577" class="ln">   577  </span>	}
-<span id="L578" class="ln">   578  </span>	if err := rows.Err(); err != nil {
-<span id="L579" class="ln">   579  </span>		return nil, err
-<span id="L580" class="ln">   580  </span>	}
-<span id="L581" class="ln">   581  </span>	return items, nil
-<span id="L582" class="ln">   582  </span>}
-<span id="L583" class="ln">   583  </span>
-<span id="L584" class="ln">   584  </span>const listUsers = `-- name: ListUsers :many
-<span id="L585" class="ln">   585  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L586" class="ln">   586  </span>FROM users AS u
-<span id="L587" class="ln">   587  </span>ORDER BY u.created_at DESC
-<span id="L588" class="ln">   588  </span>LIMIT $2 OFFSET $1
-<span id="L589" class="ln">   589  </span>`
-<span id="L590" class="ln">   590  </span>
-<span id="L591" class="ln">   591  </span>type ListUsersParams struct {
-<span id="L592" class="ln">   592  </span>	OffsetParam int32
-<span id="L593" class="ln">   593  </span>	LimitParam  int32
-<span id="L594" class="ln">   594  </span>}
-<span id="L595" class="ln">   595  </span>
-<span id="L596" class="ln">   596  </span>type ListUsersRow struct {
-<span id="L597" class="ln">   597  </span>	Users Users
-<span id="L598" class="ln">   598  </span>}
-<span id="L599" class="ln">   599  </span>
-<span id="L600" class="ln">   600  </span><span class="comment">// === source: database/dml/repository/user/select_users.sql ===</span>
-<span id="L601" class="ln">   601  </span><span class="comment">//</span>
-<span id="L602" class="ln">   602  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L603" class="ln">   603  </span><span class="comment">//	FROM users AS u</span>
-<span id="L604" class="ln">   604  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
-<span id="L605" class="ln">   605  </span><span class="comment">//	LIMIT $2 OFFSET $1</span>
-<span id="L606" class="ln">   606  </span>func (q *Queries) ListUsers(ctx context.Context, arg *ListUsersParams) ([]*ListUsersRow, error) {
-<span id="L607" class="ln">   607  </span>	rows, err := q.db.Query(ctx, listUsers, arg.OffsetParam, arg.LimitParam)
-<span id="L608" class="ln">   608  </span>	if err != nil {
-<span id="L609" class="ln">   609  </span>		return nil, err
-<span id="L610" class="ln">   610  </span>	}
-<span id="L611" class="ln">   611  </span>	defer rows.Close()
-<span id="L612" class="ln">   612  </span>	var items []*ListUsersRow
-<span id="L613" class="ln">   613  </span>	for rows.Next() {
-<span id="L614" class="ln">   614  </span>		var i ListUsersRow
-<span id="L615" class="ln">   615  </span>		if err := rows.Scan(
-<span id="L616" class="ln">   616  </span>			&amp;i.Users.ID,
-<span id="L617" class="ln">   617  </span>			&amp;i.Users.FirstName,
-<span id="L618" class="ln">   618  </span>			&amp;i.Users.LastName,
-<span id="L619" class="ln">   619  </span>			&amp;i.Users.Email,
-<span id="L620" class="ln">   620  </span>			&amp;i.Users.Phone,
-<span id="L621" class="ln">   621  </span>			&amp;i.Users.PrefectureID,
-<span id="L622" class="ln">   622  </span>			&amp;i.Users.City,
-<span id="L623" class="ln">   623  </span>			&amp;i.Users.Street,
-<span id="L624" class="ln">   624  </span>			&amp;i.Users.Building,
-<span id="L625" class="ln">   625  </span>			&amp;i.Users.PostalCode,
-<span id="L626" class="ln">   626  </span>			&amp;i.Users.DeletedAt,
-<span id="L627" class="ln">   627  </span>			&amp;i.Users.CreatedAt,
-<span id="L628" class="ln">   628  </span>			&amp;i.Users.UpdatedAt,
-<span id="L629" class="ln">   629  </span>			&amp;i.Users.SearchText,
-<span id="L630" class="ln">   630  </span>		); err != nil {
-<span id="L631" class="ln">   631  </span>			return nil, err
-<span id="L632" class="ln">   632  </span>		}
-<span id="L633" class="ln">   633  </span>		items = append(items, &amp;i)
-<span id="L634" class="ln">   634  </span>	}
-<span id="L635" class="ln">   635  </span>	if err := rows.Err(); err != nil {
-<span id="L636" class="ln">   636  </span>		return nil, err
-<span id="L637" class="ln">   637  </span>	}
-<span id="L638" class="ln">   638  </span>	return items, nil
-<span id="L639" class="ln">   639  </span>}
-<span id="L640" class="ln">   640  </span>
-<span id="L641" class="ln">   641  </span>const listUsersFeedAfter = `-- name: ListUsersFeedAfter :many
-<span id="L642" class="ln">   642  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L643" class="ln">   643  </span>FROM users AS u
-<span id="L644" class="ln">   644  </span>WHERE u.deleted_at IS NULL
-<span id="L645" class="ln">   645  </span>    AND (
-<span id="L646" class="ln">   646  </span>        u.created_at &lt; $1
-<span id="L647" class="ln">   647  </span>        OR (u.created_at = $1 AND u.id &lt; $2)
-<span id="L648" class="ln">   648  </span>    )
-<span id="L649" class="ln">   649  </span>ORDER BY u.created_at DESC, u.id DESC
-<span id="L650" class="ln">   650  </span>LIMIT $3
-<span id="L651" class="ln">   651  </span>`
-<span id="L652" class="ln">   652  </span>
-<span id="L653" class="ln">   653  </span>type ListUsersFeedAfterParams struct {
-<span id="L654" class="ln">   654  </span>	AfterCreatedAt time.Time
-<span id="L655" class="ln">   655  </span>	AfterID        uuid.UUID
-<span id="L656" class="ln">   656  </span>	LimitParam     int32
-<span id="L657" class="ln">   657  </span>}
-<span id="L658" class="ln">   658  </span>
-<span id="L659" class="ln">   659  </span>type ListUsersFeedAfterRow struct {
-<span id="L660" class="ln">   660  </span>	Users Users
-<span id="L661" class="ln">   661  </span>}
-<span id="L662" class="ln">   662  </span>
-<span id="L663" class="ln">   663  </span><span class="comment">// (created_at DESC, id DESC) の keyset 境界より過去の未削除ユーザーを返します。</span>
-<span id="L664" class="ln">   664  </span><span class="comment">//</span>
-<span id="L665" class="ln">   665  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L666" class="ln">   666  </span><span class="comment">//	FROM users AS u</span>
-<span id="L667" class="ln">   667  </span><span class="comment">//	WHERE u.deleted_at IS NULL</span>
-<span id="L668" class="ln">   668  </span><span class="comment">//	    AND (</span>
-<span id="L669" class="ln">   669  </span><span class="comment">//	        u.created_at &lt; $1</span>
-<span id="L670" class="ln">   670  </span><span class="comment">//	        OR (u.created_at = $1 AND u.id &lt; $2)</span>
-<span id="L671" class="ln">   671  </span><span class="comment">//	    )</span>
-<span id="L672" class="ln">   672  </span><span class="comment">//	ORDER BY u.created_at DESC, u.id DESC</span>
-<span id="L673" class="ln">   673  </span><span class="comment">//	LIMIT $3</span>
-<span id="L674" class="ln">   674  </span>func (q *Queries) ListUsersFeedAfter(ctx context.Context, arg *ListUsersFeedAfterParams) ([]*ListUsersFeedAfterRow, error) {
-<span id="L675" class="ln">   675  </span>	rows, err := q.db.Query(ctx, listUsersFeedAfter, arg.AfterCreatedAt, arg.AfterID, arg.LimitParam)
-<span id="L676" class="ln">   676  </span>	if err != nil {
-<span id="L677" class="ln">   677  </span>		return nil, err
-<span id="L678" class="ln">   678  </span>	}
-<span id="L679" class="ln">   679  </span>	defer rows.Close()
-<span id="L680" class="ln">   680  </span>	var items []*ListUsersFeedAfterRow
-<span id="L681" class="ln">   681  </span>	for rows.Next() {
-<span id="L682" class="ln">   682  </span>		var i ListUsersFeedAfterRow
-<span id="L683" class="ln">   683  </span>		if err := rows.Scan(
-<span id="L684" class="ln">   684  </span>			&amp;i.Users.ID,
-<span id="L685" class="ln">   685  </span>			&amp;i.Users.FirstName,
-<span id="L686" class="ln">   686  </span>			&amp;i.Users.LastName,
-<span id="L687" class="ln">   687  </span>			&amp;i.Users.Email,
-<span id="L688" class="ln">   688  </span>			&amp;i.Users.Phone,
-<span id="L689" class="ln">   689  </span>			&amp;i.Users.PrefectureID,
-<span id="L690" class="ln">   690  </span>			&amp;i.Users.City,
-<span id="L691" class="ln">   691  </span>			&amp;i.Users.Street,
-<span id="L692" class="ln">   692  </span>			&amp;i.Users.Building,
-<span id="L693" class="ln">   693  </span>			&amp;i.Users.PostalCode,
-<span id="L694" class="ln">   694  </span>			&amp;i.Users.DeletedAt,
-<span id="L695" class="ln">   695  </span>			&amp;i.Users.CreatedAt,
-<span id="L696" class="ln">   696  </span>			&amp;i.Users.UpdatedAt,
-<span id="L697" class="ln">   697  </span>			&amp;i.Users.SearchText,
-<span id="L698" class="ln">   698  </span>		); err != nil {
-<span id="L699" class="ln">   699  </span>			return nil, err
-<span id="L700" class="ln">   700  </span>		}
-<span id="L701" class="ln">   701  </span>		items = append(items, &amp;i)
-<span id="L702" class="ln">   702  </span>	}
-<span id="L703" class="ln">   703  </span>	if err := rows.Err(); err != nil {
-<span id="L704" class="ln">   704  </span>		return nil, err
-<span id="L705" class="ln">   705  </span>	}
-<span id="L706" class="ln">   706  </span>	return items, nil
-<span id="L707" class="ln">   707  </span>}
-<span id="L708" class="ln">   708  </span>
-<span id="L709" class="ln">   709  </span>const listUsersFeedFirst = `-- name: ListUsersFeedFirst :many
-<span id="L710" class="ln">   710  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L711" class="ln">   711  </span>FROM users AS u
-<span id="L712" class="ln">   712  </span>WHERE u.deleted_at IS NULL
-<span id="L713" class="ln">   713  </span>ORDER BY u.created_at DESC, u.id DESC
-<span id="L714" class="ln">   714  </span>LIMIT $1
-<span id="L715" class="ln">   715  </span>`
-<span id="L716" class="ln">   716  </span>
-<span id="L717" class="ln">   717  </span>type ListUsersFeedFirstRow struct {
-<span id="L718" class="ln">   718  </span>	Users Users
-<span id="L719" class="ln">   719  </span>}
-<span id="L720" class="ln">   720  </span>
-<span id="L721" class="ln">   721  </span><span class="comment">// === source: database/dml/repository/user/select_users_feed.sql ===</span>
-<span id="L722" class="ln">   722  </span><span class="comment">//</span>
-<span id="L723" class="ln">   723  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L724" class="ln">   724  </span><span class="comment">//	FROM users AS u</span>
-<span id="L725" class="ln">   725  </span><span class="comment">//	WHERE u.deleted_at IS NULL</span>
-<span id="L726" class="ln">   726  </span><span class="comment">//	ORDER BY u.created_at DESC, u.id DESC</span>
-<span id="L727" class="ln">   727  </span><span class="comment">//	LIMIT $1</span>
-<span id="L728" class="ln">   728  </span>func (q *Queries) ListUsersFeedFirst(ctx context.Context, limitParam int32) ([]*ListUsersFeedFirstRow, error) {
-<span id="L729" class="ln">   729  </span>	rows, err := q.db.Query(ctx, listUsersFeedFirst, limitParam)
-<span id="L730" class="ln">   730  </span>	if err != nil {
-<span id="L731" class="ln">   731  </span>		return nil, err
-<span id="L732" class="ln">   732  </span>	}
-<span id="L733" class="ln">   733  </span>	defer rows.Close()
-<span id="L734" class="ln">   734  </span>	var items []*ListUsersFeedFirstRow
-<span id="L735" class="ln">   735  </span>	for rows.Next() {
-<span id="L736" class="ln">   736  </span>		var i ListUsersFeedFirstRow
-<span id="L737" class="ln">   737  </span>		if err := rows.Scan(
-<span id="L738" class="ln">   738  </span>			&amp;i.Users.ID,
-<span id="L739" class="ln">   739  </span>			&amp;i.Users.FirstName,
-<span id="L740" class="ln">   740  </span>			&amp;i.Users.LastName,
-<span id="L741" class="ln">   741  </span>			&amp;i.Users.Email,
-<span id="L742" class="ln">   742  </span>			&amp;i.Users.Phone,
-<span id="L743" class="ln">   743  </span>			&amp;i.Users.PrefectureID,
-<span id="L744" class="ln">   744  </span>			&amp;i.Users.City,
-<span id="L745" class="ln">   745  </span>			&amp;i.Users.Street,
-<span id="L746" class="ln">   746  </span>			&amp;i.Users.Building,
-<span id="L747" class="ln">   747  </span>			&amp;i.Users.PostalCode,
-<span id="L748" class="ln">   748  </span>			&amp;i.Users.DeletedAt,
-<span id="L749" class="ln">   749  </span>			&amp;i.Users.CreatedAt,
-<span id="L750" class="ln">   750  </span>			&amp;i.Users.UpdatedAt,
-<span id="L751" class="ln">   751  </span>			&amp;i.Users.SearchText,
-<span id="L752" class="ln">   752  </span>		); err != nil {
-<span id="L753" class="ln">   753  </span>			return nil, err
-<span id="L754" class="ln">   754  </span>		}
-<span id="L755" class="ln">   755  </span>		items = append(items, &amp;i)
-<span id="L756" class="ln">   756  </span>	}
-<span id="L757" class="ln">   757  </span>	if err := rows.Err(); err != nil {
-<span id="L758" class="ln">   758  </span>		return nil, err
-<span id="L759" class="ln">   759  </span>	}
-<span id="L760" class="ln">   760  </span>	return items, nil
-<span id="L761" class="ln">   761  </span>}
-<span id="L762" class="ln">   762  </span>
-<span id="L763" class="ln">   763  </span>const lockUserByID = `-- name: LockUserByID :one
-<span id="L764" class="ln">   764  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L765" class="ln">   765  </span>FROM users AS u
-<span id="L766" class="ln">   766  </span>WHERE u.id = $1
-<span id="L767" class="ln">   767  </span>    AND u.deleted_at IS NULL
-<span id="L768" class="ln">   768  </span>FOR UPDATE
-<span id="L769" class="ln">   769  </span>`
-<span id="L770" class="ln">   770  </span>
-<span id="L771" class="ln">   771  </span>type LockUserByIDRow struct {
-<span id="L772" class="ln">   772  </span>	Users Users
-<span id="L773" class="ln">   773  </span>}
-<span id="L774" class="ln">   774  </span>
-<span id="L775" class="ln">   775  </span><span class="comment">// === source: database/dml/repository/user/lock_user_by_id.sql ===</span>
-<span id="L776" class="ln">   776  </span><span class="comment">// ID から未削除のユーザーを 1 件、悲観ロック（FOR UPDATE）して取得する。</span>
-<span id="L777" class="ln">   777  </span><span class="comment">// 論理削除済み・不存在はいずれも 0 行（NotFound）。</span>
-<span id="L778" class="ln">   778  </span><span class="comment">// 取得位置の不変条件は docs/spec/user/usecase.md の DeleteUser を参照（ADR-0036 (ordered-pessimistic-row-locks)）。</span>
-<span id="L779" class="ln">   779  </span><span class="comment">//</span>
-<span id="L780" class="ln">   780  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L781" class="ln">   781  </span><span class="comment">//	FROM users AS u</span>
-<span id="L782" class="ln">   782  </span><span class="comment">//	WHERE u.id = $1</span>
-<span id="L783" class="ln">   783  </span><span class="comment">//	    AND u.deleted_at IS NULL</span>
-<span id="L784" class="ln">   784  </span><span class="comment">//	FOR UPDATE</span>
-<span id="L785" class="ln">   785  </span>func (q *Queries) LockUserByID(ctx context.Context, userIDParam uuid.UUID) (*LockUserByIDRow, error) {
-<span id="L786" class="ln">   786  </span>	row := q.db.QueryRow(ctx, lockUserByID, userIDParam)
-<span id="L787" class="ln">   787  </span>	var i LockUserByIDRow
-<span id="L788" class="ln">   788  </span>	err := row.Scan(
-<span id="L789" class="ln">   789  </span>		&amp;i.Users.ID,
-<span id="L790" class="ln">   790  </span>		&amp;i.Users.FirstName,
-<span id="L791" class="ln">   791  </span>		&amp;i.Users.LastName,
-<span id="L792" class="ln">   792  </span>		&amp;i.Users.Email,
-<span id="L793" class="ln">   793  </span>		&amp;i.Users.Phone,
-<span id="L794" class="ln">   794  </span>		&amp;i.Users.PrefectureID,
-<span id="L795" class="ln">   795  </span>		&amp;i.Users.City,
-<span id="L796" class="ln">   796  </span>		&amp;i.Users.Street,
-<span id="L797" class="ln">   797  </span>		&amp;i.Users.Building,
-<span id="L798" class="ln">   798  </span>		&amp;i.Users.PostalCode,
-<span id="L799" class="ln">   799  </span>		&amp;i.Users.DeletedAt,
-<span id="L800" class="ln">   800  </span>		&amp;i.Users.CreatedAt,
-<span id="L801" class="ln">   801  </span>		&amp;i.Users.UpdatedAt,
-<span id="L802" class="ln">   802  </span>		&amp;i.Users.SearchText,
-<span id="L803" class="ln">   803  </span>	)
-<span id="L804" class="ln">   804  </span>	return &amp;i, err
-<span id="L805" class="ln">   805  </span>}
-<span id="L806" class="ln">   806  </span>
-<span id="L807" class="ln">   807  </span>const lockUserShareByID = `-- name: LockUserShareByID :one
-<span id="L808" class="ln">   808  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L809" class="ln">   809  </span>FROM users AS u
-<span id="L810" class="ln">   810  </span>WHERE u.id = $1
-<span id="L811" class="ln">   811  </span>FOR SHARE
-<span id="L812" class="ln">   812  </span>`
-<span id="L813" class="ln">   813  </span>
-<span id="L814" class="ln">   814  </span>type LockUserShareByIDRow struct {
-<span id="L815" class="ln">   815  </span>	Users Users
-<span id="L816" class="ln">   816  </span>}
-<span id="L817" class="ln">   817  </span>
-<span id="L818" class="ln">   818  </span><span class="comment">// === source: database/dml/repository/user/lock_user_share_by_id.sql ===</span>
-<span id="L819" class="ln">   819  </span><span class="comment">// ID からユーザーを 1 件、悲観ロック（FOR SHARE）して取得する。不存在は 0 行（NotFound）。</span>
-<span id="L820" class="ln">   820  </span><span class="comment">// 退会済みを除外しないこと — ロックは機構で、在籍かどうかの判定はドメイン（User.IsActive）が持つ。</span>
-<span id="L821" class="ln">   821  </span><span class="comment">// 退会との直列化は docs/spec/purchase/usecase.md の CreatePurchase を参照。</span>
-<span id="L822" class="ln">   822  </span><span class="comment">// ADR-0036 (ordered-pessimistic-row-locks)。</span>
-<span id="L823" class="ln">   823  </span><span class="comment">//</span>
-<span id="L824" class="ln">   824  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L825" class="ln">   825  </span><span class="comment">//	FROM users AS u</span>
-<span id="L826" class="ln">   826  </span><span class="comment">//	WHERE u.id = $1</span>
-<span id="L827" class="ln">   827  </span><span class="comment">//	FOR SHARE</span>
-<span id="L828" class="ln">   828  </span>func (q *Queries) LockUserShareByID(ctx context.Context, userIDParam uuid.UUID) (*LockUserShareByIDRow, error) {
-<span id="L829" class="ln">   829  </span>	row := q.db.QueryRow(ctx, lockUserShareByID, userIDParam)
-<span id="L830" class="ln">   830  </span>	var i LockUserShareByIDRow
-<span id="L831" class="ln">   831  </span>	err := row.Scan(
-<span id="L832" class="ln">   832  </span>		&amp;i.Users.ID,
-<span id="L833" class="ln">   833  </span>		&amp;i.Users.FirstName,
-<span id="L834" class="ln">   834  </span>		&amp;i.Users.LastName,
-<span id="L835" class="ln">   835  </span>		&amp;i.Users.Email,
-<span id="L836" class="ln">   836  </span>		&amp;i.Users.Phone,
-<span id="L837" class="ln">   837  </span>		&amp;i.Users.PrefectureID,
-<span id="L838" class="ln">   838  </span>		&amp;i.Users.City,
-<span id="L839" class="ln">   839  </span>		&amp;i.Users.Street,
-<span id="L840" class="ln">   840  </span>		&amp;i.Users.Building,
-<span id="L841" class="ln">   841  </span>		&amp;i.Users.PostalCode,
-<span id="L842" class="ln">   842  </span>		&amp;i.Users.DeletedAt,
-<span id="L843" class="ln">   843  </span>		&amp;i.Users.CreatedAt,
-<span id="L844" class="ln">   844  </span>		&amp;i.Users.UpdatedAt,
-<span id="L845" class="ln">   845  </span>		&amp;i.Users.SearchText,
-<span id="L846" class="ln">   846  </span>	)
-<span id="L847" class="ln">   847  </span>	return &amp;i, err
-<span id="L848" class="ln">   848  </span>}
-<span id="L849" class="ln">   849  </span>
-<span id="L850" class="ln">   850  </span>const searchActiveUsers = `-- name: SearchActiveUsers :many
-<span id="L851" class="ln">   851  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L852" class="ln">   852  </span>FROM users AS u
-<span id="L853" class="ln">   853  </span>WHERE u.search_text ILIKE ANY($1::TEXT[])
-<span id="L854" class="ln">   854  </span>    AND u.deleted_at IS NULL
-<span id="L855" class="ln">   855  </span>ORDER BY u.created_at DESC
-<span id="L856" class="ln">   856  </span>LIMIT $3 OFFSET $2
-<span id="L857" class="ln">   857  </span>`
-<span id="L858" class="ln">   858  </span>
-<span id="L859" class="ln">   859  </span>type SearchActiveUsersParams struct {
-<span id="L860" class="ln">   860  </span>	PatternsParam []string
-<span id="L861" class="ln">   861  </span>	OffsetParam   int32
-<span id="L862" class="ln">   862  </span>	LimitParam    int32
-<span id="L863" class="ln">   863  </span>}
-<span id="L864" class="ln">   864  </span>
-<span id="L865" class="ln">   865  </span>type SearchActiveUsersRow struct {
-<span id="L866" class="ln">   866  </span>	Users Users
-<span id="L867" class="ln">   867  </span>}
-<span id="L868" class="ln">   868  </span>
-<span id="L869" class="ln">   869  </span><span class="comment">// SearchActiveUsers</span>
-<span id="L870" class="ln">   870  </span><span class="comment">//</span>
-<span id="L871" class="ln">   871  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L872" class="ln">   872  </span><span class="comment">//	FROM users AS u</span>
-<span id="L873" class="ln">   873  </span><span class="comment">//	WHERE u.search_text ILIKE ANY($1::TEXT[])</span>
-<span id="L874" class="ln">   874  </span><span class="comment">//	    AND u.deleted_at IS NULL</span>
-<span id="L875" class="ln">   875  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
-<span id="L876" class="ln">   876  </span><span class="comment">//	LIMIT $3 OFFSET $2</span>
-<span id="L877" class="ln">   877  </span>func (q *Queries) SearchActiveUsers(ctx context.Context, arg *SearchActiveUsersParams) ([]*SearchActiveUsersRow, error) {
-<span id="L878" class="ln">   878  </span>	rows, err := q.db.Query(ctx, searchActiveUsers, arg.PatternsParam, arg.OffsetParam, arg.LimitParam)
-<span id="L879" class="ln">   879  </span>	if err != nil {
-<span id="L880" class="ln">   880  </span>		return nil, err
-<span id="L881" class="ln">   881  </span>	}
-<span id="L882" class="ln">   882  </span>	defer rows.Close()
-<span id="L883" class="ln">   883  </span>	var items []*SearchActiveUsersRow
-<span id="L884" class="ln">   884  </span>	for rows.Next() {
-<span id="L885" class="ln">   885  </span>		var i SearchActiveUsersRow
-<span id="L886" class="ln">   886  </span>		if err := rows.Scan(
-<span id="L887" class="ln">   887  </span>			&amp;i.Users.ID,
-<span id="L888" class="ln">   888  </span>			&amp;i.Users.FirstName,
-<span id="L889" class="ln">   889  </span>			&amp;i.Users.LastName,
-<span id="L890" class="ln">   890  </span>			&amp;i.Users.Email,
-<span id="L891" class="ln">   891  </span>			&amp;i.Users.Phone,
-<span id="L892" class="ln">   892  </span>			&amp;i.Users.PrefectureID,
-<span id="L893" class="ln">   893  </span>			&amp;i.Users.City,
-<span id="L894" class="ln">   894  </span>			&amp;i.Users.Street,
-<span id="L895" class="ln">   895  </span>			&amp;i.Users.Building,
-<span id="L896" class="ln">   896  </span>			&amp;i.Users.PostalCode,
-<span id="L897" class="ln">   897  </span>			&amp;i.Users.DeletedAt,
-<span id="L898" class="ln">   898  </span>			&amp;i.Users.CreatedAt,
-<span id="L899" class="ln">   899  </span>			&amp;i.Users.UpdatedAt,
-<span id="L900" class="ln">   900  </span>			&amp;i.Users.SearchText,
-<span id="L901" class="ln">   901  </span>		); err != nil {
-<span id="L902" class="ln">   902  </span>			return nil, err
-<span id="L903" class="ln">   903  </span>		}
-<span id="L904" class="ln">   904  </span>		items = append(items, &amp;i)
-<span id="L905" class="ln">   905  </span>	}
-<span id="L906" class="ln">   906  </span>	if err := rows.Err(); err != nil {
-<span id="L907" class="ln">   907  </span>		return nil, err
-<span id="L908" class="ln">   908  </span>	}
-<span id="L909" class="ln">   909  </span>	return items, nil
-<span id="L910" class="ln">   910  </span>}
-<span id="L911" class="ln">   911  </span>
-<span id="L912" class="ln">   912  </span>const searchDeletedUsers = `-- name: SearchDeletedUsers :many
-<span id="L913" class="ln">   913  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L914" class="ln">   914  </span>FROM users AS u
-<span id="L915" class="ln">   915  </span>WHERE u.search_text ILIKE ANY($1::TEXT[])
-<span id="L916" class="ln">   916  </span>    AND u.deleted_at IS NOT NULL
-<span id="L917" class="ln">   917  </span>ORDER BY u.created_at DESC
-<span id="L918" class="ln">   918  </span>LIMIT $3 OFFSET $2
-<span id="L919" class="ln">   919  </span>`
-<span id="L920" class="ln">   920  </span>
-<span id="L921" class="ln">   921  </span>type SearchDeletedUsersParams struct {
-<span id="L922" class="ln">   922  </span>	PatternsParam []string
-<span id="L923" class="ln">   923  </span>	OffsetParam   int32
-<span id="L924" class="ln">   924  </span>	LimitParam    int32
-<span id="L925" class="ln">   925  </span>}
-<span id="L926" class="ln">   926  </span>
-<span id="L927" class="ln">   927  </span>type SearchDeletedUsersRow struct {
-<span id="L928" class="ln">   928  </span>	Users Users
-<span id="L929" class="ln">   929  </span>}
-<span id="L930" class="ln">   930  </span>
-<span id="L931" class="ln">   931  </span><span class="comment">// SearchDeletedUsers</span>
-<span id="L932" class="ln">   932  </span><span class="comment">//</span>
-<span id="L933" class="ln">   933  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L934" class="ln">   934  </span><span class="comment">//	FROM users AS u</span>
-<span id="L935" class="ln">   935  </span><span class="comment">//	WHERE u.search_text ILIKE ANY($1::TEXT[])</span>
-<span id="L936" class="ln">   936  </span><span class="comment">//	    AND u.deleted_at IS NOT NULL</span>
-<span id="L937" class="ln">   937  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
-<span id="L938" class="ln">   938  </span><span class="comment">//	LIMIT $3 OFFSET $2</span>
-<span id="L939" class="ln">   939  </span>func (q *Queries) SearchDeletedUsers(ctx context.Context, arg *SearchDeletedUsersParams) ([]*SearchDeletedUsersRow, error) {
-<span id="L940" class="ln">   940  </span>	rows, err := q.db.Query(ctx, searchDeletedUsers, arg.PatternsParam, arg.OffsetParam, arg.LimitParam)
-<span id="L941" class="ln">   941  </span>	if err != nil {
-<span id="L942" class="ln">   942  </span>		return nil, err
-<span id="L943" class="ln">   943  </span>	}
-<span id="L944" class="ln">   944  </span>	defer rows.Close()
-<span id="L945" class="ln">   945  </span>	var items []*SearchDeletedUsersRow
-<span id="L946" class="ln">   946  </span>	for rows.Next() {
-<span id="L947" class="ln">   947  </span>		var i SearchDeletedUsersRow
-<span id="L948" class="ln">   948  </span>		if err := rows.Scan(
-<span id="L949" class="ln">   949  </span>			&amp;i.Users.ID,
-<span id="L950" class="ln">   950  </span>			&amp;i.Users.FirstName,
-<span id="L951" class="ln">   951  </span>			&amp;i.Users.LastName,
-<span id="L952" class="ln">   952  </span>			&amp;i.Users.Email,
-<span id="L953" class="ln">   953  </span>			&amp;i.Users.Phone,
-<span id="L954" class="ln">   954  </span>			&amp;i.Users.PrefectureID,
-<span id="L955" class="ln">   955  </span>			&amp;i.Users.City,
-<span id="L956" class="ln">   956  </span>			&amp;i.Users.Street,
-<span id="L957" class="ln">   957  </span>			&amp;i.Users.Building,
-<span id="L958" class="ln">   958  </span>			&amp;i.Users.PostalCode,
-<span id="L959" class="ln">   959  </span>			&amp;i.Users.DeletedAt,
-<span id="L960" class="ln">   960  </span>			&amp;i.Users.CreatedAt,
-<span id="L961" class="ln">   961  </span>			&amp;i.Users.UpdatedAt,
-<span id="L962" class="ln">   962  </span>			&amp;i.Users.SearchText,
-<span id="L963" class="ln">   963  </span>		); err != nil {
-<span id="L964" class="ln">   964  </span>			return nil, err
-<span id="L965" class="ln">   965  </span>		}
-<span id="L966" class="ln">   966  </span>		items = append(items, &amp;i)
-<span id="L967" class="ln">   967  </span>	}
-<span id="L968" class="ln">   968  </span>	if err := rows.Err(); err != nil {
-<span id="L969" class="ln">   969  </span>		return nil, err
-<span id="L970" class="ln">   970  </span>	}
-<span id="L971" class="ln">   971  </span>	return items, nil
-<span id="L972" class="ln">   972  </span>}
-<span id="L973" class="ln">   973  </span>
-<span id="L974" class="ln">   974  </span>const searchUsers = `-- name: SearchUsers :many
-<span id="L975" class="ln">   975  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
-<span id="L976" class="ln">   976  </span>FROM users AS u
-<span id="L977" class="ln">   977  </span>WHERE u.search_text ILIKE ANY($1::TEXT[])
-<span id="L978" class="ln">   978  </span>ORDER BY u.created_at DESC
-<span id="L979" class="ln">   979  </span>LIMIT $3 OFFSET $2
-<span id="L980" class="ln">   980  </span>`
-<span id="L981" class="ln">   981  </span>
-<span id="L982" class="ln">   982  </span>type SearchUsersParams struct {
-<span id="L983" class="ln">   983  </span>	PatternsParam []string
-<span id="L984" class="ln">   984  </span>	OffsetParam   int32
-<span id="L985" class="ln">   985  </span>	LimitParam    int32
-<span id="L986" class="ln">   986  </span>}
-<span id="L987" class="ln">   987  </span>
-<span id="L988" class="ln">   988  </span>type SearchUsersRow struct {
-<span id="L989" class="ln">   989  </span>	Users Users
-<span id="L990" class="ln">   990  </span>}
-<span id="L991" class="ln">   991  </span>
-<span id="L992" class="ln">   992  </span><span class="comment">// === source: database/dml/repository/user/select_users_by_keyword.sql ===</span>
-<span id="L993" class="ln">   993  </span><span class="comment">//</span>
-<span id="L994" class="ln">   994  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
-<span id="L995" class="ln">   995  </span><span class="comment">//	FROM users AS u</span>
-<span id="L996" class="ln">   996  </span><span class="comment">//	WHERE u.search_text ILIKE ANY($1::TEXT[])</span>
-<span id="L997" class="ln">   997  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
-<span id="L998" class="ln">   998  </span><span class="comment">//	LIMIT $3 OFFSET $2</span>
-<span id="L999" class="ln">   999  </span>func (q *Queries) SearchUsers(ctx context.Context, arg *SearchUsersParams) ([]*SearchUsersRow, error) {
-<span id="L1000" class="ln">  1000  </span>	rows, err := q.db.Query(ctx, searchUsers, arg.PatternsParam, arg.OffsetParam, arg.LimitParam)
-<span id="L1001" class="ln">  1001  </span>	if err != nil {
-<span id="L1002" class="ln">  1002  </span>		return nil, err
-<span id="L1003" class="ln">  1003  </span>	}
-<span id="L1004" class="ln">  1004  </span>	defer rows.Close()
-<span id="L1005" class="ln">  1005  </span>	var items []*SearchUsersRow
-<span id="L1006" class="ln">  1006  </span>	for rows.Next() {
-<span id="L1007" class="ln">  1007  </span>		var i SearchUsersRow
-<span id="L1008" class="ln">  1008  </span>		if err := rows.Scan(
-<span id="L1009" class="ln">  1009  </span>			&amp;i.Users.ID,
-<span id="L1010" class="ln">  1010  </span>			&amp;i.Users.FirstName,
-<span id="L1011" class="ln">  1011  </span>			&amp;i.Users.LastName,
-<span id="L1012" class="ln">  1012  </span>			&amp;i.Users.Email,
-<span id="L1013" class="ln">  1013  </span>			&amp;i.Users.Phone,
-<span id="L1014" class="ln">  1014  </span>			&amp;i.Users.PrefectureID,
-<span id="L1015" class="ln">  1015  </span>			&amp;i.Users.City,
-<span id="L1016" class="ln">  1016  </span>			&amp;i.Users.Street,
-<span id="L1017" class="ln">  1017  </span>			&amp;i.Users.Building,
-<span id="L1018" class="ln">  1018  </span>			&amp;i.Users.PostalCode,
-<span id="L1019" class="ln">  1019  </span>			&amp;i.Users.DeletedAt,
-<span id="L1020" class="ln">  1020  </span>			&amp;i.Users.CreatedAt,
-<span id="L1021" class="ln">  1021  </span>			&amp;i.Users.UpdatedAt,
-<span id="L1022" class="ln">  1022  </span>			&amp;i.Users.SearchText,
-<span id="L1023" class="ln">  1023  </span>		); err != nil {
-<span id="L1024" class="ln">  1024  </span>			return nil, err
-<span id="L1025" class="ln">  1025  </span>		}
-<span id="L1026" class="ln">  1026  </span>		items = append(items, &amp;i)
-<span id="L1027" class="ln">  1027  </span>	}
-<span id="L1028" class="ln">  1028  </span>	if err := rows.Err(); err != nil {
-<span id="L1029" class="ln">  1029  </span>		return nil, err
-<span id="L1030" class="ln">  1030  </span>	}
-<span id="L1031" class="ln">  1031  </span>	return items, nil
-<span id="L1032" class="ln">  1032  </span>}
-<span id="L1033" class="ln">  1033  </span>
-<span id="L1034" class="ln">  1034  </span>const updateUser = `-- name: UpdateUser :execrows
-<span id="L1035" class="ln">  1035  </span>UPDATE users
-<span id="L1036" class="ln">  1036  </span>SET
-<span id="L1037" class="ln">  1037  </span>    first_name = $1,
-<span id="L1038" class="ln">  1038  </span>    last_name = $2,
-<span id="L1039" class="ln">  1039  </span>    email = $3,
-<span id="L1040" class="ln">  1040  </span>    phone = $4,
-<span id="L1041" class="ln">  1041  </span>    prefecture_id = $5,
-<span id="L1042" class="ln">  1042  </span>    city = $6,
-<span id="L1043" class="ln">  1043  </span>    street = $7,
-<span id="L1044" class="ln">  1044  </span>    building = $8,
-<span id="L1045" class="ln">  1045  </span>    postal_code = $9,
-<span id="L1046" class="ln">  1046  </span>    updated_at = $10,
-<span id="L1047" class="ln">  1047  </span>    deleted_at = $11
-<span id="L1048" class="ln">  1048  </span>WHERE id = $12
-<span id="L1049" class="ln">  1049  </span>    AND deleted_at IS NULL
-<span id="L1050" class="ln">  1050  </span>`
-<span id="L1051" class="ln">  1051  </span>
-<span id="L1052" class="ln">  1052  </span>type UpdateUserParams struct {
-<span id="L1053" class="ln">  1053  </span>	FirstName    string
-<span id="L1054" class="ln">  1054  </span>	LastName     string
-<span id="L1055" class="ln">  1055  </span>	Email        string
-<span id="L1056" class="ln">  1056  </span>	Phone        string
-<span id="L1057" class="ln">  1057  </span>	PrefectureID uuid.UUID
-<span id="L1058" class="ln">  1058  </span>	City         string
-<span id="L1059" class="ln">  1059  </span>	Street       string
-<span id="L1060" class="ln">  1060  </span>	Building     *string
-<span id="L1061" class="ln">  1061  </span>	PostalCode   string
-<span id="L1062" class="ln">  1062  </span>	UpdatedAt    time.Time
-<span id="L1063" class="ln">  1063  </span>	DeletedAt    *time.Time
-<span id="L1064" class="ln">  1064  </span>	ID           uuid.UUID
-<span id="L1065" class="ln">  1065  </span>}
-<span id="L1066" class="ln">  1066  </span>
-<span id="L1067" class="ln">  1067  </span><span class="comment">// === source: database/dml/repository/user/update_user.sql ===</span>
-<span id="L1068" class="ln">  1068  </span><span class="comment">//</span>
-<span id="L1069" class="ln">  1069  </span><span class="comment">//	UPDATE users</span>
-<span id="L1070" class="ln">  1070  </span><span class="comment">//	SET</span>
-<span id="L1071" class="ln">  1071  </span><span class="comment">//	    first_name = $1,</span>
-<span id="L1072" class="ln">  1072  </span><span class="comment">//	    last_name = $2,</span>
-<span id="L1073" class="ln">  1073  </span><span class="comment">//	    email = $3,</span>
-<span id="L1074" class="ln">  1074  </span><span class="comment">//	    phone = $4,</span>
-<span id="L1075" class="ln">  1075  </span><span class="comment">//	    prefecture_id = $5,</span>
-<span id="L1076" class="ln">  1076  </span><span class="comment">//	    city = $6,</span>
-<span id="L1077" class="ln">  1077  </span><span class="comment">//	    street = $7,</span>
-<span id="L1078" class="ln">  1078  </span><span class="comment">//	    building = $8,</span>
-<span id="L1079" class="ln">  1079  </span><span class="comment">//	    postal_code = $9,</span>
-<span id="L1080" class="ln">  1080  </span><span class="comment">//	    updated_at = $10,</span>
-<span id="L1081" class="ln">  1081  </span><span class="comment">//	    deleted_at = $11</span>
-<span id="L1082" class="ln">  1082  </span><span class="comment">//	WHERE id = $12</span>
-<span id="L1083" class="ln">  1083  </span><span class="comment">//	    AND deleted_at IS NULL</span>
-<span id="L1084" class="ln">  1084  </span>func (q *Queries) UpdateUser(ctx context.Context, arg *UpdateUserParams) (int64, error) {
-<span id="L1085" class="ln">  1085  </span>	result, err := q.db.Exec(ctx, updateUser,
-<span id="L1086" class="ln">  1086  </span>		arg.FirstName,
-<span id="L1087" class="ln">  1087  </span>		arg.LastName,
-<span id="L1088" class="ln">  1088  </span>		arg.Email,
-<span id="L1089" class="ln">  1089  </span>		arg.Phone,
-<span id="L1090" class="ln">  1090  </span>		arg.PrefectureID,
-<span id="L1091" class="ln">  1091  </span>		arg.City,
-<span id="L1092" class="ln">  1092  </span>		arg.Street,
-<span id="L1093" class="ln">  1093  </span>		arg.Building,
-<span id="L1094" class="ln">  1094  </span>		arg.PostalCode,
-<span id="L1095" class="ln">  1095  </span>		arg.UpdatedAt,
-<span id="L1096" class="ln">  1096  </span>		arg.DeletedAt,
-<span id="L1097" class="ln">  1097  </span>		arg.ID,
-<span id="L1098" class="ln">  1098  </span>	)
-<span id="L1099" class="ln">  1099  </span>	if err != nil {
-<span id="L1100" class="ln">  1100  </span>		return 0, err
-<span id="L1101" class="ln">  1101  </span>	}
-<span id="L1102" class="ln">  1102  </span>	return result.RowsAffected(), nil
-<span id="L1103" class="ln">  1103  </span>}
-<span id="L1104" class="ln">  1104  </span>
+<span id="L301" class="ln">   301  </span><span class="comment">// 削除件数を返す。従属行の削除後に呼ぶこと（参照の残存はここでは検査しない）。</span>
+<span id="L302" class="ln">   302  </span><span class="comment">// 論理削除済みを永続化側でも検査する理由は docs/spec/domain/user.md の PurgeByIDs を参照。</span>
+<span id="L303" class="ln">   303  </span><span class="comment">//</span>
+<span id="L304" class="ln">   304  </span><span class="comment">//	DELETE FROM users</span>
+<span id="L305" class="ln">   305  </span><span class="comment">//	WHERE id = ANY($1::UUID[])</span>
+<span id="L306" class="ln">   306  </span><span class="comment">//	    AND deleted_at IS NOT NULL</span>
+<span id="L307" class="ln">   307  </span>func (q *Queries) DeleteUsersByIDs(ctx context.Context, ids []uuid.UUID) (int64, error) {
+<span id="L308" class="ln">   308  </span>	result, err := q.db.Exec(ctx, deleteUsersByIDs, ids)
+<span id="L309" class="ln">   309  </span>	if err != nil {
+<span id="L310" class="ln">   310  </span>		return 0, err
+<span id="L311" class="ln">   311  </span>	}
+<span id="L312" class="ln">   312  </span>	return result.RowsAffected(), nil
+<span id="L313" class="ln">   313  </span>}
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>const getUserByID = `-- name: GetUserByID :one
+<span id="L316" class="ln">   316  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L317" class="ln">   317  </span>FROM users AS u
+<span id="L318" class="ln">   318  </span>WHERE u.id = $1
+<span id="L319" class="ln">   319  </span>    AND u.deleted_at IS NULL
+<span id="L320" class="ln">   320  </span>`
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>type GetUserByIDRow struct {
+<span id="L323" class="ln">   323  </span>	Users Users
+<span id="L324" class="ln">   324  </span>}
+<span id="L325" class="ln">   325  </span>
+<span id="L326" class="ln">   326  </span><span class="comment">// === source: database/dml/repository/user/select_user_by_id.sql ===</span>
+<span id="L327" class="ln">   327  </span><span class="comment">//</span>
+<span id="L328" class="ln">   328  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L329" class="ln">   329  </span><span class="comment">//	FROM users AS u</span>
+<span id="L330" class="ln">   330  </span><span class="comment">//	WHERE u.id = $1</span>
+<span id="L331" class="ln">   331  </span><span class="comment">//	    AND u.deleted_at IS NULL</span>
+<span id="L332" class="ln">   332  </span>func (q *Queries) GetUserByID(ctx context.Context, userIDParam uuid.UUID) (*GetUserByIDRow, error) {
+<span id="L333" class="ln">   333  </span>	row := q.db.QueryRow(ctx, getUserByID, userIDParam)
+<span id="L334" class="ln">   334  </span>	var i GetUserByIDRow
+<span id="L335" class="ln">   335  </span>	err := row.Scan(
+<span id="L336" class="ln">   336  </span>		&amp;i.Users.ID,
+<span id="L337" class="ln">   337  </span>		&amp;i.Users.FirstName,
+<span id="L338" class="ln">   338  </span>		&amp;i.Users.LastName,
+<span id="L339" class="ln">   339  </span>		&amp;i.Users.Email,
+<span id="L340" class="ln">   340  </span>		&amp;i.Users.Phone,
+<span id="L341" class="ln">   341  </span>		&amp;i.Users.PrefectureID,
+<span id="L342" class="ln">   342  </span>		&amp;i.Users.City,
+<span id="L343" class="ln">   343  </span>		&amp;i.Users.Street,
+<span id="L344" class="ln">   344  </span>		&amp;i.Users.Building,
+<span id="L345" class="ln">   345  </span>		&amp;i.Users.PostalCode,
+<span id="L346" class="ln">   346  </span>		&amp;i.Users.DeletedAt,
+<span id="L347" class="ln">   347  </span>		&amp;i.Users.CreatedAt,
+<span id="L348" class="ln">   348  </span>		&amp;i.Users.UpdatedAt,
+<span id="L349" class="ln">   349  </span>		&amp;i.Users.SearchText,
+<span id="L350" class="ln">   350  </span>	)
+<span id="L351" class="ln">   351  </span>	return &amp;i, err
+<span id="L352" class="ln">   352  </span>}
+<span id="L353" class="ln">   353  </span>
+<span id="L354" class="ln">   354  </span>const getUserRolesByUserID = `-- name: GetUserRolesByUserID :many
+<span id="L355" class="ln">   355  </span>SELECT
+<span id="L356" class="ln">   356  </span>    r.id,
+<span id="L357" class="ln">   357  </span>    r.name,
+<span id="L358" class="ln">   358  </span>    r.code
+<span id="L359" class="ln">   359  </span>FROM user_roles AS ur
+<span id="L360" class="ln">   360  </span>INNER JOIN roles AS r ON ur.role_id = r.id
+<span id="L361" class="ln">   361  </span>WHERE ur.user_id = $1
+<span id="L362" class="ln">   362  </span>ORDER BY r.sort_key
+<span id="L363" class="ln">   363  </span>`
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>type GetUserRolesByUserIDRow struct {
+<span id="L366" class="ln">   366  </span>	ID   uuid.UUID
+<span id="L367" class="ln">   367  </span>	Name string
+<span id="L368" class="ln">   368  </span>	Code int16
+<span id="L369" class="ln">   369  </span>}
+<span id="L370" class="ln">   370  </span>
+<span id="L371" class="ln">   371  </span><span class="comment">// === source: database/dml/repository/user/select_roles_by_user_id.sql ===</span>
+<span id="L372" class="ln">   372  </span><span class="comment">// 指定ユーザーのロールをマスタの表示順（sort_key 昇順）で返す。並び順の出所は code ではない。</span>
+<span id="L373" class="ln">   373  </span><span class="comment">//</span>
+<span id="L374" class="ln">   374  </span><span class="comment">//	SELECT</span>
+<span id="L375" class="ln">   375  </span><span class="comment">//	    r.id,</span>
+<span id="L376" class="ln">   376  </span><span class="comment">//	    r.name,</span>
+<span id="L377" class="ln">   377  </span><span class="comment">//	    r.code</span>
+<span id="L378" class="ln">   378  </span><span class="comment">//	FROM user_roles AS ur</span>
+<span id="L379" class="ln">   379  </span><span class="comment">//	INNER JOIN roles AS r ON ur.role_id = r.id</span>
+<span id="L380" class="ln">   380  </span><span class="comment">//	WHERE ur.user_id = $1</span>
+<span id="L381" class="ln">   381  </span><span class="comment">//	ORDER BY r.sort_key</span>
+<span id="L382" class="ln">   382  </span>func (q *Queries) GetUserRolesByUserID(ctx context.Context, userIDParam uuid.UUID) ([]*GetUserRolesByUserIDRow, error) {
+<span id="L383" class="ln">   383  </span>	rows, err := q.db.Query(ctx, getUserRolesByUserID, userIDParam)
+<span id="L384" class="ln">   384  </span>	if err != nil {
+<span id="L385" class="ln">   385  </span>		return nil, err
+<span id="L386" class="ln">   386  </span>	}
+<span id="L387" class="ln">   387  </span>	defer rows.Close()
+<span id="L388" class="ln">   388  </span>	var items []*GetUserRolesByUserIDRow
+<span id="L389" class="ln">   389  </span>	for rows.Next() {
+<span id="L390" class="ln">   390  </span>		var i GetUserRolesByUserIDRow
+<span id="L391" class="ln">   391  </span>		if err := rows.Scan(&amp;i.ID, &amp;i.Name, &amp;i.Code); err != nil {
+<span id="L392" class="ln">   392  </span>			return nil, err
+<span id="L393" class="ln">   393  </span>		}
+<span id="L394" class="ln">   394  </span>		items = append(items, &amp;i)
+<span id="L395" class="ln">   395  </span>	}
+<span id="L396" class="ln">   396  </span>	if err := rows.Err(); err != nil {
+<span id="L397" class="ln">   397  </span>		return nil, err
+<span id="L398" class="ln">   398  </span>	}
+<span id="L399" class="ln">   399  </span>	return items, nil
+<span id="L400" class="ln">   400  </span>}
+<span id="L401" class="ln">   401  </span>
+<span id="L402" class="ln">   402  </span>const listActiveUsers = `-- name: ListActiveUsers :many
+<span id="L403" class="ln">   403  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L404" class="ln">   404  </span>FROM users AS u
+<span id="L405" class="ln">   405  </span>WHERE u.deleted_at IS NULL
+<span id="L406" class="ln">   406  </span>ORDER BY u.created_at DESC
+<span id="L407" class="ln">   407  </span>LIMIT $2 OFFSET $1
+<span id="L408" class="ln">   408  </span>`
+<span id="L409" class="ln">   409  </span>
+<span id="L410" class="ln">   410  </span>type ListActiveUsersParams struct {
+<span id="L411" class="ln">   411  </span>	OffsetParam int32
+<span id="L412" class="ln">   412  </span>	LimitParam  int32
+<span id="L413" class="ln">   413  </span>}
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>type ListActiveUsersRow struct {
+<span id="L416" class="ln">   416  </span>	Users Users
+<span id="L417" class="ln">   417  </span>}
+<span id="L418" class="ln">   418  </span>
+<span id="L419" class="ln">   419  </span><span class="comment">// ListActiveUsers</span>
+<span id="L420" class="ln">   420  </span><span class="comment">//</span>
+<span id="L421" class="ln">   421  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L422" class="ln">   422  </span><span class="comment">//	FROM users AS u</span>
+<span id="L423" class="ln">   423  </span><span class="comment">//	WHERE u.deleted_at IS NULL</span>
+<span id="L424" class="ln">   424  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
+<span id="L425" class="ln">   425  </span><span class="comment">//	LIMIT $2 OFFSET $1</span>
+<span id="L426" class="ln">   426  </span>func (q *Queries) ListActiveUsers(ctx context.Context, arg *ListActiveUsersParams) ([]*ListActiveUsersRow, error) {
+<span id="L427" class="ln">   427  </span>	rows, err := q.db.Query(ctx, listActiveUsers, arg.OffsetParam, arg.LimitParam)
+<span id="L428" class="ln">   428  </span>	if err != nil {
+<span id="L429" class="ln">   429  </span>		return nil, err
+<span id="L430" class="ln">   430  </span>	}
+<span id="L431" class="ln">   431  </span>	defer rows.Close()
+<span id="L432" class="ln">   432  </span>	var items []*ListActiveUsersRow
+<span id="L433" class="ln">   433  </span>	for rows.Next() {
+<span id="L434" class="ln">   434  </span>		var i ListActiveUsersRow
+<span id="L435" class="ln">   435  </span>		if err := rows.Scan(
+<span id="L436" class="ln">   436  </span>			&amp;i.Users.ID,
+<span id="L437" class="ln">   437  </span>			&amp;i.Users.FirstName,
+<span id="L438" class="ln">   438  </span>			&amp;i.Users.LastName,
+<span id="L439" class="ln">   439  </span>			&amp;i.Users.Email,
+<span id="L440" class="ln">   440  </span>			&amp;i.Users.Phone,
+<span id="L441" class="ln">   441  </span>			&amp;i.Users.PrefectureID,
+<span id="L442" class="ln">   442  </span>			&amp;i.Users.City,
+<span id="L443" class="ln">   443  </span>			&amp;i.Users.Street,
+<span id="L444" class="ln">   444  </span>			&amp;i.Users.Building,
+<span id="L445" class="ln">   445  </span>			&amp;i.Users.PostalCode,
+<span id="L446" class="ln">   446  </span>			&amp;i.Users.DeletedAt,
+<span id="L447" class="ln">   447  </span>			&amp;i.Users.CreatedAt,
+<span id="L448" class="ln">   448  </span>			&amp;i.Users.UpdatedAt,
+<span id="L449" class="ln">   449  </span>			&amp;i.Users.SearchText,
+<span id="L450" class="ln">   450  </span>		); err != nil {
+<span id="L451" class="ln">   451  </span>			return nil, err
+<span id="L452" class="ln">   452  </span>		}
+<span id="L453" class="ln">   453  </span>		items = append(items, &amp;i)
+<span id="L454" class="ln">   454  </span>	}
+<span id="L455" class="ln">   455  </span>	if err := rows.Err(); err != nil {
+<span id="L456" class="ln">   456  </span>		return nil, err
+<span id="L457" class="ln">   457  </span>	}
+<span id="L458" class="ln">   458  </span>	return items, nil
+<span id="L459" class="ln">   459  </span>}
+<span id="L460" class="ln">   460  </span>
+<span id="L461" class="ln">   461  </span>const listDeletedUsers = `-- name: ListDeletedUsers :many
+<span id="L462" class="ln">   462  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L463" class="ln">   463  </span>FROM users AS u
+<span id="L464" class="ln">   464  </span>WHERE u.deleted_at IS NOT NULL
+<span id="L465" class="ln">   465  </span>ORDER BY u.created_at DESC
+<span id="L466" class="ln">   466  </span>LIMIT $2 OFFSET $1
+<span id="L467" class="ln">   467  </span>`
+<span id="L468" class="ln">   468  </span>
+<span id="L469" class="ln">   469  </span>type ListDeletedUsersParams struct {
+<span id="L470" class="ln">   470  </span>	OffsetParam int32
+<span id="L471" class="ln">   471  </span>	LimitParam  int32
+<span id="L472" class="ln">   472  </span>}
+<span id="L473" class="ln">   473  </span>
+<span id="L474" class="ln">   474  </span>type ListDeletedUsersRow struct {
+<span id="L475" class="ln">   475  </span>	Users Users
+<span id="L476" class="ln">   476  </span>}
+<span id="L477" class="ln">   477  </span>
+<span id="L478" class="ln">   478  </span><span class="comment">// ListDeletedUsers</span>
+<span id="L479" class="ln">   479  </span><span class="comment">//</span>
+<span id="L480" class="ln">   480  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L481" class="ln">   481  </span><span class="comment">//	FROM users AS u</span>
+<span id="L482" class="ln">   482  </span><span class="comment">//	WHERE u.deleted_at IS NOT NULL</span>
+<span id="L483" class="ln">   483  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
+<span id="L484" class="ln">   484  </span><span class="comment">//	LIMIT $2 OFFSET $1</span>
+<span id="L485" class="ln">   485  </span>func (q *Queries) ListDeletedUsers(ctx context.Context, arg *ListDeletedUsersParams) ([]*ListDeletedUsersRow, error) {
+<span id="L486" class="ln">   486  </span>	rows, err := q.db.Query(ctx, listDeletedUsers, arg.OffsetParam, arg.LimitParam)
+<span id="L487" class="ln">   487  </span>	if err != nil {
+<span id="L488" class="ln">   488  </span>		return nil, err
+<span id="L489" class="ln">   489  </span>	}
+<span id="L490" class="ln">   490  </span>	defer rows.Close()
+<span id="L491" class="ln">   491  </span>	var items []*ListDeletedUsersRow
+<span id="L492" class="ln">   492  </span>	for rows.Next() {
+<span id="L493" class="ln">   493  </span>		var i ListDeletedUsersRow
+<span id="L494" class="ln">   494  </span>		if err := rows.Scan(
+<span id="L495" class="ln">   495  </span>			&amp;i.Users.ID,
+<span id="L496" class="ln">   496  </span>			&amp;i.Users.FirstName,
+<span id="L497" class="ln">   497  </span>			&amp;i.Users.LastName,
+<span id="L498" class="ln">   498  </span>			&amp;i.Users.Email,
+<span id="L499" class="ln">   499  </span>			&amp;i.Users.Phone,
+<span id="L500" class="ln">   500  </span>			&amp;i.Users.PrefectureID,
+<span id="L501" class="ln">   501  </span>			&amp;i.Users.City,
+<span id="L502" class="ln">   502  </span>			&amp;i.Users.Street,
+<span id="L503" class="ln">   503  </span>			&amp;i.Users.Building,
+<span id="L504" class="ln">   504  </span>			&amp;i.Users.PostalCode,
+<span id="L505" class="ln">   505  </span>			&amp;i.Users.DeletedAt,
+<span id="L506" class="ln">   506  </span>			&amp;i.Users.CreatedAt,
+<span id="L507" class="ln">   507  </span>			&amp;i.Users.UpdatedAt,
+<span id="L508" class="ln">   508  </span>			&amp;i.Users.SearchText,
+<span id="L509" class="ln">   509  </span>		); err != nil {
+<span id="L510" class="ln">   510  </span>			return nil, err
+<span id="L511" class="ln">   511  </span>		}
+<span id="L512" class="ln">   512  </span>		items = append(items, &amp;i)
+<span id="L513" class="ln">   513  </span>	}
+<span id="L514" class="ln">   514  </span>	if err := rows.Err(); err != nil {
+<span id="L515" class="ln">   515  </span>		return nil, err
+<span id="L516" class="ln">   516  </span>	}
+<span id="L517" class="ln">   517  </span>	return items, nil
+<span id="L518" class="ln">   518  </span>}
+<span id="L519" class="ln">   519  </span>
+<span id="L520" class="ln">   520  </span>const listPurgeCandidateUserIDsAfter = `-- name: ListPurgeCandidateUserIDsAfter :many
+<span id="L521" class="ln">   521  </span>SELECT id
+<span id="L522" class="ln">   522  </span>FROM users
+<span id="L523" class="ln">   523  </span>WHERE deleted_at IS NOT NULL
+<span id="L524" class="ln">   524  </span>    AND deleted_at &lt; $1
+<span id="L525" class="ln">   525  </span>    AND id &gt; $2
+<span id="L526" class="ln">   526  </span>ORDER BY id ASC
+<span id="L527" class="ln">   527  </span>LIMIT $3
+<span id="L528" class="ln">   528  </span>`
+<span id="L529" class="ln">   529  </span>
+<span id="L530" class="ln">   530  </span>type ListPurgeCandidateUserIDsAfterParams struct {
+<span id="L531" class="ln">   531  </span>	Cutoff     *time.Time
+<span id="L532" class="ln">   532  </span>	AfterID    uuid.UUID
+<span id="L533" class="ln">   533  </span>	LimitParam int32
+<span id="L534" class="ln">   534  </span>}
+<span id="L535" class="ln">   535  </span>
+<span id="L536" class="ln">   536  </span><span class="comment">// 論理削除日時が cutoff より古いユーザーの ID を、ID 昇順の keyset で最大 limit_param 件取得する（after_id 以降）。</span>
+<span id="L537" class="ln">   537  </span><span class="comment">// 境界を offset でなく ID で受け取る理由は docs/spec/domain/user.md の FindDeletedBefore を参照。</span>
+<span id="L538" class="ln">   538  </span><span class="comment">//</span>
+<span id="L539" class="ln">   539  </span><span class="comment">//	SELECT id</span>
+<span id="L540" class="ln">   540  </span><span class="comment">//	FROM users</span>
+<span id="L541" class="ln">   541  </span><span class="comment">//	WHERE deleted_at IS NOT NULL</span>
+<span id="L542" class="ln">   542  </span><span class="comment">//	    AND deleted_at &lt; $1</span>
+<span id="L543" class="ln">   543  </span><span class="comment">//	    AND id &gt; $2</span>
+<span id="L544" class="ln">   544  </span><span class="comment">//	ORDER BY id ASC</span>
+<span id="L545" class="ln">   545  </span><span class="comment">//	LIMIT $3</span>
+<span id="L546" class="ln">   546  </span>func (q *Queries) ListPurgeCandidateUserIDsAfter(ctx context.Context, arg *ListPurgeCandidateUserIDsAfterParams) ([]uuid.UUID, error) {
+<span id="L547" class="ln">   547  </span>	rows, err := q.db.Query(ctx, listPurgeCandidateUserIDsAfter, arg.Cutoff, arg.AfterID, arg.LimitParam)
+<span id="L548" class="ln">   548  </span>	if err != nil {
+<span id="L549" class="ln">   549  </span>		return nil, err
+<span id="L550" class="ln">   550  </span>	}
+<span id="L551" class="ln">   551  </span>	defer rows.Close()
+<span id="L552" class="ln">   552  </span>	var items []uuid.UUID
+<span id="L553" class="ln">   553  </span>	for rows.Next() {
+<span id="L554" class="ln">   554  </span>		var id uuid.UUID
+<span id="L555" class="ln">   555  </span>		if err := rows.Scan(&amp;id); err != nil {
+<span id="L556" class="ln">   556  </span>			return nil, err
+<span id="L557" class="ln">   557  </span>		}
+<span id="L558" class="ln">   558  </span>		items = append(items, id)
+<span id="L559" class="ln">   559  </span>	}
+<span id="L560" class="ln">   560  </span>	if err := rows.Err(); err != nil {
+<span id="L561" class="ln">   561  </span>		return nil, err
+<span id="L562" class="ln">   562  </span>	}
+<span id="L563" class="ln">   563  </span>	return items, nil
+<span id="L564" class="ln">   564  </span>}
+<span id="L565" class="ln">   565  </span>
+<span id="L566" class="ln">   566  </span>const listPurgeCandidateUserIDsFirst = `-- name: ListPurgeCandidateUserIDsFirst :many
+<span id="L567" class="ln">   567  </span>SELECT id
+<span id="L568" class="ln">   568  </span>FROM users
+<span id="L569" class="ln">   569  </span>WHERE deleted_at IS NOT NULL
+<span id="L570" class="ln">   570  </span>    AND deleted_at &lt; $1
+<span id="L571" class="ln">   571  </span>ORDER BY id ASC
+<span id="L572" class="ln">   572  </span>LIMIT $2
+<span id="L573" class="ln">   573  </span>`
+<span id="L574" class="ln">   574  </span>
+<span id="L575" class="ln">   575  </span>type ListPurgeCandidateUserIDsFirstParams struct {
+<span id="L576" class="ln">   576  </span>	Cutoff     *time.Time
+<span id="L577" class="ln">   577  </span>	LimitParam int32
+<span id="L578" class="ln">   578  </span>}
+<span id="L579" class="ln">   579  </span>
+<span id="L580" class="ln">   580  </span><span class="comment">// === source: database/dml/repository/user/select_purge_candidate_users.sql ===</span>
+<span id="L581" class="ln">   581  </span><span class="comment">// 論理削除日時が cutoff より古いユーザーの ID を、ID 昇順の keyset で最大 limit_param 件取得する（先頭ページ）。</span>
+<span id="L582" class="ln">   582  </span><span class="comment">//</span>
+<span id="L583" class="ln">   583  </span><span class="comment">//	SELECT id</span>
+<span id="L584" class="ln">   584  </span><span class="comment">//	FROM users</span>
+<span id="L585" class="ln">   585  </span><span class="comment">//	WHERE deleted_at IS NOT NULL</span>
+<span id="L586" class="ln">   586  </span><span class="comment">//	    AND deleted_at &lt; $1</span>
+<span id="L587" class="ln">   587  </span><span class="comment">//	ORDER BY id ASC</span>
+<span id="L588" class="ln">   588  </span><span class="comment">//	LIMIT $2</span>
+<span id="L589" class="ln">   589  </span>func (q *Queries) ListPurgeCandidateUserIDsFirst(ctx context.Context, arg *ListPurgeCandidateUserIDsFirstParams) ([]uuid.UUID, error) {
+<span id="L590" class="ln">   590  </span>	rows, err := q.db.Query(ctx, listPurgeCandidateUserIDsFirst, arg.Cutoff, arg.LimitParam)
+<span id="L591" class="ln">   591  </span>	if err != nil {
+<span id="L592" class="ln">   592  </span>		return nil, err
+<span id="L593" class="ln">   593  </span>	}
+<span id="L594" class="ln">   594  </span>	defer rows.Close()
+<span id="L595" class="ln">   595  </span>	var items []uuid.UUID
+<span id="L596" class="ln">   596  </span>	for rows.Next() {
+<span id="L597" class="ln">   597  </span>		var id uuid.UUID
+<span id="L598" class="ln">   598  </span>		if err := rows.Scan(&amp;id); err != nil {
+<span id="L599" class="ln">   599  </span>			return nil, err
+<span id="L600" class="ln">   600  </span>		}
+<span id="L601" class="ln">   601  </span>		items = append(items, id)
+<span id="L602" class="ln">   602  </span>	}
+<span id="L603" class="ln">   603  </span>	if err := rows.Err(); err != nil {
+<span id="L604" class="ln">   604  </span>		return nil, err
+<span id="L605" class="ln">   605  </span>	}
+<span id="L606" class="ln">   606  </span>	return items, nil
+<span id="L607" class="ln">   607  </span>}
+<span id="L608" class="ln">   608  </span>
+<span id="L609" class="ln">   609  </span>const listUsers = `-- name: ListUsers :many
+<span id="L610" class="ln">   610  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L611" class="ln">   611  </span>FROM users AS u
+<span id="L612" class="ln">   612  </span>ORDER BY u.created_at DESC
+<span id="L613" class="ln">   613  </span>LIMIT $2 OFFSET $1
+<span id="L614" class="ln">   614  </span>`
+<span id="L615" class="ln">   615  </span>
+<span id="L616" class="ln">   616  </span>type ListUsersParams struct {
+<span id="L617" class="ln">   617  </span>	OffsetParam int32
+<span id="L618" class="ln">   618  </span>	LimitParam  int32
+<span id="L619" class="ln">   619  </span>}
+<span id="L620" class="ln">   620  </span>
+<span id="L621" class="ln">   621  </span>type ListUsersRow struct {
+<span id="L622" class="ln">   622  </span>	Users Users
+<span id="L623" class="ln">   623  </span>}
+<span id="L624" class="ln">   624  </span>
+<span id="L625" class="ln">   625  </span><span class="comment">// === source: database/dml/repository/user/select_users.sql ===</span>
+<span id="L626" class="ln">   626  </span><span class="comment">//</span>
+<span id="L627" class="ln">   627  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L628" class="ln">   628  </span><span class="comment">//	FROM users AS u</span>
+<span id="L629" class="ln">   629  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
+<span id="L630" class="ln">   630  </span><span class="comment">//	LIMIT $2 OFFSET $1</span>
+<span id="L631" class="ln">   631  </span>func (q *Queries) ListUsers(ctx context.Context, arg *ListUsersParams) ([]*ListUsersRow, error) {
+<span id="L632" class="ln">   632  </span>	rows, err := q.db.Query(ctx, listUsers, arg.OffsetParam, arg.LimitParam)
+<span id="L633" class="ln">   633  </span>	if err != nil {
+<span id="L634" class="ln">   634  </span>		return nil, err
+<span id="L635" class="ln">   635  </span>	}
+<span id="L636" class="ln">   636  </span>	defer rows.Close()
+<span id="L637" class="ln">   637  </span>	var items []*ListUsersRow
+<span id="L638" class="ln">   638  </span>	for rows.Next() {
+<span id="L639" class="ln">   639  </span>		var i ListUsersRow
+<span id="L640" class="ln">   640  </span>		if err := rows.Scan(
+<span id="L641" class="ln">   641  </span>			&amp;i.Users.ID,
+<span id="L642" class="ln">   642  </span>			&amp;i.Users.FirstName,
+<span id="L643" class="ln">   643  </span>			&amp;i.Users.LastName,
+<span id="L644" class="ln">   644  </span>			&amp;i.Users.Email,
+<span id="L645" class="ln">   645  </span>			&amp;i.Users.Phone,
+<span id="L646" class="ln">   646  </span>			&amp;i.Users.PrefectureID,
+<span id="L647" class="ln">   647  </span>			&amp;i.Users.City,
+<span id="L648" class="ln">   648  </span>			&amp;i.Users.Street,
+<span id="L649" class="ln">   649  </span>			&amp;i.Users.Building,
+<span id="L650" class="ln">   650  </span>			&amp;i.Users.PostalCode,
+<span id="L651" class="ln">   651  </span>			&amp;i.Users.DeletedAt,
+<span id="L652" class="ln">   652  </span>			&amp;i.Users.CreatedAt,
+<span id="L653" class="ln">   653  </span>			&amp;i.Users.UpdatedAt,
+<span id="L654" class="ln">   654  </span>			&amp;i.Users.SearchText,
+<span id="L655" class="ln">   655  </span>		); err != nil {
+<span id="L656" class="ln">   656  </span>			return nil, err
+<span id="L657" class="ln">   657  </span>		}
+<span id="L658" class="ln">   658  </span>		items = append(items, &amp;i)
+<span id="L659" class="ln">   659  </span>	}
+<span id="L660" class="ln">   660  </span>	if err := rows.Err(); err != nil {
+<span id="L661" class="ln">   661  </span>		return nil, err
+<span id="L662" class="ln">   662  </span>	}
+<span id="L663" class="ln">   663  </span>	return items, nil
+<span id="L664" class="ln">   664  </span>}
+<span id="L665" class="ln">   665  </span>
+<span id="L666" class="ln">   666  </span>const listUsersFeedAfter = `-- name: ListUsersFeedAfter :many
+<span id="L667" class="ln">   667  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L668" class="ln">   668  </span>FROM users AS u
+<span id="L669" class="ln">   669  </span>WHERE u.deleted_at IS NULL
+<span id="L670" class="ln">   670  </span>    AND (
+<span id="L671" class="ln">   671  </span>        u.created_at &lt; $1
+<span id="L672" class="ln">   672  </span>        OR (u.created_at = $1 AND u.id &lt; $2)
+<span id="L673" class="ln">   673  </span>    )
+<span id="L674" class="ln">   674  </span>ORDER BY u.created_at DESC, u.id DESC
+<span id="L675" class="ln">   675  </span>LIMIT $3
+<span id="L676" class="ln">   676  </span>`
+<span id="L677" class="ln">   677  </span>
+<span id="L678" class="ln">   678  </span>type ListUsersFeedAfterParams struct {
+<span id="L679" class="ln">   679  </span>	AfterCreatedAt time.Time
+<span id="L680" class="ln">   680  </span>	AfterID        uuid.UUID
+<span id="L681" class="ln">   681  </span>	LimitParam     int32
+<span id="L682" class="ln">   682  </span>}
+<span id="L683" class="ln">   683  </span>
+<span id="L684" class="ln">   684  </span>type ListUsersFeedAfterRow struct {
+<span id="L685" class="ln">   685  </span>	Users Users
+<span id="L686" class="ln">   686  </span>}
+<span id="L687" class="ln">   687  </span>
+<span id="L688" class="ln">   688  </span><span class="comment">// (created_at DESC, id DESC) の keyset 境界より過去の未削除ユーザーを返します。</span>
+<span id="L689" class="ln">   689  </span><span class="comment">//</span>
+<span id="L690" class="ln">   690  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L691" class="ln">   691  </span><span class="comment">//	FROM users AS u</span>
+<span id="L692" class="ln">   692  </span><span class="comment">//	WHERE u.deleted_at IS NULL</span>
+<span id="L693" class="ln">   693  </span><span class="comment">//	    AND (</span>
+<span id="L694" class="ln">   694  </span><span class="comment">//	        u.created_at &lt; $1</span>
+<span id="L695" class="ln">   695  </span><span class="comment">//	        OR (u.created_at = $1 AND u.id &lt; $2)</span>
+<span id="L696" class="ln">   696  </span><span class="comment">//	    )</span>
+<span id="L697" class="ln">   697  </span><span class="comment">//	ORDER BY u.created_at DESC, u.id DESC</span>
+<span id="L698" class="ln">   698  </span><span class="comment">//	LIMIT $3</span>
+<span id="L699" class="ln">   699  </span>func (q *Queries) ListUsersFeedAfter(ctx context.Context, arg *ListUsersFeedAfterParams) ([]*ListUsersFeedAfterRow, error) {
+<span id="L700" class="ln">   700  </span>	rows, err := q.db.Query(ctx, listUsersFeedAfter, arg.AfterCreatedAt, arg.AfterID, arg.LimitParam)
+<span id="L701" class="ln">   701  </span>	if err != nil {
+<span id="L702" class="ln">   702  </span>		return nil, err
+<span id="L703" class="ln">   703  </span>	}
+<span id="L704" class="ln">   704  </span>	defer rows.Close()
+<span id="L705" class="ln">   705  </span>	var items []*ListUsersFeedAfterRow
+<span id="L706" class="ln">   706  </span>	for rows.Next() {
+<span id="L707" class="ln">   707  </span>		var i ListUsersFeedAfterRow
+<span id="L708" class="ln">   708  </span>		if err := rows.Scan(
+<span id="L709" class="ln">   709  </span>			&amp;i.Users.ID,
+<span id="L710" class="ln">   710  </span>			&amp;i.Users.FirstName,
+<span id="L711" class="ln">   711  </span>			&amp;i.Users.LastName,
+<span id="L712" class="ln">   712  </span>			&amp;i.Users.Email,
+<span id="L713" class="ln">   713  </span>			&amp;i.Users.Phone,
+<span id="L714" class="ln">   714  </span>			&amp;i.Users.PrefectureID,
+<span id="L715" class="ln">   715  </span>			&amp;i.Users.City,
+<span id="L716" class="ln">   716  </span>			&amp;i.Users.Street,
+<span id="L717" class="ln">   717  </span>			&amp;i.Users.Building,
+<span id="L718" class="ln">   718  </span>			&amp;i.Users.PostalCode,
+<span id="L719" class="ln">   719  </span>			&amp;i.Users.DeletedAt,
+<span id="L720" class="ln">   720  </span>			&amp;i.Users.CreatedAt,
+<span id="L721" class="ln">   721  </span>			&amp;i.Users.UpdatedAt,
+<span id="L722" class="ln">   722  </span>			&amp;i.Users.SearchText,
+<span id="L723" class="ln">   723  </span>		); err != nil {
+<span id="L724" class="ln">   724  </span>			return nil, err
+<span id="L725" class="ln">   725  </span>		}
+<span id="L726" class="ln">   726  </span>		items = append(items, &amp;i)
+<span id="L727" class="ln">   727  </span>	}
+<span id="L728" class="ln">   728  </span>	if err := rows.Err(); err != nil {
+<span id="L729" class="ln">   729  </span>		return nil, err
+<span id="L730" class="ln">   730  </span>	}
+<span id="L731" class="ln">   731  </span>	return items, nil
+<span id="L732" class="ln">   732  </span>}
+<span id="L733" class="ln">   733  </span>
+<span id="L734" class="ln">   734  </span>const listUsersFeedFirst = `-- name: ListUsersFeedFirst :many
+<span id="L735" class="ln">   735  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L736" class="ln">   736  </span>FROM users AS u
+<span id="L737" class="ln">   737  </span>WHERE u.deleted_at IS NULL
+<span id="L738" class="ln">   738  </span>ORDER BY u.created_at DESC, u.id DESC
+<span id="L739" class="ln">   739  </span>LIMIT $1
+<span id="L740" class="ln">   740  </span>`
+<span id="L741" class="ln">   741  </span>
+<span id="L742" class="ln">   742  </span>type ListUsersFeedFirstRow struct {
+<span id="L743" class="ln">   743  </span>	Users Users
+<span id="L744" class="ln">   744  </span>}
+<span id="L745" class="ln">   745  </span>
+<span id="L746" class="ln">   746  </span><span class="comment">// === source: database/dml/repository/user/select_users_feed.sql ===</span>
+<span id="L747" class="ln">   747  </span><span class="comment">//</span>
+<span id="L748" class="ln">   748  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L749" class="ln">   749  </span><span class="comment">//	FROM users AS u</span>
+<span id="L750" class="ln">   750  </span><span class="comment">//	WHERE u.deleted_at IS NULL</span>
+<span id="L751" class="ln">   751  </span><span class="comment">//	ORDER BY u.created_at DESC, u.id DESC</span>
+<span id="L752" class="ln">   752  </span><span class="comment">//	LIMIT $1</span>
+<span id="L753" class="ln">   753  </span>func (q *Queries) ListUsersFeedFirst(ctx context.Context, limitParam int32) ([]*ListUsersFeedFirstRow, error) {
+<span id="L754" class="ln">   754  </span>	rows, err := q.db.Query(ctx, listUsersFeedFirst, limitParam)
+<span id="L755" class="ln">   755  </span>	if err != nil {
+<span id="L756" class="ln">   756  </span>		return nil, err
+<span id="L757" class="ln">   757  </span>	}
+<span id="L758" class="ln">   758  </span>	defer rows.Close()
+<span id="L759" class="ln">   759  </span>	var items []*ListUsersFeedFirstRow
+<span id="L760" class="ln">   760  </span>	for rows.Next() {
+<span id="L761" class="ln">   761  </span>		var i ListUsersFeedFirstRow
+<span id="L762" class="ln">   762  </span>		if err := rows.Scan(
+<span id="L763" class="ln">   763  </span>			&amp;i.Users.ID,
+<span id="L764" class="ln">   764  </span>			&amp;i.Users.FirstName,
+<span id="L765" class="ln">   765  </span>			&amp;i.Users.LastName,
+<span id="L766" class="ln">   766  </span>			&amp;i.Users.Email,
+<span id="L767" class="ln">   767  </span>			&amp;i.Users.Phone,
+<span id="L768" class="ln">   768  </span>			&amp;i.Users.PrefectureID,
+<span id="L769" class="ln">   769  </span>			&amp;i.Users.City,
+<span id="L770" class="ln">   770  </span>			&amp;i.Users.Street,
+<span id="L771" class="ln">   771  </span>			&amp;i.Users.Building,
+<span id="L772" class="ln">   772  </span>			&amp;i.Users.PostalCode,
+<span id="L773" class="ln">   773  </span>			&amp;i.Users.DeletedAt,
+<span id="L774" class="ln">   774  </span>			&amp;i.Users.CreatedAt,
+<span id="L775" class="ln">   775  </span>			&amp;i.Users.UpdatedAt,
+<span id="L776" class="ln">   776  </span>			&amp;i.Users.SearchText,
+<span id="L777" class="ln">   777  </span>		); err != nil {
+<span id="L778" class="ln">   778  </span>			return nil, err
+<span id="L779" class="ln">   779  </span>		}
+<span id="L780" class="ln">   780  </span>		items = append(items, &amp;i)
+<span id="L781" class="ln">   781  </span>	}
+<span id="L782" class="ln">   782  </span>	if err := rows.Err(); err != nil {
+<span id="L783" class="ln">   783  </span>		return nil, err
+<span id="L784" class="ln">   784  </span>	}
+<span id="L785" class="ln">   785  </span>	return items, nil
+<span id="L786" class="ln">   786  </span>}
+<span id="L787" class="ln">   787  </span>
+<span id="L788" class="ln">   788  </span>const lockUserByID = `-- name: LockUserByID :one
+<span id="L789" class="ln">   789  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L790" class="ln">   790  </span>FROM users AS u
+<span id="L791" class="ln">   791  </span>WHERE u.id = $1
+<span id="L792" class="ln">   792  </span>    AND u.deleted_at IS NULL
+<span id="L793" class="ln">   793  </span>FOR UPDATE
+<span id="L794" class="ln">   794  </span>`
+<span id="L795" class="ln">   795  </span>
+<span id="L796" class="ln">   796  </span>type LockUserByIDRow struct {
+<span id="L797" class="ln">   797  </span>	Users Users
+<span id="L798" class="ln">   798  </span>}
+<span id="L799" class="ln">   799  </span>
+<span id="L800" class="ln">   800  </span><span class="comment">// === source: database/dml/repository/user/lock_user_by_id.sql ===</span>
+<span id="L801" class="ln">   801  </span><span class="comment">// ID から未削除のユーザーを 1 件、悲観ロック（FOR UPDATE）して取得する。</span>
+<span id="L802" class="ln">   802  </span><span class="comment">// 論理削除済み・不存在はいずれも 0 行（NotFound）。</span>
+<span id="L803" class="ln">   803  </span><span class="comment">// 取得位置の不変条件は docs/spec/usecase/user.md の DeleteUser を参照（ADR-0036 (ordered-pessimistic-row-locks)）。</span>
+<span id="L804" class="ln">   804  </span><span class="comment">//</span>
+<span id="L805" class="ln">   805  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L806" class="ln">   806  </span><span class="comment">//	FROM users AS u</span>
+<span id="L807" class="ln">   807  </span><span class="comment">//	WHERE u.id = $1</span>
+<span id="L808" class="ln">   808  </span><span class="comment">//	    AND u.deleted_at IS NULL</span>
+<span id="L809" class="ln">   809  </span><span class="comment">//	FOR UPDATE</span>
+<span id="L810" class="ln">   810  </span>func (q *Queries) LockUserByID(ctx context.Context, userIDParam uuid.UUID) (*LockUserByIDRow, error) {
+<span id="L811" class="ln">   811  </span>	row := q.db.QueryRow(ctx, lockUserByID, userIDParam)
+<span id="L812" class="ln">   812  </span>	var i LockUserByIDRow
+<span id="L813" class="ln">   813  </span>	err := row.Scan(
+<span id="L814" class="ln">   814  </span>		&amp;i.Users.ID,
+<span id="L815" class="ln">   815  </span>		&amp;i.Users.FirstName,
+<span id="L816" class="ln">   816  </span>		&amp;i.Users.LastName,
+<span id="L817" class="ln">   817  </span>		&amp;i.Users.Email,
+<span id="L818" class="ln">   818  </span>		&amp;i.Users.Phone,
+<span id="L819" class="ln">   819  </span>		&amp;i.Users.PrefectureID,
+<span id="L820" class="ln">   820  </span>		&amp;i.Users.City,
+<span id="L821" class="ln">   821  </span>		&amp;i.Users.Street,
+<span id="L822" class="ln">   822  </span>		&amp;i.Users.Building,
+<span id="L823" class="ln">   823  </span>		&amp;i.Users.PostalCode,
+<span id="L824" class="ln">   824  </span>		&amp;i.Users.DeletedAt,
+<span id="L825" class="ln">   825  </span>		&amp;i.Users.CreatedAt,
+<span id="L826" class="ln">   826  </span>		&amp;i.Users.UpdatedAt,
+<span id="L827" class="ln">   827  </span>		&amp;i.Users.SearchText,
+<span id="L828" class="ln">   828  </span>	)
+<span id="L829" class="ln">   829  </span>	return &amp;i, err
+<span id="L830" class="ln">   830  </span>}
+<span id="L831" class="ln">   831  </span>
+<span id="L832" class="ln">   832  </span>const lockUserShareByID = `-- name: LockUserShareByID :one
+<span id="L833" class="ln">   833  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L834" class="ln">   834  </span>FROM users AS u
+<span id="L835" class="ln">   835  </span>WHERE u.id = $1
+<span id="L836" class="ln">   836  </span>FOR SHARE
+<span id="L837" class="ln">   837  </span>`
+<span id="L838" class="ln">   838  </span>
+<span id="L839" class="ln">   839  </span>type LockUserShareByIDRow struct {
+<span id="L840" class="ln">   840  </span>	Users Users
+<span id="L841" class="ln">   841  </span>}
+<span id="L842" class="ln">   842  </span>
+<span id="L843" class="ln">   843  </span><span class="comment">// === source: database/dml/repository/user/lock_user_share_by_id.sql ===</span>
+<span id="L844" class="ln">   844  </span><span class="comment">// ID からユーザーを 1 件、悲観ロック（FOR SHARE）して取得する。不存在は 0 行（NotFound）。</span>
+<span id="L845" class="ln">   845  </span><span class="comment">// 退会済みを除外しないこと — ロックは機構で、在籍かどうかの判定はドメイン（User.IsActive）が持つ。</span>
+<span id="L846" class="ln">   846  </span><span class="comment">// 退会との直列化は docs/spec/usecase/purchase.md の CreatePurchase を参照。</span>
+<span id="L847" class="ln">   847  </span><span class="comment">// ADR-0036 (ordered-pessimistic-row-locks)。</span>
+<span id="L848" class="ln">   848  </span><span class="comment">//</span>
+<span id="L849" class="ln">   849  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L850" class="ln">   850  </span><span class="comment">//	FROM users AS u</span>
+<span id="L851" class="ln">   851  </span><span class="comment">//	WHERE u.id = $1</span>
+<span id="L852" class="ln">   852  </span><span class="comment">//	FOR SHARE</span>
+<span id="L853" class="ln">   853  </span>func (q *Queries) LockUserShareByID(ctx context.Context, userIDParam uuid.UUID) (*LockUserShareByIDRow, error) {
+<span id="L854" class="ln">   854  </span>	row := q.db.QueryRow(ctx, lockUserShareByID, userIDParam)
+<span id="L855" class="ln">   855  </span>	var i LockUserShareByIDRow
+<span id="L856" class="ln">   856  </span>	err := row.Scan(
+<span id="L857" class="ln">   857  </span>		&amp;i.Users.ID,
+<span id="L858" class="ln">   858  </span>		&amp;i.Users.FirstName,
+<span id="L859" class="ln">   859  </span>		&amp;i.Users.LastName,
+<span id="L860" class="ln">   860  </span>		&amp;i.Users.Email,
+<span id="L861" class="ln">   861  </span>		&amp;i.Users.Phone,
+<span id="L862" class="ln">   862  </span>		&amp;i.Users.PrefectureID,
+<span id="L863" class="ln">   863  </span>		&amp;i.Users.City,
+<span id="L864" class="ln">   864  </span>		&amp;i.Users.Street,
+<span id="L865" class="ln">   865  </span>		&amp;i.Users.Building,
+<span id="L866" class="ln">   866  </span>		&amp;i.Users.PostalCode,
+<span id="L867" class="ln">   867  </span>		&amp;i.Users.DeletedAt,
+<span id="L868" class="ln">   868  </span>		&amp;i.Users.CreatedAt,
+<span id="L869" class="ln">   869  </span>		&amp;i.Users.UpdatedAt,
+<span id="L870" class="ln">   870  </span>		&amp;i.Users.SearchText,
+<span id="L871" class="ln">   871  </span>	)
+<span id="L872" class="ln">   872  </span>	return &amp;i, err
+<span id="L873" class="ln">   873  </span>}
+<span id="L874" class="ln">   874  </span>
+<span id="L875" class="ln">   875  </span>const searchActiveUsers = `-- name: SearchActiveUsers :many
+<span id="L876" class="ln">   876  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L877" class="ln">   877  </span>FROM users AS u
+<span id="L878" class="ln">   878  </span>WHERE u.search_text ILIKE ANY($1::TEXT[])
+<span id="L879" class="ln">   879  </span>    AND u.deleted_at IS NULL
+<span id="L880" class="ln">   880  </span>ORDER BY u.created_at DESC
+<span id="L881" class="ln">   881  </span>LIMIT $3 OFFSET $2
+<span id="L882" class="ln">   882  </span>`
+<span id="L883" class="ln">   883  </span>
+<span id="L884" class="ln">   884  </span>type SearchActiveUsersParams struct {
+<span id="L885" class="ln">   885  </span>	PatternsParam []string
+<span id="L886" class="ln">   886  </span>	OffsetParam   int32
+<span id="L887" class="ln">   887  </span>	LimitParam    int32
+<span id="L888" class="ln">   888  </span>}
+<span id="L889" class="ln">   889  </span>
+<span id="L890" class="ln">   890  </span>type SearchActiveUsersRow struct {
+<span id="L891" class="ln">   891  </span>	Users Users
+<span id="L892" class="ln">   892  </span>}
+<span id="L893" class="ln">   893  </span>
+<span id="L894" class="ln">   894  </span><span class="comment">// SearchActiveUsers</span>
+<span id="L895" class="ln">   895  </span><span class="comment">//</span>
+<span id="L896" class="ln">   896  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L897" class="ln">   897  </span><span class="comment">//	FROM users AS u</span>
+<span id="L898" class="ln">   898  </span><span class="comment">//	WHERE u.search_text ILIKE ANY($1::TEXT[])</span>
+<span id="L899" class="ln">   899  </span><span class="comment">//	    AND u.deleted_at IS NULL</span>
+<span id="L900" class="ln">   900  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
+<span id="L901" class="ln">   901  </span><span class="comment">//	LIMIT $3 OFFSET $2</span>
+<span id="L902" class="ln">   902  </span>func (q *Queries) SearchActiveUsers(ctx context.Context, arg *SearchActiveUsersParams) ([]*SearchActiveUsersRow, error) {
+<span id="L903" class="ln">   903  </span>	rows, err := q.db.Query(ctx, searchActiveUsers, arg.PatternsParam, arg.OffsetParam, arg.LimitParam)
+<span id="L904" class="ln">   904  </span>	if err != nil {
+<span id="L905" class="ln">   905  </span>		return nil, err
+<span id="L906" class="ln">   906  </span>	}
+<span id="L907" class="ln">   907  </span>	defer rows.Close()
+<span id="L908" class="ln">   908  </span>	var items []*SearchActiveUsersRow
+<span id="L909" class="ln">   909  </span>	for rows.Next() {
+<span id="L910" class="ln">   910  </span>		var i SearchActiveUsersRow
+<span id="L911" class="ln">   911  </span>		if err := rows.Scan(
+<span id="L912" class="ln">   912  </span>			&amp;i.Users.ID,
+<span id="L913" class="ln">   913  </span>			&amp;i.Users.FirstName,
+<span id="L914" class="ln">   914  </span>			&amp;i.Users.LastName,
+<span id="L915" class="ln">   915  </span>			&amp;i.Users.Email,
+<span id="L916" class="ln">   916  </span>			&amp;i.Users.Phone,
+<span id="L917" class="ln">   917  </span>			&amp;i.Users.PrefectureID,
+<span id="L918" class="ln">   918  </span>			&amp;i.Users.City,
+<span id="L919" class="ln">   919  </span>			&amp;i.Users.Street,
+<span id="L920" class="ln">   920  </span>			&amp;i.Users.Building,
+<span id="L921" class="ln">   921  </span>			&amp;i.Users.PostalCode,
+<span id="L922" class="ln">   922  </span>			&amp;i.Users.DeletedAt,
+<span id="L923" class="ln">   923  </span>			&amp;i.Users.CreatedAt,
+<span id="L924" class="ln">   924  </span>			&amp;i.Users.UpdatedAt,
+<span id="L925" class="ln">   925  </span>			&amp;i.Users.SearchText,
+<span id="L926" class="ln">   926  </span>		); err != nil {
+<span id="L927" class="ln">   927  </span>			return nil, err
+<span id="L928" class="ln">   928  </span>		}
+<span id="L929" class="ln">   929  </span>		items = append(items, &amp;i)
+<span id="L930" class="ln">   930  </span>	}
+<span id="L931" class="ln">   931  </span>	if err := rows.Err(); err != nil {
+<span id="L932" class="ln">   932  </span>		return nil, err
+<span id="L933" class="ln">   933  </span>	}
+<span id="L934" class="ln">   934  </span>	return items, nil
+<span id="L935" class="ln">   935  </span>}
+<span id="L936" class="ln">   936  </span>
+<span id="L937" class="ln">   937  </span>const searchDeletedUsers = `-- name: SearchDeletedUsers :many
+<span id="L938" class="ln">   938  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L939" class="ln">   939  </span>FROM users AS u
+<span id="L940" class="ln">   940  </span>WHERE u.search_text ILIKE ANY($1::TEXT[])
+<span id="L941" class="ln">   941  </span>    AND u.deleted_at IS NOT NULL
+<span id="L942" class="ln">   942  </span>ORDER BY u.created_at DESC
+<span id="L943" class="ln">   943  </span>LIMIT $3 OFFSET $2
+<span id="L944" class="ln">   944  </span>`
+<span id="L945" class="ln">   945  </span>
+<span id="L946" class="ln">   946  </span>type SearchDeletedUsersParams struct {
+<span id="L947" class="ln">   947  </span>	PatternsParam []string
+<span id="L948" class="ln">   948  </span>	OffsetParam   int32
+<span id="L949" class="ln">   949  </span>	LimitParam    int32
+<span id="L950" class="ln">   950  </span>}
+<span id="L951" class="ln">   951  </span>
+<span id="L952" class="ln">   952  </span>type SearchDeletedUsersRow struct {
+<span id="L953" class="ln">   953  </span>	Users Users
+<span id="L954" class="ln">   954  </span>}
+<span id="L955" class="ln">   955  </span>
+<span id="L956" class="ln">   956  </span><span class="comment">// SearchDeletedUsers</span>
+<span id="L957" class="ln">   957  </span><span class="comment">//</span>
+<span id="L958" class="ln">   958  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L959" class="ln">   959  </span><span class="comment">//	FROM users AS u</span>
+<span id="L960" class="ln">   960  </span><span class="comment">//	WHERE u.search_text ILIKE ANY($1::TEXT[])</span>
+<span id="L961" class="ln">   961  </span><span class="comment">//	    AND u.deleted_at IS NOT NULL</span>
+<span id="L962" class="ln">   962  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
+<span id="L963" class="ln">   963  </span><span class="comment">//	LIMIT $3 OFFSET $2</span>
+<span id="L964" class="ln">   964  </span>func (q *Queries) SearchDeletedUsers(ctx context.Context, arg *SearchDeletedUsersParams) ([]*SearchDeletedUsersRow, error) {
+<span id="L965" class="ln">   965  </span>	rows, err := q.db.Query(ctx, searchDeletedUsers, arg.PatternsParam, arg.OffsetParam, arg.LimitParam)
+<span id="L966" class="ln">   966  </span>	if err != nil {
+<span id="L967" class="ln">   967  </span>		return nil, err
+<span id="L968" class="ln">   968  </span>	}
+<span id="L969" class="ln">   969  </span>	defer rows.Close()
+<span id="L970" class="ln">   970  </span>	var items []*SearchDeletedUsersRow
+<span id="L971" class="ln">   971  </span>	for rows.Next() {
+<span id="L972" class="ln">   972  </span>		var i SearchDeletedUsersRow
+<span id="L973" class="ln">   973  </span>		if err := rows.Scan(
+<span id="L974" class="ln">   974  </span>			&amp;i.Users.ID,
+<span id="L975" class="ln">   975  </span>			&amp;i.Users.FirstName,
+<span id="L976" class="ln">   976  </span>			&amp;i.Users.LastName,
+<span id="L977" class="ln">   977  </span>			&amp;i.Users.Email,
+<span id="L978" class="ln">   978  </span>			&amp;i.Users.Phone,
+<span id="L979" class="ln">   979  </span>			&amp;i.Users.PrefectureID,
+<span id="L980" class="ln">   980  </span>			&amp;i.Users.City,
+<span id="L981" class="ln">   981  </span>			&amp;i.Users.Street,
+<span id="L982" class="ln">   982  </span>			&amp;i.Users.Building,
+<span id="L983" class="ln">   983  </span>			&amp;i.Users.PostalCode,
+<span id="L984" class="ln">   984  </span>			&amp;i.Users.DeletedAt,
+<span id="L985" class="ln">   985  </span>			&amp;i.Users.CreatedAt,
+<span id="L986" class="ln">   986  </span>			&amp;i.Users.UpdatedAt,
+<span id="L987" class="ln">   987  </span>			&amp;i.Users.SearchText,
+<span id="L988" class="ln">   988  </span>		); err != nil {
+<span id="L989" class="ln">   989  </span>			return nil, err
+<span id="L990" class="ln">   990  </span>		}
+<span id="L991" class="ln">   991  </span>		items = append(items, &amp;i)
+<span id="L992" class="ln">   992  </span>	}
+<span id="L993" class="ln">   993  </span>	if err := rows.Err(); err != nil {
+<span id="L994" class="ln">   994  </span>		return nil, err
+<span id="L995" class="ln">   995  </span>	}
+<span id="L996" class="ln">   996  </span>	return items, nil
+<span id="L997" class="ln">   997  </span>}
+<span id="L998" class="ln">   998  </span>
+<span id="L999" class="ln">   999  </span>const searchUsers = `-- name: SearchUsers :many
+<span id="L1000" class="ln">  1000  </span>SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text
+<span id="L1001" class="ln">  1001  </span>FROM users AS u
+<span id="L1002" class="ln">  1002  </span>WHERE u.search_text ILIKE ANY($1::TEXT[])
+<span id="L1003" class="ln">  1003  </span>ORDER BY u.created_at DESC
+<span id="L1004" class="ln">  1004  </span>LIMIT $3 OFFSET $2
+<span id="L1005" class="ln">  1005  </span>`
+<span id="L1006" class="ln">  1006  </span>
+<span id="L1007" class="ln">  1007  </span>type SearchUsersParams struct {
+<span id="L1008" class="ln">  1008  </span>	PatternsParam []string
+<span id="L1009" class="ln">  1009  </span>	OffsetParam   int32
+<span id="L1010" class="ln">  1010  </span>	LimitParam    int32
+<span id="L1011" class="ln">  1011  </span>}
+<span id="L1012" class="ln">  1012  </span>
+<span id="L1013" class="ln">  1013  </span>type SearchUsersRow struct {
+<span id="L1014" class="ln">  1014  </span>	Users Users
+<span id="L1015" class="ln">  1015  </span>}
+<span id="L1016" class="ln">  1016  </span>
+<span id="L1017" class="ln">  1017  </span><span class="comment">// === source: database/dml/repository/user/select_users_by_keyword.sql ===</span>
+<span id="L1018" class="ln">  1018  </span><span class="comment">//</span>
+<span id="L1019" class="ln">  1019  </span><span class="comment">//	SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.prefecture_id, u.city, u.street, u.building, u.postal_code, u.deleted_at, u.created_at, u.updated_at, u.search_text</span>
+<span id="L1020" class="ln">  1020  </span><span class="comment">//	FROM users AS u</span>
+<span id="L1021" class="ln">  1021  </span><span class="comment">//	WHERE u.search_text ILIKE ANY($1::TEXT[])</span>
+<span id="L1022" class="ln">  1022  </span><span class="comment">//	ORDER BY u.created_at DESC</span>
+<span id="L1023" class="ln">  1023  </span><span class="comment">//	LIMIT $3 OFFSET $2</span>
+<span id="L1024" class="ln">  1024  </span>func (q *Queries) SearchUsers(ctx context.Context, arg *SearchUsersParams) ([]*SearchUsersRow, error) {
+<span id="L1025" class="ln">  1025  </span>	rows, err := q.db.Query(ctx, searchUsers, arg.PatternsParam, arg.OffsetParam, arg.LimitParam)
+<span id="L1026" class="ln">  1026  </span>	if err != nil {
+<span id="L1027" class="ln">  1027  </span>		return nil, err
+<span id="L1028" class="ln">  1028  </span>	}
+<span id="L1029" class="ln">  1029  </span>	defer rows.Close()
+<span id="L1030" class="ln">  1030  </span>	var items []*SearchUsersRow
+<span id="L1031" class="ln">  1031  </span>	for rows.Next() {
+<span id="L1032" class="ln">  1032  </span>		var i SearchUsersRow
+<span id="L1033" class="ln">  1033  </span>		if err := rows.Scan(
+<span id="L1034" class="ln">  1034  </span>			&amp;i.Users.ID,
+<span id="L1035" class="ln">  1035  </span>			&amp;i.Users.FirstName,
+<span id="L1036" class="ln">  1036  </span>			&amp;i.Users.LastName,
+<span id="L1037" class="ln">  1037  </span>			&amp;i.Users.Email,
+<span id="L1038" class="ln">  1038  </span>			&amp;i.Users.Phone,
+<span id="L1039" class="ln">  1039  </span>			&amp;i.Users.PrefectureID,
+<span id="L1040" class="ln">  1040  </span>			&amp;i.Users.City,
+<span id="L1041" class="ln">  1041  </span>			&amp;i.Users.Street,
+<span id="L1042" class="ln">  1042  </span>			&amp;i.Users.Building,
+<span id="L1043" class="ln">  1043  </span>			&amp;i.Users.PostalCode,
+<span id="L1044" class="ln">  1044  </span>			&amp;i.Users.DeletedAt,
+<span id="L1045" class="ln">  1045  </span>			&amp;i.Users.CreatedAt,
+<span id="L1046" class="ln">  1046  </span>			&amp;i.Users.UpdatedAt,
+<span id="L1047" class="ln">  1047  </span>			&amp;i.Users.SearchText,
+<span id="L1048" class="ln">  1048  </span>		); err != nil {
+<span id="L1049" class="ln">  1049  </span>			return nil, err
+<span id="L1050" class="ln">  1050  </span>		}
+<span id="L1051" class="ln">  1051  </span>		items = append(items, &amp;i)
+<span id="L1052" class="ln">  1052  </span>	}
+<span id="L1053" class="ln">  1053  </span>	if err := rows.Err(); err != nil {
+<span id="L1054" class="ln">  1054  </span>		return nil, err
+<span id="L1055" class="ln">  1055  </span>	}
+<span id="L1056" class="ln">  1056  </span>	return items, nil
+<span id="L1057" class="ln">  1057  </span>}
+<span id="L1058" class="ln">  1058  </span>
+<span id="L1059" class="ln">  1059  </span>const updateUser = `-- name: UpdateUser :execrows
+<span id="L1060" class="ln">  1060  </span>UPDATE users
+<span id="L1061" class="ln">  1061  </span>SET
+<span id="L1062" class="ln">  1062  </span>    first_name = $1,
+<span id="L1063" class="ln">  1063  </span>    last_name = $2,
+<span id="L1064" class="ln">  1064  </span>    email = $3,
+<span id="L1065" class="ln">  1065  </span>    phone = $4,
+<span id="L1066" class="ln">  1066  </span>    prefecture_id = $5,
+<span id="L1067" class="ln">  1067  </span>    city = $6,
+<span id="L1068" class="ln">  1068  </span>    street = $7,
+<span id="L1069" class="ln">  1069  </span>    building = $8,
+<span id="L1070" class="ln">  1070  </span>    postal_code = $9,
+<span id="L1071" class="ln">  1071  </span>    updated_at = $10,
+<span id="L1072" class="ln">  1072  </span>    deleted_at = $11
+<span id="L1073" class="ln">  1073  </span>WHERE id = $12
+<span id="L1074" class="ln">  1074  </span>    AND deleted_at IS NULL
+<span id="L1075" class="ln">  1075  </span>`
+<span id="L1076" class="ln">  1076  </span>
+<span id="L1077" class="ln">  1077  </span>type UpdateUserParams struct {
+<span id="L1078" class="ln">  1078  </span>	FirstName    string
+<span id="L1079" class="ln">  1079  </span>	LastName     string
+<span id="L1080" class="ln">  1080  </span>	Email        string
+<span id="L1081" class="ln">  1081  </span>	Phone        string
+<span id="L1082" class="ln">  1082  </span>	PrefectureID uuid.UUID
+<span id="L1083" class="ln">  1083  </span>	City         string
+<span id="L1084" class="ln">  1084  </span>	Street       string
+<span id="L1085" class="ln">  1085  </span>	Building     *string
+<span id="L1086" class="ln">  1086  </span>	PostalCode   string
+<span id="L1087" class="ln">  1087  </span>	UpdatedAt    time.Time
+<span id="L1088" class="ln">  1088  </span>	DeletedAt    *time.Time
+<span id="L1089" class="ln">  1089  </span>	ID           uuid.UUID
+<span id="L1090" class="ln">  1090  </span>}
+<span id="L1091" class="ln">  1091  </span>
+<span id="L1092" class="ln">  1092  </span><span class="comment">// === source: database/dml/repository/user/update_user.sql ===</span>
+<span id="L1093" class="ln">  1093  </span><span class="comment">//</span>
+<span id="L1094" class="ln">  1094  </span><span class="comment">//	UPDATE users</span>
+<span id="L1095" class="ln">  1095  </span><span class="comment">//	SET</span>
+<span id="L1096" class="ln">  1096  </span><span class="comment">//	    first_name = $1,</span>
+<span id="L1097" class="ln">  1097  </span><span class="comment">//	    last_name = $2,</span>
+<span id="L1098" class="ln">  1098  </span><span class="comment">//	    email = $3,</span>
+<span id="L1099" class="ln">  1099  </span><span class="comment">//	    phone = $4,</span>
+<span id="L1100" class="ln">  1100  </span><span class="comment">//	    prefecture_id = $5,</span>
+<span id="L1101" class="ln">  1101  </span><span class="comment">//	    city = $6,</span>
+<span id="L1102" class="ln">  1102  </span><span class="comment">//	    street = $7,</span>
+<span id="L1103" class="ln">  1103  </span><span class="comment">//	    building = $8,</span>
+<span id="L1104" class="ln">  1104  </span><span class="comment">//	    postal_code = $9,</span>
+<span id="L1105" class="ln">  1105  </span><span class="comment">//	    updated_at = $10,</span>
+<span id="L1106" class="ln">  1106  </span><span class="comment">//	    deleted_at = $11</span>
+<span id="L1107" class="ln">  1107  </span><span class="comment">//	WHERE id = $12</span>
+<span id="L1108" class="ln">  1108  </span><span class="comment">//	    AND deleted_at IS NULL</span>
+<span id="L1109" class="ln">  1109  </span>func (q *Queries) UpdateUser(ctx context.Context, arg *UpdateUserParams) (int64, error) {
+<span id="L1110" class="ln">  1110  </span>	result, err := q.db.Exec(ctx, updateUser,
+<span id="L1111" class="ln">  1111  </span>		arg.FirstName,
+<span id="L1112" class="ln">  1112  </span>		arg.LastName,
+<span id="L1113" class="ln">  1113  </span>		arg.Email,
+<span id="L1114" class="ln">  1114  </span>		arg.Phone,
+<span id="L1115" class="ln">  1115  </span>		arg.PrefectureID,
+<span id="L1116" class="ln">  1116  </span>		arg.City,
+<span id="L1117" class="ln">  1117  </span>		arg.Street,
+<span id="L1118" class="ln">  1118  </span>		arg.Building,
+<span id="L1119" class="ln">  1119  </span>		arg.PostalCode,
+<span id="L1120" class="ln">  1120  </span>		arg.UpdatedAt,
+<span id="L1121" class="ln">  1121  </span>		arg.DeletedAt,
+<span id="L1122" class="ln">  1122  </span>		arg.ID,
+<span id="L1123" class="ln">  1123  </span>	)
+<span id="L1124" class="ln">  1124  </span>	if err != nil {
+<span id="L1125" class="ln">  1125  </span>		return 0, err
+<span id="L1126" class="ln">  1126  </span>	}
+<span id="L1127" class="ln">  1127  </span>	return result.RowsAffected(), nil
+<span id="L1128" class="ln">  1128  </span>}
+<span id="L1129" class="ln">  1129  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_repository.gen.sql.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

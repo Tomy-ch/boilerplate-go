@@ -1,0 +1,167 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>inquiry - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/usecase">usecase</a>/<a href="../../../../../src/go-boilerplate/internal/usecase/inquiry">inquiry</a>/<span class="text-muted">inquiry_usecase.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/usecase/inquiry">go-boilerplate/internal/usecase/inquiry</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">//go:generate mockgen -source=$GOFILE -destination=mock/mock_$GOFILE.gen.go -package=mock_$GOPACKAGE</span>
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span><span class="comment">// Package inquiry は、問い合わせのユースケースを提供します。利用者の投稿・履歴・購読と、</span>
+<span id="L4" class="ln">     4  </span><span class="comment">// 運営の一覧・履歴・回答・購読を扱います。</span>
+<span id="L5" class="ln">     5  </span><span class="comment">//</span>
+<span id="L6" class="ln">     6  </span><span class="comment">// Realtime Delivery への変換（realtime adapter）はこの package の内側に置きます。機構側は</span>
+<span id="L7" class="ln">     7  </span><span class="comment">// 問い合わせの語彙を知りません（ADR-0071 (realtime-delivery-driving-mechanism)）。</span>
+<span id="L8" class="ln">     8  </span>package inquiry
+<span id="L9" class="ln">     9  </span>
+<span id="L10" class="ln">    10  </span>import (
+<span id="L11" class="ln">    11  </span>	&#34;context&#34;
+<span id="L12" class="ln">    12  </span>
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/domain/inquiry&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L15" class="ln">    15  </span>	authbd &#34;go-boilerplate/internal/usecase/boundary/auth&#34;
+<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/usecase/boundary/authz&#34;
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/usecase/boundary/clock&#34;
+<span id="L18" class="ln">    18  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/internal/usecase/boundary/tx&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/usecase/outbox&#34;
+<span id="L21" class="ln">    21  </span>	ucrealtime &#34;go-boilerplate/internal/usecase/realtime&#34;
+<span id="L22" class="ln">    22  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L23" class="ln">    23  </span>)
+<span id="L24" class="ln">    24  </span>
+<span id="L25" class="ln">    25  </span><span class="comment">// feedStreamID は、運営の一覧画面が購読する組織 feed の stream です。</span>
+<span id="L26" class="ln">    26  </span><span class="comment">// 単一組織を前提とした固定値です（docs/spec/usecase/inquiry.md の placeholder）。</span>
+<span id="L27" class="ln">    27  </span>const feedStreamID rt.StreamID = &#34;inquiry-feed&#34;
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span><span class="comment">// Usecase は、問い合わせのユースケースです。</span>
+<span id="L30" class="ln">    30  </span>type Usecase interface {
+<span id="L31" class="ln">    31  </span>	<span class="comment">// AppendMessage は、利用者の投稿を追加します。</span>
+<span id="L32" class="ln">    32  </span>	<span class="comment">// active な問い合わせが無ければ作成し、以降の投稿は同じ問い合わせへ追加します。</span>
+<span id="L33" class="ln">    33  </span>	AppendMessage(ctx context.Context, params AppendMessageParams) (MessageView, error)
+<span id="L34" class="ln">    34  </span>
+<span id="L35" class="ln">    35  </span>	<span class="comment">// GetHistory は、利用者自身の履歴を位置の昇順で 1 ページ返します。</span>
+<span id="L36" class="ln">    36  </span>	<span class="comment">// 問い合わせを持たない利用者には空の履歴を返します。</span>
+<span id="L37" class="ln">    37  </span>	GetHistory(ctx context.Context, params HistoryParams) (*HistoryView, error)
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span>	<span class="comment">// IssueStreamTicket は、利用者の会話 stream を購読するための ticket を発行します。</span>
+<span id="L40" class="ln">    40  </span>	IssueStreamTicket(ctx context.Context, params IssueStreamTicketParams) (TicketView, error)
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span>	<span class="comment">// ListInquiries は、運営向けに問い合わせを更新日時の新しい順で 1 ページ返します。</span>
+<span id="L43" class="ln">    43  </span>	ListInquiries(ctx context.Context, authn *authbd.Authn, params ListInquiriesParams) (*InquiryListView, error)
+<span id="L44" class="ln">    44  </span>
+<span id="L45" class="ln">    45  </span>	<span class="comment">// GetInquiryHistory は、運営向けに任意の問い合わせの履歴を 1 ページ返します。</span>
+<span id="L46" class="ln">    46  </span>	GetInquiryHistory(ctx context.Context, authn *authbd.Authn, params OperatorHistoryParams) (*HistoryView, error)
+<span id="L47" class="ln">    47  </span>
+<span id="L48" class="ln">    48  </span>	<span class="comment">// Reply は、運営の回答を追加します。</span>
+<span id="L49" class="ln">    49  </span>	Reply(ctx context.Context, authn *authbd.Authn, params ReplyParams) (MessageView, error)
+<span id="L50" class="ln">    50  </span>
+<span id="L51" class="ln">    51  </span>	<span class="comment">// IssueFeedTicket は、運営の feed stream を購読するための ticket を発行します。</span>
+<span id="L52" class="ln">    52  </span>	IssueFeedTicket(ctx context.Context, authn *authbd.Authn) (TicketView, error)
+<span id="L53" class="ln">    53  </span>}
+<span id="L54" class="ln">    54  </span>
+<span id="L55" class="ln">    55  </span>type usecase struct {
+<span id="L56" class="ln">    56  </span>	txm        tx.Manager
+<span id="L57" class="ln">    57  </span>	clock      clock.Clock
+<span id="L58" class="ln">    58  </span>	repo       inquiry.Repository
+<span id="L59" class="ln">    59  </span>	sequences  rt.SequenceAllocator
+<span id="L60" class="ln">    60  </span>	emit       outbox.EmitUsecase
+<span id="L61" class="ln">    61  </span>	tickets    ucrealtime.TicketIssuer
+<span id="L62" class="ln">    62  </span>	authorizer authz.Authorizer
+<span id="L63" class="ln">    63  </span>	tracer     observability.LayerTracer
+<span id="L64" class="ln">    64  </span>}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span><span class="comment">// New は、問い合わせユースケースを生成します。</span>
+<span id="L67" class="ln">    67  </span>func New(
+<span id="L68" class="ln">    68  </span>	txm tx.Manager,
+<span id="L69" class="ln">    69  </span>	clk clock.Clock,
+<span id="L70" class="ln">    70  </span>	repo inquiry.Repository,
+<span id="L71" class="ln">    71  </span>	sequences rt.SequenceAllocator,
+<span id="L72" class="ln">    72  </span>	emit outbox.EmitUsecase,
+<span id="L73" class="ln">    73  </span>	tickets ucrealtime.TicketIssuer,
+<span id="L74" class="ln">    74  </span>	authorizer authz.Authorizer,
+<span id="L75" class="ln">    75  </span>	tf observability.TracerFactory,
+<span id="L76" class="ln">    76  </span>) Usecase {
+<span id="L77" class="ln">    77  </span>	return &amp;usecase{
+<span id="L78" class="ln">    78  </span>		txm:        txm,
+<span id="L79" class="ln">    79  </span>		clock:      clk,
+<span id="L80" class="ln">    80  </span>		repo:       repo,
+<span id="L81" class="ln">    81  </span>		sequences:  sequences,
+<span id="L82" class="ln">    82  </span>		emit:       emit,
+<span id="L83" class="ln">    83  </span>		tickets:    tickets,
+<span id="L84" class="ln">    84  </span>		authorizer: authorizer,
+<span id="L85" class="ln">    85  </span>		tracer:     tf.Usecase(),
+<span id="L86" class="ln">    86  </span>	}
+<span id="L87" class="ln">    87  </span>}
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span><span class="comment">// toMessageView は、メッセージを出力 DTO へ写します。</span>
+<span id="L90" class="ln">    90  </span><span class="comment">// メッセージは親への逆参照を持たないため、所属する問い合わせを併せて受け取ります。</span>
+<span id="L91" class="ln">    91  </span>func toMessageView(inquiryID uuid.UUID, m *inquiry.Message) MessageView {
+<span id="L92" class="ln">    92  </span>	return MessageView{
+<span id="L93" class="ln">    93  </span>		ID:         m.ID(),
+<span id="L94" class="ln">    94  </span>		InquiryID:  inquiryID,
+<span id="L95" class="ln">    95  </span>		AuthorKind: m.Author().Kind().String(),
+<span id="L96" class="ln">    96  </span>		Body:       m.Body(),
+<span id="L97" class="ln">    97  </span>		Sequence:   m.Sequence(),
+<span id="L98" class="ln">    98  </span>		CreatedAt:  m.CreatedAt(),
+<span id="L99" class="ln">    99  </span>	}
+<span id="L100" class="ln">   100  </span>}
+<span id="L101" class="ln">   101  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_usecase.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

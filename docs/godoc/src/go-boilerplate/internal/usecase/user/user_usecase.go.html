@@ -73,449 +73,449 @@
 <span id="L16" class="ln">    16  </span>	authbd &#34;go-boilerplate/internal/usecase/boundary/auth&#34;
 <span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/usecase/boundary/authz&#34;
 <span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/internal/usecase/boundary/clock&#34;
-<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/internal/usecase/boundary/tx&#34;
-<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/usecase/outbox&#34;
-<span id="L21" class="ln">    21  </span>	&#34;go-boilerplate/internal/usecase/tools/paging&#34;
-<span id="L22" class="ln">    22  </span>	&#34;go-boilerplate/internal/usecase/user/event&#34;
-<span id="L23" class="ln">    23  </span>	&#34;go-boilerplate/pkg/ptr&#34;
-<span id="L24" class="ln">    24  </span>	&#34;go-boilerplate/pkg/uuid&#34;
-<span id="L25" class="ln">    25  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
-<span id="L26" class="ln">    26  </span>)
-<span id="L27" class="ln">    27  </span>
-<span id="L28" class="ln">    28  </span><span class="comment">// aggregateType は、outbox の集約種別です。</span>
-<span id="L29" class="ln">    29  </span>const aggregateType = &#34;user&#34;
-<span id="L30" class="ln">    30  </span>
-<span id="L31" class="ln">    31  </span><span class="comment">// 既存ユーザーが参照する prefecture を解決できない参照整合性破れ（サーバ側データ不整合）を表します。</span>
-<span id="L32" class="ln">    32  </span>var errOrphanPrefecture = xerrors.Wrap(apperror.ErrInternal, &#34;prefecture not found for user&#34;)
-<span id="L33" class="ln">    33  </span>
-<span id="L34" class="ln">    34  </span><span class="comment">// UserView は、ユーザー取得結果の出力 DTO を表します。</span>
-<span id="L35" class="ln">    35  </span>type UserView struct {
-<span id="L36" class="ln">    36  </span>	ID             uuid.UUID
-<span id="L37" class="ln">    37  </span>	FirstName      string
-<span id="L38" class="ln">    38  </span>	LastName       string
-<span id="L39" class="ln">    39  </span>	Email          string
-<span id="L40" class="ln">    40  </span>	Phone          string
-<span id="L41" class="ln">    41  </span>	PostalCode     string
-<span id="L42" class="ln">    42  </span>	PrefectureName string
-<span id="L43" class="ln">    43  </span>	City           string
-<span id="L44" class="ln">    44  </span>	Street         string
-<span id="L45" class="ln">    45  </span>	Building       *string
-<span id="L46" class="ln">    46  </span>	DeletedAt      *time.Time
-<span id="L47" class="ln">    47  </span>}
-<span id="L48" class="ln">    48  </span>
-<span id="L49" class="ln">    49  </span><span class="comment">// UserListView は、一覧取得結果（ページ分の一覧と総件数）を表します。</span>
-<span id="L50" class="ln">    50  </span>type UserListView struct {
-<span id="L51" class="ln">    51  </span>	Items []UserView
-<span id="L52" class="ln">    52  </span>	Total int64
-<span id="L53" class="ln">    53  </span>}
-<span id="L54" class="ln">    54  </span>
-<span id="L55" class="ln">    55  </span><span class="comment">// UserFeedView は、ユーザーフィード（cursor ページネーション）の取得結果を表します。</span>
-<span id="L56" class="ln">    56  </span>type UserFeedView struct {
-<span id="L57" class="ln">    57  </span>	<span class="comment">// Items は、現在ページのユーザー一覧です。</span>
-<span id="L58" class="ln">    58  </span>	Items []UserView
-<span id="L59" class="ln">    59  </span>	<span class="comment">// NextCursor は、次ページ取得用の不透明カーソルです。最終ページの場合は nil です。</span>
-<span id="L60" class="ln">    60  </span>	NextCursor *string
-<span id="L61" class="ln">    61  </span>}
-<span id="L62" class="ln">    62  </span>
-<span id="L63" class="ln">    63  </span><span class="comment">// UpdateProfileParams は、ユーザープロフィール更新の入力（可変フィールド）を表します。</span>
-<span id="L64" class="ln">    64  </span>type UpdateProfileParams struct {
-<span id="L65" class="ln">    65  </span>	FirstName      string
-<span id="L66" class="ln">    66  </span>	LastName       string
-<span id="L67" class="ln">    67  </span>	Email          string
-<span id="L68" class="ln">    68  </span>	Phone          string
-<span id="L69" class="ln">    69  </span>	PostalCode     string
-<span id="L70" class="ln">    70  </span>	PrefectureName string
-<span id="L71" class="ln">    71  </span>	City           string
-<span id="L72" class="ln">    72  </span>	Street         string
-<span id="L73" class="ln">    73  </span>	Building       *string
-<span id="L74" class="ln">    74  </span>}
-<span id="L75" class="ln">    75  </span>
-<span id="L76" class="ln">    76  </span><span class="comment">// CreateParamsDTO は、ユーザー作成に必要なパラメータを表します。</span>
-<span id="L77" class="ln">    77  </span>type CreateParamsDTO struct {
-<span id="L78" class="ln">    78  </span>	UpdateProfileParams
-<span id="L79" class="ln">    79  </span>
-<span id="L80" class="ln">    80  </span>	UserID uuid.UUID
-<span id="L81" class="ln">    81  </span>}
-<span id="L82" class="ln">    82  </span>
-<span id="L83" class="ln">    83  </span><span class="comment">// PatchParamsDTO は、ユーザー部分更新（PATCH）に必要なパラメータを表します。nil のフィールドは更新しません。</span>
-<span id="L84" class="ln">    84  </span>type PatchParamsDTO struct {
-<span id="L85" class="ln">    85  </span>	FirstName      *string
-<span id="L86" class="ln">    86  </span>	LastName       *string
-<span id="L87" class="ln">    87  </span>	Email          *string
-<span id="L88" class="ln">    88  </span>	Phone          *string
-<span id="L89" class="ln">    89  </span>	PostalCode     *string
-<span id="L90" class="ln">    90  </span>	PrefectureName *string
-<span id="L91" class="ln">    91  </span>	City           *string
-<span id="L92" class="ln">    92  </span>	Street         *string
-<span id="L93" class="ln">    93  </span>	Building       *string
-<span id="L94" class="ln">    94  </span>}
-<span id="L95" class="ln">    95  </span>
-<span id="L96" class="ln">    96  </span>type usecase struct {
-<span id="L97" class="ln">    97  </span>	tracer       observability.LayerTracer
-<span id="L98" class="ln">    98  </span>	txm          tx.Manager
-<span id="L99" class="ln">    99  </span>	clock        clock.Clock
-<span id="L100" class="ln">   100  </span>	authorizer   authz.Authorizer
-<span id="L101" class="ln">   101  </span>	userRepo     user.Repository
-<span id="L102" class="ln">   102  </span>	userLock     user.LockRepository
-<span id="L103" class="ln">   103  </span>	pftRepo      prefecture.Repository
-<span id="L104" class="ln">   104  </span>	purchaseRepo purchase.Repository
-<span id="L105" class="ln">   105  </span>	emit         outbox.EmitUsecase
-<span id="L106" class="ln">   106  </span>}
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span><span class="comment">// Usecase は、ユーザーに関するユースケースを定義します。</span>
-<span id="L109" class="ln">   109  </span>type Usecase interface {
-<span id="L110" class="ln">   110  </span>	<span class="comment">// ListUsers は、認可を確認したうえでユーザー一覧を取得します。他ユーザーを列挙する操作のため</span>
-<span id="L111" class="ln">   111  </span>	<span class="comment">// admin ロールを持つ主体のみ許可し、拒否された場合は authz.ErrForbidden を返します。</span>
-<span id="L112" class="ln">   112  </span>	ListUsers(ctx context.Context, authn *authbd.Authn, active *bool, page *paging.Page) ([]UserView, error)
-<span id="L113" class="ln">   113  </span>	<span class="comment">// ListUsersWithTotal は、認可を確認したうえでユーザー一覧と総件数をまとめて取得します。</span>
-<span id="L114" class="ln">   114  </span>	<span class="comment">// 認可条件は ListUsers と同じく admin 限定です。</span>
-<span id="L115" class="ln">   115  </span>	ListUsersWithTotal(ctx context.Context, authn *authbd.Authn, active *bool, page *paging.Page) (*UserListView, error)
-<span id="L116" class="ln">   116  </span>	<span class="comment">// ListUsersFeed は、認可を確認したうえで未削除ユーザーを作成日時の降順（cursor ページネーション）で</span>
-<span id="L117" class="ln">   117  </span>	<span class="comment">// 取得します。認可条件は ListUsers と同じく admin 限定です。</span>
-<span id="L118" class="ln">   118  </span>	ListUsersFeed(ctx context.Context, authn *authbd.Authn, cursor *paging.Cursor) (*UserFeedView, error)
-<span id="L119" class="ln">   119  </span>	<span class="comment">// CreateUser は、ユーザーを作成します。</span>
-<span id="L120" class="ln">   120  </span>	CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserView, error)
-<span id="L121" class="ln">   121  </span>	<span class="comment">// CountUsers は、ユーザーの総件数を返します。件数のみを返し個々のユーザーを開示しないため、</span>
-<span id="L122" class="ln">   122  </span>	<span class="comment">// 認可を要求しません。</span>
-<span id="L123" class="ln">   123  </span>	CountUsers(ctx context.Context, active *bool) (int64, error)
-<span id="L124" class="ln">   124  </span>	<span class="comment">// GetUser は、認可を確認したうえで ID から単一ユーザーを取得します。</span>
-<span id="L125" class="ln">   125  </span>	<span class="comment">// 認可が拒否された場合は authz.ErrForbidden（apperror.ErrPermissionDenied をラップ）を返します。</span>
-<span id="L126" class="ln">   126  </span>	GetUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID) (UserView, error)
-<span id="L127" class="ln">   127  </span>	<span class="comment">// UpdateUser は、認可を確認したうえでユーザーのプロフィールを全更新します。</span>
-<span id="L128" class="ln">   128  </span>	<span class="comment">// 認可が拒否された場合は authz.ErrForbidden（apperror.ErrPermissionDenied をラップ）を返します。</span>
-<span id="L129" class="ln">   129  </span>	UpdateUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID, dto *UpdateProfileParams) (UserView, error)
-<span id="L130" class="ln">   130  </span>	<span class="comment">// UpdateUserPartially は、認可を確認したうえでユーザーを部分更新します。指定されたフィールドのみを</span>
-<span id="L131" class="ln">   131  </span>	<span class="comment">// 反映し、未指定 / null は据え置きます（値のクリアは非対応で、クリアには全更新の UpdateUser を使います）。</span>
-<span id="L132" class="ln">   132  </span>	<span class="comment">// 認可が拒否された場合は authz.ErrForbidden（apperror.ErrPermissionDenied をラップ）を返します。</span>
-<span id="L133" class="ln">   133  </span>	UpdateUserPartially(ctx context.Context, authn *authbd.Authn, id uuid.UUID, dto *PatchParamsDTO) (UserView, error)
-<span id="L134" class="ln">   134  </span>	<span class="comment">// DeleteUser は、認可を確認したうえでユーザーを退会させます。ユーザーを論理削除し、</span>
-<span id="L135" class="ln">   135  </span>	<span class="comment">// 同一トランザクションで退会イベントを発行します（配信は非同期・結果整合。ADR-0054 (transactional-outbox)）。</span>
-<span id="L136" class="ln">   136  </span>	<span class="comment">// 進行中の購入が残っている場合は apperror.ErrConflict を返し、退会させません。</span>
-<span id="L137" class="ln">   137  </span>	<span class="comment">// 認可が拒否された場合は authz.ErrForbidden（apperror.ErrPermissionDenied をラップ）を返します。</span>
-<span id="L138" class="ln">   138  </span>	DeleteUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID) error
-<span id="L139" class="ln">   139  </span>}
-<span id="L140" class="ln">   140  </span>
-<span id="L141" class="ln">   141  </span><span class="comment">// New は、ユーザーに関するユースケースを初期化します。</span>
-<span id="L142" class="ln">   142  </span>func New(
-<span id="L143" class="ln">   143  </span>	tf observability.TracerFactory,
-<span id="L144" class="ln">   144  </span>	txm tx.Manager,
-<span id="L145" class="ln">   145  </span>	clock clock.Clock,
-<span id="L146" class="ln">   146  </span>	authorizer authz.Authorizer,
-<span id="L147" class="ln">   147  </span>	userRepo user.Repository,
-<span id="L148" class="ln">   148  </span>	userLock user.LockRepository,
-<span id="L149" class="ln">   149  </span>	prefectureRepo prefecture.Repository,
-<span id="L150" class="ln">   150  </span>	purchaseRepo purchase.Repository,
-<span id="L151" class="ln">   151  </span>	emit outbox.EmitUsecase,
-<span id="L152" class="ln">   152  </span>) Usecase {
-<span id="L153" class="ln">   153  </span>	return &amp;usecase{
-<span id="L154" class="ln">   154  </span>		tracer:       tf.Usecase(),
-<span id="L155" class="ln">   155  </span>		txm:          txm,
-<span id="L156" class="ln">   156  </span>		clock:        clock,
-<span id="L157" class="ln">   157  </span>		authorizer:   authorizer,
-<span id="L158" class="ln">   158  </span>		userRepo:     userRepo,
-<span id="L159" class="ln">   159  </span>		userLock:     userLock,
-<span id="L160" class="ln">   160  </span>		pftRepo:      prefectureRepo,
-<span id="L161" class="ln">   161  </span>		purchaseRepo: purchaseRepo,
-<span id="L162" class="ln">   162  </span>		emit:         emit,
-<span id="L163" class="ln">   163  </span>	}
-<span id="L164" class="ln">   164  </span>}
-<span id="L165" class="ln">   165  </span>
-<span id="L166" class="ln">   166  </span>func (u *usecase) ListUsers(ctx context.Context, authn *authbd.Authn, active *bool, page *paging.Page) ([]UserView, error) {
-<span id="L167" class="ln">   167  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L168" class="ln">   168  </span>	defer endSpan()
-<span id="L169" class="ln">   169  </span>
-<span id="L170" class="ln">   170  </span>	if err := u.authorizeUserCollection(ctx, authn); err != nil {
-<span id="L171" class="ln">   171  </span>		return nil, err
-<span id="L172" class="ln">   172  </span>	}
-<span id="L173" class="ln">   173  </span>
-<span id="L174" class="ln">   174  </span>	return u.listUsers(ctx, active, page)
-<span id="L175" class="ln">   175  </span>}
-<span id="L176" class="ln">   176  </span>
-<span id="L177" class="ln">   177  </span>func (u *usecase) CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserView, error) {
-<span id="L178" class="ln">   178  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L179" class="ln">   179  </span>	defer endSpan()
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>	now := u.clock.Now()
-<span id="L182" class="ln">   182  </span>
-<span id="L183" class="ln">   183  </span>	var (
-<span id="L184" class="ln">   184  </span>		userEntity *user.User
-<span id="L185" class="ln">   185  </span>		pftName    string
-<span id="L186" class="ln">   186  </span>	)
-<span id="L187" class="ln">   187  </span>	err := u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L188" class="ln">   188  </span>		pftDomain, err := u.pftRepo.FindByName(ctx, dto.PrefectureName)
-<span id="L189" class="ln">   189  </span>		if err != nil {
-<span id="L190" class="ln">   190  </span>			return err
-<span id="L191" class="ln">   191  </span>		}
-<span id="L192" class="ln">   192  </span>		pftName = pftDomain.Name()
-<span id="L193" class="ln">   193  </span>
-<span id="L194" class="ln">   194  </span>		userEntity, err = user.New(dto.UserID, user.Attributes{
-<span id="L195" class="ln">   195  </span>			Profile: user.Profile{
-<span id="L196" class="ln">   196  </span>				FirstName:    dto.FirstName,
-<span id="L197" class="ln">   197  </span>				LastName:     dto.LastName,
-<span id="L198" class="ln">   198  </span>				Email:        dto.Email,
-<span id="L199" class="ln">   199  </span>				Phone:        dto.Phone,
-<span id="L200" class="ln">   200  </span>				PrefectureID: pftDomain.ID(),
-<span id="L201" class="ln">   201  </span>				City:         dto.City,
-<span id="L202" class="ln">   202  </span>				Street:       dto.Street,
-<span id="L203" class="ln">   203  </span>				Building:     dto.Building,
-<span id="L204" class="ln">   204  </span>				PostalCode:   dto.PostalCode,
-<span id="L205" class="ln">   205  </span>			},
-<span id="L206" class="ln">   206  </span>			CreatedAt: now,
-<span id="L207" class="ln">   207  </span>			UpdatedAt: now,
-<span id="L208" class="ln">   208  </span>		})
-<span id="L209" class="ln">   209  </span>		if err != nil {
-<span id="L210" class="ln">   210  </span>			return err
-<span id="L211" class="ln">   211  </span>		}
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span>		return u.userRepo.Create(ctx, userEntity)
-<span id="L214" class="ln">   214  </span>	})
-<span id="L215" class="ln">   215  </span>	if err != nil {
-<span id="L216" class="ln">   216  </span>		return UserView{}, err
-<span id="L217" class="ln">   217  </span>	}
-<span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>	return toUserView(userEntity, pftName), nil
-<span id="L220" class="ln">   220  </span>}
-<span id="L221" class="ln">   221  </span>
-<span id="L222" class="ln">   222  </span>func (u *usecase) CountUsers(ctx context.Context, active *bool) (int64, error) {
-<span id="L223" class="ln">   223  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L224" class="ln">   224  </span>	defer endSpan()
-<span id="L225" class="ln">   225  </span>	return u.userRepo.CountByActive(ctx, active)
-<span id="L226" class="ln">   226  </span>}
-<span id="L227" class="ln">   227  </span>
-<span id="L228" class="ln">   228  </span>func (u *usecase) ListUsersWithTotal(ctx context.Context, authn *authbd.Authn, active *bool, page *paging.Page) (*UserListView, error) {
-<span id="L229" class="ln">   229  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L230" class="ln">   230  </span>	defer endSpan()
-<span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>	if err := u.authorizeUserCollection(ctx, authn); err != nil {
-<span id="L233" class="ln">   233  </span>		return nil, err
-<span id="L234" class="ln">   234  </span>	}
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>	items, err := u.listUsers(ctx, active, page)
-<span id="L237" class="ln">   237  </span>	if err != nil {
-<span id="L238" class="ln">   238  </span>		return nil, err
-<span id="L239" class="ln">   239  </span>	}
-<span id="L240" class="ln">   240  </span>	total, err := u.CountUsers(ctx, active)
-<span id="L241" class="ln">   241  </span>	if err != nil {
-<span id="L242" class="ln">   242  </span>		return nil, err
-<span id="L243" class="ln">   243  </span>	}
-<span id="L244" class="ln">   244  </span>	return &amp;UserListView{Items: items, Total: total}, nil
-<span id="L245" class="ln">   245  </span>}
-<span id="L246" class="ln">   246  </span>
-<span id="L247" class="ln">   247  </span>func (u *usecase) ListUsersFeed(ctx context.Context, authn *authbd.Authn, cursor *paging.Cursor) (*UserFeedView, error) {
-<span id="L248" class="ln">   248  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L249" class="ln">   249  </span>	defer endSpan()
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>	if err := u.authorizeUserCollection(ctx, authn); err != nil {
-<span id="L252" class="ln">   252  </span>		return nil, err
-<span id="L253" class="ln">   253  </span>	}
-<span id="L254" class="ln">   254  </span>
-<span id="L255" class="ln">   255  </span>	if cursor == nil {
-<span id="L256" class="ln">   256  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;cursor must not be nil&#34;)
-<span id="L257" class="ln">   257  </span>	}
-<span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>	after, err := decodeFeedCursor(cursor)
-<span id="L260" class="ln">   260  </span>	if err != nil {
-<span id="L261" class="ln">   261  </span>		return nil, err
-<span id="L262" class="ln">   262  </span>	}
-<span id="L263" class="ln">   263  </span>
-<span id="L264" class="ln">   264  </span>	us, err := u.userRepo.FindFeed(ctx, after, cursor.Limit32()+1)
-<span id="L265" class="ln">   265  </span>	if err != nil {
-<span id="L266" class="ln">   266  </span>		return nil, err
-<span id="L267" class="ln">   267  </span>	}
-<span id="L268" class="ln">   268  </span>
-<span id="L269" class="ln">   269  </span>	limit := cursor.Limit()
-<span id="L270" class="ln">   270  </span>	hasNext := len(us) &gt; limit
-<span id="L271" class="ln">   271  </span>	if hasNext {
-<span id="L272" class="ln">   272  </span>		us = us[:limit]
-<span id="L273" class="ln">   273  </span>	}
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>	items, err := u.toUserViews(ctx, us)
-<span id="L276" class="ln">   276  </span>	if err != nil {
-<span id="L277" class="ln">   277  </span>		return nil, err
-<span id="L278" class="ln">   278  </span>	}
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>	var nextCursor *string
-<span id="L281" class="ln">   281  </span>	if hasNext &amp;&amp; len(us) &gt; 0 {
-<span id="L282" class="ln">   282  </span>		encoded := encodeFeedCursor(us[len(us)-1])
-<span id="L283" class="ln">   283  </span>		nextCursor = &amp;encoded
-<span id="L284" class="ln">   284  </span>	}
-<span id="L285" class="ln">   285  </span>
-<span id="L286" class="ln">   286  </span>	return &amp;UserFeedView{Items: items, NextCursor: nextCursor}, nil
-<span id="L287" class="ln">   287  </span>}
-<span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>func (u *usecase) GetUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID) (UserView, error) {
-<span id="L290" class="ln">   290  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L291" class="ln">   291  </span>	defer endSpan()
-<span id="L292" class="ln">   292  </span>
-<span id="L293" class="ln">   293  </span>	if err := u.authorizeUserAccess(ctx, authn, authz.ActionUserGet, id); err != nil {
-<span id="L294" class="ln">   294  </span>		return UserView{}, err
-<span id="L295" class="ln">   295  </span>	}
-<span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>	userEntity, err := u.userRepo.FindByID(ctx, id)
-<span id="L298" class="ln">   298  </span>	if err != nil {
-<span id="L299" class="ln">   299  </span>		return UserView{}, err
-<span id="L300" class="ln">   300  </span>	}
-<span id="L301" class="ln">   301  </span>
-<span id="L302" class="ln">   302  </span>	pftDomain, err := u.pftRepo.FindByID(ctx, userEntity.PrefectureID())
-<span id="L303" class="ln">   303  </span>	if err != nil {
-<span id="L304" class="ln">   304  </span>		if xerrors.Is(err, apperror.ErrNotFound) {
-<span id="L305" class="ln">   305  </span>			return UserView{}, errOrphanPrefecture
-<span id="L306" class="ln">   306  </span>		}
-<span id="L307" class="ln">   307  </span>		return UserView{}, err
-<span id="L308" class="ln">   308  </span>	}
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>	return toUserView(userEntity, pftDomain.Name()), nil
-<span id="L311" class="ln">   311  </span>}
-<span id="L312" class="ln">   312  </span>
-<span id="L313" class="ln">   313  </span>func (u *usecase) UpdateUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID, dto *UpdateProfileParams) (UserView, error) {
-<span id="L314" class="ln">   314  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L315" class="ln">   315  </span>	defer endSpan()
-<span id="L316" class="ln">   316  </span>
-<span id="L317" class="ln">   317  </span>	if err := u.authorizeUserAccess(ctx, authn, authz.ActionUserUpdate, id); err != nil {
-<span id="L318" class="ln">   318  </span>		return UserView{}, err
-<span id="L319" class="ln">   319  </span>	}
-<span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>	now := u.clock.Now()
-<span id="L322" class="ln">   322  </span>
-<span id="L323" class="ln">   323  </span>	var (
-<span id="L324" class="ln">   324  </span>		userEntity *user.User
-<span id="L325" class="ln">   325  </span>		pftName    string
-<span id="L326" class="ln">   326  </span>	)
-<span id="L327" class="ln">   327  </span>	err := u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L328" class="ln">   328  </span>		var err error
-<span id="L329" class="ln">   329  </span>		userEntity, err = u.userRepo.FindByID(ctx, id)
-<span id="L330" class="ln">   330  </span>		if err != nil {
-<span id="L331" class="ln">   331  </span>			return err
-<span id="L332" class="ln">   332  </span>		}
-<span id="L333" class="ln">   333  </span>
-<span id="L334" class="ln">   334  </span>		pftDomain, err := u.pftRepo.FindByName(ctx, dto.PrefectureName)
-<span id="L335" class="ln">   335  </span>		if err != nil {
-<span id="L336" class="ln">   336  </span>			return err
-<span id="L337" class="ln">   337  </span>		}
-<span id="L338" class="ln">   338  </span>		pftName = pftDomain.Name()
-<span id="L339" class="ln">   339  </span>
-<span id="L340" class="ln">   340  </span>		if err = userEntity.UpdateProfile(user.Profile{
-<span id="L341" class="ln">   341  </span>			FirstName:    dto.FirstName,
-<span id="L342" class="ln">   342  </span>			LastName:     dto.LastName,
-<span id="L343" class="ln">   343  </span>			Email:        dto.Email,
-<span id="L344" class="ln">   344  </span>			Phone:        dto.Phone,
-<span id="L345" class="ln">   345  </span>			PrefectureID: pftDomain.ID(),
-<span id="L346" class="ln">   346  </span>			City:         dto.City,
-<span id="L347" class="ln">   347  </span>			Street:       dto.Street,
-<span id="L348" class="ln">   348  </span>			Building:     dto.Building,
-<span id="L349" class="ln">   349  </span>			PostalCode:   dto.PostalCode,
-<span id="L350" class="ln">   350  </span>		}, now); err != nil {
-<span id="L351" class="ln">   351  </span>			return err
-<span id="L352" class="ln">   352  </span>		}
-<span id="L353" class="ln">   353  </span>
-<span id="L354" class="ln">   354  </span>		return u.userRepo.Update(ctx, userEntity)
-<span id="L355" class="ln">   355  </span>	})
-<span id="L356" class="ln">   356  </span>	if err != nil {
-<span id="L357" class="ln">   357  </span>		return UserView{}, err
-<span id="L358" class="ln">   358  </span>	}
-<span id="L359" class="ln">   359  </span>
-<span id="L360" class="ln">   360  </span>	return toUserView(userEntity, pftName), nil
-<span id="L361" class="ln">   361  </span>}
-<span id="L362" class="ln">   362  </span>
-<span id="L363" class="ln">   363  </span>func (u *usecase) UpdateUserPartially(ctx context.Context, authn *authbd.Authn, id uuid.UUID, dto *PatchParamsDTO) (UserView, error) {
-<span id="L364" class="ln">   364  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L365" class="ln">   365  </span>	defer endSpan()
-<span id="L366" class="ln">   366  </span>
-<span id="L367" class="ln">   367  </span>	if err := u.authorizeUserAccess(ctx, authn, authz.ActionUserUpdate, id); err != nil {
-<span id="L368" class="ln">   368  </span>		return UserView{}, err
-<span id="L369" class="ln">   369  </span>	}
-<span id="L370" class="ln">   370  </span>
-<span id="L371" class="ln">   371  </span>	now := u.clock.Now()
-<span id="L372" class="ln">   372  </span>
-<span id="L373" class="ln">   373  </span>	var (
-<span id="L374" class="ln">   374  </span>		userEntity *user.User
-<span id="L375" class="ln">   375  </span>		pftName    string
-<span id="L376" class="ln">   376  </span>	)
-<span id="L377" class="ln">   377  </span>	err := u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L378" class="ln">   378  </span>		var err error
-<span id="L379" class="ln">   379  </span>		userEntity, err = u.userRepo.FindByID(ctx, id)
-<span id="L380" class="ln">   380  </span>		if err != nil {
-<span id="L381" class="ln">   381  </span>			return err
-<span id="L382" class="ln">   382  </span>		}
-<span id="L383" class="ln">   383  </span>
-<span id="L384" class="ln">   384  </span>		prefectureID := userEntity.PrefectureID()
-<span id="L385" class="ln">   385  </span>		pftDomain, err := u.resolvePatchPrefecture(ctx, dto.PrefectureName, prefectureID)
-<span id="L386" class="ln">   386  </span>		if err != nil {
-<span id="L387" class="ln">   387  </span>			return err
-<span id="L388" class="ln">   388  </span>		}
-<span id="L389" class="ln">   389  </span>		prefectureID = pftDomain.ID()
-<span id="L390" class="ln">   390  </span>		pftName = pftDomain.Name()
-<span id="L391" class="ln">   391  </span>
-<span id="L392" class="ln">   392  </span>		building := userEntity.Building()
-<span id="L393" class="ln">   393  </span>		if dto.Building != nil {
-<span id="L394" class="ln">   394  </span>			building = dto.Building
-<span id="L395" class="ln">   395  </span>		}
-<span id="L396" class="ln">   396  </span>
-<span id="L397" class="ln">   397  </span>		if err = userEntity.UpdateProfile(user.Profile{
-<span id="L398" class="ln">   398  </span>			FirstName:    ptr.Deref(dto.FirstName, userEntity.FirstName()),
-<span id="L399" class="ln">   399  </span>			LastName:     ptr.Deref(dto.LastName, userEntity.LastName()),
-<span id="L400" class="ln">   400  </span>			Email:        ptr.Deref(dto.Email, userEntity.Email()),
-<span id="L401" class="ln">   401  </span>			Phone:        ptr.Deref(dto.Phone, userEntity.Phone()),
-<span id="L402" class="ln">   402  </span>			PrefectureID: prefectureID,
-<span id="L403" class="ln">   403  </span>			City:         ptr.Deref(dto.City, userEntity.City()),
-<span id="L404" class="ln">   404  </span>			Street:       ptr.Deref(dto.Street, userEntity.Street()),
-<span id="L405" class="ln">   405  </span>			Building:     building,
-<span id="L406" class="ln">   406  </span>			PostalCode:   ptr.Deref(dto.PostalCode, userEntity.PostalCode()),
-<span id="L407" class="ln">   407  </span>		}, now); err != nil {
-<span id="L408" class="ln">   408  </span>			return err
-<span id="L409" class="ln">   409  </span>		}
-<span id="L410" class="ln">   410  </span>		return u.userRepo.Update(ctx, userEntity)
-<span id="L411" class="ln">   411  </span>	})
-<span id="L412" class="ln">   412  </span>	if err != nil {
-<span id="L413" class="ln">   413  </span>		return UserView{}, err
-<span id="L414" class="ln">   414  </span>	}
-<span id="L415" class="ln">   415  </span>
-<span id="L416" class="ln">   416  </span>	return toUserView(userEntity, pftName), nil
-<span id="L417" class="ln">   417  </span>}
-<span id="L418" class="ln">   418  </span>
-<span id="L419" class="ln">   419  </span>func (u *usecase) DeleteUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID) error {
-<span id="L420" class="ln">   420  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L421" class="ln">   421  </span>	defer endSpan()
-<span id="L422" class="ln">   422  </span>
-<span id="L423" class="ln">   423  </span>	if err := u.authorizeUserAccess(ctx, authn, authz.ActionUserDelete, id); err != nil {
-<span id="L424" class="ln">   424  </span>		return err
-<span id="L425" class="ln">   425  </span>	}
-<span id="L426" class="ln">   426  </span>
-<span id="L427" class="ln">   427  </span>	now := u.clock.Now()
-<span id="L428" class="ln">   428  </span>	<span class="comment">// 論理削除と退会イベントの発行を単一 tx にまとめ、退会だけが成立してイベントが失われることを防ぐ。</span>
-<span id="L429" class="ln">   429  </span>	<span class="comment">// 退会を拒む条件（進行中の購入）も同じ tx で判定し、拒否時は論理削除もイベントも残さない。</span>
-<span id="L430" class="ln">   430  </span>	return u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L431" class="ln">   431  </span>		<span class="comment">// 進行中購入の判定より前に排他ロックを取ることが、購入作成（共有ロック）との直列化の成立条件。</span>
-<span id="L432" class="ln">   432  </span>		<span class="comment">// 判定より後だと「判定通過 → 購入の成立 → 退会の確定」の順序を止められない。</span>
-<span id="L433" class="ln">   433  </span>		userEntity, err := u.userLock.LockByID(ctx, id)
-<span id="L434" class="ln">   434  </span>		if err != nil {
-<span id="L435" class="ln">   435  </span>			return err
-<span id="L436" class="ln">   436  </span>		}
-<span id="L437" class="ln">   437  </span>
-<span id="L438" class="ln">   438  </span>		statuses, err := u.purchaseRepo.FindStatusesByUserID(ctx, id)
-<span id="L439" class="ln">   439  </span>		if err != nil {
-<span id="L440" class="ln">   440  </span>			return err
-<span id="L441" class="ln">   441  </span>		}
-<span id="L442" class="ln">   442  </span>		if err = membership.EnsureWithdrawable(userEntity, statuses); err != nil {
-<span id="L443" class="ln">   443  </span>			return err
-<span id="L444" class="ln">   444  </span>		}
-<span id="L445" class="ln">   445  </span>
-<span id="L446" class="ln">   446  </span>		if err = userEntity.MarkAsDeleted(now); err != nil {
-<span id="L447" class="ln">   447  </span>			return err
-<span id="L448" class="ln">   448  </span>		}
-<span id="L449" class="ln">   449  </span>		if err = u.userRepo.Update(ctx, userEntity); err != nil {
-<span id="L450" class="ln">   450  </span>			return err
-<span id="L451" class="ln">   451  </span>		}
-<span id="L452" class="ln">   452  </span>
-<span id="L453" class="ln">   453  </span>		payload, err := event.BuildWithdrawn(userEntity)
-<span id="L454" class="ln">   454  </span>		if err != nil {
-<span id="L455" class="ln">   455  </span>			return err
-<span id="L456" class="ln">   456  </span>		}
-<span id="L457" class="ln">   457  </span>		_, err = u.emit.Emit(ctx, outbox.EmitInput{
-<span id="L458" class="ln">   458  </span>			AggregateType: aggregateType,
-<span id="L459" class="ln">   459  </span>			AggregateID:   id.String(),
-<span id="L460" class="ln">   460  </span>			EventType:     event.TypeWithdrawn,
-<span id="L461" class="ln">   461  </span>			Payload:       payload,
+<span id="L19" class="ln">    19  </span>	outboxbndry &#34;go-boilerplate/internal/usecase/boundary/outbox&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/usecase/boundary/tx&#34;
+<span id="L21" class="ln">    21  </span>	&#34;go-boilerplate/internal/usecase/outbox&#34;
+<span id="L22" class="ln">    22  </span>	&#34;go-boilerplate/internal/usecase/tools/paging&#34;
+<span id="L23" class="ln">    23  </span>	&#34;go-boilerplate/internal/usecase/user/event&#34;
+<span id="L24" class="ln">    24  </span>	&#34;go-boilerplate/pkg/ptr&#34;
+<span id="L25" class="ln">    25  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L26" class="ln">    26  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L27" class="ln">    27  </span>)
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span><span class="comment">// aggregateType は、outbox の集約種別です。</span>
+<span id="L30" class="ln">    30  </span>const aggregateType = &#34;user&#34;
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span><span class="comment">// 既存ユーザーが参照する prefecture を解決できない参照整合性破れ（サーバ側データ不整合）を表します。</span>
+<span id="L33" class="ln">    33  </span>var errOrphanPrefecture = xerrors.Wrap(apperror.ErrInternal, &#34;prefecture not found for user&#34;)
+<span id="L34" class="ln">    34  </span>
+<span id="L35" class="ln">    35  </span><span class="comment">// UserView は、ユーザー取得結果の出力 DTO を表します。</span>
+<span id="L36" class="ln">    36  </span>type UserView struct {
+<span id="L37" class="ln">    37  </span>	ID             uuid.UUID
+<span id="L38" class="ln">    38  </span>	FirstName      string
+<span id="L39" class="ln">    39  </span>	LastName       string
+<span id="L40" class="ln">    40  </span>	Email          string
+<span id="L41" class="ln">    41  </span>	Phone          string
+<span id="L42" class="ln">    42  </span>	PostalCode     string
+<span id="L43" class="ln">    43  </span>	PrefectureName string
+<span id="L44" class="ln">    44  </span>	City           string
+<span id="L45" class="ln">    45  </span>	Street         string
+<span id="L46" class="ln">    46  </span>	Building       *string
+<span id="L47" class="ln">    47  </span>	DeletedAt      *time.Time
+<span id="L48" class="ln">    48  </span>}
+<span id="L49" class="ln">    49  </span>
+<span id="L50" class="ln">    50  </span><span class="comment">// UserListView は、一覧取得結果（ページ分の一覧と総件数）を表します。</span>
+<span id="L51" class="ln">    51  </span>type UserListView struct {
+<span id="L52" class="ln">    52  </span>	Items []UserView
+<span id="L53" class="ln">    53  </span>	Total int64
+<span id="L54" class="ln">    54  </span>}
+<span id="L55" class="ln">    55  </span>
+<span id="L56" class="ln">    56  </span><span class="comment">// UserFeedView は、ユーザーフィード（cursor ページネーション）の取得結果を表します。</span>
+<span id="L57" class="ln">    57  </span>type UserFeedView struct {
+<span id="L58" class="ln">    58  </span>	<span class="comment">// Items は、現在ページのユーザー一覧です。</span>
+<span id="L59" class="ln">    59  </span>	Items []UserView
+<span id="L60" class="ln">    60  </span>	<span class="comment">// NextCursor は、次ページ取得用の不透明カーソルです。最終ページの場合は nil です。</span>
+<span id="L61" class="ln">    61  </span>	NextCursor *string
+<span id="L62" class="ln">    62  </span>}
+<span id="L63" class="ln">    63  </span>
+<span id="L64" class="ln">    64  </span><span class="comment">// UpdateProfileParams は、ユーザープロフィール更新の入力（可変フィールド）を表します。</span>
+<span id="L65" class="ln">    65  </span>type UpdateProfileParams struct {
+<span id="L66" class="ln">    66  </span>	FirstName      string
+<span id="L67" class="ln">    67  </span>	LastName       string
+<span id="L68" class="ln">    68  </span>	Email          string
+<span id="L69" class="ln">    69  </span>	Phone          string
+<span id="L70" class="ln">    70  </span>	PostalCode     string
+<span id="L71" class="ln">    71  </span>	PrefectureName string
+<span id="L72" class="ln">    72  </span>	City           string
+<span id="L73" class="ln">    73  </span>	Street         string
+<span id="L74" class="ln">    74  </span>	Building       *string
+<span id="L75" class="ln">    75  </span>}
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span><span class="comment">// CreateParamsDTO は、ユーザー作成に必要なパラメータを表します。</span>
+<span id="L78" class="ln">    78  </span>type CreateParamsDTO struct {
+<span id="L79" class="ln">    79  </span>	UpdateProfileParams
+<span id="L80" class="ln">    80  </span>
+<span id="L81" class="ln">    81  </span>	UserID uuid.UUID
+<span id="L82" class="ln">    82  </span>}
+<span id="L83" class="ln">    83  </span>
+<span id="L84" class="ln">    84  </span><span class="comment">// PatchParamsDTO は、ユーザー部分更新（PATCH）に必要なパラメータを表します。nil のフィールドは更新しません。</span>
+<span id="L85" class="ln">    85  </span>type PatchParamsDTO struct {
+<span id="L86" class="ln">    86  </span>	FirstName      *string
+<span id="L87" class="ln">    87  </span>	LastName       *string
+<span id="L88" class="ln">    88  </span>	Email          *string
+<span id="L89" class="ln">    89  </span>	Phone          *string
+<span id="L90" class="ln">    90  </span>	PostalCode     *string
+<span id="L91" class="ln">    91  </span>	PrefectureName *string
+<span id="L92" class="ln">    92  </span>	City           *string
+<span id="L93" class="ln">    93  </span>	Street         *string
+<span id="L94" class="ln">    94  </span>	Building       *string
+<span id="L95" class="ln">    95  </span>}
+<span id="L96" class="ln">    96  </span>
+<span id="L97" class="ln">    97  </span>type usecase struct {
+<span id="L98" class="ln">    98  </span>	tracer       observability.LayerTracer
+<span id="L99" class="ln">    99  </span>	txm          tx.Manager
+<span id="L100" class="ln">   100  </span>	clock        clock.Clock
+<span id="L101" class="ln">   101  </span>	authorizer   authz.Authorizer
+<span id="L102" class="ln">   102  </span>	userRepo     user.Repository
+<span id="L103" class="ln">   103  </span>	userLock     user.LockRepository
+<span id="L104" class="ln">   104  </span>	pftRepo      prefecture.Repository
+<span id="L105" class="ln">   105  </span>	purchaseRepo purchase.Repository
+<span id="L106" class="ln">   106  </span>	emit         outbox.EmitUsecase
+<span id="L107" class="ln">   107  </span>}
+<span id="L108" class="ln">   108  </span>
+<span id="L109" class="ln">   109  </span><span class="comment">// Usecase は、ユーザーに関するユースケースを定義します。</span>
+<span id="L110" class="ln">   110  </span>type Usecase interface {
+<span id="L111" class="ln">   111  </span>	<span class="comment">// ListUsers は、認可を確認したうえでユーザー一覧を取得します。他ユーザーを列挙する操作のため</span>
+<span id="L112" class="ln">   112  </span>	<span class="comment">// admin ロールを持つ主体のみ許可し、拒否された場合は authz.ErrForbidden を返します。</span>
+<span id="L113" class="ln">   113  </span>	ListUsers(ctx context.Context, authn *authbd.Authn, active *bool, page *paging.Page) ([]UserView, error)
+<span id="L114" class="ln">   114  </span>	<span class="comment">// ListUsersWithTotal は、認可を確認したうえでユーザー一覧と総件数をまとめて取得します。</span>
+<span id="L115" class="ln">   115  </span>	<span class="comment">// 認可条件は ListUsers と同じく admin 限定です。</span>
+<span id="L116" class="ln">   116  </span>	ListUsersWithTotal(ctx context.Context, authn *authbd.Authn, active *bool, page *paging.Page) (*UserListView, error)
+<span id="L117" class="ln">   117  </span>	<span class="comment">// ListUsersFeed は、認可を確認したうえで未削除ユーザーを作成日時の降順（cursor ページネーション）で</span>
+<span id="L118" class="ln">   118  </span>	<span class="comment">// 取得します。認可条件は ListUsers と同じく admin 限定です。</span>
+<span id="L119" class="ln">   119  </span>	ListUsersFeed(ctx context.Context, authn *authbd.Authn, cursor *paging.Cursor) (*UserFeedView, error)
+<span id="L120" class="ln">   120  </span>	<span class="comment">// CreateUser は、ユーザーを作成します。</span>
+<span id="L121" class="ln">   121  </span>	CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserView, error)
+<span id="L122" class="ln">   122  </span>	<span class="comment">// CountUsers は、ユーザーの総件数を返します。件数のみを返し個々のユーザーを開示しないため、</span>
+<span id="L123" class="ln">   123  </span>	<span class="comment">// 認可を要求しません。</span>
+<span id="L124" class="ln">   124  </span>	CountUsers(ctx context.Context, active *bool) (int64, error)
+<span id="L125" class="ln">   125  </span>	<span class="comment">// GetUser は、認可を確認したうえで ID から単一ユーザーを取得します。</span>
+<span id="L126" class="ln">   126  </span>	<span class="comment">// 認可が拒否された場合は authz.ErrForbidden（apperror.ErrPermissionDenied をラップ）を返します。</span>
+<span id="L127" class="ln">   127  </span>	GetUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID) (UserView, error)
+<span id="L128" class="ln">   128  </span>	<span class="comment">// UpdateUser は、認可を確認したうえでユーザーのプロフィールを全更新します。</span>
+<span id="L129" class="ln">   129  </span>	<span class="comment">// 認可が拒否された場合は authz.ErrForbidden（apperror.ErrPermissionDenied をラップ）を返します。</span>
+<span id="L130" class="ln">   130  </span>	UpdateUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID, dto *UpdateProfileParams) (UserView, error)
+<span id="L131" class="ln">   131  </span>	<span class="comment">// UpdateUserPartially は、認可を確認したうえでユーザーを部分更新します。指定されたフィールドのみを</span>
+<span id="L132" class="ln">   132  </span>	<span class="comment">// 反映し、未指定 / null は据え置きます（値のクリアは非対応で、クリアには全更新の UpdateUser を使います）。</span>
+<span id="L133" class="ln">   133  </span>	<span class="comment">// 認可が拒否された場合は authz.ErrForbidden（apperror.ErrPermissionDenied をラップ）を返します。</span>
+<span id="L134" class="ln">   134  </span>	UpdateUserPartially(ctx context.Context, authn *authbd.Authn, id uuid.UUID, dto *PatchParamsDTO) (UserView, error)
+<span id="L135" class="ln">   135  </span>	<span class="comment">// DeleteUser は、認可を確認したうえでユーザーを退会させます。ユーザーを論理削除し、</span>
+<span id="L136" class="ln">   136  </span>	<span class="comment">// 同一トランザクションで退会イベントを発行します（配信は非同期・結果整合。ADR-0054 (transactional-outbox)）。</span>
+<span id="L137" class="ln">   137  </span>	<span class="comment">// 進行中の購入が残っている場合は apperror.ErrConflict を返し、退会させません。</span>
+<span id="L138" class="ln">   138  </span>	<span class="comment">// 認可が拒否された場合は authz.ErrForbidden（apperror.ErrPermissionDenied をラップ）を返します。</span>
+<span id="L139" class="ln">   139  </span>	DeleteUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID) error
+<span id="L140" class="ln">   140  </span>}
+<span id="L141" class="ln">   141  </span>
+<span id="L142" class="ln">   142  </span><span class="comment">// New は、ユーザーに関するユースケースを初期化します。</span>
+<span id="L143" class="ln">   143  </span>func New(
+<span id="L144" class="ln">   144  </span>	tf observability.TracerFactory,
+<span id="L145" class="ln">   145  </span>	txm tx.Manager,
+<span id="L146" class="ln">   146  </span>	clock clock.Clock,
+<span id="L147" class="ln">   147  </span>	authorizer authz.Authorizer,
+<span id="L148" class="ln">   148  </span>	userRepo user.Repository,
+<span id="L149" class="ln">   149  </span>	userLock user.LockRepository,
+<span id="L150" class="ln">   150  </span>	prefectureRepo prefecture.Repository,
+<span id="L151" class="ln">   151  </span>	purchaseRepo purchase.Repository,
+<span id="L152" class="ln">   152  </span>	emit outbox.EmitUsecase,
+<span id="L153" class="ln">   153  </span>) Usecase {
+<span id="L154" class="ln">   154  </span>	return &amp;usecase{
+<span id="L155" class="ln">   155  </span>		tracer:       tf.Usecase(),
+<span id="L156" class="ln">   156  </span>		txm:          txm,
+<span id="L157" class="ln">   157  </span>		clock:        clock,
+<span id="L158" class="ln">   158  </span>		authorizer:   authorizer,
+<span id="L159" class="ln">   159  </span>		userRepo:     userRepo,
+<span id="L160" class="ln">   160  </span>		userLock:     userLock,
+<span id="L161" class="ln">   161  </span>		pftRepo:      prefectureRepo,
+<span id="L162" class="ln">   162  </span>		purchaseRepo: purchaseRepo,
+<span id="L163" class="ln">   163  </span>		emit:         emit,
+<span id="L164" class="ln">   164  </span>	}
+<span id="L165" class="ln">   165  </span>}
+<span id="L166" class="ln">   166  </span>
+<span id="L167" class="ln">   167  </span>func (u *usecase) ListUsers(ctx context.Context, authn *authbd.Authn, active *bool, page *paging.Page) ([]UserView, error) {
+<span id="L168" class="ln">   168  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L169" class="ln">   169  </span>	defer endSpan()
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>	if err := u.authorizeUserCollection(ctx, authn); err != nil {
+<span id="L172" class="ln">   172  </span>		return nil, err
+<span id="L173" class="ln">   173  </span>	}
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>	return u.listUsers(ctx, active, page)
+<span id="L176" class="ln">   176  </span>}
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>func (u *usecase) CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserView, error) {
+<span id="L179" class="ln">   179  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L180" class="ln">   180  </span>	defer endSpan()
+<span id="L181" class="ln">   181  </span>
+<span id="L182" class="ln">   182  </span>	now := u.clock.Now()
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>	var (
+<span id="L185" class="ln">   185  </span>		userEntity *user.User
+<span id="L186" class="ln">   186  </span>		pftName    string
+<span id="L187" class="ln">   187  </span>	)
+<span id="L188" class="ln">   188  </span>	err := u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L189" class="ln">   189  </span>		pftDomain, err := u.pftRepo.FindByName(ctx, dto.PrefectureName)
+<span id="L190" class="ln">   190  </span>		if err != nil {
+<span id="L191" class="ln">   191  </span>			return err
+<span id="L192" class="ln">   192  </span>		}
+<span id="L193" class="ln">   193  </span>		pftName = pftDomain.Name()
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>		userEntity, err = user.New(dto.UserID, user.Attributes{
+<span id="L196" class="ln">   196  </span>			FirstName:    dto.FirstName,
+<span id="L197" class="ln">   197  </span>			LastName:     dto.LastName,
+<span id="L198" class="ln">   198  </span>			Email:        dto.Email,
+<span id="L199" class="ln">   199  </span>			Phone:        dto.Phone,
+<span id="L200" class="ln">   200  </span>			PrefectureID: pftDomain.ID(),
+<span id="L201" class="ln">   201  </span>			City:         dto.City,
+<span id="L202" class="ln">   202  </span>			Street:       dto.Street,
+<span id="L203" class="ln">   203  </span>			Building:     dto.Building,
+<span id="L204" class="ln">   204  </span>			PostalCode:   dto.PostalCode,
+<span id="L205" class="ln">   205  </span>			CreatedAt:    now,
+<span id="L206" class="ln">   206  </span>			UpdatedAt:    now,
+<span id="L207" class="ln">   207  </span>		})
+<span id="L208" class="ln">   208  </span>		if err != nil {
+<span id="L209" class="ln">   209  </span>			return err
+<span id="L210" class="ln">   210  </span>		}
+<span id="L211" class="ln">   211  </span>
+<span id="L212" class="ln">   212  </span>		return u.userRepo.Create(ctx, userEntity)
+<span id="L213" class="ln">   213  </span>	})
+<span id="L214" class="ln">   214  </span>	if err != nil {
+<span id="L215" class="ln">   215  </span>		return UserView{}, err
+<span id="L216" class="ln">   216  </span>	}
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>	return toUserView(userEntity, pftName), nil
+<span id="L219" class="ln">   219  </span>}
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span>func (u *usecase) CountUsers(ctx context.Context, active *bool) (int64, error) {
+<span id="L222" class="ln">   222  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L223" class="ln">   223  </span>	defer endSpan()
+<span id="L224" class="ln">   224  </span>	return u.userRepo.CountByActive(ctx, active)
+<span id="L225" class="ln">   225  </span>}
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span>func (u *usecase) ListUsersWithTotal(ctx context.Context, authn *authbd.Authn, active *bool, page *paging.Page) (*UserListView, error) {
+<span id="L228" class="ln">   228  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L229" class="ln">   229  </span>	defer endSpan()
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>	if err := u.authorizeUserCollection(ctx, authn); err != nil {
+<span id="L232" class="ln">   232  </span>		return nil, err
+<span id="L233" class="ln">   233  </span>	}
+<span id="L234" class="ln">   234  </span>
+<span id="L235" class="ln">   235  </span>	items, err := u.listUsers(ctx, active, page)
+<span id="L236" class="ln">   236  </span>	if err != nil {
+<span id="L237" class="ln">   237  </span>		return nil, err
+<span id="L238" class="ln">   238  </span>	}
+<span id="L239" class="ln">   239  </span>	total, err := u.CountUsers(ctx, active)
+<span id="L240" class="ln">   240  </span>	if err != nil {
+<span id="L241" class="ln">   241  </span>		return nil, err
+<span id="L242" class="ln">   242  </span>	}
+<span id="L243" class="ln">   243  </span>	return &amp;UserListView{Items: items, Total: total}, nil
+<span id="L244" class="ln">   244  </span>}
+<span id="L245" class="ln">   245  </span>
+<span id="L246" class="ln">   246  </span>func (u *usecase) ListUsersFeed(ctx context.Context, authn *authbd.Authn, cursor *paging.Cursor) (*UserFeedView, error) {
+<span id="L247" class="ln">   247  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L248" class="ln">   248  </span>	defer endSpan()
+<span id="L249" class="ln">   249  </span>
+<span id="L250" class="ln">   250  </span>	if err := u.authorizeUserCollection(ctx, authn); err != nil {
+<span id="L251" class="ln">   251  </span>		return nil, err
+<span id="L252" class="ln">   252  </span>	}
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>	if cursor == nil {
+<span id="L255" class="ln">   255  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;cursor must not be nil&#34;)
+<span id="L256" class="ln">   256  </span>	}
+<span id="L257" class="ln">   257  </span>
+<span id="L258" class="ln">   258  </span>	after, err := decodeFeedCursor(cursor)
+<span id="L259" class="ln">   259  </span>	if err != nil {
+<span id="L260" class="ln">   260  </span>		return nil, err
+<span id="L261" class="ln">   261  </span>	}
+<span id="L262" class="ln">   262  </span>
+<span id="L263" class="ln">   263  </span>	us, err := u.userRepo.FindFeed(ctx, after, cursor.Limit32()+1)
+<span id="L264" class="ln">   264  </span>	if err != nil {
+<span id="L265" class="ln">   265  </span>		return nil, err
+<span id="L266" class="ln">   266  </span>	}
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>	limit := cursor.Limit()
+<span id="L269" class="ln">   269  </span>	hasNext := len(us) &gt; limit
+<span id="L270" class="ln">   270  </span>	if hasNext {
+<span id="L271" class="ln">   271  </span>		us = us[:limit]
+<span id="L272" class="ln">   272  </span>	}
+<span id="L273" class="ln">   273  </span>
+<span id="L274" class="ln">   274  </span>	items, err := u.toUserViews(ctx, us)
+<span id="L275" class="ln">   275  </span>	if err != nil {
+<span id="L276" class="ln">   276  </span>		return nil, err
+<span id="L277" class="ln">   277  </span>	}
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>	var nextCursor *string
+<span id="L280" class="ln">   280  </span>	if hasNext &amp;&amp; len(us) &gt; 0 {
+<span id="L281" class="ln">   281  </span>		encoded := encodeFeedCursor(us[len(us)-1])
+<span id="L282" class="ln">   282  </span>		nextCursor = &amp;encoded
+<span id="L283" class="ln">   283  </span>	}
+<span id="L284" class="ln">   284  </span>
+<span id="L285" class="ln">   285  </span>	return &amp;UserFeedView{Items: items, NextCursor: nextCursor}, nil
+<span id="L286" class="ln">   286  </span>}
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>func (u *usecase) GetUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID) (UserView, error) {
+<span id="L289" class="ln">   289  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L290" class="ln">   290  </span>	defer endSpan()
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span>	if err := u.authorizeUserAccess(ctx, authn, authz.ActionUserGet, id); err != nil {
+<span id="L293" class="ln">   293  </span>		return UserView{}, err
+<span id="L294" class="ln">   294  </span>	}
+<span id="L295" class="ln">   295  </span>
+<span id="L296" class="ln">   296  </span>	userEntity, err := u.userRepo.FindByID(ctx, id)
+<span id="L297" class="ln">   297  </span>	if err != nil {
+<span id="L298" class="ln">   298  </span>		return UserView{}, err
+<span id="L299" class="ln">   299  </span>	}
+<span id="L300" class="ln">   300  </span>
+<span id="L301" class="ln">   301  </span>	pftDomain, err := u.pftRepo.FindByID(ctx, userEntity.PrefectureID())
+<span id="L302" class="ln">   302  </span>	if err != nil {
+<span id="L303" class="ln">   303  </span>		if xerrors.Is(err, apperror.ErrNotFound) {
+<span id="L304" class="ln">   304  </span>			return UserView{}, errOrphanPrefecture
+<span id="L305" class="ln">   305  </span>		}
+<span id="L306" class="ln">   306  </span>		return UserView{}, err
+<span id="L307" class="ln">   307  </span>	}
+<span id="L308" class="ln">   308  </span>
+<span id="L309" class="ln">   309  </span>	return toUserView(userEntity, pftDomain.Name()), nil
+<span id="L310" class="ln">   310  </span>}
+<span id="L311" class="ln">   311  </span>
+<span id="L312" class="ln">   312  </span>func (u *usecase) UpdateUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID, dto *UpdateProfileParams) (UserView, error) {
+<span id="L313" class="ln">   313  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L314" class="ln">   314  </span>	defer endSpan()
+<span id="L315" class="ln">   315  </span>
+<span id="L316" class="ln">   316  </span>	if err := u.authorizeUserAccess(ctx, authn, authz.ActionUserUpdate, id); err != nil {
+<span id="L317" class="ln">   317  </span>		return UserView{}, err
+<span id="L318" class="ln">   318  </span>	}
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span>	now := u.clock.Now()
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>	var (
+<span id="L323" class="ln">   323  </span>		userEntity *user.User
+<span id="L324" class="ln">   324  </span>		pftName    string
+<span id="L325" class="ln">   325  </span>	)
+<span id="L326" class="ln">   326  </span>	err := u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L327" class="ln">   327  </span>		var err error
+<span id="L328" class="ln">   328  </span>		userEntity, err = u.userRepo.FindByID(ctx, id)
+<span id="L329" class="ln">   329  </span>		if err != nil {
+<span id="L330" class="ln">   330  </span>			return err
+<span id="L331" class="ln">   331  </span>		}
+<span id="L332" class="ln">   332  </span>
+<span id="L333" class="ln">   333  </span>		pftDomain, err := u.pftRepo.FindByName(ctx, dto.PrefectureName)
+<span id="L334" class="ln">   334  </span>		if err != nil {
+<span id="L335" class="ln">   335  </span>			return err
+<span id="L336" class="ln">   336  </span>		}
+<span id="L337" class="ln">   337  </span>		pftName = pftDomain.Name()
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>		if err = userEntity.UpdateProfile(user.Profile{
+<span id="L340" class="ln">   340  </span>			FirstName:    dto.FirstName,
+<span id="L341" class="ln">   341  </span>			LastName:     dto.LastName,
+<span id="L342" class="ln">   342  </span>			Email:        dto.Email,
+<span id="L343" class="ln">   343  </span>			Phone:        dto.Phone,
+<span id="L344" class="ln">   344  </span>			PrefectureID: pftDomain.ID(),
+<span id="L345" class="ln">   345  </span>			City:         dto.City,
+<span id="L346" class="ln">   346  </span>			Street:       dto.Street,
+<span id="L347" class="ln">   347  </span>			Building:     dto.Building,
+<span id="L348" class="ln">   348  </span>			PostalCode:   dto.PostalCode,
+<span id="L349" class="ln">   349  </span>		}, now); err != nil {
+<span id="L350" class="ln">   350  </span>			return err
+<span id="L351" class="ln">   351  </span>		}
+<span id="L352" class="ln">   352  </span>
+<span id="L353" class="ln">   353  </span>		return u.userRepo.Update(ctx, userEntity)
+<span id="L354" class="ln">   354  </span>	})
+<span id="L355" class="ln">   355  </span>	if err != nil {
+<span id="L356" class="ln">   356  </span>		return UserView{}, err
+<span id="L357" class="ln">   357  </span>	}
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>	return toUserView(userEntity, pftName), nil
+<span id="L360" class="ln">   360  </span>}
+<span id="L361" class="ln">   361  </span>
+<span id="L362" class="ln">   362  </span>func (u *usecase) UpdateUserPartially(ctx context.Context, authn *authbd.Authn, id uuid.UUID, dto *PatchParamsDTO) (UserView, error) {
+<span id="L363" class="ln">   363  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L364" class="ln">   364  </span>	defer endSpan()
+<span id="L365" class="ln">   365  </span>
+<span id="L366" class="ln">   366  </span>	if err := u.authorizeUserAccess(ctx, authn, authz.ActionUserUpdate, id); err != nil {
+<span id="L367" class="ln">   367  </span>		return UserView{}, err
+<span id="L368" class="ln">   368  </span>	}
+<span id="L369" class="ln">   369  </span>
+<span id="L370" class="ln">   370  </span>	now := u.clock.Now()
+<span id="L371" class="ln">   371  </span>
+<span id="L372" class="ln">   372  </span>	var (
+<span id="L373" class="ln">   373  </span>		userEntity *user.User
+<span id="L374" class="ln">   374  </span>		pftName    string
+<span id="L375" class="ln">   375  </span>	)
+<span id="L376" class="ln">   376  </span>	err := u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L377" class="ln">   377  </span>		var err error
+<span id="L378" class="ln">   378  </span>		userEntity, err = u.userRepo.FindByID(ctx, id)
+<span id="L379" class="ln">   379  </span>		if err != nil {
+<span id="L380" class="ln">   380  </span>			return err
+<span id="L381" class="ln">   381  </span>		}
+<span id="L382" class="ln">   382  </span>
+<span id="L383" class="ln">   383  </span>		prefectureID := userEntity.PrefectureID()
+<span id="L384" class="ln">   384  </span>		pftDomain, err := u.resolvePatchPrefecture(ctx, dto.PrefectureName, prefectureID)
+<span id="L385" class="ln">   385  </span>		if err != nil {
+<span id="L386" class="ln">   386  </span>			return err
+<span id="L387" class="ln">   387  </span>		}
+<span id="L388" class="ln">   388  </span>		prefectureID = pftDomain.ID()
+<span id="L389" class="ln">   389  </span>		pftName = pftDomain.Name()
+<span id="L390" class="ln">   390  </span>
+<span id="L391" class="ln">   391  </span>		building := userEntity.Building()
+<span id="L392" class="ln">   392  </span>		if dto.Building != nil {
+<span id="L393" class="ln">   393  </span>			building = dto.Building
+<span id="L394" class="ln">   394  </span>		}
+<span id="L395" class="ln">   395  </span>
+<span id="L396" class="ln">   396  </span>		if err = userEntity.UpdateProfile(user.Profile{
+<span id="L397" class="ln">   397  </span>			FirstName:    ptr.Deref(dto.FirstName, userEntity.FirstName()),
+<span id="L398" class="ln">   398  </span>			LastName:     ptr.Deref(dto.LastName, userEntity.LastName()),
+<span id="L399" class="ln">   399  </span>			Email:        ptr.Deref(dto.Email, userEntity.Email()),
+<span id="L400" class="ln">   400  </span>			Phone:        ptr.Deref(dto.Phone, userEntity.Phone()),
+<span id="L401" class="ln">   401  </span>			PrefectureID: prefectureID,
+<span id="L402" class="ln">   402  </span>			City:         ptr.Deref(dto.City, userEntity.City()),
+<span id="L403" class="ln">   403  </span>			Street:       ptr.Deref(dto.Street, userEntity.Street()),
+<span id="L404" class="ln">   404  </span>			Building:     building,
+<span id="L405" class="ln">   405  </span>			PostalCode:   ptr.Deref(dto.PostalCode, userEntity.PostalCode()),
+<span id="L406" class="ln">   406  </span>		}, now); err != nil {
+<span id="L407" class="ln">   407  </span>			return err
+<span id="L408" class="ln">   408  </span>		}
+<span id="L409" class="ln">   409  </span>		return u.userRepo.Update(ctx, userEntity)
+<span id="L410" class="ln">   410  </span>	})
+<span id="L411" class="ln">   411  </span>	if err != nil {
+<span id="L412" class="ln">   412  </span>		return UserView{}, err
+<span id="L413" class="ln">   413  </span>	}
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>	return toUserView(userEntity, pftName), nil
+<span id="L416" class="ln">   416  </span>}
+<span id="L417" class="ln">   417  </span>
+<span id="L418" class="ln">   418  </span>func (u *usecase) DeleteUser(ctx context.Context, authn *authbd.Authn, id uuid.UUID) error {
+<span id="L419" class="ln">   419  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L420" class="ln">   420  </span>	defer endSpan()
+<span id="L421" class="ln">   421  </span>
+<span id="L422" class="ln">   422  </span>	if err := u.authorizeUserAccess(ctx, authn, authz.ActionUserDelete, id); err != nil {
+<span id="L423" class="ln">   423  </span>		return err
+<span id="L424" class="ln">   424  </span>	}
+<span id="L425" class="ln">   425  </span>
+<span id="L426" class="ln">   426  </span>	now := u.clock.Now()
+<span id="L427" class="ln">   427  </span>	<span class="comment">// 論理削除と退会イベントの発行を単一 tx にまとめ、退会だけが成立してイベントが失われることを防ぐ。</span>
+<span id="L428" class="ln">   428  </span>	<span class="comment">// 退会を拒む条件（進行中の購入）も同じ tx で判定し、拒否時は論理削除もイベントも残さない。</span>
+<span id="L429" class="ln">   429  </span>	return u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L430" class="ln">   430  </span>		<span class="comment">// 進行中購入の判定より前に排他ロックを取ることが、購入作成（共有ロック）との直列化の成立条件。</span>
+<span id="L431" class="ln">   431  </span>		<span class="comment">// 判定より後だと「判定通過 → 購入の成立 → 退会の確定」の順序を止められない。</span>
+<span id="L432" class="ln">   432  </span>		userEntity, err := u.userLock.LockByID(ctx, id)
+<span id="L433" class="ln">   433  </span>		if err != nil {
+<span id="L434" class="ln">   434  </span>			return err
+<span id="L435" class="ln">   435  </span>		}
+<span id="L436" class="ln">   436  </span>
+<span id="L437" class="ln">   437  </span>		statuses, err := u.purchaseRepo.FindStatusesByUserID(ctx, id)
+<span id="L438" class="ln">   438  </span>		if err != nil {
+<span id="L439" class="ln">   439  </span>			return err
+<span id="L440" class="ln">   440  </span>		}
+<span id="L441" class="ln">   441  </span>		if err = membership.EnsureWithdrawable(userEntity, statuses); err != nil {
+<span id="L442" class="ln">   442  </span>			return err
+<span id="L443" class="ln">   443  </span>		}
+<span id="L444" class="ln">   444  </span>
+<span id="L445" class="ln">   445  </span>		if err = userEntity.MarkAsDeleted(now); err != nil {
+<span id="L446" class="ln">   446  </span>			return err
+<span id="L447" class="ln">   447  </span>		}
+<span id="L448" class="ln">   448  </span>		if err = u.userRepo.Update(ctx, userEntity); err != nil {
+<span id="L449" class="ln">   449  </span>			return err
+<span id="L450" class="ln">   450  </span>		}
+<span id="L451" class="ln">   451  </span>
+<span id="L452" class="ln">   452  </span>		payload, err := event.BuildWithdrawn(userEntity)
+<span id="L453" class="ln">   453  </span>		if err != nil {
+<span id="L454" class="ln">   454  </span>			return err
+<span id="L455" class="ln">   455  </span>		}
+<span id="L456" class="ln">   456  </span>		_, err = u.emit.Emit(ctx, outbox.EmitInput{
+<span id="L457" class="ln">   457  </span>			AggregateType: aggregateType,
+<span id="L458" class="ln">   458  </span>			AggregateID:   id.String(),
+<span id="L459" class="ln">   459  </span>			EventType:     event.TypeWithdrawn,
+<span id="L460" class="ln">   460  </span>			Payload:       payload,
+<span id="L461" class="ln">   461  </span>			Channel:       outboxbndry.ChannelHTTP,
 <span id="L462" class="ln">   462  </span>		})
 <span id="L463" class="ln">   463  </span>		return err
 <span id="L464" class="ln">   464  </span>	})
@@ -577,56 +577,57 @@
 <span id="L520" class="ln">   520  </span>			}
 <span id="L521" class="ln">   521  </span>
 <span id="L522" class="ln">   522  </span>			return prefectureMap, nil
-<span id="L523" class="ln">   523  </span>		})
-<span id="L524" class="ln">   524  </span>	if err != nil {
-<span id="L525" class="ln">   525  </span>		return nil, err
-<span id="L526" class="ln">   526  </span>	}
-<span id="L527" class="ln">   527  </span>
-<span id="L528" class="ln">   528  </span>	dtos := make([]UserView, len(us))
-<span id="L529" class="ln">   529  </span>	for i, ue := range us {
-<span id="L530" class="ln">   530  </span>		p, ok := prefectureMap[ue.PrefectureID()]
-<span id="L531" class="ln">   531  </span>		if !ok {
-<span id="L532" class="ln">   532  </span>			return nil, errOrphanPrefecture
-<span id="L533" class="ln">   533  </span>		}
-<span id="L534" class="ln">   534  </span>		dtos[i] = toUserView(ue, p.Name())
-<span id="L535" class="ln">   535  </span>	}
-<span id="L536" class="ln">   536  </span>
-<span id="L537" class="ln">   537  </span>	return dtos, nil
-<span id="L538" class="ln">   538  </span>}
-<span id="L539" class="ln">   539  </span>
-<span id="L540" class="ln">   540  </span><span class="comment">// resolvePatchPrefecture は、部分更新時の都道府県を解決します。</span>
-<span id="L541" class="ln">   541  </span><span class="comment">// 名前指定があれば名前で解決（入力エラーは伝播）、なければ既存 ID で解決します（未解決は参照整合性破れ）。</span>
-<span id="L542" class="ln">   542  </span>func (u *usecase) resolvePatchPrefecture(ctx context.Context, name *string, currentID uuid.UUID) (*prefecture.Prefecture, error) {
-<span id="L543" class="ln">   543  </span>	if name != nil {
-<span id="L544" class="ln">   544  </span>		return u.pftRepo.FindByName(ctx, *name)
-<span id="L545" class="ln">   545  </span>	}
-<span id="L546" class="ln">   546  </span>	pftDomain, err := u.pftRepo.FindByID(ctx, currentID)
-<span id="L547" class="ln">   547  </span>	if xerrors.Is(err, apperror.ErrNotFound) {
-<span id="L548" class="ln">   548  </span>		return nil, errOrphanPrefecture
-<span id="L549" class="ln">   549  </span>	}
-<span id="L550" class="ln">   550  </span>	if err != nil {
-<span id="L551" class="ln">   551  </span>		return nil, err
-<span id="L552" class="ln">   552  </span>	}
-<span id="L553" class="ln">   553  </span>	return pftDomain, nil
-<span id="L554" class="ln">   554  </span>}
-<span id="L555" class="ln">   555  </span>
-<span id="L556" class="ln">   556  </span><span class="comment">// toUserView は、ユーザーエンティティと都道府県名から DTO を構築します。</span>
-<span id="L557" class="ln">   557  </span>func toUserView(u *user.User, prefectureName string) UserView {
-<span id="L558" class="ln">   558  </span>	return UserView{
-<span id="L559" class="ln">   559  </span>		ID:             u.ID(),
-<span id="L560" class="ln">   560  </span>		FirstName:      u.FirstName(),
-<span id="L561" class="ln">   561  </span>		LastName:       u.LastName(),
-<span id="L562" class="ln">   562  </span>		Email:          u.Email(),
-<span id="L563" class="ln">   563  </span>		Phone:          u.Phone(),
-<span id="L564" class="ln">   564  </span>		PostalCode:     u.PostalCode(),
-<span id="L565" class="ln">   565  </span>		PrefectureName: prefectureName,
-<span id="L566" class="ln">   566  </span>		City:           u.City(),
-<span id="L567" class="ln">   567  </span>		Street:         u.Street(),
-<span id="L568" class="ln">   568  </span>		Building:       u.Building(),
-<span id="L569" class="ln">   569  </span>		DeletedAt:      u.DeletedAt(),
-<span id="L570" class="ln">   570  </span>	}
-<span id="L571" class="ln">   571  </span>}
-<span id="L572" class="ln">   572  </span>
+<span id="L523" class="ln">   523  </span>		},
+<span id="L524" class="ln">   524  </span>	)
+<span id="L525" class="ln">   525  </span>	if err != nil {
+<span id="L526" class="ln">   526  </span>		return nil, err
+<span id="L527" class="ln">   527  </span>	}
+<span id="L528" class="ln">   528  </span>
+<span id="L529" class="ln">   529  </span>	dtos := make([]UserView, len(us))
+<span id="L530" class="ln">   530  </span>	for i, ue := range us {
+<span id="L531" class="ln">   531  </span>		p, ok := prefectureMap[ue.PrefectureID()]
+<span id="L532" class="ln">   532  </span>		if !ok {
+<span id="L533" class="ln">   533  </span>			return nil, errOrphanPrefecture
+<span id="L534" class="ln">   534  </span>		}
+<span id="L535" class="ln">   535  </span>		dtos[i] = toUserView(ue, p.Name())
+<span id="L536" class="ln">   536  </span>	}
+<span id="L537" class="ln">   537  </span>
+<span id="L538" class="ln">   538  </span>	return dtos, nil
+<span id="L539" class="ln">   539  </span>}
+<span id="L540" class="ln">   540  </span>
+<span id="L541" class="ln">   541  </span><span class="comment">// resolvePatchPrefecture は、部分更新時の都道府県を解決します。</span>
+<span id="L542" class="ln">   542  </span><span class="comment">// 名前指定があれば名前で解決（入力エラーは伝播）、なければ既存 ID で解決します（未解決は参照整合性破れ）。</span>
+<span id="L543" class="ln">   543  </span>func (u *usecase) resolvePatchPrefecture(ctx context.Context, name *string, currentID uuid.UUID) (*prefecture.Prefecture, error) {
+<span id="L544" class="ln">   544  </span>	if name != nil {
+<span id="L545" class="ln">   545  </span>		return u.pftRepo.FindByName(ctx, *name)
+<span id="L546" class="ln">   546  </span>	}
+<span id="L547" class="ln">   547  </span>	pftDomain, err := u.pftRepo.FindByID(ctx, currentID)
+<span id="L548" class="ln">   548  </span>	if xerrors.Is(err, apperror.ErrNotFound) {
+<span id="L549" class="ln">   549  </span>		return nil, errOrphanPrefecture
+<span id="L550" class="ln">   550  </span>	}
+<span id="L551" class="ln">   551  </span>	if err != nil {
+<span id="L552" class="ln">   552  </span>		return nil, err
+<span id="L553" class="ln">   553  </span>	}
+<span id="L554" class="ln">   554  </span>	return pftDomain, nil
+<span id="L555" class="ln">   555  </span>}
+<span id="L556" class="ln">   556  </span>
+<span id="L557" class="ln">   557  </span><span class="comment">// toUserView は、ユーザーエンティティと都道府県名から DTO を構築します。</span>
+<span id="L558" class="ln">   558  </span>func toUserView(u *user.User, prefectureName string) UserView {
+<span id="L559" class="ln">   559  </span>	return UserView{
+<span id="L560" class="ln">   560  </span>		ID:             u.ID(),
+<span id="L561" class="ln">   561  </span>		FirstName:      u.FirstName(),
+<span id="L562" class="ln">   562  </span>		LastName:       u.LastName(),
+<span id="L563" class="ln">   563  </span>		Email:          u.Email(),
+<span id="L564" class="ln">   564  </span>		Phone:          u.Phone(),
+<span id="L565" class="ln">   565  </span>		PostalCode:     u.PostalCode(),
+<span id="L566" class="ln">   566  </span>		PrefectureName: prefectureName,
+<span id="L567" class="ln">   567  </span>		City:           u.City(),
+<span id="L568" class="ln">   568  </span>		Street:         u.Street(),
+<span id="L569" class="ln">   569  </span>		Building:       u.Building(),
+<span id="L570" class="ln">   570  </span>		DeletedAt:      u.DeletedAt(),
+<span id="L571" class="ln">   571  </span>	}
+<span id="L572" class="ln">   572  </span>}
+<span id="L573" class="ln">   573  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

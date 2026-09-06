@@ -1,0 +1,271 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>redaction - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package redaction
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/controller/httpstack/redaction&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package redaction は、ログへ出す前にリクエスト URI と query から資格情報の値を取り除きます。
+秘匿する名前は OpenAPI の securityScheme（query の apiKey）から導出し、名前を Go 側に持ちません。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+			
+				
+				<dd><a href="#SecretQueryParamNames">func SecretQueryParamNames(spec *openapi3.T) []string</a></dd>
+			
+			
+				
+				<dd><a href="#Redactor">type Redactor</a></dd>
+				
+					
+					<dd>    <a href="#FromSpec">func FromSpec(spec *openapi3.T) Redactor</a></dd>
+				
+					
+					<dd>    <a href="#New">func New(names []string) Redactor</a></dd>
+				
+				
+					
+					<dd>    <a href="#Redactor.QueryParams">func (r Redactor) QueryParams(params map[string][]string) map[string][]string</a></dd>
+				
+					
+					<dd>    <a href="#Redactor.URI">func (r Redactor) URI(raw string) string</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/controller/httpstack/redaction/redaction.go.html">redaction.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<p>RedactedValue は、秘匿した値の代わりにログへ残す文字列です。
+
+				</p><pre>const <span id="RedactedValue">RedactedValue</span> = &#34;[REDACTED]&#34;</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="SecretQueryParamNames">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/redaction/redaction.go.html?s=1371:1424#L31">SecretQueryParamNames</a>
+				<a class="permalink" href="#SecretQueryParamNames">¶</a>
+				
+				
+			</h2>
+			<pre>func SecretQueryParamNames(spec *<a href="../../../../../github.com/getkin/kin-openapi/openapi3/">openapi3</a>.<a href="../../../../../github.com/getkin/kin-openapi/openapi3/#T">T</a>) []<a href="../../../../../builtin/#string">string</a></pre>
+			<p>SecretQueryParamNames は、spec の securityScheme のうち query で受け取る apiKey のパラメータ名を名前順で返します。
+
+			
+			
+
+		
+		
+			
+			
+			</p><h2 id="Redactor">type <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/redaction/redaction.go.html?s=704:755#L12">Redactor</a>
+				<a class="permalink" href="#Redactor">¶</a>
+				
+				
+			</h2>
+			<p>Redactor は、秘匿対象の query パラメータの値を RedactedValue へ置き換えます。ゼロ値は何も秘匿しません。
+
+			</p><pre>type Redactor struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="FromSpec">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/redaction/redaction.go.html?s=1138:1178#L26">FromSpec</a>
+					<a class="permalink" href="#FromSpec">¶</a>
+					
+					
+				</h3>
+				<pre>func FromSpec(spec *<a href="../../../../../github.com/getkin/kin-openapi/openapi3/">openapi3</a>.<a href="../../../../../github.com/getkin/kin-openapi/openapi3/#T">T</a>) <a href="#Redactor">Redactor</a></pre>
+				<p>FromSpec は、spec の securityScheme のうち query で受け取る apiKey の名前を秘匿対象とする Redactor を返します。
+
+				
+				
+			
+				
+				</p><h3 id="New">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/redaction/redaction.go.html?s=829:862#L17">New</a>
+					<a class="permalink" href="#New">¶</a>
+					
+					
+				</h3>
+				<pre>func New(names []<a href="../../../../../builtin/#string">string</a>) <a href="#Redactor">Redactor</a></pre>
+				<p>New は、names を秘匿対象とする Redactor を返します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Redactor.QueryParams">func (Redactor) <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/redaction/redaction.go.html?s=3011:3088#L83">QueryParams</a>
+					<a class="permalink" href="#Redactor.QueryParams">¶</a>
+					
+					
+				</h3>
+				<pre>func (r <a href="#Redactor">Redactor</a>) QueryParams(params map[<a href="../../../../../builtin/#string">string</a>][]<a href="../../../../../builtin/#string">string</a>) map[<a href="../../../../../builtin/#string">string</a>][]<a href="../../../../../builtin/#string">string</a></pre>
+				<p>QueryParams は、秘匿対象パラメータの値を RedactedValue へ置き換えた map を返します。元の map は変更しません。
+秘匿対象が 1 つも無い場合は params をそのまま返すため、返り値が複製であることは保証しません。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Redactor.URI">func (Redactor) <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/redaction/redaction.go.html?s=2213:2253#L53">URI</a>
+					<a class="permalink" href="#Redactor.URI">¶</a>
+					
+					
+				</h3>
+				<pre>func (r <a href="#Redactor">Redactor</a>) URI(raw <a href="../../../../../builtin/#string">string</a>) <a href="../../../../../builtin/#string">string</a></pre>
+				<p>URI は、raw（path と query を含むリクエスト URI）から秘匿対象パラメータの値を取り除いた文字列を返します。
+query の並びと符号化はそのまま保ちます。標準の構文解析が受け付けない query（`;` 区切りや壊れた符号化）は
+組ごとに判定できないため、query 全体を置き換えます（fail-closed）。
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

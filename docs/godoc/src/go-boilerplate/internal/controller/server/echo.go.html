@@ -60,61 +60,62 @@
 <span id="L3" class="ln">     3  </span>import (
 <span id="L4" class="ln">     4  </span>	&#34;time&#34;
 <span id="L5" class="ln">     5  </span>
-<span id="L6" class="ln">     6  </span>	&#34;go-boilerplate/internal/logging&#34;
-<span id="L7" class="ln">     7  </span>
-<span id="L8" class="ln">     8  </span>	&#34;github.com/labstack/echo/v5&#34;
-<span id="L9" class="ln">     9  </span>)
-<span id="L10" class="ln">    10  </span>
-<span id="L11" class="ln">    11  </span><span class="comment">// BuildHTTPRequestLogInput は、Echo コンテキストから HTTP リクエストのログ入力を組み立てます（エラー/リカバリ経路の共通生成点）。</span>
-<span id="L12" class="ln">    12  </span><span class="comment">// eventType には呼び出し経路に応じたイベント種別（logging.EventTypeError / EventTypePanic 等）を渡す。</span>
-<span id="L13" class="ln">    13  </span>func BuildHTTPRequestLogInput(c *echo.Context, eventType string) logging.HTTPRequestLogInput {
-<span id="L14" class="ln">    14  </span>	req := c.Request()
-<span id="L15" class="ln">    15  </span>	return logging.HTTPRequestLogInput{
-<span id="L16" class="ln">    16  </span>		EventType:     eventType,
-<span id="L17" class="ln">    17  </span>		EventAt:       time.Now(),
-<span id="L18" class="ln">    18  </span>		Method:        req.Method,
-<span id="L19" class="ln">    19  </span>		Path:          c.Path(),
-<span id="L20" class="ln">    20  </span>		URI:           req.RequestURI,
-<span id="L21" class="ln">    21  </span>		RemoteIP:      c.RealIP(),
-<span id="L22" class="ln">    22  </span>		Host:          req.Host,
-<span id="L23" class="ln">    23  </span>		Scheme:        c.Scheme(),
-<span id="L24" class="ln">    24  </span>		Proto:         req.Proto,
-<span id="L25" class="ln">    25  </span>		UserAgent:     req.UserAgent(),
-<span id="L26" class="ln">    26  </span>		ContentType:   req.Header.Get(echo.HeaderContentType),
-<span id="L27" class="ln">    27  </span>		ContentLength: req.ContentLength,
-<span id="L28" class="ln">    28  </span>		QueryParams:   ExtractQueryParams(c),
-<span id="L29" class="ln">    29  </span>		PathParams:    ExtractPathParams(c),
-<span id="L30" class="ln">    30  </span>	}
-<span id="L31" class="ln">    31  </span>}
-<span id="L32" class="ln">    32  </span>
-<span id="L33" class="ln">    33  </span><span class="comment">// ExtractPathParams は、Echoコンテキストからパスパラメータを抽出します。</span>
-<span id="L34" class="ln">    34  </span>func ExtractPathParams(c *echo.Context) map[string]string {
-<span id="L35" class="ln">    35  </span>	values := c.PathValues()
-<span id="L36" class="ln">    36  </span>	m := make(map[string]string, len(values))
-<span id="L37" class="ln">    37  </span>	for _, v := range values {
-<span id="L38" class="ln">    38  </span>		m[v.Name] = v.Value
-<span id="L39" class="ln">    39  </span>	}
-<span id="L40" class="ln">    40  </span>	return m
-<span id="L41" class="ln">    41  </span>}
-<span id="L42" class="ln">    42  </span>
-<span id="L43" class="ln">    43  </span><span class="comment">// ExtractQueryParams は、Echoコンテキストからクエリパラメータを抽出します。</span>
-<span id="L44" class="ln">    44  </span>func ExtractQueryParams(c *echo.Context) map[string][]string {
-<span id="L45" class="ln">    45  </span>	<span class="comment">// URL.Query() は呼び出し毎に新規 map を返すため、防御的コピーは不要。</span>
-<span id="L46" class="ln">    46  </span>	return c.Request().URL.Query()
-<span id="L47" class="ln">    47  </span>}
-<span id="L48" class="ln">    48  </span>
-<span id="L49" class="ln">    49  </span><span class="comment">// ResponseOf は、Echo コンテキストから [echo.Response] を取り出します。</span>
-<span id="L50" class="ln">    50  </span><span class="comment">// Echo v5 の Context.Response() は http.ResponseWriter を返すため、</span>
-<span id="L51" class="ln">    51  </span><span class="comment">// ステータスや Before/After フックを扱うにはこの unwrap が要ります。</span>
-<span id="L52" class="ln">    52  </span><span class="comment">// レスポンスライタが Echo のレスポンスへ辿れない場合は nil を返します。</span>
-<span id="L53" class="ln">    53  </span>func ResponseOf(c *echo.Context) *echo.Response {
-<span id="L54" class="ln">    54  </span>	res, err := echo.UnwrapResponse(c.Response())
-<span id="L55" class="ln">    55  </span>	if err != nil {
-<span id="L56" class="ln">    56  </span>		return nil
-<span id="L57" class="ln">    57  </span>	}
-<span id="L58" class="ln">    58  </span>	return res
-<span id="L59" class="ln">    59  </span>}
-<span id="L60" class="ln">    60  </span>
+<span id="L6" class="ln">     6  </span>	&#34;go-boilerplate/internal/controller/httpstack/redaction&#34;
+<span id="L7" class="ln">     7  </span>	&#34;go-boilerplate/internal/logging&#34;
+<span id="L8" class="ln">     8  </span>
+<span id="L9" class="ln">     9  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L10" class="ln">    10  </span>)
+<span id="L11" class="ln">    11  </span>
+<span id="L12" class="ln">    12  </span><span class="comment">// BuildHTTPRequestLogInput は、Echo コンテキストから HTTP リクエストのログ入力を組み立てます。</span>
+<span id="L13" class="ln">    13  </span><span class="comment">// eventType には呼び出し経路に応じたイベント種別（logging.EventTypeError / EventTypePanic 等）を渡す。</span>
+<span id="L14" class="ln">    14  </span>func BuildHTTPRequestLogInput(c *echo.Context, eventType string, red redaction.Redactor) logging.HTTPRequestLogInput {
+<span id="L15" class="ln">    15  </span>	req := c.Request()
+<span id="L16" class="ln">    16  </span>	return logging.HTTPRequestLogInput{
+<span id="L17" class="ln">    17  </span>		EventType:     eventType,
+<span id="L18" class="ln">    18  </span>		EventAt:       time.Now(),
+<span id="L19" class="ln">    19  </span>		Method:        req.Method,
+<span id="L20" class="ln">    20  </span>		Path:          c.Path(),
+<span id="L21" class="ln">    21  </span>		URI:           red.URI(req.RequestURI),
+<span id="L22" class="ln">    22  </span>		RemoteIP:      c.RealIP(),
+<span id="L23" class="ln">    23  </span>		Host:          req.Host,
+<span id="L24" class="ln">    24  </span>		Scheme:        c.Scheme(),
+<span id="L25" class="ln">    25  </span>		Proto:         req.Proto,
+<span id="L26" class="ln">    26  </span>		UserAgent:     req.UserAgent(),
+<span id="L27" class="ln">    27  </span>		ContentType:   req.Header.Get(echo.HeaderContentType),
+<span id="L28" class="ln">    28  </span>		ContentLength: req.ContentLength,
+<span id="L29" class="ln">    29  </span>		QueryParams:   red.QueryParams(ExtractQueryParams(c)),
+<span id="L30" class="ln">    30  </span>		PathParams:    ExtractPathParams(c),
+<span id="L31" class="ln">    31  </span>	}
+<span id="L32" class="ln">    32  </span>}
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span><span class="comment">// ExtractPathParams は、Echoコンテキストからパスパラメータを抽出します。</span>
+<span id="L35" class="ln">    35  </span>func ExtractPathParams(c *echo.Context) map[string]string {
+<span id="L36" class="ln">    36  </span>	values := c.PathValues()
+<span id="L37" class="ln">    37  </span>	m := make(map[string]string, len(values))
+<span id="L38" class="ln">    38  </span>	for _, v := range values {
+<span id="L39" class="ln">    39  </span>		m[v.Name] = v.Value
+<span id="L40" class="ln">    40  </span>	}
+<span id="L41" class="ln">    41  </span>	return m
+<span id="L42" class="ln">    42  </span>}
+<span id="L43" class="ln">    43  </span>
+<span id="L44" class="ln">    44  </span><span class="comment">// ExtractQueryParams は、Echoコンテキストからクエリパラメータを抽出します。</span>
+<span id="L45" class="ln">    45  </span>func ExtractQueryParams(c *echo.Context) map[string][]string {
+<span id="L46" class="ln">    46  </span>	<span class="comment">// URL.Query() は呼び出し毎に新規 map を返すため、防御的コピーは不要。</span>
+<span id="L47" class="ln">    47  </span>	return c.Request().URL.Query()
+<span id="L48" class="ln">    48  </span>}
+<span id="L49" class="ln">    49  </span>
+<span id="L50" class="ln">    50  </span><span class="comment">// ResponseOf は、Echo コンテキストから [echo.Response] を取り出します。</span>
+<span id="L51" class="ln">    51  </span><span class="comment">// Echo v5 の Context.Response() は http.ResponseWriter を返すため、</span>
+<span id="L52" class="ln">    52  </span><span class="comment">// ステータスや Before/After フックを扱うにはこの unwrap が要ります。</span>
+<span id="L53" class="ln">    53  </span><span class="comment">// レスポンスライタが Echo のレスポンスへ辿れない場合は nil を返します。</span>
+<span id="L54" class="ln">    54  </span>func ResponseOf(c *echo.Context) *echo.Response {
+<span id="L55" class="ln">    55  </span>	res, err := echo.UnwrapResponse(c.Response())
+<span id="L56" class="ln">    56  </span>	if err != nil {
+<span id="L57" class="ln">    57  </span>		return nil
+<span id="L58" class="ln">    58  </span>	}
+<span id="L59" class="ln">    59  </span>	return res
+<span id="L60" class="ln">    60  </span>}
+<span id="L61" class="ln">    61  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/controller/server/echo.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

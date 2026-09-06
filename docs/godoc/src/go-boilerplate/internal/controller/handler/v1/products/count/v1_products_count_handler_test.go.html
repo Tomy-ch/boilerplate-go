@@ -123,95 +123,96 @@
 <span id="L66" class="ln">    66  </span>					require.NotNil(t, params.MaxQuantity)
 <span id="L67" class="ln">    67  </span>					assert.Equal(t, int32(20), *params.MaxQuantity)
 <span id="L68" class="ln">    68  </span>					return productuc.ProductCountView{Count: 4}, nil
-<span id="L69" class="ln">    69  </span>				})
-<span id="L70" class="ln">    70  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
-<span id="L71" class="ln">    71  </span>
-<span id="L72" class="ln">    72  </span>			resp, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{
-<span id="L73" class="ln">    73  </span>				Params: gen.GetProductsCountParams{
-<span id="L74" class="ln">    74  </span>					CategoryId: ptr.To(categoryID.ToPrimitive()), StatusId: ptr.To(statusID.ToPrimitive()),
-<span id="L75" class="ln">    75  </span>					Keyword:  ptr.To(&#34;phone&#34;),
-<span id="L76" class="ln">    76  </span>					MinPrice: ptr.To(&#34;10.50&#34;), MaxPrice: ptr.To(&#34;99.99&#34;),
-<span id="L77" class="ln">    77  </span>					MinQuantity: ptr.To[int32](2), MaxQuantity: ptr.To[int32](20),
-<span id="L78" class="ln">    78  </span>				},
-<span id="L79" class="ln">    79  </span>			})
-<span id="L80" class="ln">    80  </span>
-<span id="L81" class="ln">    81  </span>			require.NoError(t, err)
-<span id="L82" class="ln">    82  </span>			actual, ok := resp.(gen.GetProductsCount200JSONResponse)
-<span id="L83" class="ln">    83  </span>			require.True(t, ok)
-<span id="L84" class="ln">    84  </span>			assert.Equal(t, int64(4), actual.Count)
-<span id="L85" class="ln">    85  </span>		})
-<span id="L86" class="ln">    86  </span>		t.Run(&#34;categoryCodesとstatusCodesがUsecaseへ引き渡される&#34;, func(t *testing.T) {
-<span id="L87" class="ln">    87  </span>			t.Parallel()
-<span id="L88" class="ln">    88  </span>
-<span id="L89" class="ln">    89  </span>			<span class="comment">// 2 つは同型なので、取り違えても片方だけの検証では気づけない。値を分けて個別に確かめる。</span>
-<span id="L90" class="ln">    90  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
-<span id="L91" class="ln">    91  </span>			mockUC.EXPECT().CountProducts(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L92" class="ln">    92  </span>				func(_ context.Context, _ *auth.Authn, params productuc.CountProductsParams) (productuc.ProductCountView, error) {
-<span id="L93" class="ln">    93  </span>					assert.Equal(t, []int16{1, 2}, params.CategoryCodes)
-<span id="L94" class="ln">    94  </span>					assert.Equal(t, []int16{7}, params.StatusCodes)
-<span id="L95" class="ln">    95  </span>					return productuc.ProductCountView{Count: 3}, nil
-<span id="L96" class="ln">    96  </span>				},
-<span id="L97" class="ln">    97  </span>			)
-<span id="L98" class="ln">    98  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
-<span id="L99" class="ln">    99  </span>			categoryCodes := gen.CategoryCodesParam{1, 2}
-<span id="L100" class="ln">   100  </span>			statusCodes := gen.StatusCodesParam{7}
-<span id="L101" class="ln">   101  </span>
-<span id="L102" class="ln">   102  </span>			actual, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{
-<span id="L103" class="ln">   103  </span>				Params: gen.GetProductsCountParams{CategoryCodes: &amp;categoryCodes, StatusCodes: &amp;statusCodes},
-<span id="L104" class="ln">   104  </span>			})
-<span id="L105" class="ln">   105  </span>			require.NoError(t, err)
-<span id="L106" class="ln">   106  </span>			assert.Equal(t, gen.GetProductsCount200JSONResponse(gen.ProductCountResponse{Count: 3}), actual)
-<span id="L107" class="ln">   107  </span>		})
-<span id="L108" class="ln">   108  </span>	})
-<span id="L109" class="ln">   109  </span>
-<span id="L110" class="ln">   110  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L111" class="ln">   111  </span>		t.Parallel()
-<span id="L112" class="ln">   112  </span>
-<span id="L113" class="ln">   113  </span>		t.Run(&#34;categoryCodesがint16の範囲を超える場合、ErrOverflowを返す&#34;, func(t *testing.T) {
-<span id="L114" class="ln">   114  </span>			t.Parallel()
-<span id="L115" class="ln">   115  </span>
-<span id="L116" class="ln">   116  </span>			<span class="comment">// spec の maximum が先に弾くため通常は到達しないが、spec を迂回した呼び出しでは</span>
-<span id="L117" class="ln">   117  </span>			<span class="comment">// 切り捨てずに落ちることがこの経路の契約。</span>
-<span id="L118" class="ln">   118  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
-<span id="L119" class="ln">   119  </span>			mockUC.EXPECT().CountProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L120" class="ln">   120  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
-<span id="L121" class="ln">   121  </span>			codes := gen.CategoryCodesParam{math.MaxInt16 + 1}
-<span id="L122" class="ln">   122  </span>
-<span id="L123" class="ln">   123  </span>			_, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{
-<span id="L124" class="ln">   124  </span>				Params: gen.GetProductsCountParams{CategoryCodes: &amp;codes},
-<span id="L125" class="ln">   125  </span>			})
-<span id="L126" class="ln">   126  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
-<span id="L127" class="ln">   127  </span>		})
-<span id="L128" class="ln">   128  </span>
-<span id="L129" class="ln">   129  </span>		t.Run(&#34;statusCodesがint16の範囲を超える場合、ErrOverflowを返す&#34;, func(t *testing.T) {
-<span id="L130" class="ln">   130  </span>			t.Parallel()
-<span id="L131" class="ln">   131  </span>
-<span id="L132" class="ln">   132  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
-<span id="L133" class="ln">   133  </span>			mockUC.EXPECT().CountProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L134" class="ln">   134  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
-<span id="L135" class="ln">   135  </span>			codes := gen.StatusCodesParam{math.MaxInt16 + 1}
-<span id="L136" class="ln">   136  </span>
-<span id="L137" class="ln">   137  </span>			_, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{
-<span id="L138" class="ln">   138  </span>				Params: gen.GetProductsCountParams{StatusCodes: &amp;codes},
-<span id="L139" class="ln">   139  </span>			})
-<span id="L140" class="ln">   140  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
-<span id="L141" class="ln">   141  </span>		})
-<span id="L142" class="ln">   142  </span>
-<span id="L143" class="ln">   143  </span>		t.Run(&#34;Usecaseのエラーを伝播する&#34;, func(t *testing.T) {
-<span id="L144" class="ln">   144  </span>			t.Parallel()
-<span id="L145" class="ln">   145  </span>
-<span id="L146" class="ln">   146  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
-<span id="L147" class="ln">   147  </span>			mockUC.EXPECT().CountProducts(gomock.Any(), gomock.Any(), gomock.Any()).Return(productuc.ProductCountView{}, apperror.ErrInternal)
-<span id="L148" class="ln">   148  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
-<span id="L149" class="ln">   149  </span>
-<span id="L150" class="ln">   150  </span>			resp, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{})
-<span id="L151" class="ln">   151  </span>
-<span id="L152" class="ln">   152  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
-<span id="L153" class="ln">   153  </span>			assert.Nil(t, resp)
-<span id="L154" class="ln">   154  </span>		})
-<span id="L155" class="ln">   155  </span>	})
-<span id="L156" class="ln">   156  </span>}
-<span id="L157" class="ln">   157  </span>
+<span id="L69" class="ln">    69  </span>				},
+<span id="L70" class="ln">    70  </span>			)
+<span id="L71" class="ln">    71  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
+<span id="L72" class="ln">    72  </span>
+<span id="L73" class="ln">    73  </span>			resp, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{
+<span id="L74" class="ln">    74  </span>				Params: gen.GetProductsCountParams{
+<span id="L75" class="ln">    75  </span>					CategoryId: ptr.To(categoryID.ToPrimitive()), StatusId: ptr.To(statusID.ToPrimitive()),
+<span id="L76" class="ln">    76  </span>					Keyword:  ptr.To(&#34;phone&#34;),
+<span id="L77" class="ln">    77  </span>					MinPrice: ptr.To(&#34;10.50&#34;), MaxPrice: ptr.To(&#34;99.99&#34;),
+<span id="L78" class="ln">    78  </span>					MinQuantity: ptr.To[int32](2), MaxQuantity: ptr.To[int32](20),
+<span id="L79" class="ln">    79  </span>				},
+<span id="L80" class="ln">    80  </span>			})
+<span id="L81" class="ln">    81  </span>
+<span id="L82" class="ln">    82  </span>			require.NoError(t, err)
+<span id="L83" class="ln">    83  </span>			actual, ok := resp.(gen.GetProductsCount200JSONResponse)
+<span id="L84" class="ln">    84  </span>			require.True(t, ok)
+<span id="L85" class="ln">    85  </span>			assert.Equal(t, int64(4), actual.Count)
+<span id="L86" class="ln">    86  </span>		})
+<span id="L87" class="ln">    87  </span>		t.Run(&#34;categoryCodesとstatusCodesがUsecaseへ引き渡される&#34;, func(t *testing.T) {
+<span id="L88" class="ln">    88  </span>			t.Parallel()
+<span id="L89" class="ln">    89  </span>
+<span id="L90" class="ln">    90  </span>			<span class="comment">// 2 つは同型なので、取り違えても片方だけの検証では気づけない。値を分けて個別に確かめる。</span>
+<span id="L91" class="ln">    91  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
+<span id="L92" class="ln">    92  </span>			mockUC.EXPECT().CountProducts(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L93" class="ln">    93  </span>				func(_ context.Context, _ *auth.Authn, params productuc.CountProductsParams) (productuc.ProductCountView, error) {
+<span id="L94" class="ln">    94  </span>					assert.Equal(t, []int16{1, 2}, params.CategoryCodes)
+<span id="L95" class="ln">    95  </span>					assert.Equal(t, []int16{7}, params.StatusCodes)
+<span id="L96" class="ln">    96  </span>					return productuc.ProductCountView{Count: 3}, nil
+<span id="L97" class="ln">    97  </span>				},
+<span id="L98" class="ln">    98  </span>			)
+<span id="L99" class="ln">    99  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
+<span id="L100" class="ln">   100  </span>			categoryCodes := gen.CategoryCodesParam{1, 2}
+<span id="L101" class="ln">   101  </span>			statusCodes := gen.StatusCodesParam{7}
+<span id="L102" class="ln">   102  </span>
+<span id="L103" class="ln">   103  </span>			actual, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{
+<span id="L104" class="ln">   104  </span>				Params: gen.GetProductsCountParams{CategoryCodes: &amp;categoryCodes, StatusCodes: &amp;statusCodes},
+<span id="L105" class="ln">   105  </span>			})
+<span id="L106" class="ln">   106  </span>			require.NoError(t, err)
+<span id="L107" class="ln">   107  </span>			assert.Equal(t, gen.GetProductsCount200JSONResponse(gen.ProductCountResponse{Count: 3}), actual)
+<span id="L108" class="ln">   108  </span>		})
+<span id="L109" class="ln">   109  </span>	})
+<span id="L110" class="ln">   110  </span>
+<span id="L111" class="ln">   111  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L112" class="ln">   112  </span>		t.Parallel()
+<span id="L113" class="ln">   113  </span>
+<span id="L114" class="ln">   114  </span>		t.Run(&#34;categoryCodesがint16の範囲を超える場合、ErrOverflowを返す&#34;, func(t *testing.T) {
+<span id="L115" class="ln">   115  </span>			t.Parallel()
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>			<span class="comment">// spec の maximum が先に弾くため通常は到達しないが、spec を迂回した呼び出しでは</span>
+<span id="L118" class="ln">   118  </span>			<span class="comment">// 切り捨てずに落ちることがこの経路の契約。</span>
+<span id="L119" class="ln">   119  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
+<span id="L120" class="ln">   120  </span>			mockUC.EXPECT().CountProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L121" class="ln">   121  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
+<span id="L122" class="ln">   122  </span>			codes := gen.CategoryCodesParam{math.MaxInt16 + 1}
+<span id="L123" class="ln">   123  </span>
+<span id="L124" class="ln">   124  </span>			_, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{
+<span id="L125" class="ln">   125  </span>				Params: gen.GetProductsCountParams{CategoryCodes: &amp;codes},
+<span id="L126" class="ln">   126  </span>			})
+<span id="L127" class="ln">   127  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
+<span id="L128" class="ln">   128  </span>		})
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>		t.Run(&#34;statusCodesがint16の範囲を超える場合、ErrOverflowを返す&#34;, func(t *testing.T) {
+<span id="L131" class="ln">   131  </span>			t.Parallel()
+<span id="L132" class="ln">   132  </span>
+<span id="L133" class="ln">   133  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
+<span id="L134" class="ln">   134  </span>			mockUC.EXPECT().CountProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L135" class="ln">   135  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
+<span id="L136" class="ln">   136  </span>			codes := gen.StatusCodesParam{math.MaxInt16 + 1}
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>			_, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{
+<span id="L139" class="ln">   139  </span>				Params: gen.GetProductsCountParams{StatusCodes: &amp;codes},
+<span id="L140" class="ln">   140  </span>			})
+<span id="L141" class="ln">   141  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
+<span id="L142" class="ln">   142  </span>		})
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>		t.Run(&#34;Usecaseのエラーを伝播する&#34;, func(t *testing.T) {
+<span id="L145" class="ln">   145  </span>			t.Parallel()
+<span id="L146" class="ln">   146  </span>
+<span id="L147" class="ln">   147  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
+<span id="L148" class="ln">   148  </span>			mockUC.EXPECT().CountProducts(gomock.Any(), gomock.Any(), gomock.Any()).Return(productuc.ProductCountView{}, apperror.ErrInternal)
+<span id="L149" class="ln">   149  </span>			s := &amp;server{tracer: observability.NewMockControllerLayerTracer(t), uc: mockUC}
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>			resp, err := s.GetProductsCount(context.Background(), gen.GetProductsCountRequestObject{})
+<span id="L152" class="ln">   152  </span>
+<span id="L153" class="ln">   153  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L154" class="ln">   154  </span>			assert.Nil(t, resp)
+<span id="L155" class="ln">   155  </span>		})
+<span id="L156" class="ln">   156  </span>	})
+<span id="L157" class="ln">   157  </span>}
+<span id="L158" class="ln">   158  </span>
 </pre><p><a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/count/v1_products_count_handler_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

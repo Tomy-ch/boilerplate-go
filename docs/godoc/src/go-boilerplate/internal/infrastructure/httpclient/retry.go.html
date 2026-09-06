@@ -92,86 +92,87 @@
 <span id="L35" class="ln">    35  </span>	}
 <span id="L36" class="ln">    36  </span>}
 <span id="L37" class="ln">    37  </span>
-<span id="L38" class="ln">    38  </span><span class="comment">// isRetryableOutcome は、試行結果が retry 対象かを返します。</span>
+<span id="L38" class="ln">    38  </span><span class="comment">// RetryableOutcome は、試行結果が retry 対象かを返します。</span>
 <span id="L39" class="ln">    39  </span><span class="comment">// 5xx / 429 / 応答未取得の transport 失敗は retry 対象、4xx / 成功 / ctx cancel は対象外です。</span>
-<span id="L40" class="ln">    40  </span>func isRetryableOutcome(resp *Response, err error) bool {
-<span id="L41" class="ln">    41  </span>	if err == nil {
-<span id="L42" class="ln">    42  </span>		return false
-<span id="L43" class="ln">    43  </span>	}
-<span id="L44" class="ln">    44  </span>	if xerrors.Is(err, apperror.ErrCanceled) {
-<span id="L45" class="ln">    45  </span>		return false
-<span id="L46" class="ln">    46  </span>	}
-<span id="L47" class="ln">    47  </span>	if resp != nil {
-<span id="L48" class="ln">    48  </span>		return resp.StatusCode == retryableStatusTooManyRequests ||
-<span id="L49" class="ln">    49  </span>			resp.StatusCode &gt;= retryableStatusServerErrorMin
-<span id="L50" class="ln">    50  </span>	}
-<span id="L51" class="ln">    51  </span>	<span class="comment">// レスポンス上限超過は ErrUnavailable(503) だが再試行しても改善しない決定的失敗なので明示除外する</span>
-<span id="L52" class="ln">    52  </span>	<span class="comment">// （HTTP ステータス写像は 503 のまま保ち、retry 可否だけをここで分離する）。</span>
-<span id="L53" class="ln">    53  </span>	if xerrors.Is(err, errResponseTooLarge) {
-<span id="L54" class="ln">    54  </span>		return false
-<span id="L55" class="ln">    55  </span>	}
-<span id="L56" class="ln">    56  </span>	<span class="comment">// 応答未取得は transport 失敗(ErrUnavailable)のみ retry 対象。</span>
-<span id="L57" class="ln">    57  </span>	<span class="comment">// buildRequest 由来の client エラー(ErrInvalidArgument 等)は決定的なので retry しない。</span>
-<span id="L58" class="ln">    58  </span>	return xerrors.Is(err, apperror.ErrUnavailable)
-<span id="L59" class="ln">    59  </span>}
-<span id="L60" class="ln">    60  </span>
-<span id="L61" class="ln">    61  </span><span class="comment">// computeBackoff は、attempt（1 起算）に対する指数バックオフ + full jitter の待機時間を返します。</span>
-<span id="L62" class="ln">    62  </span>func computeBackoff(attempt int, profile Profile) time.Duration {
-<span id="L63" class="ln">    63  </span>	if attempt &lt; 1 {
-<span id="L64" class="ln">    64  </span>		attempt = 1
-<span id="L65" class="ln">    65  </span>	}
-<span id="L66" class="ln">    66  </span>
-<span id="L67" class="ln">    67  </span>	exp := backoff.Exponential{
-<span id="L68" class="ln">    68  </span>		Initial:    profile.BaseBackoff,
-<span id="L69" class="ln">    69  </span>		Max:        profile.MaxBackoff,
-<span id="L70" class="ln">    70  </span>		Multiplier: backoffMultiplier,
-<span id="L71" class="ln">    71  </span>	}
-<span id="L72" class="ln">    72  </span>	return retry.Full(exp.Duration(attempt - 1))
-<span id="L73" class="ln">    73  </span>}
-<span id="L74" class="ln">    74  </span>
-<span id="L75" class="ln">    75  </span><span class="comment">// retryWait は、次の retry までの待機時間を決定します。</span>
-<span id="L76" class="ln">    76  </span><span class="comment">// レスポンスに Retry-After があればそれを優先し、無ければ指数バックオフ + full jitter を用います。</span>
-<span id="L77" class="ln">    77  </span><span class="comment">// Retry-After が過大でも overall deadline 規律（canRetryWithin）が別途打ち切るため、ここでは上限を設けません。</span>
-<span id="L78" class="ln">    78  </span>func retryWait(attempt int, profile Profile, resp *Response, now time.Time) time.Duration {
-<span id="L79" class="ln">    79  </span>	if resp != nil {
-<span id="L80" class="ln">    80  </span>		if d, ok := retryAfter(resp.Header, now); ok {
-<span id="L81" class="ln">    81  </span>			return d
-<span id="L82" class="ln">    82  </span>		}
-<span id="L83" class="ln">    83  </span>	}
-<span id="L84" class="ln">    84  </span>	return computeBackoff(attempt, profile)
-<span id="L85" class="ln">    85  </span>}
-<span id="L86" class="ln">    86  </span>
-<span id="L87" class="ln">    87  </span><span class="comment">// retryAfter は、Retry-After ヘッダ（delay-seconds 形式 / HTTP-date 形式）を解釈し待機時間を返します。</span>
-<span id="L88" class="ln">    88  </span><span class="comment">// 解釈できない / 不在の場合は (0, false) を返し、呼び出し側は通常のバックオフへ fallback します。</span>
-<span id="L89" class="ln">    89  </span>func retryAfter(header Header, now time.Time) (time.Duration, bool) {
-<span id="L90" class="ln">    90  </span>	if header == nil {
-<span id="L91" class="ln">    91  </span>		return 0, false
-<span id="L92" class="ln">    92  </span>	}
-<span id="L93" class="ln">    93  </span>	values, ok := header[retryAfterHeader]
-<span id="L94" class="ln">    94  </span>	if !ok || len(values) == 0 {
-<span id="L95" class="ln">    95  </span>		return 0, false
-<span id="L96" class="ln">    96  </span>	}
-<span id="L97" class="ln">    97  </span>
-<span id="L98" class="ln">    98  </span>	raw := strings.TrimSpace(values[0])
-<span id="L99" class="ln">    99  </span>	if raw == &#34;&#34; {
-<span id="L100" class="ln">   100  </span>		return 0, false
-<span id="L101" class="ln">   101  </span>	}
-<span id="L102" class="ln">   102  </span>
-<span id="L103" class="ln">   103  </span>	<span class="comment">// delay-seconds 形式（非負整数秒）。</span>
-<span id="L104" class="ln">   104  </span>	if secs, err := strconv.Atoi(raw); err == nil {
-<span id="L105" class="ln">   105  </span>		if secs &lt; 0 {
-<span id="L106" class="ln">   106  </span>			return 0, false
-<span id="L107" class="ln">   107  </span>		}
-<span id="L108" class="ln">   108  </span>		return time.Duration(secs) * time.Second, true
-<span id="L109" class="ln">   109  </span>	}
-<span id="L110" class="ln">   110  </span>
-<span id="L111" class="ln">   111  </span>	<span class="comment">// HTTP-date 形式。</span>
-<span id="L112" class="ln">   112  </span>	if at, err := http.ParseTime(raw); err == nil {
-<span id="L113" class="ln">   113  </span>		return max(0, at.Sub(now)), true
-<span id="L114" class="ln">   114  </span>	}
-<span id="L115" class="ln">   115  </span>	return 0, false
-<span id="L116" class="ln">   116  </span>}
-<span id="L117" class="ln">   117  </span>
+<span id="L40" class="ln">    40  </span><span class="comment">// この判定表を持つのはこの関数だけです（公開理由は README の Design Policy を参照）。</span>
+<span id="L41" class="ln">    41  </span>func RetryableOutcome(resp *Response, err error) bool {
+<span id="L42" class="ln">    42  </span>	if err == nil {
+<span id="L43" class="ln">    43  </span>		return false
+<span id="L44" class="ln">    44  </span>	}
+<span id="L45" class="ln">    45  </span>	if xerrors.Is(err, apperror.ErrCanceled) {
+<span id="L46" class="ln">    46  </span>		return false
+<span id="L47" class="ln">    47  </span>	}
+<span id="L48" class="ln">    48  </span>	if resp != nil {
+<span id="L49" class="ln">    49  </span>		return resp.StatusCode == retryableStatusTooManyRequests ||
+<span id="L50" class="ln">    50  </span>			resp.StatusCode &gt;= retryableStatusServerErrorMin
+<span id="L51" class="ln">    51  </span>	}
+<span id="L52" class="ln">    52  </span>	<span class="comment">// レスポンス上限超過は ErrUnavailable(503) だが再試行しても改善しない決定的失敗なので明示除外する</span>
+<span id="L53" class="ln">    53  </span>	<span class="comment">// （HTTP ステータス写像は 503 のまま保ち、retry 可否だけをここで分離する）。</span>
+<span id="L54" class="ln">    54  </span>	if xerrors.Is(err, errResponseTooLarge) {
+<span id="L55" class="ln">    55  </span>		return false
+<span id="L56" class="ln">    56  </span>	}
+<span id="L57" class="ln">    57  </span>	<span class="comment">// 応答未取得は transport 失敗(ErrUnavailable)のみ retry 対象。</span>
+<span id="L58" class="ln">    58  </span>	<span class="comment">// buildRequest 由来の client エラー(ErrInvalidArgument 等)は決定的なので retry しない。</span>
+<span id="L59" class="ln">    59  </span>	return xerrors.Is(err, apperror.ErrUnavailable)
+<span id="L60" class="ln">    60  </span>}
+<span id="L61" class="ln">    61  </span>
+<span id="L62" class="ln">    62  </span><span class="comment">// computeBackoff は、attempt（1 起算）に対する指数バックオフ + full jitter の待機時間を返します。</span>
+<span id="L63" class="ln">    63  </span>func computeBackoff(attempt int, profile Profile) time.Duration {
+<span id="L64" class="ln">    64  </span>	if attempt &lt; 1 {
+<span id="L65" class="ln">    65  </span>		attempt = 1
+<span id="L66" class="ln">    66  </span>	}
+<span id="L67" class="ln">    67  </span>
+<span id="L68" class="ln">    68  </span>	exp := backoff.Exponential{
+<span id="L69" class="ln">    69  </span>		Initial:    profile.BaseBackoff,
+<span id="L70" class="ln">    70  </span>		Max:        profile.MaxBackoff,
+<span id="L71" class="ln">    71  </span>		Multiplier: backoffMultiplier,
+<span id="L72" class="ln">    72  </span>	}
+<span id="L73" class="ln">    73  </span>	return retry.Full(exp.Duration(attempt - 1))
+<span id="L74" class="ln">    74  </span>}
+<span id="L75" class="ln">    75  </span>
+<span id="L76" class="ln">    76  </span><span class="comment">// retryWait は、次の retry までの待機時間を決定します。</span>
+<span id="L77" class="ln">    77  </span><span class="comment">// レスポンスに Retry-After があればそれを優先し、無ければ指数バックオフ + full jitter を用います。</span>
+<span id="L78" class="ln">    78  </span><span class="comment">// Retry-After が過大でも overall deadline 規律（canRetryWithin）が別途打ち切るため、ここでは上限を設けません。</span>
+<span id="L79" class="ln">    79  </span>func retryWait(attempt int, profile Profile, resp *Response, now time.Time) time.Duration {
+<span id="L80" class="ln">    80  </span>	if resp != nil {
+<span id="L81" class="ln">    81  </span>		if d, ok := retryAfter(resp.Header, now); ok {
+<span id="L82" class="ln">    82  </span>			return d
+<span id="L83" class="ln">    83  </span>		}
+<span id="L84" class="ln">    84  </span>	}
+<span id="L85" class="ln">    85  </span>	return computeBackoff(attempt, profile)
+<span id="L86" class="ln">    86  </span>}
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span><span class="comment">// retryAfter は、Retry-After ヘッダ（delay-seconds 形式 / HTTP-date 形式）を解釈し待機時間を返します。</span>
+<span id="L89" class="ln">    89  </span><span class="comment">// 解釈できない / 不在の場合は (0, false) を返し、呼び出し側は通常のバックオフへ fallback します。</span>
+<span id="L90" class="ln">    90  </span>func retryAfter(header Header, now time.Time) (time.Duration, bool) {
+<span id="L91" class="ln">    91  </span>	if header == nil {
+<span id="L92" class="ln">    92  </span>		return 0, false
+<span id="L93" class="ln">    93  </span>	}
+<span id="L94" class="ln">    94  </span>	values, ok := header[retryAfterHeader]
+<span id="L95" class="ln">    95  </span>	if !ok || len(values) == 0 {
+<span id="L96" class="ln">    96  </span>		return 0, false
+<span id="L97" class="ln">    97  </span>	}
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span>	raw := strings.TrimSpace(values[0])
+<span id="L100" class="ln">   100  </span>	if raw == &#34;&#34; {
+<span id="L101" class="ln">   101  </span>		return 0, false
+<span id="L102" class="ln">   102  </span>	}
+<span id="L103" class="ln">   103  </span>
+<span id="L104" class="ln">   104  </span>	<span class="comment">// delay-seconds 形式（非負整数秒）。</span>
+<span id="L105" class="ln">   105  </span>	if secs, err := strconv.Atoi(raw); err == nil {
+<span id="L106" class="ln">   106  </span>		if secs &lt; 0 {
+<span id="L107" class="ln">   107  </span>			return 0, false
+<span id="L108" class="ln">   108  </span>		}
+<span id="L109" class="ln">   109  </span>		return time.Duration(secs) * time.Second, true
+<span id="L110" class="ln">   110  </span>	}
+<span id="L111" class="ln">   111  </span>
+<span id="L112" class="ln">   112  </span>	<span class="comment">// HTTP-date 形式。</span>
+<span id="L113" class="ln">   113  </span>	if at, err := http.ParseTime(raw); err == nil {
+<span id="L114" class="ln">   114  </span>		return max(0, at.Sub(now)), true
+<span id="L115" class="ln">   115  </span>	}
+<span id="L116" class="ln">   116  </span>	return 0, false
+<span id="L117" class="ln">   117  </span>}
+<span id="L118" class="ln">   118  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/infrastructure/httpclient/retry.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -1,0 +1,465 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>mock - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package mock_inquiry
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/inquiry/mock&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package mock_inquiry is a generated GoMock package.
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#MockUsecase">type MockUsecase</a></dd>
+				
+					
+					<dd>    <a href="#NewMockUsecase">func NewMockUsecase(ctrl *gomock.Controller) *MockUsecase</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockUsecase.AppendMessage">func (m *MockUsecase) AppendMessage(ctx context.Context, params inquiry.AppendMessageParams) (inquiry.MessageView, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.EXPECT">func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.GetHistory">func (m *MockUsecase) GetHistory(ctx context.Context, params inquiry.HistoryParams) (*inquiry.HistoryView, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.GetInquiryHistory">func (m *MockUsecase) GetInquiryHistory(ctx context.Context, authn *auth.Authn, params inquiry.OperatorHistoryParams) (*inquiry.HistoryView, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.IssueFeedTicket">func (m *MockUsecase) IssueFeedTicket(ctx context.Context, authn *auth.Authn) (inquiry.TicketView, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.IssueStreamTicket">func (m *MockUsecase) IssueStreamTicket(ctx context.Context, params inquiry.IssueStreamTicketParams) (inquiry.TicketView, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.ListInquiries">func (m *MockUsecase) ListInquiries(ctx context.Context, authn *auth.Authn, params inquiry.ListInquiriesParams) (*inquiry.InquiryListView, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.Reply">func (m *MockUsecase) Reply(ctx context.Context, authn *auth.Authn, params inquiry.ReplyParams) (inquiry.MessageView, error)</a></dd>
+				
+			
+				
+				<dd><a href="#MockUsecaseMockRecorder">type MockUsecaseMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.AppendMessage">func (mr *MockUsecaseMockRecorder) AppendMessage(ctx, params any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.GetHistory">func (mr *MockUsecaseMockRecorder) GetHistory(ctx, params any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.GetInquiryHistory">func (mr *MockUsecaseMockRecorder) GetInquiryHistory(ctx, authn, params any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.IssueFeedTicket">func (mr *MockUsecaseMockRecorder) IssueFeedTicket(ctx, authn any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.IssueStreamTicket">func (mr *MockUsecaseMockRecorder) IssueStreamTicket(ctx, params any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.ListInquiries">func (mr *MockUsecaseMockRecorder) ListInquiries(ctx, authn, params any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.Reply">func (mr *MockUsecaseMockRecorder) Reply(ctx, authn, params any) *gomock.Call</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html">mock_inquiry_usecase.go.gen.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="MockUsecase">type <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=536:646#L12">MockUsecase</a>
+				<a class="permalink" href="#MockUsecase">¶</a>
+				
+				
+			</h2>
+			<p>MockUsecase is a mock of Usecase interface.
+
+			</p><pre>type MockUsecase struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockUsecase">func <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=820:877#L24">NewMockUsecase</a>
+					<a class="permalink" href="#NewMockUsecase">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockUsecase(ctrl *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockUsecase">MockUsecase</a></pre>
+				<p>NewMockUsecase creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockUsecase.AppendMessage">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=1171:1292#L36">AppendMessage</a>
+					<a class="permalink" href="#MockUsecase.AppendMessage">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) AppendMessage(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, params <a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#AppendMessageParams">AppendMessageParams</a>) (<a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#MessageView">MessageView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>AppendMessage mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.EXPECT">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=1055:1110#L31">EXPECT</a>
+					<a class="permalink" href="#MockUsecase.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) EXPECT() *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.GetHistory">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=1797:1910#L51">GetHistory</a>
+					<a class="permalink" href="#MockUsecase.GetHistory">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) GetHistory(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, params <a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#HistoryParams">HistoryParams</a>) (*<a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#HistoryView">HistoryView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>GetHistory mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.GetInquiryHistory">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=2405:2552#L66">GetInquiryHistory</a>
+					<a class="permalink" href="#MockUsecase.GetInquiryHistory">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) GetInquiryHistory(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, authn *<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#OperatorHistoryParams">OperatorHistoryParams</a>) (*<a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#HistoryView">HistoryView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>GetInquiryHistory mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.IssueFeedTicket">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=3108:3213#L81">IssueFeedTicket</a>
+					<a class="permalink" href="#MockUsecase.IssueFeedTicket">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) IssueFeedTicket(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, authn *<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>) (<a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#TicketView">TicketView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>IssueFeedTicket mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.IssueStreamTicket">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=3733:3861#L96">IssueStreamTicket</a>
+					<a class="permalink" href="#MockUsecase.IssueStreamTicket">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) IssueStreamTicket(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, params <a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#IssueStreamTicketParams">IssueStreamTicketParams</a>) (<a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#TicketView">TicketView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>IssueStreamTicket mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.ListInquiries">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=4392:4537#L111">ListInquiries</a>
+					<a class="permalink" href="#MockUsecase.ListInquiries">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) ListInquiries(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, authn *<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#ListInquiriesParams">ListInquiriesParams</a>) (*<a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#InquiryListView">InquiryListView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>ListInquiries mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.Reply">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=5063:5187#L126">Reply</a>
+					<a class="permalink" href="#MockUsecase.Reply">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) Reply(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, authn *<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#ReplyParams">ReplyParams</a>) (<a href="../../../../../go-boilerplate/internal/usecase/inquiry/">inquiry</a>.<a href="../../../../../go-boilerplate/internal/usecase/inquiry/#MessageView">MessageView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>Reply mocks base method.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockUsecaseMockRecorder">type <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=713:771#L19">MockUsecaseMockRecorder</a>
+				<a class="permalink" href="#MockUsecaseMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockUsecaseMockRecorder is the mock recorder for MockUsecase.
+
+			</p><pre>type MockUsecaseMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockUsecaseMockRecorder.AppendMessage">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=1519:1597#L45">AppendMessage</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.AppendMessage">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) AppendMessage(ctx, params <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>AppendMessage indicates an expected call of AppendMessage.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.GetHistory">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=2129:2204#L60">GetHistory</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.GetHistory">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) GetHistory(ctx, params <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>GetHistory indicates an expected call of GetHistory.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.GetInquiryHistory">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=2799:2888#L75">GetInquiryHistory</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.GetInquiryHistory">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) GetInquiryHistory(ctx, authn, params <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>GetInquiryHistory indicates an expected call of GetInquiryHistory.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.IssueFeedTicket">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=3444:3523#L90">IssueFeedTicket</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.IssueFeedTicket">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) IssueFeedTicket(ctx, authn <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>IssueFeedTicket indicates an expected call of IssueFeedTicket.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.IssueStreamTicket">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=4099:4181#L105">IssueStreamTicket</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.IssueStreamTicket">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) IssueStreamTicket(ctx, params <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>IssueStreamTicket indicates an expected call of IssueStreamTicket.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.ListInquiries">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=4776:4861#L120">ListInquiries</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.ListInquiries">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) ListInquiries(ctx, authn, params <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>ListInquiries indicates an expected call of ListInquiries.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.Reply">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/inquiry/mock/mock_inquiry_usecase.go.gen.go.html?s=5397:5474#L135">Reply</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.Reply">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) Reply(ctx, authn, params <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Reply indicates an expected call of Reply.
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

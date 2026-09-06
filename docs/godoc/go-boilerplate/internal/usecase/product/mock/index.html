@@ -141,7 +141,13 @@
 					<dd>    <a href="#MockUsecase.CreateProduct">func (m *MockUsecase) CreateProduct(ctx context.Context, authn *auth.Authn, params product.CreateProductParams) (product.ProductView, error)</a></dd>
 				
 					
+					<dd>    <a href="#MockUsecase.DiscontinueProduct">func (m *MockUsecase) DiscontinueProduct(ctx context.Context, authn *auth.Authn, id uuid.UUID, params product.DiscontinueProductParams) (product.DiscontinueProductView, error)</a></dd>
+				
+					
 					<dd>    <a href="#MockUsecase.EXPECT">func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.GetDiscontinueImpact">func (m *MockUsecase) GetDiscontinueImpact(ctx context.Context, authn *auth.Authn, id uuid.UUID) (product.DiscontinueImpactView, error)</a></dd>
 				
 					
 					<dd>    <a href="#MockUsecase.GetProduct">func (m *MockUsecase) GetProduct(ctx context.Context, authn *auth.Authn, params product.GetProductParams) (product.ProductView, error)</a></dd>
@@ -171,6 +177,12 @@
 				
 					
 					<dd>    <a href="#MockUsecaseMockRecorder.CreateProduct">func (mr *MockUsecaseMockRecorder) CreateProduct(ctx, authn, params any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.DiscontinueProduct">func (mr *MockUsecaseMockRecorder) DiscontinueProduct(ctx, authn, id, params any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.GetDiscontinueImpact">func (mr *MockUsecaseMockRecorder) GetDiscontinueImpact(ctx, authn, id any) *gomock.Call</a></dd>
 				
 					
 					<dd>    <a href="#MockUsecaseMockRecorder.GetProduct">func (mr *MockUsecaseMockRecorder) GetProduct(ctx, authn, params any) *gomock.Call</a></dd>
@@ -385,6 +397,19 @@
 				
 			
 				
+				</p><h3 id="MockUsecase.DiscontinueProduct">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=2556:2731#L67">DiscontinueProduct</a>
+					<a class="permalink" href="#MockUsecase.DiscontinueProduct">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) DiscontinueProduct(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, authn *<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, id <a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, params <a href="../../../../../go-boilerplate/internal/usecase/product/">product</a>.<a href="../../../../../go-boilerplate/internal/usecase/product/#DiscontinueProductParams">DiscontinueProductParams</a>) (<a href="../../../../../go-boilerplate/internal/usecase/product/">product</a>.<a href="../../../../../go-boilerplate/internal/usecase/product/#DiscontinueProductView">DiscontinueProductView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>DiscontinueProduct mocks base method.
+
+				
+				
+				
+			
+				
 				</p><h3 id="MockUsecase.EXPECT">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=1087:1142#L32">EXPECT</a>
 					<a class="permalink" href="#MockUsecase.EXPECT">¶</a>
 					
@@ -398,7 +423,20 @@
 				
 			
 				
-				</p><h3 id="MockUsecase.GetProduct">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=2548:2682#L67">GetProduct</a>
+				</p><h3 id="MockUsecase.GetDiscontinueImpact">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=3320:3455#L82">GetDiscontinueImpact</a>
+					<a class="permalink" href="#MockUsecase.GetDiscontinueImpact">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) GetDiscontinueImpact(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, authn *<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, id <a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="../../../../../go-boilerplate/internal/usecase/product/">product</a>.<a href="../../../../../go-boilerplate/internal/usecase/product/#DiscontinueImpactView">DiscontinueImpactView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>GetDiscontinueImpact mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.GetProduct">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=4021:4155#L97">GetProduct</a>
 					<a class="permalink" href="#MockUsecase.GetProduct">¶</a>
 					
 					
@@ -411,7 +449,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecase.ListLowStockProducts">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=3200:3366#L82">ListLowStockProducts</a>
+				</p><h3 id="MockUsecase.ListLowStockProducts">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=4673:4839#L112">ListLowStockProducts</a>
 					<a class="permalink" href="#MockUsecase.ListLowStockProducts">¶</a>
 					
 					
@@ -424,7 +462,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecase.ListProducts">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=3948:4090#L97">ListProducts</a>
+				</p><h3 id="MockUsecase.ListProducts">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=5421:5563#L127">ListProducts</a>
 					<a class="permalink" href="#MockUsecase.ListProducts">¶</a>
 					
 					
@@ -437,7 +475,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecase.UpdateProduct">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=4617:4771#L112">UpdateProduct</a>
+				</p><h3 id="MockUsecase.UpdateProduct">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=6090:6244#L142">UpdateProduct</a>
 					<a class="permalink" href="#MockUsecase.UpdateProduct">¶</a>
 					
 					
@@ -450,7 +488,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecase.UpdateProductStock">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=5317:5481#L127">UpdateProductStock</a>
+				</p><h3 id="MockUsecase.UpdateProductStock">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=6790:6954#L157">UpdateProductStock</a>
 					<a class="permalink" href="#MockUsecase.UpdateProductStock">¶</a>
 					
 					
@@ -463,7 +501,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecase.UploadProductImage">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=6057:6212#L142">UploadProductImage</a>
+				</p><h3 id="MockUsecase.UploadProductImage">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=7530:7685#L172">UploadProductImage</a>
 					<a class="permalink" href="#MockUsecase.UploadProductImage">¶</a>
 					
 					
@@ -528,7 +566,33 @@
 				
 			
 				
-				</p><h3 id="MockUsecaseMockRecorder.GetProduct">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=2907:2989#L76">GetProduct</a>
+				</p><h3 id="MockUsecaseMockRecorder.DiscontinueProduct">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=2995:3089#L76">DiscontinueProduct</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.DiscontinueProduct">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) DiscontinueProduct(ctx, authn, id, params <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>DiscontinueProduct indicates an expected call of DiscontinueProduct.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.GetDiscontinueImpact">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=3716:3804#L91">GetDiscontinueImpact</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.GetDiscontinueImpact">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) GetDiscontinueImpact(ctx, authn, id <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>GetDiscontinueImpact indicates an expected call of GetDiscontinueImpact.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.GetProduct">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=4380:4462#L106">GetProduct</a>
 					<a class="permalink" href="#MockUsecaseMockRecorder.GetProduct">¶</a>
 					
 					
@@ -541,7 +605,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecaseMockRecorder.ListLowStockProducts">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=3633:3725#L91">ListLowStockProducts</a>
+				</p><h3 id="MockUsecaseMockRecorder.ListLowStockProducts">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=5106:5198#L121">ListLowStockProducts</a>
 					<a class="permalink" href="#MockUsecaseMockRecorder.ListLowStockProducts">¶</a>
 					
 					
@@ -554,7 +618,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecaseMockRecorder.ListProducts">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=4325:4409#L106">ListProducts</a>
+				</p><h3 id="MockUsecaseMockRecorder.ListProducts">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=5798:5882#L136">ListProducts</a>
 					<a class="permalink" href="#MockUsecaseMockRecorder.ListProducts">¶</a>
 					
 					
@@ -567,7 +631,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecaseMockRecorder.UpdateProduct">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=5009:5098#L121">UpdateProduct</a>
+				</p><h3 id="MockUsecaseMockRecorder.UpdateProduct">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=6482:6571#L151">UpdateProduct</a>
 					<a class="permalink" href="#MockUsecaseMockRecorder.UpdateProduct">¶</a>
 					
 					
@@ -580,7 +644,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecaseMockRecorder.UpdateProductStock">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=5734:5828#L136">UpdateProductStock</a>
+				</p><h3 id="MockUsecaseMockRecorder.UpdateProductStock">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=7207:7301#L166">UpdateProductStock</a>
 					<a class="permalink" href="#MockUsecaseMockRecorder.UpdateProductStock">¶</a>
 					
 					
@@ -593,7 +657,7 @@
 				
 			
 				
-				</p><h3 id="MockUsecaseMockRecorder.UploadProductImage">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=6466:6556#L151">UploadProductImage</a>
+				</p><h3 id="MockUsecaseMockRecorder.UploadProductImage">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/product/mock/mock_product_usecase.go.gen.go.html?s=7939:8029#L181">UploadProductImage</a>
 					<a class="permalink" href="#MockUsecaseMockRecorder.UploadProductImage">¶</a>
 					
 					

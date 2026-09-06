@@ -1,7 +1,5 @@
 # lifecycle
 
-[English](README.md) | 日本語
-
 `internal/di/lifecycle` は、アプリケーションの起動 / 停止時に実行するフック（Start / Stop）を登録するための **DI 抽象化レイヤ**です。
 
 `fx.Lifecycle` をラップした `Registrar` インターフェースを提供し、アプリケーションコードが fx に直接依存しないようにします。
@@ -91,6 +89,8 @@ lifecycle.SupervisedRunner{
 - **OnStop**: 実行 context をキャンセルし、停止 `ctx`（grace）の範囲で `Body` の完了を待ち、`OnStopAux` を実行。
 
 実行 context は `context.Background()` を `WithCancel` で派生させるため、`OnStart` 完了後に fx が起動 context をキャンセルしても goroutine は巻き込まれず、`OnStop` でのみキャンセルされます。この「Background 由来 + 停止時キャンセル」の型を 3 hook で揃えることで、停止シグナルが実行中の処理へ確実に伝播します。
+
+`Bind()` は同じ start / stop の組を登録せずに返します。複数の runner を 1 つの hook の中で順序付けて起動・停止する呼び出し側（`internal/di/server/hook` の serve lifecycle）向けで、`Register` は `Bind` に登録を足したものです。1 度の `Bind` は 1 つの実行 context を共有するため、`start` は 1 回だけ呼びます。
 
 ## 利用箇所の例
 

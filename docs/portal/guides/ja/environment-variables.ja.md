@@ -1,7 +1,5 @@
 # 環境変数一覧（対応表）
 
-[English](README.md) | 日本語
-
 このディレクトリは、アプリケーションが読み込むすべての環境変数の正規リファレンスです。各変数は `internal/config/` 配下の型付き Go 構造体にロードされ、本 README ではサブシステム別（OS / Application / Server / Database / Security / …）にグルーピングしています。新規変数の追加、各サービスが読む変数の棚卸し、オンボーディング資料として活用してください。
 
 ## 命名・型の規約
@@ -96,7 +94,7 @@
 |OBS_LOGS_EXPORTER|log の OTLP exporter（`otlp` で有効化／空・`none` で無効）|string|otlp|空でログ送出無効（zap は stdout のみ）。Per-environment value — compose の可観測性スタックを持つのは `local` だけで、他の環境は collector を結線するまで空にする|
 |OBS_OTLP_PROTOCOL|OTLP プロトコル（`http/protobuf` / `grpc`）|string|http/protobuf|Code default `http/protobuf`|
 |OBS_MASKED_DB_QUERY_ARGS|DBパラメータマスク|bool|false|セキュリティ重要。Per-environment value — local / ci / dast だけ `false`。クエリやテスト失敗、スキャン結果の調査では生の SQL 引数が見えること自体が目的のため。`dev` 以降は `true` とし、実データがトレースバックエンドへ届かないようにする。上位環境をローカル側の値に揃えてはならない|
-|OBS_TARGET_STATUS_CODES|トレース対象ステータス|csv|400,401,403,404,405,409,422,429,500,501,503|エラー監視用。Per-environment value — 本番に近い環境ほど単調に絞り込むため、ファイル間の不一致は伝播漏れではなく意図である。`local` / `ci` / `dast` は開発・テストでの可視性のため全件を監視し、`dev` / `stg` は `429` を落とし、`prd` はさらに `403` / `404` / `405` を落として、本番の監視をサーバー側の失敗と契約違反に寄せる（本番規模ではクライアント起因のノイズが支配的になるため）。下位の環境が上位の環境の無視するコードを監視することはない。ポリシーは `TestEnvTargetStatusCodesPolicy`（`internal/architest`）が機械検証しており、一部の env ファイルにだけコードを足せばビルドが落ちる。特定環境から意図的に外す場合は、同テストのポリシー宣言も更新する必要がある|
+|OBS_TARGET_STATUS_CODES|トレース対象ステータス|csv|400,401,403,404,405,409,410,422,429,500,501,503|エラー監視用。Per-environment value — 本番に近い環境ほど単調に絞り込むため、ファイル間の不一致は伝播漏れではなく意図である。`local` / `ci` / `dast` は開発・テストでの可視性のため全件を監視し、`dev` / `stg` は `429` を落とし、`prd` はさらに `403` / `404` / `405` / `410` を落として、本番の監視をサーバー側の失敗と契約違反に寄せる（本番規模ではクライアント起因のノイズが支配的になるため）。下位の環境が上位の環境の無視するコードを監視することはない。ポリシーは `TestEnvTargetStatusCodesPolicy`（`internal/architest`）が機械検証しており、一部の env ファイルにだけコードを足せばビルドが落ちる。特定環境から意図的に外す場合は、同テストのポリシー宣言も更新する必要がある|
 
 ### Database
 
@@ -234,6 +232,22 @@ access token（JWT）検証の設定。CI / test は署名検証なしのスタ�
 
 配信はこれらの変数の管轄外です。API はオブジェクトキー（`imagePath`）だけを返しフル URL を返さないため、フロントが `<配信オリジン>/<オブジェクトキー>` を組み立てます。したがって配信オリジンの変数はこちら側に存在せず、フロントが持ちます（`local` は `http://gobp-local.web.garage.localhost:3902`、デプロイ環境では CDN のドメイン）。ローカルの配信エンドポイントを匿名 read で開く方法は [`docker/README.md`](../docker/README.md) を参照してください。
 
+### Realtime Delivery
+
+Realtime Delivery（[`docs/design/realtime-delivery.ja.md`](../docs/design/realtime-delivery.ja.md)）の背後にある DynamoDB 互換 store — EventLog（有界の replay）、stream ticket、instance lease — と、全 serve instance を起こす SNS / SQS 互換の fan-out の設定です。usecase は vendor 非依存の `realtime` 境界に依存し、adapter は DynamoDB と SNS / SQS（AWS SDK v2）なので、`local` / `ci` は DynamoDB Local と GoAWS へ、デプロイ環境は `ENDPOINT_REALTIME` / `ENDPOINT_REALTIME_PUBSUB` を空にして AWS へ繋ぎます。table 名は固定名（`realtime_event_log` / `realtime_stream_ticket` / `realtime_instance_lease`）に `_<REALTIME_TABLE_SUFFIX>` を付けた形で、1 つの DynamoDB（あるいは共有の DynamoDB Local）に複数環境を並べられます。table と topic は one-shot の `make realtime-init` が作り、application の起動時には作りません。instance ごとの queue だけは application 自身が serve 起動時に `REALTIME_QUEUE_PREFIX` の下で作ります。
+
+|変数名|説明|型|例|Notes|
+|---|---|---|---|---|
+|REALTIME_REGION|署名に用いるリージョン|string|us-east-1|`required,notEmpty`。環境ごとの値 — local / ci / dast は DynamoDB Local 向けのサンプル値、`dev` 以降はその環境の AWS リージョン|
+|REALTIME_TABLE_SUFFIX|全 table 名の末尾に付く環境識別子（`realtime_event_log_<suffix>` …）|string|local|`required,notEmpty`。小文字・数字・アンダースコア。環境ごとの値 — 環境名。worktree の slot はここに独自の suffix（`local_wt<N>`、`docker-compose.attach.yaml` が設定）を注入し、DynamoDB Local を共有する checkout 同士が table を共有しないようにする|
+|REALTIME_TOPIC|wakeup と revocation の通知を全 serve instance へ運ぶ topic の識別子（AWS では ARN）|string|`arn:aws:sns:us-east-1:000000000000:realtime-fanout-local`|Code default は空。host ではなく resource 識別子なので `ENDPOINT_*` ではない。空のまま fan-out が結線されると起動に失敗する（`ENDPOINT_OUTBOX` と同じ扱い）。環境ごとの値 — `local` / `ci` は `make realtime-init` が GoAWS 上に作る topic を指す（`ci` の account id はイメージ既定の `100010001000`。service container は設定ファイルを取らないため）。`dast` は自前の GoAWS service container 上の topic を指す（`ci` と同じ形で suffix だけ `dast`）。DAST ジョブは実の serve graph を起動し、topic が空だと fail-closed で落ちるため。`dev` 以降は deployment が provisioning した topic の値を**デプロイ時に注入**する|
+|REALTIME_QUEUE_PREFIX|instance ごとの queue 名の prefix（`<prefix>-<instance id>`）|string|realtime-local|`required,notEmpty`。英数字と `-` / `_`。full name が SQS の上限 80 文字に収まるよう最大 43 文字。環境ごとの値 — 環境名。1 つのアカウント（あるいは共有の GoAWS）上で複数環境の instance が衝突しないようにする|
+|REALTIME_DLQ|instance ごとの queue が redrive する先の dead-letter queue の識別子（AWS では ARN）|string||Code default は空。空なら `RedrivePolicy` を付けない。wakeup は状態を持たず、1 つ失っても定期 catch-up が拾うので、DLQ は正しさの要件ではなく運用上の安全網である。環境ごとの値 — local / ci / dast では空（GoAWS は `RedrivePolicy` を設定すると receive-and-delete が壊れる）、`dev` 以降は deployment が provisioning した DLQ の値を**デプロイ時に注入**する|
+|REALTIME_ACCESS_KEY_ID|静的資格情報のアクセスキー ID|string|localdummyaccesskey|Code default は空。secret と揃って空なら資格情報の解決を SDK 既定の chain に委ねる（IAM ロールの使い方）— ロール運用のデプロイは何も注入しない。DynamoDB Local は認証しないので local / ci / dast は SDK の署名を満たすだけのダミー — ただし**英数字のみ**: `-` を含む key は DynamoDB Local が `UnrecognizedClientException` で拒否する|
+|REALTIME_SECRET_ACCESS_KEY|静的資格情報のシークレットアクセスキー|string|localdummysecretkey|Code default は空。アクセスキー ID と揃えて設定する — 片方だけの設定は明示注入とも chain 委譲とも読めないため起動に失敗する|
+|REALTIME_MAX_CONNECTIONS|1 instance が同時に保持する SSE 接続数の上限|int|1000|Code default は `1000`。instance 単位の上限で、1 プロセスが長寿命レスポンスに割り当てるメモリとファイルディスクリプタを縛るため、環境ではなく機材に従う。到達すると新規接続に `503` を返し、既存の接続には手を触れない|
+|REALTIME_REPLAY_CONCURRENCY|1 instance で replay と catch-up が同時に走る本数の上限|int|16|Code default は `16`。1 instance が EventLog に掛ける読み取り負荷を縛る。初回 replay は枠が空くのを有界に待ってから `503` を返し、catch-up は順番を待つだけ|
+
 ### Endpoint
 
 このデプロイの接続先です。「どこへ繋ぐか」は独立した軸で、デプロイごとに変わる一方で各サブシステムの振る舞いは変わりません。そのため、叩く側のサブシステム設定ではなくここにまとめます。すべて `required` ですが空文字を許容し、空が何を意味するかは接続先ごとに異なるため Notes に記します。キューの `*_URL` はここに置きません（接続先ではなく API 引数として渡すリソース識別子のため）。`AUTH_ISSUER` も突き合わせる値であって接続先ではありません。
@@ -243,6 +257,8 @@ access token（JWT）検証の設定。CI / test は署名検証なしのスタ�
 |ENDPOINT_OTLP|OTLP 送出先エンドポイント URL|string|`http://observability:4318`|exporter 有効時に使用。Per-environment value — 各環境の collector。exporter が無効な環境では空|
 |ENDPOINT_JWKS|JWKS エンドポイント URL の override。空の場合は `AUTH_ISSUER` から OIDC discovery で `jwks_uri` を導出|string|`http://mock_auth_server:4000/default/jwks`|Code default は空。Per-environment value — compose 内部のサービス URL で上書きするのは `local` だけで、他は既定の空のまま `AUTH_ISSUER` から OIDC discovery で `jwks_uri` を導出する|
 |ENDPOINT_OBJECT_STORAGE|S3 互換エンドポイント URL。空は SDK 既定解決（AWS S3）|string|`http://garage:3900`|`required`（空を許容）。Per-environment value — `local` は Garage の compose サービスを指し、他の環境は SDK が AWS S3 を解決するよう空にする|
+|ENDPOINT_REALTIME|Realtime Delivery の store の DynamoDB 互換エンドポイント URL。空なら SDK 既定の解決（AWS DynamoDB）|string|`http://dynamodb_local:8000`|`required`（空を許容）。環境ごとの値 — `local` は compose の DynamoDB Local、`ci` と `dast` は service container の `localhost:8000`。他の環境は空にして SDK に AWS DynamoDB を解決させる|
+|ENDPOINT_REALTIME_PUBSUB|Realtime Delivery の fan-out の SNS / SQS 互換エンドポイント URL（1 つの host が両方の API を提供する）。空なら SDK 既定の解決（AWS SNS / SQS）|string|`http://goaws:4100`|`required`（空を許容）。環境ごとの値 — `local` は compose の GoAWS、`ci` と `dast` は service container の `localhost:4100`。他の環境は空にして SDK に AWS SNS / SQS を解決させる。`ENDPOINT_OUTBOX_QUEUE` / `ENDPOINT_CONSUMER_QUEUE` と分けているのは意図的で、worker のブローカー emulator はこの機構と共有しない|
 |ENDPOINT_OUTBOX|メッセージの送信先エンドポイント URL|string||Code default は空。`OUTBOX_PUBLISHER=http` のとき必須|
 |ENDPOINT_OUTBOX_QUEUE|SQS 互換エンドポイント|string|`http://elasticmq:9324`|Code default は空。空なら SDK 既定の解決に委ねる（本番 AWS SQS 等）。**Per-environment value**: ブローカーが compose で動く local でのみ設定する。キューはデプロイ先ごとのリソースなので他環境は空のまま|
 |ENDPOINT_CONSUMER_QUEUE|SQS 互換エンドポイント|string|`http://elasticmq:9324`|Code default は空。空なら SDK 既定の解決（本番 AWS SQS）に委ねる。**Per-environment value**: ブローカーが compose で動く local でのみ設定する。キューはデプロイ先ごとのリソースなので他環境は空のまま|

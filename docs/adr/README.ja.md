@@ -156,6 +156,7 @@ Exclusion ADR（意図的な「X はしない」）は、リポジトリセッ�
 | [0110](0110-no-generic-cache-abstraction.ja.md) | 汎用 Cache 抽象化を提供しない | accepted (exclusion) |
 | [0111](0111-outbox-relay-hardening-delegated.ja.md) | outbox relay はバランス型で出荷し、ハードニング（多層 lease 再設計）は運用で得た事実に委ねる | accepted (exclusion) |
 | [0112](0112-pnpm-as-the-only-node-resolver.ja.md) | Node パッケージはすべて pnpm で解決し、npm を使わない | accepted |
+| [0113](0113-outbox-payload-kinds-and-parity-declaration.ja.md) | outbox payload の種別を宣言させ、snapshot は集約とのフィールド対応を検査する | accepted |
 
 フロントマターフィールド: `status`、`date`、`deciders`、`supersedes` / `superseded-by`、`tags`。
 Consequences は MADR 標準に従う（`Positive` / `Negative`; 任意で `Neutral`）。

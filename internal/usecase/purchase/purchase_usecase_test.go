@@ -341,6 +341,8 @@ func Test_usecase_CreatePurchase(t *testing.T) {
 			productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).Return(lockedProducts(t, productA, 20), nil)
 			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
 			repo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+			// 注文日時は DB 採番なので、emit は再検証の読み直しのあとに走る。
+			repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(rereadPurchase(t), nil)
 			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, apperror.ErrInternal)
 
 			u := newUsecase(t, activeUserLock(ctrl), repo, productRepo, emit)
@@ -359,8 +361,8 @@ func Test_usecase_CreatePurchase(t *testing.T) {
 			productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).Return(lockedProducts(t, productA, 20), nil)
 			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
 			repo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
-			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
 			repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(nil, apperror.ErrNotFound)
+			// emit に EXPECT を張らないことで、読み直しに失敗したら発行へ進まないことを担保する。
 
 			u := newUsecase(t, activeUserLock(ctrl), repo, productRepo, emit)
 
@@ -2387,7 +2389,14 @@ func Test_usecase_createPurchaseInTx(t *testing.T) {
 			reread := rereadPurchase(t)
 			repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(reread, nil)
 			emit := mock_outbox.NewMockEmitUsecase(ctrl)
-			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
+			// payload の注文日時が読み直した集約のものであることを見ることで、
+			// emit が読み直しのあとに走っていることを固定する（順序を戻す退行を赤にする）。
+			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(_ context.Context, in outbox.EmitInput) (uuid.UUID, error) {
+					assertPayloadOrderedAt(t, in.Payload, reread.OrderedAt())
+
+					return uuid.UUID{}, nil
+				})
 
 			u := &usecase{
 				tracer:      observability.NewNoopTracerFactory(t).Usecase(),
@@ -2448,6 +2457,18 @@ func Test_usecase_createPurchaseInTx(t *testing.T) {
 	})
 }
 
+// assertPayloadOrderedAt は、outbox payload の注文日時が期待どおりであることを確かめます。
+// 生成直後の集約から組まれていればゼロ値になるため、これが読み直し後であることの証拠になります。
+func assertPayloadOrderedAt(t *testing.T, payload []byte, want time.Time) {
+	t.Helper()
+
+	var decoded struct {
+		OrderedAt string `json:"orderedAt"`
+	}
+	require.NoError(t, json.Unmarshal(payload, &decoded))
+	assert.Equal(t, want.Format(time.RFC3339Nano), decoded.OrderedAt)
+}
+
 func Test_usecase_emitCreated(t *testing.T) {
 	t.Parallel()
 
@@ -2464,7 +2485,7 @@ func Test_usecase_emitCreated(t *testing.T) {
 			u := &usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), emit: emit}
 			entity := rereadPurchase(t)
 
-			require.NoError(t, u.emitCreated(context.Background(), entity, entity.ID()))
+			require.NoError(t, u.emitCreated(context.Background(), entity))
 		})
 	})
 
@@ -2481,9 +2502,34 @@ func Test_usecase_emitCreated(t *testing.T) {
 			u := &usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), emit: emit}
 			entity := rereadPurchase(t)
 
-			err := u.emitCreated(context.Background(), entity, entity.ID())
+			err := u.emitCreated(context.Background(), entity)
 
 			require.ErrorIs(t, err, apperror.ErrCanceled)
+		})
+
+		t.Run("注文日時を持たない集約は組み立てで弾き、outboxへ積まない", func(t *testing.T) {
+			t.Parallel()
+
+			// emit に EXPECT を張らないことで、payload の組み立てに失敗したら
+			// outbox 行を作らずに戻ることを担保する。
+			ctrl := gomock.NewController(t)
+			emit := mock_outbox.NewMockEmitUsecase(ctrl)
+
+			u := &usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), emit: emit}
+			productA := uuidtestkit.NewTestFromSalt(t, "emit_zero_product")
+			entity, nerr := domainpurchase.New(
+				uuidtestkit.NewTestFromSalt(t, "emit_zero_id"),
+				"emit-zero-code",
+				uuidtestkit.NewTestFromSalt(t, "emit_zero_user"),
+				[]domainpurchase.DetailInput{{ID: uuidtestkit.NewTestFromSalt(t, "emit_zero_d"), ProductID: productA, Quantity: 1}},
+				[]domainpurchase.LockedProduct{domainpurchase.NewLockedProduct(productA, mustPrice(t, "800"), 20)},
+			)
+			require.NoError(t, nerr)
+			require.True(t, entity.OrderedAt().IsZero())
+
+			err := u.emitCreated(context.Background(), entity)
+
+			require.ErrorIs(t, err, apperror.ErrInternal)
 		})
 	})
 }

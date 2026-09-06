@@ -1,7 +1,5 @@
 # shutdowner DI Wrapper
 
-English | [日本語](README.ja.md)
-
 This package provides a `Shutdowner` interface that abstracts `fx.Shutdowner` from `go.uber.org/fx`. It wraps the `fx.Shutdowner` obtained from the DI container to make it easier to use from application code and tests.
 
 ## Why Abstract?

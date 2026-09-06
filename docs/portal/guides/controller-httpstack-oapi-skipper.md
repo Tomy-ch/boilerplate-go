@@ -1,7 +1,5 @@
 # oapi/skipper
 
-English | [日本語](README.ja.md)
-
 Skipper function that bypasses OpenAPI validation for operational endpoints.
 
 ## Skipped Paths

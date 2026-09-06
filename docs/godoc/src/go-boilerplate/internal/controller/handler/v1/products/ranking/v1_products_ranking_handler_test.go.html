@@ -157,272 +157,276 @@
 <span id="L100" class="ln">   100  </span>					assert.Nil(t, params.Window.Before())
 <span id="L101" class="ln">   101  </span>					assert.Equal(t, 0, params.Limit)
 <span id="L102" class="ln">   102  </span>					return rankinguc.QuantityRankingView{Rankings: []rankinguc.QuantityRankingItemView{}}, nil
-<span id="L103" class="ln">   103  </span>				})
-<span id="L104" class="ln">   104  </span>
-<span id="L105" class="ln">   105  </span>			resp, err := s.GetProductsRankingQuantity(context.Background(), gen.GetProductsRankingQuantityRequestObject{
-<span id="L106" class="ln">   106  </span>				Params: gen.GetProductsRankingQuantityParams{},
-<span id="L107" class="ln">   107  </span>			})
-<span id="L108" class="ln">   108  </span>			require.NoError(t, err)
-<span id="L109" class="ln">   109  </span>
-<span id="L110" class="ln">   110  </span>			actual, ok := resp.(gen.GetProductsRankingQuantity200JSONResponse)
-<span id="L111" class="ln">   111  </span>			require.True(t, ok)
-<span id="L112" class="ln">   112  </span>			assert.NotNil(t, actual.Rankings)
-<span id="L113" class="ln">   113  </span>			assert.Empty(t, actual.Rankings)
-<span id="L114" class="ln">   114  </span>		})
-<span id="L115" class="ln">   115  </span>
-<span id="L116" class="ln">   116  </span>		t.Run(&#34;orderedAfter・orderedBeforeを対象期間へ変換してusecaseへ渡す&#34;, func(t *testing.T) {
-<span id="L117" class="ln">   117  </span>			t.Parallel()
-<span id="L118" class="ln">   118  </span>
-<span id="L119" class="ln">   119  </span>			after := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
-<span id="L120" class="ln">   120  </span>			before := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
-<span id="L121" class="ln">   121  </span>
-<span id="L122" class="ln">   122  </span>			s, mockUC := newServer(t)
-<span id="L123" class="ln">   123  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L124" class="ln">   124  </span>				func(_ context.Context, params rankinguc.GetRankingParams) (rankinguc.QuantityRankingView, error) {
-<span id="L125" class="ln">   125  </span>					assert.Equal(t, after, *params.Window.After())
-<span id="L126" class="ln">   126  </span>					assert.Equal(t, before, *params.Window.Before())
-<span id="L127" class="ln">   127  </span>					return rankinguc.QuantityRankingView{Rankings: []rankinguc.QuantityRankingItemView{}}, nil
-<span id="L128" class="ln">   128  </span>				})
-<span id="L129" class="ln">   129  </span>
-<span id="L130" class="ln">   130  </span>			_, err := s.GetProductsRankingQuantity(context.Background(), gen.GetProductsRankingQuantityRequestObject{
-<span id="L131" class="ln">   131  </span>				Params: gen.GetProductsRankingQuantityParams{OrderedAfter: &amp;after, OrderedBefore: &amp;before},
-<span id="L132" class="ln">   132  </span>			})
-<span id="L133" class="ln">   133  </span>			require.NoError(t, err)
-<span id="L134" class="ln">   134  </span>		})
-<span id="L135" class="ln">   135  </span>	})
-<span id="L136" class="ln">   136  </span>
-<span id="L137" class="ln">   137  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L138" class="ln">   138  </span>		t.Parallel()
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>		t.Run(&#34;orderedBeforeがorderedAfter以前の場合、usecaseを呼ばずErrInvalidArgumentを返す&#34;, func(t *testing.T) {
-<span id="L141" class="ln">   141  </span>			t.Parallel()
-<span id="L142" class="ln">   142  </span>
-<span id="L143" class="ln">   143  </span>			s, mockUC := newServer(t)
-<span id="L144" class="ln">   144  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Times(0)
-<span id="L145" class="ln">   145  </span>
-<span id="L146" class="ln">   146  </span>			after := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
-<span id="L147" class="ln">   147  </span>			before := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
-<span id="L148" class="ln">   148  </span>
-<span id="L149" class="ln">   149  </span>			_, err := s.GetProductsRankingQuantity(context.Background(), gen.GetProductsRankingQuantityRequestObject{
-<span id="L150" class="ln">   150  </span>				Params: gen.GetProductsRankingQuantityParams{OrderedAfter: &amp;after, OrderedBefore: &amp;before},
-<span id="L151" class="ln">   151  </span>			})
-<span id="L152" class="ln">   152  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
-<span id="L153" class="ln">   153  </span>		})
-<span id="L154" class="ln">   154  </span>
-<span id="L155" class="ln">   155  </span>		t.Run(&#34;usecaseのエラーをそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L156" class="ln">   156  </span>			t.Parallel()
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span>			s, mockUC := newServer(t)
-<span id="L159" class="ln">   159  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Return(rankinguc.QuantityRankingView{}, apperror.ErrInternal)
-<span id="L160" class="ln">   160  </span>
-<span id="L161" class="ln">   161  </span>			resp, err := s.GetProductsRankingQuantity(context.Background(), gen.GetProductsRankingQuantityRequestObject{})
-<span id="L162" class="ln">   162  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
-<span id="L163" class="ln">   163  </span>			assert.Nil(t, resp)
-<span id="L164" class="ln">   164  </span>		})
-<span id="L165" class="ln">   165  </span>	})
-<span id="L166" class="ln">   166  </span>}
-<span id="L167" class="ln">   167  </span>
-<span id="L168" class="ln">   168  </span>func Test_server_GetProductsRankingAmount(t *testing.T) {
-<span id="L169" class="ln">   169  </span>	t.Parallel()
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L172" class="ln">   172  </span>		t.Parallel()
-<span id="L173" class="ln">   173  </span>
-<span id="L174" class="ln">   174  </span>		t.Run(&#34;usecaseのDTOを金額ランキングのレスポンスへ写像して返す&#34;, func(t *testing.T) {
-<span id="L175" class="ln">   175  </span>			t.Parallel()
-<span id="L176" class="ln">   176  </span>
-<span id="L177" class="ln">   177  </span>			productID, err := uuid.Parse(&#34;a1000000-0000-4000-8000-000000000001&#34;)
-<span id="L178" class="ln">   178  </span>			require.NoError(t, err)
-<span id="L179" class="ln">   179  </span>
-<span id="L180" class="ln">   180  </span>			s, mockUC := newServer(t)
-<span id="L181" class="ln">   181  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Return(rankinguc.AmountRankingView{
-<span id="L182" class="ln">   182  </span>				Rankings: []rankinguc.AmountRankingItemView{
-<span id="L183" class="ln">   183  </span>					{
-<span id="L184" class="ln">   184  </span>						ProductID:   productID,
-<span id="L185" class="ln">   185  </span>						Name:        &#34;商品A&#34;,
-<span id="L186" class="ln">   186  </span>						Price:       decimaltestkit.MustParse(t, &#34;19.995&#34;),
-<span id="L187" class="ln">   187  </span>						SalesAmount: decimaltestkit.MustParse(t, &#34;59.985&#34;),
-<span id="L188" class="ln">   188  </span>					},
-<span id="L189" class="ln">   189  </span>				},
-<span id="L190" class="ln">   190  </span>			}, nil)
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>			resp, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{
-<span id="L193" class="ln">   193  </span>				Params: gen.GetProductsRankingAmountParams{Limit: ptr.To(10)},
-<span id="L194" class="ln">   194  </span>			})
-<span id="L195" class="ln">   195  </span>			require.NoError(t, err)
-<span id="L196" class="ln">   196  </span>
-<span id="L197" class="ln">   197  </span>			actual, ok := resp.(gen.GetProductsRankingAmount200JSONResponse)
-<span id="L198" class="ln">   198  </span>			require.True(t, ok)
-<span id="L199" class="ln">   199  </span>			assert.Equal(t, gen.GetProductsRankingAmount200JSONResponse{
-<span id="L200" class="ln">   200  </span>				Rankings: []gen.ProductAmountRankingItem{
-<span id="L201" class="ln">   201  </span>					{ProductId: productID.ToPrimitive(), Name: &#34;商品A&#34;, Price: &#34;19.995&#34;, SalesAmount: &#34;59.985&#34;},
-<span id="L202" class="ln">   202  </span>				},
-<span id="L203" class="ln">   203  </span>			}, actual)
-<span id="L204" class="ln">   204  </span>		})
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>		t.Run(&#34;期間/limit未指定は境界を持たない対象期間と0でusecaseへ渡す&#34;, func(t *testing.T) {
-<span id="L207" class="ln">   207  </span>			t.Parallel()
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>			s, mockUC := newServer(t)
-<span id="L210" class="ln">   210  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L211" class="ln">   211  </span>				func(_ context.Context, params rankinguc.GetRankingParams) (rankinguc.AmountRankingView, error) {
-<span id="L212" class="ln">   212  </span>					assert.Nil(t, params.Window.After())
-<span id="L213" class="ln">   213  </span>					assert.Nil(t, params.Window.Before())
-<span id="L214" class="ln">   214  </span>					assert.Equal(t, 0, params.Limit)
-<span id="L215" class="ln">   215  </span>					return rankinguc.AmountRankingView{Rankings: []rankinguc.AmountRankingItemView{}}, nil
-<span id="L216" class="ln">   216  </span>				})
-<span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span>			_, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{
-<span id="L219" class="ln">   219  </span>				Params: gen.GetProductsRankingAmountParams{},
-<span id="L220" class="ln">   220  </span>			})
-<span id="L221" class="ln">   221  </span>			require.NoError(t, err)
-<span id="L222" class="ln">   222  </span>		})
-<span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span>		t.Run(&#34;orderedAfter・orderedBeforeを対象期間へ変換してusecaseへ渡す&#34;, func(t *testing.T) {
-<span id="L225" class="ln">   225  </span>			t.Parallel()
+<span id="L103" class="ln">   103  </span>				},
+<span id="L104" class="ln">   104  </span>			)
+<span id="L105" class="ln">   105  </span>
+<span id="L106" class="ln">   106  </span>			resp, err := s.GetProductsRankingQuantity(context.Background(), gen.GetProductsRankingQuantityRequestObject{
+<span id="L107" class="ln">   107  </span>				Params: gen.GetProductsRankingQuantityParams{},
+<span id="L108" class="ln">   108  </span>			})
+<span id="L109" class="ln">   109  </span>			require.NoError(t, err)
+<span id="L110" class="ln">   110  </span>
+<span id="L111" class="ln">   111  </span>			actual, ok := resp.(gen.GetProductsRankingQuantity200JSONResponse)
+<span id="L112" class="ln">   112  </span>			require.True(t, ok)
+<span id="L113" class="ln">   113  </span>			assert.NotNil(t, actual.Rankings)
+<span id="L114" class="ln">   114  </span>			assert.Empty(t, actual.Rankings)
+<span id="L115" class="ln">   115  </span>		})
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>		t.Run(&#34;orderedAfter・orderedBeforeを対象期間へ変換してusecaseへ渡す&#34;, func(t *testing.T) {
+<span id="L118" class="ln">   118  </span>			t.Parallel()
+<span id="L119" class="ln">   119  </span>
+<span id="L120" class="ln">   120  </span>			after := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
+<span id="L121" class="ln">   121  </span>			before := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span>			s, mockUC := newServer(t)
+<span id="L124" class="ln">   124  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L125" class="ln">   125  </span>				func(_ context.Context, params rankinguc.GetRankingParams) (rankinguc.QuantityRankingView, error) {
+<span id="L126" class="ln">   126  </span>					assert.Equal(t, after, *params.Window.After())
+<span id="L127" class="ln">   127  </span>					assert.Equal(t, before, *params.Window.Before())
+<span id="L128" class="ln">   128  </span>					return rankinguc.QuantityRankingView{Rankings: []rankinguc.QuantityRankingItemView{}}, nil
+<span id="L129" class="ln">   129  </span>				},
+<span id="L130" class="ln">   130  </span>			)
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span>			_, err := s.GetProductsRankingQuantity(context.Background(), gen.GetProductsRankingQuantityRequestObject{
+<span id="L133" class="ln">   133  </span>				Params: gen.GetProductsRankingQuantityParams{OrderedAfter: &amp;after, OrderedBefore: &amp;before},
+<span id="L134" class="ln">   134  </span>			})
+<span id="L135" class="ln">   135  </span>			require.NoError(t, err)
+<span id="L136" class="ln">   136  </span>		})
+<span id="L137" class="ln">   137  </span>	})
+<span id="L138" class="ln">   138  </span>
+<span id="L139" class="ln">   139  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L140" class="ln">   140  </span>		t.Parallel()
+<span id="L141" class="ln">   141  </span>
+<span id="L142" class="ln">   142  </span>		t.Run(&#34;orderedBeforeがorderedAfter以前の場合、usecaseを呼ばずErrInvalidArgumentを返す&#34;, func(t *testing.T) {
+<span id="L143" class="ln">   143  </span>			t.Parallel()
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span>			s, mockUC := newServer(t)
+<span id="L146" class="ln">   146  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Times(0)
+<span id="L147" class="ln">   147  </span>
+<span id="L148" class="ln">   148  </span>			after := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
+<span id="L149" class="ln">   149  </span>			before := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>			_, err := s.GetProductsRankingQuantity(context.Background(), gen.GetProductsRankingQuantityRequestObject{
+<span id="L152" class="ln">   152  </span>				Params: gen.GetProductsRankingQuantityParams{OrderedAfter: &amp;after, OrderedBefore: &amp;before},
+<span id="L153" class="ln">   153  </span>			})
+<span id="L154" class="ln">   154  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
+<span id="L155" class="ln">   155  </span>		})
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>		t.Run(&#34;usecaseのエラーをそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L158" class="ln">   158  </span>			t.Parallel()
+<span id="L159" class="ln">   159  </span>
+<span id="L160" class="ln">   160  </span>			s, mockUC := newServer(t)
+<span id="L161" class="ln">   161  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Return(rankinguc.QuantityRankingView{}, apperror.ErrInternal)
+<span id="L162" class="ln">   162  </span>
+<span id="L163" class="ln">   163  </span>			resp, err := s.GetProductsRankingQuantity(context.Background(), gen.GetProductsRankingQuantityRequestObject{})
+<span id="L164" class="ln">   164  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L165" class="ln">   165  </span>			assert.Nil(t, resp)
+<span id="L166" class="ln">   166  </span>		})
+<span id="L167" class="ln">   167  </span>	})
+<span id="L168" class="ln">   168  </span>}
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>func Test_server_GetProductsRankingAmount(t *testing.T) {
+<span id="L171" class="ln">   171  </span>	t.Parallel()
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L174" class="ln">   174  </span>		t.Parallel()
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>		t.Run(&#34;usecaseのDTOを金額ランキングのレスポンスへ写像して返す&#34;, func(t *testing.T) {
+<span id="L177" class="ln">   177  </span>			t.Parallel()
+<span id="L178" class="ln">   178  </span>
+<span id="L179" class="ln">   179  </span>			productID, err := uuid.Parse(&#34;a1000000-0000-4000-8000-000000000001&#34;)
+<span id="L180" class="ln">   180  </span>			require.NoError(t, err)
+<span id="L181" class="ln">   181  </span>
+<span id="L182" class="ln">   182  </span>			s, mockUC := newServer(t)
+<span id="L183" class="ln">   183  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Return(rankinguc.AmountRankingView{
+<span id="L184" class="ln">   184  </span>				Rankings: []rankinguc.AmountRankingItemView{
+<span id="L185" class="ln">   185  </span>					{
+<span id="L186" class="ln">   186  </span>						ProductID:   productID,
+<span id="L187" class="ln">   187  </span>						Name:        &#34;商品A&#34;,
+<span id="L188" class="ln">   188  </span>						Price:       decimaltestkit.MustParse(t, &#34;19.995&#34;),
+<span id="L189" class="ln">   189  </span>						SalesAmount: decimaltestkit.MustParse(t, &#34;59.985&#34;),
+<span id="L190" class="ln">   190  </span>					},
+<span id="L191" class="ln">   191  </span>				},
+<span id="L192" class="ln">   192  </span>			}, nil)
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span>			resp, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{
+<span id="L195" class="ln">   195  </span>				Params: gen.GetProductsRankingAmountParams{Limit: ptr.To(10)},
+<span id="L196" class="ln">   196  </span>			})
+<span id="L197" class="ln">   197  </span>			require.NoError(t, err)
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span>			actual, ok := resp.(gen.GetProductsRankingAmount200JSONResponse)
+<span id="L200" class="ln">   200  </span>			require.True(t, ok)
+<span id="L201" class="ln">   201  </span>			assert.Equal(t, gen.GetProductsRankingAmount200JSONResponse{
+<span id="L202" class="ln">   202  </span>				Rankings: []gen.ProductAmountRankingItem{
+<span id="L203" class="ln">   203  </span>					{ProductId: productID.ToPrimitive(), Name: &#34;商品A&#34;, Price: &#34;19.995&#34;, SalesAmount: &#34;59.985&#34;},
+<span id="L204" class="ln">   204  </span>				},
+<span id="L205" class="ln">   205  </span>			}, actual)
+<span id="L206" class="ln">   206  </span>		})
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>		t.Run(&#34;期間/limit未指定は境界を持たない対象期間と0でusecaseへ渡す&#34;, func(t *testing.T) {
+<span id="L209" class="ln">   209  </span>			t.Parallel()
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span>			s, mockUC := newServer(t)
+<span id="L212" class="ln">   212  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L213" class="ln">   213  </span>				func(_ context.Context, params rankinguc.GetRankingParams) (rankinguc.AmountRankingView, error) {
+<span id="L214" class="ln">   214  </span>					assert.Nil(t, params.Window.After())
+<span id="L215" class="ln">   215  </span>					assert.Nil(t, params.Window.Before())
+<span id="L216" class="ln">   216  </span>					assert.Equal(t, 0, params.Limit)
+<span id="L217" class="ln">   217  </span>					return rankinguc.AmountRankingView{Rankings: []rankinguc.AmountRankingItemView{}}, nil
+<span id="L218" class="ln">   218  </span>				},
+<span id="L219" class="ln">   219  </span>			)
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span>			_, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{
+<span id="L222" class="ln">   222  </span>				Params: gen.GetProductsRankingAmountParams{},
+<span id="L223" class="ln">   223  </span>			})
+<span id="L224" class="ln">   224  </span>			require.NoError(t, err)
+<span id="L225" class="ln">   225  </span>		})
 <span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span>			after := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
-<span id="L228" class="ln">   228  </span>			before := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
+<span id="L227" class="ln">   227  </span>		t.Run(&#34;orderedAfter・orderedBeforeを対象期間へ変換してusecaseへ渡す&#34;, func(t *testing.T) {
+<span id="L228" class="ln">   228  </span>			t.Parallel()
 <span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			s, mockUC := newServer(t)
-<span id="L231" class="ln">   231  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L232" class="ln">   232  </span>				func(_ context.Context, params rankinguc.GetRankingParams) (rankinguc.AmountRankingView, error) {
-<span id="L233" class="ln">   233  </span>					assert.Equal(t, after, *params.Window.After())
-<span id="L234" class="ln">   234  </span>					assert.Equal(t, before, *params.Window.Before())
-<span id="L235" class="ln">   235  </span>					return rankinguc.AmountRankingView{Rankings: []rankinguc.AmountRankingItemView{}}, nil
-<span id="L236" class="ln">   236  </span>				})
-<span id="L237" class="ln">   237  </span>
-<span id="L238" class="ln">   238  </span>			_, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{
-<span id="L239" class="ln">   239  </span>				Params: gen.GetProductsRankingAmountParams{OrderedAfter: &amp;after, OrderedBefore: &amp;before},
-<span id="L240" class="ln">   240  </span>			})
-<span id="L241" class="ln">   241  </span>			require.NoError(t, err)
-<span id="L242" class="ln">   242  </span>		})
-<span id="L243" class="ln">   243  </span>	})
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L246" class="ln">   246  </span>		t.Parallel()
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>		t.Run(&#34;orderedBeforeがorderedAfter以前の場合、usecaseを呼ばずErrInvalidArgumentを返す&#34;, func(t *testing.T) {
-<span id="L249" class="ln">   249  </span>			t.Parallel()
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>			s, mockUC := newServer(t)
-<span id="L252" class="ln">   252  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Times(0)
-<span id="L253" class="ln">   253  </span>
-<span id="L254" class="ln">   254  </span>			after := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
-<span id="L255" class="ln">   255  </span>			before := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
-<span id="L256" class="ln">   256  </span>
-<span id="L257" class="ln">   257  </span>			_, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{
-<span id="L258" class="ln">   258  </span>				Params: gen.GetProductsRankingAmountParams{OrderedAfter: &amp;after, OrderedBefore: &amp;before},
-<span id="L259" class="ln">   259  </span>			})
-<span id="L260" class="ln">   260  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
-<span id="L261" class="ln">   261  </span>		})
-<span id="L262" class="ln">   262  </span>
-<span id="L263" class="ln">   263  </span>		t.Run(&#34;usecaseのエラーをそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L264" class="ln">   264  </span>			t.Parallel()
-<span id="L265" class="ln">   265  </span>
-<span id="L266" class="ln">   266  </span>			s, mockUC := newServer(t)
-<span id="L267" class="ln">   267  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).
-<span id="L268" class="ln">   268  </span>				Return(rankinguc.AmountRankingView{}, apperror.ErrInternal)
+<span id="L230" class="ln">   230  </span>			after := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
+<span id="L231" class="ln">   231  </span>			before := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
+<span id="L232" class="ln">   232  </span>
+<span id="L233" class="ln">   233  </span>			s, mockUC := newServer(t)
+<span id="L234" class="ln">   234  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L235" class="ln">   235  </span>				func(_ context.Context, params rankinguc.GetRankingParams) (rankinguc.AmountRankingView, error) {
+<span id="L236" class="ln">   236  </span>					assert.Equal(t, after, *params.Window.After())
+<span id="L237" class="ln">   237  </span>					assert.Equal(t, before, *params.Window.Before())
+<span id="L238" class="ln">   238  </span>					return rankinguc.AmountRankingView{Rankings: []rankinguc.AmountRankingItemView{}}, nil
+<span id="L239" class="ln">   239  </span>				},
+<span id="L240" class="ln">   240  </span>			)
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>			_, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{
+<span id="L243" class="ln">   243  </span>				Params: gen.GetProductsRankingAmountParams{OrderedAfter: &amp;after, OrderedBefore: &amp;before},
+<span id="L244" class="ln">   244  </span>			})
+<span id="L245" class="ln">   245  </span>			require.NoError(t, err)
+<span id="L246" class="ln">   246  </span>		})
+<span id="L247" class="ln">   247  </span>	})
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L250" class="ln">   250  </span>		t.Parallel()
+<span id="L251" class="ln">   251  </span>
+<span id="L252" class="ln">   252  </span>		t.Run(&#34;orderedBeforeがorderedAfter以前の場合、usecaseを呼ばずErrInvalidArgumentを返す&#34;, func(t *testing.T) {
+<span id="L253" class="ln">   253  </span>			t.Parallel()
+<span id="L254" class="ln">   254  </span>
+<span id="L255" class="ln">   255  </span>			s, mockUC := newServer(t)
+<span id="L256" class="ln">   256  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Times(0)
+<span id="L257" class="ln">   257  </span>
+<span id="L258" class="ln">   258  </span>			after := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
+<span id="L259" class="ln">   259  </span>			before := time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC)
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span>			_, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{
+<span id="L262" class="ln">   262  </span>				Params: gen.GetProductsRankingAmountParams{OrderedAfter: &amp;after, OrderedBefore: &amp;before},
+<span id="L263" class="ln">   263  </span>			})
+<span id="L264" class="ln">   264  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
+<span id="L265" class="ln">   265  </span>		})
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>		t.Run(&#34;usecaseのエラーをそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L268" class="ln">   268  </span>			t.Parallel()
 <span id="L269" class="ln">   269  </span>
-<span id="L270" class="ln">   270  </span>			resp, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{})
-<span id="L271" class="ln">   271  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
-<span id="L272" class="ln">   272  </span>			assert.Nil(t, resp)
-<span id="L273" class="ln">   273  </span>		})
-<span id="L274" class="ln">   274  </span>	})
-<span id="L275" class="ln">   275  </span>}
-<span id="L276" class="ln">   276  </span>
-<span id="L277" class="ln">   277  </span>func Test_toAmountRankingResponse(t *testing.T) {
-<span id="L278" class="ln">   278  </span>	t.Parallel()
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L281" class="ln">   281  </span>		t.Parallel()
-<span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>		t.Run(&#34;金額と単価を丸めずに文字列へ写像する&#34;, func(t *testing.T) {
-<span id="L284" class="ln">   284  </span>			t.Parallel()
-<span id="L285" class="ln">   285  </span>
-<span id="L286" class="ln">   286  </span>			productID, err := uuid.Parse(&#34;a1000000-0000-4000-8000-000000000002&#34;)
-<span id="L287" class="ln">   287  </span>			require.NoError(t, err)
-<span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>			got := toAmountRankingResponse(rankinguc.AmountRankingView{
-<span id="L290" class="ln">   290  </span>				Rankings: []rankinguc.AmountRankingItemView{
-<span id="L291" class="ln">   291  </span>					{
-<span id="L292" class="ln">   292  </span>						ProductID:   productID,
-<span id="L293" class="ln">   293  </span>						Name:        &#34;商品B&#34;,
-<span id="L294" class="ln">   294  </span>						Price:       decimaltestkit.MustParse(t, &#34;0.005&#34;),
-<span id="L295" class="ln">   295  </span>						SalesAmount: decimaltestkit.MustParse(t, &#34;0.015&#34;),
-<span id="L296" class="ln">   296  </span>					},
-<span id="L297" class="ln">   297  </span>				},
-<span id="L298" class="ln">   298  </span>			})
-<span id="L299" class="ln">   299  </span>
-<span id="L300" class="ln">   300  </span>			require.Len(t, got.Rankings, 1)
-<span id="L301" class="ln">   301  </span>			assert.Equal(t, &#34;0.005&#34;, got.Rankings[0].Price)
-<span id="L302" class="ln">   302  </span>			assert.Equal(t, &#34;0.015&#34;, got.Rankings[0].SalesAmount)
-<span id="L303" class="ln">   303  </span>		})
-<span id="L304" class="ln">   304  </span>
-<span id="L305" class="ln">   305  </span>		t.Run(&#34;項目が空の場合はnilでない空スライスを返す&#34;, func(t *testing.T) {
-<span id="L306" class="ln">   306  </span>			t.Parallel()
-<span id="L307" class="ln">   307  </span>
-<span id="L308" class="ln">   308  </span>			got := toAmountRankingResponse(rankinguc.AmountRankingView{})
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>			assert.NotNil(t, got.Rankings)
-<span id="L311" class="ln">   311  </span>			assert.Empty(t, got.Rankings)
-<span id="L312" class="ln">   312  </span>		})
-<span id="L313" class="ln">   313  </span>	})
-<span id="L314" class="ln">   314  </span>}
-<span id="L315" class="ln">   315  </span>
-<span id="L316" class="ln">   316  </span>func Test_limitParam(t *testing.T) {
-<span id="L317" class="ln">   317  </span>	t.Parallel()
-<span id="L318" class="ln">   318  </span>
-<span id="L319" class="ln">   319  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L320" class="ln">   320  </span>		t.Parallel()
-<span id="L321" class="ln">   321  </span>
-<span id="L322" class="ln">   322  </span>		t.Run(&#34;未指定の場合、0を返す&#34;, func(t *testing.T) {
-<span id="L323" class="ln">   323  </span>			t.Parallel()
-<span id="L324" class="ln">   324  </span>			assert.Equal(t, 0, limitParam(nil))
-<span id="L325" class="ln">   325  </span>		})
-<span id="L326" class="ln">   326  </span>
-<span id="L327" class="ln">   327  </span>		t.Run(&#34;指定時はその値を返す&#34;, func(t *testing.T) {
-<span id="L328" class="ln">   328  </span>			t.Parallel()
-<span id="L329" class="ln">   329  </span>			assert.Equal(t, 25, limitParam(ptr.To(25)))
-<span id="L330" class="ln">   330  </span>		})
-<span id="L331" class="ln">   331  </span>	})
-<span id="L332" class="ln">   332  </span>}
-<span id="L333" class="ln">   333  </span>
-<span id="L334" class="ln">   334  </span>func Test_toQuantityRankingResponse(t *testing.T) {
-<span id="L335" class="ln">   335  </span>	t.Parallel()
-<span id="L336" class="ln">   336  </span>
-<span id="L337" class="ln">   337  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L338" class="ln">   338  </span>		t.Parallel()
-<span id="L339" class="ln">   339  </span>
-<span id="L340" class="ln">   340  </span>		t.Run(&#34;RankingViewの各項目をレスポンス項目へ写像する&#34;, func(t *testing.T) {
-<span id="L341" class="ln">   341  </span>			t.Parallel()
-<span id="L342" class="ln">   342  </span>
-<span id="L343" class="ln">   343  </span>			productID, err := uuid.Parse(&#34;a1000000-0000-4000-8000-000000000001&#34;)
-<span id="L344" class="ln">   344  </span>			require.NoError(t, err)
-<span id="L345" class="ln">   345  </span>
-<span id="L346" class="ln">   346  </span>			got := toQuantityRankingResponse(rankinguc.QuantityRankingView{
-<span id="L347" class="ln">   347  </span>				Rankings: []rankinguc.QuantityRankingItemView{
-<span id="L348" class="ln">   348  </span>					{ProductID: productID, Name: &#34;商品A&#34;, Price: decimaltestkit.MustParse(t, &#34;19.99&#34;), SoldQuantity: 8},
-<span id="L349" class="ln">   349  </span>				},
-<span id="L350" class="ln">   350  </span>			})
-<span id="L351" class="ln">   351  </span>
-<span id="L352" class="ln">   352  </span>			assert.Equal(t, gen.ProductQuantityRankingResponse{
-<span id="L353" class="ln">   353  </span>				Rankings: []gen.ProductQuantityRankingItem{
-<span id="L354" class="ln">   354  </span>					{ProductId: productID.ToPrimitive(), Name: &#34;商品A&#34;, Price: &#34;19.99&#34;, SoldQuantity: 8},
-<span id="L355" class="ln">   355  </span>				},
-<span id="L356" class="ln">   356  </span>			}, got)
-<span id="L357" class="ln">   357  </span>		})
-<span id="L358" class="ln">   358  </span>
-<span id="L359" class="ln">   359  </span>		t.Run(&#34;空一覧は空スライスの項目を返す&#34;, func(t *testing.T) {
-<span id="L360" class="ln">   360  </span>			t.Parallel()
-<span id="L361" class="ln">   361  </span>
-<span id="L362" class="ln">   362  </span>			got := toQuantityRankingResponse(rankinguc.QuantityRankingView{})
-<span id="L363" class="ln">   363  </span>			assert.NotNil(t, got.Rankings)
-<span id="L364" class="ln">   364  </span>			assert.Empty(t, got.Rankings)
-<span id="L365" class="ln">   365  </span>		})
-<span id="L366" class="ln">   366  </span>	})
-<span id="L367" class="ln">   367  </span>}
-<span id="L368" class="ln">   368  </span>
+<span id="L270" class="ln">   270  </span>			s, mockUC := newServer(t)
+<span id="L271" class="ln">   271  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).
+<span id="L272" class="ln">   272  </span>				Return(rankinguc.AmountRankingView{}, apperror.ErrInternal)
+<span id="L273" class="ln">   273  </span>
+<span id="L274" class="ln">   274  </span>			resp, err := s.GetProductsRankingAmount(context.Background(), gen.GetProductsRankingAmountRequestObject{})
+<span id="L275" class="ln">   275  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L276" class="ln">   276  </span>			assert.Nil(t, resp)
+<span id="L277" class="ln">   277  </span>		})
+<span id="L278" class="ln">   278  </span>	})
+<span id="L279" class="ln">   279  </span>}
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span>func Test_toAmountRankingResponse(t *testing.T) {
+<span id="L282" class="ln">   282  </span>	t.Parallel()
+<span id="L283" class="ln">   283  </span>
+<span id="L284" class="ln">   284  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L285" class="ln">   285  </span>		t.Parallel()
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>		t.Run(&#34;金額と単価を丸めずに文字列へ写像する&#34;, func(t *testing.T) {
+<span id="L288" class="ln">   288  </span>			t.Parallel()
+<span id="L289" class="ln">   289  </span>
+<span id="L290" class="ln">   290  </span>			productID, err := uuid.Parse(&#34;a1000000-0000-4000-8000-000000000002&#34;)
+<span id="L291" class="ln">   291  </span>			require.NoError(t, err)
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>			got := toAmountRankingResponse(rankinguc.AmountRankingView{
+<span id="L294" class="ln">   294  </span>				Rankings: []rankinguc.AmountRankingItemView{
+<span id="L295" class="ln">   295  </span>					{
+<span id="L296" class="ln">   296  </span>						ProductID:   productID,
+<span id="L297" class="ln">   297  </span>						Name:        &#34;商品B&#34;,
+<span id="L298" class="ln">   298  </span>						Price:       decimaltestkit.MustParse(t, &#34;0.005&#34;),
+<span id="L299" class="ln">   299  </span>						SalesAmount: decimaltestkit.MustParse(t, &#34;0.015&#34;),
+<span id="L300" class="ln">   300  </span>					},
+<span id="L301" class="ln">   301  </span>				},
+<span id="L302" class="ln">   302  </span>			})
+<span id="L303" class="ln">   303  </span>
+<span id="L304" class="ln">   304  </span>			require.Len(t, got.Rankings, 1)
+<span id="L305" class="ln">   305  </span>			assert.Equal(t, &#34;0.005&#34;, got.Rankings[0].Price)
+<span id="L306" class="ln">   306  </span>			assert.Equal(t, &#34;0.015&#34;, got.Rankings[0].SalesAmount)
+<span id="L307" class="ln">   307  </span>		})
+<span id="L308" class="ln">   308  </span>
+<span id="L309" class="ln">   309  </span>		t.Run(&#34;項目が空の場合はnilでない空スライスを返す&#34;, func(t *testing.T) {
+<span id="L310" class="ln">   310  </span>			t.Parallel()
+<span id="L311" class="ln">   311  </span>
+<span id="L312" class="ln">   312  </span>			got := toAmountRankingResponse(rankinguc.AmountRankingView{})
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span>			assert.NotNil(t, got.Rankings)
+<span id="L315" class="ln">   315  </span>			assert.Empty(t, got.Rankings)
+<span id="L316" class="ln">   316  </span>		})
+<span id="L317" class="ln">   317  </span>	})
+<span id="L318" class="ln">   318  </span>}
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span>func Test_limitParam(t *testing.T) {
+<span id="L321" class="ln">   321  </span>	t.Parallel()
+<span id="L322" class="ln">   322  </span>
+<span id="L323" class="ln">   323  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L324" class="ln">   324  </span>		t.Parallel()
+<span id="L325" class="ln">   325  </span>
+<span id="L326" class="ln">   326  </span>		t.Run(&#34;未指定の場合、0を返す&#34;, func(t *testing.T) {
+<span id="L327" class="ln">   327  </span>			t.Parallel()
+<span id="L328" class="ln">   328  </span>			assert.Equal(t, 0, limitParam(nil))
+<span id="L329" class="ln">   329  </span>		})
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>		t.Run(&#34;指定時はその値を返す&#34;, func(t *testing.T) {
+<span id="L332" class="ln">   332  </span>			t.Parallel()
+<span id="L333" class="ln">   333  </span>			assert.Equal(t, 25, limitParam(ptr.To(25)))
+<span id="L334" class="ln">   334  </span>		})
+<span id="L335" class="ln">   335  </span>	})
+<span id="L336" class="ln">   336  </span>}
+<span id="L337" class="ln">   337  </span>
+<span id="L338" class="ln">   338  </span>func Test_toQuantityRankingResponse(t *testing.T) {
+<span id="L339" class="ln">   339  </span>	t.Parallel()
+<span id="L340" class="ln">   340  </span>
+<span id="L341" class="ln">   341  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L342" class="ln">   342  </span>		t.Parallel()
+<span id="L343" class="ln">   343  </span>
+<span id="L344" class="ln">   344  </span>		t.Run(&#34;RankingViewの各項目をレスポンス項目へ写像する&#34;, func(t *testing.T) {
+<span id="L345" class="ln">   345  </span>			t.Parallel()
+<span id="L346" class="ln">   346  </span>
+<span id="L347" class="ln">   347  </span>			productID, err := uuid.Parse(&#34;a1000000-0000-4000-8000-000000000001&#34;)
+<span id="L348" class="ln">   348  </span>			require.NoError(t, err)
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>			got := toQuantityRankingResponse(rankinguc.QuantityRankingView{
+<span id="L351" class="ln">   351  </span>				Rankings: []rankinguc.QuantityRankingItemView{
+<span id="L352" class="ln">   352  </span>					{ProductID: productID, Name: &#34;商品A&#34;, Price: decimaltestkit.MustParse(t, &#34;19.99&#34;), SoldQuantity: 8},
+<span id="L353" class="ln">   353  </span>				},
+<span id="L354" class="ln">   354  </span>			})
+<span id="L355" class="ln">   355  </span>
+<span id="L356" class="ln">   356  </span>			assert.Equal(t, gen.ProductQuantityRankingResponse{
+<span id="L357" class="ln">   357  </span>				Rankings: []gen.ProductQuantityRankingItem{
+<span id="L358" class="ln">   358  </span>					{ProductId: productID.ToPrimitive(), Name: &#34;商品A&#34;, Price: &#34;19.99&#34;, SoldQuantity: 8},
+<span id="L359" class="ln">   359  </span>				},
+<span id="L360" class="ln">   360  </span>			}, got)
+<span id="L361" class="ln">   361  </span>		})
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span>		t.Run(&#34;空一覧は空スライスの項目を返す&#34;, func(t *testing.T) {
+<span id="L364" class="ln">   364  </span>			t.Parallel()
+<span id="L365" class="ln">   365  </span>
+<span id="L366" class="ln">   366  </span>			got := toQuantityRankingResponse(rankinguc.QuantityRankingView{})
+<span id="L367" class="ln">   367  </span>			assert.NotNil(t, got.Rankings)
+<span id="L368" class="ln">   368  </span>			assert.Empty(t, got.Rankings)
+<span id="L369" class="ln">   369  </span>		})
+<span id="L370" class="ln">   370  </span>	})
+<span id="L371" class="ln">   371  </span>}
+<span id="L372" class="ln">   372  </span>
 </pre><p><a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/ranking/v1_products_ranking_handler_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

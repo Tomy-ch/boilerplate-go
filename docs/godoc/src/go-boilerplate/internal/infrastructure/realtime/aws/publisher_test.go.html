@@ -1,0 +1,336 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>aws - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure">infrastructure</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime">realtime</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws">aws</a>/<span class="text-muted">publisher_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/infrastructure/realtime/aws">go-boilerplate/internal/infrastructure/realtime/aws</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package aws
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;testing&#34;
+<span id="L5" class="ln">     5  </span>	&#34;time&#34;
+<span id="L6" class="ln">     6  </span>
+<span id="L7" class="ln">     7  </span>	awssdk &#34;github.com/aws/aws-sdk-go-v2/aws&#34;
+<span id="L8" class="ln">     8  </span>	&#34;github.com/aws/aws-sdk-go-v2/service/sns&#34;
+<span id="L9" class="ln">     9  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L10" class="ln">    10  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L11" class="ln">    11  </span>	gomock &#34;go.uber.org/mock/gomock&#34;
+<span id="L12" class="ln">    12  </span>
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L14" class="ln">    14  </span>	mock_aws &#34;go-boilerplate/internal/infrastructure/realtime/aws/mock&#34;
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L16" class="ln">    16  </span>	publisherbndry &#34;go-boilerplate/internal/usecase/boundary/publisher&#34;
+<span id="L17" class="ln">    17  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L18" class="ln">    18  </span>	mock_realtime &#34;go-boilerplate/internal/usecase/boundary/realtime/mock&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L20" class="ln">    20  </span>)
+<span id="L21" class="ln">    21  </span>
+<span id="L22" class="ln">    22  </span>func newPublisher(t *testing.T) (publisherbndry.Publisher, *mock_realtime.MockEventLogStore, *mock_aws.MockSNSAPI) {
+<span id="L23" class="ln">    23  </span>	t.Helper()
+<span id="L24" class="ln">    24  </span>
+<span id="L25" class="ln">    25  </span>	ctrl := gomock.NewController(t)
+<span id="L26" class="ln">    26  </span>	log := mock_realtime.NewMockEventLogStore(ctrl)
+<span id="L27" class="ln">    27  </span>	snsAPI := mock_aws.NewMockSNSAPI(ctrl)
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span>	return NewPublisher(log, snsAPI, testTopicARN, observability.NewNoopTracerFactory(t), observability.NewNoopRealtimeMetrics(t)), log, snsAPI
+<span id="L30" class="ln">    30  </span>}
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span><span class="comment">// outboxMessage は、eventID の event を payload に持つ outbox message を返します。eventID が空なら payload の eventId を省きます。</span>
+<span id="L33" class="ln">    33  </span>func outboxMessage(t *testing.T, eventID string) (publisherbndry.Message, rt.DeliveryEvent) {
+<span id="L34" class="ln">    34  </span>	t.Helper()
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span>	id, err := uuid.New()
+<span id="L37" class="ln">    37  </span>	require.NoError(t, err)
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span>	event := rt.DeliveryEvent{
+<span id="L40" class="ln">    40  </span>		EventID: eventID, StreamID: &#34;stream-1&#34;, Sequence: 7, Type: &#34;inquiry.message.appended.v1&#34;,
+<span id="L41" class="ln">    41  </span>		OccurredAt: time.Date(
+<span id="L42" class="ln">    42  </span>			2026,
+<span id="L43" class="ln">    43  </span>			time.August,
+<span id="L44" class="ln">    44  </span>			29,
+<span id="L45" class="ln">    45  </span>			1,
+<span id="L46" class="ln">    46  </span>			2,
+<span id="L47" class="ln">    47  </span>			3,
+<span id="L48" class="ln">    48  </span>			0,
+<span id="L49" class="ln">    49  </span>			time.UTC,
+<span id="L50" class="ln">    50  </span>		), SchemaVersion: 1, Payload: []byte(`{&#34;body&#34;:&#34;hi&#34;}`),
+<span id="L51" class="ln">    51  </span>	}
+<span id="L52" class="ln">    52  </span>	payload, err := event.MarshalJSON()
+<span id="L53" class="ln">    53  </span>	require.NoError(t, err)
+<span id="L54" class="ln">    54  </span>
+<span id="L55" class="ln">    55  </span>	if eventID == &#34;&#34; {
+<span id="L56" class="ln">    56  </span>		event.EventID = id.String()
+<span id="L57" class="ln">    57  </span>	}
+<span id="L58" class="ln">    58  </span>
+<span id="L59" class="ln">    59  </span>	return publisherbndry.Message{MessageID: id, EventType: event.Type, Payload: payload}, event
+<span id="L60" class="ln">    60  </span>}
+<span id="L61" class="ln">    61  </span>
+<span id="L62" class="ln">    62  </span>func TestNewPublisher(t *testing.T) {
+<span id="L63" class="ln">    63  </span>	t.Parallel()
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span>	p, _, _ := newPublisher(t)
+<span id="L66" class="ln">    66  </span>	assert.NotNil(t, p)
+<span id="L67" class="ln">    67  </span>}
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span>func Test_publisher_Publish(t *testing.T) {
+<span id="L70" class="ln">    70  </span>	t.Parallel()
+<span id="L71" class="ln">    71  </span>
+<span id="L72" class="ln">    72  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L73" class="ln">    73  </span>		t.Parallel()
+<span id="L74" class="ln">    74  </span>
+<span id="L75" class="ln">    75  </span>		t.Run(&#34;EventLog へ append してから wakeup を publish する（eventId は message_id で埋まる）&#34;, func(t *testing.T) {
+<span id="L76" class="ln">    76  </span>			t.Parallel()
+<span id="L77" class="ln">    77  </span>
+<span id="L78" class="ln">    78  </span>			p, log, snsAPI := newPublisher(t)
+<span id="L79" class="ln">    79  </span>			m, want := outboxMessage(t, &#34;&#34;)
+<span id="L80" class="ln">    80  </span>			gomock.InOrder(
+<span id="L81" class="ln">    81  </span>				log.EXPECT().Append(gomock.Any(), want).Return(nil),
+<span id="L82" class="ln">    82  </span>				snsAPI.EXPECT().Publish(gomock.Any(), gomock.Any()).
+<span id="L83" class="ln">    83  </span>					DoAndReturn(func(_ any, in *sns.PublishInput, _ ...func(*sns.Options)) (*sns.PublishOutput, error) {
+<span id="L84" class="ln">    84  </span>						assert.Equal(t, testTopicARN, awssdk.ToString(in.TopicArn))
+<span id="L85" class="ln">    85  </span>						assert.JSONEq(
+<span id="L86" class="ln">    86  </span>							t,
+<span id="L87" class="ln">    87  </span>							`{&#34;eventId&#34;:&#34;`+want.EventID+`&#34;,&#34;streamId&#34;:&#34;stream-1&#34;,&#34;sequence&#34;:&#34;7&#34;}`,
+<span id="L88" class="ln">    88  </span>							awssdk.ToString(in.Message),
+<span id="L89" class="ln">    89  </span>						)
+<span id="L90" class="ln">    90  </span>						assert.Equal(t, &#34;wakeup&#34;, awssdk.ToString(in.MessageAttributes[AttrKind].StringValue))
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>						return &amp;sns.PublishOutput{}, nil
+<span id="L93" class="ln">    93  </span>					}),
+<span id="L94" class="ln">    94  </span>			)
+<span id="L95" class="ln">    95  </span>
+<span id="L96" class="ln">    96  </span>			require.NoError(t, p.Publish(t.Context(), m))
+<span id="L97" class="ln">    97  </span>		})
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span>		t.Run(&#34;append が冪等に成功する再実行でも wakeup を再 publish する（重複 wakeup は無害）&#34;, func(t *testing.T) {
+<span id="L100" class="ln">   100  </span>			t.Parallel()
+<span id="L101" class="ln">   101  </span>
+<span id="L102" class="ln">   102  </span>			p, log, snsAPI := newPublisher(t)
+<span id="L103" class="ln">   103  </span>			m, _ := outboxMessage(t, &#34;&#34;)
+<span id="L104" class="ln">   104  </span>			log.EXPECT().Append(gomock.Any(), gomock.Any()).Return(nil).Times(2)
+<span id="L105" class="ln">   105  </span>			snsAPI.EXPECT().Publish(gomock.Any(), gomock.Any()).Return(&amp;sns.PublishOutput{}, nil).Times(2)
+<span id="L106" class="ln">   106  </span>
+<span id="L107" class="ln">   107  </span>			require.NoError(t, p.Publish(t.Context(), m))
+<span id="L108" class="ln">   108  </span>			require.NoError(t, p.Publish(t.Context(), m))
+<span id="L109" class="ln">   109  </span>		})
+<span id="L110" class="ln">   110  </span>	})
+<span id="L111" class="ln">   111  </span>
+<span id="L112" class="ln">   112  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L113" class="ln">   113  </span>		t.Parallel()
+<span id="L114" class="ln">   114  </span>
+<span id="L115" class="ln">   115  </span>		t.Run(&#34;payload が復元できなければ ErrPermanent で、append も publish もしない&#34;, func(t *testing.T) {
+<span id="L116" class="ln">   116  </span>			t.Parallel()
+<span id="L117" class="ln">   117  </span>
+<span id="L118" class="ln">   118  </span>			p, _, _ := newPublisher(t)
+<span id="L119" class="ln">   119  </span>			m, _ := outboxMessage(t, &#34;&#34;)
+<span id="L120" class="ln">   120  </span>			m.Payload = []byte(&#34;not json&#34;)
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>			err := p.Publish(t.Context(), m)
+<span id="L123" class="ln">   123  </span>			require.ErrorIs(t, err, apperror.ErrPermanent)
+<span id="L124" class="ln">   124  </span>			require.ErrorIs(t, err, rt.ErrInvalidEvent)
+<span id="L125" class="ln">   125  </span>		})
+<span id="L126" class="ln">   126  </span>
+<span id="L127" class="ln">   127  </span>		t.Run(&#34;payload の eventId が message_id と食い違えば ErrEventIDMismatch（permanent）&#34;, func(t *testing.T) {
+<span id="L128" class="ln">   128  </span>			t.Parallel()
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>			p, _, _ := newPublisher(t)
+<span id="L131" class="ln">   131  </span>			m, _ := outboxMessage(t, &#34;other-id&#34;)
+<span id="L132" class="ln">   132  </span>
+<span id="L133" class="ln">   133  </span>			err := p.Publish(t.Context(), m)
+<span id="L134" class="ln">   134  </span>			require.ErrorIs(t, err, ErrEventIDMismatch)
+<span id="L135" class="ln">   135  </span>			require.ErrorIs(t, err, apperror.ErrPermanent)
+<span id="L136" class="ln">   136  </span>		})
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>		t.Run(&#34;封筒が不正なら ErrPermanent&#34;, func(t *testing.T) {
+<span id="L139" class="ln">   139  </span>			t.Parallel()
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span>			p, _, _ := newPublisher(t)
+<span id="L142" class="ln">   142  </span>			m, _ := outboxMessage(t, &#34;&#34;)
+<span id="L143" class="ln">   143  </span>			m.Payload = []byte(`{&#34;eventId&#34;:&#34;&#34;,&#34;streamId&#34;:&#34;&#34;,&#34;sequence&#34;:&#34;1&#34;}`)
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span>			err := p.Publish(t.Context(), m)
+<span id="L146" class="ln">   146  </span>			require.ErrorIs(t, err, apperror.ErrPermanent)
+<span id="L147" class="ln">   147  </span>			require.ErrorIs(t, err, rt.ErrInvalidEvent)
+<span id="L148" class="ln">   148  </span>		})
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span>		t.Run(&#34;同じ位置に別の event があれば ErrPermanent で、publish しない&#34;, func(t *testing.T) {
+<span id="L151" class="ln">   151  </span>			t.Parallel()
+<span id="L152" class="ln">   152  </span>
+<span id="L153" class="ln">   153  </span>			p, log, _ := newPublisher(t)
+<span id="L154" class="ln">   154  </span>			m, _ := outboxMessage(t, &#34;&#34;)
+<span id="L155" class="ln">   155  </span>			log.EXPECT().Append(gomock.Any(), gomock.Any()).Return(rt.ErrSequenceConflict)
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>			err := p.Publish(t.Context(), m)
+<span id="L158" class="ln">   158  </span>			require.ErrorIs(t, err, apperror.ErrPermanent)
+<span id="L159" class="ln">   159  </span>			require.ErrorIs(t, err, rt.ErrSequenceConflict)
+<span id="L160" class="ln">   160  </span>		})
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>		t.Run(&#34;EventLog に届かなければ ErrRetryable で、publish しない&#34;, func(t *testing.T) {
+<span id="L163" class="ln">   163  </span>			t.Parallel()
+<span id="L164" class="ln">   164  </span>
+<span id="L165" class="ln">   165  </span>			p, log, _ := newPublisher(t)
+<span id="L166" class="ln">   166  </span>			m, _ := outboxMessage(t, &#34;&#34;)
+<span id="L167" class="ln">   167  </span>			log.EXPECT().Append(gomock.Any(), gomock.Any()).Return(apperror.ErrUnavailable)
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>			err := p.Publish(t.Context(), m)
+<span id="L170" class="ln">   170  </span>			require.ErrorIs(t, err, apperror.ErrRetryable)
+<span id="L171" class="ln">   171  </span>			assert.NotErrorIs(t, err, apperror.ErrPermanent)
+<span id="L172" class="ln">   172  </span>		})
+<span id="L173" class="ln">   173  </span>
+<span id="L174" class="ln">   174  </span>		t.Run(&#34;append 済みで publish が失敗すれば ErrRetryable（再実行は append の冪等性で吸収される）&#34;, func(t *testing.T) {
+<span id="L175" class="ln">   175  </span>			t.Parallel()
+<span id="L176" class="ln">   176  </span>
+<span id="L177" class="ln">   177  </span>			p, log, snsAPI := newPublisher(t)
+<span id="L178" class="ln">   178  </span>			m, _ := outboxMessage(t, &#34;&#34;)
+<span id="L179" class="ln">   179  </span>			log.EXPECT().Append(gomock.Any(), gomock.Any()).Return(nil)
+<span id="L180" class="ln">   180  </span>			snsAPI.EXPECT().Publish(gomock.Any(), gomock.Any()).Return(nil, errSubstrate)
+<span id="L181" class="ln">   181  </span>
+<span id="L182" class="ln">   182  </span>			err := p.Publish(t.Context(), m)
+<span id="L183" class="ln">   183  </span>			require.ErrorIs(t, err, apperror.ErrRetryable)
+<span id="L184" class="ln">   184  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L185" class="ln">   185  </span>		})
+<span id="L186" class="ln">   186  </span>	})
+<span id="L187" class="ln">   187  </span>}
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>func Test_decodeEvent(t *testing.T) {
+<span id="L190" class="ln">   190  </span>	t.Parallel()
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L193" class="ln">   193  </span>		t.Parallel()
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>		t.Run(&#34;eventId が message_id と一致すればそのまま通る&#34;, func(t *testing.T) {
+<span id="L196" class="ln">   196  </span>			t.Parallel()
+<span id="L197" class="ln">   197  </span>
+<span id="L198" class="ln">   198  </span>			m, _ := outboxMessage(t, &#34;&#34;)
+<span id="L199" class="ln">   199  </span>			m2, _ := outboxMessage(t, m.MessageID.String())
+<span id="L200" class="ln">   200  </span>			m2.MessageID = m.MessageID
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>			got, err := decodeEvent(m2)
+<span id="L203" class="ln">   203  </span>			require.NoError(t, err)
+<span id="L204" class="ln">   204  </span>			assert.Equal(t, m.MessageID.String(), got.EventID)
+<span id="L205" class="ln">   205  </span>		})
+<span id="L206" class="ln">   206  </span>	})
+<span id="L207" class="ln">   207  </span>}
+<span id="L208" class="ln">   208  </span>
+<span id="L209" class="ln">   209  </span>func Test_classifyAppend(t *testing.T) {
+<span id="L210" class="ln">   210  </span>	t.Parallel()
+<span id="L211" class="ln">   211  </span>
+<span id="L212" class="ln">   212  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L213" class="ln">   213  </span>		t.Parallel()
+<span id="L214" class="ln">   214  </span>
+<span id="L215" class="ln">   215  </span>		t.Run(&#34;位置の衝突は permanent&#34;, func(t *testing.T) {
+<span id="L216" class="ln">   216  </span>			t.Parallel()
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>			err := classifyAppend(rt.ErrSequenceConflict)
+<span id="L219" class="ln">   219  </span>			require.ErrorIs(t, err, rt.ErrSequenceConflict)
+<span id="L220" class="ln">   220  </span>			require.ErrorIs(t, err, apperror.ErrPermanent)
+<span id="L221" class="ln">   221  </span>		})
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>		t.Run(&#34;不正な封筒は permanent&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>			err := classifyAppend(rt.ErrInvalidEvent)
+<span id="L227" class="ln">   227  </span>			require.ErrorIs(t, err, rt.ErrInvalidEvent)
+<span id="L228" class="ln">   228  </span>			require.ErrorIs(t, err, apperror.ErrPermanent)
+<span id="L229" class="ln">   229  </span>		})
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>		t.Run(&#34;大きすぎる封筒は permanent&#34;, func(t *testing.T) {
+<span id="L232" class="ln">   232  </span>			t.Parallel()
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>			err := classifyAppend(rt.ErrPayloadTooLarge)
+<span id="L235" class="ln">   235  </span>			require.ErrorIs(t, err, rt.ErrPayloadTooLarge)
+<span id="L236" class="ln">   236  </span>			require.ErrorIs(t, err, apperror.ErrPermanent)
+<span id="L237" class="ln">   237  </span>		})
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>		t.Run(&#34;store の不通は retryable&#34;, func(t *testing.T) {
+<span id="L240" class="ln">   240  </span>			t.Parallel()
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>			err := classifyAppend(apperror.ErrUnavailable)
+<span id="L243" class="ln">   243  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L244" class="ln">   244  </span>			require.ErrorIs(t, err, apperror.ErrRetryable)
+<span id="L245" class="ln">   245  </span>		})
+<span id="L246" class="ln">   246  </span>	})
+<span id="L247" class="ln">   247  </span>}
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>func Test_appendResult(t *testing.T) {
+<span id="L250" class="ln">   250  </span>	t.Parallel()
+<span id="L251" class="ln">   251  </span>
+<span id="L252" class="ln">   252  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L253" class="ln">   253  </span>		t.Parallel()
+<span id="L254" class="ln">   254  </span>
+<span id="L255" class="ln">   255  </span>		t.Run(&#34;位置の衝突は conflict として数える&#34;, func(t *testing.T) {
+<span id="L256" class="ln">   256  </span>			t.Parallel()
+<span id="L257" class="ln">   257  </span>
+<span id="L258" class="ln">   258  </span>			<span class="comment">// 「既に誰かが書いた」を substrate の失敗と混ぜると、再送の冪等成功が障害に見える。</span>
+<span id="L259" class="ln">   259  </span>			assert.Equal(t, observability.RealtimeResultConflict, appendResult(rt.ErrSequenceConflict))
+<span id="L260" class="ln">   260  </span>		})
+<span id="L261" class="ln">   261  </span>
+<span id="L262" class="ln">   262  </span>		t.Run(&#34;それ以外の失敗は error として数える&#34;, func(t *testing.T) {
+<span id="L263" class="ln">   263  </span>			t.Parallel()
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>			assert.Equal(t, observability.RealtimeResultError, appendResult(rt.ErrInvalidEvent))
+<span id="L266" class="ln">   266  </span>			assert.Equal(t, observability.RealtimeResultError, appendResult(apperror.ErrUnavailable))
+<span id="L267" class="ln">   267  </span>		})
+<span id="L268" class="ln">   268  </span>	})
+<span id="L269" class="ln">   269  </span>}
+<span id="L270" class="ln">   270  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/publisher_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

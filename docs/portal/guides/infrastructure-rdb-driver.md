@@ -1,7 +1,5 @@
 # driver
 
-English | [日本語](README.ja.md)
-
 Overview: **Base driver layer for RDB (PostgreSQL / pgx) connections. Provides connection management, transaction boundaries, and sqlc execution adapters.**
 
 This package is the **lowest-level DB access foundation in the Infrastructure layer**.

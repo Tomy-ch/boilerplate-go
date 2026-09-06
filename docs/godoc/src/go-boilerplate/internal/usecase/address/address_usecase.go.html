@@ -124,12 +124,12 @@
 <span id="L67" class="ln">    67  </span>
 <span id="L68" class="ln">    68  </span>	candidates, err := u.gateway.Lookup(ctx, postalCode)
 <span id="L69" class="ln">    69  </span>	if err != nil {
-<span id="L70" class="ln">    70  </span>		<span class="comment">// 外部 lookup 障害時は degrade する（docs/spec/address/usecase.md）。</span>
+<span id="L70" class="ln">    70  </span>		<span class="comment">// 外部 lookup 障害時は degrade する（docs/spec/usecase/address.md）。</span>
 <span id="L71" class="ln">    71  </span>		return &amp;Result{Candidates: []*CandidateView{}, IsFallback: true}, nil
 <span id="L72" class="ln">    72  </span>	}
 <span id="L73" class="ln">    73  </span>
 <span id="L74" class="ln">    74  </span>	<span class="comment">// 県名は同一郵便番号でほぼ単一のため memo 化して FindByName 呼び出しを最小化する</span>
-<span id="L75" class="ln">    75  </span>	<span class="comment">// （degrade の範囲は docs/spec/address/usecase.md）。</span>
+<span id="L75" class="ln">    75  </span>	<span class="comment">// （degrade の範囲は docs/spec/usecase/address.md）。</span>
 <span id="L76" class="ln">    76  </span>	resolved := make(map[string]*uuid.UUID, 1)
 <span id="L77" class="ln">    77  </span>	views := make([]*CandidateView, 0, len(candidates))
 <span id="L78" class="ln">    78  </span>	for _, c := range candidates {

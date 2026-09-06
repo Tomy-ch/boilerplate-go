@@ -350,6 +350,30 @@ WITH 句
 - インターフェイスは`Usecase`（例：`user.Usecase`）で統一。
 - インスタンスの生成関数名は `New` で統一し、[di/module/usecase.go](../di/module/usecase.go) で登録する。
 
+### `event/payload_parity.yaml` — usecase パッケージに置く唯一の非 Go ファイル
+
+outbox イベントを発行するパッケージ（`<集約>/event/`。各 payload を marshal する `Build*` を持つ）は、
+その隣に `payload_parity.yaml` を置く。この層が宣言する唯一の非 Go ファイルであり、置いてあるのは
+意図であって置き忘れではない。
+
+内容は payload ごとに、その payload が集約の `snapshot` なのか、集約についての `notification` なのか、
+そして `snapshot` なら写し元 struct の各フィールドをどう扱うかである。
+
+```yaml
+payloads:
+  <Go の payload 型名>:
+    kind: snapshot | notification
+    of: <domain パッケージ>.<集約 struct>
+    fields:                     # snapshot のみ。notification は書かない
+      <集約のフィールド名>: <payload の JSON 名>   # 運ぶ
+      <集約のフィールド名>:
+        omit: <理由>                              # 運ばない。理由は必須
+```宣言がこの層に属するのは
+ワイヤ表現がこの層に属するからで、事象の**名前**はドメインの語彙だが表現はそうではない
+（`internal/domain/README.md` の Domain events）。`TestOutboxPayloadParity` が宣言とコードを突き合わせる
+ので、集約にフィールドを足すと payload での扱いを書き下すまで落ちる。
+詳細は [ADR-0113](../../docs/adr/0113-outbox-payload-kinds-and-parity-declaration.ja.md)。
+
 ### doc コメント：インターフェイス側と実装側
 
 本リポジトリではインターフェイスとその実装が同一パッケージに同居する（`Usecase` と非 export の

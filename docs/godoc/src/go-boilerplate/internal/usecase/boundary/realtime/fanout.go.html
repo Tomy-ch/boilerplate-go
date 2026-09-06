@@ -1,0 +1,125 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase">usecase</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase/boundary">boundary</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime">realtime</a>/<span class="text-muted">fanout.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime">go-boilerplate/internal/usecase/boundary/realtime</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">//go:generate mockgen -source=$GOFILE -destination=mock/mock_$GOFILE.gen.go -package=mock_$GOPACKAGE</span>
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>package realtime
+<span id="L4" class="ln">     4  </span>
+<span id="L5" class="ln">     5  </span>import &#34;context&#34;
+<span id="L6" class="ln">     6  </span>
+<span id="L7" class="ln">     7  </span>const (
+<span id="L8" class="ln">     8  </span>	<span class="comment">// KindUnknown は、種別が読めなかった通知です。受け取る側は Delete で取り除きます（残すと再配送され続けるため）。</span>
+<span id="L9" class="ln">     9  </span>	KindUnknown NotificationKind = &#34;&#34;
+<span id="L10" class="ln">    10  </span>	<span class="comment">// KindWakeup は「stream を自分の cursor 以降で読み直せ」の合図です。状態は運びません（ADR-0073）。</span>
+<span id="L11" class="ln">    11  </span>	KindWakeup NotificationKind = &#34;wakeup&#34;
+<span id="L12" class="ln">    12  </span>	<span class="comment">// KindRevocation は、subject の destination への権利が取り下げられたことの通知です（ADR-0074）。</span>
+<span id="L13" class="ln">    13  </span>	KindRevocation NotificationKind = &#34;revocation&#34;
+<span id="L14" class="ln">    14  </span>)
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span><span class="comment">// NotificationKind は、instance の受信先に届く通知の種別です。</span>
+<span id="L17" class="ln">    17  </span>type NotificationKind string
+<span id="L18" class="ln">    18  </span>
+<span id="L19" class="ln">    19  </span><span class="comment">// Wakeup は、EventLog に event が 1 件増えたことを全 instance へ伝える通知です。</span>
+<span id="L20" class="ln">    20  </span><span class="comment">// 重複・欠落しうるので受け取る側は冪等でなければなりません（ADR-0073）。</span>
+<span id="L21" class="ln">    21  </span>type Wakeup struct {
+<span id="L22" class="ln">    22  </span>	<span class="comment">// EventID は、増えた event の識別子です（outbox の message_id と同じ）。</span>
+<span id="L23" class="ln">    23  </span>	EventID string
+<span id="L24" class="ln">    24  </span>	<span class="comment">// StreamID は、読み直す stream です。</span>
+<span id="L25" class="ln">    25  </span>	StreamID StreamID
+<span id="L26" class="ln">    26  </span>	<span class="comment">// Sequence は、増えた event の位置です。受け取る側はこれ以下の cursor を持つ接続だけを起こせます。</span>
+<span id="L27" class="ln">    27  </span>	Sequence Sequence
+<span id="L28" class="ln">    28  </span>}
+<span id="L29" class="ln">    29  </span>
+<span id="L30" class="ln">    30  </span><span class="comment">// Revocation は、subject × destination の失効通知です。受け取った instance は該当する接続を閉じます。</span>
+<span id="L31" class="ln">    31  </span>type Revocation struct {
+<span id="L32" class="ln">    32  </span>	Subject     string
+<span id="L33" class="ln">    33  </span>	Destination StreamID
+<span id="L34" class="ln">    34  </span>}
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span><span class="comment">// Notification は、instance の受信先から取り出した 1 件です。Kind に応じて Wakeup か Revocation のどちらかが埋まります。</span>
+<span id="L37" class="ln">    37  </span><span class="comment">// 種別が読めない通知は Kind が KindUnknown（空文字）のまま返ります。</span>
+<span id="L38" class="ln">    38  </span><span class="comment">// Receipt は受信先固有の削除鍵で、機構は中身を解釈しません。</span>
+<span id="L39" class="ln">    39  </span>type Notification struct {
+<span id="L40" class="ln">    40  </span>	Kind       NotificationKind
+<span id="L41" class="ln">    41  </span>	Wakeup     Wakeup
+<span id="L42" class="ln">    42  </span>	Revocation Revocation
+<span id="L43" class="ln">    43  </span>	Receipt    string
+<span id="L44" class="ln">    44  </span>}
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span><span class="comment">// InstanceSubscription は、serve instance 固有の受信先の境界です。受信先の作成から削除までを 1 つの instance の</span>
+<span id="L47" class="ln">    47  </span><span class="comment">// 生存期間に閉じ、substrate 固有の識別子（ARN / URL / receipt handle の中身）は外に出しません。</span>
+<span id="L48" class="ln">    48  </span><span class="comment">// 失敗は apperror sentinel で返します。</span>
+<span id="L49" class="ln">    49  </span>type InstanceSubscription interface {
+<span id="L50" class="ln">    50  </span>	<span class="comment">// Provision は、id の instance 専用の受信先を作り、fan-out 元へ登録します。同じ id で繰り返し呼んでも 1 組に収束します。</span>
+<span id="L51" class="ln">    51  </span>	Provision(ctx context.Context, id InstanceID) error
+<span id="L52" class="ln">    52  </span>	<span class="comment">// Receive は、届いた通知を最大 limit 件返します。通知が無ければ有限時間待ってから空を返し、ctx 完了でも返ります。</span>
+<span id="L53" class="ln">    53  </span>	Receive(ctx context.Context, limit int) ([]Notification, error)
+<span id="L54" class="ln">    54  </span>	<span class="comment">// Delete は、処理済みの 1 件を受信先から取り除きます。取り除かなかった通知は再配送されます。</span>
+<span id="L55" class="ln">    55  </span>	Delete(ctx context.Context, n Notification) error
+<span id="L56" class="ln">    56  </span>	<span class="comment">// Teardown は、登録を解除して受信先を削除します。Provision していなければ何もしません。</span>
+<span id="L57" class="ln">    57  </span>	Teardown(ctx context.Context) error
+<span id="L58" class="ln">    58  </span>}
+<span id="L59" class="ln">    59  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/fanout.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

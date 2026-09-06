@@ -1,7 +1,5 @@
 # driver
 
-[English](README.md) | 日本語
-
 概要: **RDB（PostgreSQL / pgx）接続のための基盤ドライバレイヤー。接続管理・トランザクション境界・sqlc 実行アダプタを提供します。**
 
 このパッケージは **Infrastructure 層の最下位に位置する DB アクセス基盤**です。

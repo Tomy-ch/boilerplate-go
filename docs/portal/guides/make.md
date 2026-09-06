@@ -1,7 +1,5 @@
 # Make Command List
 
-English | [日本語](README.ja.md)
-
 ## Role
 
 `.makefiles/` is the central registry for every `make` target used by the project. Each `.mk` file groups related targets by area (application / database / sql / go / openapi / docs / github / tools). The top-level `makefile` simply `include`s them, so adding a new target means dropping it into the right group file — no top-level edits required.
@@ -26,7 +24,7 @@ Make targets are mainly organized into the following units.
 
 - Target names use dash-separated lower case (`make new-migrate-<name>`, `make gen-api`).
 - Targets are split into two flavors:
-  - **Normal targets**: invoked by developers locally; run inside Docker containers for reproducibility. A few resolve their tool on the host instead — `lint` / `fix` (`golangci-lint`), `actions-zizmor` (`zizmor`), `go-cooldown-gate` / `go-cooldown-audit`, `tool-cooldown-gate` / `tool-cooldown-audit` — because the tool-runners are Alpine and upstream publishes no musl build. That is the documented last resort in [Toolchain Execution Rules](../docs/rules.md#toolchain-execution-rules), not an exception to the convention: `make install-tools` provisions those tools, and the `mise.toml` pin carries the reproducibility the image otherwise would.
+  - **Normal targets**: invoked by developers locally; run inside Docker containers for reproducibility. A few resolve their tool on the host instead — `lint` / `fix` (`golangci-lint`), `actions-zizmor` (`zizmor`), `go-cooldown-gate` / `go-cooldown-audit`, `tool-cooldown-gate` / `tool-cooldown-audit`, `pnpm-cooldown-check` — because the tool-runners are Alpine and upstream publishes no musl build. That is the documented last resort in [Toolchain Execution Rules](../docs/rules.md#toolchain-execution-rules), not an exception to the convention: `make install-tools` provisions those tools, and the `mise.toml` pin carries the reproducibility the image otherwise would.
   - **`-ci` targets**: low-level commands intended to run on bare metal (CI runners, or developers who already have the tool installed).
 - Every target should be `.PHONY` and self-documenting via a trailing `##` comment so `make help` can pick it up.
 
@@ -41,7 +39,7 @@ Make targets are mainly organized into the following units.
 This is a group of targets related to application development environment startup and Job execution.
 
 Compose services are split into two layers (see `.makefiles/docker` group below): the shared **infra**
-layer (`database` / `observability` / `garage`) lives once in the fixed `gobp-shared` project, and the
+layer (`database` / `observability` / `garage` / `elasticmq` / `dynamodb_local` / `goaws`) lives once in the fixed `gobp-shared` project, and the
 per-checkout **app** layer (`api_server` / `mock_auth_server`) runs in this checkout's `APP_PROJECT`.
 
 ### Application startup related
@@ -96,10 +94,11 @@ make worker NAME=sampleworker
 #### `make outbox-relay ARGS="<arguments>"`
 
 Starts the outbox relay (periodically polls the outbox table and publishes pending
-messages). `ARGS` is optional and also reaches the `replay` subcommand.
+messages). `ARGS` is required — the relay serves exactly one delivery channel and has no
+default one — and also reaches the `replay` subcommand.
 
 ```sh
-make outbox-relay
+make outbox-relay ARGS="--channel=http"
 make outbox-relay ARGS="replay --message-id=<id>"
 ```
 
@@ -113,6 +112,13 @@ that step (and its undo for drift checks).
 | --- | --- | --- |
 | `make materialize-env` | Copies `env/.env.$(APP_ENV)` over `env/.env` (defaults to `APP_ENV=ci`). | Materialize the embed target in CI / build before `go build` / `go run` |
 | `make restore-env` | Restores `env/.env` to its git-tracked content via `git restore`. | Undo materialization before a generated-artifact drift / commit check |
+
+### Realtime Delivery smoke related
+
+| Command | Description | Main Use |
+| --- | --- | --- |
+| `make realtime-init` | Brings up the shared infra, then creates the Realtime Delivery tables (EventLog / StreamTicket / InstanceLease) in DynamoDB Local and the fan-out topic on GoAWS from inside the app container (`go run ./cmd/ realtime-init`). Idempotent — re-running converges on the same state. | Provisioning without starting the app. `make serve` runs the same one-shot itself (`realtime-provision`), so the ordinary path needs no separate call |
+| `make realtime-smoke` | Brings up the shared infra, then runs `scripts/realtime-smoke` against DynamoDB Local and GoAWS with the AWS SDK Go v2 and prints one verdict per call (互換 / 非互換 / 未対応 / 検証不能). Resources are created under a per-run random name and deleted afterwards. `ARGS` passes flags through (`-format markdown` / `-subscribers N` / `-keep` / `-strict`). | Confirm the emulators still accept the calls Realtime Delivery makes — e.g. after bumping either image |
 
 ## `.makefiles/database` group
 
@@ -276,6 +282,7 @@ This group runs local security scans (Trivy dependency / secret scan, gitleaks s
 | `make go-cooldown-audit` | Reports every module in `go.mod` published inside the window, and fails on a bypass entry that has expired, reaches beyond three months, or matches nothing. | Runs on the host. The window itself never fails here — existing dependencies are grandfathered — but a lapsed bypass does, since its deadline arrives without `go.mod` changing. |
 | `make tool-cooldown-gate BASE=<ref>` | Fails when the declaration diff against `BASE` — `mise.toml` and `python/*.in` — pins a tool version published inside its backend's window (14 days for a GitHub release, 7 for a package registry). Also fails when a `python/*.in` declaration and its `python/*.txt` lockfile name different versions. | Runs on the host; needs `mise` on PATH to resolve a short name's backend, and a `GITHUB_TOKEN` because the unauthenticated API cannot carry one run. Language runtimes are excluded as an accepted risk. |
 | `make tool-cooldown-audit` | Reports every declared tool published inside its window, and fails on a bypass entry that has expired, reaches beyond three months, or matches nothing. | Runs on the host. Same grandfathering and same lapsed-bypass failure as the Go counterpart. |
+| `make pnpm-cooldown-check` | Fails on a `minimumReleaseAgeExclude` entry with no deadline in `.github/pnpm-cooldown-bypass.toml`, a deadline that has expired or reaches beyond three months, a bypass entry matching no exclusion, or an exclusion naming a version the sibling `pnpm-lock.yaml` no longer resolves. | Runs on the host. There is no `gate` counterpart because pnpm's resolver already enforces the window on every install; what this checks is the exemption, whose deadline arrives without either file changing. |
 | `make actions-zizmor` | Audits the workflow / composite-action definitions with zizmor and fails on a `high` finding. | Runs on the host. `--offline`, so the pre-commit hook needs no network and no `GH_TOKEN`; the online audits are left to CI. Exceptions live in `.github/zizmor.yml`. |
 | `make actions-zizmor-sarif-ci` | Writes every zizmor finding to stdout as SARIF. | CI target. Not filtered by severity, so code scanning keeps the full picture; call it with `make -s`. |
 | `make actions-zizmor-gate-ci` | Fails on a `high` zizmor finding. | CI target. Same gate as `actions-zizmor` but with the online audits, which need `GH_TOKEN`. |
@@ -296,7 +303,7 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | --- | --- | --- |
 | `INFRA_PROJECT` | `gobp-shared` | Fixed compose project holding the single shared infra instance. |
 | `APP_PROJECT` | `gobp-app-$(notdir $(CURDIR))` | Per-checkout compose project for the app layer. Becomes `SERVE_PROJECT` (`gobp-wt-N`) when a DB slot is held. |
-| `INFRA_SERVICES` | `database observability garage elasticmq` | Services that can only run on fixed ports, hence shared. |
+| `INFRA_SERVICES` | `database observability garage elasticmq dynamodb_local goaws` | Services that can only run on fixed ports, hence shared. |
 | `APP_SERVICES` | `api_server mock_auth_server` | Services started per checkout. |
 | `COMPOSE_INFRA` | `docker compose -p $(INFRA_PROJECT)` | Compose invocation for the infra layer. |
 | `INFRA_NO_RECREATE` | `--no-recreate` in a worktree, empty otherwise | Keeps a shared-infra container another checkout is using instead of re-creating it. Empty in a single checkout, where compose re-converges on a definition change as usual. Set it explicitly for a topology the worktree test misses, such as several independent clones. Resolved inside the recipe by `db-slot env`, not at make's parse time. |
@@ -311,9 +318,9 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | --- | --- | --- |
 | `make docker-lint` | Lints `docker/*/Dockerfile` with hadolint. | Invokes `make docker-lint-ci` inside the `go_tool_runner` container. |
 | `make docker-lint-ci` | Runs `hadolint docker/*/Dockerfile` directly. | CI target. Ignored rules are in `.hadolint.yaml`. |
-| `make pin-images-resolve` | Resolves each `FROM` and `docker-compose*.yaml` `image:` `image:tag` to its current digest and updates the `docker/images-pin.toml` lockfile. | Quarantines digests younger than `PIN_IMAGES_MIN_AGE_DAYS` (default 14; 0 disables). Needs registry access (`docker`). |
-| `make pin-images-apply` | Pins `FROM` / compose `image:` to `image:tag@sha256:...` from the lockfile (quarantined images stay tag-only). | None |
-| `make pin-images-check` | Verifies `FROM` / compose `image:` are pinned per the lockfile (no write). | CI / pre-commit gate. |
+| `make pin-images-resolve` | Resolves every registry reference — `FROM`, `docker-compose*.yaml` `image:`, and a workflow's `uses: docker://` and `services.*.image` — to its current digest and updates the `docker/images-pin.toml` lockfile. | Quarantines digests younger than `PIN_IMAGES_MIN_AGE_DAYS` (default 14; 0 disables). Needs registry access (`docker`). |
+| `make pin-images-apply` | Pins those same four reference forms to `image:tag@sha256:...` from the lockfile (quarantined images stay tag-only). | None |
+| `make pin-images-check` | Verifies those same four reference forms are pinned per the lockfile (no write). An `image:` built from a `${{ }}` expression is not a fixable reference and is skipped. | CI / pre-commit gate. |
 
 ## `.makefiles/openapi` group
 
@@ -328,6 +335,8 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | `make stamp-openapi-version` | Rewrites `info.version` from a release branch name. | Invokes `make stamp-openapi-version-ci` inside the `node_tool_runner` container. Takes `REF=release/vX.Y.Z`, falling back to `GITHUB_REF_NAME`; any other ref is a no-op. |
 | `make stamp-openapi-version-ci` | Runs `scripts/stamp-openapi-version/index.ts` directly. | CI target |
 | `make lint-oapi-security-ci` | Runs Spectral with the OWASP API Security ruleset. | CI target. Runs outside `node_tool_runner` so a spec-only check does not build the tool image; run `pnpm install --dir scripts --frozen-lockfile` first. |
+| `make openapi-client-check` | Confirms the frontend generator (orval) can generate the SSE contract types (`DeliveryEvent` / `ControlEvent` / `StreamCursor`) from the bundled spec. | Invokes `make openapi-client-check-ci` inside the `node_tool_runner` container. Output goes to `tmp/openapi-client/` and is never committed. |
+| `make openapi-client-check-ci` | Runs `tsx scripts/openapi-client-check` directly. | CI target. Same preparation as `lint-oapi-security-ci`. |
 
 ## `.makefiles/load` group
 
@@ -433,7 +442,7 @@ several of these scripts are gates, and a broken gate reports a clean run rather
 ## `.makefiles/python` group
 
 The CLI tools this repository installs from PyPI are declared in `python/*.in` and locked, with a
-sha256 hash per package, in `python/*.txt` ([ADR-0080 (mise-ssot-drift-gate)](../docs/adr/0080-mise-ssot-drift-gate.md)).
+sha256 hash per package, in `python/*.txt` ([ADR-0084 (mise-ssot-drift-gate)](../docs/adr/0084-mise-ssot-drift-gate.md)).
 These targets regenerate the lockfiles; nothing installs from a `.in` file directly.
 
 | Command | Description | Notes |
@@ -452,11 +461,13 @@ targets keep the two apart.
 
 The semantic cache is the one part of `cache/` that is shared: its keys are content hashes, so it
 saves re-running LLM extraction on a full rebuild. What it is *not* keyed by is the extraction prompt
-that produced its contents. That prompt ships with graphify, so running the tool from the
-`python_tool_runner` image is what makes it a property of `python/graphify.in` rather than of
-whoever happened to run the build; [`.agents/graphify/spec-pin.toml`](../.agents/graphify/spec-pin.toml)
-records the resulting fingerprint so CI can check a committed cache without installing graphify at
-all, and `graphify-check` refuses one baked by anything else.
+that produced its contents. That prompt ships with graphify, so pinning the build is what makes it a
+property of `python/graphify.in` rather than of whoever happened to run it — the `python_tool_runner`
+image for the deterministic half, and `UV_CONSTRAINT` pointed at the lockfile for the extraction
+workflow, whose skill would otherwise resolve its own interpreter from the newest release on PyPI.
+[`.agents/graphify/spec-pin.toml`](../.agents/graphify/spec-pin.toml) records the resulting
+fingerprint so CI can check a committed cache without installing graphify at all, and
+`graphify-check` refuses one baked by anything else.
 
 The build splits along what needs a model, and the two halves are produced in different places.
 `graphify update` re-extracts changed code with tree-sitter, is deterministic, and runs unattended on
@@ -479,7 +490,7 @@ and a rewritten ADR are not the same amount of work to re-extract.
 | `make graphify-update` | Re-extracts the code files whose content changed into `graph.json`. Deterministic and needs no model. | Invokes `make graphify-update-ci` inside the `python_tool_runner` container. The graph is updated on the release line by `graphify-sync.yaml`; locally this keeps your own working copy current. |
 | `make graphify-export` | Converts `graphify-out/graph.json` into the deterministic `nodes.json` / `edges.json` / `metadata.json` triple. | Invokes `make graphify-export-ci` inside the `go_tool_runner` container. |
 | `make graphify-check` | Verifies that nothing outside the whitelist is tracked, that no tracked artifact carries an absolute path from the machine that produced it, and that the tracked semantic cache belongs to the extraction prompt `.agents/graphify/spec-pin.toml` pins. | Runs on the host: the subject is the git index, not a toolchain. Called from the `pre-commit` hook and the `Graphify Check` workflow. |
-| `make graphify-check SPEC=<path>` | Also fingerprints the given `extraction-spec.md` and fails when it differs from the pin. | Run before an extraction. The prompt lives in the assistant's skill directory, which CI cannot see, so this form is local only. |
+| `make graphify-check SPEC=<path>` | Also fingerprints the given `extraction-spec.md` and fails when it differs from the pin. | Run before an extraction. The prompt lives in the assistant's skill directory, which `bootstrap-external-skills.sh` writes into the checkout, so the extraction workflow verifies it there as well. |
 | `make graphify-check BASE=<ref>` | Also fails when the diff against `<ref>` touches the output directory. | Used by the pull-request gate: the graph is a single blob that conflicts between concurrent branches, so its updates stay on the release line. |
 | `make graphify-pending` | Reports how much semantic extraction is waiting: which documents changed since the last extraction, and by how many lines. | Reports only, never fails. The threshold is `GRAPHIFY_PENDING_THRESHOLD` (default 3000 changed lines, about 3% of the ~92,500-line document corpus) and exists to inform the decision to run `/graphify --update`, which needs a model no workflow here can start. The count and the per-file breakdown are printed on every run regardless, so a small but consequential rewrite is still visible below the threshold. |
 | `make graphify-update-ci` | Runs `graphify update .` directly. | CI target. The scan root is passed explicitly because graphify would otherwise recover it from `graphify-out/.graphify_root`, which holds a host path and is not tracked. |
@@ -589,6 +600,7 @@ This is the initial setup command when launching a new repository.
 | `make setup-verify` | Verifies the localization landed, then removes the localization tooling. | Runs `scripts/setup/verify-setup` in `node_tool_runner`; expects the Phase 5 values in the environment.  <!-- setup-localize:line --> |
 | `make setup-remove-boilerplate-identity` | Removes what only holds while this repository is a boilerplate. | Scans the repository for `boilerplate-only` markers and resolves each via `node_tool_runner`, deletes the boilerplate-only conventions doc, then removes itself. Preview with `DRY_RUN=1`. <!-- boilerplate-only:line --> |
 | `make setup-remove-sample-api` | Removes the sample API (`user`/`product`/`order`) in batch. | Deletes via `node_tool_runner`, then runs `db-local-reinit` / `db-test-reinit` → `gen-api` → `gen-query` → `tidy-lib` → `fix` → `lint`. The DB rebuild keeps dropped tables out of the generated models, and `tidy-lib` drops the direct dependencies the sample API was the only user of. **Requires the DB container (`database`) running** (`gen-query` dumps the live schema). Preview without changing anything with `DRY_RUN=1` (any non-empty value counts as preview, `0` included, so omit the variable entirely for a real run). <!-- sample-api:line --> |
+| `make setup-remove-doc-language` | Resolves the documentation / skill translation pairs against `LANG_CHOICE` — `en` / `ja` fold into that language, `both` keeps the pairs and resolves the markers. | Runs on the host, not through the tool runner: it commits the whole fold at once and needs the host's git. Run it **before** every other removal — each removal tool carries paired declarations and prunes its own pair when the fold resolves it, while Phase 12 deletes a workflow this tool declares a string in, so a fold attempted afterwards aborts. Preview with `DRY_RUN=1` (works on a dirty tree; the real run requires a clean one). <!-- lang-choice:line --> |
 
 ### Base branch resolution related
 

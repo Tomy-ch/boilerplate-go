@@ -1,7 +1,5 @@
 # Infrastructure Layer (`internal/infrastructure`) Guide
 
-English | [日本語](README.ja.md)
-
 ## Role
 
 The Infrastructure layer is responsible for **implementing access to external technologies (DB, external APIs, authentication, etc.)**.
@@ -117,11 +115,16 @@ repeats it has leaked the layer; see
 
 The converse is the failure mode to watch for here. Because the inward interface states the guarantee
 in application vocabulary, an implementation doc that only paraphrases that interface adds **nothing**
-— it is a duplicate that rots in two places. So an implementation doc must either **name the
-mechanism** (`FindByID` reads without taking a lock, unlike `LockByID`; `SearchByKeyword` dispatches to
-one of three fixed queries on the `active` filter; `Update` normalizes zero affected rows to NotFound)
-or be **omitted** — the Repository type is unexported, so `revive`'s `exported` rule does not require
-one. Paraphrasing the interface is the one option that is never right.
+— it is a duplicate that rots in two places. Deleting it is not the remedy: Go does not carry an
+interface's doc to its implementations, so a bare method body leaves whoever maintains the SQL with
+less than the caller has, and the guarantee they are about to change is nowhere in sight.
+
+So an implementation doc **states the guarantee through the mechanism that carries it** (`FindByID`
+reads without taking a lock, unlike `LockByID`; `SearchByKeyword` dispatches to one of three fixed
+queries on the `active` filter; `Update` normalizes zero affected rows to NotFound). Each of those
+says what the interface says *and* how this implementation gets there, in one breath — which is why
+it neither duplicates nor omits. Paraphrasing the interface and leaving the body bare are the two
+options that are never right.
 
 ## Directory Structure
 
@@ -131,6 +134,12 @@ flowchart TB
     Auth["auth/"]
     Authz["authz/"]
     AwsClient["awsclient/"]
+    DDBClient["dynamodbclient/"]
+    EventLog["eventlog/"]
+    StreamTicket["streamticket/"]
+    InstanceLease["instancelease/"]
+    RealtimeSecret["realtimesecret/"]
+    Realtime["realtime/"]
     HTTP["httpclient/"]
     ObjStorage["objectstorage/"]
     Pub["publisher/"]
@@ -145,6 +154,12 @@ flowchart TB
     Root --> Auth
     Root --> Authz
     Root --> AwsClient
+    Root --> DDBClient
+    Root --> EventLog
+    Root --> StreamTicket
+    Root --> InstanceLease
+    Root --> RealtimeSecret
+    Root --> Realtime
     Root --> HTTP
     Root --> ObjStorage
     Root --> Pub
@@ -163,7 +178,13 @@ flowchart TB
 |---|---|---|---|
 |`auth/`|Authentication infrastructure (environment-specific Authenticator impl)|Usecase boundary|[README](auth/README.md)|
 |`authz/`|Authorization infrastructure (Authorizer impl; default `allowall` for non-production)|Usecase boundary|[README](authz/README.md)|
-|`awsclient/`|AWS credential resolution shared by `objectstorage/s3` and `queue/sqs`|— (substrate, no domain/usecase IF)|[README](awsclient/README.md)|
+|`awsclient/`|AWS credential resolution shared by `objectstorage/s3`, `queue/sqs` and `dynamodbclient`|— (substrate, no domain/usecase IF)|[README](awsclient/README.md)|
+|`dynamodbclient/`|DynamoDB client substrate shared by the Realtime Delivery stores: endpoint override, fixed retry bound, error normalization, idempotent `EnsureTable`; `testkit/` for the contract tests|— (substrate, no domain/usecase IF)|[README](dynamodbclient/README.md)|
+|`eventlog/`|Realtime Delivery EventLog adapter (DynamoDB impl of `realtime.EventLogStore`; bounded replay store)|Usecase boundary|[README](eventlog/README.md)|
+|`streamticket/`|Realtime Delivery stream-ticket adapter (DynamoDB impl of `realtime.StreamTicketStore`)|Usecase boundary|[README](streamticket/README.md)|
+|`instancelease/`|Realtime Delivery instance-lease adapter (DynamoDB impl of `realtime.InstanceLeaseStore`)|Usecase boundary|[README](instancelease/README.md)|
+|`realtimesecret/`|Ticket-secret generation from the OS randomness source (impl of `realtime.SecretGenerator`; independent of the sample-only `token/`)|Usecase boundary|[README](realtimesecret/README.md)|
+|`realtime/`|Realtime Delivery fan-out substrate (SNS / SQS impl of the `realtime` channel's `boundary.Publisher`, `realtime.RevocationNotifier` and `realtime.InstanceSubscription`; `local/` for the emulator's queue attributes)|Usecase boundary|[README](realtime/README.md)|
 |`httpclient/`|Resilient HTTP client substrate (retry / circuit breaker / tracing); shared driver-level base consumed by `webapi/` and `publisher/`|— (substrate, no domain/usecase IF)|[README](httpclient/README.md)|
 |`objectstorage/`|Object storage adapter (impl of `boundary.Storage`; endpoint / credential swap connects to Garage / MinIO / production S3)|Usecase boundary|[README](objectstorage/README.md)|
 |`publisher/`|Transactional outbox publish destination (HTTP impl of `boundary.Publisher`)|Usecase boundary|[README](publisher/README.md)|

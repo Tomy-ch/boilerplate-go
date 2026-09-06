@@ -1,0 +1,191 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>auth - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package auth
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/controller/stream/auth&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package auth は、query の stream ticket を検証する securityScheme（StreamTicket）の認証器を提供します。
+検証そのものは usecase/realtime の TicketVerifier が行い、ここは spec の宣言から生値と destination を取り出して
+結果を StreamGrant スロットへ書くだけです。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+				
+				<dd><a href="#New">func New(verifier ucrealtime.TicketVerifier) oapiauth.SchemeAuthenticator</a></dd>
+			
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/controller/stream/auth/stream_ticket.go.html">stream_ticket.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				
+				<pre>const (
+    <span class="comment">// SchemeName は、担当する securityScheme の名前（openapi/openapi.yaml の securitySchemes のキー）です。</span>
+    <span id="SchemeName">SchemeName</span> = &#34;StreamTicket&#34;
+)</pre>
+			
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				
+				<pre>var (
+    <span class="comment">// ErrSchemeDeclarationMissing は、validator が scheme の宣言を渡さず、ticket を運ぶパラメータ名が分からない場合のエラー。</span>
+    <span id="ErrSchemeDeclarationMissing">ErrSchemeDeclarationMissing</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrInternal">ErrInternal</a>, &#34;stream ticket scheme declaration is missing&#34;)
+    <span class="comment">// ErrStreamGrantSlotNotFound は、StreamGrant スロット未装着の場合のエラー（資格情報と無関係な結線の不具合）。</span>
+    <span id="ErrStreamGrantSlotNotFound">ErrStreamGrantSlotNotFound</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrInternal">ErrInternal</a>, &#34;stream grant slot not found in request context&#34;)
+)</pre>
+			
+		
+		
+			
+			
+			<h2 id="New">func <a href="../../../../../src/go-boilerplate/internal/controller/stream/auth/stream_ticket.go.html?s=1674:1747#L28">New</a>
+				<a class="permalink" href="#New">¶</a>
+				
+				
+			</h2>
+			<pre>func New(verifier <a href="../../../../../go-boilerplate/internal/usecase/realtime/">ucrealtime</a>.<a href="../../../../../go-boilerplate/internal/usecase/realtime/#TicketVerifier">TicketVerifier</a>) <a href="../../../../../go-boilerplate/internal/controller/httpstack/oapi/auth/">oapiauth</a>.<a href="../../../../../go-boilerplate/internal/controller/httpstack/oapi/auth/#SchemeAuthenticator">SchemeAuthenticator</a></pre>
+			<p>New は、StreamTicket scheme の認証器を返します。
+
+			
+			
+
+		
+		
+	
+
+	
+
+
+
+
+
+
+
+</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

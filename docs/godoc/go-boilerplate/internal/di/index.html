@@ -118,10 +118,10 @@
 				<dd><a href="#NewJobCore">func NewJobCore() fx.Option</a></dd>
 			
 				
-				<dd><a href="#NewOutboxRelayApp">func NewOutboxRelayApp(grace time.Duration) *fx.App</a></dd>
+				<dd><a href="#NewOutboxRelayApp">func NewOutboxRelayApp(grace time.Duration, channel outboxbndry.Channel) *fx.App</a></dd>
 			
 				
-				<dd><a href="#NewOutboxRelayCore">func NewOutboxRelayCore() fx.Option</a></dd>
+				<dd><a href="#NewOutboxRelayCore">func NewOutboxRelayCore(channel outboxbndry.Channel) fx.Option</a></dd>
 			
 				
 				<dd><a href="#NewWorkerCore">func NewWorkerCore() fx.Option</a></dd>
@@ -180,7 +180,7 @@
 		
 			
 			
-			<h2 id="NewApplicationCore">func <a href="../../../src/go-boilerplate/internal/di/server.go.html?s=1739:1790#L49">NewApplicationCore</a>
+			<h2 id="NewApplicationCore">func <a href="../../../src/go-boilerplate/internal/di/server.go.html?s=2460:2511#L65">NewApplicationCore</a>
 				<a class="permalink" href="#NewApplicationCore">¶</a>
 				
 				
@@ -237,15 +237,14 @@ extra はテスト時に依存を差し替える（fx.Replace / fx.Decorate）�
 		
 			
 			
-			</p><h2 id="NewOutboxRelayApp">func <a href="../../../src/go-boilerplate/internal/di/outboxrelay.go.html?s=1210:1261#L29">NewOutboxRelayApp</a>
+			</p><h2 id="NewOutboxRelayApp">func <a href="../../../src/go-boilerplate/internal/di/outboxrelay.go.html?s=1253:1333#L29">NewOutboxRelayApp</a>
 				<a class="permalink" href="#NewOutboxRelayApp">¶</a>
 				
 				
 			</h2>
-			<pre>func NewOutboxRelayApp(grace <a href="../../../time/">time</a>.<a href="../../../time/#Duration">Duration</a>) *<a href="../../../go.uber.org/fx/">fx</a>.<a href="../../../go.uber.org/fx/#App">App</a></pre>
-			<p>NewOutboxRelayApp は、relay 常駐プロセス用の fx.App を生成します。
-grace（APP_SHUTDOWN_TIMEOUT）を fx.StopTimeout に設定し、fx 既定（15s）が停止猶予より
-先に teardown を打ち切らないようにします（停止軸を grace に一本化）。
+			<pre>func NewOutboxRelayApp(grace <a href="../../../time/">time</a>.<a href="../../../time/#Duration">Duration</a>, channel <a href="../../../go-boilerplate/internal/usecase/boundary/outbox/">outboxbndry</a>.<a href="../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>) *<a href="../../../go.uber.org/fx/">fx</a>.<a href="../../../go.uber.org/fx/#App">App</a></pre>
+			<p>NewOutboxRelayApp は、channel を担う relay 常駐プロセス用の fx.App を生成します。
+停止軸を grace へ一本化する理由は internal/di/README.md の Execution Profile Switching を参照。
 
 			
 			
@@ -253,13 +252,13 @@ grace（APP_SHUTDOWN_TIMEOUT）を fx.StopTimeout に設定し、fx 既定（15s
 		
 			
 			
-			</p><h2 id="NewOutboxRelayCore">func <a href="../../../src/go-boilerplate/internal/di/outboxrelay.go.html?s=789:824#L22">NewOutboxRelayCore</a>
+			</p><h2 id="NewOutboxRelayCore">func <a href="../../../src/go-boilerplate/internal/di/outboxrelay.go.html?s=870:932#L23">NewOutboxRelayCore</a>
 				<a class="permalink" href="#NewOutboxRelayCore">¶</a>
 				
 				
 			</h2>
-			<pre>func NewOutboxRelayCore() <a href="../../../go.uber.org/fx/">fx</a>.<a href="../../../go.uber.org/fx/#Option">Option</a></pre>
-			<p>NewOutboxRelayCore は、relay 常駐プロセス用の fx.App を構成する fx.Option を返します。
+			<pre>func NewOutboxRelayCore(channel <a href="../../../go-boilerplate/internal/usecase/boundary/outbox/">outboxbndry</a>.<a href="../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>) <a href="../../../go.uber.org/fx/">fx</a>.<a href="../../../go.uber.org/fx/#Option">Option</a></pre>
+			<p>NewOutboxRelayCore は、channel を担う relay 常駐プロセス用の fx.App を構成する fx.Option を返します。
 
 			
 			
@@ -281,7 +280,7 @@ grace（APP_SHUTDOWN_TIMEOUT）を fx.StopTimeout に設定し、fx 既定（15s
 		
 			
 			
-			</p><h2 id="RunJob">func <a href="../../../src/go-boilerplate/internal/di/job.go.html?s=2588:2642#L54">RunJob</a>
+			</p><h2 id="RunJob">func <a href="../../../src/go-boilerplate/internal/di/job.go.html?s=2716:2770#L56">RunJob</a>
 				<a class="permalink" href="#RunJob">¶</a>
 				
 				
@@ -298,7 +297,7 @@ DI グラフの構築に失敗した場合、返す start／stop はいずれも
 		
 			
 			
-			</p><h2 id="RunOutboxReplay">func <a href="../../../src/go-boilerplate/internal/di/outboxrelay.go.html?s=1797:1875#L37">RunOutboxReplay</a>
+			</p><h2 id="RunOutboxReplay">func <a href="../../../src/go-boilerplate/internal/di/outboxrelay.go.html?s=1876:1954#L37">RunOutboxReplay</a>
 				<a class="permalink" href="#RunOutboxReplay">¶</a>
 				
 				

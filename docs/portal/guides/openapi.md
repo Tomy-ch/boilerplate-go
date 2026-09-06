@@ -1,7 +1,5 @@
 # OpenAPI Guide (`openapi/`)
 
-English | [日本語](README.ja.md)
-
 This directory contains the **OpenAPI definitions** used in this project.
 
 - Modular structure using Redocly
@@ -166,6 +164,7 @@ Breaking changes → create `/v2/` alongside `/v1/`
 ### Security
 
 - JWT (BearerAuth) for authenticated endpoints
+- An opaque stream ticket in the query (`StreamTicket`, `apiKey` / `in: query`) for the SSE endpoint only — the browser `EventSource` cannot set headers (ADR-0074 (query-ticket-stream-authentication)). The ticket is short-lived, bound to one destination, stored hashed, and stripped from logs by `httpstack/redaction`; do not reuse the scheme for anything a Bearer token can protect
 - Resource ownership validated via `sub` claim in Usecase/Middleware
 - UUID as public identifiers — see `secure-uuid.md` for security evaluation
 - IDOR protection required

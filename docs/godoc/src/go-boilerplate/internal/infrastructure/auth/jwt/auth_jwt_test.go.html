@@ -689,7 +689,7 @@
 <span id="L632" class="ln">   632  </span>			t.Parallel()
 <span id="L633" class="ln">   633  </span>			client := jwksClientReturning(t, discoveryDoc(t, testIssuer, testIssuer+&#34;/keys.json&#34;))
 <span id="L634" class="ln">   634  </span>			fn, err := buildJWKSURLProvider(JWKSParams{
-<span id="L635" class="ln">   635  </span>				Params: Params{Issuer: testIssuer, Clock: testkit.NewMockClock(t, fixedNow)},
+<span id="L635" class="ln">   635  </span>				Issuer: testIssuer, Clock: testkit.NewMockClock(t, fixedNow),
 <span id="L636" class="ln">   636  </span>			}, client)
 <span id="L637" class="ln">   637  </span>			require.NoError(t, err)
 <span id="L638" class="ln">   638  </span>
@@ -719,7 +719,7 @@
 <span id="L662" class="ln">   662  </span>		t.Run(&#34;discovery(issuer=http) かつ AllowInsecureURL=false なら設定エラーになる&#34;, func(t *testing.T) {
 <span id="L663" class="ln">   663  </span>			t.Parallel()
 <span id="L664" class="ln">   664  </span>			fn, err := buildJWKSURLProvider(JWKSParams{
-<span id="L665" class="ln">   665  </span>				Params: Params{Issuer: &#34;http://issuer.example.test&#34;, Clock: testkit.NewMockClock(t, fixedNow)},
+<span id="L665" class="ln">   665  </span>				Issuer: &#34;http://issuer.example.test&#34;, Clock: testkit.NewMockClock(t, fixedNow),
 <span id="L666" class="ln">   666  </span>			}, stubJWKSClient(t, nil))
 <span id="L667" class="ln">   667  </span>			assert.Nil(t, fn)
 <span id="L668" class="ln">   668  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidParams)

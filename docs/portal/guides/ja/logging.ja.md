@@ -1,7 +1,5 @@
 # logging
 
-[English](README.md) | 日本語
-
 > このファイルは canonical な英語版 [README.md](README.md) の翻訳です。直接編集せず、更新は英語版から反映してください。
 
 `internal/logging` は、アプリケーション全体で使用する**構造化ログ基盤**を提供します。
@@ -324,6 +322,14 @@ logging.NewTestLogFieldBuilder(t)
 |`MessageIDKey`|`message_id`|
 |`ReceiveCountKey`|`receive_count`|
 |`PanicKey`|`panic`|
+
+### Realtime
+
+|定数|キー|
+|---|---|
+|`StreamIDKey`|`stream_id`|
+|`CloseReasonKey`|`close_reason`|
+|`OpenConnectionsKey`|`open_connections`|
 
 ### Observability
 

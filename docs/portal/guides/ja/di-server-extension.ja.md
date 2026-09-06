@@ -1,7 +1,5 @@
 # extension
 
-[English](README.md) | 日本語
-
 Echo サーバーに対して **ミドルウェア・設定関数（Configurator）の適用を統一管理する拡張レイヤー**です。
 
 Uber FX の DI グループを利用し、`middlewares.pre`・`middlewares.use`・`server.configurators` の3系統でサーバーを拡張します。

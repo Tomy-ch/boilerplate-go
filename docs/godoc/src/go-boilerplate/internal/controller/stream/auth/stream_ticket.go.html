@@ -1,0 +1,151 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>auth - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/controller">controller</a>/<a href="../../../../../../src/go-boilerplate/internal/controller/stream">stream</a>/<a href="../../../../../../src/go-boilerplate/internal/controller/stream/auth">auth</a>/<span class="text-muted">stream_ticket.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/controller/stream/auth">go-boilerplate/internal/controller/stream/auth</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">// Package auth は、query の stream ticket を検証する securityScheme（StreamTicket）の認証器を提供します。</span>
+<span id="L2" class="ln">     2  </span><span class="comment">// 検証そのものは usecase/realtime の TicketVerifier が行い、ここは spec の宣言から生値と destination を取り出して</span>
+<span id="L3" class="ln">     3  </span><span class="comment">// 結果を StreamGrant スロットへ書くだけです。</span>
+<span id="L4" class="ln">     4  </span>package auth
+<span id="L5" class="ln">     5  </span>
+<span id="L6" class="ln">     6  </span>import (
+<span id="L7" class="ln">     7  </span>	&#34;context&#34;
+<span id="L8" class="ln">     8  </span>
+<span id="L9" class="ln">     9  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/internal/controller/ctxhelper&#34;
+<span id="L11" class="ln">    11  </span>	oapiauth &#34;go-boilerplate/internal/controller/httpstack/oapi/auth&#34;
+<span id="L12" class="ln">    12  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L13" class="ln">    13  </span>	ucrealtime &#34;go-boilerplate/internal/usecase/realtime&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span>	&#34;github.com/getkin/kin-openapi/openapi3filter&#34;
+<span id="L17" class="ln">    17  </span>)
+<span id="L18" class="ln">    18  </span>
+<span id="L19" class="ln">    19  </span>const (
+<span id="L20" class="ln">    20  </span>	<span class="comment">// SchemeName は、担当する securityScheme の名前（openapi/openapi.yaml の securitySchemes のキー）です。</span>
+<span id="L21" class="ln">    21  </span>	SchemeName = &#34;StreamTicket&#34;
+<span id="L22" class="ln">    22  </span>	<span class="comment">// destinationParam は、接続先 stream を運ぶ path パラメータの名前です。</span>
+<span id="L23" class="ln">    23  </span>	destinationParam = &#34;destination&#34;
+<span id="L24" class="ln">    24  </span>)
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span>var (
+<span id="L27" class="ln">    27  </span>	<span class="comment">// ErrSchemeDeclarationMissing は、validator が scheme の宣言を渡さず、ticket を運ぶパラメータ名が分からない場合のエラー。</span>
+<span id="L28" class="ln">    28  </span>	ErrSchemeDeclarationMissing = xerrors.Wrap(apperror.ErrInternal, &#34;stream ticket scheme declaration is missing&#34;)
+<span id="L29" class="ln">    29  </span>	<span class="comment">// ErrStreamGrantSlotNotFound は、StreamGrant スロット未装着の場合のエラー（資格情報と無関係な結線の不具合）。</span>
+<span id="L30" class="ln">    30  </span>	ErrStreamGrantSlotNotFound = xerrors.Wrap(apperror.ErrInternal, &#34;stream grant slot not found in request context&#34;)
+<span id="L31" class="ln">    31  </span>)
+<span id="L32" class="ln">    32  </span>
+<span id="L33" class="ln">    33  </span>type streamTicket struct {
+<span id="L34" class="ln">    34  </span>	verifier ucrealtime.TicketVerifier
+<span id="L35" class="ln">    35  </span>}
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span><span class="comment">// New は、StreamTicket scheme の認証器を返します。</span>
+<span id="L38" class="ln">    38  </span>func New(verifier ucrealtime.TicketVerifier) oapiauth.SchemeAuthenticator {
+<span id="L39" class="ln">    39  </span>	return &amp;streamTicket{verifier: verifier}
+<span id="L40" class="ln">    40  </span>}
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// Scheme は、SchemeName を返します。</span>
+<span id="L43" class="ln">    43  </span>func (s *streamTicket) Scheme() string {
+<span id="L44" class="ln">    44  </span>	return SchemeName
+<span id="L45" class="ln">    45  </span>}
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span><span class="comment">// Authenticate は、scheme が宣言した query パラメータの ticket を path の destination に対して検証し、</span>
+<span id="L48" class="ln">    48  </span><span class="comment">// 通れば束縛を StreamGrant スロットへ書き込みます。ticket の生値はエラーにも context にも残しません</span>
+<span id="L49" class="ln">    49  </span><span class="comment">// — 後段が受け取るのは、同じ ticket をもう一度検証する関数値だけです。</span>
+<span id="L50" class="ln">    50  </span>func (s *streamTicket) Authenticate(_ context.Context, input *openapi3filter.AuthenticationInput) error {
+<span id="L51" class="ln">    51  </span>	if input.SecurityScheme == nil || input.SecurityScheme.Name == &#34;&#34; {
+<span id="L52" class="ln">    52  </span>		return ErrSchemeDeclarationMissing
+<span id="L53" class="ln">    53  </span>	}
+<span id="L54" class="ln">    54  </span>
+<span id="L55" class="ln">    55  </span>	in := input.RequestValidationInput
+<span id="L56" class="ln">    56  </span>	<span class="comment">// OpenAPI バリデータが渡す context は context.Background() から組み立てられており、</span>
+<span id="L57" class="ln">    57  </span>	<span class="comment">// スパン・deadline・キャンセルのいずれも持たない。検証は request の予算の内側で行う。</span>
+<span id="L58" class="ln">    58  </span>	ctx := in.Request.Context()
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>	value := in.GetQueryParams().Get(input.SecurityScheme.Name)
+<span id="L61" class="ln">    61  </span>	destination := rt.StreamID(in.PathParams[destinationParam])
+<span id="L62" class="ln">    62  </span>
+<span id="L63" class="ln">    63  </span>	<span class="comment">//nolint:contextcheck // 引数の context ではなく input が内包する request の context を用いるため</span>
+<span id="L64" class="ln">    64  </span>	grant, err := s.verifier.Verify(ctx, value, destination)
+<span id="L65" class="ln">    65  </span>	if err != nil {
+<span id="L66" class="ln">    66  </span>		return err
+<span id="L67" class="ln">    67  </span>	}
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span>	<span class="comment">//nolint:contextcheck // input が内包する request の context のスロットへ書き戻すため</span>
+<span id="L70" class="ln">    70  </span>	if !ctxhelper.SetStreamGrant(ctx, grant) {
+<span id="L71" class="ln">    71  </span>		return ErrStreamGrantSlotNotFound
+<span id="L72" class="ln">    72  </span>	}
+<span id="L73" class="ln">    73  </span>
+<span id="L74" class="ln">    74  </span>	<span class="comment">//nolint:contextcheck // 同上</span>
+<span id="L75" class="ln">    75  </span>	if !ctxhelper.SetStreamRevalidator(ctx, func(ctx context.Context) error {
+<span id="L76" class="ln">    76  </span>		_, err := s.verifier.Verify(ctx, value, destination)
+<span id="L77" class="ln">    77  </span>
+<span id="L78" class="ln">    78  </span>		return err
+<span id="L79" class="ln">    79  </span>	}) {
+<span id="L80" class="ln">    80  </span>		return ErrStreamGrantSlotNotFound
+<span id="L81" class="ln">    81  </span>	}
+<span id="L82" class="ln">    82  </span>
+<span id="L83" class="ln">    83  </span>	return nil
+<span id="L84" class="ln">    84  </span>}
+<span id="L85" class="ln">    85  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/controller/stream/auth/stream_ticket.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

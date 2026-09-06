@@ -166,1258 +166,1252 @@
 <span id="L109" class="ln">   109  </span>			b := bodies[min(call, len(bodies)-1)]
 <span id="L110" class="ln">   110  </span>			call++
 <span id="L111" class="ln">   111  </span>			return &amp;httpclient.Response{StatusCode: 200, Body: b}, nil
-<span id="L112" class="ln">   112  </span>		}).AnyTimes()
-<span id="L113" class="ln">   113  </span>	return client
-<span id="L114" class="ln">   114  </span>}
-<span id="L115" class="ln">   115  </span>
-<span id="L116" class="ln">   116  </span>func (c *countingJWKSClient) Do(_ context.Context, _ *httpclient.Request) (*httpclient.Response, error) {
-<span id="L117" class="ln">   117  </span>	c.mu.Lock()
-<span id="L118" class="ln">   118  </span>	defer c.mu.Unlock()
-<span id="L119" class="ln">   119  </span>	b := c.bodies[min(c.calls, len(c.bodies)-1)]
-<span id="L120" class="ln">   120  </span>	c.calls++
-<span id="L121" class="ln">   121  </span>	return &amp;httpclient.Response{StatusCode: 200, Body: b}, nil
-<span id="L122" class="ln">   122  </span>}
-<span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>func (c *countingJWKSClient) count() int {
-<span id="L125" class="ln">   125  </span>	c.mu.Lock()
-<span id="L126" class="ln">   126  </span>	defer c.mu.Unlock()
-<span id="L127" class="ln">   127  </span>	return c.calls
-<span id="L128" class="ln">   128  </span>}
-<span id="L129" class="ln">   129  </span>
-<span id="L130" class="ln">   130  </span>func signTokenWithTestKID(t *testing.T, key *rsa.PrivateKey, claims jwtlib.MapClaims) string {
-<span id="L131" class="ln">   131  </span>	t.Helper()
-<span id="L132" class="ln">   132  </span>	token := jwtlib.NewWithClaims(jwtlib.SigningMethodRS256, claims)
-<span id="L133" class="ln">   133  </span>	token.Header[&#34;kid&#34;] = testKID
-<span id="L134" class="ln">   134  </span>
-<span id="L135" class="ln">   135  </span>	signed, err := token.SignedString(key)
-<span id="L136" class="ln">   136  </span>	require.NoError(t, err)
-<span id="L137" class="ln">   137  </span>	return signed
-<span id="L138" class="ln">   138  </span>}
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span><span class="comment">// stubJWKSClient は Do が常に body(JWKS) を返す httpclient.Client のモックです。</span>
-<span id="L141" class="ln">   141  </span>func stubJWKSClient(t *testing.T, body []byte) httpclient.Client {
-<span id="L142" class="ln">   142  </span>	t.Helper()
-<span id="L143" class="ln">   143  </span>	ctrl := gomock.NewController(t)
-<span id="L144" class="ln">   144  </span>	client := mock_httpclient.NewMockClient(ctrl)
-<span id="L145" class="ln">   145  </span>	client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L146" class="ln">   146  </span>		Return(&amp;httpclient.Response{StatusCode: 200, Body: body}, nil).AnyTimes()
-<span id="L147" class="ln">   147  </span>	return client
-<span id="L148" class="ln">   148  </span>}
-<span id="L149" class="ln">   149  </span>
-<span id="L150" class="ln">   150  </span><span class="comment">// staticURL は、常に固定 URL を返す jwksResolver 用の URL 供給関数です。</span>
-<span id="L151" class="ln">   151  </span><span class="comment">//</span>
-<span id="L152" class="ln">   152  </span><span class="comment">//nolint:unparam // テスト用ヘルパ。任意 URL を渡せるよう引数化している</span>
-<span id="L153" class="ln">   153  </span>func staticURL(u string) func(context.Context) (string, error) {
-<span id="L154" class="ln">   154  </span>	return func(context.Context) (string, error) { return u, nil }
-<span id="L155" class="ln">   155  </span>}
-<span id="L156" class="ln">   156  </span>
-<span id="L157" class="ln">   157  </span><span class="comment">// newJWKSAuthenticator は、JWKS を返すモック httpclient で kid 解決する Authenticator を生成します。</span>
-<span id="L158" class="ln">   158  </span>func newJWKSAuthenticator(t *testing.T, jwks []byte) authbd.Authenticator {
-<span id="L159" class="ln">   159  </span>	t.Helper()
-<span id="L160" class="ln">   160  </span>	a, err := NewJWKS(JWKSParams{
-<span id="L161" class="ln">   161  </span>		Params: Params{
-<span id="L162" class="ln">   162  </span>			Issuer:   testIssuer,
-<span id="L163" class="ln">   163  </span>			Audience: testAudience,
-<span id="L164" class="ln">   164  </span>			Clock:    testkit.NewMockClock(t, fixedNow),
-<span id="L165" class="ln">   165  </span>		},
-<span id="L166" class="ln">   166  </span>		JWKSURL:          &#34;http://jwks.example.test/keys.json&#34;,
-<span id="L167" class="ln">   167  </span>		AllowInsecureURL: true,
-<span id="L168" class="ln">   168  </span>	}, stubJWKSClient(t, jwks))
-<span id="L169" class="ln">   169  </span>	require.NoError(t, err)
-<span id="L170" class="ln">   170  </span>	return a
-<span id="L171" class="ln">   171  </span>}
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>func TestNewDownstreamProfile(t *testing.T) {
-<span id="L174" class="ln">   174  </span>	t.Parallel()
-<span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L177" class="ln">   177  </span>		t.Parallel()
-<span id="L178" class="ln">   178  </span>
-<span id="L179" class="ln">   179  </span>		t.Run(&#34;外部 IdP へ相関 ID を漏らさないよう trace を伝搬しない設定になる&#34;, func(t *testing.T) {
-<span id="L180" class="ln">   180  </span>			t.Parallel()
-<span id="L181" class="ln">   181  </span>			assert.False(t, NewDownstreamProfile(false).Profile.PropagateTrace)
-<span id="L182" class="ln">   182  </span>		})
-<span id="L183" class="ln">   183  </span>
-<span id="L184" class="ln">   184  </span>		t.Run(&#34;allowPrivateNetwork 引数が Profile.AllowPrivateNetwork に反映される&#34;, func(t *testing.T) {
-<span id="L185" class="ln">   185  </span>			t.Parallel()
-<span id="L186" class="ln">   186  </span>			assert.False(t, NewDownstreamProfile(false).Profile.AllowPrivateNetwork)
-<span id="L187" class="ln">   187  </span>			assert.True(t, NewDownstreamProfile(true).Profile.AllowPrivateNetwork)
-<span id="L188" class="ln">   188  </span>		})
-<span id="L189" class="ln">   189  </span>
-<span id="L190" class="ln">   190  </span>		t.Run(&#34;認証ホットパス向けに全体タイムアウト・試行回数・応答上限を絞る&#34;, func(t *testing.T) {
-<span id="L191" class="ln">   191  </span>			t.Parallel()
-<span id="L192" class="ln">   192  </span>			p := NewDownstreamProfile(false).Profile
-<span id="L193" class="ln">   193  </span>			assert.Equal(t, jwksOverallTimeout, p.OverallTimeout)
-<span id="L194" class="ln">   194  </span>			assert.Equal(t, jwksMaxAttempts, p.MaxAttempts)
-<span id="L195" class="ln">   195  </span>			assert.Equal(t, int64(jwksMaxResponseBytes), p.MaxResponseBytes)
-<span id="L196" class="ln">   196  </span>		})
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>		t.Run(&#34;Name が jwks downstream になる&#34;, func(t *testing.T) {
-<span id="L199" class="ln">   199  </span>			t.Parallel()
-<span id="L200" class="ln">   200  </span>			assert.Equal(t, RequiredDownstream(), NewDownstreamProfile(false).Name)
-<span id="L201" class="ln">   201  </span>		})
-<span id="L202" class="ln">   202  </span>	})
-<span id="L203" class="ln">   203  </span>}
-<span id="L204" class="ln">   204  </span>
-<span id="L205" class="ln">   205  </span>func TestRequiredDownstream(t *testing.T) {
-<span id="L206" class="ln">   206  </span>	t.Parallel()
-<span id="L207" class="ln">   207  </span>
-<span id="L208" class="ln">   208  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L209" class="ln">   209  </span>		t.Parallel()
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>		t.Run(&#34;jwks downstream を返す&#34;, func(t *testing.T) {
-<span id="L212" class="ln">   212  </span>			t.Parallel()
-<span id="L213" class="ln">   213  </span>			assert.Equal(t, httpclient.Downstream(&#34;jwks&#34;), RequiredDownstream())
-<span id="L214" class="ln">   214  </span>		})
-<span id="L215" class="ln">   215  </span>	})
-<span id="L216" class="ln">   216  </span>}
-<span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span>func Test_parseJWKSKeys(t *testing.T) {
-<span id="L219" class="ln">   219  </span>	t.Parallel()
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L222" class="ln">   222  </span>		t.Parallel()
-<span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span>		t.Run(&#34;kid 付き JWKS を kid→公開鍵へパースできる&#34;, func(t *testing.T) {
-<span id="L225" class="ln">   225  </span>			t.Parallel()
-<span id="L226" class="ln">   226  </span>			key := newRSAKey(t)
-<span id="L227" class="ln">   227  </span>			keys, err := parseJWKSKeys(jwksPublicJSON(t, &amp;key.PublicKey), testAllowedAlgs)
-<span id="L228" class="ln">   228  </span>			require.NoError(t, err)
-<span id="L229" class="ln">   229  </span>			assert.Contains(t, keys, testKID)
-<span id="L230" class="ln">   230  </span>		})
-<span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>		t.Run(&#34;KeyID の無いエントリを含む場合、kid 付き鍵のみ採用される&#34;, func(t *testing.T) {
-<span id="L233" class="ln">   233  </span>			t.Parallel()
-<span id="L234" class="ln">   234  </span>			key := newRSAKey(t)
-<span id="L235" class="ln">   235  </span>			set := jose.JSONWebKeySet{
-<span id="L236" class="ln">   236  </span>				Keys: []jose.JSONWebKey{
-<span id="L237" class="ln">   237  </span>					{Key: &amp;key.PublicKey, KeyID: &#34;&#34;, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
-<span id="L238" class="ln">   238  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
-<span id="L239" class="ln">   239  </span>				},
-<span id="L240" class="ln">   240  </span>			}
-<span id="L241" class="ln">   241  </span>			raw, err := json.Marshal(set)
-<span id="L242" class="ln">   242  </span>			require.NoError(t, err)
-<span id="L243" class="ln">   243  </span>
-<span id="L244" class="ln">   244  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
-<span id="L245" class="ln">   245  </span>			require.NoError(t, err)
-<span id="L246" class="ln">   246  </span>			assert.Len(t, keys, 1)
-<span id="L247" class="ln">   247  </span>			assert.Contains(t, keys, testKID)
-<span id="L248" class="ln">   248  </span>		})
-<span id="L249" class="ln">   249  </span>
-<span id="L250" class="ln">   250  </span>		t.Run(&#34;非 RSA 鍵（EC）を含む場合、RSA 公開鍵のみ採用される&#34;, func(t *testing.T) {
-<span id="L251" class="ln">   251  </span>			t.Parallel()
-<span id="L252" class="ln">   252  </span>			rsaKey := newRSAKey(t)
-<span id="L253" class="ln">   253  </span>			ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-<span id="L254" class="ln">   254  </span>			require.NoError(t, err)
-<span id="L255" class="ln">   255  </span>			set := jose.JSONWebKeySet{
-<span id="L256" class="ln">   256  </span>				Keys: []jose.JSONWebKey{
-<span id="L257" class="ln">   257  </span>					{Key: &amp;ecKey.PublicKey, KeyID: &#34;ec-key&#34;, Use: &#34;sig&#34;, Algorithm: &#34;ES256&#34;},
-<span id="L258" class="ln">   258  </span>					{Key: &amp;rsaKey.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
-<span id="L259" class="ln">   259  </span>				},
-<span id="L260" class="ln">   260  </span>			}
-<span id="L261" class="ln">   261  </span>			raw, err := json.Marshal(set)
-<span id="L262" class="ln">   262  </span>			require.NoError(t, err)
-<span id="L263" class="ln">   263  </span>
-<span id="L264" class="ln">   264  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
-<span id="L265" class="ln">   265  </span>			require.NoError(t, err)
-<span id="L266" class="ln">   266  </span>			assert.Len(t, keys, 1)
-<span id="L267" class="ln">   267  </span>			assert.Contains(t, keys, testKID)
-<span id="L268" class="ln">   268  </span>			assert.NotContains(t, keys, &#34;ec-key&#34;)
-<span id="L269" class="ln">   269  </span>		})
-<span id="L270" class="ln">   270  </span>
-<span id="L271" class="ln">   271  </span>		t.Run(&#34;暗号化用途（use=enc）の鍵は署名鍵として採用されない&#34;, func(t *testing.T) {
-<span id="L272" class="ln">   272  </span>			t.Parallel()
-<span id="L273" class="ln">   273  </span>			key := newRSAKey(t)
-<span id="L274" class="ln">   274  </span>			set := jose.JSONWebKeySet{
-<span id="L275" class="ln">   275  </span>				Keys: []jose.JSONWebKey{
-<span id="L276" class="ln">   276  </span>					{Key: &amp;key.PublicKey, KeyID: &#34;enc-key&#34;, Use: &#34;enc&#34;, Algorithm: &#34;RS256&#34;},
-<span id="L277" class="ln">   277  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
-<span id="L278" class="ln">   278  </span>				},
-<span id="L279" class="ln">   279  </span>			}
-<span id="L280" class="ln">   280  </span>			raw, err := json.Marshal(set)
-<span id="L281" class="ln">   281  </span>			require.NoError(t, err)
-<span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
-<span id="L284" class="ln">   284  </span>			require.NoError(t, err)
-<span id="L285" class="ln">   285  </span>			assert.Len(t, keys, 1)
-<span id="L286" class="ln">   286  </span>			assert.Contains(t, keys, testKID)
-<span id="L287" class="ln">   287  </span>			assert.NotContains(t, keys, &#34;enc-key&#34;)
-<span id="L288" class="ln">   288  </span>		})
-<span id="L289" class="ln">   289  </span>
-<span id="L290" class="ln">   290  </span>		t.Run(&#34;JWK が宣言する alg が許可外なら採用されない&#34;, func(t *testing.T) {
-<span id="L291" class="ln">   291  </span>			t.Parallel()
-<span id="L292" class="ln">   292  </span>			key := newRSAKey(t)
-<span id="L293" class="ln">   293  </span>			set := jose.JSONWebKeySet{
-<span id="L294" class="ln">   294  </span>				Keys: []jose.JSONWebKey{
-<span id="L295" class="ln">   295  </span>					{Key: &amp;key.PublicKey, KeyID: &#34;ps-key&#34;, Use: &#34;sig&#34;, Algorithm: &#34;PS256&#34;},
-<span id="L296" class="ln">   296  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
-<span id="L297" class="ln">   297  </span>				},
-<span id="L298" class="ln">   298  </span>			}
-<span id="L299" class="ln">   299  </span>			raw, err := json.Marshal(set)
-<span id="L300" class="ln">   300  </span>			require.NoError(t, err)
-<span id="L301" class="ln">   301  </span>
-<span id="L302" class="ln">   302  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
-<span id="L303" class="ln">   303  </span>			require.NoError(t, err)
-<span id="L304" class="ln">   304  </span>			assert.Len(t, keys, 1)
-<span id="L305" class="ln">   305  </span>			assert.Contains(t, keys, testKID)
-<span id="L306" class="ln">   306  </span>			assert.NotContains(t, keys, &#34;ps-key&#34;)
-<span id="L307" class="ln">   307  </span>		})
-<span id="L308" class="ln">   308  </span>
-<span id="L309" class="ln">   309  </span>		t.Run(&#34;use / alg を宣言しない鍵も採用される&#34;, func(t *testing.T) {
-<span id="L310" class="ln">   310  </span>			t.Parallel()
-<span id="L311" class="ln">   311  </span>			key := newRSAKey(t)
-<span id="L312" class="ln">   312  </span>			set := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: &amp;key.PublicKey, KeyID: testKID}}}
-<span id="L313" class="ln">   313  </span>			raw, err := json.Marshal(set)
-<span id="L314" class="ln">   314  </span>			require.NoError(t, err)
-<span id="L315" class="ln">   315  </span>
-<span id="L316" class="ln">   316  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
-<span id="L317" class="ln">   317  </span>			require.NoError(t, err)
-<span id="L318" class="ln">   318  </span>			assert.Contains(t, keys, testKID)
-<span id="L319" class="ln">   319  </span>		})
-<span id="L320" class="ln">   320  </span>	})
-<span id="L321" class="ln">   321  </span>
-<span id="L322" class="ln">   322  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L323" class="ln">   323  </span>		t.Parallel()
-<span id="L324" class="ln">   324  </span>
-<span id="L325" class="ln">   325  </span>		t.Run(&#34;JSON が不正な場合は文書ごと利用不能として分類される&#34;, func(t *testing.T) {
-<span id="L326" class="ln">   326  </span>			t.Parallel()
-<span id="L327" class="ln">   327  </span>			_, err := parseJWKSKeys([]byte(&#34;{&#34;), testAllowedAlgs)
-<span id="L328" class="ln">   328  </span>			require.ErrorIs(t, err, errJWKSMalformed)
-<span id="L329" class="ln">   329  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L330" class="ln">   330  </span>		})
-<span id="L331" class="ln">   331  </span>
-<span id="L332" class="ln">   332  </span>		t.Run(&#34;利用可能な鍵が無い場合は文書ごと利用不能として分類される&#34;, func(t *testing.T) {
-<span id="L333" class="ln">   333  </span>			t.Parallel()
-<span id="L334" class="ln">   334  </span>			_, err := parseJWKSKeys([]byte(`{&#34;keys&#34;:[]}`), testAllowedAlgs)
-<span id="L335" class="ln">   335  </span>			require.ErrorIs(t, err, errJWKSNoKeys)
-<span id="L336" class="ln">   336  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L337" class="ln">   337  </span>		})
-<span id="L338" class="ln">   338  </span>
-<span id="L339" class="ln">   339  </span>		t.Run(&#34;重複する kid を含む場合は文書ごと不採用になる&#34;, func(t *testing.T) {
-<span id="L340" class="ln">   340  </span>			t.Parallel()
-<span id="L341" class="ln">   341  </span>			key := newRSAKey(t)
-<span id="L342" class="ln">   342  </span>			set := jose.JSONWebKeySet{
-<span id="L343" class="ln">   343  </span>				Keys: []jose.JSONWebKey{
+<span id="L112" class="ln">   112  </span>		},
+<span id="L113" class="ln">   113  </span>	).AnyTimes()
+<span id="L114" class="ln">   114  </span>	return client
+<span id="L115" class="ln">   115  </span>}
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>func (c *countingJWKSClient) Do(_ context.Context, _ *httpclient.Request) (*httpclient.Response, error) {
+<span id="L118" class="ln">   118  </span>	c.mu.Lock()
+<span id="L119" class="ln">   119  </span>	defer c.mu.Unlock()
+<span id="L120" class="ln">   120  </span>	b := c.bodies[min(c.calls, len(c.bodies)-1)]
+<span id="L121" class="ln">   121  </span>	c.calls++
+<span id="L122" class="ln">   122  </span>	return &amp;httpclient.Response{StatusCode: 200, Body: b}, nil
+<span id="L123" class="ln">   123  </span>}
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>func (c *countingJWKSClient) count() int {
+<span id="L126" class="ln">   126  </span>	c.mu.Lock()
+<span id="L127" class="ln">   127  </span>	defer c.mu.Unlock()
+<span id="L128" class="ln">   128  </span>	return c.calls
+<span id="L129" class="ln">   129  </span>}
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span>func signTokenWithTestKID(t *testing.T, key *rsa.PrivateKey, claims jwtlib.MapClaims) string {
+<span id="L132" class="ln">   132  </span>	t.Helper()
+<span id="L133" class="ln">   133  </span>	token := jwtlib.NewWithClaims(jwtlib.SigningMethodRS256, claims)
+<span id="L134" class="ln">   134  </span>	token.Header[&#34;kid&#34;] = testKID
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span>	signed, err := token.SignedString(key)
+<span id="L137" class="ln">   137  </span>	require.NoError(t, err)
+<span id="L138" class="ln">   138  </span>	return signed
+<span id="L139" class="ln">   139  </span>}
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span><span class="comment">// stubJWKSClient は Do が常に body(JWKS) を返す httpclient.Client のモックです。</span>
+<span id="L142" class="ln">   142  </span>func stubJWKSClient(t *testing.T, body []byte) httpclient.Client {
+<span id="L143" class="ln">   143  </span>	t.Helper()
+<span id="L144" class="ln">   144  </span>	ctrl := gomock.NewController(t)
+<span id="L145" class="ln">   145  </span>	client := mock_httpclient.NewMockClient(ctrl)
+<span id="L146" class="ln">   146  </span>	client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L147" class="ln">   147  </span>		Return(&amp;httpclient.Response{StatusCode: 200, Body: body}, nil).AnyTimes()
+<span id="L148" class="ln">   148  </span>	return client
+<span id="L149" class="ln">   149  </span>}
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span><span class="comment">// staticURL は、常に固定 URL を返す jwksResolver 用の URL 供給関数です。</span>
+<span id="L152" class="ln">   152  </span><span class="comment">//</span>
+<span id="L153" class="ln">   153  </span><span class="comment">//nolint:unparam // テスト用ヘルパ。任意 URL を渡せるよう引数化している</span>
+<span id="L154" class="ln">   154  </span>func staticURL(u string) func(context.Context) (string, error) {
+<span id="L155" class="ln">   155  </span>	return func(context.Context) (string, error) { return u, nil }
+<span id="L156" class="ln">   156  </span>}
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span><span class="comment">// newJWKSAuthenticator は、JWKS を返すモック httpclient で kid 解決する Authenticator を生成します。</span>
+<span id="L159" class="ln">   159  </span>func newJWKSAuthenticator(t *testing.T, jwks []byte) authbd.Authenticator {
+<span id="L160" class="ln">   160  </span>	t.Helper()
+<span id="L161" class="ln">   161  </span>	a, err := NewJWKS(JWKSParams{
+<span id="L162" class="ln">   162  </span>		Issuer:           testIssuer,
+<span id="L163" class="ln">   163  </span>		Audience:         testAudience,
+<span id="L164" class="ln">   164  </span>		Clock:            testkit.NewMockClock(t, fixedNow),
+<span id="L165" class="ln">   165  </span>		JWKSURL:          &#34;http://jwks.example.test/keys.json&#34;,
+<span id="L166" class="ln">   166  </span>		AllowInsecureURL: true,
+<span id="L167" class="ln">   167  </span>	}, stubJWKSClient(t, jwks))
+<span id="L168" class="ln">   168  </span>	require.NoError(t, err)
+<span id="L169" class="ln">   169  </span>	return a
+<span id="L170" class="ln">   170  </span>}
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>func TestNewDownstreamProfile(t *testing.T) {
+<span id="L173" class="ln">   173  </span>	t.Parallel()
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L176" class="ln">   176  </span>		t.Parallel()
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>		t.Run(&#34;外部 IdP へ相関 ID を漏らさないよう trace を伝搬しない設定になる&#34;, func(t *testing.T) {
+<span id="L179" class="ln">   179  </span>			t.Parallel()
+<span id="L180" class="ln">   180  </span>			assert.False(t, NewDownstreamProfile(false).Profile.PropagateTrace)
+<span id="L181" class="ln">   181  </span>		})
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>		t.Run(&#34;allowPrivateNetwork 引数が Profile.AllowPrivateNetwork に反映される&#34;, func(t *testing.T) {
+<span id="L184" class="ln">   184  </span>			t.Parallel()
+<span id="L185" class="ln">   185  </span>			assert.False(t, NewDownstreamProfile(false).Profile.AllowPrivateNetwork)
+<span id="L186" class="ln">   186  </span>			assert.True(t, NewDownstreamProfile(true).Profile.AllowPrivateNetwork)
+<span id="L187" class="ln">   187  </span>		})
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>		t.Run(&#34;認証ホットパス向けに全体タイムアウト・試行回数・応答上限を絞る&#34;, func(t *testing.T) {
+<span id="L190" class="ln">   190  </span>			t.Parallel()
+<span id="L191" class="ln">   191  </span>			p := NewDownstreamProfile(false).Profile
+<span id="L192" class="ln">   192  </span>			assert.Equal(t, jwksOverallTimeout, p.OverallTimeout)
+<span id="L193" class="ln">   193  </span>			assert.Equal(t, jwksMaxAttempts, p.MaxAttempts)
+<span id="L194" class="ln">   194  </span>			assert.Equal(t, int64(jwksMaxResponseBytes), p.MaxResponseBytes)
+<span id="L195" class="ln">   195  </span>		})
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>		t.Run(&#34;Name が jwks downstream になる&#34;, func(t *testing.T) {
+<span id="L198" class="ln">   198  </span>			t.Parallel()
+<span id="L199" class="ln">   199  </span>			assert.Equal(t, RequiredDownstream(), NewDownstreamProfile(false).Name)
+<span id="L200" class="ln">   200  </span>		})
+<span id="L201" class="ln">   201  </span>	})
+<span id="L202" class="ln">   202  </span>}
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>func TestRequiredDownstream(t *testing.T) {
+<span id="L205" class="ln">   205  </span>	t.Parallel()
+<span id="L206" class="ln">   206  </span>
+<span id="L207" class="ln">   207  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L208" class="ln">   208  </span>		t.Parallel()
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>		t.Run(&#34;jwks downstream を返す&#34;, func(t *testing.T) {
+<span id="L211" class="ln">   211  </span>			t.Parallel()
+<span id="L212" class="ln">   212  </span>			assert.Equal(t, httpclient.Downstream(&#34;jwks&#34;), RequiredDownstream())
+<span id="L213" class="ln">   213  </span>		})
+<span id="L214" class="ln">   214  </span>	})
+<span id="L215" class="ln">   215  </span>}
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span>func Test_parseJWKSKeys(t *testing.T) {
+<span id="L218" class="ln">   218  </span>	t.Parallel()
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L221" class="ln">   221  </span>		t.Parallel()
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>		t.Run(&#34;kid 付き JWKS を kid→公開鍵へパースできる&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L225" class="ln">   225  </span>			key := newRSAKey(t)
+<span id="L226" class="ln">   226  </span>			keys, err := parseJWKSKeys(jwksPublicJSON(t, &amp;key.PublicKey), testAllowedAlgs)
+<span id="L227" class="ln">   227  </span>			require.NoError(t, err)
+<span id="L228" class="ln">   228  </span>			assert.Contains(t, keys, testKID)
+<span id="L229" class="ln">   229  </span>		})
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>		t.Run(&#34;KeyID の無いエントリを含む場合、kid 付き鍵のみ採用される&#34;, func(t *testing.T) {
+<span id="L232" class="ln">   232  </span>			t.Parallel()
+<span id="L233" class="ln">   233  </span>			key := newRSAKey(t)
+<span id="L234" class="ln">   234  </span>			set := jose.JSONWebKeySet{
+<span id="L235" class="ln">   235  </span>				Keys: []jose.JSONWebKey{
+<span id="L236" class="ln">   236  </span>					{Key: &amp;key.PublicKey, KeyID: &#34;&#34;, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
+<span id="L237" class="ln">   237  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
+<span id="L238" class="ln">   238  </span>				},
+<span id="L239" class="ln">   239  </span>			}
+<span id="L240" class="ln">   240  </span>			raw, err := json.Marshal(set)
+<span id="L241" class="ln">   241  </span>			require.NoError(t, err)
+<span id="L242" class="ln">   242  </span>
+<span id="L243" class="ln">   243  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
+<span id="L244" class="ln">   244  </span>			require.NoError(t, err)
+<span id="L245" class="ln">   245  </span>			assert.Len(t, keys, 1)
+<span id="L246" class="ln">   246  </span>			assert.Contains(t, keys, testKID)
+<span id="L247" class="ln">   247  </span>		})
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>		t.Run(&#34;非 RSA 鍵（EC）を含む場合、RSA 公開鍵のみ採用される&#34;, func(t *testing.T) {
+<span id="L250" class="ln">   250  </span>			t.Parallel()
+<span id="L251" class="ln">   251  </span>			rsaKey := newRSAKey(t)
+<span id="L252" class="ln">   252  </span>			ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+<span id="L253" class="ln">   253  </span>			require.NoError(t, err)
+<span id="L254" class="ln">   254  </span>			set := jose.JSONWebKeySet{
+<span id="L255" class="ln">   255  </span>				Keys: []jose.JSONWebKey{
+<span id="L256" class="ln">   256  </span>					{Key: &amp;ecKey.PublicKey, KeyID: &#34;ec-key&#34;, Use: &#34;sig&#34;, Algorithm: &#34;ES256&#34;},
+<span id="L257" class="ln">   257  </span>					{Key: &amp;rsaKey.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
+<span id="L258" class="ln">   258  </span>				},
+<span id="L259" class="ln">   259  </span>			}
+<span id="L260" class="ln">   260  </span>			raw, err := json.Marshal(set)
+<span id="L261" class="ln">   261  </span>			require.NoError(t, err)
+<span id="L262" class="ln">   262  </span>
+<span id="L263" class="ln">   263  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
+<span id="L264" class="ln">   264  </span>			require.NoError(t, err)
+<span id="L265" class="ln">   265  </span>			assert.Len(t, keys, 1)
+<span id="L266" class="ln">   266  </span>			assert.Contains(t, keys, testKID)
+<span id="L267" class="ln">   267  </span>			assert.NotContains(t, keys, &#34;ec-key&#34;)
+<span id="L268" class="ln">   268  </span>		})
+<span id="L269" class="ln">   269  </span>
+<span id="L270" class="ln">   270  </span>		t.Run(&#34;暗号化用途（use=enc）の鍵は署名鍵として採用されない&#34;, func(t *testing.T) {
+<span id="L271" class="ln">   271  </span>			t.Parallel()
+<span id="L272" class="ln">   272  </span>			key := newRSAKey(t)
+<span id="L273" class="ln">   273  </span>			set := jose.JSONWebKeySet{
+<span id="L274" class="ln">   274  </span>				Keys: []jose.JSONWebKey{
+<span id="L275" class="ln">   275  </span>					{Key: &amp;key.PublicKey, KeyID: &#34;enc-key&#34;, Use: &#34;enc&#34;, Algorithm: &#34;RS256&#34;},
+<span id="L276" class="ln">   276  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
+<span id="L277" class="ln">   277  </span>				},
+<span id="L278" class="ln">   278  </span>			}
+<span id="L279" class="ln">   279  </span>			raw, err := json.Marshal(set)
+<span id="L280" class="ln">   280  </span>			require.NoError(t, err)
+<span id="L281" class="ln">   281  </span>
+<span id="L282" class="ln">   282  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
+<span id="L283" class="ln">   283  </span>			require.NoError(t, err)
+<span id="L284" class="ln">   284  </span>			assert.Len(t, keys, 1)
+<span id="L285" class="ln">   285  </span>			assert.Contains(t, keys, testKID)
+<span id="L286" class="ln">   286  </span>			assert.NotContains(t, keys, &#34;enc-key&#34;)
+<span id="L287" class="ln">   287  </span>		})
+<span id="L288" class="ln">   288  </span>
+<span id="L289" class="ln">   289  </span>		t.Run(&#34;JWK が宣言する alg が許可外なら採用されない&#34;, func(t *testing.T) {
+<span id="L290" class="ln">   290  </span>			t.Parallel()
+<span id="L291" class="ln">   291  </span>			key := newRSAKey(t)
+<span id="L292" class="ln">   292  </span>			set := jose.JSONWebKeySet{
+<span id="L293" class="ln">   293  </span>				Keys: []jose.JSONWebKey{
+<span id="L294" class="ln">   294  </span>					{Key: &amp;key.PublicKey, KeyID: &#34;ps-key&#34;, Use: &#34;sig&#34;, Algorithm: &#34;PS256&#34;},
+<span id="L295" class="ln">   295  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
+<span id="L296" class="ln">   296  </span>				},
+<span id="L297" class="ln">   297  </span>			}
+<span id="L298" class="ln">   298  </span>			raw, err := json.Marshal(set)
+<span id="L299" class="ln">   299  </span>			require.NoError(t, err)
+<span id="L300" class="ln">   300  </span>
+<span id="L301" class="ln">   301  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
+<span id="L302" class="ln">   302  </span>			require.NoError(t, err)
+<span id="L303" class="ln">   303  </span>			assert.Len(t, keys, 1)
+<span id="L304" class="ln">   304  </span>			assert.Contains(t, keys, testKID)
+<span id="L305" class="ln">   305  </span>			assert.NotContains(t, keys, &#34;ps-key&#34;)
+<span id="L306" class="ln">   306  </span>		})
+<span id="L307" class="ln">   307  </span>
+<span id="L308" class="ln">   308  </span>		t.Run(&#34;use / alg を宣言しない鍵も採用される&#34;, func(t *testing.T) {
+<span id="L309" class="ln">   309  </span>			t.Parallel()
+<span id="L310" class="ln">   310  </span>			key := newRSAKey(t)
+<span id="L311" class="ln">   311  </span>			set := jose.JSONWebKeySet{Keys: []jose.JSONWebKey{{Key: &amp;key.PublicKey, KeyID: testKID}}}
+<span id="L312" class="ln">   312  </span>			raw, err := json.Marshal(set)
+<span id="L313" class="ln">   313  </span>			require.NoError(t, err)
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>			keys, err := parseJWKSKeys(raw, testAllowedAlgs)
+<span id="L316" class="ln">   316  </span>			require.NoError(t, err)
+<span id="L317" class="ln">   317  </span>			assert.Contains(t, keys, testKID)
+<span id="L318" class="ln">   318  </span>		})
+<span id="L319" class="ln">   319  </span>	})
+<span id="L320" class="ln">   320  </span>
+<span id="L321" class="ln">   321  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L322" class="ln">   322  </span>		t.Parallel()
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span>		t.Run(&#34;JSON が不正な場合は文書ごと利用不能として分類される&#34;, func(t *testing.T) {
+<span id="L325" class="ln">   325  </span>			t.Parallel()
+<span id="L326" class="ln">   326  </span>			_, err := parseJWKSKeys([]byte(&#34;{&#34;), testAllowedAlgs)
+<span id="L327" class="ln">   327  </span>			require.ErrorIs(t, err, errJWKSMalformed)
+<span id="L328" class="ln">   328  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L329" class="ln">   329  </span>		})
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>		t.Run(&#34;利用可能な鍵が無い場合は文書ごと利用不能として分類される&#34;, func(t *testing.T) {
+<span id="L332" class="ln">   332  </span>			t.Parallel()
+<span id="L333" class="ln">   333  </span>			_, err := parseJWKSKeys([]byte(`{&#34;keys&#34;:[]}`), testAllowedAlgs)
+<span id="L334" class="ln">   334  </span>			require.ErrorIs(t, err, errJWKSNoKeys)
+<span id="L335" class="ln">   335  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L336" class="ln">   336  </span>		})
+<span id="L337" class="ln">   337  </span>
+<span id="L338" class="ln">   338  </span>		t.Run(&#34;重複する kid を含む場合は文書ごと不採用になる&#34;, func(t *testing.T) {
+<span id="L339" class="ln">   339  </span>			t.Parallel()
+<span id="L340" class="ln">   340  </span>			key := newRSAKey(t)
+<span id="L341" class="ln">   341  </span>			set := jose.JSONWebKeySet{
+<span id="L342" class="ln">   342  </span>				Keys: []jose.JSONWebKey{
+<span id="L343" class="ln">   343  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
 <span id="L344" class="ln">   344  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
-<span id="L345" class="ln">   345  </span>					{Key: &amp;key.PublicKey, KeyID: testKID, Use: &#34;sig&#34;, Algorithm: &#34;RS256&#34;},
-<span id="L346" class="ln">   346  </span>				},
-<span id="L347" class="ln">   347  </span>			}
-<span id="L348" class="ln">   348  </span>			raw, err := json.Marshal(set)
-<span id="L349" class="ln">   349  </span>			require.NoError(t, err)
-<span id="L350" class="ln">   350  </span>
-<span id="L351" class="ln">   351  </span>			_, err = parseJWKSKeys(raw, testAllowedAlgs)
-<span id="L352" class="ln">   352  </span>			require.ErrorIs(t, err, errJWKSDuplicateKID)
-<span id="L353" class="ln">   353  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L354" class="ln">   354  </span>		})
-<span id="L355" class="ln">   355  </span>	})
-<span id="L356" class="ln">   356  </span>}
-<span id="L357" class="ln">   357  </span>
-<span id="L358" class="ln">   358  </span>func TestNewJWKS(t *testing.T) {
-<span id="L359" class="ln">   359  </span>	t.Parallel()
-<span id="L360" class="ln">   360  </span>
-<span id="L361" class="ln">   361  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L362" class="ln">   362  </span>		t.Parallel()
-<span id="L363" class="ln">   363  </span>
-<span id="L364" class="ln">   364  </span>		t.Run(&#34;JWKS の kid に一致する鍵で署名したトークンを検証できる&#34;, func(t *testing.T) {
-<span id="L365" class="ln">   365  </span>			t.Parallel()
-<span id="L366" class="ln">   366  </span>			key := newRSAKey(t)
-<span id="L367" class="ln">   367  </span>			a := newJWKSAuthenticator(t, jwksPublicJSON(t, &amp;key.PublicKey))
-<span id="L368" class="ln">   368  </span>
-<span id="L369" class="ln">   369  </span>			token := signTokenWithTestKID(t, key, validClaims())
-<span id="L370" class="ln">   370  </span>			authn, err := a.Authenticate(context.Background(), newCredential(t, token))
-<span id="L371" class="ln">   371  </span>			require.NoError(t, err)
-<span id="L372" class="ln">   372  </span>			assert.Equal(t, testSubject, authn.Subject())
-<span id="L373" class="ln">   373  </span>		})
-<span id="L374" class="ln">   374  </span>
-<span id="L375" class="ln">   375  </span>		t.Run(&#34;JWKSParams の AllowedAlgs / UnknownKidCooldown が resolver へ反映される&#34;, func(t *testing.T) {
-<span id="L376" class="ln">   376  </span>			t.Parallel()
-<span id="L377" class="ln">   377  </span>			a, err := NewJWKS(JWKSParams{
-<span id="L378" class="ln">   378  </span>				Params: Params{
-<span id="L379" class="ln">   379  </span>					Issuer:      testIssuer,
-<span id="L380" class="ln">   380  </span>					Audience:    testAudience,
-<span id="L381" class="ln">   381  </span>					AllowedAlgs: []string{&#34;PS256&#34;},
-<span id="L382" class="ln">   382  </span>					Clock:       testkit.NewMockClock(t, fixedNow),
-<span id="L383" class="ln">   383  </span>				},
-<span id="L384" class="ln">   384  </span>				JWKSURL:            &#34;https://idp.example.test/keys.json&#34;,
-<span id="L385" class="ln">   385  </span>				UnknownKidCooldown: 30 * time.Second,
-<span id="L386" class="ln">   386  </span>			}, stubJWKSClient(t, nil))
-<span id="L387" class="ln">   387  </span>			require.NoError(t, err)
-<span id="L388" class="ln">   388  </span>
-<span id="L389" class="ln">   389  </span>			authn, ok := a.(*authenticator)
-<span id="L390" class="ln">   390  </span>			require.True(t, ok)
-<span id="L391" class="ln">   391  </span>			r, ok := authn.keyResolver.(*jwksResolver)
-<span id="L392" class="ln">   392  </span>			require.True(t, ok)
-<span id="L393" class="ln">   393  </span>			assert.Equal(t, []string{&#34;PS256&#34;}, r.allowedAlgs)
-<span id="L394" class="ln">   394  </span>			assert.Equal(t, 30*time.Second, r.cooldown)
-<span id="L395" class="ln">   395  </span>		})
-<span id="L396" class="ln">   396  </span>
-<span id="L397" class="ln">   397  </span>		t.Run(&#34;JWKSURL 未指定でも discovery 経由で鍵解決しトークンを検証できる&#34;, func(t *testing.T) {
-<span id="L398" class="ln">   398  </span>			t.Parallel()
-<span id="L399" class="ln">   399  </span>			key := newRSAKey(t)
-<span id="L400" class="ln">   400  </span>			client := jwksClientReturning(t,
-<span id="L401" class="ln">   401  </span>				discoveryDoc(t, testIssuer, testIssuer+&#34;/keys.json&#34;),
-<span id="L402" class="ln">   402  </span>				jwksPublicJSON(t, &amp;key.PublicKey),
-<span id="L403" class="ln">   403  </span>			)
-<span id="L404" class="ln">   404  </span>			a, err := NewJWKS(JWKSParams{
-<span id="L405" class="ln">   405  </span>				Params: Params{Issuer: testIssuer, Audience: testAudience, Clock: testkit.NewMockClock(t, fixedNow)},
-<span id="L406" class="ln">   406  </span>			}, client)
-<span id="L407" class="ln">   407  </span>			require.NoError(t, err)
-<span id="L408" class="ln">   408  </span>
-<span id="L409" class="ln">   409  </span>			token := signTokenWithTestKID(t, key, validClaims())
-<span id="L410" class="ln">   410  </span>			authn, err := a.Authenticate(context.Background(), newCredential(t, token))
-<span id="L411" class="ln">   411  </span>			require.NoError(t, err)
-<span id="L412" class="ln">   412  </span>			assert.Equal(t, testSubject, authn.Subject())
-<span id="L413" class="ln">   413  </span>		})
-<span id="L414" class="ln">   414  </span>	})
+<span id="L345" class="ln">   345  </span>				},
+<span id="L346" class="ln">   346  </span>			}
+<span id="L347" class="ln">   347  </span>			raw, err := json.Marshal(set)
+<span id="L348" class="ln">   348  </span>			require.NoError(t, err)
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>			_, err = parseJWKSKeys(raw, testAllowedAlgs)
+<span id="L351" class="ln">   351  </span>			require.ErrorIs(t, err, errJWKSDuplicateKID)
+<span id="L352" class="ln">   352  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L353" class="ln">   353  </span>		})
+<span id="L354" class="ln">   354  </span>	})
+<span id="L355" class="ln">   355  </span>}
+<span id="L356" class="ln">   356  </span>
+<span id="L357" class="ln">   357  </span>func TestNewJWKS(t *testing.T) {
+<span id="L358" class="ln">   358  </span>	t.Parallel()
+<span id="L359" class="ln">   359  </span>
+<span id="L360" class="ln">   360  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L361" class="ln">   361  </span>		t.Parallel()
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span>		t.Run(&#34;JWKS の kid に一致する鍵で署名したトークンを検証できる&#34;, func(t *testing.T) {
+<span id="L364" class="ln">   364  </span>			t.Parallel()
+<span id="L365" class="ln">   365  </span>			key := newRSAKey(t)
+<span id="L366" class="ln">   366  </span>			a := newJWKSAuthenticator(t, jwksPublicJSON(t, &amp;key.PublicKey))
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>			token := signTokenWithTestKID(t, key, validClaims())
+<span id="L369" class="ln">   369  </span>			authn, err := a.Authenticate(context.Background(), newCredential(t, token))
+<span id="L370" class="ln">   370  </span>			require.NoError(t, err)
+<span id="L371" class="ln">   371  </span>			assert.Equal(t, testSubject, authn.Subject())
+<span id="L372" class="ln">   372  </span>		})
+<span id="L373" class="ln">   373  </span>
+<span id="L374" class="ln">   374  </span>		t.Run(&#34;JWKSParams の AllowedAlgs / UnknownKidCooldown が resolver へ反映される&#34;, func(t *testing.T) {
+<span id="L375" class="ln">   375  </span>			t.Parallel()
+<span id="L376" class="ln">   376  </span>			a, err := NewJWKS(JWKSParams{
+<span id="L377" class="ln">   377  </span>				Issuer:             testIssuer,
+<span id="L378" class="ln">   378  </span>				Audience:           testAudience,
+<span id="L379" class="ln">   379  </span>				AllowedAlgs:        []string{&#34;PS256&#34;},
+<span id="L380" class="ln">   380  </span>				Clock:              testkit.NewMockClock(t, fixedNow),
+<span id="L381" class="ln">   381  </span>				JWKSURL:            &#34;https://idp.example.test/keys.json&#34;,
+<span id="L382" class="ln">   382  </span>				UnknownKidCooldown: 30 * time.Second,
+<span id="L383" class="ln">   383  </span>			}, stubJWKSClient(t, nil))
+<span id="L384" class="ln">   384  </span>			require.NoError(t, err)
+<span id="L385" class="ln">   385  </span>
+<span id="L386" class="ln">   386  </span>			authn, ok := a.(*authenticator)
+<span id="L387" class="ln">   387  </span>			require.True(t, ok)
+<span id="L388" class="ln">   388  </span>			r, ok := authn.keyResolver.(*jwksResolver)
+<span id="L389" class="ln">   389  </span>			require.True(t, ok)
+<span id="L390" class="ln">   390  </span>			assert.Equal(t, []string{&#34;PS256&#34;}, r.allowedAlgs)
+<span id="L391" class="ln">   391  </span>			assert.Equal(t, 30*time.Second, r.cooldown)
+<span id="L392" class="ln">   392  </span>		})
+<span id="L393" class="ln">   393  </span>
+<span id="L394" class="ln">   394  </span>		t.Run(&#34;JWKSURL 未指定でも discovery 経由で鍵解決しトークンを検証できる&#34;, func(t *testing.T) {
+<span id="L395" class="ln">   395  </span>			t.Parallel()
+<span id="L396" class="ln">   396  </span>			key := newRSAKey(t)
+<span id="L397" class="ln">   397  </span>			client := jwksClientReturning(t,
+<span id="L398" class="ln">   398  </span>				discoveryDoc(t, testIssuer, testIssuer+&#34;/keys.json&#34;),
+<span id="L399" class="ln">   399  </span>				jwksPublicJSON(t, &amp;key.PublicKey),
+<span id="L400" class="ln">   400  </span>			)
+<span id="L401" class="ln">   401  </span>			a, err := NewJWKS(JWKSParams{
+<span id="L402" class="ln">   402  </span>				Issuer: testIssuer, Audience: testAudience, Clock: testkit.NewMockClock(t, fixedNow),
+<span id="L403" class="ln">   403  </span>			}, client)
+<span id="L404" class="ln">   404  </span>			require.NoError(t, err)
+<span id="L405" class="ln">   405  </span>
+<span id="L406" class="ln">   406  </span>			token := signTokenWithTestKID(t, key, validClaims())
+<span id="L407" class="ln">   407  </span>			authn, err := a.Authenticate(context.Background(), newCredential(t, token))
+<span id="L408" class="ln">   408  </span>			require.NoError(t, err)
+<span id="L409" class="ln">   409  </span>			assert.Equal(t, testSubject, authn.Subject())
+<span id="L410" class="ln">   410  </span>		})
+<span id="L411" class="ln">   411  </span>	})
+<span id="L412" class="ln">   412  </span>
+<span id="L413" class="ln">   413  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L414" class="ln">   414  </span>		t.Parallel()
 <span id="L415" class="ln">   415  </span>
-<span id="L416" class="ln">   416  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L417" class="ln">   417  </span>		t.Parallel()
-<span id="L418" class="ln">   418  </span>
-<span id="L419" class="ln">   419  </span>		t.Run(&#34;JWKS URL と issuer の両方が空の場合は設定エラーになる&#34;, func(t *testing.T) {
-<span id="L420" class="ln">   420  </span>			t.Parallel()
-<span id="L421" class="ln">   421  </span>			a, err := NewJWKS(JWKSParams{
-<span id="L422" class="ln">   422  </span>				Params: Params{
-<span id="L423" class="ln">   423  </span>					Audience: testAudience,
-<span id="L424" class="ln">   424  </span>					Clock:    testkit.NewMockClock(t, fixedNow),
-<span id="L425" class="ln">   425  </span>				},
-<span id="L426" class="ln">   426  </span>				JWKSURL: &#34;&#34;,
-<span id="L427" class="ln">   427  </span>			}, stubJWKSClient(t, nil))
-<span id="L428" class="ln">   428  </span>			assert.Nil(t, a)
-<span id="L429" class="ln">   429  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidParams)
-<span id="L430" class="ln">   430  </span>		})
-<span id="L431" class="ln">   431  </span>
-<span id="L432" class="ln">   432  </span>		t.Run(&#34;http client が nil の場合は設定エラーになる&#34;, func(t *testing.T) {
-<span id="L433" class="ln">   433  </span>			t.Parallel()
-<span id="L434" class="ln">   434  </span>			a, err := NewJWKS(JWKSParams{
-<span id="L435" class="ln">   435  </span>				Params: Params{
-<span id="L436" class="ln">   436  </span>					Issuer:   testIssuer,
-<span id="L437" class="ln">   437  </span>					Audience: testAudience,
-<span id="L438" class="ln">   438  </span>					Clock:    testkit.NewMockClock(t, fixedNow),
-<span id="L439" class="ln">   439  </span>				},
-<span id="L440" class="ln">   440  </span>				JWKSURL: &#34;http://jwks.example.test/keys.json&#34;,
-<span id="L441" class="ln">   441  </span>			}, nil)
-<span id="L442" class="ln">   442  </span>			assert.Nil(t, a)
-<span id="L443" class="ln">   443  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidParams)
-<span id="L444" class="ln">   444  </span>		})
-<span id="L445" class="ln">   445  </span>
-<span id="L446" class="ln">   446  </span>		t.Run(&#34;discovery が失敗する場合は無効トークンへ正規化される&#34;, func(t *testing.T) {
-<span id="L447" class="ln">   447  </span>			t.Parallel()
-<span id="L448" class="ln">   448  </span>			key := newRSAKey(t)
-<span id="L449" class="ln">   449  </span>			<span class="comment">// discovery 応答の issuer 不一致 → 解決失敗。</span>
-<span id="L450" class="ln">   450  </span>			client := jwksClientReturning(t, discoveryDoc(t, &#34;https://evil.example.test&#34;, testIssuer+&#34;/keys.json&#34;))
-<span id="L451" class="ln">   451  </span>			a, err := NewJWKS(JWKSParams{
-<span id="L452" class="ln">   452  </span>				Params: Params{Issuer: testIssuer, Audience: testAudience, Clock: testkit.NewMockClock(t, fixedNow)},
-<span id="L453" class="ln">   453  </span>			}, client)
-<span id="L454" class="ln">   454  </span>			require.NoError(t, err)
-<span id="L455" class="ln">   455  </span>
-<span id="L456" class="ln">   456  </span>			token := signTokenWithTestKID(t, key, validClaims())
-<span id="L457" class="ln">   457  </span>			_, err = a.Authenticate(context.Background(), newCredential(t, token))
-<span id="L458" class="ln">   458  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L459" class="ln">   459  </span>		})
-<span id="L460" class="ln">   460  </span>
-<span id="L461" class="ln">   461  </span>		t.Run(&#34;kid は一致するが署名鍵が異なるトークンは拒否される&#34;, func(t *testing.T) {
-<span id="L462" class="ln">   462  </span>			t.Parallel()
-<span id="L463" class="ln">   463  </span>			key := newRSAKey(t)
-<span id="L464" class="ln">   464  </span>			otherKey := newRSAKey(t)
-<span id="L465" class="ln">   465  </span>			a := newJWKSAuthenticator(t, jwksPublicJSON(t, &amp;key.PublicKey))
-<span id="L466" class="ln">   466  </span>
-<span id="L467" class="ln">   467  </span>			token := signTokenWithTestKID(t, otherKey, validClaims())
-<span id="L468" class="ln">   468  </span>			authn, err := a.Authenticate(context.Background(), newCredential(t, token))
-<span id="L469" class="ln">   469  </span>			assert.Nil(t, authn)
-<span id="L470" class="ln">   470  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L471" class="ln">   471  </span>		})
-<span id="L472" class="ln">   472  </span>	})
-<span id="L473" class="ln">   473  </span>}
-<span id="L474" class="ln">   474  </span>
-<span id="L475" class="ln">   475  </span>func Test_jwksResolver_ResolveKey(t *testing.T) {
-<span id="L476" class="ln">   476  </span>	t.Parallel()
-<span id="L477" class="ln">   477  </span>
-<span id="L478" class="ln">   478  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L479" class="ln">   479  </span>		t.Parallel()
-<span id="L480" class="ln">   480  </span>
-<span id="L481" class="ln">   481  </span>		t.Run(&#34;鮮度内キャッシュに kid がある場合、再取得せず解決する&#34;, func(t *testing.T) {
-<span id="L482" class="ln">   482  </span>			t.Parallel()
-<span id="L483" class="ln">   483  </span>			key := newRSAKey(t)
-<span id="L484" class="ln">   484  </span>			ctrl := gomock.NewController(t)
-<span id="L485" class="ln">   485  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L486" class="ln">   486  </span>			<span class="comment">// Times(1): 2 回目の解決は鮮度内キャッシュ命中で Do を呼ばない。</span>
-<span id="L487" class="ln">   487  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L488" class="ln">   488  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: jwksPublicJSON(t, &amp;key.PublicKey)}, nil).
-<span id="L489" class="ln">   489  </span>				Times(1)
-<span id="L490" class="ln">   490  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L491" class="ln">   491  </span>
-<span id="L492" class="ln">   492  </span>			k1, err := r.ResolveKey(context.Background(), testKID)
-<span id="L493" class="ln">   493  </span>			require.NoError(t, err)
-<span id="L494" class="ln">   494  </span>			assert.Equal(t, &amp;key.PublicKey, k1)
-<span id="L495" class="ln">   495  </span>
-<span id="L496" class="ln">   496  </span>			k2, err := r.ResolveKey(context.Background(), testKID)
-<span id="L497" class="ln">   497  </span>			require.NoError(t, err)
-<span id="L498" class="ln">   498  </span>			assert.Equal(t, &amp;key.PublicKey, k2)
-<span id="L499" class="ln">   499  </span>		})
-<span id="L500" class="ln">   500  </span>
-<span id="L501" class="ln">   501  </span>		t.Run(&#34;キャッシュ TTL 経過後は再取得する&#34;, func(t *testing.T) {
-<span id="L502" class="ln">   502  </span>			t.Parallel()
-<span id="L503" class="ln">   503  </span>			key := newRSAKey(t)
-<span id="L504" class="ln">   504  </span>			ctrl := gomock.NewController(t)
-<span id="L505" class="ln">   505  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L506" class="ln">   506  </span>			<span class="comment">// Times(2): TTL 経過で鮮度切れとなり 2 回目は再取得する。</span>
-<span id="L507" class="ln">   507  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L508" class="ln">   508  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: jwksPublicJSON(t, &amp;key.PublicKey)}, nil).
-<span id="L509" class="ln">   509  </span>				Times(2)
-<span id="L510" class="ln">   510  </span>			clk := newFakeClock(fixedNow)
-<span id="L511" class="ln">   511  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L512" class="ln">   512  </span>
-<span id="L513" class="ln">   513  </span>			_, err := r.ResolveKey(context.Background(), testKID)
-<span id="L514" class="ln">   514  </span>			require.NoError(t, err)
-<span id="L515" class="ln">   515  </span>
-<span id="L516" class="ln">   516  </span>			clk.advance(time.Hour + time.Minute)
-<span id="L517" class="ln">   517  </span>			_, err = r.ResolveKey(context.Background(), testKID)
-<span id="L518" class="ln">   518  </span>			require.NoError(t, err)
-<span id="L519" class="ln">   519  </span>		})
-<span id="L520" class="ln">   520  </span>
-<span id="L521" class="ln">   521  </span>		t.Run(&#34;鮮度内でも未知 kid は cooldown 経過後に再取得しローテ後の鍵を解決する&#34;, func(t *testing.T) {
-<span id="L522" class="ln">   522  </span>			t.Parallel()
-<span id="L523" class="ln">   523  </span>			keyA := newRSAKey(t)
-<span id="L524" class="ln">   524  </span>			keyB := newRSAKey(t)
-<span id="L525" class="ln">   525  </span>			clk := newFakeClock(fixedNow)
-<span id="L526" class="ln">   526  </span>			r := newJWKSResolver(
-<span id="L527" class="ln">   527  </span>				jwksClientReturning(t, jwksWithKey(t, testKID, &amp;keyA.PublicKey), jwksWithKey(t, &#34;kid-2&#34;, &amp;keyB.PublicKey)),
-<span id="L528" class="ln">   528  </span>				staticURL(jwksTestURL),
-<span id="L529" class="ln">   529  </span>				time.Hour,
-<span id="L530" class="ln">   530  </span>				nil,
-<span id="L531" class="ln">   531  </span>				0,
-<span id="L532" class="ln">   532  </span>				clk,
-<span id="L533" class="ln">   533  </span>				nil,
-<span id="L534" class="ln">   534  </span>			)
-<span id="L535" class="ln">   535  </span>
-<span id="L536" class="ln">   536  </span>			kA, err := r.ResolveKey(context.Background(), testKID)
-<span id="L537" class="ln">   537  </span>			require.NoError(t, err)
-<span id="L538" class="ln">   538  </span>			assert.Equal(t, &amp;keyA.PublicKey, kA)
+<span id="L416" class="ln">   416  </span>		t.Run(&#34;JWKS URL と issuer の両方が空の場合は設定エラーになる&#34;, func(t *testing.T) {
+<span id="L417" class="ln">   417  </span>			t.Parallel()
+<span id="L418" class="ln">   418  </span>			a, err := NewJWKS(JWKSParams{
+<span id="L419" class="ln">   419  </span>				Audience: testAudience,
+<span id="L420" class="ln">   420  </span>				Clock:    testkit.NewMockClock(t, fixedNow),
+<span id="L421" class="ln">   421  </span>				JWKSURL:  &#34;&#34;,
+<span id="L422" class="ln">   422  </span>			}, stubJWKSClient(t, nil))
+<span id="L423" class="ln">   423  </span>			assert.Nil(t, a)
+<span id="L424" class="ln">   424  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidParams)
+<span id="L425" class="ln">   425  </span>		})
+<span id="L426" class="ln">   426  </span>
+<span id="L427" class="ln">   427  </span>		t.Run(&#34;http client が nil の場合は設定エラーになる&#34;, func(t *testing.T) {
+<span id="L428" class="ln">   428  </span>			t.Parallel()
+<span id="L429" class="ln">   429  </span>			a, err := NewJWKS(JWKSParams{
+<span id="L430" class="ln">   430  </span>				Issuer:   testIssuer,
+<span id="L431" class="ln">   431  </span>				Audience: testAudience,
+<span id="L432" class="ln">   432  </span>				Clock:    testkit.NewMockClock(t, fixedNow),
+<span id="L433" class="ln">   433  </span>				JWKSURL:  &#34;http://jwks.example.test/keys.json&#34;,
+<span id="L434" class="ln">   434  </span>			}, nil)
+<span id="L435" class="ln">   435  </span>			assert.Nil(t, a)
+<span id="L436" class="ln">   436  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidParams)
+<span id="L437" class="ln">   437  </span>		})
+<span id="L438" class="ln">   438  </span>
+<span id="L439" class="ln">   439  </span>		t.Run(&#34;discovery が失敗する場合は無効トークンへ正規化される&#34;, func(t *testing.T) {
+<span id="L440" class="ln">   440  </span>			t.Parallel()
+<span id="L441" class="ln">   441  </span>			key := newRSAKey(t)
+<span id="L442" class="ln">   442  </span>			<span class="comment">// discovery 応答の issuer 不一致 → 解決失敗。</span>
+<span id="L443" class="ln">   443  </span>			client := jwksClientReturning(t, discoveryDoc(t, &#34;https://evil.example.test&#34;, testIssuer+&#34;/keys.json&#34;))
+<span id="L444" class="ln">   444  </span>			a, err := NewJWKS(JWKSParams{
+<span id="L445" class="ln">   445  </span>				Issuer: testIssuer, Audience: testAudience, Clock: testkit.NewMockClock(t, fixedNow),
+<span id="L446" class="ln">   446  </span>			}, client)
+<span id="L447" class="ln">   447  </span>			require.NoError(t, err)
+<span id="L448" class="ln">   448  </span>
+<span id="L449" class="ln">   449  </span>			token := signTokenWithTestKID(t, key, validClaims())
+<span id="L450" class="ln">   450  </span>			_, err = a.Authenticate(context.Background(), newCredential(t, token))
+<span id="L451" class="ln">   451  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L452" class="ln">   452  </span>		})
+<span id="L453" class="ln">   453  </span>
+<span id="L454" class="ln">   454  </span>		t.Run(&#34;kid は一致するが署名鍵が異なるトークンは拒否される&#34;, func(t *testing.T) {
+<span id="L455" class="ln">   455  </span>			t.Parallel()
+<span id="L456" class="ln">   456  </span>			key := newRSAKey(t)
+<span id="L457" class="ln">   457  </span>			otherKey := newRSAKey(t)
+<span id="L458" class="ln">   458  </span>			a := newJWKSAuthenticator(t, jwksPublicJSON(t, &amp;key.PublicKey))
+<span id="L459" class="ln">   459  </span>
+<span id="L460" class="ln">   460  </span>			token := signTokenWithTestKID(t, otherKey, validClaims())
+<span id="L461" class="ln">   461  </span>			authn, err := a.Authenticate(context.Background(), newCredential(t, token))
+<span id="L462" class="ln">   462  </span>			assert.Nil(t, authn)
+<span id="L463" class="ln">   463  </span>			require.ErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L464" class="ln">   464  </span>		})
+<span id="L465" class="ln">   465  </span>	})
+<span id="L466" class="ln">   466  </span>}
+<span id="L467" class="ln">   467  </span>
+<span id="L468" class="ln">   468  </span>func Test_jwksResolver_ResolveKey(t *testing.T) {
+<span id="L469" class="ln">   469  </span>	t.Parallel()
+<span id="L470" class="ln">   470  </span>
+<span id="L471" class="ln">   471  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L472" class="ln">   472  </span>		t.Parallel()
+<span id="L473" class="ln">   473  </span>
+<span id="L474" class="ln">   474  </span>		t.Run(&#34;鮮度内キャッシュに kid がある場合、再取得せず解決する&#34;, func(t *testing.T) {
+<span id="L475" class="ln">   475  </span>			t.Parallel()
+<span id="L476" class="ln">   476  </span>			key := newRSAKey(t)
+<span id="L477" class="ln">   477  </span>			ctrl := gomock.NewController(t)
+<span id="L478" class="ln">   478  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L479" class="ln">   479  </span>			<span class="comment">// Times(1): 2 回目の解決は鮮度内キャッシュ命中で Do を呼ばない。</span>
+<span id="L480" class="ln">   480  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L481" class="ln">   481  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: jwksPublicJSON(t, &amp;key.PublicKey)}, nil).
+<span id="L482" class="ln">   482  </span>				Times(1)
+<span id="L483" class="ln">   483  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L484" class="ln">   484  </span>
+<span id="L485" class="ln">   485  </span>			k1, err := r.ResolveKey(context.Background(), testKID)
+<span id="L486" class="ln">   486  </span>			require.NoError(t, err)
+<span id="L487" class="ln">   487  </span>			assert.Equal(t, &amp;key.PublicKey, k1)
+<span id="L488" class="ln">   488  </span>
+<span id="L489" class="ln">   489  </span>			k2, err := r.ResolveKey(context.Background(), testKID)
+<span id="L490" class="ln">   490  </span>			require.NoError(t, err)
+<span id="L491" class="ln">   491  </span>			assert.Equal(t, &amp;key.PublicKey, k2)
+<span id="L492" class="ln">   492  </span>		})
+<span id="L493" class="ln">   493  </span>
+<span id="L494" class="ln">   494  </span>		t.Run(&#34;キャッシュ TTL 経過後は再取得する&#34;, func(t *testing.T) {
+<span id="L495" class="ln">   495  </span>			t.Parallel()
+<span id="L496" class="ln">   496  </span>			key := newRSAKey(t)
+<span id="L497" class="ln">   497  </span>			ctrl := gomock.NewController(t)
+<span id="L498" class="ln">   498  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L499" class="ln">   499  </span>			<span class="comment">// Times(2): TTL 経過で鮮度切れとなり 2 回目は再取得する。</span>
+<span id="L500" class="ln">   500  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L501" class="ln">   501  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: jwksPublicJSON(t, &amp;key.PublicKey)}, nil).
+<span id="L502" class="ln">   502  </span>				Times(2)
+<span id="L503" class="ln">   503  </span>			clk := newFakeClock(fixedNow)
+<span id="L504" class="ln">   504  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
+<span id="L505" class="ln">   505  </span>
+<span id="L506" class="ln">   506  </span>			_, err := r.ResolveKey(context.Background(), testKID)
+<span id="L507" class="ln">   507  </span>			require.NoError(t, err)
+<span id="L508" class="ln">   508  </span>
+<span id="L509" class="ln">   509  </span>			clk.advance(time.Hour + time.Minute)
+<span id="L510" class="ln">   510  </span>			_, err = r.ResolveKey(context.Background(), testKID)
+<span id="L511" class="ln">   511  </span>			require.NoError(t, err)
+<span id="L512" class="ln">   512  </span>		})
+<span id="L513" class="ln">   513  </span>
+<span id="L514" class="ln">   514  </span>		t.Run(&#34;鮮度内でも未知 kid は cooldown 経過後に再取得しローテ後の鍵を解決する&#34;, func(t *testing.T) {
+<span id="L515" class="ln">   515  </span>			t.Parallel()
+<span id="L516" class="ln">   516  </span>			keyA := newRSAKey(t)
+<span id="L517" class="ln">   517  </span>			keyB := newRSAKey(t)
+<span id="L518" class="ln">   518  </span>			clk := newFakeClock(fixedNow)
+<span id="L519" class="ln">   519  </span>			r := newJWKSResolver(
+<span id="L520" class="ln">   520  </span>				jwksClientReturning(t, jwksWithKey(t, testKID, &amp;keyA.PublicKey), jwksWithKey(t, &#34;kid-2&#34;, &amp;keyB.PublicKey)),
+<span id="L521" class="ln">   521  </span>				staticURL(jwksTestURL),
+<span id="L522" class="ln">   522  </span>				time.Hour,
+<span id="L523" class="ln">   523  </span>				nil,
+<span id="L524" class="ln">   524  </span>				0,
+<span id="L525" class="ln">   525  </span>				clk,
+<span id="L526" class="ln">   526  </span>				nil,
+<span id="L527" class="ln">   527  </span>			)
+<span id="L528" class="ln">   528  </span>
+<span id="L529" class="ln">   529  </span>			kA, err := r.ResolveKey(context.Background(), testKID)
+<span id="L530" class="ln">   530  </span>			require.NoError(t, err)
+<span id="L531" class="ln">   531  </span>			assert.Equal(t, &amp;keyA.PublicKey, kA)
+<span id="L532" class="ln">   532  </span>
+<span id="L533" class="ln">   533  </span>			clk.advance(jwksRefreshCooldown + time.Second)
+<span id="L534" class="ln">   534  </span>			kB, err := r.ResolveKey(context.Background(), &#34;kid-2&#34;)
+<span id="L535" class="ln">   535  </span>			require.NoError(t, err)
+<span id="L536" class="ln">   536  </span>			assert.Equal(t, &amp;keyB.PublicKey, kB)
+<span id="L537" class="ln">   537  </span>		})
+<span id="L538" class="ln">   538  </span>	})
 <span id="L539" class="ln">   539  </span>
-<span id="L540" class="ln">   540  </span>			clk.advance(jwksRefreshCooldown + time.Second)
-<span id="L541" class="ln">   541  </span>			kB, err := r.ResolveKey(context.Background(), &#34;kid-2&#34;)
-<span id="L542" class="ln">   542  </span>			require.NoError(t, err)
-<span id="L543" class="ln">   543  </span>			assert.Equal(t, &amp;keyB.PublicKey, kB)
-<span id="L544" class="ln">   544  </span>		})
-<span id="L545" class="ln">   545  </span>	})
-<span id="L546" class="ln">   546  </span>
-<span id="L547" class="ln">   547  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L548" class="ln">   548  </span>		t.Parallel()
+<span id="L540" class="ln">   540  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L541" class="ln">   541  </span>		t.Parallel()
+<span id="L542" class="ln">   542  </span>
+<span id="L543" class="ln">   543  </span>		t.Run(&#34;fetch がエラーの場合、正規化せず原因を素の error として伝播する&#34;, func(t *testing.T) {
+<span id="L544" class="ln">   544  </span>			t.Parallel()
+<span id="L545" class="ln">   545  </span>			ctrl := gomock.NewController(t)
+<span id="L546" class="ln">   546  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L547" class="ln">   547  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
+<span id="L548" class="ln">   548  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
 <span id="L549" class="ln">   549  </span>
-<span id="L550" class="ln">   550  </span>		t.Run(&#34;fetch がエラーの場合、正規化せず原因を素の error として伝播する&#34;, func(t *testing.T) {
-<span id="L551" class="ln">   551  </span>			t.Parallel()
-<span id="L552" class="ln">   552  </span>			ctrl := gomock.NewController(t)
-<span id="L553" class="ln">   553  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L554" class="ln">   554  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
-<span id="L555" class="ln">   555  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L556" class="ln">   556  </span>
-<span id="L557" class="ln">   557  </span>			_, err := r.ResolveKey(context.Background(), testKID)
-<span id="L558" class="ln">   558  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L559" class="ln">   559  </span>			require.ErrorIs(t, err, errBoom)
-<span id="L560" class="ln">   560  </span>		})
-<span id="L561" class="ln">   561  </span>
-<span id="L562" class="ln">   562  </span>		t.Run(&#34;cooldown 中の再取得は再fetchせず直近の失敗原因を伝播する&#34;, func(t *testing.T) {
-<span id="L563" class="ln">   563  </span>			t.Parallel()
-<span id="L564" class="ln">   564  </span>			ctrl := gomock.NewController(t)
-<span id="L565" class="ln">   565  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L566" class="ln">   566  </span>			<span class="comment">// Times(1): 2 回目は cooldown で throttle され Do を呼ばない（直近エラーを伝播）。</span>
-<span id="L567" class="ln">   567  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
-<span id="L568" class="ln">   568  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L569" class="ln">   569  </span>
-<span id="L570" class="ln">   570  </span>			_, err1 := r.ResolveKey(context.Background(), testKID)
-<span id="L571" class="ln">   571  </span>			require.ErrorIs(t, err1, errBoom)
-<span id="L572" class="ln">   572  </span>
-<span id="L573" class="ln">   573  </span>			_, err2 := r.ResolveKey(context.Background(), testKID)
-<span id="L574" class="ln">   574  </span>			require.NotErrorIs(t, err2, ErrJWTAuthenticatorInvalidToken)
-<span id="L575" class="ln">   575  </span>			require.ErrorIs(t, err2, errBoom)
-<span id="L576" class="ln">   576  </span>		})
-<span id="L577" class="ln">   577  </span>
-<span id="L578" class="ln">   578  </span>		t.Run(&#34;cooldown 経過後は再取得する&#34;, func(t *testing.T) {
-<span id="L579" class="ln">   579  </span>			t.Parallel()
-<span id="L580" class="ln">   580  </span>			key := newRSAKey(t)
-<span id="L581" class="ln">   581  </span>			ctrl := gomock.NewController(t)
-<span id="L582" class="ln">   582  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L583" class="ln">   583  </span>			<span class="comment">// 1 回目は失敗、cooldown 経過後の 2 回目で再取得して回復する。</span>
-<span id="L584" class="ln">   584  </span>			firstFetch := client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
-<span id="L585" class="ln">   585  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L586" class="ln">   586  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: jwksPublicJSON(t, &amp;key.PublicKey)}, nil).
-<span id="L587" class="ln">   587  </span>				Times(1).After(firstFetch)
-<span id="L588" class="ln">   588  </span>			clk := newFakeClock(fixedNow)
-<span id="L589" class="ln">   589  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L590" class="ln">   590  </span>
-<span id="L591" class="ln">   591  </span>			_, err1 := r.ResolveKey(context.Background(), testKID)
-<span id="L592" class="ln">   592  </span>			require.ErrorIs(t, err1, errBoom)
-<span id="L593" class="ln">   593  </span>
-<span id="L594" class="ln">   594  </span>			clk.advance(jwksRefreshCooldown + time.Second)
-<span id="L595" class="ln">   595  </span>			k, err2 := r.ResolveKey(context.Background(), testKID)
-<span id="L596" class="ln">   596  </span>			require.NoError(t, err2)
-<span id="L597" class="ln">   597  </span>			assert.Equal(t, &amp;key.PublicKey, k)
-<span id="L598" class="ln">   598  </span>		})
-<span id="L599" class="ln">   599  </span>
-<span id="L600" class="ln">   600  </span>		t.Run(&#34;再取得に成功しても要求 kid が JWKS に無い場合は拒否する&#34;, func(t *testing.T) {
-<span id="L601" class="ln">   601  </span>			t.Parallel()
-<span id="L602" class="ln">   602  </span>			key := newRSAKey(t)
-<span id="L603" class="ln">   603  </span>			r := newJWKSResolver(
-<span id="L604" class="ln">   604  </span>				stubJWKSClient(t, jwksWithKey(t, testKID, &amp;key.PublicKey)),
-<span id="L605" class="ln">   605  </span>				staticURL(jwksTestURL),
-<span id="L606" class="ln">   606  </span>				time.Hour,
-<span id="L607" class="ln">   607  </span>				nil,
-<span id="L608" class="ln">   608  </span>				0,
-<span id="L609" class="ln">   609  </span>				newFakeClock(fixedNow),
-<span id="L610" class="ln">   610  </span>				nil,
-<span id="L611" class="ln">   611  </span>			)
+<span id="L550" class="ln">   550  </span>			_, err := r.ResolveKey(context.Background(), testKID)
+<span id="L551" class="ln">   551  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L552" class="ln">   552  </span>			require.ErrorIs(t, err, errBoom)
+<span id="L553" class="ln">   553  </span>		})
+<span id="L554" class="ln">   554  </span>
+<span id="L555" class="ln">   555  </span>		t.Run(&#34;cooldown 中の再取得は再fetchせず直近の失敗原因を伝播する&#34;, func(t *testing.T) {
+<span id="L556" class="ln">   556  </span>			t.Parallel()
+<span id="L557" class="ln">   557  </span>			ctrl := gomock.NewController(t)
+<span id="L558" class="ln">   558  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L559" class="ln">   559  </span>			<span class="comment">// Times(1): 2 回目は cooldown で throttle され Do を呼ばない（直近エラーを伝播）。</span>
+<span id="L560" class="ln">   560  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
+<span id="L561" class="ln">   561  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L562" class="ln">   562  </span>
+<span id="L563" class="ln">   563  </span>			_, err1 := r.ResolveKey(context.Background(), testKID)
+<span id="L564" class="ln">   564  </span>			require.ErrorIs(t, err1, errBoom)
+<span id="L565" class="ln">   565  </span>
+<span id="L566" class="ln">   566  </span>			_, err2 := r.ResolveKey(context.Background(), testKID)
+<span id="L567" class="ln">   567  </span>			require.NotErrorIs(t, err2, ErrJWTAuthenticatorInvalidToken)
+<span id="L568" class="ln">   568  </span>			require.ErrorIs(t, err2, errBoom)
+<span id="L569" class="ln">   569  </span>		})
+<span id="L570" class="ln">   570  </span>
+<span id="L571" class="ln">   571  </span>		t.Run(&#34;cooldown 経過後は再取得する&#34;, func(t *testing.T) {
+<span id="L572" class="ln">   572  </span>			t.Parallel()
+<span id="L573" class="ln">   573  </span>			key := newRSAKey(t)
+<span id="L574" class="ln">   574  </span>			ctrl := gomock.NewController(t)
+<span id="L575" class="ln">   575  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L576" class="ln">   576  </span>			<span class="comment">// 1 回目は失敗、cooldown 経過後の 2 回目で再取得して回復する。</span>
+<span id="L577" class="ln">   577  </span>			firstFetch := client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
+<span id="L578" class="ln">   578  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L579" class="ln">   579  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: jwksPublicJSON(t, &amp;key.PublicKey)}, nil).
+<span id="L580" class="ln">   580  </span>				Times(1).After(firstFetch)
+<span id="L581" class="ln">   581  </span>			clk := newFakeClock(fixedNow)
+<span id="L582" class="ln">   582  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
+<span id="L583" class="ln">   583  </span>
+<span id="L584" class="ln">   584  </span>			_, err1 := r.ResolveKey(context.Background(), testKID)
+<span id="L585" class="ln">   585  </span>			require.ErrorIs(t, err1, errBoom)
+<span id="L586" class="ln">   586  </span>
+<span id="L587" class="ln">   587  </span>			clk.advance(jwksRefreshCooldown + time.Second)
+<span id="L588" class="ln">   588  </span>			k, err2 := r.ResolveKey(context.Background(), testKID)
+<span id="L589" class="ln">   589  </span>			require.NoError(t, err2)
+<span id="L590" class="ln">   590  </span>			assert.Equal(t, &amp;key.PublicKey, k)
+<span id="L591" class="ln">   591  </span>		})
+<span id="L592" class="ln">   592  </span>
+<span id="L593" class="ln">   593  </span>		t.Run(&#34;再取得に成功しても要求 kid が JWKS に無い場合は拒否する&#34;, func(t *testing.T) {
+<span id="L594" class="ln">   594  </span>			t.Parallel()
+<span id="L595" class="ln">   595  </span>			key := newRSAKey(t)
+<span id="L596" class="ln">   596  </span>			r := newJWKSResolver(
+<span id="L597" class="ln">   597  </span>				stubJWKSClient(t, jwksWithKey(t, testKID, &amp;key.PublicKey)),
+<span id="L598" class="ln">   598  </span>				staticURL(jwksTestURL),
+<span id="L599" class="ln">   599  </span>				time.Hour,
+<span id="L600" class="ln">   600  </span>				nil,
+<span id="L601" class="ln">   601  </span>				0,
+<span id="L602" class="ln">   602  </span>				newFakeClock(fixedNow),
+<span id="L603" class="ln">   603  </span>				nil,
+<span id="L604" class="ln">   604  </span>			)
+<span id="L605" class="ln">   605  </span>
+<span id="L606" class="ln">   606  </span>			_, err := r.ResolveKey(context.Background(), &#34;absent-kid&#34;)
+<span id="L607" class="ln">   607  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L608" class="ln">   608  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
+<span id="L609" class="ln">   609  </span>			<span class="comment">// 特定 kid の不在は文書が使えないことを意味しないため、利用不能へは分類しない。</span>
+<span id="L610" class="ln">   610  </span>			require.NotErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L611" class="ln">   611  </span>		})
 <span id="L612" class="ln">   612  </span>
-<span id="L613" class="ln">   613  </span>			_, err := r.ResolveKey(context.Background(), &#34;absent-kid&#34;)
-<span id="L614" class="ln">   614  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L615" class="ln">   615  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
-<span id="L616" class="ln">   616  </span>			<span class="comment">// 特定 kid の不在は文書が使えないことを意味しないため、利用不能へは分類しない。</span>
-<span id="L617" class="ln">   617  </span>			require.NotErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L618" class="ln">   618  </span>		})
-<span id="L619" class="ln">   619  </span>
-<span id="L620" class="ln">   620  </span>		t.Run(&#34;直近取得が成功なら cooldown 中の未知 kid は再取得せず拒否する&#34;, func(t *testing.T) {
-<span id="L621" class="ln">   621  </span>			t.Parallel()
-<span id="L622" class="ln">   622  </span>			key := newRSAKey(t)
-<span id="L623" class="ln">   623  </span>			ctrl := gomock.NewController(t)
-<span id="L624" class="ln">   624  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L625" class="ln">   625  </span>			<span class="comment">// Times(1): 初回取得のみ。cooldown 中の未知 kid は再取得しない。</span>
-<span id="L626" class="ln">   626  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L627" class="ln">   627  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: jwksWithKey(t, testKID, &amp;key.PublicKey)}, nil).
-<span id="L628" class="ln">   628  </span>				Times(1)
-<span id="L629" class="ln">   629  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L630" class="ln">   630  </span>
-<span id="L631" class="ln">   631  </span>			_, err := r.ResolveKey(context.Background(), testKID)
-<span id="L632" class="ln">   632  </span>			require.NoError(t, err)
-<span id="L633" class="ln">   633  </span>			_, err = r.ResolveKey(context.Background(), &#34;unknown-kid&#34;)
-<span id="L634" class="ln">   634  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L635" class="ln">   635  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
-<span id="L636" class="ln">   636  </span>		})
-<span id="L637" class="ln">   637  </span>	})
-<span id="L638" class="ln">   638  </span>}
-<span id="L639" class="ln">   639  </span>
-<span id="L640" class="ln">   640  </span>func Test_jwksResolver_negativeCache(t *testing.T) {
-<span id="L641" class="ln">   641  </span>	t.Parallel()
-<span id="L642" class="ln">   642  </span>
-<span id="L643" class="ln">   643  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L644" class="ln">   644  </span>		t.Parallel()
+<span id="L613" class="ln">   613  </span>		t.Run(&#34;直近取得が成功なら cooldown 中の未知 kid は再取得せず拒否する&#34;, func(t *testing.T) {
+<span id="L614" class="ln">   614  </span>			t.Parallel()
+<span id="L615" class="ln">   615  </span>			key := newRSAKey(t)
+<span id="L616" class="ln">   616  </span>			ctrl := gomock.NewController(t)
+<span id="L617" class="ln">   617  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L618" class="ln">   618  </span>			<span class="comment">// Times(1): 初回取得のみ。cooldown 中の未知 kid は再取得しない。</span>
+<span id="L619" class="ln">   619  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L620" class="ln">   620  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: jwksWithKey(t, testKID, &amp;key.PublicKey)}, nil).
+<span id="L621" class="ln">   621  </span>				Times(1)
+<span id="L622" class="ln">   622  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L623" class="ln">   623  </span>
+<span id="L624" class="ln">   624  </span>			_, err := r.ResolveKey(context.Background(), testKID)
+<span id="L625" class="ln">   625  </span>			require.NoError(t, err)
+<span id="L626" class="ln">   626  </span>			_, err = r.ResolveKey(context.Background(), &#34;unknown-kid&#34;)
+<span id="L627" class="ln">   627  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L628" class="ln">   628  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
+<span id="L629" class="ln">   629  </span>		})
+<span id="L630" class="ln">   630  </span>	})
+<span id="L631" class="ln">   631  </span>}
+<span id="L632" class="ln">   632  </span>
+<span id="L633" class="ln">   633  </span>func Test_jwksResolver_negativeCache(t *testing.T) {
+<span id="L634" class="ln">   634  </span>	t.Parallel()
+<span id="L635" class="ln">   635  </span>
+<span id="L636" class="ln">   636  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L637" class="ln">   637  </span>		t.Parallel()
+<span id="L638" class="ln">   638  </span>
+<span id="L639" class="ln">   639  </span>		t.Run(&#34;不在確定 kid は cooldown 経過後も再取得せず拒否する&#34;, func(t *testing.T) {
+<span id="L640" class="ln">   640  </span>			t.Parallel()
+<span id="L641" class="ln">   641  </span>			key := newRSAKey(t)
+<span id="L642" class="ln">   642  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{jwksWithKey(t, testKID, &amp;key.PublicKey)}}
+<span id="L643" class="ln">   643  </span>			clk := newFakeClock(fixedNow)
+<span id="L644" class="ln">   644  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
 <span id="L645" class="ln">   645  </span>
-<span id="L646" class="ln">   646  </span>		t.Run(&#34;不在確定 kid は cooldown 経過後も再取得せず拒否する&#34;, func(t *testing.T) {
-<span id="L647" class="ln">   647  </span>			t.Parallel()
-<span id="L648" class="ln">   648  </span>			key := newRSAKey(t)
-<span id="L649" class="ln">   649  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{jwksWithKey(t, testKID, &amp;key.PublicKey)}}
-<span id="L650" class="ln">   650  </span>			clk := newFakeClock(fixedNow)
-<span id="L651" class="ln">   651  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L652" class="ln">   652  </span>
-<span id="L653" class="ln">   653  </span>			<span class="comment">// 初回の未知 kid は 1 度だけ再取得し、不在を確定して negative へ記録する。</span>
-<span id="L654" class="ln">   654  </span>			_, err := r.ResolveKey(context.Background(), &#34;absent-kid&#34;)
+<span id="L646" class="ln">   646  </span>			<span class="comment">// 初回の未知 kid は 1 度だけ再取得し、不在を確定して negative へ記録する。</span>
+<span id="L647" class="ln">   647  </span>			_, err := r.ResolveKey(context.Background(), &#34;absent-kid&#34;)
+<span id="L648" class="ln">   648  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L649" class="ln">   649  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
+<span id="L650" class="ln">   650  </span>			require.Equal(t, 1, cc.count())
+<span id="L651" class="ln">   651  </span>
+<span id="L652" class="ln">   652  </span>			<span class="comment">// cooldown を跨いでも、同一の不在確定 kid は再取得しない（negative cache が抑止する）。</span>
+<span id="L653" class="ln">   653  </span>			clk.advance(jwksRefreshCooldown + time.Second)
+<span id="L654" class="ln">   654  </span>			_, err = r.ResolveKey(context.Background(), &#34;absent-kid&#34;)
 <span id="L655" class="ln">   655  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L656" class="ln">   656  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
-<span id="L657" class="ln">   657  </span>			require.Equal(t, 1, cc.count())
-<span id="L658" class="ln">   658  </span>
-<span id="L659" class="ln">   659  </span>			<span class="comment">// cooldown を跨いでも、同一の不在確定 kid は再取得しない（negative cache が抑止する）。</span>
-<span id="L660" class="ln">   660  </span>			clk.advance(jwksRefreshCooldown + time.Second)
-<span id="L661" class="ln">   661  </span>			_, err = r.ResolveKey(context.Background(), &#34;absent-kid&#34;)
-<span id="L662" class="ln">   662  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L663" class="ln">   663  </span>			require.ErrorIs(t, err, errJWKSKIDKnownAbsent)
-<span id="L664" class="ln">   664  </span>			require.NotErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L665" class="ln">   665  </span>			assert.Equal(t, 1, cc.count(), &#34;不在確定 kid は cooldown 経過後も再取得しない&#34;)
-<span id="L666" class="ln">   666  </span>		})
-<span id="L667" class="ln">   667  </span>
-<span id="L668" class="ln">   668  </span>		t.Run(&#34;世代交代（cacheTTL 経過）で negative がクリアされ回転追加の kid を解決する&#34;, func(t *testing.T) {
-<span id="L669" class="ln">   669  </span>			t.Parallel()
-<span id="L670" class="ln">   670  </span>			keyA := newRSAKey(t)
-<span id="L671" class="ln">   671  </span>			keyB := newRSAKey(t)
-<span id="L672" class="ln">   672  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{
-<span id="L673" class="ln">   673  </span>				jwksWithKey(t, testKID, &amp;keyA.PublicKey),
-<span id="L674" class="ln">   674  </span>				jwksWithKey(t, &#34;kid-2&#34;, &amp;keyB.PublicKey),
-<span id="L675" class="ln">   675  </span>			}}
-<span id="L676" class="ln">   676  </span>			clk := newFakeClock(fixedNow)
-<span id="L677" class="ln">   677  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L678" class="ln">   678  </span>
-<span id="L679" class="ln">   679  </span>			<span class="comment">// 現世代 {testKID} で kid-2 は不在確定（negative 記録）。</span>
-<span id="L680" class="ln">   680  </span>			_, err := r.ResolveKey(context.Background(), &#34;kid-2&#34;)
-<span id="L681" class="ln">   681  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L682" class="ln">   682  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
-<span id="L683" class="ln">   683  </span>			require.Equal(t, 1, cc.count())
-<span id="L684" class="ln">   684  </span>
-<span id="L685" class="ln">   685  </span>			<span class="comment">// cacheTTL 経過で世代が失効 → 再取得で鍵集合が変わり negative はクリアされ kid-2 を解決する。</span>
-<span id="L686" class="ln">   686  </span>			clk.advance(time.Hour + time.Minute)
-<span id="L687" class="ln">   687  </span>			kB, err := r.ResolveKey(context.Background(), &#34;kid-2&#34;)
-<span id="L688" class="ln">   688  </span>			require.NoError(t, err)
-<span id="L689" class="ln">   689  </span>			assert.Equal(t, &amp;keyB.PublicKey, kB)
-<span id="L690" class="ln">   690  </span>			assert.Equal(t, 2, cc.count())
-<span id="L691" class="ln">   691  </span>		})
-<span id="L692" class="ln">   692  </span>
-<span id="L693" class="ln">   693  </span>		t.Run(&#34;cooldown 中に問い合わせた kid は negative 記録されず、cooldown 明けの再取得で回転追加を解決する&#34;, func(t *testing.T) {
-<span id="L694" class="ln">   694  </span>			t.Parallel()
-<span id="L695" class="ln">   695  </span>			keyA := newRSAKey(t)
-<span id="L696" class="ln">   696  </span>			keyB := newRSAKey(t)
-<span id="L697" class="ln">   697  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{
-<span id="L698" class="ln">   698  </span>				jwksWithKey(t, testKID, &amp;keyA.PublicKey),
-<span id="L699" class="ln">   699  </span>				jwksWith2Keys(t, testKID, &amp;keyA.PublicKey, &#34;kid-2&#34;, &amp;keyB.PublicKey),
-<span id="L700" class="ln">   700  </span>			}}
-<span id="L701" class="ln">   701  </span>			clk := newFakeClock(fixedNow)
-<span id="L702" class="ln">   702  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L703" class="ln">   703  </span>
-<span id="L704" class="ln">   704  </span>			<span class="comment">// 初回取得で {testKID} をキャッシュ。</span>
-<span id="L705" class="ln">   705  </span>			_, err := r.ResolveKey(context.Background(), testKID)
-<span id="L706" class="ln">   706  </span>			require.NoError(t, err)
-<span id="L707" class="ln">   707  </span>			require.Equal(t, 1, cc.count())
+<span id="L656" class="ln">   656  </span>			require.ErrorIs(t, err, errJWKSKIDKnownAbsent)
+<span id="L657" class="ln">   657  </span>			require.NotErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L658" class="ln">   658  </span>			assert.Equal(t, 1, cc.count(), &#34;不在確定 kid は cooldown 経過後も再取得しない&#34;)
+<span id="L659" class="ln">   659  </span>		})
+<span id="L660" class="ln">   660  </span>
+<span id="L661" class="ln">   661  </span>		t.Run(&#34;世代交代（cacheTTL 経過）で negative がクリアされ回転追加の kid を解決する&#34;, func(t *testing.T) {
+<span id="L662" class="ln">   662  </span>			t.Parallel()
+<span id="L663" class="ln">   663  </span>			keyA := newRSAKey(t)
+<span id="L664" class="ln">   664  </span>			keyB := newRSAKey(t)
+<span id="L665" class="ln">   665  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{
+<span id="L666" class="ln">   666  </span>				jwksWithKey(t, testKID, &amp;keyA.PublicKey),
+<span id="L667" class="ln">   667  </span>				jwksWithKey(t, &#34;kid-2&#34;, &amp;keyB.PublicKey),
+<span id="L668" class="ln">   668  </span>			}}
+<span id="L669" class="ln">   669  </span>			clk := newFakeClock(fixedNow)
+<span id="L670" class="ln">   670  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
+<span id="L671" class="ln">   671  </span>
+<span id="L672" class="ln">   672  </span>			<span class="comment">// 現世代 {testKID} で kid-2 は不在確定（negative 記録）。</span>
+<span id="L673" class="ln">   673  </span>			_, err := r.ResolveKey(context.Background(), &#34;kid-2&#34;)
+<span id="L674" class="ln">   674  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L675" class="ln">   675  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
+<span id="L676" class="ln">   676  </span>			require.Equal(t, 1, cc.count())
+<span id="L677" class="ln">   677  </span>
+<span id="L678" class="ln">   678  </span>			<span class="comment">// cacheTTL 経過で世代が失効 → 再取得で鍵集合が変わり negative はクリアされ kid-2 を解決する。</span>
+<span id="L679" class="ln">   679  </span>			clk.advance(time.Hour + time.Minute)
+<span id="L680" class="ln">   680  </span>			kB, err := r.ResolveKey(context.Background(), &#34;kid-2&#34;)
+<span id="L681" class="ln">   681  </span>			require.NoError(t, err)
+<span id="L682" class="ln">   682  </span>			assert.Equal(t, &amp;keyB.PublicKey, kB)
+<span id="L683" class="ln">   683  </span>			assert.Equal(t, 2, cc.count())
+<span id="L684" class="ln">   684  </span>		})
+<span id="L685" class="ln">   685  </span>
+<span id="L686" class="ln">   686  </span>		t.Run(&#34;cooldown 中に問い合わせた kid は negative 記録されず、cooldown 明けの再取得で回転追加を解決する&#34;, func(t *testing.T) {
+<span id="L687" class="ln">   687  </span>			t.Parallel()
+<span id="L688" class="ln">   688  </span>			keyA := newRSAKey(t)
+<span id="L689" class="ln">   689  </span>			keyB := newRSAKey(t)
+<span id="L690" class="ln">   690  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{
+<span id="L691" class="ln">   691  </span>				jwksWithKey(t, testKID, &amp;keyA.PublicKey),
+<span id="L692" class="ln">   692  </span>				jwksWith2Keys(t, testKID, &amp;keyA.PublicKey, &#34;kid-2&#34;, &amp;keyB.PublicKey),
+<span id="L693" class="ln">   693  </span>			}}
+<span id="L694" class="ln">   694  </span>			clk := newFakeClock(fixedNow)
+<span id="L695" class="ln">   695  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
+<span id="L696" class="ln">   696  </span>
+<span id="L697" class="ln">   697  </span>			<span class="comment">// 初回取得で {testKID} をキャッシュ。</span>
+<span id="L698" class="ln">   698  </span>			_, err := r.ResolveKey(context.Background(), testKID)
+<span id="L699" class="ln">   699  </span>			require.NoError(t, err)
+<span id="L700" class="ln">   700  </span>			require.Equal(t, 1, cc.count())
+<span id="L701" class="ln">   701  </span>
+<span id="L702" class="ln">   702  </span>			<span class="comment">// cooldown 中に未知 kid-2 を問い合わせる → throttle で未取得。不在確定として記録してはならない。</span>
+<span id="L703" class="ln">   703  </span>			clk.advance(jwksRefreshCooldown / 2)
+<span id="L704" class="ln">   704  </span>			_, err = r.ResolveKey(context.Background(), &#34;kid-2&#34;)
+<span id="L705" class="ln">   705  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L706" class="ln">   706  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
+<span id="L707" class="ln">   707  </span>			require.Equal(t, 1, cc.count(), &#34;cooldown 中は再取得しない&#34;)
 <span id="L708" class="ln">   708  </span>
-<span id="L709" class="ln">   709  </span>			<span class="comment">// cooldown 中に未知 kid-2 を問い合わせる → throttle で未取得。不在確定として記録してはならない。</span>
-<span id="L710" class="ln">   710  </span>			clk.advance(jwksRefreshCooldown / 2)
-<span id="L711" class="ln">   711  </span>			_, err = r.ResolveKey(context.Background(), &#34;kid-2&#34;)
-<span id="L712" class="ln">   712  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L713" class="ln">   713  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
-<span id="L714" class="ln">   714  </span>			require.Equal(t, 1, cc.count(), &#34;cooldown 中は再取得しない&#34;)
-<span id="L715" class="ln">   715  </span>
-<span id="L716" class="ln">   716  </span>			<span class="comment">// cooldown 明け（provider が kid-2 を追加）→ 再取得して kid-2 を解決できる（取りこぼさない）。</span>
-<span id="L717" class="ln">   717  </span>			clk.advance(jwksRefreshCooldown)
-<span id="L718" class="ln">   718  </span>			kB, err := r.ResolveKey(context.Background(), &#34;kid-2&#34;)
-<span id="L719" class="ln">   719  </span>			require.NoError(t, err, &#34;cooldown 中の問い合わせで negative に閉じ込められない&#34;)
-<span id="L720" class="ln">   720  </span>			assert.Equal(t, &amp;keyB.PublicKey, kB)
-<span id="L721" class="ln">   721  </span>			assert.Equal(t, 2, cc.count())
-<span id="L722" class="ln">   722  </span>		})
+<span id="L709" class="ln">   709  </span>			<span class="comment">// cooldown 明け（provider が kid-2 を追加）→ 再取得して kid-2 を解決できる（取りこぼさない）。</span>
+<span id="L710" class="ln">   710  </span>			clk.advance(jwksRefreshCooldown)
+<span id="L711" class="ln">   711  </span>			kB, err := r.ResolveKey(context.Background(), &#34;kid-2&#34;)
+<span id="L712" class="ln">   712  </span>			require.NoError(t, err, &#34;cooldown 中の問い合わせで negative に閉じ込められない&#34;)
+<span id="L713" class="ln">   713  </span>			assert.Equal(t, &amp;keyB.PublicKey, kB)
+<span id="L714" class="ln">   714  </span>			assert.Equal(t, 2, cc.count())
+<span id="L715" class="ln">   715  </span>		})
+<span id="L716" class="ln">   716  </span>
+<span id="L717" class="ln">   717  </span>		t.Run(&#34;鍵集合が変わらない再取得では negative を保持し bogus kid を再取得しない&#34;, func(t *testing.T) {
+<span id="L718" class="ln">   718  </span>			t.Parallel()
+<span id="L719" class="ln">   719  </span>			key := newRSAKey(t)
+<span id="L720" class="ln">   720  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{jwksWithKey(t, testKID, &amp;key.PublicKey)}}
+<span id="L721" class="ln">   721  </span>			clk := newFakeClock(fixedNow)
+<span id="L722" class="ln">   722  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
 <span id="L723" class="ln">   723  </span>
-<span id="L724" class="ln">   724  </span>		t.Run(&#34;鍵集合が変わらない再取得では negative を保持し bogus kid を再取得しない&#34;, func(t *testing.T) {
-<span id="L725" class="ln">   725  </span>			t.Parallel()
-<span id="L726" class="ln">   726  </span>			key := newRSAKey(t)
-<span id="L727" class="ln">   727  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{jwksWithKey(t, testKID, &amp;key.PublicKey)}}
-<span id="L728" class="ln">   728  </span>			clk := newFakeClock(fixedNow)
-<span id="L729" class="ln">   729  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L730" class="ln">   730  </span>
-<span id="L731" class="ln">   731  </span>			<span class="comment">// 初回取得で bogus kid の不在を確定（negative 記録）。</span>
-<span id="L732" class="ln">   732  </span>			_, err := r.ResolveKey(context.Background(), &#34;bogus&#34;)
-<span id="L733" class="ln">   733  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L734" class="ln">   734  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
-<span id="L735" class="ln">   735  </span>			require.Equal(t, 1, cc.count())
-<span id="L736" class="ln">   736  </span>
-<span id="L737" class="ln">   737  </span>			<span class="comment">// cacheTTL 経過で世代失効 → 同一集合を再取得（negative は破棄されない）。</span>
-<span id="L738" class="ln">   738  </span>			clk.advance(time.Hour + time.Minute)
-<span id="L739" class="ln">   739  </span>			_, err = r.ResolveKey(context.Background(), testKID)
-<span id="L740" class="ln">   740  </span>			require.NoError(t, err)
-<span id="L741" class="ln">   741  </span>			require.Equal(t, 2, cc.count(), &#34;TTL 失効で 1 度だけ再取得する&#34;)
-<span id="L742" class="ln">   742  </span>
-<span id="L743" class="ln">   743  </span>			<span class="comment">// 集合不変のため negative は保持され、bogus kid は再取得を誘発しない。</span>
-<span id="L744" class="ln">   744  </span>			_, err = r.ResolveKey(context.Background(), &#34;bogus&#34;)
-<span id="L745" class="ln">   745  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
-<span id="L746" class="ln">   746  </span>			require.ErrorIs(t, err, errJWKSKIDKnownAbsent)
-<span id="L747" class="ln">   747  </span>			require.NotErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L748" class="ln">   748  </span>			assert.Equal(t, 2, cc.count(), &#34;集合不変なら bogus kid の negative を保持し再取得しない&#34;)
-<span id="L749" class="ln">   749  </span>		})
-<span id="L750" class="ln">   750  </span>
-<span id="L751" class="ln">   751  </span>		t.Run(&#34;同時の未知 kid 解決は singleflight + cooldown で fetch を 1 回に抑える&#34;, func(t *testing.T) {
-<span id="L752" class="ln">   752  </span>			t.Parallel()
-<span id="L753" class="ln">   753  </span>			key := newRSAKey(t)
-<span id="L754" class="ln">   754  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{jwksWithKey(t, testKID, &amp;key.PublicKey)}}
-<span id="L755" class="ln">   755  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L756" class="ln">   756  </span>
-<span id="L757" class="ln">   757  </span>			var wg sync.WaitGroup
-<span id="L758" class="ln">   758  </span>			for range 8 {
-<span id="L759" class="ln">   759  </span>				wg.Go(func() {
-<span id="L760" class="ln">   760  </span>					_, _ = r.ResolveKey(context.Background(), &#34;unknown-kid&#34;)
-<span id="L761" class="ln">   761  </span>				})
-<span id="L762" class="ln">   762  </span>			}
-<span id="L763" class="ln">   763  </span>			wg.Wait()
-<span id="L764" class="ln">   764  </span>
-<span id="L765" class="ln">   765  </span>			assert.Equal(t, 1, cc.count(), &#34;同時の未知 kid 更新は 1 回の fetch に抑制される&#34;)
-<span id="L766" class="ln">   766  </span>		})
-<span id="L767" class="ln">   767  </span>	})
-<span id="L768" class="ln">   768  </span>}
-<span id="L769" class="ln">   769  </span>
-<span id="L770" class="ln">   770  </span>func Test_jwksResolver_negativelyCached(t *testing.T) {
-<span id="L771" class="ln">   771  </span>	t.Parallel()
-<span id="L772" class="ln">   772  </span>
-<span id="L773" class="ln">   773  </span>	<span class="comment">// newFetchedResolver は、fixedNow に取得済みの状態（キャッシュ鮮度内）の resolver と clock を返す。</span>
-<span id="L774" class="ln">   774  </span>	newFetchedResolver := func(t *testing.T) (*jwksResolver, *fakeClock) {
-<span id="L775" class="ln">   775  </span>		t.Helper()
-<span id="L776" class="ln">   776  </span>		clk := newFakeClock(fixedNow)
-<span id="L777" class="ln">   777  </span>		r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L778" class="ln">   778  </span>		r.fetchedAt = clk.Now()
-<span id="L779" class="ln">   779  </span>		return r, clk
-<span id="L780" class="ln">   780  </span>	}
-<span id="L781" class="ln">   781  </span>
-<span id="L782" class="ln">   782  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L783" class="ln">   783  </span>		t.Parallel()
-<span id="L784" class="ln">   784  </span>
-<span id="L785" class="ln">   785  </span>		t.Run(&#34;鮮度内で不在確定済みの kid は true&#34;, func(t *testing.T) {
-<span id="L786" class="ln">   786  </span>			t.Parallel()
-<span id="L787" class="ln">   787  </span>
-<span id="L788" class="ln">   788  </span>			r, _ := newFetchedResolver(t)
-<span id="L789" class="ln">   789  </span>			r.negative = map[string]struct{}{&#34;absent&#34;: {}}
-<span id="L790" class="ln">   790  </span>
-<span id="L791" class="ln">   791  </span>			assert.True(t, r.negativelyCached(&#34;absent&#34;))
-<span id="L792" class="ln">   792  </span>		})
-<span id="L793" class="ln">   793  </span>
-<span id="L794" class="ln">   794  </span>		t.Run(&#34;鮮度内でも未記録の kid は false&#34;, func(t *testing.T) {
-<span id="L795" class="ln">   795  </span>			t.Parallel()
-<span id="L796" class="ln">   796  </span>
-<span id="L797" class="ln">   797  </span>			r, _ := newFetchedResolver(t)
-<span id="L798" class="ln">   798  </span>			r.negative = map[string]struct{}{&#34;absent&#34;: {}}
-<span id="L799" class="ln">   799  </span>
-<span id="L800" class="ln">   800  </span>			assert.False(t, r.negativelyCached(&#34;other&#34;))
-<span id="L801" class="ln">   801  </span>		})
-<span id="L802" class="ln">   802  </span>
-<span id="L803" class="ln">   803  </span>		t.Run(&#34;未取得（fetchedAt がゼロ）なら false&#34;, func(t *testing.T) {
-<span id="L804" class="ln">   804  </span>			t.Parallel()
-<span id="L805" class="ln">   805  </span>
-<span id="L806" class="ln">   806  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L807" class="ln">   807  </span>			r.negative = map[string]struct{}{&#34;absent&#34;: {}}
-<span id="L808" class="ln">   808  </span>
-<span id="L809" class="ln">   809  </span>			assert.False(t, r.negativelyCached(&#34;absent&#34;))
-<span id="L810" class="ln">   810  </span>		})
+<span id="L724" class="ln">   724  </span>			<span class="comment">// 初回取得で bogus kid の不在を確定（negative 記録）。</span>
+<span id="L725" class="ln">   725  </span>			_, err := r.ResolveKey(context.Background(), &#34;bogus&#34;)
+<span id="L726" class="ln">   726  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L727" class="ln">   727  </span>			require.ErrorIs(t, err, errJWKSNoMatchingKID)
+<span id="L728" class="ln">   728  </span>			require.Equal(t, 1, cc.count())
+<span id="L729" class="ln">   729  </span>
+<span id="L730" class="ln">   730  </span>			<span class="comment">// cacheTTL 経過で世代失効 → 同一集合を再取得（negative は破棄されない）。</span>
+<span id="L731" class="ln">   731  </span>			clk.advance(time.Hour + time.Minute)
+<span id="L732" class="ln">   732  </span>			_, err = r.ResolveKey(context.Background(), testKID)
+<span id="L733" class="ln">   733  </span>			require.NoError(t, err)
+<span id="L734" class="ln">   734  </span>			require.Equal(t, 2, cc.count(), &#34;TTL 失効で 1 度だけ再取得する&#34;)
+<span id="L735" class="ln">   735  </span>
+<span id="L736" class="ln">   736  </span>			<span class="comment">// 集合不変のため negative は保持され、bogus kid は再取得を誘発しない。</span>
+<span id="L737" class="ln">   737  </span>			_, err = r.ResolveKey(context.Background(), &#34;bogus&#34;)
+<span id="L738" class="ln">   738  </span>			require.NotErrorIs(t, err, ErrJWTAuthenticatorInvalidToken)
+<span id="L739" class="ln">   739  </span>			require.ErrorIs(t, err, errJWKSKIDKnownAbsent)
+<span id="L740" class="ln">   740  </span>			require.NotErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L741" class="ln">   741  </span>			assert.Equal(t, 2, cc.count(), &#34;集合不変なら bogus kid の negative を保持し再取得しない&#34;)
+<span id="L742" class="ln">   742  </span>		})
+<span id="L743" class="ln">   743  </span>
+<span id="L744" class="ln">   744  </span>		t.Run(&#34;同時の未知 kid 解決は singleflight + cooldown で fetch を 1 回に抑える&#34;, func(t *testing.T) {
+<span id="L745" class="ln">   745  </span>			t.Parallel()
+<span id="L746" class="ln">   746  </span>			key := newRSAKey(t)
+<span id="L747" class="ln">   747  </span>			cc := &amp;countingJWKSClient{bodies: [][]byte{jwksWithKey(t, testKID, &amp;key.PublicKey)}}
+<span id="L748" class="ln">   748  </span>			r := newJWKSResolver(cc, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L749" class="ln">   749  </span>
+<span id="L750" class="ln">   750  </span>			var wg sync.WaitGroup
+<span id="L751" class="ln">   751  </span>			for range 8 {
+<span id="L752" class="ln">   752  </span>				wg.Go(func() {
+<span id="L753" class="ln">   753  </span>					_, _ = r.ResolveKey(context.Background(), &#34;unknown-kid&#34;)
+<span id="L754" class="ln">   754  </span>				})
+<span id="L755" class="ln">   755  </span>			}
+<span id="L756" class="ln">   756  </span>			wg.Wait()
+<span id="L757" class="ln">   757  </span>
+<span id="L758" class="ln">   758  </span>			assert.Equal(t, 1, cc.count(), &#34;同時の未知 kid 更新は 1 回の fetch に抑制される&#34;)
+<span id="L759" class="ln">   759  </span>		})
+<span id="L760" class="ln">   760  </span>	})
+<span id="L761" class="ln">   761  </span>}
+<span id="L762" class="ln">   762  </span>
+<span id="L763" class="ln">   763  </span>func Test_jwksResolver_negativelyCached(t *testing.T) {
+<span id="L764" class="ln">   764  </span>	t.Parallel()
+<span id="L765" class="ln">   765  </span>
+<span id="L766" class="ln">   766  </span>	<span class="comment">// newFetchedResolver は、fixedNow に取得済みの状態（キャッシュ鮮度内）の resolver と clock を返す。</span>
+<span id="L767" class="ln">   767  </span>	newFetchedResolver := func(t *testing.T) (*jwksResolver, *fakeClock) {
+<span id="L768" class="ln">   768  </span>		t.Helper()
+<span id="L769" class="ln">   769  </span>		clk := newFakeClock(fixedNow)
+<span id="L770" class="ln">   770  </span>		r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
+<span id="L771" class="ln">   771  </span>		r.fetchedAt = clk.Now()
+<span id="L772" class="ln">   772  </span>		return r, clk
+<span id="L773" class="ln">   773  </span>	}
+<span id="L774" class="ln">   774  </span>
+<span id="L775" class="ln">   775  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L776" class="ln">   776  </span>		t.Parallel()
+<span id="L777" class="ln">   777  </span>
+<span id="L778" class="ln">   778  </span>		t.Run(&#34;鮮度内で不在確定済みの kid は true&#34;, func(t *testing.T) {
+<span id="L779" class="ln">   779  </span>			t.Parallel()
+<span id="L780" class="ln">   780  </span>
+<span id="L781" class="ln">   781  </span>			r, _ := newFetchedResolver(t)
+<span id="L782" class="ln">   782  </span>			r.negative = map[string]struct{}{&#34;absent&#34;: {}}
+<span id="L783" class="ln">   783  </span>
+<span id="L784" class="ln">   784  </span>			assert.True(t, r.negativelyCached(&#34;absent&#34;))
+<span id="L785" class="ln">   785  </span>		})
+<span id="L786" class="ln">   786  </span>
+<span id="L787" class="ln">   787  </span>		t.Run(&#34;鮮度内でも未記録の kid は false&#34;, func(t *testing.T) {
+<span id="L788" class="ln">   788  </span>			t.Parallel()
+<span id="L789" class="ln">   789  </span>
+<span id="L790" class="ln">   790  </span>			r, _ := newFetchedResolver(t)
+<span id="L791" class="ln">   791  </span>			r.negative = map[string]struct{}{&#34;absent&#34;: {}}
+<span id="L792" class="ln">   792  </span>
+<span id="L793" class="ln">   793  </span>			assert.False(t, r.negativelyCached(&#34;other&#34;))
+<span id="L794" class="ln">   794  </span>		})
+<span id="L795" class="ln">   795  </span>
+<span id="L796" class="ln">   796  </span>		t.Run(&#34;未取得（fetchedAt がゼロ）なら false&#34;, func(t *testing.T) {
+<span id="L797" class="ln">   797  </span>			t.Parallel()
+<span id="L798" class="ln">   798  </span>
+<span id="L799" class="ln">   799  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L800" class="ln">   800  </span>			r.negative = map[string]struct{}{&#34;absent&#34;: {}}
+<span id="L801" class="ln">   801  </span>
+<span id="L802" class="ln">   802  </span>			assert.False(t, r.negativelyCached(&#34;absent&#34;))
+<span id="L803" class="ln">   803  </span>		})
+<span id="L804" class="ln">   804  </span>
+<span id="L805" class="ln">   805  </span>		t.Run(&#34;cacheTTL 経過後は記録済みでも false（退役後の再評価を許す）&#34;, func(t *testing.T) {
+<span id="L806" class="ln">   806  </span>			t.Parallel()
+<span id="L807" class="ln">   807  </span>
+<span id="L808" class="ln">   808  </span>			r, clk := newFetchedResolver(t)
+<span id="L809" class="ln">   809  </span>			r.negative = map[string]struct{}{&#34;absent&#34;: {}}
+<span id="L810" class="ln">   810  </span>			clk.advance(time.Hour)
 <span id="L811" class="ln">   811  </span>
-<span id="L812" class="ln">   812  </span>		t.Run(&#34;cacheTTL 経過後は記録済みでも false（退役後の再評価を許す）&#34;, func(t *testing.T) {
-<span id="L813" class="ln">   813  </span>			t.Parallel()
-<span id="L814" class="ln">   814  </span>
-<span id="L815" class="ln">   815  </span>			r, clk := newFetchedResolver(t)
-<span id="L816" class="ln">   816  </span>			r.negative = map[string]struct{}{&#34;absent&#34;: {}}
-<span id="L817" class="ln">   817  </span>			clk.advance(time.Hour)
-<span id="L818" class="ln">   818  </span>
-<span id="L819" class="ln">   819  </span>			assert.False(t, r.negativelyCached(&#34;absent&#34;))
-<span id="L820" class="ln">   820  </span>		})
-<span id="L821" class="ln">   821  </span>	})
-<span id="L822" class="ln">   822  </span>}
-<span id="L823" class="ln">   823  </span>
-<span id="L824" class="ln">   824  </span>func Test_jwksResolver_recordAbsent(t *testing.T) {
-<span id="L825" class="ln">   825  </span>	t.Parallel()
-<span id="L826" class="ln">   826  </span>
-<span id="L827" class="ln">   827  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L828" class="ln">   828  </span>		t.Parallel()
+<span id="L812" class="ln">   812  </span>			assert.False(t, r.negativelyCached(&#34;absent&#34;))
+<span id="L813" class="ln">   813  </span>		})
+<span id="L814" class="ln">   814  </span>	})
+<span id="L815" class="ln">   815  </span>}
+<span id="L816" class="ln">   816  </span>
+<span id="L817" class="ln">   817  </span>func Test_jwksResolver_recordAbsent(t *testing.T) {
+<span id="L818" class="ln">   818  </span>	t.Parallel()
+<span id="L819" class="ln">   819  </span>
+<span id="L820" class="ln">   820  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L821" class="ln">   821  </span>		t.Parallel()
+<span id="L822" class="ln">   822  </span>
+<span id="L823" class="ln">   823  </span>		t.Run(&#34;鮮度内なら不在確定として記録する&#34;, func(t *testing.T) {
+<span id="L824" class="ln">   824  </span>			t.Parallel()
+<span id="L825" class="ln">   825  </span>
+<span id="L826" class="ln">   826  </span>			clk := newFakeClock(fixedNow)
+<span id="L827" class="ln">   827  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
+<span id="L828" class="ln">   828  </span>			r.fetchedAt = clk.Now()
 <span id="L829" class="ln">   829  </span>
-<span id="L830" class="ln">   830  </span>		t.Run(&#34;鮮度内なら不在確定として記録する&#34;, func(t *testing.T) {
-<span id="L831" class="ln">   831  </span>			t.Parallel()
-<span id="L832" class="ln">   832  </span>
-<span id="L833" class="ln">   833  </span>			clk := newFakeClock(fixedNow)
-<span id="L834" class="ln">   834  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L835" class="ln">   835  </span>			r.fetchedAt = clk.Now()
-<span id="L836" class="ln">   836  </span>
-<span id="L837" class="ln">   837  </span>			r.recordAbsent(&#34;absent&#34;)
-<span id="L838" class="ln">   838  </span>
-<span id="L839" class="ln">   839  </span>			assert.Contains(t, r.negative, &#34;absent&#34;)
-<span id="L840" class="ln">   840  </span>		})
+<span id="L830" class="ln">   830  </span>			r.recordAbsent(&#34;absent&#34;)
+<span id="L831" class="ln">   831  </span>
+<span id="L832" class="ln">   832  </span>			assert.Contains(t, r.negative, &#34;absent&#34;)
+<span id="L833" class="ln">   833  </span>		})
+<span id="L834" class="ln">   834  </span>
+<span id="L835" class="ln">   835  </span>		t.Run(&#34;未取得（fetchedAt がゼロ）なら記録しない&#34;, func(t *testing.T) {
+<span id="L836" class="ln">   836  </span>			t.Parallel()
+<span id="L837" class="ln">   837  </span>
+<span id="L838" class="ln">   838  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L839" class="ln">   839  </span>
+<span id="L840" class="ln">   840  </span>			r.recordAbsent(&#34;absent&#34;)
 <span id="L841" class="ln">   841  </span>
-<span id="L842" class="ln">   842  </span>		t.Run(&#34;未取得（fetchedAt がゼロ）なら記録しない&#34;, func(t *testing.T) {
-<span id="L843" class="ln">   843  </span>			t.Parallel()
+<span id="L842" class="ln">   842  </span>			assert.Empty(t, r.negative)
+<span id="L843" class="ln">   843  </span>		})
 <span id="L844" class="ln">   844  </span>
-<span id="L845" class="ln">   845  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L846" class="ln">   846  </span>
-<span id="L847" class="ln">   847  </span>			r.recordAbsent(&#34;absent&#34;)
-<span id="L848" class="ln">   848  </span>
-<span id="L849" class="ln">   849  </span>			assert.Empty(t, r.negative)
-<span id="L850" class="ln">   850  </span>		})
-<span id="L851" class="ln">   851  </span>
-<span id="L852" class="ln">   852  </span>		t.Run(&#34;cacheTTL 経過後は記録しない（回転追加された kid を拒否し続けないため）&#34;, func(t *testing.T) {
-<span id="L853" class="ln">   853  </span>			t.Parallel()
+<span id="L845" class="ln">   845  </span>		t.Run(&#34;cacheTTL 経過後は記録しない（回転追加された kid を拒否し続けないため）&#34;, func(t *testing.T) {
+<span id="L846" class="ln">   846  </span>			t.Parallel()
+<span id="L847" class="ln">   847  </span>
+<span id="L848" class="ln">   848  </span>			clk := newFakeClock(fixedNow)
+<span id="L849" class="ln">   849  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
+<span id="L850" class="ln">   850  </span>			r.fetchedAt = clk.Now()
+<span id="L851" class="ln">   851  </span>			clk.advance(time.Hour)
+<span id="L852" class="ln">   852  </span>
+<span id="L853" class="ln">   853  </span>			r.recordAbsent(&#34;absent&#34;)
 <span id="L854" class="ln">   854  </span>
-<span id="L855" class="ln">   855  </span>			clk := newFakeClock(fixedNow)
-<span id="L856" class="ln">   856  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L857" class="ln">   857  </span>			r.fetchedAt = clk.Now()
-<span id="L858" class="ln">   858  </span>			clk.advance(time.Hour)
+<span id="L855" class="ln">   855  </span>			assert.Empty(t, r.negative)
+<span id="L856" class="ln">   856  </span>		})
+<span id="L857" class="ln">   857  </span>	})
+<span id="L858" class="ln">   858  </span>}
 <span id="L859" class="ln">   859  </span>
-<span id="L860" class="ln">   860  </span>			r.recordAbsent(&#34;absent&#34;)
-<span id="L861" class="ln">   861  </span>
-<span id="L862" class="ln">   862  </span>			assert.Empty(t, r.negative)
-<span id="L863" class="ln">   863  </span>		})
-<span id="L864" class="ln">   864  </span>	})
-<span id="L865" class="ln">   865  </span>}
+<span id="L860" class="ln">   860  </span>func Test_sameKeySet(t *testing.T) {
+<span id="L861" class="ln">   861  </span>	t.Parallel()
+<span id="L862" class="ln">   862  </span>
+<span id="L863" class="ln">   863  </span>	keyA := newRSAKey(t)
+<span id="L864" class="ln">   864  </span>	keyB := newRSAKey(t)
+<span id="L865" class="ln">   865  </span>	base := map[string]crypto.PublicKey{testKID: &amp;keyA.PublicKey, &#34;kid-2&#34;: &amp;keyB.PublicKey}
 <span id="L866" class="ln">   866  </span>
-<span id="L867" class="ln">   867  </span>func Test_sameKeySet(t *testing.T) {
-<span id="L868" class="ln">   868  </span>	t.Parallel()
+<span id="L867" class="ln">   867  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L868" class="ln">   868  </span>		t.Parallel()
 <span id="L869" class="ln">   869  </span>
-<span id="L870" class="ln">   870  </span>	keyA := newRSAKey(t)
-<span id="L871" class="ln">   871  </span>	keyB := newRSAKey(t)
-<span id="L872" class="ln">   872  </span>	base := map[string]crypto.PublicKey{testKID: &amp;keyA.PublicKey, &#34;kid-2&#34;: &amp;keyB.PublicKey}
-<span id="L873" class="ln">   873  </span>
-<span id="L874" class="ln">   874  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L875" class="ln">   875  </span>		t.Parallel()
-<span id="L876" class="ln">   876  </span>
-<span id="L877" class="ln">   877  </span>		t.Run(&#34;同一 kid 集合は true&#34;, func(t *testing.T) {
-<span id="L878" class="ln">   878  </span>			t.Parallel()
-<span id="L879" class="ln">   879  </span>			other := map[string]crypto.PublicKey{&#34;kid-2&#34;: &amp;keyB.PublicKey, testKID: &amp;keyA.PublicKey}
-<span id="L880" class="ln">   880  </span>			assert.True(t, sameKeySet(base, other))
-<span id="L881" class="ln">   881  </span>		})
-<span id="L882" class="ln">   882  </span>
-<span id="L883" class="ln">   883  </span>		t.Run(&#34;kid が増減すると false&#34;, func(t *testing.T) {
-<span id="L884" class="ln">   884  </span>			t.Parallel()
-<span id="L885" class="ln">   885  </span>			assert.False(t, sameKeySet(base, map[string]crypto.PublicKey{testKID: &amp;keyA.PublicKey}))
-<span id="L886" class="ln">   886  </span>		})
-<span id="L887" class="ln">   887  </span>
-<span id="L888" class="ln">   888  </span>		t.Run(&#34;要素数が同じでも kid が異なると false&#34;, func(t *testing.T) {
-<span id="L889" class="ln">   889  </span>			t.Parallel()
-<span id="L890" class="ln">   890  </span>			other := map[string]crypto.PublicKey{testKID: &amp;keyA.PublicKey, &#34;kid-3&#34;: &amp;keyB.PublicKey}
-<span id="L891" class="ln">   891  </span>			assert.False(t, sameKeySet(base, other))
-<span id="L892" class="ln">   892  </span>		})
-<span id="L893" class="ln">   893  </span>	})
-<span id="L894" class="ln">   894  </span>}
-<span id="L895" class="ln">   895  </span>
-<span id="L896" class="ln">   896  </span>func Test_newJWKSResolver(t *testing.T) {
-<span id="L897" class="ln">   897  </span>	t.Parallel()
-<span id="L898" class="ln">   898  </span>
-<span id="L899" class="ln">   899  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L900" class="ln">   900  </span>		t.Parallel()
-<span id="L901" class="ln">   901  </span>
-<span id="L902" class="ln">   902  </span>		t.Run(&#34;cacheTTL が正なら指定値をそのまま保持する&#34;, func(t *testing.T) {
-<span id="L903" class="ln">   903  </span>			t.Parallel()
-<span id="L904" class="ln">   904  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L905" class="ln">   905  </span>			assert.Equal(t, time.Hour, r.cacheTTL)
-<span id="L906" class="ln">   906  </span>		})
-<span id="L907" class="ln">   907  </span>
-<span id="L908" class="ln">   908  </span>		t.Run(&#34;cacheTTL が 0 以下なら既定 TTL が適用される&#34;, func(t *testing.T) {
-<span id="L909" class="ln">   909  </span>			t.Parallel()
-<span id="L910" class="ln">   910  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), 0, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L911" class="ln">   911  </span>			assert.Equal(t, defaultJWKSCacheTTL, r.cacheTTL)
-<span id="L912" class="ln">   912  </span>		})
-<span id="L913" class="ln">   913  </span>
-<span id="L914" class="ln">   914  </span>		t.Run(&#34;cooldown が 0 以下なら既定 cooldown が適用される&#34;, func(t *testing.T) {
-<span id="L915" class="ln">   915  </span>			t.Parallel()
-<span id="L916" class="ln">   916  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L917" class="ln">   917  </span>			assert.Equal(t, jwksRefreshCooldown, r.cooldown)
-<span id="L918" class="ln">   918  </span>		})
-<span id="L919" class="ln">   919  </span>
-<span id="L920" class="ln">   920  </span>		t.Run(&#34;allowedAlgs が空なら既定の許可アルゴリズムが適用される&#34;, func(t *testing.T) {
-<span id="L921" class="ln">   921  </span>			t.Parallel()
-<span id="L922" class="ln">   922  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L923" class="ln">   923  </span>			assert.Equal(t, defaultAllowedAlgs, r.allowedAlgs)
-<span id="L924" class="ln">   924  </span>		})
-<span id="L925" class="ln">   925  </span>	})
-<span id="L926" class="ln">   926  </span>}
-<span id="L927" class="ln">   927  </span>
-<span id="L928" class="ln">   928  </span>func Test_jwksResolver_lookup(t *testing.T) {
-<span id="L929" class="ln">   929  </span>	t.Parallel()
-<span id="L930" class="ln">   930  </span>
-<span id="L931" class="ln">   931  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L932" class="ln">   932  </span>		t.Parallel()
+<span id="L870" class="ln">   870  </span>		t.Run(&#34;同一 kid 集合は true&#34;, func(t *testing.T) {
+<span id="L871" class="ln">   871  </span>			t.Parallel()
+<span id="L872" class="ln">   872  </span>			other := map[string]crypto.PublicKey{&#34;kid-2&#34;: &amp;keyB.PublicKey, testKID: &amp;keyA.PublicKey}
+<span id="L873" class="ln">   873  </span>			assert.True(t, sameKeySet(base, other))
+<span id="L874" class="ln">   874  </span>		})
+<span id="L875" class="ln">   875  </span>
+<span id="L876" class="ln">   876  </span>		t.Run(&#34;kid が増減すると false&#34;, func(t *testing.T) {
+<span id="L877" class="ln">   877  </span>			t.Parallel()
+<span id="L878" class="ln">   878  </span>			assert.False(t, sameKeySet(base, map[string]crypto.PublicKey{testKID: &amp;keyA.PublicKey}))
+<span id="L879" class="ln">   879  </span>		})
+<span id="L880" class="ln">   880  </span>
+<span id="L881" class="ln">   881  </span>		t.Run(&#34;要素数が同じでも kid が異なると false&#34;, func(t *testing.T) {
+<span id="L882" class="ln">   882  </span>			t.Parallel()
+<span id="L883" class="ln">   883  </span>			other := map[string]crypto.PublicKey{testKID: &amp;keyA.PublicKey, &#34;kid-3&#34;: &amp;keyB.PublicKey}
+<span id="L884" class="ln">   884  </span>			assert.False(t, sameKeySet(base, other))
+<span id="L885" class="ln">   885  </span>		})
+<span id="L886" class="ln">   886  </span>	})
+<span id="L887" class="ln">   887  </span>}
+<span id="L888" class="ln">   888  </span>
+<span id="L889" class="ln">   889  </span>func Test_newJWKSResolver(t *testing.T) {
+<span id="L890" class="ln">   890  </span>	t.Parallel()
+<span id="L891" class="ln">   891  </span>
+<span id="L892" class="ln">   892  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L893" class="ln">   893  </span>		t.Parallel()
+<span id="L894" class="ln">   894  </span>
+<span id="L895" class="ln">   895  </span>		t.Run(&#34;cacheTTL が正なら指定値をそのまま保持する&#34;, func(t *testing.T) {
+<span id="L896" class="ln">   896  </span>			t.Parallel()
+<span id="L897" class="ln">   897  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L898" class="ln">   898  </span>			assert.Equal(t, time.Hour, r.cacheTTL)
+<span id="L899" class="ln">   899  </span>		})
+<span id="L900" class="ln">   900  </span>
+<span id="L901" class="ln">   901  </span>		t.Run(&#34;cacheTTL が 0 以下なら既定 TTL が適用される&#34;, func(t *testing.T) {
+<span id="L902" class="ln">   902  </span>			t.Parallel()
+<span id="L903" class="ln">   903  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), 0, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L904" class="ln">   904  </span>			assert.Equal(t, defaultJWKSCacheTTL, r.cacheTTL)
+<span id="L905" class="ln">   905  </span>		})
+<span id="L906" class="ln">   906  </span>
+<span id="L907" class="ln">   907  </span>		t.Run(&#34;cooldown が 0 以下なら既定 cooldown が適用される&#34;, func(t *testing.T) {
+<span id="L908" class="ln">   908  </span>			t.Parallel()
+<span id="L909" class="ln">   909  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L910" class="ln">   910  </span>			assert.Equal(t, jwksRefreshCooldown, r.cooldown)
+<span id="L911" class="ln">   911  </span>		})
+<span id="L912" class="ln">   912  </span>
+<span id="L913" class="ln">   913  </span>		t.Run(&#34;allowedAlgs が空なら既定の許可アルゴリズムが適用される&#34;, func(t *testing.T) {
+<span id="L914" class="ln">   914  </span>			t.Parallel()
+<span id="L915" class="ln">   915  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L916" class="ln">   916  </span>			assert.Equal(t, defaultAllowedAlgs, r.allowedAlgs)
+<span id="L917" class="ln">   917  </span>		})
+<span id="L918" class="ln">   918  </span>	})
+<span id="L919" class="ln">   919  </span>}
+<span id="L920" class="ln">   920  </span>
+<span id="L921" class="ln">   921  </span>func Test_jwksResolver_lookup(t *testing.T) {
+<span id="L922" class="ln">   922  </span>	t.Parallel()
+<span id="L923" class="ln">   923  </span>
+<span id="L924" class="ln">   924  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L925" class="ln">   925  </span>		t.Parallel()
+<span id="L926" class="ln">   926  </span>
+<span id="L927" class="ln">   927  </span>		t.Run(&#34;鮮度内キャッシュに kid があれば対応する鍵を返す&#34;, func(t *testing.T) {
+<span id="L928" class="ln">   928  </span>			t.Parallel()
+<span id="L929" class="ln">   929  </span>			key := newRSAKey(t)
+<span id="L930" class="ln">   930  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L931" class="ln">   931  </span>			r.keys = map[string]crypto.PublicKey{testKID: &amp;key.PublicKey}
+<span id="L932" class="ln">   932  </span>			r.fetchedAt = fixedNow
 <span id="L933" class="ln">   933  </span>
-<span id="L934" class="ln">   934  </span>		t.Run(&#34;鮮度内キャッシュに kid があれば対応する鍵を返す&#34;, func(t *testing.T) {
-<span id="L935" class="ln">   935  </span>			t.Parallel()
-<span id="L936" class="ln">   936  </span>			key := newRSAKey(t)
-<span id="L937" class="ln">   937  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L938" class="ln">   938  </span>			r.keys = map[string]crypto.PublicKey{testKID: &amp;key.PublicKey}
-<span id="L939" class="ln">   939  </span>			r.fetchedAt = fixedNow
+<span id="L934" class="ln">   934  </span>			assert.Equal(t, &amp;key.PublicKey, r.lookup(testKID))
+<span id="L935" class="ln">   935  </span>		})
+<span id="L936" class="ln">   936  </span>	})
+<span id="L937" class="ln">   937  </span>
+<span id="L938" class="ln">   938  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L939" class="ln">   939  </span>		t.Parallel()
 <span id="L940" class="ln">   940  </span>
-<span id="L941" class="ln">   941  </span>			assert.Equal(t, &amp;key.PublicKey, r.lookup(testKID))
-<span id="L942" class="ln">   942  </span>		})
-<span id="L943" class="ln">   943  </span>	})
-<span id="L944" class="ln">   944  </span>
-<span id="L945" class="ln">   945  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L946" class="ln">   946  </span>		t.Parallel()
-<span id="L947" class="ln">   947  </span>
-<span id="L948" class="ln">   948  </span>		t.Run(&#34;一度も取得していない（fetchedAt がゼロ値）場合は nil を返す&#34;, func(t *testing.T) {
-<span id="L949" class="ln">   949  </span>			t.Parallel()
-<span id="L950" class="ln">   950  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L951" class="ln">   951  </span>			assert.Nil(t, r.lookup(testKID))
-<span id="L952" class="ln">   952  </span>		})
-<span id="L953" class="ln">   953  </span>
-<span id="L954" class="ln">   954  </span>		t.Run(&#34;TTL を超過して鮮度切れの場合は nil を返す&#34;, func(t *testing.T) {
-<span id="L955" class="ln">   955  </span>			t.Parallel()
-<span id="L956" class="ln">   956  </span>			key := newRSAKey(t)
-<span id="L957" class="ln">   957  </span>			clk := newFakeClock(fixedNow)
-<span id="L958" class="ln">   958  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
-<span id="L959" class="ln">   959  </span>			r.keys = map[string]crypto.PublicKey{testKID: &amp;key.PublicKey}
-<span id="L960" class="ln">   960  </span>			r.fetchedAt = fixedNow
-<span id="L961" class="ln">   961  </span>			clk.advance(time.Hour + time.Minute)
-<span id="L962" class="ln">   962  </span>
-<span id="L963" class="ln">   963  </span>			assert.Nil(t, r.lookup(testKID))
-<span id="L964" class="ln">   964  </span>		})
+<span id="L941" class="ln">   941  </span>		t.Run(&#34;一度も取得していない（fetchedAt がゼロ値）場合は nil を返す&#34;, func(t *testing.T) {
+<span id="L942" class="ln">   942  </span>			t.Parallel()
+<span id="L943" class="ln">   943  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L944" class="ln">   944  </span>			assert.Nil(t, r.lookup(testKID))
+<span id="L945" class="ln">   945  </span>		})
+<span id="L946" class="ln">   946  </span>
+<span id="L947" class="ln">   947  </span>		t.Run(&#34;TTL を超過して鮮度切れの場合は nil を返す&#34;, func(t *testing.T) {
+<span id="L948" class="ln">   948  </span>			t.Parallel()
+<span id="L949" class="ln">   949  </span>			key := newRSAKey(t)
+<span id="L950" class="ln">   950  </span>			clk := newFakeClock(fixedNow)
+<span id="L951" class="ln">   951  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, clk, nil)
+<span id="L952" class="ln">   952  </span>			r.keys = map[string]crypto.PublicKey{testKID: &amp;key.PublicKey}
+<span id="L953" class="ln">   953  </span>			r.fetchedAt = fixedNow
+<span id="L954" class="ln">   954  </span>			clk.advance(time.Hour + time.Minute)
+<span id="L955" class="ln">   955  </span>
+<span id="L956" class="ln">   956  </span>			assert.Nil(t, r.lookup(testKID))
+<span id="L957" class="ln">   957  </span>		})
+<span id="L958" class="ln">   958  </span>
+<span id="L959" class="ln">   959  </span>		t.Run(&#34;鮮度内でも未知の kid は nil を返す&#34;, func(t *testing.T) {
+<span id="L960" class="ln">   960  </span>			t.Parallel()
+<span id="L961" class="ln">   961  </span>			key := newRSAKey(t)
+<span id="L962" class="ln">   962  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L963" class="ln">   963  </span>			r.keys = map[string]crypto.PublicKey{testKID: &amp;key.PublicKey}
+<span id="L964" class="ln">   964  </span>			r.fetchedAt = fixedNow
 <span id="L965" class="ln">   965  </span>
-<span id="L966" class="ln">   966  </span>		t.Run(&#34;鮮度内でも未知の kid は nil を返す&#34;, func(t *testing.T) {
-<span id="L967" class="ln">   967  </span>			t.Parallel()
-<span id="L968" class="ln">   968  </span>			key := newRSAKey(t)
-<span id="L969" class="ln">   969  </span>			r := newJWKSResolver(stubJWKSClient(t, nil), staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L970" class="ln">   970  </span>			r.keys = map[string]crypto.PublicKey{testKID: &amp;key.PublicKey}
-<span id="L971" class="ln">   971  </span>			r.fetchedAt = fixedNow
-<span id="L972" class="ln">   972  </span>
-<span id="L973" class="ln">   973  </span>			assert.Nil(t, r.lookup(&#34;unknown-kid&#34;))
-<span id="L974" class="ln">   974  </span>		})
-<span id="L975" class="ln">   975  </span>	})
-<span id="L976" class="ln">   976  </span>}
-<span id="L977" class="ln">   977  </span>
-<span id="L978" class="ln">   978  </span>func Test_jwksResolver_refresh(t *testing.T) {
-<span id="L979" class="ln">   979  </span>	t.Parallel()
-<span id="L980" class="ln">   980  </span>
-<span id="L981" class="ln">   981  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L982" class="ln">   982  </span>		t.Parallel()
-<span id="L983" class="ln">   983  </span>
-<span id="L984" class="ln">   984  </span>		t.Run(&#34;取得成功時は keys / fetchedAt を更新する&#34;, func(t *testing.T) {
-<span id="L985" class="ln">   985  </span>			t.Parallel()
-<span id="L986" class="ln">   986  </span>			key := newRSAKey(t)
-<span id="L987" class="ln">   987  </span>			r := newJWKSResolver(
-<span id="L988" class="ln">   988  </span>				stubJWKSClient(t, jwksPublicJSON(t, &amp;key.PublicKey)),
-<span id="L989" class="ln">   989  </span>				staticURL(jwksTestURL),
-<span id="L990" class="ln">   990  </span>				time.Hour,
-<span id="L991" class="ln">   991  </span>				nil,
-<span id="L992" class="ln">   992  </span>				0,
-<span id="L993" class="ln">   993  </span>				newFakeClock(fixedNow),
-<span id="L994" class="ln">   994  </span>				nil,
-<span id="L995" class="ln">   995  </span>			)
-<span id="L996" class="ln">   996  </span>
-<span id="L997" class="ln">   997  </span>			fetched, err := r.refresh(context.Background())
-<span id="L998" class="ln">   998  </span>			require.NoError(t, err)
-<span id="L999" class="ln">   999  </span>			assert.True(t, fetched)
-<span id="L1000" class="ln">  1000  </span>			assert.Equal(t, fixedNow, r.fetchedAt)
-<span id="L1001" class="ln">  1001  </span>			assert.Contains(t, r.keys, testKID)
-<span id="L1002" class="ln">  1002  </span>		})
-<span id="L1003" class="ln">  1003  </span>	})
-<span id="L1004" class="ln">  1004  </span>
-<span id="L1005" class="ln">  1005  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1006" class="ln">  1006  </span>		t.Parallel()
+<span id="L966" class="ln">   966  </span>			assert.Nil(t, r.lookup(&#34;unknown-kid&#34;))
+<span id="L967" class="ln">   967  </span>		})
+<span id="L968" class="ln">   968  </span>	})
+<span id="L969" class="ln">   969  </span>}
+<span id="L970" class="ln">   970  </span>
+<span id="L971" class="ln">   971  </span>func Test_jwksResolver_refresh(t *testing.T) {
+<span id="L972" class="ln">   972  </span>	t.Parallel()
+<span id="L973" class="ln">   973  </span>
+<span id="L974" class="ln">   974  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L975" class="ln">   975  </span>		t.Parallel()
+<span id="L976" class="ln">   976  </span>
+<span id="L977" class="ln">   977  </span>		t.Run(&#34;取得成功時は keys / fetchedAt を更新する&#34;, func(t *testing.T) {
+<span id="L978" class="ln">   978  </span>			t.Parallel()
+<span id="L979" class="ln">   979  </span>			key := newRSAKey(t)
+<span id="L980" class="ln">   980  </span>			r := newJWKSResolver(
+<span id="L981" class="ln">   981  </span>				stubJWKSClient(t, jwksPublicJSON(t, &amp;key.PublicKey)),
+<span id="L982" class="ln">   982  </span>				staticURL(jwksTestURL),
+<span id="L983" class="ln">   983  </span>				time.Hour,
+<span id="L984" class="ln">   984  </span>				nil,
+<span id="L985" class="ln">   985  </span>				0,
+<span id="L986" class="ln">   986  </span>				newFakeClock(fixedNow),
+<span id="L987" class="ln">   987  </span>				nil,
+<span id="L988" class="ln">   988  </span>			)
+<span id="L989" class="ln">   989  </span>
+<span id="L990" class="ln">   990  </span>			fetched, err := r.refresh(context.Background())
+<span id="L991" class="ln">   991  </span>			require.NoError(t, err)
+<span id="L992" class="ln">   992  </span>			assert.True(t, fetched)
+<span id="L993" class="ln">   993  </span>			assert.Equal(t, fixedNow, r.fetchedAt)
+<span id="L994" class="ln">   994  </span>			assert.Contains(t, r.keys, testKID)
+<span id="L995" class="ln">   995  </span>		})
+<span id="L996" class="ln">   996  </span>	})
+<span id="L997" class="ln">   997  </span>
+<span id="L998" class="ln">   998  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L999" class="ln">   999  </span>		t.Parallel()
+<span id="L1000" class="ln">  1000  </span>
+<span id="L1001" class="ln">  1001  </span>		t.Run(&#34;取得失敗時は原因を返し lastErr へ保持する&#34;, func(t *testing.T) {
+<span id="L1002" class="ln">  1002  </span>			t.Parallel()
+<span id="L1003" class="ln">  1003  </span>			ctrl := gomock.NewController(t)
+<span id="L1004" class="ln">  1004  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1005" class="ln">  1005  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
+<span id="L1006" class="ln">  1006  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
 <span id="L1007" class="ln">  1007  </span>
-<span id="L1008" class="ln">  1008  </span>		t.Run(&#34;取得失敗時は原因を返し lastErr へ保持する&#34;, func(t *testing.T) {
-<span id="L1009" class="ln">  1009  </span>			t.Parallel()
-<span id="L1010" class="ln">  1010  </span>			ctrl := gomock.NewController(t)
-<span id="L1011" class="ln">  1011  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1012" class="ln">  1012  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
-<span id="L1013" class="ln">  1013  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1014" class="ln">  1014  </span>
-<span id="L1015" class="ln">  1015  </span>			_, err := r.refresh(context.Background())
-<span id="L1016" class="ln">  1016  </span>			require.ErrorIs(t, err, errBoom)
-<span id="L1017" class="ln">  1017  </span>			assert.True(t, r.fetchedAt.IsZero())
-<span id="L1018" class="ln">  1018  </span>		})
-<span id="L1019" class="ln">  1019  </span>
-<span id="L1020" class="ln">  1020  </span>		t.Run(&#34;cooldown 中の再取得は再fetchせず直近の失敗原因を伝播する&#34;, func(t *testing.T) {
-<span id="L1021" class="ln">  1021  </span>			t.Parallel()
-<span id="L1022" class="ln">  1022  </span>			ctrl := gomock.NewController(t)
-<span id="L1023" class="ln">  1023  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1024" class="ln">  1024  </span>			<span class="comment">// Times(1): 2 回目は cooldown で throttle され Do を呼ばない。</span>
-<span id="L1025" class="ln">  1025  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
-<span id="L1026" class="ln">  1026  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1027" class="ln">  1027  </span>
-<span id="L1028" class="ln">  1028  </span>			fetched1, err1 := r.refresh(context.Background())
-<span id="L1029" class="ln">  1029  </span>			require.ErrorIs(t, err1, errBoom)
-<span id="L1030" class="ln">  1030  </span>			assert.True(t, fetched1, &#34;初回は実 fetch する&#34;)
-<span id="L1031" class="ln">  1031  </span>			fetched2, err2 := r.refresh(context.Background())
-<span id="L1032" class="ln">  1032  </span>			require.ErrorIs(t, err2, errBoom)
-<span id="L1033" class="ln">  1033  </span>			assert.False(t, fetched2, &#34;cooldown 中は throttle され fetch しない&#34;)
-<span id="L1034" class="ln">  1034  </span>		})
-<span id="L1035" class="ln">  1035  </span>
-<span id="L1036" class="ln">  1036  </span>		t.Run(&#34;呼び出し元がキャンセルで離脱しても取得は完走し cooldown が起動する&#34;, func(t *testing.T) {
-<span id="L1037" class="ln">  1037  </span>			t.Parallel()
-<span id="L1038" class="ln">  1038  </span>			key := newRSAKey(t)
-<span id="L1039" class="ln">  1039  </span>			ctrl := gomock.NewController(t)
-<span id="L1040" class="ln">  1040  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1041" class="ln">  1041  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
-<span id="L1042" class="ln">  1042  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1043" class="ln">  1043  </span>
-<span id="L1044" class="ln">  1044  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1045" class="ln">  1045  </span>			left := goRefresh(r, ctx)
-<span id="L1046" class="ln">  1046  </span>			&lt;-blocked.entered
-<span id="L1047" class="ln">  1047  </span>			cancel()
-<span id="L1048" class="ln">  1048  </span>
-<span id="L1049" class="ln">  1049  </span>			leftResult := &lt;-left
-<span id="L1050" class="ln">  1050  </span>			assert.False(t, leftResult.fetched, &#34;離脱は未取得扱い（negative へ載せない）&#34;)
-<span id="L1051" class="ln">  1051  </span>			require.ErrorIs(t, leftResult.err, apperror.ErrCanceled)
-<span id="L1052" class="ln">  1052  </span>
-<span id="L1053" class="ln">  1053  </span>			close(blocked.release)
-<span id="L1054" class="ln">  1054  </span>			fetched, err := r.refresh(context.Background())
-<span id="L1055" class="ln">  1055  </span>			require.NoError(t, err)
-<span id="L1056" class="ln">  1056  </span>			assert.False(t, fetched, &#34;離脱した取得が cooldown を起動しているため再取得しない&#34;)
-<span id="L1057" class="ln">  1057  </span>		})
-<span id="L1058" class="ln">  1058  </span>
-<span id="L1059" class="ln">  1059  </span>		t.Run(&#34;離脱した取得の結果は他の呼び出し元が追加取得なしで使える&#34;, func(t *testing.T) {
-<span id="L1060" class="ln">  1060  </span>			t.Parallel()
-<span id="L1061" class="ln">  1061  </span>			key := newRSAKey(t)
-<span id="L1062" class="ln">  1062  </span>			ctrl := gomock.NewController(t)
-<span id="L1063" class="ln">  1063  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1064" class="ln">  1064  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
-<span id="L1065" class="ln">  1065  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1008" class="ln">  1008  </span>			_, err := r.refresh(context.Background())
+<span id="L1009" class="ln">  1009  </span>			require.ErrorIs(t, err, errBoom)
+<span id="L1010" class="ln">  1010  </span>			assert.True(t, r.fetchedAt.IsZero())
+<span id="L1011" class="ln">  1011  </span>		})
+<span id="L1012" class="ln">  1012  </span>
+<span id="L1013" class="ln">  1013  </span>		t.Run(&#34;cooldown 中の再取得は再fetchせず直近の失敗原因を伝播する&#34;, func(t *testing.T) {
+<span id="L1014" class="ln">  1014  </span>			t.Parallel()
+<span id="L1015" class="ln">  1015  </span>			ctrl := gomock.NewController(t)
+<span id="L1016" class="ln">  1016  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1017" class="ln">  1017  </span>			<span class="comment">// Times(1): 2 回目は cooldown で throttle され Do を呼ばない。</span>
+<span id="L1018" class="ln">  1018  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
+<span id="L1019" class="ln">  1019  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1020" class="ln">  1020  </span>
+<span id="L1021" class="ln">  1021  </span>			fetched1, err1 := r.refresh(context.Background())
+<span id="L1022" class="ln">  1022  </span>			require.ErrorIs(t, err1, errBoom)
+<span id="L1023" class="ln">  1023  </span>			assert.True(t, fetched1, &#34;初回は実 fetch する&#34;)
+<span id="L1024" class="ln">  1024  </span>			fetched2, err2 := r.refresh(context.Background())
+<span id="L1025" class="ln">  1025  </span>			require.ErrorIs(t, err2, errBoom)
+<span id="L1026" class="ln">  1026  </span>			assert.False(t, fetched2, &#34;cooldown 中は throttle され fetch しない&#34;)
+<span id="L1027" class="ln">  1027  </span>		})
+<span id="L1028" class="ln">  1028  </span>
+<span id="L1029" class="ln">  1029  </span>		t.Run(&#34;呼び出し元がキャンセルで離脱しても取得は完走し cooldown が起動する&#34;, func(t *testing.T) {
+<span id="L1030" class="ln">  1030  </span>			t.Parallel()
+<span id="L1031" class="ln">  1031  </span>			key := newRSAKey(t)
+<span id="L1032" class="ln">  1032  </span>			ctrl := gomock.NewController(t)
+<span id="L1033" class="ln">  1033  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1034" class="ln">  1034  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
+<span id="L1035" class="ln">  1035  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1036" class="ln">  1036  </span>
+<span id="L1037" class="ln">  1037  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1038" class="ln">  1038  </span>			left := goRefresh(r, ctx)
+<span id="L1039" class="ln">  1039  </span>			&lt;-blocked.entered
+<span id="L1040" class="ln">  1040  </span>			cancel()
+<span id="L1041" class="ln">  1041  </span>
+<span id="L1042" class="ln">  1042  </span>			leftResult := &lt;-left
+<span id="L1043" class="ln">  1043  </span>			assert.False(t, leftResult.fetched, &#34;離脱は未取得扱い（negative へ載せない）&#34;)
+<span id="L1044" class="ln">  1044  </span>			require.ErrorIs(t, leftResult.err, apperror.ErrCanceled)
+<span id="L1045" class="ln">  1045  </span>
+<span id="L1046" class="ln">  1046  </span>			close(blocked.release)
+<span id="L1047" class="ln">  1047  </span>			fetched, err := r.refresh(context.Background())
+<span id="L1048" class="ln">  1048  </span>			require.NoError(t, err)
+<span id="L1049" class="ln">  1049  </span>			assert.False(t, fetched, &#34;離脱した取得が cooldown を起動しているため再取得しない&#34;)
+<span id="L1050" class="ln">  1050  </span>		})
+<span id="L1051" class="ln">  1051  </span>
+<span id="L1052" class="ln">  1052  </span>		t.Run(&#34;離脱した取得の結果は他の呼び出し元が追加取得なしで使える&#34;, func(t *testing.T) {
+<span id="L1053" class="ln">  1053  </span>			t.Parallel()
+<span id="L1054" class="ln">  1054  </span>			key := newRSAKey(t)
+<span id="L1055" class="ln">  1055  </span>			ctrl := gomock.NewController(t)
+<span id="L1056" class="ln">  1056  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1057" class="ln">  1057  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
+<span id="L1058" class="ln">  1058  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1059" class="ln">  1059  </span>
+<span id="L1060" class="ln">  1060  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1061" class="ln">  1061  </span>			left := goRefresh(r, ctx)
+<span id="L1062" class="ln">  1062  </span>			&lt;-blocked.entered
+<span id="L1063" class="ln">  1063  </span>			cancel()
+<span id="L1064" class="ln">  1064  </span>			&lt;-left
+<span id="L1065" class="ln">  1065  </span>			close(blocked.release)
 <span id="L1066" class="ln">  1066  </span>
-<span id="L1067" class="ln">  1067  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1068" class="ln">  1068  </span>			left := goRefresh(r, ctx)
-<span id="L1069" class="ln">  1069  </span>			&lt;-blocked.entered
-<span id="L1070" class="ln">  1070  </span>			cancel()
-<span id="L1071" class="ln">  1071  </span>			&lt;-left
-<span id="L1072" class="ln">  1072  </span>			close(blocked.release)
-<span id="L1073" class="ln">  1073  </span>
-<span id="L1074" class="ln">  1074  </span>			got, err := r.ResolveKey(context.Background(), testKID)
-<span id="L1075" class="ln">  1075  </span>			require.NoError(t, err)
-<span id="L1076" class="ln">  1076  </span>			assert.Equal(t, &amp;key.PublicKey, got)
-<span id="L1077" class="ln">  1077  </span>		})
-<span id="L1078" class="ln">  1078  </span>
-<span id="L1079" class="ln">  1079  </span>		t.Run(&#34;先行取得の完了を待つ側も自分の予算で離脱できる&#34;, func(t *testing.T) {
-<span id="L1080" class="ln">  1080  </span>			t.Parallel()
-<span id="L1081" class="ln">  1081  </span>			key := newRSAKey(t)
-<span id="L1082" class="ln">  1082  </span>			ctrl := gomock.NewController(t)
-<span id="L1083" class="ln">  1083  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1084" class="ln">  1084  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
-<span id="L1085" class="ln">  1085  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1086" class="ln">  1086  </span>
-<span id="L1087" class="ln">  1087  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1088" class="ln">  1088  </span>			left := goRefresh(r, ctx)
-<span id="L1089" class="ln">  1089  </span>			&lt;-blocked.entered
+<span id="L1067" class="ln">  1067  </span>			got, err := r.ResolveKey(context.Background(), testKID)
+<span id="L1068" class="ln">  1068  </span>			require.NoError(t, err)
+<span id="L1069" class="ln">  1069  </span>			assert.Equal(t, &amp;key.PublicKey, got)
+<span id="L1070" class="ln">  1070  </span>		})
+<span id="L1071" class="ln">  1071  </span>
+<span id="L1072" class="ln">  1072  </span>		t.Run(&#34;先行取得の完了を待つ側も自分の予算で離脱できる&#34;, func(t *testing.T) {
+<span id="L1073" class="ln">  1073  </span>			t.Parallel()
+<span id="L1074" class="ln">  1074  </span>			key := newRSAKey(t)
+<span id="L1075" class="ln">  1075  </span>			ctrl := gomock.NewController(t)
+<span id="L1076" class="ln">  1076  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1077" class="ln">  1077  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
+<span id="L1078" class="ln">  1078  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1079" class="ln">  1079  </span>
+<span id="L1080" class="ln">  1080  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1081" class="ln">  1081  </span>			left := goRefresh(r, ctx)
+<span id="L1082" class="ln">  1082  </span>			&lt;-blocked.entered
+<span id="L1083" class="ln">  1083  </span>
+<span id="L1084" class="ln">  1084  </span>			<span class="comment">// 先行取得が走っている間に別の呼び出し元が来る。取得権を待つ間も自分の deadline は効く。</span>
+<span id="L1085" class="ln">  1085  </span>			waiterCtx, waiterCancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+<span id="L1086" class="ln">  1086  </span>			defer waiterCancel()
+<span id="L1087" class="ln">  1087  </span>			fetched, err := r.refresh(waiterCtx)
+<span id="L1088" class="ln">  1088  </span>			assert.False(t, fetched)
+<span id="L1089" class="ln">  1089  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
 <span id="L1090" class="ln">  1090  </span>
-<span id="L1091" class="ln">  1091  </span>			<span class="comment">// 先行取得が走っている間に別の呼び出し元が来る。取得権を待つ間も自分の deadline は効く。</span>
-<span id="L1092" class="ln">  1092  </span>			waiterCtx, waiterCancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
-<span id="L1093" class="ln">  1093  </span>			defer waiterCancel()
-<span id="L1094" class="ln">  1094  </span>			fetched, err := r.refresh(waiterCtx)
-<span id="L1095" class="ln">  1095  </span>			assert.False(t, fetched)
-<span id="L1096" class="ln">  1096  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L1097" class="ln">  1097  </span>
-<span id="L1098" class="ln">  1098  </span>			cancel()
-<span id="L1099" class="ln">  1099  </span>			&lt;-left
-<span id="L1100" class="ln">  1100  </span>			close(blocked.release)
-<span id="L1101" class="ln">  1101  </span>			_, _ = r.refresh(context.Background())
-<span id="L1102" class="ln">  1102  </span>		})
-<span id="L1103" class="ln">  1103  </span>
-<span id="L1104" class="ln">  1104  </span>		t.Run(&#34;呼び出し元が予算切れで離脱した場合は利用不能として返す&#34;, func(t *testing.T) {
-<span id="L1105" class="ln">  1105  </span>			t.Parallel()
-<span id="L1106" class="ln">  1106  </span>			key := newRSAKey(t)
-<span id="L1107" class="ln">  1107  </span>			ctrl := gomock.NewController(t)
-<span id="L1108" class="ln">  1108  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1109" class="ln">  1109  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
-<span id="L1110" class="ln">  1110  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1111" class="ln">  1111  </span>
-<span id="L1112" class="ln">  1112  </span>			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
-<span id="L1113" class="ln">  1113  </span>			defer cancel()
-<span id="L1114" class="ln">  1114  </span>			_, err := r.refresh(ctx)
-<span id="L1115" class="ln">  1115  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L1116" class="ln">  1116  </span>			require.NotErrorIs(t, err, apperror.ErrCanceled)
-<span id="L1117" class="ln">  1117  </span>
-<span id="L1118" class="ln">  1118  </span>			close(blocked.release)
-<span id="L1119" class="ln">  1119  </span>			_, _ = r.refresh(context.Background())
-<span id="L1120" class="ln">  1120  </span>		})
-<span id="L1121" class="ln">  1121  </span>	})
-<span id="L1122" class="ln">  1122  </span>}
-<span id="L1123" class="ln">  1123  </span>
-<span id="L1124" class="ln">  1124  </span>func Test_jwksResolver_fetchAndRecord(t *testing.T) {
-<span id="L1125" class="ln">  1125  </span>	t.Parallel()
-<span id="L1126" class="ln">  1126  </span>
-<span id="L1127" class="ln">  1127  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1128" class="ln">  1128  </span>		t.Parallel()
-<span id="L1129" class="ln">  1129  </span>
-<span id="L1130" class="ln">  1130  </span>		t.Run(&#34;取得成功を lastAttempt と keys へ記録する&#34;, func(t *testing.T) {
-<span id="L1131" class="ln">  1131  </span>			t.Parallel()
-<span id="L1132" class="ln">  1132  </span>			key := newRSAKey(t)
-<span id="L1133" class="ln">  1133  </span>			r := newJWKSResolver(
-<span id="L1134" class="ln">  1134  </span>				stubJWKSClient(t, jwksPublicJSON(t, &amp;key.PublicKey)),
-<span id="L1135" class="ln">  1135  </span>				staticURL(jwksTestURL),
-<span id="L1136" class="ln">  1136  </span>				time.Hour,
-<span id="L1137" class="ln">  1137  </span>				nil,
-<span id="L1138" class="ln">  1138  </span>				0,
-<span id="L1139" class="ln">  1139  </span>				newFakeClock(fixedNow),
-<span id="L1140" class="ln">  1140  </span>				nil,
-<span id="L1141" class="ln">  1141  </span>			)
+<span id="L1091" class="ln">  1091  </span>			cancel()
+<span id="L1092" class="ln">  1092  </span>			&lt;-left
+<span id="L1093" class="ln">  1093  </span>			close(blocked.release)
+<span id="L1094" class="ln">  1094  </span>			_, _ = r.refresh(context.Background())
+<span id="L1095" class="ln">  1095  </span>		})
+<span id="L1096" class="ln">  1096  </span>
+<span id="L1097" class="ln">  1097  </span>		t.Run(&#34;呼び出し元が予算切れで離脱した場合は利用不能として返す&#34;, func(t *testing.T) {
+<span id="L1098" class="ln">  1098  </span>			t.Parallel()
+<span id="L1099" class="ln">  1099  </span>			key := newRSAKey(t)
+<span id="L1100" class="ln">  1100  </span>			ctrl := gomock.NewController(t)
+<span id="L1101" class="ln">  1101  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1102" class="ln">  1102  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
+<span id="L1103" class="ln">  1103  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1104" class="ln">  1104  </span>
+<span id="L1105" class="ln">  1105  </span>			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+<span id="L1106" class="ln">  1106  </span>			defer cancel()
+<span id="L1107" class="ln">  1107  </span>			_, err := r.refresh(ctx)
+<span id="L1108" class="ln">  1108  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L1109" class="ln">  1109  </span>			require.NotErrorIs(t, err, apperror.ErrCanceled)
+<span id="L1110" class="ln">  1110  </span>
+<span id="L1111" class="ln">  1111  </span>			close(blocked.release)
+<span id="L1112" class="ln">  1112  </span>			_, _ = r.refresh(context.Background())
+<span id="L1113" class="ln">  1113  </span>		})
+<span id="L1114" class="ln">  1114  </span>	})
+<span id="L1115" class="ln">  1115  </span>}
+<span id="L1116" class="ln">  1116  </span>
+<span id="L1117" class="ln">  1117  </span>func Test_jwksResolver_fetchAndRecord(t *testing.T) {
+<span id="L1118" class="ln">  1118  </span>	t.Parallel()
+<span id="L1119" class="ln">  1119  </span>
+<span id="L1120" class="ln">  1120  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1121" class="ln">  1121  </span>		t.Parallel()
+<span id="L1122" class="ln">  1122  </span>
+<span id="L1123" class="ln">  1123  </span>		t.Run(&#34;取得成功を lastAttempt と keys へ記録する&#34;, func(t *testing.T) {
+<span id="L1124" class="ln">  1124  </span>			t.Parallel()
+<span id="L1125" class="ln">  1125  </span>			key := newRSAKey(t)
+<span id="L1126" class="ln">  1126  </span>			r := newJWKSResolver(
+<span id="L1127" class="ln">  1127  </span>				stubJWKSClient(t, jwksPublicJSON(t, &amp;key.PublicKey)),
+<span id="L1128" class="ln">  1128  </span>				staticURL(jwksTestURL),
+<span id="L1129" class="ln">  1129  </span>				time.Hour,
+<span id="L1130" class="ln">  1130  </span>				nil,
+<span id="L1131" class="ln">  1131  </span>				0,
+<span id="L1132" class="ln">  1132  </span>				newFakeClock(fixedNow),
+<span id="L1133" class="ln">  1133  </span>				nil,
+<span id="L1134" class="ln">  1134  </span>			)
+<span id="L1135" class="ln">  1135  </span>
+<span id="L1136" class="ln">  1136  </span>			require.NoError(t, r.fetchAndRecord(context.Background()))
+<span id="L1137" class="ln">  1137  </span>			assert.Equal(t, fixedNow, r.lastAttempt)
+<span id="L1138" class="ln">  1138  </span>			assert.Equal(t, fixedNow, r.fetchedAt)
+<span id="L1139" class="ln">  1139  </span>			assert.Contains(t, r.keys, testKID)
+<span id="L1140" class="ln">  1140  </span>			require.NoError(t, r.lastErr)
+<span id="L1141" class="ln">  1141  </span>		})
 <span id="L1142" class="ln">  1142  </span>
-<span id="L1143" class="ln">  1143  </span>			require.NoError(t, r.fetchAndRecord(context.Background()))
-<span id="L1144" class="ln">  1144  </span>			assert.Equal(t, fixedNow, r.lastAttempt)
-<span id="L1145" class="ln">  1145  </span>			assert.Equal(t, fixedNow, r.fetchedAt)
-<span id="L1146" class="ln">  1146  </span>			assert.Contains(t, r.keys, testKID)
-<span id="L1147" class="ln">  1147  </span>			require.NoError(t, r.lastErr)
-<span id="L1148" class="ln">  1148  </span>		})
-<span id="L1149" class="ln">  1149  </span>
-<span id="L1150" class="ln">  1150  </span>		t.Run(&#34;公開鍵集合が変わる取得成功では不在確定を破棄する&#34;, func(t *testing.T) {
-<span id="L1151" class="ln">  1151  </span>			t.Parallel()
-<span id="L1152" class="ln">  1152  </span>			key := newRSAKey(t)
-<span id="L1153" class="ln">  1153  </span>			r := newJWKSResolver(
-<span id="L1154" class="ln">  1154  </span>				stubJWKSClient(t, jwksPublicJSON(t, &amp;key.PublicKey)),
-<span id="L1155" class="ln">  1155  </span>				staticURL(jwksTestURL),
-<span id="L1156" class="ln">  1156  </span>				time.Hour,
-<span id="L1157" class="ln">  1157  </span>				nil,
-<span id="L1158" class="ln">  1158  </span>				0,
-<span id="L1159" class="ln">  1159  </span>				newFakeClock(fixedNow),
-<span id="L1160" class="ln">  1160  </span>				nil,
-<span id="L1161" class="ln">  1161  </span>			)
-<span id="L1162" class="ln">  1162  </span>			r.negative = map[string]struct{}{&#34;absent-kid&#34;: {}}
-<span id="L1163" class="ln">  1163  </span>
-<span id="L1164" class="ln">  1164  </span>			require.NoError(t, r.fetchAndRecord(context.Background()))
-<span id="L1165" class="ln">  1165  </span>			assert.Empty(t, r.negative)
-<span id="L1166" class="ln">  1166  </span>		})
-<span id="L1167" class="ln">  1167  </span>	})
-<span id="L1168" class="ln">  1168  </span>
-<span id="L1169" class="ln">  1169  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1170" class="ln">  1170  </span>		t.Parallel()
+<span id="L1143" class="ln">  1143  </span>		t.Run(&#34;公開鍵集合が変わる取得成功では不在確定を破棄する&#34;, func(t *testing.T) {
+<span id="L1144" class="ln">  1144  </span>			t.Parallel()
+<span id="L1145" class="ln">  1145  </span>			key := newRSAKey(t)
+<span id="L1146" class="ln">  1146  </span>			r := newJWKSResolver(
+<span id="L1147" class="ln">  1147  </span>				stubJWKSClient(t, jwksPublicJSON(t, &amp;key.PublicKey)),
+<span id="L1148" class="ln">  1148  </span>				staticURL(jwksTestURL),
+<span id="L1149" class="ln">  1149  </span>				time.Hour,
+<span id="L1150" class="ln">  1150  </span>				nil,
+<span id="L1151" class="ln">  1151  </span>				0,
+<span id="L1152" class="ln">  1152  </span>				newFakeClock(fixedNow),
+<span id="L1153" class="ln">  1153  </span>				nil,
+<span id="L1154" class="ln">  1154  </span>			)
+<span id="L1155" class="ln">  1155  </span>			r.negative = map[string]struct{}{&#34;absent-kid&#34;: {}}
+<span id="L1156" class="ln">  1156  </span>
+<span id="L1157" class="ln">  1157  </span>			require.NoError(t, r.fetchAndRecord(context.Background()))
+<span id="L1158" class="ln">  1158  </span>			assert.Empty(t, r.negative)
+<span id="L1159" class="ln">  1159  </span>		})
+<span id="L1160" class="ln">  1160  </span>	})
+<span id="L1161" class="ln">  1161  </span>
+<span id="L1162" class="ln">  1162  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1163" class="ln">  1163  </span>		t.Parallel()
+<span id="L1164" class="ln">  1164  </span>
+<span id="L1165" class="ln">  1165  </span>		t.Run(&#34;取得失敗は lastErr へ記録し鍵の世代は進めない&#34;, func(t *testing.T) {
+<span id="L1166" class="ln">  1166  </span>			t.Parallel()
+<span id="L1167" class="ln">  1167  </span>			ctrl := gomock.NewController(t)
+<span id="L1168" class="ln">  1168  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1169" class="ln">  1169  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
+<span id="L1170" class="ln">  1170  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
 <span id="L1171" class="ln">  1171  </span>
-<span id="L1172" class="ln">  1172  </span>		t.Run(&#34;取得失敗は lastErr へ記録し鍵の世代は進めない&#34;, func(t *testing.T) {
-<span id="L1173" class="ln">  1173  </span>			t.Parallel()
-<span id="L1174" class="ln">  1174  </span>			ctrl := gomock.NewController(t)
-<span id="L1175" class="ln">  1175  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1176" class="ln">  1176  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
-<span id="L1177" class="ln">  1177  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1178" class="ln">  1178  </span>
-<span id="L1179" class="ln">  1179  </span>			require.ErrorIs(t, r.fetchAndRecord(context.Background()), errBoom)
-<span id="L1180" class="ln">  1180  </span>			assert.Equal(t, fixedNow, r.lastAttempt, &#34;失敗も試行として記録し cooldown を起動する&#34;)
-<span id="L1181" class="ln">  1181  </span>			require.ErrorIs(t, r.lastErr, errBoom)
-<span id="L1182" class="ln">  1182  </span>			assert.True(t, r.fetchedAt.IsZero())
-<span id="L1183" class="ln">  1183  </span>		})
-<span id="L1184" class="ln">  1184  </span>	})
-<span id="L1185" class="ln">  1185  </span>}
-<span id="L1186" class="ln">  1186  </span>
-<span id="L1187" class="ln">  1187  </span>func Test_jwksResolver_Drain(t *testing.T) {
-<span id="L1188" class="ln">  1188  </span>	t.Parallel()
-<span id="L1189" class="ln">  1189  </span>
-<span id="L1190" class="ln">  1190  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1191" class="ln">  1191  </span>		t.Parallel()
-<span id="L1192" class="ln">  1192  </span>
-<span id="L1193" class="ln">  1193  </span>		t.Run(&#34;切り離して走っている取得の完了を待つ&#34;, func(t *testing.T) {
-<span id="L1194" class="ln">  1194  </span>			t.Parallel()
-<span id="L1195" class="ln">  1195  </span>			key := newRSAKey(t)
-<span id="L1196" class="ln">  1196  </span>			ctrl := gomock.NewController(t)
-<span id="L1197" class="ln">  1197  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1198" class="ln">  1198  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
-<span id="L1199" class="ln">  1199  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1200" class="ln">  1200  </span>
-<span id="L1201" class="ln">  1201  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1202" class="ln">  1202  </span>			left := goRefresh(r, ctx)
-<span id="L1203" class="ln">  1203  </span>			&lt;-blocked.entered
-<span id="L1204" class="ln">  1204  </span>			cancel()
-<span id="L1205" class="ln">  1205  </span>			&lt;-left
-<span id="L1206" class="ln">  1206  </span>
-<span id="L1207" class="ln">  1207  </span>			close(blocked.release)
-<span id="L1208" class="ln">  1208  </span>			require.NoError(t, r.Drain(context.Background()))
-<span id="L1209" class="ln">  1209  </span>			assert.Equal(t, fixedNow, r.lastAttempt, &#34;待ち終えた時点で取得結果が記録されている&#34;)
-<span id="L1210" class="ln">  1210  </span>		})
-<span id="L1211" class="ln">  1211  </span>
-<span id="L1212" class="ln">  1212  </span>		t.Run(&#34;待つ対象が無ければ即座に返る&#34;, func(t *testing.T) {
-<span id="L1213" class="ln">  1213  </span>			t.Parallel()
-<span id="L1214" class="ln">  1214  </span>			ctrl := gomock.NewController(t)
-<span id="L1215" class="ln">  1215  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1216" class="ln">  1216  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1172" class="ln">  1172  </span>			require.ErrorIs(t, r.fetchAndRecord(context.Background()), errBoom)
+<span id="L1173" class="ln">  1173  </span>			assert.Equal(t, fixedNow, r.lastAttempt, &#34;失敗も試行として記録し cooldown を起動する&#34;)
+<span id="L1174" class="ln">  1174  </span>			require.ErrorIs(t, r.lastErr, errBoom)
+<span id="L1175" class="ln">  1175  </span>			assert.True(t, r.fetchedAt.IsZero())
+<span id="L1176" class="ln">  1176  </span>		})
+<span id="L1177" class="ln">  1177  </span>	})
+<span id="L1178" class="ln">  1178  </span>}
+<span id="L1179" class="ln">  1179  </span>
+<span id="L1180" class="ln">  1180  </span>func Test_jwksResolver_Drain(t *testing.T) {
+<span id="L1181" class="ln">  1181  </span>	t.Parallel()
+<span id="L1182" class="ln">  1182  </span>
+<span id="L1183" class="ln">  1183  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1184" class="ln">  1184  </span>		t.Parallel()
+<span id="L1185" class="ln">  1185  </span>
+<span id="L1186" class="ln">  1186  </span>		t.Run(&#34;切り離して走っている取得の完了を待つ&#34;, func(t *testing.T) {
+<span id="L1187" class="ln">  1187  </span>			t.Parallel()
+<span id="L1188" class="ln">  1188  </span>			key := newRSAKey(t)
+<span id="L1189" class="ln">  1189  </span>			ctrl := gomock.NewController(t)
+<span id="L1190" class="ln">  1190  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1191" class="ln">  1191  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
+<span id="L1192" class="ln">  1192  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1193" class="ln">  1193  </span>
+<span id="L1194" class="ln">  1194  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1195" class="ln">  1195  </span>			left := goRefresh(r, ctx)
+<span id="L1196" class="ln">  1196  </span>			&lt;-blocked.entered
+<span id="L1197" class="ln">  1197  </span>			cancel()
+<span id="L1198" class="ln">  1198  </span>			&lt;-left
+<span id="L1199" class="ln">  1199  </span>
+<span id="L1200" class="ln">  1200  </span>			close(blocked.release)
+<span id="L1201" class="ln">  1201  </span>			require.NoError(t, r.Drain(context.Background()))
+<span id="L1202" class="ln">  1202  </span>			assert.Equal(t, fixedNow, r.lastAttempt, &#34;待ち終えた時点で取得結果が記録されている&#34;)
+<span id="L1203" class="ln">  1203  </span>		})
+<span id="L1204" class="ln">  1204  </span>
+<span id="L1205" class="ln">  1205  </span>		t.Run(&#34;待つ対象が無ければ即座に返る&#34;, func(t *testing.T) {
+<span id="L1206" class="ln">  1206  </span>			t.Parallel()
+<span id="L1207" class="ln">  1207  </span>			ctrl := gomock.NewController(t)
+<span id="L1208" class="ln">  1208  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1209" class="ln">  1209  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1210" class="ln">  1210  </span>
+<span id="L1211" class="ln">  1211  </span>			require.NoError(t, r.Drain(context.Background()))
+<span id="L1212" class="ln">  1212  </span>		})
+<span id="L1213" class="ln">  1213  </span>	})
+<span id="L1214" class="ln">  1214  </span>
+<span id="L1215" class="ln">  1215  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1216" class="ln">  1216  </span>		t.Parallel()
 <span id="L1217" class="ln">  1217  </span>
-<span id="L1218" class="ln">  1218  </span>			require.NoError(t, r.Drain(context.Background()))
-<span id="L1219" class="ln">  1219  </span>		})
-<span id="L1220" class="ln">  1220  </span>	})
-<span id="L1221" class="ln">  1221  </span>
-<span id="L1222" class="ln">  1222  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1223" class="ln">  1223  </span>		t.Parallel()
-<span id="L1224" class="ln">  1224  </span>
-<span id="L1225" class="ln">  1225  </span>		t.Run(&#34;待ちきれずに ctx が終わった場合は利用不能として返す&#34;, func(t *testing.T) {
-<span id="L1226" class="ln">  1226  </span>			t.Parallel()
-<span id="L1227" class="ln">  1227  </span>			key := newRSAKey(t)
-<span id="L1228" class="ln">  1228  </span>			ctrl := gomock.NewController(t)
-<span id="L1229" class="ln">  1229  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1230" class="ln">  1230  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
-<span id="L1231" class="ln">  1231  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1232" class="ln">  1232  </span>
-<span id="L1233" class="ln">  1233  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1234" class="ln">  1234  </span>			left := goRefresh(r, ctx)
-<span id="L1235" class="ln">  1235  </span>			&lt;-blocked.entered
-<span id="L1236" class="ln">  1236  </span>			cancel()
-<span id="L1237" class="ln">  1237  </span>			&lt;-left
-<span id="L1238" class="ln">  1238  </span>
-<span id="L1239" class="ln">  1239  </span>			drainCtx, drainCancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
-<span id="L1240" class="ln">  1240  </span>			defer drainCancel()
-<span id="L1241" class="ln">  1241  </span>			require.ErrorIs(t, r.Drain(drainCtx), apperror.ErrUnavailable)
-<span id="L1242" class="ln">  1242  </span>
-<span id="L1243" class="ln">  1243  </span>			close(blocked.release)
-<span id="L1244" class="ln">  1244  </span>			require.NoError(t, r.Drain(context.Background()))
-<span id="L1245" class="ln">  1245  </span>		})
-<span id="L1246" class="ln">  1246  </span>	})
-<span id="L1247" class="ln">  1247  </span>}
-<span id="L1248" class="ln">  1248  </span>
-<span id="L1249" class="ln">  1249  </span>func Test_detachedErr(t *testing.T) {
-<span id="L1250" class="ln">  1250  </span>	t.Parallel()
-<span id="L1251" class="ln">  1251  </span>
-<span id="L1252" class="ln">  1252  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1253" class="ln">  1253  </span>		t.Parallel()
-<span id="L1254" class="ln">  1254  </span>
-<span id="L1255" class="ln">  1255  </span>		t.Run(&#34;キャンセルでの離脱はキャンセルとして分類する&#34;, func(t *testing.T) {
-<span id="L1256" class="ln">  1256  </span>			t.Parallel()
-<span id="L1257" class="ln">  1257  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1258" class="ln">  1258  </span>			cancel()
-<span id="L1259" class="ln">  1259  </span>
-<span id="L1260" class="ln">  1260  </span>			err := detachedErr(ctx)
-<span id="L1261" class="ln">  1261  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L1262" class="ln">  1262  </span>			require.NotErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L1263" class="ln">  1263  </span>		})
-<span id="L1264" class="ln">  1264  </span>
-<span id="L1265" class="ln">  1265  </span>		t.Run(&#34;予算切れでの離脱は利用不能として分類する&#34;, func(t *testing.T) {
-<span id="L1266" class="ln">  1266  </span>			t.Parallel()
-<span id="L1267" class="ln">  1267  </span>			ctx, cancel := context.WithDeadline(context.Background(), fixedNow)
-<span id="L1268" class="ln">  1268  </span>			defer cancel()
+<span id="L1218" class="ln">  1218  </span>		t.Run(&#34;待ちきれずに ctx が終わった場合は利用不能として返す&#34;, func(t *testing.T) {
+<span id="L1219" class="ln">  1219  </span>			t.Parallel()
+<span id="L1220" class="ln">  1220  </span>			key := newRSAKey(t)
+<span id="L1221" class="ln">  1221  </span>			ctrl := gomock.NewController(t)
+<span id="L1222" class="ln">  1222  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1223" class="ln">  1223  </span>			blocked := newBlockedFetch(t, client, &amp;key.PublicKey)
+<span id="L1224" class="ln">  1224  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1225" class="ln">  1225  </span>
+<span id="L1226" class="ln">  1226  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1227" class="ln">  1227  </span>			left := goRefresh(r, ctx)
+<span id="L1228" class="ln">  1228  </span>			&lt;-blocked.entered
+<span id="L1229" class="ln">  1229  </span>			cancel()
+<span id="L1230" class="ln">  1230  </span>			&lt;-left
+<span id="L1231" class="ln">  1231  </span>
+<span id="L1232" class="ln">  1232  </span>			drainCtx, drainCancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
+<span id="L1233" class="ln">  1233  </span>			defer drainCancel()
+<span id="L1234" class="ln">  1234  </span>			require.ErrorIs(t, r.Drain(drainCtx), apperror.ErrUnavailable)
+<span id="L1235" class="ln">  1235  </span>
+<span id="L1236" class="ln">  1236  </span>			close(blocked.release)
+<span id="L1237" class="ln">  1237  </span>			require.NoError(t, r.Drain(context.Background()))
+<span id="L1238" class="ln">  1238  </span>		})
+<span id="L1239" class="ln">  1239  </span>	})
+<span id="L1240" class="ln">  1240  </span>}
+<span id="L1241" class="ln">  1241  </span>
+<span id="L1242" class="ln">  1242  </span>func Test_detachedErr(t *testing.T) {
+<span id="L1243" class="ln">  1243  </span>	t.Parallel()
+<span id="L1244" class="ln">  1244  </span>
+<span id="L1245" class="ln">  1245  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1246" class="ln">  1246  </span>		t.Parallel()
+<span id="L1247" class="ln">  1247  </span>
+<span id="L1248" class="ln">  1248  </span>		t.Run(&#34;キャンセルでの離脱はキャンセルとして分類する&#34;, func(t *testing.T) {
+<span id="L1249" class="ln">  1249  </span>			t.Parallel()
+<span id="L1250" class="ln">  1250  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1251" class="ln">  1251  </span>			cancel()
+<span id="L1252" class="ln">  1252  </span>
+<span id="L1253" class="ln">  1253  </span>			err := detachedErr(ctx)
+<span id="L1254" class="ln">  1254  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L1255" class="ln">  1255  </span>			require.NotErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L1256" class="ln">  1256  </span>		})
+<span id="L1257" class="ln">  1257  </span>
+<span id="L1258" class="ln">  1258  </span>		t.Run(&#34;予算切れでの離脱は利用不能として分類する&#34;, func(t *testing.T) {
+<span id="L1259" class="ln">  1259  </span>			t.Parallel()
+<span id="L1260" class="ln">  1260  </span>			ctx, cancel := context.WithDeadline(context.Background(), fixedNow)
+<span id="L1261" class="ln">  1261  </span>			defer cancel()
+<span id="L1262" class="ln">  1262  </span>
+<span id="L1263" class="ln">  1263  </span>			err := detachedErr(ctx)
+<span id="L1264" class="ln">  1264  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L1265" class="ln">  1265  </span>			require.NotErrorIs(t, err, apperror.ErrCanceled)
+<span id="L1266" class="ln">  1266  </span>		})
+<span id="L1267" class="ln">  1267  </span>	})
+<span id="L1268" class="ln">  1268  </span>}
 <span id="L1269" class="ln">  1269  </span>
-<span id="L1270" class="ln">  1270  </span>			err := detachedErr(ctx)
-<span id="L1271" class="ln">  1271  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L1272" class="ln">  1272  </span>			require.NotErrorIs(t, err, apperror.ErrCanceled)
-<span id="L1273" class="ln">  1273  </span>		})
-<span id="L1274" class="ln">  1274  </span>	})
-<span id="L1275" class="ln">  1275  </span>}
-<span id="L1276" class="ln">  1276  </span>
-<span id="L1277" class="ln">  1277  </span><span class="comment">// newBlockedFetch は、1 回だけ呼ばれ release まで応答しない Do をモックへ仕込みます。</span>
-<span id="L1278" class="ln">  1278  </span><span class="comment">// 実際の httpclient と同じく渡された ctx のキャンセルに反応するため、取得へ何の context が渡ったかが結果に現れます。</span>
-<span id="L1279" class="ln">  1279  </span>func newBlockedFetch(t *testing.T, client *mock_httpclient.MockClient, pub *rsa.PublicKey) blockedFetch {
-<span id="L1280" class="ln">  1280  </span>	t.Helper()
-<span id="L1281" class="ln">  1281  </span>	b := blockedFetch{entered: make(chan struct{}), release: make(chan struct{})}
-<span id="L1282" class="ln">  1282  </span>	body := jwksPublicJSON(t, pub)
-<span id="L1283" class="ln">  1283  </span>	client.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L1284" class="ln">  1284  </span>		func(ctx context.Context, _ *httpclient.Request) (*httpclient.Response, error) {
-<span id="L1285" class="ln">  1285  </span>			close(b.entered)
-<span id="L1286" class="ln">  1286  </span>			select {
-<span id="L1287" class="ln">  1287  </span>			case &lt;-ctx.Done():
-<span id="L1288" class="ln">  1288  </span>				return nil, xerrors.Wrap(apperror.ErrCanceled, &#34;canceled&#34;)
-<span id="L1289" class="ln">  1289  </span>			case &lt;-b.release:
-<span id="L1290" class="ln">  1290  </span>				return &amp;httpclient.Response{StatusCode: 200, Body: body}, nil
-<span id="L1291" class="ln">  1291  </span>			}
-<span id="L1292" class="ln">  1292  </span>		}).Times(1)
-<span id="L1293" class="ln">  1293  </span>	return b
-<span id="L1294" class="ln">  1294  </span>}
-<span id="L1295" class="ln">  1295  </span>
-<span id="L1296" class="ln">  1296  </span><span class="comment">// goRefresh は refresh を別 goroutine で走らせ、その戻り値を 1 度だけ送ります。</span>
-<span id="L1297" class="ln">  1297  </span>func goRefresh(r *jwksResolver, ctx context.Context) &lt;-chan refreshResult {
-<span id="L1298" class="ln">  1298  </span>	out := make(chan refreshResult, 1)
-<span id="L1299" class="ln">  1299  </span>	go func() {
-<span id="L1300" class="ln">  1300  </span>		fetched, err := r.refresh(ctx)
-<span id="L1301" class="ln">  1301  </span>		out &lt;- refreshResult{fetched: fetched, err: err}
-<span id="L1302" class="ln">  1302  </span>	}()
-<span id="L1303" class="ln">  1303  </span>	return out
-<span id="L1304" class="ln">  1304  </span>}
+<span id="L1270" class="ln">  1270  </span><span class="comment">// newBlockedFetch は、1 回だけ呼ばれ release まで応答しない Do をモックへ仕込みます。</span>
+<span id="L1271" class="ln">  1271  </span><span class="comment">// 実際の httpclient と同じく渡された ctx のキャンセルに反応するため、取得へ何の context が渡ったかが結果に現れます。</span>
+<span id="L1272" class="ln">  1272  </span>func newBlockedFetch(t *testing.T, client *mock_httpclient.MockClient, pub *rsa.PublicKey) blockedFetch {
+<span id="L1273" class="ln">  1273  </span>	t.Helper()
+<span id="L1274" class="ln">  1274  </span>	b := blockedFetch{entered: make(chan struct{}), release: make(chan struct{})}
+<span id="L1275" class="ln">  1275  </span>	body := jwksPublicJSON(t, pub)
+<span id="L1276" class="ln">  1276  </span>	client.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L1277" class="ln">  1277  </span>		func(ctx context.Context, _ *httpclient.Request) (*httpclient.Response, error) {
+<span id="L1278" class="ln">  1278  </span>			close(b.entered)
+<span id="L1279" class="ln">  1279  </span>			select {
+<span id="L1280" class="ln">  1280  </span>			case &lt;-ctx.Done():
+<span id="L1281" class="ln">  1281  </span>				return nil, xerrors.Wrap(apperror.ErrCanceled, &#34;canceled&#34;)
+<span id="L1282" class="ln">  1282  </span>			case &lt;-b.release:
+<span id="L1283" class="ln">  1283  </span>				return &amp;httpclient.Response{StatusCode: 200, Body: body}, nil
+<span id="L1284" class="ln">  1284  </span>			}
+<span id="L1285" class="ln">  1285  </span>		},
+<span id="L1286" class="ln">  1286  </span>	).Times(1)
+<span id="L1287" class="ln">  1287  </span>	return b
+<span id="L1288" class="ln">  1288  </span>}
+<span id="L1289" class="ln">  1289  </span>
+<span id="L1290" class="ln">  1290  </span><span class="comment">// goRefresh は refresh を別 goroutine で走らせ、その戻り値を 1 度だけ送ります。</span>
+<span id="L1291" class="ln">  1291  </span>func goRefresh(r *jwksResolver, ctx context.Context) &lt;-chan refreshResult {
+<span id="L1292" class="ln">  1292  </span>	out := make(chan refreshResult, 1)
+<span id="L1293" class="ln">  1293  </span>	go func() {
+<span id="L1294" class="ln">  1294  </span>		fetched, err := r.refresh(ctx)
+<span id="L1295" class="ln">  1295  </span>		out &lt;- refreshResult{fetched: fetched, err: err}
+<span id="L1296" class="ln">  1296  </span>	}()
+<span id="L1297" class="ln">  1297  </span>	return out
+<span id="L1298" class="ln">  1298  </span>}
+<span id="L1299" class="ln">  1299  </span>
+<span id="L1300" class="ln">  1300  </span>func Test_jwksResolver_fetch(t *testing.T) {
+<span id="L1301" class="ln">  1301  </span>	t.Parallel()
+<span id="L1302" class="ln">  1302  </span>
+<span id="L1303" class="ln">  1303  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1304" class="ln">  1304  </span>		t.Parallel()
 <span id="L1305" class="ln">  1305  </span>
-<span id="L1306" class="ln">  1306  </span>func Test_jwksResolver_fetch(t *testing.T) {
-<span id="L1307" class="ln">  1307  </span>	t.Parallel()
-<span id="L1308" class="ln">  1308  </span>
-<span id="L1309" class="ln">  1309  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1310" class="ln">  1310  </span>		t.Parallel()
-<span id="L1311" class="ln">  1311  </span>
-<span id="L1312" class="ln">  1312  </span>		t.Run(&#34;取得したレスポンスボディを kid→公開鍵へパースする&#34;, func(t *testing.T) {
-<span id="L1313" class="ln">  1313  </span>			t.Parallel()
-<span id="L1314" class="ln">  1314  </span>			key := newRSAKey(t)
-<span id="L1315" class="ln">  1315  </span>			r := newJWKSResolver(
-<span id="L1316" class="ln">  1316  </span>				stubJWKSClient(t, jwksPublicJSON(t, &amp;key.PublicKey)),
-<span id="L1317" class="ln">  1317  </span>				staticURL(jwksTestURL),
-<span id="L1318" class="ln">  1318  </span>				time.Hour,
-<span id="L1319" class="ln">  1319  </span>				nil,
-<span id="L1320" class="ln">  1320  </span>				0,
-<span id="L1321" class="ln">  1321  </span>				newFakeClock(fixedNow),
-<span id="L1322" class="ln">  1322  </span>				nil,
-<span id="L1323" class="ln">  1323  </span>			)
+<span id="L1306" class="ln">  1306  </span>		t.Run(&#34;取得したレスポンスボディを kid→公開鍵へパースする&#34;, func(t *testing.T) {
+<span id="L1307" class="ln">  1307  </span>			t.Parallel()
+<span id="L1308" class="ln">  1308  </span>			key := newRSAKey(t)
+<span id="L1309" class="ln">  1309  </span>			r := newJWKSResolver(
+<span id="L1310" class="ln">  1310  </span>				stubJWKSClient(t, jwksPublicJSON(t, &amp;key.PublicKey)),
+<span id="L1311" class="ln">  1311  </span>				staticURL(jwksTestURL),
+<span id="L1312" class="ln">  1312  </span>				time.Hour,
+<span id="L1313" class="ln">  1313  </span>				nil,
+<span id="L1314" class="ln">  1314  </span>				0,
+<span id="L1315" class="ln">  1315  </span>				newFakeClock(fixedNow),
+<span id="L1316" class="ln">  1316  </span>				nil,
+<span id="L1317" class="ln">  1317  </span>			)
+<span id="L1318" class="ln">  1318  </span>
+<span id="L1319" class="ln">  1319  </span>			keys, err := r.fetch(context.Background())
+<span id="L1320" class="ln">  1320  </span>			require.NoError(t, err)
+<span id="L1321" class="ln">  1321  </span>			assert.Contains(t, keys, testKID)
+<span id="L1322" class="ln">  1322  </span>		})
+<span id="L1323" class="ln">  1323  </span>	})
 <span id="L1324" class="ln">  1324  </span>
-<span id="L1325" class="ln">  1325  </span>			keys, err := r.fetch(context.Background())
-<span id="L1326" class="ln">  1326  </span>			require.NoError(t, err)
-<span id="L1327" class="ln">  1327  </span>			assert.Contains(t, keys, testKID)
-<span id="L1328" class="ln">  1328  </span>		})
-<span id="L1329" class="ln">  1329  </span>	})
-<span id="L1330" class="ln">  1330  </span>
-<span id="L1331" class="ln">  1331  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1332" class="ln">  1332  </span>		t.Parallel()
-<span id="L1333" class="ln">  1333  </span>
-<span id="L1334" class="ln">  1334  </span>		t.Run(&#34;httpclient がエラーを返す場合はそのまま原因を返す&#34;, func(t *testing.T) {
-<span id="L1335" class="ln">  1335  </span>			t.Parallel()
-<span id="L1336" class="ln">  1336  </span>			ctrl := gomock.NewController(t)
-<span id="L1337" class="ln">  1337  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L1338" class="ln">  1338  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
-<span id="L1339" class="ln">  1339  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
-<span id="L1340" class="ln">  1340  </span>
-<span id="L1341" class="ln">  1341  </span>			keys, err := r.fetch(context.Background())
-<span id="L1342" class="ln">  1342  </span>			assert.Nil(t, keys)
-<span id="L1343" class="ln">  1343  </span>			require.ErrorIs(t, err, errBoom)
-<span id="L1344" class="ln">  1344  </span>		})
-<span id="L1345" class="ln">  1345  </span>	})
-<span id="L1346" class="ln">  1346  </span>}
-<span id="L1347" class="ln">  1347  </span>
-<span id="L1348" class="ln">  1348  </span>func newFakeClock(start time.Time) *fakeClock {
-<span id="L1349" class="ln">  1349  </span>	return &amp;fakeClock{now: start}
+<span id="L1325" class="ln">  1325  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1326" class="ln">  1326  </span>		t.Parallel()
+<span id="L1327" class="ln">  1327  </span>
+<span id="L1328" class="ln">  1328  </span>		t.Run(&#34;httpclient がエラーを返す場合はそのまま原因を返す&#34;, func(t *testing.T) {
+<span id="L1329" class="ln">  1329  </span>			t.Parallel()
+<span id="L1330" class="ln">  1330  </span>			ctrl := gomock.NewController(t)
+<span id="L1331" class="ln">  1331  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L1332" class="ln">  1332  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).Return(nil, errBoom).Times(1)
+<span id="L1333" class="ln">  1333  </span>			r := newJWKSResolver(client, staticURL(jwksTestURL), time.Hour, nil, 0, newFakeClock(fixedNow), nil)
+<span id="L1334" class="ln">  1334  </span>
+<span id="L1335" class="ln">  1335  </span>			keys, err := r.fetch(context.Background())
+<span id="L1336" class="ln">  1336  </span>			assert.Nil(t, keys)
+<span id="L1337" class="ln">  1337  </span>			require.ErrorIs(t, err, errBoom)
+<span id="L1338" class="ln">  1338  </span>		})
+<span id="L1339" class="ln">  1339  </span>	})
+<span id="L1340" class="ln">  1340  </span>}
+<span id="L1341" class="ln">  1341  </span>
+<span id="L1342" class="ln">  1342  </span>func newFakeClock(start time.Time) *fakeClock {
+<span id="L1343" class="ln">  1343  </span>	return &amp;fakeClock{now: start}
+<span id="L1344" class="ln">  1344  </span>}
+<span id="L1345" class="ln">  1345  </span>
+<span id="L1346" class="ln">  1346  </span>func (c *fakeClock) Now() time.Time {
+<span id="L1347" class="ln">  1347  </span>	c.mu.Lock()
+<span id="L1348" class="ln">  1348  </span>	defer c.mu.Unlock()
+<span id="L1349" class="ln">  1349  </span>	return c.now
 <span id="L1350" class="ln">  1350  </span>}
 <span id="L1351" class="ln">  1351  </span>
-<span id="L1352" class="ln">  1352  </span>func (c *fakeClock) Now() time.Time {
+<span id="L1352" class="ln">  1352  </span>func (c *fakeClock) advance(d time.Duration) {
 <span id="L1353" class="ln">  1353  </span>	c.mu.Lock()
 <span id="L1354" class="ln">  1354  </span>	defer c.mu.Unlock()
-<span id="L1355" class="ln">  1355  </span>	return c.now
+<span id="L1355" class="ln">  1355  </span>	c.now = c.now.Add(d)
 <span id="L1356" class="ln">  1356  </span>}
 <span id="L1357" class="ln">  1357  </span>
-<span id="L1358" class="ln">  1358  </span>func (c *fakeClock) advance(d time.Duration) {
-<span id="L1359" class="ln">  1359  </span>	c.mu.Lock()
-<span id="L1360" class="ln">  1360  </span>	defer c.mu.Unlock()
-<span id="L1361" class="ln">  1361  </span>	c.now = c.now.Add(d)
-<span id="L1362" class="ln">  1362  </span>}
-<span id="L1363" class="ln">  1363  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/auth/jwt/jwks_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

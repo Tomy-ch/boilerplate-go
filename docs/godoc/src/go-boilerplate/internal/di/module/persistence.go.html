@@ -58,78 +58,92 @@
 <pre><span id="L1" class="ln">     1  </span>package module
 <span id="L2" class="ln">     2  </span>
 <span id="L3" class="ln">     3  </span>import (
-<span id="L4" class="ln">     4  </span>	purchasecmd &#34;go-boilerplate/internal/infrastructure/rdb/command_service/purchase&#34;             <span class="comment">// sample-api:line</span>
+<span id="L4" class="ln">     4  </span>	productdiscontinuecs &#34;go-boilerplate/internal/infrastructure/rdb/command_service/product&#34;     <span class="comment">// sample-api:line</span>
 <span id="L5" class="ln">     5  </span>	dashboardqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/dashboard&#34;              <span class="comment">// sample-api:line</span>
-<span id="L6" class="ln">     6  </span>	productrankingqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/product/ranking&#34;   <span class="comment">// sample-api:line</span>
-<span id="L7" class="ln">     7  </span>	purchasedetailqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/purchase&#34;          <span class="comment">// sample-api:line</span>
-<span id="L8" class="ln">     8  </span>	purchasefeedqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/purchase/feed&#34;       <span class="comment">// sample-api:line</span>
-<span id="L9" class="ln">     9  </span>	purchasesummaryqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/purchase/summary&#34; <span class="comment">// sample-api:line</span>
-<span id="L10" class="ln">    10  </span>	cartrepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/cart&#34;                         <span class="comment">// sample-api:line</span>
-<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/repository/prefecture&#34;                            <span class="comment">// sample-api:line</span>
-<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/repository/product&#34;                               <span class="comment">// sample-api:line</span>
-<span id="L13" class="ln">    13  </span>	productcategory &#34;go-boilerplate/internal/infrastructure/rdb/repository/product_category&#34;      <span class="comment">// sample-api:line</span>
-<span id="L14" class="ln">    14  </span>	productstatusrepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/productstatus&#34;       <span class="comment">// sample-api:line</span>
-<span id="L15" class="ln">    15  </span>	purchaserepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/purchase&#34;                 <span class="comment">// sample-api:line</span>
-<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/repository/user&#34;                                  <span class="comment">// sample-api:line</span>
-<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/system_cqrs/healthcheck&#34;
-<span id="L18" class="ln">    18  </span>	idempotencysq &#34;go-boilerplate/internal/infrastructure/rdb/system_cqrs/idempotency&#34;
-<span id="L19" class="ln">    19  </span>	outboxsq &#34;go-boilerplate/internal/infrastructure/rdb/system_cqrs/outbox&#34;
-<span id="L20" class="ln">    20  </span>
-<span id="L21" class="ln">    21  </span>	&#34;go.uber.org/fx&#34;
-<span id="L22" class="ln">    22  </span>)
-<span id="L23" class="ln">    23  </span>
-<span id="L24" class="ln">    24  </span><span class="comment">// persistenceModule は、RDB 背後の永続化系依存（repository / query_service / command_service /</span>
-<span id="L25" class="ln">    25  </span><span class="comment">// system_cqrs）を提供する fx.Module です。詳細は internal/di/module/README.md § Design Policy を参照。</span>
-<span id="L26" class="ln">    26  </span>func persistenceModule() fx.Option {
-<span id="L27" class="ln">    27  </span>	return fx.Module(&#34;persistence&#34;,
-<span id="L28" class="ln">    28  </span>		fx.Module(&#34;repository&#34;,
-<span id="L29" class="ln">    29  </span>			fx.Provide(
-<span id="L30" class="ln">    30  </span>				<span class="comment">// sample-api:begin</span>
-<span id="L31" class="ln">    31  </span>				user.New,
-<span id="L32" class="ln">    32  </span>				user.NewRoleRepository,
-<span id="L33" class="ln">    33  </span>				user.NewLockRepository,
-<span id="L34" class="ln">    34  </span>				prefecture.New,
-<span id="L35" class="ln">    35  </span>				productstatusrepo.New,
-<span id="L36" class="ln">    36  </span>				productcategory.New,
-<span id="L37" class="ln">    37  </span>				product.New,
-<span id="L38" class="ln">    38  </span>				purchaserepo.New,
-<span id="L39" class="ln">    39  </span>				cartrepo.New,
-<span id="L40" class="ln">    40  </span>				<span class="comment">// sample-api:end</span>
-<span id="L41" class="ln">    41  </span>			),
-<span id="L42" class="ln">    42  </span>		),
-<span id="L43" class="ln">    43  </span>		fx.Module(&#34;query_service&#34;,
-<span id="L44" class="ln">    44  </span>			fx.Provide(
-<span id="L45" class="ln">    45  </span>				<span class="comment">// sample-api:begin</span>
-<span id="L46" class="ln">    46  </span>				<span class="comment">// productrankingqs: 商品売上ランキング（docs/spec/product-ranking/usecase.md § Overview）</span>
-<span id="L47" class="ln">    47  </span>				productrankingqs.New,
-<span id="L48" class="ln">    48  </span>				<span class="comment">// purchasedetailqs / purchasefeedqs: 集約跨ぎ read 投影（docs/spec/purchase/usecase.md § GET 詳細 / GET 一覧）</span>
-<span id="L49" class="ln">    49  </span>				purchasedetailqs.New,
-<span id="L50" class="ln">    50  </span>				purchasefeedqs.New,
-<span id="L51" class="ln">    51  </span>				<span class="comment">// purchasesummaryqs: 認証主体自身の購入集計（docs/spec/purchase/usecase.md § GET 集計）</span>
-<span id="L52" class="ln">    52  </span>				purchasesummaryqs.New,
-<span id="L53" class="ln">    53  </span>				<span class="comment">// dashboardqs: 購入・商品横断の admin 集計（docs/spec/dashboard/usecase.md § Overview）</span>
-<span id="L54" class="ln">    54  </span>				dashboardqs.New,
-<span id="L55" class="ln">    55  </span>				<span class="comment">// sample-api:end</span>
-<span id="L56" class="ln">    56  </span>			),
-<span id="L57" class="ln">    57  </span>		),
-<span id="L58" class="ln">    58  </span>		fx.Module(&#34;command_service&#34;,
-<span id="L59" class="ln">    59  </span>			fx.Provide(
-<span id="L60" class="ln">    60  </span>				<span class="comment">// sample-api:begin</span>
-<span id="L61" class="ln">    61  </span>				<span class="comment">// purchasecmd: 購入の原子的書き込み（docs/spec/purchase/usecase.md 冒頭ノート）</span>
-<span id="L62" class="ln">    62  </span>				purchasecmd.New,
-<span id="L63" class="ln">    63  </span>				<span class="comment">// sample-api:end</span>
-<span id="L64" class="ln">    64  </span>			),
-<span id="L65" class="ln">    65  </span>		),
-<span id="L66" class="ln">    66  </span>		fx.Module(&#34;system_cqrs&#34;,
-<span id="L67" class="ln">    67  </span>			fx.Provide(
-<span id="L68" class="ln">    68  </span>				healthcheck.New,
-<span id="L69" class="ln">    69  </span>				idempotencysq.New,
-<span id="L70" class="ln">    70  </span>				outboxsq.New,
-<span id="L71" class="ln">    71  </span>			),
-<span id="L72" class="ln">    72  </span>		),
-<span id="L73" class="ln">    73  </span>	)
-<span id="L74" class="ln">    74  </span>}
-<span id="L75" class="ln">    75  </span>
+<span id="L6" class="ln">     6  </span>	productimageqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/product&#34;             <span class="comment">// sample-api:line</span>
+<span id="L7" class="ln">     7  </span>	productrankingqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/product/ranking&#34;   <span class="comment">// sample-api:line</span>
+<span id="L8" class="ln">     8  </span>	purchasedetailqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/purchase&#34;          <span class="comment">// sample-api:line</span>
+<span id="L9" class="ln">     9  </span>	purchasefeedqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/purchase/feed&#34;       <span class="comment">// sample-api:line</span>
+<span id="L10" class="ln">    10  </span>	purchasesummaryqs &#34;go-boilerplate/internal/infrastructure/rdb/query_service/purchase/summary&#34; <span class="comment">// sample-api:line</span>
+<span id="L11" class="ln">    11  </span>	cartrepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/cart&#34;                         <span class="comment">// sample-api:line</span>
+<span id="L12" class="ln">    12  </span>	couponrepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/coupon&#34;                     <span class="comment">// sample-api:line</span>
+<span id="L13" class="ln">    13  </span>	inquiryrepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/inquiry&#34;                   <span class="comment">// sample-api:line</span>
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/repository/prefecture&#34;                            <span class="comment">// sample-api:line</span>
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/repository/product&#34;                               <span class="comment">// sample-api:line</span>
+<span id="L16" class="ln">    16  </span>	productcategory &#34;go-boilerplate/internal/infrastructure/rdb/repository/product_category&#34;      <span class="comment">// sample-api:line</span>
+<span id="L17" class="ln">    17  </span>	productstatusrepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/productstatus&#34;       <span class="comment">// sample-api:line</span>
+<span id="L18" class="ln">    18  </span>	purchaserepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/purchase&#34;                 <span class="comment">// sample-api:line</span>
+<span id="L19" class="ln">    19  </span>	purchasestatusrepo &#34;go-boilerplate/internal/infrastructure/rdb/repository/purchasestatus&#34;     <span class="comment">// sample-api:line</span>
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/repository/user&#34;                                  <span class="comment">// sample-api:line</span>
+<span id="L21" class="ln">    21  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/system_cqrs/healthcheck&#34;
+<span id="L22" class="ln">    22  </span>	idempotencysq &#34;go-boilerplate/internal/infrastructure/rdb/system_cqrs/idempotency&#34;
+<span id="L23" class="ln">    23  </span>	outboxsq &#34;go-boilerplate/internal/infrastructure/rdb/system_cqrs/outbox&#34;
+<span id="L24" class="ln">    24  </span>	realtimesq &#34;go-boilerplate/internal/infrastructure/rdb/system_cqrs/realtime&#34;
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span>	&#34;go.uber.org/fx&#34;
+<span id="L27" class="ln">    27  </span>)
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span><span class="comment">// persistenceModule は、RDB 背後の永続化系依存（repository / query_service / command_service /</span>
+<span id="L30" class="ln">    30  </span><span class="comment">// system_cqrs）を提供する fx.Module です。詳細は internal/di/module/README.md § Design Policy を参照。</span>
+<span id="L31" class="ln">    31  </span>func persistenceModule() fx.Option {
+<span id="L32" class="ln">    32  </span>	return fx.Module(&#34;persistence&#34;,
+<span id="L33" class="ln">    33  </span>		fx.Module(&#34;repository&#34;,
+<span id="L34" class="ln">    34  </span>			fx.Provide(
+<span id="L35" class="ln">    35  </span>				<span class="comment">// sample-api:begin</span>
+<span id="L36" class="ln">    36  </span>				user.New,
+<span id="L37" class="ln">    37  </span>				user.NewRoleRepository,
+<span id="L38" class="ln">    38  </span>				user.NewLockRepository,
+<span id="L39" class="ln">    39  </span>				prefecture.New,
+<span id="L40" class="ln">    40  </span>				productstatusrepo.New,
+<span id="L41" class="ln">    41  </span>				productcategory.New,
+<span id="L42" class="ln">    42  </span>				product.New,
+<span id="L43" class="ln">    43  </span>				purchaserepo.New,
+<span id="L44" class="ln">    44  </span>				purchasestatusrepo.New,
+<span id="L45" class="ln">    45  </span>				cartrepo.New,
+<span id="L46" class="ln">    46  </span>				couponrepo.New,  <span class="comment">// sample-api:line</span>
+<span id="L47" class="ln">    47  </span>				inquiryrepo.New, <span class="comment">// sample-api:line</span>
+<span id="L48" class="ln">    48  </span>				<span class="comment">// sample-api:end</span>
+<span id="L49" class="ln">    49  </span>			),
+<span id="L50" class="ln">    50  </span>		),
+<span id="L51" class="ln">    51  </span>		fx.Module(&#34;query_service&#34;,
+<span id="L52" class="ln">    52  </span>			fx.Provide(
+<span id="L53" class="ln">    53  </span>				<span class="comment">// sample-api:begin</span>
+<span id="L54" class="ln">    54  </span>				<span class="comment">// productimageqs: 商品を経由しない画像パスの参照照合（docs/spec/usecase/product.md § SweepOrphans）</span>
+<span id="L55" class="ln">    55  </span>				productimageqs.New,
+<span id="L56" class="ln">    56  </span>				<span class="comment">// productrankingqs: 商品売上ランキング（docs/spec/usecase/product/ranking.md § Overview）</span>
+<span id="L57" class="ln">    57  </span>				productrankingqs.New,
+<span id="L58" class="ln">    58  </span>				<span class="comment">// 同パッケージ: 廃番の影響見積もり（docs/spec/usecase/product.md § 廃番）</span>
+<span id="L59" class="ln">    59  </span>				productimageqs.NewDiscontinueImpactQueryService,
+<span id="L60" class="ln">    60  </span>				<span class="comment">// purchasedetailqs / purchasefeedqs: 集約跨ぎ read 投影（docs/spec/usecase/purchase.md § GET 詳細 / GET 一覧）</span>
+<span id="L61" class="ln">    61  </span>				purchasedetailqs.New,
+<span id="L62" class="ln">    62  </span>				purchasefeedqs.New,
+<span id="L63" class="ln">    63  </span>				<span class="comment">// purchasesummaryqs: 認証主体自身の購入集計（docs/spec/usecase/purchase.md § GET 集計）</span>
+<span id="L64" class="ln">    64  </span>				purchasesummaryqs.New,
+<span id="L65" class="ln">    65  </span>				<span class="comment">// dashboardqs: 購入・商品横断の admin 集計（docs/spec/usecase/dashboard.md § Overview）</span>
+<span id="L66" class="ln">    66  </span>				dashboardqs.New,
+<span id="L67" class="ln">    67  </span>				<span class="comment">// sample-api:end</span>
+<span id="L68" class="ln">    68  </span>			),
+<span id="L69" class="ln">    69  </span>		),
+<span id="L70" class="ln">    70  </span>		fx.Module(&#34;command_service&#34;,
+<span id="L71" class="ln">    71  </span>			fx.Provide(
+<span id="L72" class="ln">    72  </span>				<span class="comment">// sample-api:begin</span>
+<span id="L73" class="ln">    73  </span>				<span class="comment">// productdiscontinuecs: 廃番に伴う代替クーポンの一括発行。受給者が述語でしか決まらず</span>
+<span id="L74" class="ln">    74  </span>				<span class="comment">// 分解できないため CommandService に置く（docs/spec/usecase/product.md § 廃番、ADR-0034）</span>
+<span id="L75" class="ln">    75  </span>				productdiscontinuecs.New,
+<span id="L76" class="ln">    76  </span>				<span class="comment">// sample-api:end</span>
+<span id="L77" class="ln">    77  </span>			),
+<span id="L78" class="ln">    78  </span>		),
+<span id="L79" class="ln">    79  </span>		fx.Module(&#34;system_cqrs&#34;,
+<span id="L80" class="ln">    80  </span>			fx.Provide(
+<span id="L81" class="ln">    81  </span>				healthcheck.New,
+<span id="L82" class="ln">    82  </span>				idempotencysq.New,
+<span id="L83" class="ln">    83  </span>				outboxsq.New,
+<span id="L84" class="ln">    84  </span>				realtimesq.NewSequenceAllocator,
+<span id="L85" class="ln">    85  </span>			),
+<span id="L86" class="ln">    86  </span>		),
+<span id="L87" class="ln">    87  </span>	)
+<span id="L88" class="ln">    88  </span>}
+<span id="L89" class="ln">    89  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/di/module/persistence.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
