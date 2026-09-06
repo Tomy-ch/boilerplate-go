@@ -17,11 +17,14 @@ import (
 	uuidtestkit "go-boilerplate/pkg/uuid/testkit"
 	"go-boilerplate/pkg/xerrors"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // raceBlockedGracePeriod は、購入役が退会役のロック解放を待たされていることを確認するために待つ時間です。
 // 高負荷でこの時間内に問い合わせが届かない場合も「まだ完了していない」側に倒れるため、負荷は偽陽性を生みません。
+// 待たされた事実は所要時間でも確かめます。最終状態の一致だけを見ると、ロックが外れていても
+// 後続役の往復がこの時間を超えれば同じ観測になり、退行を見逃します。
 const raceBlockedGracePeriod = 300 * time.Millisecond
 
 var (
@@ -87,13 +90,16 @@ func Test_lockSerializesWithdrawalAgainstPurchase(t *testing.T) {
 	withdrawalLocked := make(chan struct{})
 	guardDone := make(chan struct{})
 	guardResult := make(chan error, 1)
+	guardBlockedFor := make(chan time.Duration, 1)
 
 	// 購入役: 退会役がユーザー行を押さえている間に在籍ガードへ入り、退会の確定まで待たされる。
 	go func() {
 		defer close(guardDone)
 		<-withdrawalLocked
 		guardResult <- newTxManager().Do(ctx, func(txCtx context.Context) error {
+			startedAt := time.Now()
 			purchaser, guardErr := lockRepo.LockShareByID(txCtx, targetID)
+			guardBlockedFor <- time.Since(startedAt)
 			if guardErr != nil {
 				return xerrors.Join(errRollbackRaceTx, guardErr)
 			}
@@ -129,4 +135,6 @@ func Test_lockSerializesWithdrawalAgainstPurchase(t *testing.T) {
 	<-guardDone
 	// 退会が確定した以上、待たされていた購入が読み出す購入者は退会済みになっている。
 	require.ErrorIs(t, <-guardResult, errPurchaserWithdrawn)
+	// 退会済みを観測できたのがロック待ちの結果であることを、待機時間で裏づける。
+	assert.GreaterOrEqual(t, <-guardBlockedFor, raceBlockedGracePeriod)
 }
