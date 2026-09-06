@@ -45,6 +45,10 @@ const (
 	ActionInquiryReply Action = "inquiry:reply"
 	// ActionInquiryFeedSubscribe は、問い合わせ更新フィードの購読操作（admin）を表します。
 	ActionInquiryFeedSubscribe Action = "inquiry-feed:subscribe"
+	// ActionCouponBulkIssue は、販促クーポンの一括発行（admin）を表します。
+	// 受給者を名指しする発行とは別の Action です。1 枚の発行と不特定多数への配布では影響範囲が
+	// 桁で違い、片方だけを許す運用が成り立つためです。
+	ActionCouponBulkIssue Action = "coupon:bulk-issue"
 )
 
 // sample-api:end

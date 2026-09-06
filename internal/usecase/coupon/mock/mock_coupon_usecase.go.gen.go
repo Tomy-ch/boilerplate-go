@@ -42,6 +42,21 @@ func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder {
 	return m.recorder
 }
 
+// IssuePromotionalCoupons mocks base method.
+func (m *MockUsecase) IssuePromotionalCoupons(ctx context.Context, authn *auth.Authn, params coupon.IssuePromotionalCouponsParams) (coupon.IssuePromotionalCouponsView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IssuePromotionalCoupons", ctx, authn, params)
+	ret0, _ := ret[0].(coupon.IssuePromotionalCouponsView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IssuePromotionalCoupons indicates an expected call of IssuePromotionalCoupons.
+func (mr *MockUsecaseMockRecorder) IssuePromotionalCoupons(ctx, authn, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IssuePromotionalCoupons", reflect.TypeOf((*MockUsecase)(nil).IssuePromotionalCoupons), ctx, authn, params)
+}
+
 // ListApplicableToMyCart mocks base method.
 func (m *MockUsecase) ListApplicableToMyCart(ctx context.Context, authn *auth.Authn) ([]coupon.CartCouponView, error) {
 	m.ctrl.T.Helper()

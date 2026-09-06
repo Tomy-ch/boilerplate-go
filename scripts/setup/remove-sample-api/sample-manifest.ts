@@ -393,6 +393,17 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
       "openapi/paths/v1/carts/me/coupons.yaml",
       "openapi/components/schemas/coupons",
       "openapi/components/responses/coupons",
+      "openapi/components/requests/coupons",
+
+      // 販促クーポンの一括発行。受給者を識別子で名指しできない書き込みの実例なので、
+      // クーポン集約と生死を共にする（ADR-0114 の branch 3b）。
+      "internal/infrastructure/rdb/command_service/coupon",
+      "database/dml/command_service/coupon",
+      "database/gen/coupon_command_service.gen.sql",
+      "internal/infrastructure/rdb/sqlc/gen/coupon_command_service.gen.sql.go",
+      "internal/controller/handler/v1/coupons",
+      "internal/integration/v1_coupons_bulk_issue_test.go",
+      "openapi/paths/v1/coupons",
       "openapi/components/schemas/carts/CartCouponResponse.yaml",
       "openapi/components/responses/carts/CartCouponListResponse.yaml",
 
