@@ -32,9 +32,8 @@ const (
 const (
 	// FieldName は、商品名フィールドの識別子です。
 	FieldName = "name"
-	// FieldPrice は、価格フィールドの識別子です。値を検証するのは横断語彙の
-	// [go-boilerplate/internal/domain/lexicon/money.NewPrice] で、そちらはどのリクエストの
-	// どの項目として渡されたかを知りません。付けるのは呼び出し元です。
+	// FieldPrice は、価格フィールドの識別子です。値を検証する money.NewPrice は項目を知らないため、
+	// 付けるのは呼び出し元です（internal/domain/README.md の Validation を参照）。
 	FieldPrice = "price"
 	// FieldQuantity は、在庫数フィールドの識別子です。
 	FieldQuantity = "quantity"
@@ -47,9 +46,8 @@ const (
 	// FieldImages は、画像フィールドの識別子です。画像は集合ごと置き換わるため、要素ではなく
 	// 集合を指します。
 	FieldImages = "images"
-	// FieldDelta は、在庫増減フィールドの識別子です。[Product.AdjustStock] は増減後の在庫を
-	// 検証しますが、クライアントが送るのは増減量で、しかも購入の在庫調整からも呼ばれます。
-	// どちらの呼ばれ方かを知っているのは呼び出し元なので、付けるのも呼び出し元です。
+	// FieldDelta は、在庫増減フィールドの識別子です。[Product.AdjustStock] は増減量ではなく増減後の
+	// 在庫を検証するため、付けるのは呼び出し元です（internal/domain/README.md の Validation を参照）。
 	FieldDelta = "delta"
 	// FieldPublishedAt は、公開日時フィールドの識別子です。
 	FieldPublishedAt = "publishedAt"

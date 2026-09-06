@@ -106,8 +106,10 @@ func newProduct(id uuid.UUID, attrs Attributes, version int, createdAt time.Time
 }
 
 // validateAttributes は、商品属性の不変条件を検証します。生成時と更新時で同一の条件を課します。
-// 最初の違反で打ち切らず、利用者が直せる項目をすべて検証してから束ねて返します
-// （internal/domain/README.md の Validation を参照）。
+// 最初の違反で打ち切らず、利用者が直せる項目をすべて検証してから束ねて返します。
+// 違反した項目の識別子を付けるのはこの関数だけで、個別の検証関数は項目を名指ししないエラーを
+// 返します。複数項目にまたがる違反でどれを名指しするか、採番済みの値の違反を名指ししないことも
+// ここで決めます（internal/domain/README.md の Validation を参照）。
 func validateAttributes(attrs Attributes) error {
 	var errs []error
 	var fields []string
@@ -132,15 +134,14 @@ func validateAttributes(attrs Attributes) error {
 		errs = append(errs, xerrors.Wrap(ErrInvalidCategoryID, "category is required"))
 		fields = append(fields, FieldCategoryID)
 	}
-	// 違反しているのは片方の項目ではなく組み合わせなので、名指しする項目はここで決まります。
+	// 名指しするのは publishedAt（理由は docs/spec/domain/product.md の Cross-field Invariants）。
 	if err := validateDiscontinuedAt(attrs.DiscontinuedAt, attrs.PublishedAt); err != nil {
 		errs = append(errs, err)
 		fields = append(fields, FieldPublishedAt)
 	}
 	if err := validateImages(attrs.Images); err != nil {
 		errs = append(errs, err)
-		// 画像 ID は採番済みでクライアントが送る項目ではないため、その違反は名指ししません
-		// （purchase の明細 ID と同じ扱いです）。
+		// 画像 ID は採番済み（サーバ内部）で、利用者が直せる項目ではないため名指ししません。
 		if !xerrors.Is(err, ErrInvalidID) {
 			fields = append(fields, FieldImages)
 		}
@@ -325,8 +326,7 @@ func (p *Product) IsDiscontinued() bool { return IsDiscontinued(p.discontinuedAt
 func IsDiscontinued(discontinuedAt *time.Time) bool { return discontinuedAt != nil }
 
 // validateDiscontinuedAt は、廃番と公開が同時に成り立たないことを検証します。
-// 名指しする項目は呼び出し元が決めます。理由は docs/spec/domain/product.md の
-// Cross-field Invariants を参照してください。
+// 項目の名指しは validateAttributes が行います。
 func validateDiscontinuedAt(discontinuedAt, publishedAt *time.Time) error {
 	if IsDiscontinued(discontinuedAt) && IsPublished(publishedAt) {
 		return xerrors.Wrap(ErrDiscontinuedCannotBePublished, "publishedAt must be nil for a discontinued product")

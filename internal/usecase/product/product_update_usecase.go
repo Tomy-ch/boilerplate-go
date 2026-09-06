@@ -172,7 +172,6 @@ func parseOptionalPrice(v *string) (*money.Price, error) {
 	if err != nil {
 		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, "price is not a valid decimal: "+err.Error())
 	}
-	// 識別子はここで付けます。理由は生成側と同じです。
 	price, err := money.NewPrice(parsed)
 	if err != nil {
 		return nil, apperror.WithDetails(err, product.FieldPrice)

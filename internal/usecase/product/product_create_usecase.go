@@ -56,8 +56,6 @@ func (u *usecase) CreateProduct(ctx context.Context, authn *auth.Authn, params C
 	if err != nil {
 		return ProductView{}, xerrors.Wrap(apperror.ErrInvalidArgument, "price is not a valid decimal: "+err.Error())
 	}
-	// 識別子はここで付けます。money は集約をまたぐ語彙で、渡された値がどのリクエストの
-	// どの項目だったかを知りません（internal/domain/README.md の Validation）。
 	productPrice, err := money.NewPrice(price)
 	if err != nil {
 		return ProductView{}, apperror.WithDetails(err, product.FieldPrice)

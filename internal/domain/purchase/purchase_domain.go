@@ -238,10 +238,9 @@ func New(
 	if userID.IsNil() {
 		return nil, xerrors.Wrap(ErrInvalidUserID, "userID is required")
 	}
-	// 明細に由来する検証エラーはここで名指しします。数量・重複・対象商品の不在はいずれも
-	// 明細 1 件の中の話で、クライアントから見れば送った details が悪いという 1 つの事実に
-	// なります。検証エラーに限るのは、buildDetails が在庫不足（409）と採番済み明細 ID の
-	// 不正（サーバ内部）も返すためで、どちらも「送った項目が不正」ではありません。
+	// 名指しするのは検証エラーだけです。buildDetails は在庫不足（409）と採番済み明細 ID の不正
+	// （サーバ内部）も返し、どちらも「送った項目が不正」ではありません（付与の一般形は
+	// internal/domain/README.md の Validation を参照）。
 	if len(inputs) == 0 {
 		return nil, apperror.WithDetails(ErrEmptyDetails, FieldDetails)
 	}
