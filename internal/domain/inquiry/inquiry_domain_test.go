@@ -372,34 +372,58 @@ func TestInquiry_AppendMessage(t *testing.T) {
 			assert.False(t, ok)
 		})
 
-		t.Run("本文が不正なら body を名指しする", func(t *testing.T) {
+		t.Run("本文が空の場合、bodyを名指しする", func(t *testing.T) {
 			t.Parallel()
-			for _, tc := range []struct {
-				name string
-				body string
-				want error
-			}{
-				{"空", "", ErrEmptyBody},
-				{"長すぎる", strings.Repeat("あ", maxBodyLength+1), ErrBodyTooLong},
-			} {
-				t.Run(tc.name, func(t *testing.T) {
-					t.Parallel()
-					i := newTestInquiry(t)
-					attrs := newTestMessageAttributes(t)
-					attrs.Body = tc.body
+			i := newTestInquiry(t)
+			attrs := newTestMessageAttributes(t)
+			attrs.Body = ""
 
-					_, err := i.AppendMessage(
-						uuidtestkit.NewTestFromSalt(t, "message"),
-						attrs,
-						time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
-					)
+			_, err := i.AppendMessage(
+				uuidtestkit.NewTestFromSalt(t, "message"),
+				attrs,
+				time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
+			)
 
-					require.ErrorIs(t, err, tc.want)
-					meta, ok := apperror.MetaFrom(err)
-					require.True(t, ok)
-					assert.Equal(t, []string{FieldBody}, meta.Details())
-				})
-			}
+			require.ErrorIs(t, err, ErrEmptyBody)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldBody}, meta.Details())
+		})
+
+		t.Run("本文が最大長を超える場合、bodyを名指しする", func(t *testing.T) {
+			t.Parallel()
+			i := newTestInquiry(t)
+			attrs := newTestMessageAttributes(t)
+			attrs.Body = strings.Repeat("あ", maxBodyLength+1)
+
+			_, err := i.AppendMessage(
+				uuidtestkit.NewTestFromSalt(t, "message"),
+				attrs,
+				time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
+			)
+
+			require.ErrorIs(t, err, ErrBodyTooLong)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldBody}, meta.Details())
+		})
+
+		t.Run("本文とメッセージIDがともに不正な場合、先に本文を名指しする", func(t *testing.T) {
+			t.Parallel()
+			i := newTestInquiry(t)
+			attrs := newTestMessageAttributes(t)
+			attrs.Body = ""
+
+			_, err := i.AppendMessage(
+				uuid.UUID{},
+				attrs,
+				time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
+			)
+
+			require.ErrorIs(t, err, ErrEmptyBody)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldBody}, meta.Details())
 		})
 	})
 }

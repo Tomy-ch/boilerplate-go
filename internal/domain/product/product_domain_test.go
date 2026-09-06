@@ -620,7 +620,12 @@ func Test_validateAttributes(t *testing.T) {
 			t.Parallel()
 			attrs := valid
 			attrs.Name = ""
-			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidName)
+
+			err := validateAttributes(attrs)
+			require.ErrorIs(t, err, ErrInvalidName)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldName}, meta.Details())
 		})
 
 		t.Run("nameが最大長を超える場合、ErrInvalidNameを返す", func(t *testing.T) {
@@ -634,7 +639,12 @@ func Test_validateAttributes(t *testing.T) {
 			t.Parallel()
 			attrs := valid
 			attrs.Quantity = minQuantity - 1
-			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidQuantity)
+
+			err := validateAttributes(attrs)
+			require.ErrorIs(t, err, ErrInvalidQuantity)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldQuantity}, meta.Details())
 		})
 
 		t.Run("stockWarningThresholdが最小値未満の場合、ErrInvalidStockWarningThresholdを返す", func(t *testing.T) {
@@ -642,7 +652,12 @@ func Test_validateAttributes(t *testing.T) {
 			attrs := valid
 			attrs.Quantity = minQuantity
 			attrs.StockWarningThreshold = ptr.To(minThreshold - 1)
-			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidStockWarningThreshold)
+
+			err := validateAttributes(attrs)
+			require.ErrorIs(t, err, ErrInvalidStockWarningThreshold)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldStockWarningThreshold}, meta.Details())
 		})
 
 		t.Run("stockWarningThresholdが最大値を超える場合、ErrInvalidStockWarningThresholdを返す", func(t *testing.T) {
@@ -656,63 +671,47 @@ func Test_validateAttributes(t *testing.T) {
 			t.Parallel()
 			attrs := valid
 			attrs.Status = StatusRef{}
-			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidStatusID)
+
+			err := validateAttributes(attrs)
+			require.ErrorIs(t, err, ErrInvalidStatusID)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldStatusID}, meta.Details())
 		})
 
 		t.Run("categoryがゼロ値の場合、ErrInvalidCategoryIDを返す", func(t *testing.T) {
 			t.Parallel()
 			attrs := valid
 			attrs.Category = CategoryRef{}
-			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidCategoryID)
+
+			err := validateAttributes(attrs)
+			require.ErrorIs(t, err, ErrInvalidCategoryID)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldCategoryID}, meta.Details())
 		})
 
 		t.Run("画像の不変条件違反を伝播する", func(t *testing.T) {
 			t.Parallel()
 			attrs := valid
 			attrs.Images = []Image{mustImage(t, "out_of_range_image", "products/a.png", maxImageDisplaySort+1)}
-			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidImageDisplaySort)
-		})
-
-		t.Run("項目ごとに不正な項目の識別子が付く", func(t *testing.T) {
-			t.Parallel()
-			for _, tc := range []struct {
-				name   string
-				mutate func(*Attributes)
-				want   string
-			}{
-				{"name", func(a *Attributes) { a.Name = "" }, FieldName},
-				{"quantity", func(a *Attributes) { a.Quantity = -1 }, FieldQuantity},
-				{"stockWarningThreshold", func(a *Attributes) { a.StockWarningThreshold = ptr.To(-1) }, FieldStockWarningThreshold},
-				{"statusId", func(a *Attributes) { a.Status = StatusRef{} }, FieldStatusID},
-				{"categoryId", func(a *Attributes) { a.Category = CategoryRef{} }, FieldCategoryID},
-			} {
-				t.Run(tc.name, func(t *testing.T) {
-					t.Parallel()
-					attrs := valid
-					tc.mutate(&attrs)
-
-					meta, ok := apperror.MetaFrom(validateAttributes(attrs))
-					require.True(t, ok)
-					assert.Equal(t, []string{tc.want}, meta.Details())
-				})
-			}
-		})
-
-		t.Run("複数項目が同時に不正な場合、最初の違反で打ち切らず全項目を名指しする", func(t *testing.T) {
-			t.Parallel()
-			attrs := valid
-			attrs.Name = ""
-			attrs.Quantity = -1
-			attrs.Status = StatusRef{}
 
 			err := validateAttributes(attrs)
-			require.ErrorIs(t, err, ErrInvalidName)
-			require.ErrorIs(t, err, ErrInvalidQuantity)
-			require.ErrorIs(t, err, ErrInvalidStatusID)
-
+			require.ErrorIs(t, err, ErrInvalidImageDisplaySort)
 			meta, ok := apperror.MetaFrom(err)
 			require.True(t, ok)
-			assert.Equal(t, []string{FieldName, FieldQuantity, FieldStatusID}, meta.Details())
+			assert.Equal(t, []string{FieldImages}, meta.Details())
+		})
+
+		t.Run("画像IDの欠落はサーバ内部の不正なので識別子を付けない", func(t *testing.T) {
+			t.Parallel()
+			attrs := valid
+			attrs.Images = []Image{{}}
+
+			err := validateAttributes(attrs)
+			require.ErrorIs(t, err, ErrInvalidID)
+			_, ok := apperror.MetaFrom(err)
+			assert.False(t, ok)
 		})
 
 		t.Run("廃番と公開の同時成立が他項目の違反を握りつぶさない", func(t *testing.T) {
@@ -731,17 +730,7 @@ func Test_validateAttributes(t *testing.T) {
 
 			meta, ok := apperror.MetaFrom(err)
 			require.True(t, ok)
-			assert.Equal(t, []string{FieldName, FieldPublishedAt, FieldImages}, meta.Details())
-		})
-
-		t.Run("画像の違反は集合として images を名指しする", func(t *testing.T) {
-			t.Parallel()
-			attrs := valid
-			attrs.Images = []Image{mustImage(t, "out_of_range_image", "products/a.png", maxImageDisplaySort+1)}
-
-			meta, ok := apperror.MetaFrom(validateAttributes(attrs))
-			require.True(t, ok)
-			assert.Equal(t, []string{FieldImages}, meta.Details())
+			assert.ElementsMatch(t, []string{FieldName, FieldPublishedAt, FieldImages}, meta.Details())
 		})
 	})
 }
@@ -1005,7 +994,9 @@ func TestProduct_AdjustStock(t *testing.T) {
 
 			p := newTestProduct(t)
 
-			_, ok := apperror.MetaFrom(p.AdjustStock(-p.Quantity() - 1))
+			err := p.AdjustStock(-p.Quantity() - 1)
+			require.ErrorIs(t, err, ErrInvalidQuantity)
+			_, ok := apperror.MetaFrom(err)
 			assert.False(t, ok)
 		})
 	})

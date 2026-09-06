@@ -139,13 +139,22 @@ func validateAttributes(attrs Attributes) error {
 	}
 	if err := validateImages(attrs.Images); err != nil {
 		errs = append(errs, err)
-		fields = append(fields, FieldImages)
+		// 画像 ID は採番済みでクライアントが送る項目ではないため、その違反は名指ししません
+		// （purchase の明細 ID と同じ扱いです）。
+		if !xerrors.Is(err, ErrInvalidID) {
+			fields = append(fields, FieldImages)
+		}
 	}
 
-	if len(errs) > 0 {
-		return apperror.WithDetails(xerrors.Join(errs...), fields...)
+	if len(errs) == 0 {
+		return nil
 	}
-	return nil
+	// 名指しする項目が 1 つも無いときは Meta を付けません。空の details を付けると、
+	// 「利用者が直せる項目がある」と偽って伝えることになります。
+	if len(fields) == 0 {
+		return xerrors.Join(errs...)
+	}
+	return apperror.WithDetails(xerrors.Join(errs...), fields...)
 }
 
 // Update は、商品の属性を更新します。生成時と同一の不変条件を課し、違反する場合はエンティティを

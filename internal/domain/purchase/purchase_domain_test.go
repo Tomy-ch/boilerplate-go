@@ -369,7 +369,7 @@ func TestNew(t *testing.T) {
 			require.ErrorIs(t, err, ErrInvalidAmount)
 		})
 
-		t.Run("明細に由来する違反は details を名指しする", func(t *testing.T) {
+		t.Run("明細に由来するエラーの識別子", func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("明細が空", func(t *testing.T) {
@@ -410,6 +410,31 @@ func TestNew(t *testing.T) {
 				require.ErrorIs(t, err, ErrInsufficientStock)
 				_, ok := apperror.MetaFrom(err)
 				assert.False(t, ok)
+			})
+
+			t.Run("明細IDの欠落はサーバ内部の不正なので識別子を付けない", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, inputs, locked := validNewArgs(t)
+				inputs[0].ID = uuid.UUID{}
+
+				_, err := New(id, code, userID, inputs, locked)
+
+				require.ErrorIs(t, err, ErrInvalidID)
+				_, ok := apperror.MetaFrom(err)
+				assert.False(t, ok)
+			})
+
+			t.Run("同一productIDの重複", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, inputs, locked := validNewArgs(t)
+				inputs[1].ProductID = inputs[0].ProductID
+
+				_, err := New(id, code, userID, inputs, locked)
+
+				require.ErrorIs(t, err, ErrDuplicateProductID)
+				meta, ok := apperror.MetaFrom(err)
+				require.True(t, ok)
+				assert.Equal(t, []string{FieldDetails}, meta.Details())
 			})
 
 			t.Run("対応するロック済み商品が無い", func(t *testing.T) {

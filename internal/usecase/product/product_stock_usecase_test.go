@@ -204,7 +204,6 @@ func Test_usecase_UpdateProductStock(t *testing.T) {
 			require.ErrorIs(t, err, apperror.ErrValidation)
 			assert.Equal(t, ProductView{}, actual)
 
-			// 検証するのは増減後の在庫だが、クライアントが送るのは delta である。
 			meta, ok := apperror.MetaFrom(err)
 			require.True(t, ok)
 			assert.Equal(t, []string{domainproduct.FieldDelta}, meta.Details())

@@ -208,7 +208,7 @@ func Test_reconstructMessage(t *testing.T) {
 
 		// 表の CHECK 制約と NOT NULL がある限り到達しないが、種別の検証はこの関数が
 		// 担う境界なので、壊れた行を渡したときにメッセージを組み立てないことを固定する。
-		t.Run("既知でない種別の行はErrInvalidAuthorKindを返す", func(t *testing.T) {
+		t.Run("既知でない種別の行はErrInternalへ正規化し元の分類は露出しない", func(t *testing.T) {
 			t.Parallel()
 
 			_, err := reconstructMessage(gen.InquiryMessages{
@@ -216,7 +216,32 @@ func Test_reconstructMessage(t *testing.T) {
 				AuthorKind: "admin", AuthorSubjectID: mustNewUUID(t),
 				Body: "本文", StreamSequence: 1,
 			})
-			require.ErrorIs(t, err, domaininquiry.ErrInvalidAuthorKind)
+			require.ErrorIs(t, err, apperror.ErrInternal)
+			require.NotErrorIs(t, err, domaininquiry.ErrInvalidAuthorKind)
+		})
+
+		t.Run("送り手の主体IDが空の行はErrInternalへ正規化する", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := reconstructMessage(gen.InquiryMessages{
+				ID: mustNewUUID(t), InquiryID: mustNewUUID(t),
+				AuthorKind: "user", AuthorSubjectID: uuid.UUID{},
+				Body: "本文", StreamSequence: 1,
+			})
+			require.ErrorIs(t, err, apperror.ErrInternal)
+		})
+
+		t.Run("本文が空の行はErrInternalへ正規化し識別子も落ちる", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := reconstructMessage(gen.InquiryMessages{
+				ID: mustNewUUID(t), InquiryID: mustNewUUID(t),
+				AuthorKind: "user", AuthorSubjectID: mustNewUUID(t),
+				Body: "", StreamSequence: 1,
+			})
+			require.ErrorIs(t, err, apperror.ErrInternal)
+			_, ok := apperror.MetaFrom(err)
+			assert.False(t, ok)
 		})
 	})
 }

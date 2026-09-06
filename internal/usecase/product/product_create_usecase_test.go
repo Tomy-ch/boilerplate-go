@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go-boilerplate/internal/apperror"
+	domainproduct "go-boilerplate/internal/domain/product"
 	"go-boilerplate/internal/domain/product/category"
 	mock_category "go-boilerplate/internal/domain/product/category/mock"
 	mock_product "go-boilerplate/internal/domain/product/mock"
@@ -242,6 +243,9 @@ func Test_usecase_CreateProduct(t *testing.T) {
 			u := &usecase{tracer: lt, authorizer: authorizer}
 			_, err := u.CreateProduct(context.Background(), &auth.Authn{}, params)
 			require.ErrorIs(t, err, apperror.ErrValidation)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{domainproduct.FieldPrice}, meta.Details())
 		})
 
 		t.Run("在庫数が負の場合、検証エラー(422)を返す", func(t *testing.T) {

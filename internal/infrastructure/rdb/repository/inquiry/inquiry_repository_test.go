@@ -370,7 +370,7 @@ func Test_reconstruct(t *testing.T) {
 
 		// 表には更新日時と作成日時の前後関係を強制する制約が無いため、この分岐は
 		// 破損した行から現実に到達する（構造的に到達不能な防御ではない）。
-		t.Run("更新日時が作成日時より前の行はErrInvalidTimeを返す", func(t *testing.T) {
+		t.Run("更新日時が作成日時より前の行はErrInternalへ正規化し元の分類は露出しない", func(t *testing.T) {
 			t.Parallel()
 			createdAt := time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC)
 
@@ -381,15 +381,17 @@ func Test_reconstruct(t *testing.T) {
 				UpdatedAt: createdAt.Add(-time.Nanosecond),
 			})
 
-			require.ErrorIs(t, err, domaininquiry.ErrInvalidTime)
+			require.ErrorIs(t, err, apperror.ErrInternal)
+			require.NotErrorIs(t, err, domaininquiry.ErrInvalidTime)
 		})
 
-		t.Run("利用者が未設定の行はErrInvalidUserIDを返す", func(t *testing.T) {
+		t.Run("利用者が未設定の行はErrInternalへ正規化し元の分類は露出しない", func(t *testing.T) {
 			t.Parallel()
 
 			_, err := reconstruct(gen.Inquiries{ID: mustNewUUID(t)})
 
-			require.ErrorIs(t, err, domaininquiry.ErrInvalidUserID)
+			require.ErrorIs(t, err, apperror.ErrInternal)
+			require.NotErrorIs(t, err, domaininquiry.ErrInvalidUserID)
 		})
 	})
 }
