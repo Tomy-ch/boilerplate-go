@@ -60,8 +60,6 @@ jobs:
               - 'go.mod'
               - 'go.sum'
               - '**/*.sql'
-              # The job runs `make materialize-env`, which copies env/.env.ci over env/.env
-              # before the tests read it, so a CI env value is an input to the result.
               - 'env/.env'
               - 'env/.env.ci'
               - '.makefiles/**'

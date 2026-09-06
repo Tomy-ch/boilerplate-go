@@ -6,8 +6,6 @@ on:
       - '.github/workflows/app-di-startup-check.yaml'
       - 'cmd/**.go'
       - 'internal/**.go'
-      # The job runs `make materialize-env`, which copies env/.env.ci over env/.env before
-      # the server starts, so a CI env value decides whether the boot succeeds.
       - 'env/.env.ci'
       - 'env/.env'
       - 'go.mod'

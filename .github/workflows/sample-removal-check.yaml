@@ -2,10 +2,7 @@ name: Sample Removal Check
 
 on:
   workflow_dispatch:
-  # The removal manifest names files under internal/ database/ openapi/ docs/ scripts/, and the
-  # job rebuilds, re-lints, re-tests and re-migrates the shrunken repository afterwards — so the
-  # module graph and the toolchain are inputs too. Nothing outside that surface can change the
-  # result, and the job costs eight minutes on every pull request that reaches it.
+  # Mirrors scripts/setup/remove-sample-api/sample-manifest.ts, plus what the rebuild reads.
   pull_request:
     paths:
       - '.github/workflows/sample-removal-check.yaml'
@@ -20,7 +17,6 @@ on:
       - 'go.sum'
       - 'sqlc.yaml'
       - 'mise.toml'
-      # `make materialize-env` supplies the values the rebuilt repository is tested against.
       - 'env/.env'
       - 'env/.env.ci'
 
