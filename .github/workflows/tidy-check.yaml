@@ -59,6 +59,12 @@ jobs:
           token: ''
           filters: |
             relevant:
+              - '.github/workflows/tidy-check.yaml'
+              # `go mod tidy` derives the required set from every import in the tree, so a
+              # change that drops the last use of a module leaves go.mod stale while touching
+              # no manifest. Watching go.mod alone makes this required check blind to exactly
+              # the edit that untidies it.
+              - '**/*.go'
               - 'go.mod'
               - 'go.sum'
 
