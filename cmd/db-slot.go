@@ -132,7 +132,7 @@ func newSlotRegistry(root string) *dbslot.Registry {
 	)
 }
 
-// newSlotResolver は、スロットから導かれる値の解決器を実依存（ホストの git）で配線して生成します。
+// newSlotResolver は、スロットから導かれる値の解決器を実依存（ホストの git / リースレジストリ）で配線して生成します。
 func newSlotResolver(out io.Writer) (*dbslot.Resolver, error) {
 	root, err := os.Getwd()
 	if err != nil {
@@ -143,7 +143,7 @@ func newSlotResolver(out io.Writer) (*dbslot.Resolver, error) {
 		return nil, err
 	}
 
-	// スロットの保持はレジストリのリースで判定する（.gobp-db-slot は解放されず残ることがある）。
+	// 判定基準は dbslot.LeaseProbe のドキュメントを参照。
 	lease := &dbslot.LeaseProbe{OwnedBySelf: newSlotRegistry(root).OwnedBySelf}
 
 	return dbslot.NewResolver(cfg, nil, lease, out), nil

@@ -57,8 +57,8 @@ func (a *PgxAdmin) EnsureDatabase(ctx context.Context, name string) error {
 	return nil
 }
 
-// SetupDatabase は、対象 DB に pg_trgm 拡張を設定します。
-// timezone は DB コンテナの TZ 由来のクラスタ既定を継承するため、ここでは設定しません。
+// SetupDatabase は、対象 DB に pg_trgm 拡張を設定します
+// （timezone を設定しない理由は README.md「DB admin」）。
 func (a *PgxAdmin) SetupDatabase(ctx context.Context, name string) error {
 	conn, err := a.connect(ctx, name)
 	if err != nil {

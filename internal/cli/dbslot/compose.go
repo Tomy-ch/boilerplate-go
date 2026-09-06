@@ -13,8 +13,8 @@ import (
 )
 
 // appProfile は、app 層のサービス（api_server / mock_auth_server）が属する compose の profile です。
-// 全サービスが profile 配下にあるため、これを渡さない down は対象ゼロのまま exit 0 で返ります。
-// 値は .makefiles/docker/compose.mk の COMPOSE_APP と一致していなければなりません。
+// 値は .makefiles/docker/compose.mk の COMPOSE_APP と一致していなければなりません
+// （渡さない down が空振りする理由は README.md「Compose」）。
 const appProfile = "development"
 
 // Compose は、docker compose 操作を抽象化します（テストでフェイク可能）。

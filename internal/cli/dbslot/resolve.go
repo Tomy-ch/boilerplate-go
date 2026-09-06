@@ -40,16 +40,14 @@ const (
 	// docker/mock-auth-server/config.json の issuerId と一致していなければなりません。
 	mockAuthIssuerPath = "/default"
 
-	// slotInfixTable / slotInfixName は、基底名とスロット番号の間に入る区切りです。
-	// table だけ `_` なのは REALTIME_TABLE_SUFFIX の使用可能文字に合わせるためで、
-	// queue と topic は `-` です。
+	// slotInfixTable / slotInfixName は、基底名とスロット番号の間に入る区切りです
+	// （table だけ `_` である理由は docs/maintenance/db-worktree-pool.md）。
 	slotInfixTable = "_wt"
 	slotInfixName  = "-wt"
 )
 
 var (
 	// errGitLayoutUnreadable は、git リポジトリではあるのにその構成を読み取れなかったことを表します。
-	// 「リンク worktree かどうか」を判定できないため、所有者判定はここで止まります。
 	errGitLayoutUnreadable = xerrors.New("git repository exists but its layout could not be read")
 
 	// errNoDatabaseOwner は、リンク worktree がスロットを取得しておらず所有データベースが無いことを表します。
@@ -57,7 +55,7 @@ var (
 )
 
 // GitContext は、この checkout がどの git 文脈にあるかを表します。
-// 「所有データベースが無い状態を検出できるか」はこの区別で決まります。
+// 文脈ごとの扱いは RequireOwner を参照。
 type GitContext int
 
 // GitProbe は、git 文脈の判定に使う外部依存の注入点です（テストで差し替えます）。
@@ -70,16 +68,15 @@ type GitProbe struct {
 	HasGitEntry func(root string) bool
 }
 
-// LeaseProbe は、リース所有権の判定に使う外部依存の注入点です（テストで差し替えます）。
-// .gobp-db-slot は解放されないまま残ることがあるので、ファイルの存在だけでは所有を名乗れません。
+// LeaseProbe は、リース所有権の判定に使う外部依存の注入点です（テストで差し替えます。
+// ファイルの存在が所有の証明にならない理由は README.md「Slot file」）。
 type LeaseProbe struct {
 	// OwnedBySelf は、そのスロットのリースを自 worktree が保持しているかを返します。
 	OwnedBySelf func(slot int) bool
 }
 
-// Values は、スロットから導かれる解決済みの値です。
-// 一箇所で導いて env（make が eval する KEY=VALUE）と status（人間向けの表示）の両方へ流すため、
-// 「make が使う値」と「デバッグで読む値」が食い違いません。
+// Values は、スロットから導かれる解決済みの値です
+// （env / status の双方へ同一の導出を流す理由は README.md「Resolved values」）。
 type Values struct {
 	Git             GitContext
 	SlotHeld        bool   // .gobp-db-slot が宣言するスロットのリースを実際に保持しているか
@@ -158,9 +155,8 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 		RealtimeTopic:       r.cfg.Realtime.Topic,
 	}
 
-	// リースを保持しているスロットの値だけを採用する。導出はスロット番号から行い、
-	// .gobp-db-slot が並べている DB 名やプロジェクト名は読まない。レジストリで裏が取れるのは
-	// 番号だけで、他のフィールドは手編集や別 worktree のファイルの写しで食い違い得る。
+	// リースを保持しているスロットの値だけを、その番号から導く
+	// （.gobp-db-slot の他フィールドを読まない理由は README.md「Resolved values」）。
 	if slot, held := r.heldSlot(); held {
 		num := strconv.Itoa(slot)
 		values.SlotHeld = true
