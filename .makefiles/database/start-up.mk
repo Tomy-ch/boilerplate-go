@@ -44,10 +44,8 @@ db-reinit:
 	@$(MAKE) db-migrate-up DB=$(DB)
 	@$(MAKE) db-seed DB=$(DB)
 
-# local DB を作り直す経路には realtime-reset が付く。採番は PostgreSQL、配送済み event は
-# DynamoDB EventLog にあり、片方だけ巻き戻すと採番が既存 item の位置へ届いて stream が止まる
-# （docs/maintenance/db-worktree-pool.md「A slot's two stores are reset together」）。
-# test DB 側には対になる store が無いので付けない。
+# local DB を作り直す経路には realtime-reset を対で付け、対になる store の無い test DB には付けない
+# （理由は docs/maintenance/db-worktree-pool.md「A slot's two stores are reset together」）。
 db-local-reinit: DB=$(DB_LOCAL)
 db-local-reinit: db-reinit
 	@$(MAKE) realtime-reset

@@ -117,7 +117,7 @@ make outbox-relay ARGS="replay --message-id=<id>"
 | コマンド | 説明 | 主な用途 |
 | --- | --- | --- |
 | `make realtime-init` | 共有インフラを起動し、app コンテナ内から Realtime Delivery の table（EventLog / StreamTicket / InstanceLease）を DynamoDB Local に、fan-out の topic を GoAWS に作ります（`go run ./cmd/ realtime-init`）。冪等 — 何度実行しても同じ状態に収束します。 | app を起動せずに資源だけ用意したいとき。`make serve` は同じ one-shot（`realtime-provision`）を自分で走らせるので、通常の経路では個別に呼ぶ必要はありません |
-| `make realtime-reset` | `dynamodb_local` を起動し、host から `scripts/realtime-reset` を実行してこの checkout の 3 つの table を削除し、消え切るまで待ちます。作成は `realtime-provision` の担当のままです。データベースの所有者であることを要求し、空の `-endpoint`（SDK 既定の解決へ落ちる）と実 AWS の host を拒否します。 | local データベースを作り直す経路すべて（`slot-acquire` / `db-local-reinit` / `db-init-local`）から呼ばれ、採番と EventLog を一緒に作り直すため（[db-worktree-pool.md](../docs/maintenance/db-worktree-pool.ja.md) を参照）。古い採番で stream が詰まったときに手で叩くのにも使えます |
+| `make realtime-reset` | `dynamodb_local` を起動し、host から `scripts/realtime-reset` を実行してこの checkout の 3 つの table を削除し、消え切るまで待ちます。作成は `realtime-provision` の担当のままです。データベースの所有者であることを要求し、host を持たない `-endpoint` と AWS の host を拒否します（ダミー署名鍵が第 2 の制御なので、この deny だけが防御ではありません）。 | local データベースを作り直す経路すべて（`slot-acquire` / `db-local-reinit` / `db-init-local`）から呼ばれ、採番と EventLog を一緒に作り直すため（[db-worktree-pool.md](../docs/maintenance/db-worktree-pool.ja.md) を参照）。古い採番で stream が詰まったときに手で叩くのにも使えます |
 | `make realtime-smoke` | 共有インフラを起動し、`scripts/realtime-smoke` を AWS SDK Go v2 で DynamoDB Local / GoAWS に対して実行して、呼び出しごとの判定（互換 / 非互換 / 未対応 / 検証不能）を表にします。resource は実行ごとの乱数名で作り終了時に削除します。`ARGS` で flag を渡します（`-format markdown` / `-subscribers N` / `-keep` / `-strict`）。 | Realtime Delivery が行う呼び出しをエミュレータが今も受け付けるかの確認（image を上げたときなど） |
 
 ## `.makefiles/database` 系

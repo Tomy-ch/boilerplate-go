@@ -61,12 +61,10 @@ jobs:
       contents: read
 
     env:
-      # 残存検査から外す生成物。撤去ツールが走査から外しているもの（`doc-language.ts` の
-      # `EXCLUDED_PREFIXES`）と同じ集合で、そこに portal の配信物を足したものである。
-      # 検査の主題は「畳んだ結果ツリーが辻褄の合う状態か」で、生成物は正本ではない。
-      # 外さないと、生成物が正本に追いついた瞬間だけ赤くなる —— 実際
-      # `e6c6eb2c1 Chore: auto update docs` が `docs/portal/guides` と `docs/godoc` の双方で
-      # それを踏んだ。これらは畳んだあと `make gen-docs` が正本から作り直す。
+      # 残存検査から外す生成物。検査の主題は「畳んだ結果ツリーが辻褄の合う状態か」で、生成物は
+      # 正本ではなく、畳んだあと `make gen-docs` が正本から作り直す。撤去ツールが走査から外す
+      # `doc-language.ts` の `EXCLUDED_PREFIXES` の生成物に、portal の配信物と OpenAPI の出力を
+      # 足した集合である。
       GENERATED_EXCLUDES: >-
         :!docs/portal/dist
         :!docs/portal/guides

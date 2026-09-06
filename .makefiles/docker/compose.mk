@@ -37,9 +37,8 @@ COMPOSE_APP = $(LOAD_SLOT); $(DB_SLOT_ENV_EXPORTED); $(LOAD_GH_TOKEN); docker co
 DB_SLOT_ENV = eval "$$(go run ./cmd/ db-slot env || echo 'exit 1')"
 
 # 解決値を環境変数として撒く版。compose ファイルの ${REALTIME_*} と、その名前を読む子プロセスは
-# シェル変数を見られないため、この 2 つの消費者だけがこちらを使う。
-# 全呼び出しへ広げないのは、host の go test にも流れ込み、CI が埋め込む .env.ci の
-# REALTIME_* を黙って上書きしてしまうため（環境の正本は埋め込み env であって make ではない）。
+# シェル変数を見られないため、この 2 つの消費者だけがこちらを使う。全呼び出しへ広げると host の
+# go test にも流れ込み、環境の正本が埋め込み env から make へ移る。
 DB_SLOT_ENV_EXPORTED = set -a; $(DB_SLOT_ENV); set +a
 
 # 共有インフラの稼働中コンテナを作り直させないフラグ。config-hash が checkout ごとに一致しない
