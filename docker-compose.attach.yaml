@@ -1,17 +1,18 @@
-# app 層の override（全 checkout / worktree 共通）。常に重ねて適用される。
+# app 層の override（全 checkout / worktree 共通）。db-slot release の down 以外は常に重ねる。
+# 詳細: docker/README.md「Compose Layering (infra / app)」。
 # 層の分け方・共有インフラへの差し替え・スロット番号とホスト公開ポートの関係は
 # docs/maintenance/local-environment.md「Compose layering (infra / app)」を参照。
 services:
   api_server:
     ports: !override
-      - "${API_HOST_PORT:-8080}:8080" # APIポート
-      - "${DLV_HOST_PORT:-2345}:2345" # デバッグ(dlv)ポート
-      - "${PPROF_HOST_PORT:-6060}:6060" # メトリクス(pprof)ポート
+      - "${API_HOST_PORT:-8080}:8080"
+      - "${DLV_HOST_PORT:-2345}:2345"
+      - "${PPROF_HOST_PORT:-6060}:6060"
     depends_on: !override # 共有インフラは infra 層が先に起動済み（上記参照）
       mock_auth_server:
         condition: service_healthy
-    # 共有インフラへの接続先。実行時 env が env/.env より優先されることを利用して、
-    # コンテナ名前提の既定値をホスト公開ポート経由へ差し替える。
+    # 共有インフラへの接続先（ホスト公開ポート経由）。
+    # 詳細: docs/maintenance/local-environment.md「Compose layering (infra / app)」。
     environment:
       DB_HOST: host.docker.internal
       DB_NAME: ${DB_NAME_LOCAL:-local}
@@ -26,13 +27,12 @@ services:
       # fan-out（goaws）も同じく共有インフラ側。store と別に要る — SNS / SQS は別のホストに載り得るため
       # 接続先が 2 本に分かれており、片方だけ差し替えるとコンテナ名 goaws の解決に落ちる。
       ENDPOINT_REALTIME_PUBSUB: http://host.docker.internal:4100
-      # 共有の GoAWS / DynamoDB Local を worktree 間で分ける名前。導出は internal/cli/dbslot が持ち、
-      # ここは db-slot env が撒いた値を読むだけ。既定値（スロット未取得のときの名前）だけはホスト公開
-      # ポートと同じくこちらの責務。
+      # 共有の GoAWS / DynamoDB Local を worktree 間で分ける名前。db-slot env が撒いた値を読むだけで、
+      # 既定値は置かない — :- は空値の受け皿になり、この checkout が主 checkout の資源を掴む。
       # 詳細: docs/maintenance/db-worktree-pool.md「Realtime Delivery emulators are shared instances」
-      REALTIME_TOPIC: ${REALTIME_TOPIC:-arn:aws:sns:us-east-1:000000000000:realtime-fanout-local}
-      REALTIME_QUEUE_PREFIX: ${REALTIME_QUEUE_PREFIX:-realtime-local}
-      REALTIME_TABLE_SUFFIX: ${REALTIME_TABLE_SUFFIX:-local}
-      # token の iss は mock 認証サーバーのホスト公開 URL（Host ヘッダ由来）。スロット毎にポートが
-      # ずれるため追従させる。mock 側は iss を保持しないので、追従先はここ 1 箇所で足りる。
+      REALTIME_TOPIC: ${REALTIME_TOPIC:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
+      REALTIME_QUEUE_PREFIX: ${REALTIME_QUEUE_PREFIX:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
+      REALTIME_TABLE_SUFFIX: ${REALTIME_TABLE_SUFFIX:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
+      # AUTH_ISSUER はスロット毎にずれる mock 認証サーバーのポートへ追従させる。
+      # 詳細: docker/README.md「mock-auth-server」。
       AUTH_ISSUER: http://localhost:${MOCK_AUTH_HOST_PORT:-2010}/default
