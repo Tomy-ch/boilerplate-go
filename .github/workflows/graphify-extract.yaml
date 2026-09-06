@@ -24,6 +24,11 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      # `claude-code-action` reaches GitHub through a token it mints itself, by exchanging this
+      # workflow's OIDC identity with the Claude GitHub App. Without the permission the exchange
+      # fails and the action stops before the model runs. It grants no repository access of its
+      # own — only the right to request a JWT that names this workflow.
+      id-token: write
 
     steps:
       - name: Harden the runner
