@@ -9,9 +9,12 @@ import (
 	"go-boilerplate/internal/logging"
 
 	"go-boilerplate/internal/infrastructure/rdb/driver"
+	mock_driver "go-boilerplate/internal/infrastructure/rdb/driver/mock"
 	"go-boilerplate/internal/infrastructure/system"
 	mock_tx "go-boilerplate/internal/usecase/boundary/tx/mock"
+	"go-boilerplate/pkg/xerrors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +27,9 @@ const (
 	lockTimeoutProbeHold = 300 * time.Millisecond
 	waiterLockTimeout    = 50 * time.Millisecond
 )
+
+// errBeginFailed は、db.Begin を失敗させるモックが返すエラーです。
+var errBeginFailed = xerrors.New("begin failed")
 
 func TestNewTestDB(t *testing.T) {
 	t.Parallel()
@@ -130,6 +136,87 @@ func Test_testTxRunner_WithinTxE(t *testing.T) {
 			assert.Equal(t, 2, attempts)
 		})
 	})
+}
+
+func Test_holdSuiteSerialization(t *testing.T) {
+	t.Parallel()
+
+	db := NewTestDB(t)
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("占有中はtxLockを保持し、解放関数を呼ぶと手放す", func(t *testing.T) {
+			t.Parallel()
+			requireTxLockAvailable(t, "先行するテストが txLock を解放していない")
+
+			release, err := holdSuiteSerialization(context.Background(), db)
+			require.NoError(t, err)
+			require.NotNil(t, release)
+
+			assert.False(t, txLock.TryLock(), "占有中に txLock を取れてしまう")
+
+			release()
+			requireTxLockAvailable(t, "解放関数を呼んでも txLock が解放されていない")
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("トランザクションを開始できない場合、txLockを保持したままにしない", func(t *testing.T) {
+			t.Parallel()
+			requireTxLockAvailable(t, "先行するテストが txLock を解放していない")
+
+			mockDB := mock_driver.NewMockDatabaseDriver(gomock.NewController(t))
+			mockDB.EXPECT().Begin(gomock.Any()).Return(nil, errBeginFailed)
+
+			release, err := holdSuiteSerialization(context.Background(), mockDB)
+			require.ErrorIs(t, err, errBeginFailed)
+			assert.Nil(t, release)
+
+			requireTxLockAvailable(t, "占有に失敗したのに txLock を保持したままになっている")
+		})
+
+		t.Run("advisory lockを取得できない場合、txLockを保持したままにしない", func(t *testing.T) {
+			t.Parallel()
+			requireTxLockAvailable(t, "先行するテストが txLock を解放していない")
+
+			ctx := context.Background()
+
+			// 手書き mock は使えないため、閉じた実 tx を返させて Exec を ErrTxClosed で失敗させる。
+			closed, err := db.Begin(ctx)
+			require.NoError(t, err)
+			require.NoError(t, closed.Rollback(ctx))
+
+			mockDB := mock_driver.NewMockDatabaseDriver(gomock.NewController(t))
+			mockDB.EXPECT().Begin(gomock.Any()).Return(closed, nil)
+
+			release, err := holdSuiteSerialization(ctx, mockDB)
+			require.ErrorIs(t, err, pgx.ErrTxClosed)
+			assert.Nil(t, release)
+
+			requireTxLockAvailable(t, "占有に失敗したのに txLock を保持したままになっている")
+		})
+	})
+}
+
+// requireTxLockAvailable は、txLock が取得可能になるまで待ちます。
+// 同居する並列テストが一時的に握るため即時とは限らず、解放漏れだけが時間切れになります。
+//
+// 占有の前後どちらでも呼んでください。前で呼ばないと、解放漏れが起きたとき後続が
+// txLock.Lock() で止まり、並列サブテストの出力は親が終わるまで出ないため、
+// 失敗の内容がタイムアウトに巻き込まれて消えます。
+func requireTxLockAvailable(t *testing.T, msg string) {
+	t.Helper()
+
+	require.Eventually(t, func() bool {
+		if !txLock.TryLock() {
+			return false
+		}
+		txLock.Unlock()
+		return true
+	}, 15*time.Second, 50*time.Millisecond, msg)
 }
 
 func TestHoldSuiteSerialization(t *testing.T) {
