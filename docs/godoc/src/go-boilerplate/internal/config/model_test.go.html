@@ -1624,6 +1624,172 @@
 <span id="L1567" class="ln">  1567  </span>	})
 <span id="L1568" class="ln">  1568  </span>}
 <span id="L1569" class="ln">  1569  </span>
+<span id="L1570" class="ln">  1570  </span>func TestNewRealtimeConfig(t *testing.T) {
+<span id="L1571" class="ln">  1571  </span>	t.Parallel()
+<span id="L1572" class="ln">  1572  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1573" class="ln">  1573  </span>		t.Parallel()
+<span id="L1574" class="ln">  1574  </span>		t.Run(&#34;Config が保持する Realtime Delivery の store 設定への参照を返す&#34;, func(t *testing.T) {
+<span id="L1575" class="ln">  1575  </span>			t.Parallel()
+<span id="L1576" class="ln">  1576  </span>			cfg := MockConfigForTest(t)
+<span id="L1577" class="ln">  1577  </span>			assert.Same(t, &amp;cfg.realtime, NewRealtimeConfig(cfg))
+<span id="L1578" class="ln">  1578  </span>		})
+<span id="L1579" class="ln">  1579  </span>	})
+<span id="L1580" class="ln">  1580  </span>}
+<span id="L1581" class="ln">  1581  </span>
+<span id="L1582" class="ln">  1582  </span>func TestRealtimeConfig_Region(t *testing.T) {
+<span id="L1583" class="ln">  1583  </span>	t.Parallel()
+<span id="L1584" class="ln">  1584  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1585" class="ln">  1585  </span>		t.Parallel()
+<span id="L1586" class="ln">  1586  </span>		t.Run(&#34;リージョンを取得できる&#34;, func(t *testing.T) {
+<span id="L1587" class="ln">  1587  </span>			t.Parallel()
+<span id="L1588" class="ln">  1588  </span>			assert.Equal(t, expectedRealtimeRegion, MockConfigForTest(t).realtime.Region())
+<span id="L1589" class="ln">  1589  </span>		})
+<span id="L1590" class="ln">  1590  </span>	})
+<span id="L1591" class="ln">  1591  </span>}
+<span id="L1592" class="ln">  1592  </span>
+<span id="L1593" class="ln">  1593  </span>func TestRealtimeConfig_TableSuffix(t *testing.T) {
+<span id="L1594" class="ln">  1594  </span>	t.Parallel()
+<span id="L1595" class="ln">  1595  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1596" class="ln">  1596  </span>		t.Parallel()
+<span id="L1597" class="ln">  1597  </span>		t.Run(&#34;table 名の末尾に付く環境識別子を取得できる&#34;, func(t *testing.T) {
+<span id="L1598" class="ln">  1598  </span>			t.Parallel()
+<span id="L1599" class="ln">  1599  </span>			assert.Equal(t, expectedRealtimeTableSuffix, MockConfigForTest(t).realtime.TableSuffix())
+<span id="L1600" class="ln">  1600  </span>		})
+<span id="L1601" class="ln">  1601  </span>	})
+<span id="L1602" class="ln">  1602  </span>}
+<span id="L1603" class="ln">  1603  </span>
+<span id="L1604" class="ln">  1604  </span>func TestRealtimeConfig_EventLogTable(t *testing.T) {
+<span id="L1605" class="ln">  1605  </span>	t.Parallel()
+<span id="L1606" class="ln">  1606  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1607" class="ln">  1607  </span>		t.Parallel()
+<span id="L1608" class="ln">  1608  </span>		t.Run(&#34;固定名に環境識別子を付けた table 名を返す&#34;, func(t *testing.T) {
+<span id="L1609" class="ln">  1609  </span>			t.Parallel()
+<span id="L1610" class="ln">  1610  </span>			assert.Equal(t, &#34;realtime_event_log_&#34;+expectedRealtimeTableSuffix, MockConfigForTest(t).realtime.EventLogTable())
+<span id="L1611" class="ln">  1611  </span>		})
+<span id="L1612" class="ln">  1612  </span>	})
+<span id="L1613" class="ln">  1613  </span>}
+<span id="L1614" class="ln">  1614  </span>
+<span id="L1615" class="ln">  1615  </span>func TestRealtimeConfig_StreamTicketTable(t *testing.T) {
+<span id="L1616" class="ln">  1616  </span>	t.Parallel()
+<span id="L1617" class="ln">  1617  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1618" class="ln">  1618  </span>		t.Parallel()
+<span id="L1619" class="ln">  1619  </span>		t.Run(&#34;固定名に環境識別子を付けた table 名を返す&#34;, func(t *testing.T) {
+<span id="L1620" class="ln">  1620  </span>			t.Parallel()
+<span id="L1621" class="ln">  1621  </span>			assert.Equal(t, &#34;realtime_stream_ticket_&#34;+expectedRealtimeTableSuffix, MockConfigForTest(t).realtime.StreamTicketTable())
+<span id="L1622" class="ln">  1622  </span>		})
+<span id="L1623" class="ln">  1623  </span>	})
+<span id="L1624" class="ln">  1624  </span>}
+<span id="L1625" class="ln">  1625  </span>
+<span id="L1626" class="ln">  1626  </span>func TestRealtimeConfig_InstanceLeaseTable(t *testing.T) {
+<span id="L1627" class="ln">  1627  </span>	t.Parallel()
+<span id="L1628" class="ln">  1628  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1629" class="ln">  1629  </span>		t.Parallel()
+<span id="L1630" class="ln">  1630  </span>		t.Run(&#34;固定名に環境識別子を付けた table 名を返す&#34;, func(t *testing.T) {
+<span id="L1631" class="ln">  1631  </span>			t.Parallel()
+<span id="L1632" class="ln">  1632  </span>			assert.Equal(t, &#34;realtime_instance_lease_&#34;+expectedRealtimeTableSuffix, MockConfigForTest(t).realtime.InstanceLeaseTable())
+<span id="L1633" class="ln">  1633  </span>		})
+<span id="L1634" class="ln">  1634  </span>	})
+<span id="L1635" class="ln">  1635  </span>}
+<span id="L1636" class="ln">  1636  </span>
+<span id="L1637" class="ln">  1637  </span>func TestRealtimeConfig_Topic(t *testing.T) {
+<span id="L1638" class="ln">  1638  </span>	t.Parallel()
+<span id="L1639" class="ln">  1639  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1640" class="ln">  1640  </span>		t.Parallel()
+<span id="L1641" class="ln">  1641  </span>		t.Run(&#34;topic の識別子を取得できる&#34;, func(t *testing.T) {
+<span id="L1642" class="ln">  1642  </span>			t.Parallel()
+<span id="L1643" class="ln">  1643  </span>			assert.Equal(t, expectedRealtimeTopic, MockConfigForTest(t).realtime.Topic())
+<span id="L1644" class="ln">  1644  </span>		})
+<span id="L1645" class="ln">  1645  </span>	})
+<span id="L1646" class="ln">  1646  </span>}
+<span id="L1647" class="ln">  1647  </span>
+<span id="L1648" class="ln">  1648  </span>func TestRealtimeConfig_QueuePrefix(t *testing.T) {
+<span id="L1649" class="ln">  1649  </span>	t.Parallel()
+<span id="L1650" class="ln">  1650  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1651" class="ln">  1651  </span>		t.Parallel()
+<span id="L1652" class="ln">  1652  </span>		t.Run(&#34;instance queue 名の先頭を取得できる&#34;, func(t *testing.T) {
+<span id="L1653" class="ln">  1653  </span>			t.Parallel()
+<span id="L1654" class="ln">  1654  </span>			assert.Equal(t, expectedRealtimeQueuePrefix, MockConfigForTest(t).realtime.QueuePrefix())
+<span id="L1655" class="ln">  1655  </span>		})
+<span id="L1656" class="ln">  1656  </span>	})
+<span id="L1657" class="ln">  1657  </span>}
+<span id="L1658" class="ln">  1658  </span>
+<span id="L1659" class="ln">  1659  </span>func TestRealtimeConfig_DLQ(t *testing.T) {
+<span id="L1660" class="ln">  1660  </span>	t.Parallel()
+<span id="L1661" class="ln">  1661  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1662" class="ln">  1662  </span>		t.Parallel()
+<span id="L1663" class="ln">  1663  </span>		t.Run(&#34;DLQ の識別子を取得できる&#34;, func(t *testing.T) {
+<span id="L1664" class="ln">  1664  </span>			t.Parallel()
+<span id="L1665" class="ln">  1665  </span>			assert.Equal(t, expectedRealtimeDLQ, MockConfigForTest(t).realtime.DLQ())
+<span id="L1666" class="ln">  1666  </span>		})
+<span id="L1667" class="ln">  1667  </span>	})
+<span id="L1668" class="ln">  1668  </span>}
+<span id="L1669" class="ln">  1669  </span>
+<span id="L1670" class="ln">  1670  </span>func TestRealtimeConfig_AccessKeyID(t *testing.T) {
+<span id="L1671" class="ln">  1671  </span>	t.Parallel()
+<span id="L1672" class="ln">  1672  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1673" class="ln">  1673  </span>		t.Parallel()
+<span id="L1674" class="ln">  1674  </span>		t.Run(&#34;アクセスキー ID を取得できる&#34;, func(t *testing.T) {
+<span id="L1675" class="ln">  1675  </span>			t.Parallel()
+<span id="L1676" class="ln">  1676  </span>			assert.Equal(t, expectedRealtimeAccessKeyID, MockConfigForTest(t).realtime.AccessKeyID())
+<span id="L1677" class="ln">  1677  </span>		})
+<span id="L1678" class="ln">  1678  </span>	})
+<span id="L1679" class="ln">  1679  </span>}
+<span id="L1680" class="ln">  1680  </span>
+<span id="L1681" class="ln">  1681  </span>func TestRealtimeConfig_SecretAccessKey(t *testing.T) {
+<span id="L1682" class="ln">  1682  </span>	t.Parallel()
+<span id="L1683" class="ln">  1683  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1684" class="ln">  1684  </span>		t.Parallel()
+<span id="L1685" class="ln">  1685  </span>		t.Run(&#34;シークレットアクセスキーを取得できる&#34;, func(t *testing.T) {
+<span id="L1686" class="ln">  1686  </span>			t.Parallel()
+<span id="L1687" class="ln">  1687  </span>			assert.Equal(t, expectedRealtimeSecretAccessKey, MockConfigForTest(t).realtime.SecretAccessKey())
+<span id="L1688" class="ln">  1688  </span>		})
+<span id="L1689" class="ln">  1689  </span>	})
+<span id="L1690" class="ln">  1690  </span>}
+<span id="L1691" class="ln">  1691  </span>
+<span id="L1692" class="ln">  1692  </span>func TestRealtimeConfig_MaxConnections(t *testing.T) {
+<span id="L1693" class="ln">  1693  </span>	t.Parallel()
+<span id="L1694" class="ln">  1694  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1695" class="ln">  1695  </span>		t.Parallel()
+<span id="L1696" class="ln">  1696  </span>		t.Run(&#34;1 instance が同時に保持する SSE 接続数の上限を取得できる&#34;, func(t *testing.T) {
+<span id="L1697" class="ln">  1697  </span>			t.Parallel()
+<span id="L1698" class="ln">  1698  </span>			assert.Equal(t, expectedRealtimeMaxConnections, MockConfigForTest(t).realtime.MaxConnections())
+<span id="L1699" class="ln">  1699  </span>		})
+<span id="L1700" class="ln">  1700  </span>	})
+<span id="L1701" class="ln">  1701  </span>}
+<span id="L1702" class="ln">  1702  </span>
+<span id="L1703" class="ln">  1703  </span>func TestRealtimeConfig_ReplayConcurrency(t *testing.T) {
+<span id="L1704" class="ln">  1704  </span>	t.Parallel()
+<span id="L1705" class="ln">  1705  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1706" class="ln">  1706  </span>		t.Parallel()
+<span id="L1707" class="ln">  1707  </span>		t.Run(&#34;replay と catch-up が同時に走る本数の上限を取得できる&#34;, func(t *testing.T) {
+<span id="L1708" class="ln">  1708  </span>			t.Parallel()
+<span id="L1709" class="ln">  1709  </span>			assert.Equal(t, expectedRealtimeReplayConcurrency, MockConfigForTest(t).realtime.ReplayConcurrency())
+<span id="L1710" class="ln">  1710  </span>		})
+<span id="L1711" class="ln">  1711  </span>	})
+<span id="L1712" class="ln">  1712  </span>}
+<span id="L1713" class="ln">  1713  </span>
+<span id="L1714" class="ln">  1714  </span>func TestEndpointConfig_Realtime(t *testing.T) {
+<span id="L1715" class="ln">  1715  </span>	t.Parallel()
+<span id="L1716" class="ln">  1716  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1717" class="ln">  1717  </span>		t.Parallel()
+<span id="L1718" class="ln">  1718  </span>		t.Run(&#34;Realtime Delivery の store のエンドポイントを取得できる&#34;, func(t *testing.T) {
+<span id="L1719" class="ln">  1719  </span>			t.Parallel()
+<span id="L1720" class="ln">  1720  </span>			assert.Equal(t, expectedEndpointRealtime, MockConfigForTest(t).endpoint.Realtime())
+<span id="L1721" class="ln">  1721  </span>		})
+<span id="L1722" class="ln">  1722  </span>	})
+<span id="L1723" class="ln">  1723  </span>}
+<span id="L1724" class="ln">  1724  </span>
+<span id="L1725" class="ln">  1725  </span>func TestEndpointConfig_RealtimePubSub(t *testing.T) {
+<span id="L1726" class="ln">  1726  </span>	t.Parallel()
+<span id="L1727" class="ln">  1727  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1728" class="ln">  1728  </span>		t.Parallel()
+<span id="L1729" class="ln">  1729  </span>		t.Run(&#34;Realtime Delivery の fan-out のエンドポイントを取得できる&#34;, func(t *testing.T) {
+<span id="L1730" class="ln">  1730  </span>			t.Parallel()
+<span id="L1731" class="ln">  1731  </span>			assert.Equal(t, expectedEndpointRealtimePubSub, MockConfigForTest(t).endpoint.RealtimePubSub())
+<span id="L1732" class="ln">  1732  </span>		})
+<span id="L1733" class="ln">  1733  </span>	})
+<span id="L1734" class="ln">  1734  </span>}
+<span id="L1735" class="ln">  1735  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/config/model_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

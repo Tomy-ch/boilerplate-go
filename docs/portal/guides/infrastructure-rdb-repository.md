@@ -1,7 +1,5 @@
 # Repository Implementation Guide
 
-English | [日本語](README.ja.md)
-
 ## Position of Repository in Onion Architecture
 
 In Onion Architecture, Repository is the **central pattern that embodies the Dependency Inversion Principle (DIP)**.

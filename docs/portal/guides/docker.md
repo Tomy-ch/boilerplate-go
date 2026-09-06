@@ -1,7 +1,5 @@
 # docker
 
-English | [日本語](README.ja.md)
-
 `docker/` is the directory for **Docker-related configuration files** required for development, building, and operations.
 
 ## Directory Structure
@@ -15,7 +13,7 @@ Compose services are split into two layers, so the main checkout and any number 
 
 |Layer|compose project|Services|
 |---|---|---|
-|**infra**|`gobp-shared` (fixed name) — **one instance for every checkout**|`database` / `observability` / `garage` (+ `garage_init`) / `elasticmq`. The auxiliary services and tool runners default to the same project via `COMPOSE_PROJECT_NAME`|
+|**infra**|`gobp-shared` (fixed name) — **one instance for every checkout**|`database` / `observability` / `garage` (+ `garage_init`) / `elasticmq` / `dynamodb_local` (+ `dynamodb_init`) / `goaws`. The auxiliary services and tool runners default to the same project via `COMPOSE_PROJECT_NAME`|
 |**app**|`APP_PROJECT` — one per checkout (`gobp-app-<directory name>`, or `gobp-wt-N` while a DB slot is held)|`api_server` / `mock_auth_server`|
 
 The infra layer holds every service that can only run on a fixed host port, which is why it exists exactly once on the host.
@@ -48,6 +46,9 @@ The following table maps services defined in docker-compose.yaml to their corres
 |`garage`|infra|`dxflrs/garage`|3900, 3902|S3-compatible object storage (S3 API / Web API)|
 |`garage_init`|infra|`docker/garage/Dockerfile`|-|One-shot provisioning of the garage layout / bucket / access key / website access (idempotent)|
 |`elasticmq`|infra|`softwaremill/elasticmq-native`|9324|SQS-compatible message broker (local development; tests use an in-process fake)|
+|`dynamodb_init`|infra|`amazon/dynamodb-local`|-|One-shot ownership fix of the `dynamodb_data` volume so `dynamodb_local` can stay non-root (idempotent; ordered by `depends_on`)|
+|`dynamodb_local`|infra|`amazon/dynamodb-local`|8000|DynamoDB-compatible store for Realtime Delivery (EventLog / StreamTicket / InstanceLease) in local development (`-sharedDb`, persisted in the `dynamodb_data` volume)|
+|`goaws`|infra|`admiralpiett/goaws` (config: `docker/goaws/goaws.yaml`)|4100|SNS / SQS emulator dedicated to Realtime Delivery's instance fan-out; the worker-side outbox queue stays on `elasticmq`|
 
 The app layer host ports are the ones a DB slot shifts (`8080+N` / `2010+N` / `2345+N` / `6060+N`); the container-internal ports never move.
 
@@ -122,6 +123,10 @@ product images straight from the object storage, the way a CDN fronts S3 in prod
 ## elasticmq
 
 SQS-compatible broker for local development (tests use an in-process fake instead). Only `elasticmq.conf` lives here; the queues and their DLQ redrive policy are read from it at startup, so there is no one-shot provisioning container. ElasticMQ does not expand environment variables, so the queue names are literal in that file — [`env/README.md`](../env/README.md) records which `*_QUEUE_URL` they pair with.
+
+## goaws
+
+SNS / SQS emulator for local development, used only by Realtime Delivery's instance fan-out ([`docs/design/realtime-delivery.md`](../docs/design/realtime-delivery.md)); the worker-side outbox queue stays on `elasticmq`. Only `goaws.yaml` lives here, and it fixes the port, region and account id — `000000000000`, the same account the ElasticMQ queue URLs carry, so every local ARN names one account. Topics and queues are not pre-declared: the application creates them at runtime, and that runtime creation is itself what `make realtime-smoke` verifies. `make realtime-smoke` is the authority on what the pinned GoAWS accepts — re-run it after bumping the image. At the pinned version the one call it refuses is the `Policy` queue attribute (`InvalidParameterValue` on both `SetQueueAttributes` and `CreateQueue`), so the local adapter has to skip the queue policy that production sets.
 
 ## mock-auth-server
 

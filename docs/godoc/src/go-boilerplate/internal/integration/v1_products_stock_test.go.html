@@ -70,264 +70,265 @@
 <span id="L13" class="ln">    13  </span>	domainproduct &#34;go-boilerplate/internal/domain/product&#34;
 <span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/internal/observability&#34;
 <span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/usecase/boundary/auth&#34;
-<span id="L16" class="ln">    16  </span>	productuc &#34;go-boilerplate/internal/usecase/product&#34;
-<span id="L17" class="ln">    17  </span>	mock_product &#34;go-boilerplate/internal/usecase/product/mock&#34;
-<span id="L18" class="ln">    18  </span>	decimaltestkit &#34;go-boilerplate/pkg/decimal/testkit&#34;
-<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/pkg/ptr&#34;
-<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/pkg/uuid&#34;
-<span id="L21" class="ln">    21  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
-<span id="L22" class="ln">    22  </span>
-<span id="L23" class="ln">    23  </span>	&#34;github.com/labstack/echo/v5&#34;
-<span id="L24" class="ln">    24  </span>	&#34;github.com/stretchr/testify/assert&#34;
-<span id="L25" class="ln">    25  </span>	&#34;github.com/stretchr/testify/require&#34;
-<span id="L26" class="ln">    26  </span>	&#34;go.uber.org/mock/gomock&#34;
-<span id="L27" class="ln">    27  </span>)
-<span id="L28" class="ln">    28  </span>
-<span id="L29" class="ln">    29  </span>const (
-<span id="L30" class="ln">    30  </span>	productStockExistingPath = &#34;/v1/products/b1d4e0f2-3c5a-4b6d-8e7f-1a2b3c4d5e6f/stock&#34;
-<span id="L31" class="ln">    31  </span>	productStockMissingPath  = &#34;/v1/products/00000000-0000-0000-0000-000000000000/stock&#34;
-<span id="L32" class="ln">    32  </span>)
-<span id="L33" class="ln">    33  </span>
-<span id="L34" class="ln">    34  </span>func TestV1ProductsStock_Integration(t *testing.T) {
-<span id="L35" class="ln">    35  </span>	t.Parallel()
-<span id="L36" class="ln">    36  </span>
-<span id="L37" class="ln">    37  </span>	<span class="comment">// stockedView は、在庫更新後の商品を表すユースケース出力です。quantity / version は更新後の値です。</span>
-<span id="L38" class="ln">    38  </span>	stockedView := func(t *testing.T, quantity, version int) productuc.ProductView {
-<span id="L39" class="ln">    39  </span>		t.Helper()
-<span id="L40" class="ln">    40  </span>		return productuc.ProductView{
-<span id="L41" class="ln">    41  </span>			ID:                    uuidtestkit.NewTestFromSalt(t, &#34;integration_product_stock&#34;),
-<span id="L42" class="ln">    42  </span>			Name:                  &#34;商品&#34;,
-<span id="L43" class="ln">    43  </span>			Description:           ptr.To(&#34;説明&#34;),
-<span id="L44" class="ln">    44  </span>			Price:                 decimaltestkit.MustParse(t, &#34;19.99&#34;),
-<span id="L45" class="ln">    45  </span>			Quantity:              quantity,
-<span id="L46" class="ln">    46  </span>			StockWarningThreshold: ptr.To(10),
-<span id="L47" class="ln">    47  </span>			StatusID:              uuidtestkit.NewTestFromSalt(t, &#34;integration_stock_status&#34;),
-<span id="L48" class="ln">    48  </span>			StatusName:            &#34;在庫あり&#34;,
-<span id="L49" class="ln">    49  </span>			CategoryID:            uuidtestkit.NewTestFromSalt(t, &#34;integration_stock_category&#34;),
-<span id="L50" class="ln">    50  </span>			CategoryName:          &#34;電子機器&#34;,
-<span id="L51" class="ln">    51  </span>			PublishedAt:           ptr.To(time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC)),
-<span id="L52" class="ln">    52  </span>			Images: []productuc.ProductImageItemView{
-<span id="L53" class="ln">    53  </span>				{Path: &#34;products/integration_stock.png&#34;, DisplaySort: 1},
-<span id="L54" class="ln">    54  </span>			},
-<span id="L55" class="ln">    55  </span>			Version: version,
-<span id="L56" class="ln">    56  </span>		}
-<span id="L57" class="ln">    57  </span>	}
-<span id="L58" class="ln">    58  </span>
-<span id="L59" class="ln">    59  </span>	availableAdmin := func(t *testing.T, e *echo.Echo) http.Header {
-<span id="L60" class="ln">    60  </span>		t.Helper()
-<span id="L61" class="ln">    61  </span>		return MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;integration_stock_admin&#34;))
-<span id="L62" class="ln">    62  </span>	}
-<span id="L63" class="ln">    63  </span>
-<span id="L64" class="ln">    64  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L65" class="ln">    65  </span>		t.Parallel()
-<span id="L66" class="ln">    66  </span>
-<span id="L67" class="ln">    67  </span>		t.Run(&#34;PATCH /v1/products/{productId}/stock が admin の補充で更新後の在庫と version を返す&#34;, func(t *testing.T) {
-<span id="L68" class="ln">    68  </span>			t.Parallel()
-<span id="L69" class="ln">    69  </span>
-<span id="L70" class="ln">    70  </span>			e := echo.New()
-<span id="L71" class="ln">    71  </span>			ctrl := gomock.NewController(t)
-<span id="L72" class="ln">    72  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L73" class="ln">    73  </span>
-<span id="L74" class="ln">    74  </span>			var captured productuc.UpdateProductStockParams
-<span id="L75" class="ln">    75  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
-<span id="L76" class="ln">    76  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L77" class="ln">    77  </span>				func(
-<span id="L78" class="ln">    78  </span>					_ context.Context, authn *auth.Authn, _ uuid.UUID, params productuc.UpdateProductStockParams,
-<span id="L79" class="ln">    79  </span>				) (productuc.ProductView, error) {
-<span id="L80" class="ln">    80  </span>					require.NotNil(t, authn)
-<span id="L81" class="ln">    81  </span>					captured = params
-<span id="L82" class="ln">    82  </span>					return stockedView(t, 150, 2), nil
-<span id="L83" class="ln">    83  </span>				},
-<span id="L84" class="ln">    84  </span>			)
-<span id="L85" class="ln">    85  </span>
-<span id="L86" class="ln">    86  </span>			productsdetail.BindHandler(e, tf, mockUC)
-<span id="L87" class="ln">    87  </span>
-<span id="L88" class="ln">    88  </span>			headers := availableAdmin(t, e)
-<span id="L89" class="ln">    89  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 50}
-<span id="L90" class="ln">    90  </span>
-<span id="L91" class="ln">    91  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
-<span id="L92" class="ln">    92  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
-<span id="L93" class="ln">    93  </span>			assert.Equal(t, 50, captured.Delta)
-<span id="L94" class="ln">    94  </span>
-<span id="L95" class="ln">    95  </span>			var res productsdetailgen.ProductResponse
-<span id="L96" class="ln">    96  </span>			require.NoError(t, json.NewDecoder(actual.Body).Decode(&amp;res))
-<span id="L97" class="ln">    97  </span>			assert.Equal(t, int32(150), res.Quantity)
-<span id="L98" class="ln">    98  </span>			assert.Equal(t, int32(2), res.Version)
-<span id="L99" class="ln">    99  </span>		})
-<span id="L100" class="ln">   100  </span>
-<span id="L101" class="ln">   101  </span>		t.Run(&#34;PATCH /v1/products/{productId}/stock は負の delta を符号のままユースケースへ渡す&#34;, func(t *testing.T) {
-<span id="L102" class="ln">   102  </span>			t.Parallel()
-<span id="L103" class="ln">   103  </span>
-<span id="L104" class="ln">   104  </span>			e := echo.New()
-<span id="L105" class="ln">   105  </span>			ctrl := gomock.NewController(t)
-<span id="L106" class="ln">   106  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span>			var captured productuc.UpdateProductStockParams
-<span id="L109" class="ln">   109  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
-<span id="L110" class="ln">   110  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L111" class="ln">   111  </span>				func(
-<span id="L112" class="ln">   112  </span>					_ context.Context, _ *auth.Authn, _ uuid.UUID, params productuc.UpdateProductStockParams,
-<span id="L113" class="ln">   113  </span>				) (productuc.ProductView, error) {
-<span id="L114" class="ln">   114  </span>					captured = params
-<span id="L115" class="ln">   115  </span>					return stockedView(t, 90, 2), nil
-<span id="L116" class="ln">   116  </span>				},
-<span id="L117" class="ln">   117  </span>			)
-<span id="L118" class="ln">   118  </span>
-<span id="L119" class="ln">   119  </span>			productsdetail.BindHandler(e, tf, mockUC)
-<span id="L120" class="ln">   120  </span>
-<span id="L121" class="ln">   121  </span>			headers := availableAdmin(t, e)
-<span id="L122" class="ln">   122  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: -10}
-<span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
-<span id="L125" class="ln">   125  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
-<span id="L126" class="ln">   126  </span>			assert.Equal(t, -10, captured.Delta)
-<span id="L127" class="ln">   127  </span>
-<span id="L128" class="ln">   128  </span>			var res productsdetailgen.ProductResponse
-<span id="L129" class="ln">   129  </span>			require.NoError(t, json.NewDecoder(actual.Body).Decode(&amp;res))
-<span id="L130" class="ln">   130  </span>			assert.Equal(t, int32(90), res.Quantity)
-<span id="L131" class="ln">   131  </span>		})
-<span id="L132" class="ln">   132  </span>	})
-<span id="L133" class="ln">   133  </span>
-<span id="L134" class="ln">   134  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L135" class="ln">   135  </span>		t.Parallel()
-<span id="L136" class="ln">   136  </span>
-<span id="L137" class="ln">   137  </span>		t.Run(&#34;未認証は 401 を返しユースケースへ到達しない&#34;, func(t *testing.T) {
-<span id="L138" class="ln">   138  </span>			t.Parallel()
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>			e := echo.New()
-<span id="L141" class="ln">   141  </span>			UseAppErrorHandler(t, e)
-<span id="L142" class="ln">   142  </span>			ctrl := gomock.NewController(t)
-<span id="L143" class="ln">   143  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L144" class="ln">   144  </span>
-<span id="L145" class="ln">   145  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
-<span id="L146" class="ln">   146  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L147" class="ln">   147  </span>
-<span id="L148" class="ln">   148  </span>			productsdetail.BindHandler(e, tf, mockUC)
-<span id="L149" class="ln">   149  </span>
-<span id="L150" class="ln">   150  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
-<span id="L151" class="ln">   151  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, nil)
-<span id="L152" class="ln">   152  </span>			AssertErrorResponse(t, actual, http.StatusUnauthorized)
-<span id="L153" class="ln">   153  </span>		})
-<span id="L154" class="ln">   154  </span>
-<span id="L155" class="ln">   155  </span>		t.Run(&#34;宣言に無いフィールドを含む本文は400で弾かれる&#34;, func(t *testing.T) {
-<span id="L156" class="ln">   156  </span>			t.Parallel()
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span>			e := echo.New()
-<span id="L159" class="ln">   159  </span>			UseAppErrorHandler(t, e)
-<span id="L160" class="ln">   160  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
-<span id="L161" class="ln">   161  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L162" class="ln">   162  </span>			productsdetail.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC)
-<span id="L163" class="ln">   163  </span>			headers := availableAdmin(t, e)
-<span id="L164" class="ln">   164  </span>			useOpenAPIValidation(t, e)
-<span id="L165" class="ln">   165  </span>
-<span id="L166" class="ln">   166  </span>			body := map[string]any{&#34;delta&#34;: 10, &#34;productId&#34;: &#34;spoofed&#34;}
-<span id="L167" class="ln">   167  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
-<span id="L168" class="ln">   168  </span>
-<span id="L169" class="ln">   169  </span>			AssertErrorResponse(t, actual, http.StatusBadRequest)
-<span id="L170" class="ln">   170  </span>		})
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>		t.Run(&#34;非 admin の権限エラーは 403 を返す&#34;, func(t *testing.T) {
-<span id="L173" class="ln">   173  </span>			t.Parallel()
-<span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>			e := echo.New()
-<span id="L176" class="ln">   176  </span>			UseAppErrorHandler(t, e)
-<span id="L177" class="ln">   177  </span>			ctrl := gomock.NewController(t)
-<span id="L178" class="ln">   178  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L179" class="ln">   179  </span>
-<span id="L180" class="ln">   180  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
-<span id="L181" class="ln">   181  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L182" class="ln">   182  </span>				Return(productuc.ProductView{}, apperror.ErrPermissionDenied)
-<span id="L183" class="ln">   183  </span>
-<span id="L184" class="ln">   184  </span>			productsdetail.BindHandler(e, tf, mockUC)
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;integration_stock_member&#34;))
-<span id="L187" class="ln">   187  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
-<span id="L188" class="ln">   188  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
-<span id="L189" class="ln">   189  </span>			AssertErrorResponse(t, actual, http.StatusForbidden)
-<span id="L190" class="ln">   190  </span>		})
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>		t.Run(&#34;未存在の productId は 404 を返す&#34;, func(t *testing.T) {
-<span id="L193" class="ln">   193  </span>			t.Parallel()
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>			e := echo.New()
-<span id="L196" class="ln">   196  </span>			UseAppErrorHandler(t, e)
-<span id="L197" class="ln">   197  </span>			ctrl := gomock.NewController(t)
-<span id="L198" class="ln">   198  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L199" class="ln">   199  </span>
-<span id="L200" class="ln">   200  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
-<span id="L201" class="ln">   201  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L202" class="ln">   202  </span>				Return(productuc.ProductView{}, apperror.ErrNotFound)
-<span id="L203" class="ln">   203  </span>
-<span id="L204" class="ln">   204  </span>			productsdetail.BindHandler(e, tf, mockUC)
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>			headers := availableAdmin(t, e)
-<span id="L207" class="ln">   207  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
-<span id="L208" class="ln">   208  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockMissingPath, body, headers)
-<span id="L209" class="ln">   209  </span>			AssertErrorResponse(t, actual, http.StatusNotFound)
-<span id="L210" class="ln">   210  </span>		})
-<span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span>		t.Run(&#34;在庫が負になる delta の不変条件違反は 422 を返す&#34;, func(t *testing.T) {
-<span id="L213" class="ln">   213  </span>			t.Parallel()
-<span id="L214" class="ln">   214  </span>
-<span id="L215" class="ln">   215  </span>			e := echo.New()
-<span id="L216" class="ln">   216  </span>			UseAppErrorHandler(t, e)
-<span id="L217" class="ln">   217  </span>			ctrl := gomock.NewController(t)
-<span id="L218" class="ln">   218  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L219" class="ln">   219  </span>
-<span id="L220" class="ln">   220  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
-<span id="L221" class="ln">   221  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L222" class="ln">   222  </span>				Return(productuc.ProductView{}, apperror.ErrValidation)
-<span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span>			productsdetail.BindHandler(e, tf, mockUC)
-<span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>			headers := availableAdmin(t, e)
-<span id="L227" class="ln">   227  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: -1000}
-<span id="L228" class="ln">   228  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
-<span id="L229" class="ln">   229  </span>			AssertErrorResponse(t, actual, http.StatusUnprocessableEntity)
-<span id="L230" class="ln">   230  </span>		})
-<span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>		t.Run(&#34;取得後に他者が更新していた場合は 409 を返す&#34;, func(t *testing.T) {
-<span id="L233" class="ln">   233  </span>			t.Parallel()
-<span id="L234" class="ln">   234  </span>
-<span id="L235" class="ln">   235  </span>			e := echo.New()
-<span id="L236" class="ln">   236  </span>			UseAppErrorHandler(t, e)
-<span id="L237" class="ln">   237  </span>			ctrl := gomock.NewController(t)
-<span id="L238" class="ln">   238  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L239" class="ln">   239  </span>
-<span id="L240" class="ln">   240  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
-<span id="L241" class="ln">   241  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L242" class="ln">   242  </span>				Return(productuc.ProductView{}, domainproduct.ErrVersionConflict)
-<span id="L243" class="ln">   243  </span>
-<span id="L244" class="ln">   244  </span>			productsdetail.BindHandler(e, tf, mockUC)
-<span id="L245" class="ln">   245  </span>
-<span id="L246" class="ln">   246  </span>			headers := availableAdmin(t, e)
-<span id="L247" class="ln">   247  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
-<span id="L248" class="ln">   248  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
-<span id="L249" class="ln">   249  </span>			AssertErrorResponse(t, actual, http.StatusConflict)
-<span id="L250" class="ln">   250  </span>		})
-<span id="L251" class="ln">   251  </span>
-<span id="L252" class="ln">   252  </span>		t.Run(&#34;行競合が解消できなかった場合は 503 を返す&#34;, func(t *testing.T) {
-<span id="L253" class="ln">   253  </span>			t.Parallel()
-<span id="L254" class="ln">   254  </span>
-<span id="L255" class="ln">   255  </span>			e := echo.New()
-<span id="L256" class="ln">   256  </span>			UseAppErrorHandler(t, e)
-<span id="L257" class="ln">   257  </span>			ctrl := gomock.NewController(t)
-<span id="L258" class="ln">   258  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L259" class="ln">   259  </span>
-<span id="L260" class="ln">   260  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
-<span id="L261" class="ln">   261  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L262" class="ln">   262  </span>				Return(productuc.ProductView{}, apperror.ErrUnavailable)
-<span id="L263" class="ln">   263  </span>
-<span id="L264" class="ln">   264  </span>			productsdetail.BindHandler(e, tf, mockUC)
-<span id="L265" class="ln">   265  </span>
-<span id="L266" class="ln">   266  </span>			headers := availableAdmin(t, e)
-<span id="L267" class="ln">   267  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
-<span id="L268" class="ln">   268  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
-<span id="L269" class="ln">   269  </span>			AssertErrorResponse(t, actual, http.StatusServiceUnavailable)
-<span id="L270" class="ln">   270  </span>		})
-<span id="L271" class="ln">   271  </span>	})
-<span id="L272" class="ln">   272  </span>}
-<span id="L273" class="ln">   273  </span>
+<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/usecase/idempotency&#34;
+<span id="L17" class="ln">    17  </span>	productuc &#34;go-boilerplate/internal/usecase/product&#34;
+<span id="L18" class="ln">    18  </span>	mock_product &#34;go-boilerplate/internal/usecase/product/mock&#34;
+<span id="L19" class="ln">    19  </span>	decimaltestkit &#34;go-boilerplate/pkg/decimal/testkit&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/pkg/ptr&#34;
+<span id="L21" class="ln">    21  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L22" class="ln">    22  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
+<span id="L23" class="ln">    23  </span>
+<span id="L24" class="ln">    24  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L25" class="ln">    25  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L26" class="ln">    26  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L27" class="ln">    27  </span>	&#34;go.uber.org/mock/gomock&#34;
+<span id="L28" class="ln">    28  </span>)
+<span id="L29" class="ln">    29  </span>
+<span id="L30" class="ln">    30  </span>const (
+<span id="L31" class="ln">    31  </span>	productStockExistingPath = &#34;/v1/products/b1d4e0f2-3c5a-4b6d-8e7f-1a2b3c4d5e6f/stock&#34;
+<span id="L32" class="ln">    32  </span>	productStockMissingPath  = &#34;/v1/products/00000000-0000-0000-0000-000000000000/stock&#34;
+<span id="L33" class="ln">    33  </span>)
+<span id="L34" class="ln">    34  </span>
+<span id="L35" class="ln">    35  </span>func TestV1ProductsStock_Integration(t *testing.T) {
+<span id="L36" class="ln">    36  </span>	t.Parallel()
+<span id="L37" class="ln">    37  </span>
+<span id="L38" class="ln">    38  </span>	<span class="comment">// stockedView は、在庫更新後の商品を表すユースケース出力です。quantity / version は更新後の値です。</span>
+<span id="L39" class="ln">    39  </span>	stockedView := func(t *testing.T, quantity, version int) productuc.ProductView {
+<span id="L40" class="ln">    40  </span>		t.Helper()
+<span id="L41" class="ln">    41  </span>		return productuc.ProductView{
+<span id="L42" class="ln">    42  </span>			ID:                    uuidtestkit.NewTestFromSalt(t, &#34;integration_product_stock&#34;),
+<span id="L43" class="ln">    43  </span>			Name:                  &#34;商品&#34;,
+<span id="L44" class="ln">    44  </span>			Description:           ptr.To(&#34;説明&#34;),
+<span id="L45" class="ln">    45  </span>			Price:                 decimaltestkit.MustParse(t, &#34;19.99&#34;),
+<span id="L46" class="ln">    46  </span>			Quantity:              quantity,
+<span id="L47" class="ln">    47  </span>			StockWarningThreshold: ptr.To(10),
+<span id="L48" class="ln">    48  </span>			StatusID:              uuidtestkit.NewTestFromSalt(t, &#34;integration_stock_status&#34;),
+<span id="L49" class="ln">    49  </span>			StatusName:            &#34;在庫あり&#34;,
+<span id="L50" class="ln">    50  </span>			CategoryID:            uuidtestkit.NewTestFromSalt(t, &#34;integration_stock_category&#34;),
+<span id="L51" class="ln">    51  </span>			CategoryName:          &#34;電子機器&#34;,
+<span id="L52" class="ln">    52  </span>			PublishedAt:           ptr.To(time.Date(2026, time.January, 2, 0, 0, 0, 0, time.UTC)),
+<span id="L53" class="ln">    53  </span>			Images: []productuc.ProductImageItemView{
+<span id="L54" class="ln">    54  </span>				{Path: &#34;products/integration_stock.png&#34;, DisplaySort: 1},
+<span id="L55" class="ln">    55  </span>			},
+<span id="L56" class="ln">    56  </span>			Version: version,
+<span id="L57" class="ln">    57  </span>		}
+<span id="L58" class="ln">    58  </span>	}
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>	availableAdmin := func(t *testing.T, e *echo.Echo) http.Header {
+<span id="L61" class="ln">    61  </span>		t.Helper()
+<span id="L62" class="ln">    62  </span>		return MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;integration_stock_admin&#34;))
+<span id="L63" class="ln">    63  </span>	}
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L66" class="ln">    66  </span>		t.Parallel()
+<span id="L67" class="ln">    67  </span>
+<span id="L68" class="ln">    68  </span>		t.Run(&#34;PATCH /v1/products/{productId}/stock が admin の補充で更新後の在庫と version を返す&#34;, func(t *testing.T) {
+<span id="L69" class="ln">    69  </span>			t.Parallel()
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span>			e := echo.New()
+<span id="L72" class="ln">    72  </span>			ctrl := gomock.NewController(t)
+<span id="L73" class="ln">    73  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L74" class="ln">    74  </span>
+<span id="L75" class="ln">    75  </span>			var captured productuc.UpdateProductStockParams
+<span id="L76" class="ln">    76  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
+<span id="L77" class="ln">    77  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L78" class="ln">    78  </span>				func(
+<span id="L79" class="ln">    79  </span>					_ context.Context, authn *auth.Authn, _ uuid.UUID, params productuc.UpdateProductStockParams,
+<span id="L80" class="ln">    80  </span>				) (productuc.ProductView, error) {
+<span id="L81" class="ln">    81  </span>					require.NotNil(t, authn)
+<span id="L82" class="ln">    82  </span>					captured = params
+<span id="L83" class="ln">    83  </span>					return stockedView(t, 150, 2), nil
+<span id="L84" class="ln">    84  </span>				},
+<span id="L85" class="ln">    85  </span>			)
+<span id="L86" class="ln">    86  </span>
+<span id="L87" class="ln">    87  </span>			productsdetail.BindHandler(e, tf, mockUC, idempotency.Deps{})
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span>			headers := availableAdmin(t, e)
+<span id="L90" class="ln">    90  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 50}
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
+<span id="L93" class="ln">    93  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
+<span id="L94" class="ln">    94  </span>			assert.Equal(t, 50, captured.Delta)
+<span id="L95" class="ln">    95  </span>
+<span id="L96" class="ln">    96  </span>			var res productsdetailgen.ProductResponse
+<span id="L97" class="ln">    97  </span>			require.NoError(t, json.NewDecoder(actual.Body).Decode(&amp;res))
+<span id="L98" class="ln">    98  </span>			assert.Equal(t, int32(150), res.Quantity)
+<span id="L99" class="ln">    99  </span>			assert.Equal(t, int32(2), res.Version)
+<span id="L100" class="ln">   100  </span>		})
+<span id="L101" class="ln">   101  </span>
+<span id="L102" class="ln">   102  </span>		t.Run(&#34;PATCH /v1/products/{productId}/stock は負の delta を符号のままユースケースへ渡す&#34;, func(t *testing.T) {
+<span id="L103" class="ln">   103  </span>			t.Parallel()
+<span id="L104" class="ln">   104  </span>
+<span id="L105" class="ln">   105  </span>			e := echo.New()
+<span id="L106" class="ln">   106  </span>			ctrl := gomock.NewController(t)
+<span id="L107" class="ln">   107  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L108" class="ln">   108  </span>
+<span id="L109" class="ln">   109  </span>			var captured productuc.UpdateProductStockParams
+<span id="L110" class="ln">   110  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
+<span id="L111" class="ln">   111  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L112" class="ln">   112  </span>				func(
+<span id="L113" class="ln">   113  </span>					_ context.Context, _ *auth.Authn, _ uuid.UUID, params productuc.UpdateProductStockParams,
+<span id="L114" class="ln">   114  </span>				) (productuc.ProductView, error) {
+<span id="L115" class="ln">   115  </span>					captured = params
+<span id="L116" class="ln">   116  </span>					return stockedView(t, 90, 2), nil
+<span id="L117" class="ln">   117  </span>				},
+<span id="L118" class="ln">   118  </span>			)
+<span id="L119" class="ln">   119  </span>
+<span id="L120" class="ln">   120  </span>			productsdetail.BindHandler(e, tf, mockUC, idempotency.Deps{})
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>			headers := availableAdmin(t, e)
+<span id="L123" class="ln">   123  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: -10}
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
+<span id="L126" class="ln">   126  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
+<span id="L127" class="ln">   127  </span>			assert.Equal(t, -10, captured.Delta)
+<span id="L128" class="ln">   128  </span>
+<span id="L129" class="ln">   129  </span>			var res productsdetailgen.ProductResponse
+<span id="L130" class="ln">   130  </span>			require.NoError(t, json.NewDecoder(actual.Body).Decode(&amp;res))
+<span id="L131" class="ln">   131  </span>			assert.Equal(t, int32(90), res.Quantity)
+<span id="L132" class="ln">   132  </span>		})
+<span id="L133" class="ln">   133  </span>	})
+<span id="L134" class="ln">   134  </span>
+<span id="L135" class="ln">   135  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L136" class="ln">   136  </span>		t.Parallel()
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>		t.Run(&#34;未認証は 401 を返しユースケースへ到達しない&#34;, func(t *testing.T) {
+<span id="L139" class="ln">   139  </span>			t.Parallel()
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span>			e := echo.New()
+<span id="L142" class="ln">   142  </span>			UseAppErrorHandler(t, e)
+<span id="L143" class="ln">   143  </span>			ctrl := gomock.NewController(t)
+<span id="L144" class="ln">   144  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L145" class="ln">   145  </span>
+<span id="L146" class="ln">   146  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
+<span id="L147" class="ln">   147  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L148" class="ln">   148  </span>
+<span id="L149" class="ln">   149  </span>			productsdetail.BindHandler(e, tf, mockUC, idempotency.Deps{})
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
+<span id="L152" class="ln">   152  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, nil)
+<span id="L153" class="ln">   153  </span>			AssertErrorResponse(t, actual, http.StatusUnauthorized)
+<span id="L154" class="ln">   154  </span>		})
+<span id="L155" class="ln">   155  </span>
+<span id="L156" class="ln">   156  </span>		t.Run(&#34;宣言に無いフィールドを含む本文は400で弾かれる&#34;, func(t *testing.T) {
+<span id="L157" class="ln">   157  </span>			t.Parallel()
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>			e := echo.New()
+<span id="L160" class="ln">   160  </span>			UseAppErrorHandler(t, e)
+<span id="L161" class="ln">   161  </span>			mockUC := mock_product.NewMockUsecase(gomock.NewController(t))
+<span id="L162" class="ln">   162  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L163" class="ln">   163  </span>			productsdetail.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, idempotency.Deps{})
+<span id="L164" class="ln">   164  </span>			headers := availableAdmin(t, e)
+<span id="L165" class="ln">   165  </span>			useOpenAPIValidation(t, e)
+<span id="L166" class="ln">   166  </span>
+<span id="L167" class="ln">   167  </span>			body := map[string]any{&#34;delta&#34;: 10, &#34;productId&#34;: &#34;spoofed&#34;}
+<span id="L168" class="ln">   168  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>			AssertErrorResponse(t, actual, http.StatusBadRequest)
+<span id="L171" class="ln">   171  </span>		})
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>		t.Run(&#34;非 admin の権限エラーは 403 を返す&#34;, func(t *testing.T) {
+<span id="L174" class="ln">   174  </span>			t.Parallel()
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>			e := echo.New()
+<span id="L177" class="ln">   177  </span>			UseAppErrorHandler(t, e)
+<span id="L178" class="ln">   178  </span>			ctrl := gomock.NewController(t)
+<span id="L179" class="ln">   179  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
+<span id="L182" class="ln">   182  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L183" class="ln">   183  </span>				Return(productuc.ProductView{}, apperror.ErrPermissionDenied)
+<span id="L184" class="ln">   184  </span>
+<span id="L185" class="ln">   185  </span>			productsdetail.BindHandler(e, tf, mockUC, idempotency.Deps{})
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;integration_stock_member&#34;))
+<span id="L188" class="ln">   188  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
+<span id="L189" class="ln">   189  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
+<span id="L190" class="ln">   190  </span>			AssertErrorResponse(t, actual, http.StatusForbidden)
+<span id="L191" class="ln">   191  </span>		})
+<span id="L192" class="ln">   192  </span>
+<span id="L193" class="ln">   193  </span>		t.Run(&#34;未存在の productId は 404 を返す&#34;, func(t *testing.T) {
+<span id="L194" class="ln">   194  </span>			t.Parallel()
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>			e := echo.New()
+<span id="L197" class="ln">   197  </span>			UseAppErrorHandler(t, e)
+<span id="L198" class="ln">   198  </span>			ctrl := gomock.NewController(t)
+<span id="L199" class="ln">   199  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
+<span id="L202" class="ln">   202  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L203" class="ln">   203  </span>				Return(productuc.ProductView{}, apperror.ErrNotFound)
+<span id="L204" class="ln">   204  </span>
+<span id="L205" class="ln">   205  </span>			productsdetail.BindHandler(e, tf, mockUC, idempotency.Deps{})
+<span id="L206" class="ln">   206  </span>
+<span id="L207" class="ln">   207  </span>			headers := availableAdmin(t, e)
+<span id="L208" class="ln">   208  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
+<span id="L209" class="ln">   209  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockMissingPath, body, headers)
+<span id="L210" class="ln">   210  </span>			AssertErrorResponse(t, actual, http.StatusNotFound)
+<span id="L211" class="ln">   211  </span>		})
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>		t.Run(&#34;在庫が負になる delta の不変条件違反は 422 を返す&#34;, func(t *testing.T) {
+<span id="L214" class="ln">   214  </span>			t.Parallel()
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>			e := echo.New()
+<span id="L217" class="ln">   217  </span>			UseAppErrorHandler(t, e)
+<span id="L218" class="ln">   218  </span>			ctrl := gomock.NewController(t)
+<span id="L219" class="ln">   219  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
+<span id="L222" class="ln">   222  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L223" class="ln">   223  </span>				Return(productuc.ProductView{}, apperror.ErrValidation)
+<span id="L224" class="ln">   224  </span>
+<span id="L225" class="ln">   225  </span>			productsdetail.BindHandler(e, tf, mockUC, idempotency.Deps{})
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span>			headers := availableAdmin(t, e)
+<span id="L228" class="ln">   228  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: -1000}
+<span id="L229" class="ln">   229  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
+<span id="L230" class="ln">   230  </span>			AssertErrorResponse(t, actual, http.StatusUnprocessableEntity)
+<span id="L231" class="ln">   231  </span>		})
+<span id="L232" class="ln">   232  </span>
+<span id="L233" class="ln">   233  </span>		t.Run(&#34;取得後に他者が更新していた場合は 409 を返す&#34;, func(t *testing.T) {
+<span id="L234" class="ln">   234  </span>			t.Parallel()
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>			e := echo.New()
+<span id="L237" class="ln">   237  </span>			UseAppErrorHandler(t, e)
+<span id="L238" class="ln">   238  </span>			ctrl := gomock.NewController(t)
+<span id="L239" class="ln">   239  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L240" class="ln">   240  </span>
+<span id="L241" class="ln">   241  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
+<span id="L242" class="ln">   242  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L243" class="ln">   243  </span>				Return(productuc.ProductView{}, domainproduct.ErrVersionConflict)
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>			productsdetail.BindHandler(e, tf, mockUC, idempotency.Deps{})
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>			headers := availableAdmin(t, e)
+<span id="L248" class="ln">   248  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
+<span id="L249" class="ln">   249  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
+<span id="L250" class="ln">   250  </span>			AssertErrorResponse(t, actual, http.StatusConflict)
+<span id="L251" class="ln">   251  </span>		})
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span>		t.Run(&#34;行競合が解消できなかった場合は 503 を返す&#34;, func(t *testing.T) {
+<span id="L254" class="ln">   254  </span>			t.Parallel()
+<span id="L255" class="ln">   255  </span>
+<span id="L256" class="ln">   256  </span>			e := echo.New()
+<span id="L257" class="ln">   257  </span>			UseAppErrorHandler(t, e)
+<span id="L258" class="ln">   258  </span>			ctrl := gomock.NewController(t)
+<span id="L259" class="ln">   259  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span>			mockUC := mock_product.NewMockUsecase(ctrl)
+<span id="L262" class="ln">   262  </span>			mockUC.EXPECT().UpdateProductStock(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L263" class="ln">   263  </span>				Return(productuc.ProductView{}, apperror.ErrUnavailable)
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>			productsdetail.BindHandler(e, tf, mockUC, idempotency.Deps{})
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>			headers := availableAdmin(t, e)
+<span id="L268" class="ln">   268  </span>			body := &amp;productsdetailgen.PatchProductsStockJSONRequestBody{Delta: 10}
+<span id="L269" class="ln">   269  </span>			actual := StartServer(t, e).DoJSON(http.MethodPatch, productStockExistingPath, body, headers)
+<span id="L270" class="ln">   270  </span>			AssertErrorResponse(t, actual, http.StatusServiceUnavailable)
+<span id="L271" class="ln">   271  </span>		})
+<span id="L272" class="ln">   272  </span>	})
+<span id="L273" class="ln">   273  </span>}
+<span id="L274" class="ln">   274  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/integration/v1_products_stock_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

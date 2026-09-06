@@ -75,12 +75,12 @@
 <span id="L18" class="ln">    18  </span>	Outbox        Outbox          `envPrefix:&#34;OUTBOX_&#34;`
 <span id="L19" class="ln">    19  </span>	Auth          Auth            `envPrefix:&#34;AUTH_&#34;`
 <span id="L20" class="ln">    20  </span>	ObjectStorage ObjectStorage   `envPrefix:&#34;OBJECT_STORAGE_&#34;`
-<span id="L21" class="ln">    21  </span>	Endpoint      Endpoint        `envPrefix:&#34;ENDPOINT_&#34;`
-<span id="L22" class="ln">    22  </span>}
-<span id="L23" class="ln">    23  </span>
-<span id="L24" class="ln">    24  </span><span class="comment">// Endpoint は、このアプリが接続する外部サービスの所在をまとめて保持する。</span>
-<span id="L25" class="ln">    25  </span><span class="comment">// 「どこへ繋ぐか」はデプロイごとに変わる軸であり、各サブシステムの「どう振る舞うか」とは</span>
-<span id="L26" class="ln">    26  </span><span class="comment">// 直交するため、サブシステム設定から切り離してここへ集める。</span>
+<span id="L21" class="ln">    21  </span>	Realtime      Realtime        `envPrefix:&#34;REALTIME_&#34;`
+<span id="L22" class="ln">    22  </span>	Endpoint      Endpoint        `envPrefix:&#34;ENDPOINT_&#34;`
+<span id="L23" class="ln">    23  </span>}
+<span id="L24" class="ln">    24  </span>
+<span id="L25" class="ln">    25  </span><span class="comment">// Endpoint は、このアプリが接続する外部サービスの所在をまとめて保持する。</span>
+<span id="L26" class="ln">    26  </span><span class="comment">// この軸を分けている理由は env/README.md の &#34;Endpoint&#34; 節にある。</span>
 <span id="L27" class="ln">    27  </span><span class="comment">// 全項目 required だが空文字を許容する。空の意味は接続先ごとに異なるため各フィールドに記す。</span>
 <span id="L28" class="ln">    28  </span>type Endpoint struct {
 <span id="L29" class="ln">    29  </span>	<span class="comment">// OTLP は OpenTelemetry Collector の送出先です。空なら送出しません。</span>
@@ -89,192 +89,220 @@
 <span id="L32" class="ln">    32  </span>	JWKS string `env:&#34;JWKS,required&#34;`
 <span id="L33" class="ln">    33  </span>	<span class="comment">// ObjectStorage は S3 互換エンドポイントです。空なら SDK 既定の解決に委ねます（本番 AWS S3 等）。</span>
 <span id="L34" class="ln">    34  </span>	ObjectStorage string `env:&#34;OBJECT_STORAGE,required&#34;`
-<span id="L35" class="ln">    35  </span>	<span class="comment">// Outbox は PUBLISHER=http のときの送出先です。空のまま http を選ぶと DI で起動エラーにします。</span>
-<span id="L36" class="ln">    36  </span>	Outbox string `env:&#34;OUTBOX,required&#34;`
-<span id="L37" class="ln">    37  </span>	<span class="comment">// OutboxQueue は publish 端の SQS 互換エンドポイントです。空なら SDK 既定の解決に委ねます。</span>
-<span id="L38" class="ln">    38  </span>	OutboxQueue string `env:&#34;OUTBOX_QUEUE,required&#34;`
-<span id="L39" class="ln">    39  </span>	<span class="comment">// ConsumerQueue は consume 端の SQS 互換エンドポイントです。空なら SDK 既定の解決に委ねます。</span>
-<span id="L40" class="ln">    40  </span>	ConsumerQueue string `env:&#34;CONSUMER_QUEUE,required&#34;`
-<span id="L41" class="ln">    41  </span>	<span class="comment">// sample-api:begin</span>
-<span id="L42" class="ln">    42  </span>	<span class="comment">// ExchangeRate は外部為替レートサービスのベース URL です。空ならこの機能を使いません。</span>
-<span id="L43" class="ln">    43  </span>	ExchangeRate string `env:&#34;EXCHANGE_RATE,required&#34;`
-<span id="L44" class="ln">    44  </span>	<span class="comment">// sample-api:end</span>
-<span id="L45" class="ln">    45  </span>}
-<span id="L46" class="ln">    46  </span>
-<span id="L47" class="ln">    47  </span><span class="comment">// ObjectStorage は、画像等を格納する S3 互換オブジェクトストレージ（ローカルは Garage）の接続設定と</span>
-<span id="L48" class="ln">    48  </span><span class="comment">// アップロード上限を保持する。中立境界の実装は S3 アダプタだが、env 名は vendor 非依存にする。</span>
-<span id="L49" class="ln">    49  </span>type ObjectStorage struct {
-<span id="L50" class="ln">    50  </span>	Region string `env:&#34;REGION,required,notEmpty&#34;`
-<span id="L51" class="ln">    51  </span>	Bucket string `env:&#34;BUCKET,required,notEmpty&#34;`
-<span id="L52" class="ln">    52  </span>	<span class="comment">// AccessKeyID / SecretAccessKey は両方空なら SDK 既定の credential chain（IAM ロール等）へ委ねるため、</span>
-<span id="L53" class="ln">    53  </span>	<span class="comment">// 未設定を許す。ロール運用のデプロイにダミー値の注入を強いないための既定。</span>
-<span id="L54" class="ln">    54  </span>	AccessKeyID     string `env:&#34;ACCESS_KEY_ID&#34;                      envDefault:&#34;&#34;`
-<span id="L55" class="ln">    55  </span>	SecretAccessKey string `env:&#34;SECRET_ACCESS_KEY&#34;                  envDefault:&#34;&#34;`
-<span id="L56" class="ln">    56  </span>	UsePathStyle    bool   `env:&#34;USE_PATH_STYLE,required&#34;`
-<span id="L57" class="ln">    57  </span>	MaxUploadBytes  int64  `env:&#34;MAX_UPLOAD_BYTES,required,notEmpty&#34;`
-<span id="L58" class="ln">    58  </span>}
-<span id="L59" class="ln">    59  </span>
-<span id="L60" class="ln">    60  </span><span class="comment">// Auth は access token（JWT）検証の設定を保持する。</span>
-<span id="L61" class="ln">    61  </span>type Auth struct {
-<span id="L62" class="ln">    62  </span>	Issuer            string        `env:&#34;ISSUER&#34;             envDefault:&#34;&#34;`
-<span id="L63" class="ln">    63  </span>	Audience          string        `env:&#34;AUDIENCE&#34;           envDefault:&#34;&#34;`
-<span id="L64" class="ln">    64  </span>	AllowedAlgorithms []string      `env:&#34;ALLOWED_ALGORITHMS&#34; envDefault:&#34;RS256&#34; envSeparator:&#34;,&#34;`
-<span id="L65" class="ln">    65  </span>	ClockSkew         time.Duration `env:&#34;CLOCK_SKEW&#34;         envDefault:&#34;60s&#34;`
-<span id="L66" class="ln">    66  </span>	JWKSCacheTTL      time.Duration `env:&#34;JWKS_CACHE_TTL&#34;     envDefault:&#34;1h&#34;`
-<span id="L67" class="ln">    67  </span>	<span class="comment">// JWKSDiscoveryTTL は OIDC discovery 文書の再取得間隔です（鍵キャッシュとは別軸）。</span>
-<span id="L68" class="ln">    68  </span>	JWKSDiscoveryTTL time.Duration `env:&#34;JWKS_DISCOVERY_TTL&#34; envDefault:&#34;24h&#34;`
-<span id="L69" class="ln">    69  </span>	<span class="comment">// JWKSUnknownKIDCooldown は未知 kid での JWKS 再取得の最小間隔です（DoS 抑止）。</span>
-<span id="L70" class="ln">    70  </span>	JWKSUnknownKIDCooldown time.Duration `env:&#34;JWKS_UNKNOWN_KID_COOLDOWN&#34; envDefault:&#34;60s&#34;`
-<span id="L71" class="ln">    71  </span>}
-<span id="L72" class="ln">    72  </span>
-<span id="L73" class="ln">    73  </span><span class="comment">// Outbox は transactional outbox relay の設定を保持する。</span>
-<span id="L74" class="ln">    74  </span>type Outbox struct {
-<span id="L75" class="ln">    75  </span>	<span class="comment">// Publisher は publish 先の種別（&#34;http&#34; / &#34;sqs&#34;）です。ENV ではなくこの判別子で切り替え、</span>
-<span id="L76" class="ln">    76  </span>	<span class="comment">// 未知の値は DI で起動エラーにする（fail-closed）。</span>
-<span id="L77" class="ln">    77  </span>	Publisher    string        `env:&#34;PUBLISHER&#34;     envDefault:&#34;http&#34;`
-<span id="L78" class="ln">    78  </span>	PollInterval time.Duration `env:&#34;POLL_INTERVAL&#34; envDefault:&#34;1s&#34;`
-<span id="L79" class="ln">    79  </span>	ErrorBackoff time.Duration `env:&#34;ERROR_BACKOFF&#34; envDefault:&#34;5s&#34;`
-<span id="L80" class="ln">    80  </span>	BatchSize    int           `env:&#34;BATCH_SIZE&#34;    envDefault:&#34;100&#34;`
-<span id="L81" class="ln">    81  </span>	<span class="comment">// Queue* は PUBLISHER=sqs のときだけ使う。未設定のまま sqs を選ぶと adapter 構築時に落とす。</span>
-<span id="L82" class="ln">    82  </span>	QueueRegion          string `env:&#34;QUEUE_REGION&#34;            envDefault:&#34;&#34;`
-<span id="L83" class="ln">    83  </span>	QueueURL             string `env:&#34;QUEUE_URL&#34;               envDefault:&#34;&#34;`
-<span id="L84" class="ln">    84  </span>	QueueAccessKeyID     string `env:&#34;QUEUE_ACCESS_KEY_ID&#34;     envDefault:&#34;&#34;`
-<span id="L85" class="ln">    85  </span>	QueueSecretAccessKey string `env:&#34;QUEUE_SECRET_ACCESS_KEY&#34; envDefault:&#34;&#34;`
-<span id="L86" class="ln">    86  </span>}
-<span id="L87" class="ln">    87  </span>
-<span id="L88" class="ln">    88  </span><span class="comment">// ConsumerQueue は worker が consume する broker（SQS 互換）の adapter 設定を保持する。</span>
-<span id="L89" class="ln">    89  </span><span class="comment">// engine-core の Worker は broker 非依存と定めているため、broker 語彙を持つ設定は別軸に置く。</span>
-<span id="L90" class="ln">    90  </span><span class="comment">// publish 端の Outbox.Queue* とは対になる（consume 端がこちら）。</span>
-<span id="L91" class="ln">    91  </span><span class="comment">// 資格情報が両方空なら SDK 既定の credential chain（IAM ロール等）へ委ねる。</span>
-<span id="L92" class="ln">    92  </span>type ConsumerQueue struct {
-<span id="L93" class="ln">    93  </span>	Region          string `env:&#34;REGION&#34;            envDefault:&#34;&#34;`
-<span id="L94" class="ln">    94  </span>	URL             string `env:&#34;URL&#34;               envDefault:&#34;&#34;`
-<span id="L95" class="ln">    95  </span>	AccessKeyID     string `env:&#34;ACCESS_KEY_ID&#34;     envDefault:&#34;&#34;`
-<span id="L96" class="ln">    96  </span>	SecretAccessKey string `env:&#34;SECRET_ACCESS_KEY&#34; envDefault:&#34;&#34;`
-<span id="L97" class="ln">    97  </span>	<span class="comment">// DLQURL は Permanent メッセージの退避先であり、滞留量の収集対象でもある。</span>
-<span id="L98" class="ln">    98  </span>	<span class="comment">// 空なら app 側の退避経路を持たず、broker の redrive policy に委ねる。</span>
-<span id="L99" class="ln">    99  </span>	DLQURL string `env:&#34;DLQ_URL&#34; envDefault:&#34;&#34;`
-<span id="L100" class="ln">   100  </span>	<span class="comment">// MaxMessages は ReceiveMessage の最大取得件数（SQS の上限は 10）。</span>
-<span id="L101" class="ln">   101  </span>	MaxMessages int32 `env:&#34;MAX_MESSAGES&#34; envDefault:&#34;10&#34;`
-<span id="L102" class="ln">   102  </span>	<span class="comment">// WaitTimeSeconds は long-poll の待機秒数（0〜20）。上限にすると空ポーリングの往復が最も減る。</span>
-<span id="L103" class="ln">   103  </span>	WaitTimeSeconds int32 `env:&#34;WAIT_TIME_SECONDS&#34; envDefault:&#34;20&#34;`
-<span id="L104" class="ln">   104  </span>	<span class="comment">// VisibilityTimeout は受信メッセージの可視性タイムアウト秒数。</span>
-<span id="L105" class="ln">   105  </span>	VisibilityTimeout int32 `env:&#34;VISIBILITY_TIMEOUT&#34; envDefault:&#34;30&#34;`
-<span id="L106" class="ln">   106  </span>}
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span><span class="comment">// Worker は worker engine の engine-core 設定（broker 非依存）を保持する。</span>
-<span id="L109" class="ln">   109  </span>type Worker struct {
-<span id="L110" class="ln">   110  </span>	Concurrency               int           `env:&#34;CONCURRENCY&#34;                  envDefault:&#34;4&#34;`
-<span id="L111" class="ln">   111  </span>	MaxInFlight               int           `env:&#34;MAX_IN_FLIGHT&#34;                envDefault:&#34;8&#34;`
-<span id="L112" class="ln">   112  </span>	BatchSize                 int           `env:&#34;BATCH_SIZE&#34;                   envDefault:&#34;4&#34;`
-<span id="L113" class="ln">   113  </span>	ExtendInterval            time.Duration `env:&#34;EXTEND_INTERVAL&#34;              envDefault:&#34;0s&#34;`
-<span id="L114" class="ln">   114  </span>	DrainTimeout              time.Duration `env:&#34;DRAIN_TIMEOUT&#34;                envDefault:&#34;30s&#34;`
-<span id="L115" class="ln">   115  </span>	ReceiveCountWarnThreshold int           `env:&#34;RECEIVE_COUNT_WARN_THRESHOLD&#34; envDefault:&#34;5&#34;`
-<span id="L116" class="ln">   116  </span>	CircuitFailureThreshold   int           `env:&#34;CIRCUIT_FAILURE_THRESHOLD&#34;    envDefault:&#34;10&#34;`
-<span id="L117" class="ln">   117  </span>	CircuitOpenBackoffInitial time.Duration `env:&#34;CIRCUIT_OPEN_BACKOFF_INITIAL&#34; envDefault:&#34;1s&#34;`
-<span id="L118" class="ln">   118  </span>	CircuitOpenBackoffMax     time.Duration `env:&#34;CIRCUIT_OPEN_BACKOFF_MAX&#34;     envDefault:&#34;30s&#34;`
-<span id="L119" class="ln">   119  </span>	CircuitHalfOpenProbe      int           `env:&#34;CIRCUIT_HALF_OPEN_PROBE&#34;      envDefault:&#34;1&#34;`
-<span id="L120" class="ln">   120  </span>	HealthListenAddr          string        `env:&#34;HEALTH_LISTEN_ADDR&#34;           envDefault:&#34;:8081&#34;`
-<span id="L121" class="ln">   121  </span>	ProgressStaleAfter        time.Duration `env:&#34;PROGRESS_STALE_AFTER&#34;         envDefault:&#34;60s&#34;`
-<span id="L122" class="ln">   122  </span>	NackBackoffInitial        time.Duration `env:&#34;NACK_BACKOFF_INITIAL&#34;         envDefault:&#34;1s&#34;`
-<span id="L123" class="ln">   123  </span>	NackBackoffMax            time.Duration `env:&#34;NACK_BACKOFF_MAX&#34;             envDefault:&#34;30s&#34;`
-<span id="L124" class="ln">   124  </span>}
-<span id="L125" class="ln">   125  </span>
-<span id="L126" class="ln">   126  </span><span class="comment">// OperatingSystem は OS レベルの設定を保持する。</span>
-<span id="L127" class="ln">   127  </span>type OperatingSystem struct {
-<span id="L128" class="ln">   128  </span>	Timezone string `env:&#34;TZ,required,notEmpty&#34;`
-<span id="L129" class="ln">   129  </span>}
-<span id="L130" class="ln">   130  </span>
-<span id="L131" class="ln">   131  </span><span class="comment">// Application はアプリケーション識別・動作モードおよびシャットダウン制御に関する設定を保持する。</span>
-<span id="L132" class="ln">   132  </span>type Application struct {
-<span id="L133" class="ln">   133  </span>	Env             string        `env:&#34;ENV,required&#34;`
-<span id="L134" class="ln">   134  </span>	Name            string        `env:&#34;NAME,required&#34;`
-<span id="L135" class="ln">   135  </span>	Mode            string        `env:&#34;MODE,required&#34;`
-<span id="L136" class="ln">   136  </span>	LogLevel        string        `env:&#34;LOG_LEVEL,required&#34;`
-<span id="L137" class="ln">   137  </span>	ShutdownTimeout time.Duration `env:&#34;SHUTDOWN_TIMEOUT&#34;   envDefault:&#34;65s&#34;`
-<span id="L138" class="ln">   138  </span>}
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span><span class="comment">// Server は HTTP サーバーのバインドアドレスおよび各種タイムアウトに関する設定を保持する。</span>
-<span id="L141" class="ln">   141  </span>type Server struct {
-<span id="L142" class="ln">   142  </span>	Host              string        `env:&#34;HOST,required&#34;`
-<span id="L143" class="ln">   143  </span>	Port              int           `env:&#34;PORT,required&#34;`
-<span id="L144" class="ln">   144  </span>	ReadHeaderTimeout time.Duration `env:&#34;READ_HEADER_TIMEOUT&#34; envDefault:&#34;5s&#34;`
-<span id="L145" class="ln">   145  </span>	ReadTimeout       time.Duration `env:&#34;READ_TIMEOUT&#34;        envDefault:&#34;10s&#34;`
-<span id="L146" class="ln">   146  </span>	WriteTimeout      time.Duration `env:&#34;WRITE_TIMEOUT&#34;       envDefault:&#34;65s&#34;`
-<span id="L147" class="ln">   147  </span>	IdleTimeout       time.Duration `env:&#34;IDLE_TIMEOUT&#34;        envDefault:&#34;60s&#34;`
-<span id="L148" class="ln">   148  </span>	BodyLimitMB       int           `env:&#34;BODY_LIMIT_MB&#34;       envDefault:&#34;6&#34;`
-<span id="L149" class="ln">   149  </span>	RequestTimeout    time.Duration `env:&#34;REQUEST_TIMEOUT&#34;     envDefault:&#34;60s&#34;`
-<span id="L150" class="ln">   150  </span>}
-<span id="L151" class="ln">   151  </span>
-<span id="L152" class="ln">   152  </span><span class="comment">// Metrics はメトリクスエンドポイント（Prometheus 等）への接続情報と認証情報を保持する。</span>
-<span id="L153" class="ln">   153  </span>type Metrics struct {
-<span id="L154" class="ln">   154  </span>	Host     string `env:&#34;HOST,required&#34;`
-<span id="L155" class="ln">   155  </span>	Port     int    `env:&#34;PORT,required&#34;`
-<span id="L156" class="ln">   156  </span>	UserName string `env:&#34;USERNAME,required,notEmpty&#34;`
-<span id="L157" class="ln">   157  </span>	Password string `env:&#34;PASSWORD,required,notEmpty&#34;`
-<span id="L158" class="ln">   158  </span>}
-<span id="L159" class="ln">   159  </span>
-<span id="L160" class="ln">   160  </span><span class="comment">// Observability は OTLP exporter 設定（trace/metric/log の送出先種別・エンドポイント・プロトコル）、</span>
-<span id="L161" class="ln">   161  </span><span class="comment">// DBクエリ引数マスク設定、およびトレース対象とする HTTP ステータスコード一覧を保持する。</span>
-<span id="L162" class="ln">   162  </span>type Observability struct {
-<span id="L163" class="ln">   163  </span>	TracesExporter    string `env:&#34;TRACES_EXPORTER&#34;`
-<span id="L164" class="ln">   164  </span>	MetricsExporter   string `env:&#34;METRICS_EXPORTER&#34;`
-<span id="L165" class="ln">   165  </span>	LogsExporter      string `env:&#34;LOGS_EXPORTER&#34;`
-<span id="L166" class="ln">   166  </span>	OTLPProtocol      string `env:&#34;OTLP_PROTOCOL&#34;                 envDefault:&#34;http/protobuf&#34;`
-<span id="L167" class="ln">   167  </span>	MaskedDBQueryArgs bool   `env:&#34;MASKED_DB_QUERY_ARGS,required&#34;`
-<span id="L168" class="ln">   168  </span>	TargetStatusCodes []int  `env:&#34;TARGET_STATUS_CODES,required&#34;                             envSeparator:&#34;,&#34;`
-<span id="L169" class="ln">   169  </span>}
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span><span class="comment">// Database はデータベースへの接続先情報（ドライバ・ホスト・認証情報・SSL）および</span>
-<span id="L172" class="ln">   172  </span><span class="comment">// 接続確認タイムアウトやスロークエリ警告閾値を保持する。</span>
-<span id="L173" class="ln">   173  </span>type Database struct {
-<span id="L174" class="ln">   174  </span>	Driver                 string        `env:&#34;DRIVER&#34;                    envDefault:&#34;pgx&#34;`
-<span id="L175" class="ln">   175  </span>	Host                   string        `env:&#34;HOST,required&#34;`
-<span id="L176" class="ln">   176  </span>	Port                   int           `env:&#34;PORT,required&#34;`
-<span id="L177" class="ln">   177  </span>	User                   string        `env:&#34;USER,required&#34;`
-<span id="L178" class="ln">   178  </span>	Password               string        `env:&#34;PASSWORD,required&#34;`
-<span id="L179" class="ln">   179  </span>	Name                   string        `env:&#34;NAME,required&#34;`
-<span id="L180" class="ln">   180  </span>	SSLMode                string        `env:&#34;SSL_MODE,required&#34;`
-<span id="L181" class="ln">   181  </span>	PingTimeout            time.Duration `env:&#34;PING_TIMEOUT,required&#34;`
-<span id="L182" class="ln">   182  </span>	SlowQueryWarnThreshold time.Duration `env:&#34;SLOW_QUERY_WARN_THRESHOLD&#34; envDefault:&#34;500ms&#34;`
-<span id="L183" class="ln">   183  </span>	StatementTimeout       time.Duration `env:&#34;STATEMENT_TIMEOUT&#34;         envDefault:&#34;30s&#34;`
-<span id="L184" class="ln">   184  </span>	LockTimeout            time.Duration `env:&#34;LOCK_TIMEOUT&#34;              envDefault:&#34;10s&#34;`
-<span id="L185" class="ln">   185  </span>	TxMaxRetries           int           `env:&#34;TX_MAX_RETRIES&#34;            envDefault:&#34;3&#34;`
-<span id="L186" class="ln">   186  </span>	TxRetryBaseBackoff     time.Duration `env:&#34;TX_RETRY_BASE_BACKOFF&#34;     envDefault:&#34;5ms&#34;`
-<span id="L187" class="ln">   187  </span>	TxRetryMaxBackoff      time.Duration `env:&#34;TX_RETRY_MAX_BACKOFF&#34;      envDefault:&#34;100ms&#34;`
-<span id="L188" class="ln">   188  </span>}
-<span id="L189" class="ln">   189  </span>
-<span id="L190" class="ln">   190  </span><span class="comment">// DBConnection はコネクションプールの上限・下限数とコネクションの最大生存時間・最大アイドル時間を保持する。</span>
-<span id="L191" class="ln">   191  </span>type DBConnection struct {
-<span id="L192" class="ln">   192  </span>	MaxConns    int32         `env:&#34;MAX_CONNS&#34;     envDefault:&#34;10&#34;`
-<span id="L193" class="ln">   193  </span>	MinConns    int32         `env:&#34;MIN_CONNS&#34;     envDefault:&#34;5&#34;`
-<span id="L194" class="ln">   194  </span>	MaxLifetime time.Duration `env:&#34;MAX_LIFETIME&#34;  envDefault:&#34;30m&#34;`
-<span id="L195" class="ln">   195  </span>	MaxIdleTime time.Duration `env:&#34;MAX_IDLE_TIME&#34; envDefault:&#34;10m&#34;`
-<span id="L196" class="ln">   196  </span>}
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span><span class="comment">// Security は CORS 許可オリジン・CIDR 制限・セキュリティヘッダー（HSTS・X-Frame-Options 等）・</span>
-<span id="L199" class="ln">   199  </span><span class="comment">// Referrer Policy を保持する。</span>
-<span id="L200" class="ln">   200  </span>type Security struct {
-<span id="L201" class="ln">   201  </span>	AllowedOrigins        []string      `env:&#34;ALLOWED_ORIGINS,required&#34;         envSeparator:&#34;,&#34;`
-<span id="L202" class="ln">   202  </span>	CIDR                  string        `env:&#34;CIDR,required&#34;`
-<span id="L203" class="ln">   203  </span>	ContentTypeNosniff    string        `env:&#34;CONTENT_TYPE_NOSNIFF,required&#34;`
-<span id="L204" class="ln">   204  </span>	XFrameOptions         string        `env:&#34;X_FRAME_OPTIONS,required&#34;`
-<span id="L205" class="ln">   205  </span>	HSTSMaxAge            time.Duration `env:&#34;HSTS_MAX_AGE,required&#34;`
-<span id="L206" class="ln">   206  </span>	HSTSExcludeSubdomains bool          `env:&#34;HSTS_EXCLUDE_SUBDOMAINS,required&#34;`
-<span id="L207" class="ln">   207  </span>	HSTSPreloadEnabled    bool          `env:&#34;HSTS_PRELOAD_ENABLED,required&#34;`
-<span id="L208" class="ln">   208  </span>	ReferrerPolicy        string        `env:&#34;REFERRER_POLICY,required&#34;`
-<span id="L209" class="ln">   209  </span>	<span class="comment">// CrossOriginResourcePolicy は Cross-Origin-Resource-Policy ヘッダーの値です。空の場合は</span>
-<span id="L210" class="ln">   210  </span>	<span class="comment">// ヘッダーを出さない（ブラウザ既定の挙動に委ねる）という意味を持つため、空文字を許容する。</span>
-<span id="L211" class="ln">   211  </span>	CrossOriginResourcePolicy string `env:&#34;CROSS_ORIGIN_RESOURCE_POLICY,required&#34;`
-<span id="L212" class="ln">   212  </span>}
-<span id="L213" class="ln">   213  </span>
-<span id="L214" class="ln">   214  </span><span class="comment">// SecureCookie はセキュアクッキーの属性（Secure / SameSite / Domain）の上書き設定を保持する。</span>
-<span id="L215" class="ln">   215  </span>type SecureCookie struct {
-<span id="L216" class="ln">   216  </span>	Secure   *bool  `env:&#34;SECURE&#34;`
-<span id="L217" class="ln">   217  </span>	SameSite string `env:&#34;SAME_SITE&#34;`
-<span id="L218" class="ln">   218  </span>	Domain   string `env:&#34;DOMAIN&#34;`
-<span id="L219" class="ln">   219  </span>}
-<span id="L220" class="ln">   220  </span>
+<span id="L35" class="ln">    35  </span>	<span class="comment">// Realtime は Realtime Delivery の store（DynamoDB 互換）のエンドポイントです。空なら SDK 既定の解決に委ねます（本番 DynamoDB）。</span>
+<span id="L36" class="ln">    36  </span>	Realtime string `env:&#34;REALTIME,required&#34;`
+<span id="L37" class="ln">    37  </span>	<span class="comment">// RealtimePubSub は Realtime Delivery の fan-out（SNS / SQS 互換）のエンドポイントです。空なら SDK 既定の解決に委ねます（本番 SNS / SQS）。</span>
+<span id="L38" class="ln">    38  </span>	RealtimePubSub string `env:&#34;REALTIME_PUBSUB,required&#34;`
+<span id="L39" class="ln">    39  </span>	<span class="comment">// Outbox は PUBLISHER=http のときの送出先です。空のまま http を選ぶと DI で起動エラーにします。</span>
+<span id="L40" class="ln">    40  </span>	Outbox string `env:&#34;OUTBOX,required&#34;`
+<span id="L41" class="ln">    41  </span>	<span class="comment">// OutboxQueue は publish 端の SQS 互換エンドポイントです。空なら SDK 既定の解決に委ねます。</span>
+<span id="L42" class="ln">    42  </span>	OutboxQueue string `env:&#34;OUTBOX_QUEUE,required&#34;`
+<span id="L43" class="ln">    43  </span>	<span class="comment">// ConsumerQueue は consume 端の SQS 互換エンドポイントです。空なら SDK 既定の解決に委ねます。</span>
+<span id="L44" class="ln">    44  </span>	ConsumerQueue string `env:&#34;CONSUMER_QUEUE,required&#34;`
+<span id="L45" class="ln">    45  </span>	<span class="comment">// sample-api:begin</span>
+<span id="L46" class="ln">    46  </span>	<span class="comment">// ExchangeRate は外部為替レートサービスのベース URL です。空ならこの機能を使いません。</span>
+<span id="L47" class="ln">    47  </span>	ExchangeRate string `env:&#34;EXCHANGE_RATE,required&#34;`
+<span id="L48" class="ln">    48  </span>	<span class="comment">// sample-api:end</span>
+<span id="L49" class="ln">    49  </span>}
+<span id="L50" class="ln">    50  </span>
+<span id="L51" class="ln">    51  </span><span class="comment">// ObjectStorage は、画像等を格納する S3 互換オブジェクトストレージ（ローカルは Garage）の接続設定と</span>
+<span id="L52" class="ln">    52  </span><span class="comment">// アップロード上限を保持する。env 名は vendor 非依存にする（env/README.md「Object Storage」）。</span>
+<span id="L53" class="ln">    53  </span>type ObjectStorage struct {
+<span id="L54" class="ln">    54  </span>	Region string `env:&#34;REGION,required,notEmpty&#34;`
+<span id="L55" class="ln">    55  </span>	Bucket string `env:&#34;BUCKET,required,notEmpty&#34;`
+<span id="L56" class="ln">    56  </span>	<span class="comment">// AccessKeyID / SecretAccessKey は両方空なら SDK 既定の credential chain（IAM ロール等）へ委ねるため、</span>
+<span id="L57" class="ln">    57  </span>	<span class="comment">// 未設定を許す（ロール運用との関係は env/README.md「Object Storage」）。</span>
+<span id="L58" class="ln">    58  </span>	AccessKeyID     string `env:&#34;ACCESS_KEY_ID&#34;                      envDefault:&#34;&#34;`
+<span id="L59" class="ln">    59  </span>	SecretAccessKey string `env:&#34;SECRET_ACCESS_KEY&#34;                  envDefault:&#34;&#34;`
+<span id="L60" class="ln">    60  </span>	UsePathStyle    bool   `env:&#34;USE_PATH_STYLE,required&#34;`
+<span id="L61" class="ln">    61  </span>	MaxUploadBytes  int64  `env:&#34;MAX_UPLOAD_BYTES,required,notEmpty&#34;`
+<span id="L62" class="ln">    62  </span>}
+<span id="L63" class="ln">    63  </span>
+<span id="L64" class="ln">    64  </span><span class="comment">// Realtime は、Realtime Delivery の EventLog / StreamTicket / InstanceLease を置く DynamoDB 互換 store と、</span>
+<span id="L65" class="ln">    65  </span><span class="comment">// serve instance への fan-out（SNS / SQS 互換）の接続設定を保持する。中立境界の実装は DynamoDB / SNS / SQS の</span>
+<span id="L66" class="ln">    66  </span><span class="comment">// adapter だが、env 名は vendor 非依存にする。</span>
+<span id="L67" class="ln">    67  </span><span class="comment">// table 名は固定名（realtime_event_log 等）に TableSuffix を付けた形で、queue 名は QueuePrefix に instance の</span>
+<span id="L68" class="ln">    68  </span><span class="comment">// 識別子を付けた形で、どちらも環境ごとに分かれる。</span>
+<span id="L69" class="ln">    69  </span>type Realtime struct {
+<span id="L70" class="ln">    70  </span>	Region string `env:&#34;REGION,required,notEmpty&#34;`
+<span id="L71" class="ln">    71  </span>	<span class="comment">// TableSuffix は table 名の末尾に付く環境識別子（例 local / ci / prd）。小文字・数字・アンダースコアで書く。</span>
+<span id="L72" class="ln">    72  </span>	TableSuffix string `env:&#34;TABLE_SUFFIX,required,notEmpty&#34;`
+<span id="L73" class="ln">    73  </span>	<span class="comment">// Topic は wakeup と失効通知を載せる topic の識別子（AWS では ARN）。deployment が用意する resource で、</span>
+<span id="L74" class="ln">    74  </span>	<span class="comment">// 空のまま fan-out を配線すると DI で起動エラーにする（ENDPOINT_OUTBOX と同じ扱い）。</span>
+<span id="L75" class="ln">    75  </span>	Topic string `env:&#34;TOPIC&#34; envDefault:&#34;&#34;`
+<span id="L76" class="ln">    76  </span>	<span class="comment">// QueuePrefix は instance queue 名の先頭（例 realtime-local）。英数字・`-`・`_` で書く。</span>
+<span id="L77" class="ln">    77  </span>	QueuePrefix string `env:&#34;QUEUE_PREFIX,required,notEmpty&#34;`
+<span id="L78" class="ln">    78  </span>	<span class="comment">// DLQ は instance queue の redrive 先の識別子（AWS では ARN）。空なら RedrivePolicy を付けない。</span>
+<span id="L79" class="ln">    79  </span>	DLQ string `env:&#34;DLQ&#34; envDefault:&#34;&#34;`
+<span id="L80" class="ln">    80  </span>	<span class="comment">// AccessKeyID / SecretAccessKey は ObjectStorage と同じ既定（両方空なら未設定を許す）。</span>
+<span id="L81" class="ln">    81  </span>	AccessKeyID     string `env:&#34;ACCESS_KEY_ID&#34;     envDefault:&#34;&#34;`
+<span id="L82" class="ln">    82  </span>	SecretAccessKey string `env:&#34;SECRET_ACCESS_KEY&#34; envDefault:&#34;&#34;`
+<span id="L83" class="ln">    83  </span>	<span class="comment">// MaxConnections は 1 instance が同時に保持する SSE 接続数の上限。負荷と機材で決まるため配備ごとに変わる。</span>
+<span id="L84" class="ln">    84  </span>	MaxConnections int `env:&#34;MAX_CONNECTIONS&#34; envDefault:&#34;1000&#34;`
+<span id="L85" class="ln">    85  </span>	<span class="comment">// ReplayConcurrency は replay と catch-up が 1 instance で同時に走る本数の上限。</span>
+<span id="L86" class="ln">    86  </span>	ReplayConcurrency int `env:&#34;REPLAY_CONCURRENCY&#34; envDefault:&#34;16&#34;`
+<span id="L87" class="ln">    87  </span>}
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span><span class="comment">// Auth は access token（JWT）検証の設定を保持する。</span>
+<span id="L90" class="ln">    90  </span>type Auth struct {
+<span id="L91" class="ln">    91  </span>	Issuer            string        `env:&#34;ISSUER&#34;             envDefault:&#34;&#34;`
+<span id="L92" class="ln">    92  </span>	Audience          string        `env:&#34;AUDIENCE&#34;           envDefault:&#34;&#34;`
+<span id="L93" class="ln">    93  </span>	AllowedAlgorithms []string      `env:&#34;ALLOWED_ALGORITHMS&#34; envDefault:&#34;RS256&#34; envSeparator:&#34;,&#34;`
+<span id="L94" class="ln">    94  </span>	ClockSkew         time.Duration `env:&#34;CLOCK_SKEW&#34;         envDefault:&#34;60s&#34;`
+<span id="L95" class="ln">    95  </span>	JWKSCacheTTL      time.Duration `env:&#34;JWKS_CACHE_TTL&#34;     envDefault:&#34;1h&#34;`
+<span id="L96" class="ln">    96  </span>	<span class="comment">// JWKSDiscoveryTTL は OIDC discovery 文書の再取得間隔です（鍵キャッシュとは別軸）。</span>
+<span id="L97" class="ln">    97  </span>	JWKSDiscoveryTTL time.Duration `env:&#34;JWKS_DISCOVERY_TTL&#34; envDefault:&#34;24h&#34;`
+<span id="L98" class="ln">    98  </span>	<span class="comment">// JWKSUnknownKIDCooldown は未知 kid での JWKS 再取得の最小間隔です（DoS 抑止）。</span>
+<span id="L99" class="ln">    99  </span>	JWKSUnknownKIDCooldown time.Duration `env:&#34;JWKS_UNKNOWN_KID_COOLDOWN&#34; envDefault:&#34;60s&#34;`
+<span id="L100" class="ln">   100  </span>}
+<span id="L101" class="ln">   101  </span>
+<span id="L102" class="ln">   102  </span><span class="comment">// Outbox は transactional outbox relay の設定を保持する。</span>
+<span id="L103" class="ln">   103  </span>type Outbox struct {
+<span id="L104" class="ln">   104  </span>	<span class="comment">// Publisher は publish 先の種別（&#34;http&#34; / &#34;sqs&#34;）です。ENV ではなくこの判別子で切り替え、</span>
+<span id="L105" class="ln">   105  </span>	<span class="comment">// 未知の値は DI で起動エラーにする（fail-closed）。</span>
+<span id="L106" class="ln">   106  </span>	Publisher    string        `env:&#34;PUBLISHER&#34;     envDefault:&#34;http&#34;`
+<span id="L107" class="ln">   107  </span>	PollInterval time.Duration `env:&#34;POLL_INTERVAL&#34; envDefault:&#34;1s&#34;`
+<span id="L108" class="ln">   108  </span>	ErrorBackoff time.Duration `env:&#34;ERROR_BACKOFF&#34; envDefault:&#34;5s&#34;`
+<span id="L109" class="ln">   109  </span>	BatchSize    int           `env:&#34;BATCH_SIZE&#34;    envDefault:&#34;100&#34;`
+<span id="L110" class="ln">   110  </span>	<span class="comment">// Queue* は PUBLISHER=sqs のときだけ使う。未設定のまま sqs を選ぶと adapter 構築時に落とす。</span>
+<span id="L111" class="ln">   111  </span>	QueueRegion          string `env:&#34;QUEUE_REGION&#34;            envDefault:&#34;&#34;`
+<span id="L112" class="ln">   112  </span>	QueueURL             string `env:&#34;QUEUE_URL&#34;               envDefault:&#34;&#34;`
+<span id="L113" class="ln">   113  </span>	QueueAccessKeyID     string `env:&#34;QUEUE_ACCESS_KEY_ID&#34;     envDefault:&#34;&#34;`
+<span id="L114" class="ln">   114  </span>	QueueSecretAccessKey string `env:&#34;QUEUE_SECRET_ACCESS_KEY&#34; envDefault:&#34;&#34;`
+<span id="L115" class="ln">   115  </span>}
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span><span class="comment">// ConsumerQueue は worker が consume する broker（SQS 互換）の adapter 設定を保持する。Worker とは別軸で、</span>
+<span id="L118" class="ln">   118  </span><span class="comment">// publish 端の Outbox.Queue* と対になる（軸を分ける理由は env/README.md「Consumer Queue」）。</span>
+<span id="L119" class="ln">   119  </span><span class="comment">// 資格情報の既定は ObjectStorage と同じ。</span>
+<span id="L120" class="ln">   120  </span>type ConsumerQueue struct {
+<span id="L121" class="ln">   121  </span>	Region          string `env:&#34;REGION&#34;            envDefault:&#34;&#34;`
+<span id="L122" class="ln">   122  </span>	URL             string `env:&#34;URL&#34;               envDefault:&#34;&#34;`
+<span id="L123" class="ln">   123  </span>	AccessKeyID     string `env:&#34;ACCESS_KEY_ID&#34;     envDefault:&#34;&#34;`
+<span id="L124" class="ln">   124  </span>	SecretAccessKey string `env:&#34;SECRET_ACCESS_KEY&#34; envDefault:&#34;&#34;`
+<span id="L125" class="ln">   125  </span>	<span class="comment">// DLQURL は Permanent メッセージの退避先であり、滞留量の収集対象でもある。</span>
+<span id="L126" class="ln">   126  </span>	<span class="comment">// 空なら app 側の退避経路を持たず、broker の redrive policy に委ねる。</span>
+<span id="L127" class="ln">   127  </span>	DLQURL string `env:&#34;DLQ_URL&#34; envDefault:&#34;&#34;`
+<span id="L128" class="ln">   128  </span>	<span class="comment">// MaxMessages は ReceiveMessage の最大取得件数（SQS の上限は 10）。</span>
+<span id="L129" class="ln">   129  </span>	MaxMessages int32 `env:&#34;MAX_MESSAGES&#34; envDefault:&#34;10&#34;`
+<span id="L130" class="ln">   130  </span>	<span class="comment">// WaitTimeSeconds は long-poll の待機秒数（0〜20）。上限にすると空ポーリングの往復が最も減る。</span>
+<span id="L131" class="ln">   131  </span>	WaitTimeSeconds int32 `env:&#34;WAIT_TIME_SECONDS&#34; envDefault:&#34;20&#34;`
+<span id="L132" class="ln">   132  </span>	<span class="comment">// VisibilityTimeout は受信メッセージの可視性タイムアウト秒数。</span>
+<span id="L133" class="ln">   133  </span>	VisibilityTimeout int32 `env:&#34;VISIBILITY_TIMEOUT&#34; envDefault:&#34;30&#34;`
+<span id="L134" class="ln">   134  </span>}
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span><span class="comment">// Worker は worker engine の engine-core 設定（broker 非依存）を保持する。</span>
+<span id="L137" class="ln">   137  </span>type Worker struct {
+<span id="L138" class="ln">   138  </span>	Concurrency               int           `env:&#34;CONCURRENCY&#34;                  envDefault:&#34;4&#34;`
+<span id="L139" class="ln">   139  </span>	MaxInFlight               int           `env:&#34;MAX_IN_FLIGHT&#34;                envDefault:&#34;8&#34;`
+<span id="L140" class="ln">   140  </span>	BatchSize                 int           `env:&#34;BATCH_SIZE&#34;                   envDefault:&#34;4&#34;`
+<span id="L141" class="ln">   141  </span>	ExtendInterval            time.Duration `env:&#34;EXTEND_INTERVAL&#34;              envDefault:&#34;0s&#34;`
+<span id="L142" class="ln">   142  </span>	DrainTimeout              time.Duration `env:&#34;DRAIN_TIMEOUT&#34;                envDefault:&#34;30s&#34;`
+<span id="L143" class="ln">   143  </span>	ReceiveCountWarnThreshold int           `env:&#34;RECEIVE_COUNT_WARN_THRESHOLD&#34; envDefault:&#34;5&#34;`
+<span id="L144" class="ln">   144  </span>	CircuitFailureThreshold   int           `env:&#34;CIRCUIT_FAILURE_THRESHOLD&#34;    envDefault:&#34;10&#34;`
+<span id="L145" class="ln">   145  </span>	CircuitOpenBackoffInitial time.Duration `env:&#34;CIRCUIT_OPEN_BACKOFF_INITIAL&#34; envDefault:&#34;1s&#34;`
+<span id="L146" class="ln">   146  </span>	CircuitOpenBackoffMax     time.Duration `env:&#34;CIRCUIT_OPEN_BACKOFF_MAX&#34;     envDefault:&#34;30s&#34;`
+<span id="L147" class="ln">   147  </span>	CircuitHalfOpenProbe      int           `env:&#34;CIRCUIT_HALF_OPEN_PROBE&#34;      envDefault:&#34;1&#34;`
+<span id="L148" class="ln">   148  </span>	HealthListenAddr          string        `env:&#34;HEALTH_LISTEN_ADDR&#34;           envDefault:&#34;:8081&#34;`
+<span id="L149" class="ln">   149  </span>	ProgressStaleAfter        time.Duration `env:&#34;PROGRESS_STALE_AFTER&#34;         envDefault:&#34;60s&#34;`
+<span id="L150" class="ln">   150  </span>	NackBackoffInitial        time.Duration `env:&#34;NACK_BACKOFF_INITIAL&#34;         envDefault:&#34;1s&#34;`
+<span id="L151" class="ln">   151  </span>	NackBackoffMax            time.Duration `env:&#34;NACK_BACKOFF_MAX&#34;             envDefault:&#34;30s&#34;`
+<span id="L152" class="ln">   152  </span>}
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span><span class="comment">// OperatingSystem は OS レベルの設定を保持する。</span>
+<span id="L155" class="ln">   155  </span>type OperatingSystem struct {
+<span id="L156" class="ln">   156  </span>	Timezone string `env:&#34;TZ,required,notEmpty&#34;`
+<span id="L157" class="ln">   157  </span>}
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span><span class="comment">// Application はアプリケーション識別・動作モードおよびシャットダウン制御に関する設定を保持する。</span>
+<span id="L160" class="ln">   160  </span>type Application struct {
+<span id="L161" class="ln">   161  </span>	Env             string        `env:&#34;ENV,required&#34;`
+<span id="L162" class="ln">   162  </span>	Name            string        `env:&#34;NAME,required&#34;`
+<span id="L163" class="ln">   163  </span>	Mode            string        `env:&#34;MODE,required&#34;`
+<span id="L164" class="ln">   164  </span>	LogLevel        string        `env:&#34;LOG_LEVEL,required&#34;`
+<span id="L165" class="ln">   165  </span>	ShutdownTimeout time.Duration `env:&#34;SHUTDOWN_TIMEOUT&#34;   envDefault:&#34;65s&#34;`
+<span id="L166" class="ln">   166  </span>}
+<span id="L167" class="ln">   167  </span>
+<span id="L168" class="ln">   168  </span><span class="comment">// Server は HTTP サーバーのバインドアドレスおよび各種タイムアウトに関する設定を保持する。</span>
+<span id="L169" class="ln">   169  </span>type Server struct {
+<span id="L170" class="ln">   170  </span>	Host              string        `env:&#34;HOST,required&#34;`
+<span id="L171" class="ln">   171  </span>	Port              int           `env:&#34;PORT,required&#34;`
+<span id="L172" class="ln">   172  </span>	ReadHeaderTimeout time.Duration `env:&#34;READ_HEADER_TIMEOUT&#34; envDefault:&#34;5s&#34;`
+<span id="L173" class="ln">   173  </span>	ReadTimeout       time.Duration `env:&#34;READ_TIMEOUT&#34;        envDefault:&#34;10s&#34;`
+<span id="L174" class="ln">   174  </span>	WriteTimeout      time.Duration `env:&#34;WRITE_TIMEOUT&#34;       envDefault:&#34;65s&#34;`
+<span id="L175" class="ln">   175  </span>	IdleTimeout       time.Duration `env:&#34;IDLE_TIMEOUT&#34;        envDefault:&#34;60s&#34;`
+<span id="L176" class="ln">   176  </span>	BodyLimitMB       int           `env:&#34;BODY_LIMIT_MB&#34;       envDefault:&#34;6&#34;`
+<span id="L177" class="ln">   177  </span>	RequestTimeout    time.Duration `env:&#34;REQUEST_TIMEOUT&#34;     envDefault:&#34;60s&#34;`
+<span id="L178" class="ln">   178  </span>}
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span><span class="comment">// Metrics はメトリクスエンドポイント（Prometheus 等）への接続情報と認証情報を保持する。</span>
+<span id="L181" class="ln">   181  </span>type Metrics struct {
+<span id="L182" class="ln">   182  </span>	Host     string `env:&#34;HOST,required&#34;`
+<span id="L183" class="ln">   183  </span>	Port     int    `env:&#34;PORT,required&#34;`
+<span id="L184" class="ln">   184  </span>	UserName string `env:&#34;USERNAME,required,notEmpty&#34;`
+<span id="L185" class="ln">   185  </span>	Password string `env:&#34;PASSWORD,required,notEmpty&#34;`
+<span id="L186" class="ln">   186  </span>}
+<span id="L187" class="ln">   187  </span>
+<span id="L188" class="ln">   188  </span><span class="comment">// Observability は OTLP exporter 設定（trace/metric/log の送出先種別・エンドポイント・プロトコル）、</span>
+<span id="L189" class="ln">   189  </span><span class="comment">// DBクエリ引数マスク設定、およびトレース対象とする HTTP ステータスコード一覧を保持する。</span>
+<span id="L190" class="ln">   190  </span>type Observability struct {
+<span id="L191" class="ln">   191  </span>	TracesExporter    string `env:&#34;TRACES_EXPORTER&#34;`
+<span id="L192" class="ln">   192  </span>	MetricsExporter   string `env:&#34;METRICS_EXPORTER&#34;`
+<span id="L193" class="ln">   193  </span>	LogsExporter      string `env:&#34;LOGS_EXPORTER&#34;`
+<span id="L194" class="ln">   194  </span>	OTLPProtocol      string `env:&#34;OTLP_PROTOCOL&#34;                 envDefault:&#34;http/protobuf&#34;`
+<span id="L195" class="ln">   195  </span>	MaskedDBQueryArgs bool   `env:&#34;MASKED_DB_QUERY_ARGS,required&#34;`
+<span id="L196" class="ln">   196  </span>	TargetStatusCodes []int  `env:&#34;TARGET_STATUS_CODES,required&#34;                             envSeparator:&#34;,&#34;`
+<span id="L197" class="ln">   197  </span>}
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span><span class="comment">// Database はデータベースへの接続先情報（ドライバ・ホスト・認証情報・SSL）および</span>
+<span id="L200" class="ln">   200  </span><span class="comment">// 接続確認タイムアウトやスロークエリ警告閾値を保持する。</span>
+<span id="L201" class="ln">   201  </span>type Database struct {
+<span id="L202" class="ln">   202  </span>	Driver                 string        `env:&#34;DRIVER&#34;                    envDefault:&#34;pgx&#34;`
+<span id="L203" class="ln">   203  </span>	Host                   string        `env:&#34;HOST,required&#34;`
+<span id="L204" class="ln">   204  </span>	Port                   int           `env:&#34;PORT,required&#34;`
+<span id="L205" class="ln">   205  </span>	User                   string        `env:&#34;USER,required&#34;`
+<span id="L206" class="ln">   206  </span>	Password               string        `env:&#34;PASSWORD,required&#34;`
+<span id="L207" class="ln">   207  </span>	Name                   string        `env:&#34;NAME,required&#34;`
+<span id="L208" class="ln">   208  </span>	SSLMode                string        `env:&#34;SSL_MODE,required&#34;`
+<span id="L209" class="ln">   209  </span>	PingTimeout            time.Duration `env:&#34;PING_TIMEOUT,required&#34;`
+<span id="L210" class="ln">   210  </span>	SlowQueryWarnThreshold time.Duration `env:&#34;SLOW_QUERY_WARN_THRESHOLD&#34; envDefault:&#34;500ms&#34;`
+<span id="L211" class="ln">   211  </span>	StatementTimeout       time.Duration `env:&#34;STATEMENT_TIMEOUT&#34;         envDefault:&#34;30s&#34;`
+<span id="L212" class="ln">   212  </span>	LockTimeout            time.Duration `env:&#34;LOCK_TIMEOUT&#34;              envDefault:&#34;10s&#34;`
+<span id="L213" class="ln">   213  </span>	TxMaxRetries           int           `env:&#34;TX_MAX_RETRIES&#34;            envDefault:&#34;3&#34;`
+<span id="L214" class="ln">   214  </span>	TxRetryBaseBackoff     time.Duration `env:&#34;TX_RETRY_BASE_BACKOFF&#34;     envDefault:&#34;5ms&#34;`
+<span id="L215" class="ln">   215  </span>	TxRetryMaxBackoff      time.Duration `env:&#34;TX_RETRY_MAX_BACKOFF&#34;      envDefault:&#34;100ms&#34;`
+<span id="L216" class="ln">   216  </span>}
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span><span class="comment">// DBConnection はコネクションプールの上限・下限数とコネクションの最大生存時間・最大アイドル時間を保持する。</span>
+<span id="L219" class="ln">   219  </span>type DBConnection struct {
+<span id="L220" class="ln">   220  </span>	MaxConns    int32         `env:&#34;MAX_CONNS&#34;     envDefault:&#34;10&#34;`
+<span id="L221" class="ln">   221  </span>	MinConns    int32         `env:&#34;MIN_CONNS&#34;     envDefault:&#34;5&#34;`
+<span id="L222" class="ln">   222  </span>	MaxLifetime time.Duration `env:&#34;MAX_LIFETIME&#34;  envDefault:&#34;30m&#34;`
+<span id="L223" class="ln">   223  </span>	MaxIdleTime time.Duration `env:&#34;MAX_IDLE_TIME&#34; envDefault:&#34;10m&#34;`
+<span id="L224" class="ln">   224  </span>}
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span><span class="comment">// Security は CORS 許可オリジン・CIDR 制限・セキュリティヘッダー（HSTS・X-Frame-Options 等）・</span>
+<span id="L227" class="ln">   227  </span><span class="comment">// Referrer Policy を保持する。</span>
+<span id="L228" class="ln">   228  </span>type Security struct {
+<span id="L229" class="ln">   229  </span>	AllowedOrigins        []string      `env:&#34;ALLOWED_ORIGINS,required&#34;         envSeparator:&#34;,&#34;`
+<span id="L230" class="ln">   230  </span>	CIDR                  string        `env:&#34;CIDR,required&#34;`
+<span id="L231" class="ln">   231  </span>	ContentTypeNosniff    string        `env:&#34;CONTENT_TYPE_NOSNIFF,required&#34;`
+<span id="L232" class="ln">   232  </span>	XFrameOptions         string        `env:&#34;X_FRAME_OPTIONS,required&#34;`
+<span id="L233" class="ln">   233  </span>	HSTSMaxAge            time.Duration `env:&#34;HSTS_MAX_AGE,required&#34;`
+<span id="L234" class="ln">   234  </span>	HSTSExcludeSubdomains bool          `env:&#34;HSTS_EXCLUDE_SUBDOMAINS,required&#34;`
+<span id="L235" class="ln">   235  </span>	HSTSPreloadEnabled    bool          `env:&#34;HSTS_PRELOAD_ENABLED,required&#34;`
+<span id="L236" class="ln">   236  </span>	ReferrerPolicy        string        `env:&#34;REFERRER_POLICY,required&#34;`
+<span id="L237" class="ln">   237  </span>	<span class="comment">// CrossOriginResourcePolicy は Cross-Origin-Resource-Policy ヘッダーの値です。空の場合は</span>
+<span id="L238" class="ln">   238  </span>	<span class="comment">// ヘッダーを出さない（ブラウザ既定の挙動に委ねる）という意味を持つため、空文字を許容する。</span>
+<span id="L239" class="ln">   239  </span>	CrossOriginResourcePolicy string `env:&#34;CROSS_ORIGIN_RESOURCE_POLICY,required&#34;`
+<span id="L240" class="ln">   240  </span>}
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span><span class="comment">// SecureCookie はセキュアクッキーの属性（Secure / SameSite / Domain）の上書き設定を保持する。</span>
+<span id="L243" class="ln">   243  </span>type SecureCookie struct {
+<span id="L244" class="ln">   244  </span>	Secure   *bool  `env:&#34;SECURE&#34;`
+<span id="L245" class="ln">   245  </span>	SameSite string `env:&#34;SAME_SITE&#34;`
+<span id="L246" class="ln">   246  </span>	Domain   string `env:&#34;DOMAIN&#34;`
+<span id="L247" class="ln">   247  </span>}
+<span id="L248" class="ln">   248  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/config/envspec.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

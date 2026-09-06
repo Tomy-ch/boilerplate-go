@@ -1,0 +1,511 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>stream - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package stream
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/controller/stream&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package stream は、SSE stream endpoint（GET /v1/streams/{destination}）の handler です。
+レスポンスを確定する前の判定 — ticket の検証（security scheme が済ませ StreamGrant に置く）、cursor の解決、
+replay floor の確認 — をここで行い、確定後の配信は Streamer が担います。
+strict-server を使わないのは、SSE が 1 つの返り値で表せず、flush と切断の制御を handler が握る必要があるためです。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+				
+				<dd><a href="#BindHandler">func BindHandler(e *echo.Echo, tf observability.TracerFactory, cursors ucrealtime.CursorValidator, streamer Streamer)</a></dd>
+			
+			
+				
+				<dd><a href="#FanoutHealth">type FanoutHealth</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Registry">type Registry</a></dd>
+				
+					
+					<dd>    <a href="#NewRegistry">func NewRegistry(replayer ucrealtime.Replayer, sleeper clock.Sleeper, log logging.Logger, tf observability.TracerFactory, metrics *observability.RealtimeMetrics, health FanoutHealth, set Settings) *Registry</a></dd>
+				
+				
+					
+					<dd>    <a href="#Registry.Drain">func (r *Registry) Drain(ctx context.Context) error</a></dd>
+				
+					
+					<dd>    <a href="#Registry.Revoke">func (r *Registry) Revoke(_ context.Context, subject string, destination rt.StreamID)</a></dd>
+				
+					
+					<dd>    <a href="#Registry.Stream">func (r *Registry) Stream(c *echo.Context, req StreamRequest) error</a></dd>
+				
+					
+					<dd>    <a href="#Registry.Wake">func (r *Registry) Wake(_ context.Context, streamID rt.StreamID, upTo rt.Sequence)</a></dd>
+				
+			
+				
+				<dd><a href="#Settings">type Settings</a></dd>
+				
+				
+			
+				
+				<dd><a href="#StreamRequest">type StreamRequest</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Streamer">type Streamer</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/stream/connection.go.html">connection.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/stream/cursor.go.html">cursor.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/stream/error.go.html">error.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/stream/registry.go.html">registry.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/stream/settings.go.html">settings.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/stream/sse.go.html">sse.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/stream/stream_handler.go.html">stream_handler.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/stream/streamer.go.html">streamer.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<p>Settings のゼロ値に充てる既定値。どちらも instance あたりの上限で、負荷と機材で決まるため
+配備ごとに変わりえます（REALTIME_MAX_CONNECTIONS / REALTIME_REPLAY_CONCURRENCY）。
+
+				</p><pre>const (
+    <span class="comment">// DefaultMaxConnections は、1 instance が同時に保持する SSE 接続数の上限です。</span>
+    <span id="DefaultMaxConnections">DefaultMaxConnections</span> = 1000
+    <span class="comment">// DefaultReplayConcurrency は、replay と catch-up が同時に走る本数の上限です。</span>
+    <span id="DefaultReplayConcurrency">DefaultReplayConcurrency</span> = 16
+)</pre>
+			
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				
+				<pre>var (
+    <span class="comment">// ErrCursorMalformed は、client が提示した cursor が形式不正・負数・表現範囲外のときのエラーです。</span>
+    <span id="ErrCursorMalformed">ErrCursorMalformed</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>, &#34;stream cursor is malformed&#34;)
+    <span class="comment">// ErrConnectionCapacity は、この instance の SSE 接続数が上限に達していることを示します。</span>
+    <span class="comment">// rate limiting ではなく容量の保護で、超過は待たせずに断ります（ADR-0108 / 設計 §2.6）。</span>
+    <span id="ErrConnectionCapacity">ErrConnectionCapacity</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrUnavailable">ErrUnavailable</a>, &#34;stream connection capacity reached&#34;)
+    <span class="comment">// ErrReplayAdmission は、初回 replay の枠が有界待ちの間に空かなかったことを示します。</span>
+    <span id="ErrReplayAdmission">ErrReplayAdmission</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrUnavailable">ErrUnavailable</a>, &#34;initial replay admission timed out&#34;)
+    <span class="comment">// ErrDraining は、instance が停止に入っており新規接続を受け付けないことを示します。</span>
+    <span id="ErrDraining">ErrDraining</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrUnavailable">ErrUnavailable</a>, &#34;instance is draining&#34;)
+    <span class="comment">// ErrDegraded は、fan-out から通知を受け取れておらず、新規接続に配信を約束できないことを示します。</span>
+    <span class="comment">// 新規接続の拒否にだけ使い、既存の接続は閉じません（README「Degraded operation」）。</span>
+    <span id="ErrDegraded">ErrDegraded</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrUnavailable">ErrUnavailable</a>, &#34;realtime fan-out is degraded&#34;)
+)</pre>
+			
+		
+		
+			
+			
+			<h2 id="BindHandler">func <a href="../../../../src/go-boilerplate/internal/controller/stream/stream_handler.go.html?s=1679:1796#L26">BindHandler</a>
+				<a class="permalink" href="#BindHandler">¶</a>
+				
+				
+			</h2>
+			<pre>func BindHandler(e *echo.<a href="#Echo">Echo</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>, cursors <a href="../../../../go-boilerplate/internal/usecase/realtime/">ucrealtime</a>.<a href="../../../../go-boilerplate/internal/usecase/realtime/#CursorValidator">CursorValidator</a>, streamer <a href="#Streamer">Streamer</a>)</pre>
+			<p>BindHandler は、stream endpoint の handler を Echo に登録します。
+
+			
+			
+
+		
+		
+			
+			
+			</p><h2 id="FanoutHealth">type <a href="../../../../src/go-boilerplate/internal/controller/stream/streamer.go.html?s=1660:1803#L22">FanoutHealth</a>
+				<a class="permalink" href="#FanoutHealth">¶</a>
+				
+				
+			</h2>
+			<p>FanoutHealth は、fan-out から通知を受け取れているかを答える受け口です。
+受け取れていない instance に繋いだ client は周期の catch-up でしか event を受け取れないので、
+新規接続はここで断ります。判定そのものは usecase 側が持ちます。
+
+			</p><pre>type FanoutHealth interface {
+    <span class="comment">// FanoutDegraded は、通知を受け取れていないなら true を返します。</span>
+    FanoutDegraded() <a href="../../../../builtin/#bool">bool</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Registry">type <a href="../../../../src/go-boilerplate/internal/controller/stream/registry.go.html?s=901:1727#L18">Registry</a>
+				<a class="permalink" href="#Registry">¶</a>
+				
+				
+			</h2>
+			<p>Registry は、この instance が保持している SSE 接続の索引です。Streamer・（controller/realtime の）
+Waker / Revoker・停止時の drain がすべて同じ 1 つの索引を共有します。型を分けない理由と、
+索引を stream 単位 / subject 単位の 2 本持つ理由は README「Runtime」を参照。
+
+			</p><pre>type Registry struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewRegistry">func <a href="../../../../src/go-boilerplate/internal/controller/stream/registry.go.html?s=1839:2055#L42">NewRegistry</a>
+					<a class="permalink" href="#NewRegistry">¶</a>
+					
+					
+				</h3>
+				<pre>func NewRegistry(
+    replayer <a href="../../../../go-boilerplate/internal/usecase/realtime/">ucrealtime</a>.<a href="../../../../go-boilerplate/internal/usecase/realtime/#Replayer">Replayer</a>,
+    sleeper <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Sleeper">Sleeper</a>,
+    log <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#Logger">Logger</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+    metrics *<a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#RealtimeMetrics">RealtimeMetrics</a>,
+    health <a href="#FanoutHealth">FanoutHealth</a>,
+    set <a href="#Settings">Settings</a>,
+) *<a href="#Registry">Registry</a></pre>
+				<p>NewRegistry は、接続の索引を生成します。set のゼロ値は既定値に寄せられます。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Registry.Drain">func (*Registry) <a href="../../../../src/go-boilerplate/internal/controller/stream/registry.go.html?s=5815:5866#L161">Drain</a>
+					<a class="permalink" href="#Registry.Drain">¶</a>
+					
+					
+				</h3>
+				<pre>func (r *<a href="#Registry">Registry</a>) Drain(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a></pre>
+				<p>Drain は、新規接続を止め、確定済みの接続に RECONNECT を送って閉じ切るまで待ちます。
+待つのは停止 ctx の残りと drainBudget の短いほうで、超えた分は諦めます（README「Stop-time budget」）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Registry.Revoke">func (*Registry) <a href="../../../../src/go-boilerplate/internal/controller/stream/registry.go.html?s=5263:5348#L145">Revoke</a>
+					<a class="permalink" href="#Registry.Revoke">¶</a>
+					
+					
+				</h3>
+				<pre>func (r *<a href="#Registry">Registry</a>) Revoke(_ <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, subject <a href="../../../../builtin/#string">string</a>, destination <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>)</pre>
+				<p>Revoke は、subject が destination への権利を失ったことを受けて、該当する接続を STOP で閉じます。
+ticket の無効化は既に済んでいるので、STOP を無視した client も再接続できません。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Registry.Stream">func (*Registry) <a href="../../../../src/go-boilerplate/internal/controller/stream/registry.go.html?s=2851:2918#L71">Stream</a>
+					<a class="permalink" href="#Registry.Stream">¶</a>
+					
+					
+				</h3>
+				<pre>func (r *<a href="#Registry">Registry</a>) Stream(c *echo.<a href="#Context">Context</a>, req <a href="#StreamRequest">StreamRequest</a>) <a href="../../../../builtin/#error">error</a></pre>
+				<p>Stream は、検証を通った接続にレスポンスを確定し、閉じるまで event を書き続けます。
+拒否はすべて確定より前に返し、確定後は nil を返します — 確定後にエラーを返すと、
+共有 error handler が書き込み済みのレスポンスへ本文を足そうとするためです。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Registry.Wake">func (*Registry) <a href="../../../../src/go-boilerplate/internal/controller/stream/registry.go.html?s=4811:4893#L133">Wake</a>
+					<a class="permalink" href="#Registry.Wake">¶</a>
+					
+					
+				</h3>
+				<pre>func (r *<a href="#Registry">Registry</a>) Wake(_ <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, streamID <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>, upTo <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>)</pre>
+				<p>Wake は、stream の位置が upTo まで進んだことを、その stream の接続へ伝えます。
+重複した通知は正常で、既に追いついている接続は読み直しません。engine の loop を止めないよう、
+ここでは印を付けるだけで読み取りは待ちません。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="Settings">type <a href="../../../../src/go-boilerplate/internal/controller/stream/settings.go.html?s=2649:2900#L36">Settings</a>
+				<a class="permalink" href="#Settings">¶</a>
+				
+				
+			</h2>
+			<p>Settings は、Streamer のチューニング値です。ゼロ値は既定値に寄せます
+（consumer engine の realtime.Settings と同じ形）。
+
+			</p><pre>type Settings struct {
+<span id="Settings.MaxConnections"></span>    <span class="comment">// MaxConnections は、1 instance が同時に保持する SSE 接続数の上限です。</span>
+    MaxConnections <a href="../../../../builtin/#int">int</a>
+<span id="Settings.ReplayConcurrency"></span>    <span class="comment">// ReplayConcurrency は、replay と catch-up が同時に走る本数の上限です。</span>
+    ReplayConcurrency <a href="../../../../builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="StreamRequest">type <a href="../../../../src/go-boilerplate/internal/controller/stream/streamer.go.html?s=261:1338#L2">StreamRequest</a>
+				<a class="permalink" href="#StreamRequest">¶</a>
+				
+				
+			</h2>
+			<p>StreamRequest は、検証を通った接続の要求です。ticket の束縛と、解決済みの開始位置を運びます。
+
+			</p><pre>type StreamRequest struct {
+<span id="StreamRequest.Subject"></span>    <span class="comment">// Subject は、ticket を発行された subject です。</span>
+    Subject <a href="../../../../builtin/#string">string</a>
+<span id="StreamRequest.Destination"></span>    <span class="comment">// Destination は、接続先を表す stream の識別子です。path の destination と ticket の束縛が一致していることは検証済みです。</span>
+    Destination <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>
+<span id="StreamRequest.Scope"></span>    <span class="comment">// Scope は、ticket が与えた権限の範囲です（意味は boundary/realtime.StreamGrant.Scope）。</span>
+    Scope <a href="../../../../builtin/#string">string</a>
+<span id="StreamRequest.Cursor"></span>    <span class="comment">// Cursor は、この位置より後の event から配信を始めます。replay floor 以上であることは検証済みです。</span>
+    Cursor <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>
+<span id="StreamRequest.Resumed"></span>    <span class="comment">// Resumed は、client が位置を指定して繋ぎ直したかどうかです（Last-Event-ID か after を伴う接続）。</span>
+    <span class="comment">// Cursor から導けません — 位置を省いた接続にも ticket 発行時の初期位置が入るためです。</span>
+    Resumed <a href="../../../../builtin/#bool">bool</a>
+<span id="StreamRequest.Revalidate"></span>    <span class="comment">// Revalidate は、接続を索引へ載せた後に ticket をもう一度検証し直します（README「What happens on connect」step 5）。</span>
+    <span class="comment">// nil なら再検証しません。</span>
+    Revalidate func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Streamer">type <a href="../../../../src/go-boilerplate/internal/controller/stream/streamer.go.html?s=2060:2245#L29">Streamer</a>
+				<a class="permalink" href="#Streamer">¶</a>
+				
+				
+			</h2>
+			<p>Streamer は、検証を通った接続に対して SSE のレスポンスを確定し、event を書き続ける境界です。
+戻るのは接続を閉じるときで、確定後の指示は in-band の control event で client に伝えます。
+
+			</p><pre>type Streamer interface {
+    <span class="comment">// Stream は、req の位置から destination の event を c のレスポンスへ書き続けます。</span>
+    Stream(c *echo.<a href="#Context">Context</a>, req <a href="#StreamRequest">StreamRequest</a>) <a href="../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

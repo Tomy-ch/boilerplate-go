@@ -183,160 +183,161 @@
 <span id="L126" class="ln">   126  </span>			ctrl := gomock.NewController(t)
 <span id="L127" class="ln">   127  </span>			api := mock_sqs.NewMockAPI(ctrl)
 <span id="L128" class="ln">   128  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(
-<span id="L129" class="ln">   129  </span>				&amp;awssqs.GetQueueAttributesOutput{Attributes: map[string]string{}}, nil)
-<span id="L130" class="ln">   130  </span>
-<span id="L131" class="ln">   131  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;}).QueueStats(context.Background())
-<span id="L132" class="ln">   132  </span>
-<span id="L133" class="ln">   133  </span>			require.NoError(t, err)
-<span id="L134" class="ln">   134  </span>			assert.Equal(t, int64(0), stats.Source.Visible)
-<span id="L135" class="ln">   135  </span>			assert.Equal(t, int64(0), stats.Source.InFlight)
-<span id="L136" class="ln">   136  </span>			assert.Equal(t, int64(0), stats.Source.Delayed)
-<span id="L137" class="ln">   137  </span>		})
-<span id="L138" class="ln">   138  </span>
-<span id="L139" class="ln">   139  </span>		t.Run(&#34;parse 不能な値は 0 件として扱う&#34;, func(t *testing.T) {
-<span id="L140" class="ln">   140  </span>			t.Parallel()
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>			ctrl := gomock.NewController(t)
-<span id="L143" class="ln">   143  </span>			api := mock_sqs.NewMockAPI(ctrl)
-<span id="L144" class="ln">   144  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(attrs(&#34;abc&#34;, &#34;&#34;, &#34;x&#34;), nil)
-<span id="L145" class="ln">   145  </span>
-<span id="L146" class="ln">   146  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;}).QueueStats(context.Background())
-<span id="L147" class="ln">   147  </span>
-<span id="L148" class="ln">   148  </span>			require.NoError(t, err)
-<span id="L149" class="ln">   149  </span>			assert.Equal(t, int64(0), stats.Source.Visible)
-<span id="L150" class="ln">   150  </span>			assert.Equal(t, int64(0), stats.Source.InFlight)
-<span id="L151" class="ln">   151  </span>			assert.Equal(t, int64(0), stats.Source.Delayed)
-<span id="L152" class="ln">   152  </span>		})
-<span id="L153" class="ln">   153  </span>	})
-<span id="L154" class="ln">   154  </span>
-<span id="L155" class="ln">   155  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L156" class="ln">   156  </span>		t.Parallel()
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span>		t.Run(&#34;source の GetQueueAttributes エラーは ErrUnavailable に正規化される&#34;, func(t *testing.T) {
-<span id="L159" class="ln">   159  </span>			t.Parallel()
-<span id="L160" class="ln">   160  </span>
-<span id="L161" class="ln">   161  </span>			ctrl := gomock.NewController(t)
-<span id="L162" class="ln">   162  </span>			api := mock_sqs.NewMockAPI(ctrl)
-<span id="L163" class="ln">   163  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
-<span id="L164" class="ln">   164  </span>
-<span id="L165" class="ln">   165  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;}).QueueStats(context.Background())
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L168" class="ln">   168  </span>			assert.Equal(t, worker.QueueStats{}, stats)
-<span id="L169" class="ln">   169  </span>		})
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span>		t.Run(&#34;DLQ の GetQueueAttributes エラーは ErrUnavailable に正規化される&#34;, func(t *testing.T) {
-<span id="L172" class="ln">   172  </span>			t.Parallel()
-<span id="L173" class="ln">   173  </span>
-<span id="L174" class="ln">   174  </span>			ctrl := gomock.NewController(t)
-<span id="L175" class="ln">   175  </span>			api := mock_sqs.NewMockAPI(ctrl)
-<span id="L176" class="ln">   176  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(attrs(&#34;1&#34;, &#34;0&#34;, &#34;0&#34;), nil)
-<span id="L177" class="ln">   177  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
-<span id="L178" class="ln">   178  </span>
-<span id="L179" class="ln">   179  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;, DLQURL: &#34;dlq&#34;}).QueueStats(context.Background())
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L182" class="ln">   182  </span>			assert.Equal(t, worker.QueueStats{}, stats)
-<span id="L183" class="ln">   183  </span>		})
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>		t.Run(&#34;context.Canceled は ErrCanceled に正規化される&#34;, func(t *testing.T) {
-<span id="L186" class="ln">   186  </span>			t.Parallel()
-<span id="L187" class="ln">   187  </span>
-<span id="L188" class="ln">   188  </span>			ctrl := gomock.NewController(t)
-<span id="L189" class="ln">   189  </span>			api := mock_sqs.NewMockAPI(ctrl)
-<span id="L190" class="ln">   190  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(nil, context.Canceled)
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;}).QueueStats(context.Background())
-<span id="L193" class="ln">   193  </span>
-<span id="L194" class="ln">   194  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L195" class="ln">   195  </span>			assert.Equal(t, worker.QueueStats{}, stats)
-<span id="L196" class="ln">   196  </span>		})
-<span id="L197" class="ln">   197  </span>	})
-<span id="L198" class="ln">   198  </span>}
-<span id="L199" class="ln">   199  </span>
-<span id="L200" class="ln">   200  </span>func Test_parseApproxCount(t *testing.T) {
-<span id="L201" class="ln">   201  </span>	t.Parallel()
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L204" class="ln">   204  </span>		t.Parallel()
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>		t.Run(&#34;数値文字列をint64へ変換する&#34;, func(t *testing.T) {
-<span id="L207" class="ln">   207  </span>			t.Parallel()
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>			assert.Equal(t, int64(42), parseApproxCount(&#34;42&#34;))
-<span id="L210" class="ln">   210  </span>		})
-<span id="L211" class="ln">   211  </span>	})
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L214" class="ln">   214  </span>		t.Parallel()
-<span id="L215" class="ln">   215  </span>
-<span id="L216" class="ln">   216  </span>		t.Run(&#34;空文字は0を返す&#34;, func(t *testing.T) {
-<span id="L217" class="ln">   217  </span>			t.Parallel()
-<span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>			assert.Equal(t, int64(0), parseApproxCount(&#34;&#34;))
-<span id="L220" class="ln">   220  </span>		})
-<span id="L221" class="ln">   221  </span>
-<span id="L222" class="ln">   222  </span>		t.Run(&#34;parse不能な文字列は0を返す&#34;, func(t *testing.T) {
-<span id="L223" class="ln">   223  </span>			t.Parallel()
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>			assert.Equal(t, int64(0), parseApproxCount(&#34;not-a-number&#34;))
-<span id="L226" class="ln">   226  </span>		})
-<span id="L227" class="ln">   227  </span>	})
-<span id="L228" class="ln">   228  </span>}
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>func Test_statsProvider_queueDepth(t *testing.T) {
-<span id="L231" class="ln">   231  </span>	t.Parallel()
-<span id="L232" class="ln">   232  </span>
-<span id="L233" class="ln">   233  </span>	newProvider := func(t *testing.T, api API) *statsProvider {
-<span id="L234" class="ln">   234  </span>		t.Helper()
-<span id="L235" class="ln">   235  </span>		return &amp;statsProvider{api: api, tracer: observability.NewNoopTracerFactory(t).Infra()}
-<span id="L236" class="ln">   236  </span>	}
-<span id="L237" class="ln">   237  </span>
-<span id="L238" class="ln">   238  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L239" class="ln">   239  </span>		t.Parallel()
-<span id="L240" class="ln">   240  </span>
-<span id="L241" class="ln">   241  </span>		t.Run(&#34;指定 URL の approximate 属性 3 種を QueueDepth へ正規化する&#34;, func(t *testing.T) {
-<span id="L242" class="ln">   242  </span>			t.Parallel()
-<span id="L243" class="ln">   243  </span>
-<span id="L244" class="ln">   244  </span>			ctrl := gomock.NewController(t)
-<span id="L245" class="ln">   245  </span>			api := mock_sqs.NewMockAPI(ctrl)
-<span id="L246" class="ln">   246  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L247" class="ln">   247  </span>				func(_ context.Context, in *awssqs.GetQueueAttributesInput, _ ...func(*awssqs.Options)) (*awssqs.GetQueueAttributesOutput, error) {
-<span id="L248" class="ln">   248  </span>					assert.Equal(t, &#34;other&#34;, aws.ToString(in.QueueUrl)) <span class="comment">// cfg ではなく引数で渡した URL を問い合わせる</span>
-<span id="L249" class="ln">   249  </span>					assert.Equal(t, []types.QueueAttributeName{
-<span id="L250" class="ln">   250  </span>						types.QueueAttributeNameApproximateNumberOfMessages,
-<span id="L251" class="ln">   251  </span>						types.QueueAttributeNameApproximateNumberOfMessagesNotVisible,
-<span id="L252" class="ln">   252  </span>						types.QueueAttributeNameApproximateNumberOfMessagesDelayed,
-<span id="L253" class="ln">   253  </span>					}, in.AttributeNames)
-<span id="L254" class="ln">   254  </span>					return attrs(&#34;10&#34;, &#34;3&#34;, &#34;1&#34;), nil
-<span id="L255" class="ln">   255  </span>				},
-<span id="L256" class="ln">   256  </span>			)
-<span id="L257" class="ln">   257  </span>
-<span id="L258" class="ln">   258  </span>			depth, err := newProvider(t, api).queueDepth(context.Background(), &#34;other&#34;)
-<span id="L259" class="ln">   259  </span>
-<span id="L260" class="ln">   260  </span>			require.NoError(t, err)
-<span id="L261" class="ln">   261  </span>			assert.Equal(t, worker.QueueDepth{Visible: 10, InFlight: 3, Delayed: 1}, depth)
-<span id="L262" class="ln">   262  </span>		})
-<span id="L263" class="ln">   263  </span>	})
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L266" class="ln">   266  </span>		t.Parallel()
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>		t.Run(&#34;GetQueueAttributes のエラーは正規化しゼロ値を返す&#34;, func(t *testing.T) {
-<span id="L269" class="ln">   269  </span>			t.Parallel()
-<span id="L270" class="ln">   270  </span>
-<span id="L271" class="ln">   271  </span>			ctrl := gomock.NewController(t)
-<span id="L272" class="ln">   272  </span>			api := mock_sqs.NewMockAPI(ctrl)
-<span id="L273" class="ln">   273  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>			depth, err := newProvider(t, api).queueDepth(context.Background(), &#34;q&#34;)
-<span id="L276" class="ln">   276  </span>
-<span id="L277" class="ln">   277  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L278" class="ln">   278  </span>			assert.Equal(t, worker.QueueDepth{}, depth)
-<span id="L279" class="ln">   279  </span>		})
-<span id="L280" class="ln">   280  </span>	})
-<span id="L281" class="ln">   281  </span>}
-<span id="L282" class="ln">   282  </span>
+<span id="L129" class="ln">   129  </span>				&amp;awssqs.GetQueueAttributesOutput{Attributes: map[string]string{}}, nil,
+<span id="L130" class="ln">   130  </span>			)
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;}).QueueStats(context.Background())
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>			require.NoError(t, err)
+<span id="L135" class="ln">   135  </span>			assert.Equal(t, int64(0), stats.Source.Visible)
+<span id="L136" class="ln">   136  </span>			assert.Equal(t, int64(0), stats.Source.InFlight)
+<span id="L137" class="ln">   137  </span>			assert.Equal(t, int64(0), stats.Source.Delayed)
+<span id="L138" class="ln">   138  </span>		})
+<span id="L139" class="ln">   139  </span>
+<span id="L140" class="ln">   140  </span>		t.Run(&#34;parse 不能な値は 0 件として扱う&#34;, func(t *testing.T) {
+<span id="L141" class="ln">   141  </span>			t.Parallel()
+<span id="L142" class="ln">   142  </span>
+<span id="L143" class="ln">   143  </span>			ctrl := gomock.NewController(t)
+<span id="L144" class="ln">   144  </span>			api := mock_sqs.NewMockAPI(ctrl)
+<span id="L145" class="ln">   145  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(attrs(&#34;abc&#34;, &#34;&#34;, &#34;x&#34;), nil)
+<span id="L146" class="ln">   146  </span>
+<span id="L147" class="ln">   147  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;}).QueueStats(context.Background())
+<span id="L148" class="ln">   148  </span>
+<span id="L149" class="ln">   149  </span>			require.NoError(t, err)
+<span id="L150" class="ln">   150  </span>			assert.Equal(t, int64(0), stats.Source.Visible)
+<span id="L151" class="ln">   151  </span>			assert.Equal(t, int64(0), stats.Source.InFlight)
+<span id="L152" class="ln">   152  </span>			assert.Equal(t, int64(0), stats.Source.Delayed)
+<span id="L153" class="ln">   153  </span>		})
+<span id="L154" class="ln">   154  </span>	})
+<span id="L155" class="ln">   155  </span>
+<span id="L156" class="ln">   156  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L157" class="ln">   157  </span>		t.Parallel()
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>		t.Run(&#34;source の GetQueueAttributes エラーは ErrUnavailable に正規化される&#34;, func(t *testing.T) {
+<span id="L160" class="ln">   160  </span>			t.Parallel()
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>			ctrl := gomock.NewController(t)
+<span id="L163" class="ln">   163  </span>			api := mock_sqs.NewMockAPI(ctrl)
+<span id="L164" class="ln">   164  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;}).QueueStats(context.Background())
+<span id="L167" class="ln">   167  </span>
+<span id="L168" class="ln">   168  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L169" class="ln">   169  </span>			assert.Equal(t, worker.QueueStats{}, stats)
+<span id="L170" class="ln">   170  </span>		})
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>		t.Run(&#34;DLQ の GetQueueAttributes エラーは ErrUnavailable に正規化される&#34;, func(t *testing.T) {
+<span id="L173" class="ln">   173  </span>			t.Parallel()
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>			ctrl := gomock.NewController(t)
+<span id="L176" class="ln">   176  </span>			api := mock_sqs.NewMockAPI(ctrl)
+<span id="L177" class="ln">   177  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(attrs(&#34;1&#34;, &#34;0&#34;, &#34;0&#34;), nil)
+<span id="L178" class="ln">   178  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;, DLQURL: &#34;dlq&#34;}).QueueStats(context.Background())
+<span id="L181" class="ln">   181  </span>
+<span id="L182" class="ln">   182  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L183" class="ln">   183  </span>			assert.Equal(t, worker.QueueStats{}, stats)
+<span id="L184" class="ln">   184  </span>		})
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span>		t.Run(&#34;context.Canceled は ErrCanceled に正規化される&#34;, func(t *testing.T) {
+<span id="L187" class="ln">   187  </span>			t.Parallel()
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>			ctrl := gomock.NewController(t)
+<span id="L190" class="ln">   190  </span>			api := mock_sqs.NewMockAPI(ctrl)
+<span id="L191" class="ln">   191  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(nil, context.Canceled)
+<span id="L192" class="ln">   192  </span>
+<span id="L193" class="ln">   193  </span>			stats, err := newStatsProvider(t, api, Config{QueueURL: &#34;q&#34;}).QueueStats(context.Background())
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L196" class="ln">   196  </span>			assert.Equal(t, worker.QueueStats{}, stats)
+<span id="L197" class="ln">   197  </span>		})
+<span id="L198" class="ln">   198  </span>	})
+<span id="L199" class="ln">   199  </span>}
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>func Test_parseApproxCount(t *testing.T) {
+<span id="L202" class="ln">   202  </span>	t.Parallel()
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L205" class="ln">   205  </span>		t.Parallel()
+<span id="L206" class="ln">   206  </span>
+<span id="L207" class="ln">   207  </span>		t.Run(&#34;数値文字列をint64へ変換する&#34;, func(t *testing.T) {
+<span id="L208" class="ln">   208  </span>			t.Parallel()
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>			assert.Equal(t, int64(42), parseApproxCount(&#34;42&#34;))
+<span id="L211" class="ln">   211  </span>		})
+<span id="L212" class="ln">   212  </span>	})
+<span id="L213" class="ln">   213  </span>
+<span id="L214" class="ln">   214  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L215" class="ln">   215  </span>		t.Parallel()
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span>		t.Run(&#34;空文字は0を返す&#34;, func(t *testing.T) {
+<span id="L218" class="ln">   218  </span>			t.Parallel()
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>			assert.Equal(t, int64(0), parseApproxCount(&#34;&#34;))
+<span id="L221" class="ln">   221  </span>		})
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>		t.Run(&#34;parse不能な文字列は0を返す&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>			assert.Equal(t, int64(0), parseApproxCount(&#34;not-a-number&#34;))
+<span id="L227" class="ln">   227  </span>		})
+<span id="L228" class="ln">   228  </span>	})
+<span id="L229" class="ln">   229  </span>}
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>func Test_statsProvider_queueDepth(t *testing.T) {
+<span id="L232" class="ln">   232  </span>	t.Parallel()
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>	newProvider := func(t *testing.T, api API) *statsProvider {
+<span id="L235" class="ln">   235  </span>		t.Helper()
+<span id="L236" class="ln">   236  </span>		return &amp;statsProvider{api: api, tracer: observability.NewNoopTracerFactory(t).Infra()}
+<span id="L237" class="ln">   237  </span>	}
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L240" class="ln">   240  </span>		t.Parallel()
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>		t.Run(&#34;指定 URL の approximate 属性 3 種を QueueDepth へ正規化する&#34;, func(t *testing.T) {
+<span id="L243" class="ln">   243  </span>			t.Parallel()
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>			ctrl := gomock.NewController(t)
+<span id="L246" class="ln">   246  </span>			api := mock_sqs.NewMockAPI(ctrl)
+<span id="L247" class="ln">   247  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L248" class="ln">   248  </span>				func(_ context.Context, in *awssqs.GetQueueAttributesInput, _ ...func(*awssqs.Options)) (*awssqs.GetQueueAttributesOutput, error) {
+<span id="L249" class="ln">   249  </span>					assert.Equal(t, &#34;other&#34;, aws.ToString(in.QueueUrl)) <span class="comment">// cfg ではなく引数で渡した URL を問い合わせる</span>
+<span id="L250" class="ln">   250  </span>					assert.Equal(t, []types.QueueAttributeName{
+<span id="L251" class="ln">   251  </span>						types.QueueAttributeNameApproximateNumberOfMessages,
+<span id="L252" class="ln">   252  </span>						types.QueueAttributeNameApproximateNumberOfMessagesNotVisible,
+<span id="L253" class="ln">   253  </span>						types.QueueAttributeNameApproximateNumberOfMessagesDelayed,
+<span id="L254" class="ln">   254  </span>					}, in.AttributeNames)
+<span id="L255" class="ln">   255  </span>					return attrs(&#34;10&#34;, &#34;3&#34;, &#34;1&#34;), nil
+<span id="L256" class="ln">   256  </span>				},
+<span id="L257" class="ln">   257  </span>			)
+<span id="L258" class="ln">   258  </span>
+<span id="L259" class="ln">   259  </span>			depth, err := newProvider(t, api).queueDepth(context.Background(), &#34;other&#34;)
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span>			require.NoError(t, err)
+<span id="L262" class="ln">   262  </span>			assert.Equal(t, worker.QueueDepth{Visible: 10, InFlight: 3, Delayed: 1}, depth)
+<span id="L263" class="ln">   263  </span>		})
+<span id="L264" class="ln">   264  </span>	})
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L267" class="ln">   267  </span>		t.Parallel()
+<span id="L268" class="ln">   268  </span>
+<span id="L269" class="ln">   269  </span>		t.Run(&#34;GetQueueAttributes のエラーは正規化しゼロ値を返す&#34;, func(t *testing.T) {
+<span id="L270" class="ln">   270  </span>			t.Parallel()
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>			ctrl := gomock.NewController(t)
+<span id="L273" class="ln">   273  </span>			api := mock_sqs.NewMockAPI(ctrl)
+<span id="L274" class="ln">   274  </span>			api.EXPECT().GetQueueAttributes(gomock.Any(), gomock.Any()).Return(nil, assert.AnError)
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>			depth, err := newProvider(t, api).queueDepth(context.Background(), &#34;q&#34;)
+<span id="L277" class="ln">   277  </span>
+<span id="L278" class="ln">   278  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L279" class="ln">   279  </span>			assert.Equal(t, worker.QueueDepth{}, depth)
+<span id="L280" class="ln">   280  </span>		})
+<span id="L281" class="ln">   281  </span>	})
+<span id="L282" class="ln">   282  </span>}
+<span id="L283" class="ln">   283  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/queue/sqs/stats_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

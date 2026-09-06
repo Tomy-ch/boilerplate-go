@@ -108,6 +108,11 @@
 			
 			
 				
+				<dd><a href="#AppliedCouponView">type AppliedCouponView</a></dd>
+				
+				
+			
+				
 				<dd><a href="#CancelPurchaseParams">type CancelPurchaseParams</a></dd>
 				
 				
@@ -206,7 +211,7 @@
 				<dd><a href="#Usecase">type Usecase</a></dd>
 				
 					
-					<dd>    <a href="#New">func New(txm tx.Manager, cmd command.CommandService, repo purchase.Repository, productRepo product.Repository, userLock user.LockRepository, detailQS query.PurchaseDetailQueryService, feedQS query.PurchaseFeedQueryService, emit outbox.EmitUsecase, clock clock.Clock, authorizer authz.Authorizer, tf observability.TracerFactory) Usecase</a></dd>
+					<dd>    <a href="#New">func New(txm tx.Manager, repo purchase.Repository, productRepo product.Repository, couponRepo coupon.Repository, userLock user.LockRepository, detailQS query.PurchaseDetailQueryService, feedQS query.PurchaseFeedQueryService, emit outbox.EmitUsecase, clock clock.Clock, authorizer authz.Authorizer, tf observability.TracerFactory) Usecase</a></dd>
 				
 				
 			
@@ -243,7 +248,37 @@
 		
 			
 			
-			<h2 id="CancelPurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2374:2651#L60">CancelPurchaseParams</a>
+			<h2 id="AppliedCouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2625:2784#L65">AppliedCouponView</a>
+				<a class="permalink" href="#AppliedCouponView">¶</a>
+				
+				
+			</h2>
+			<p>AppliedCouponView は、購入に適用したクーポンのユースケース出力 DTO です。
+
+			</p><pre>type AppliedCouponView struct {
+<span id="AppliedCouponView.ID"></span>    ID            <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="AppliedCouponView.DiscountKind"></span>    DiscountKind  <a href="../../../../builtin/#string">string</a>
+<span id="AppliedCouponView.DiscountValue"></span>    DiscountValue <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+<span id="AppliedCouponView.ScopeKind"></span>    ScopeKind     <a href="../../../../builtin/#string">string</a>
+<span id="AppliedCouponView.ScopeTargetID"></span>    ScopeTargetID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CancelPurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2871:3148#L74">CancelPurchaseParams</a>
 				<a class="permalink" href="#CancelPurchaseParams">¶</a>
 				
 				
@@ -272,7 +307,7 @@
 		
 			
 			
-			<h2 id="CancelPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2945:3267#L69">CancelPurchaseView</a>
+			<h2 id="CancelPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=3442:3764#L83">CancelPurchaseView</a>
 				<a class="permalink" href="#CancelPurchaseView">¶</a>
 				
 				
@@ -310,7 +345,7 @@
 		
 			
 			
-			<h2 id="CreatePurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=1459:1663#L32">CreatePurchaseParams</a>
+			<h2 id="CreatePurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=1511:1842#L33">CreatePurchaseParams</a>
 				<a class="permalink" href="#CreatePurchaseParams">¶</a>
 				
 				
@@ -322,6 +357,8 @@
     UserID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
 <span id="CreatePurchaseParams.Details"></span>    <span class="comment">// Details は、購入明細の配列です。</span>
     Details []<a href="#DetailParam">DetailParam</a>
+<span id="CreatePurchaseParams.CouponID"></span>    <span class="comment">// CouponID は、適用するクーポンの ID です。nil の場合は値引きを行いません。</span>
+    CouponID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
 }
 </pre>
 
@@ -339,7 +376,7 @@
 		
 			
 			
-			<h2 id="DeliverPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=4868:5191#L128">DeliverPurchaseView</a>
+			<h2 id="DeliverPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=5365:5688#L142">DeliverPurchaseView</a>
 				<a class="permalink" href="#DeliverPurchaseView">¶</a>
 				
 				
@@ -377,7 +414,7 @@
 		
 			
 			
-			<h2 id="DetailParam">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=1318:1381#L26">DetailParam</a>
+			<h2 id="DetailParam">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=1370:1433#L27">DetailParam</a>
 				<a class="permalink" href="#DetailParam">¶</a>
 				
 				
@@ -433,7 +470,7 @@
 		
 			
 			
-			<h2 id="ListPurchasesParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_feed_usecase.go.html?s=2055:2710#L42">ListPurchasesParams</a>
+			<h2 id="ListPurchasesParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_feed_usecase.go.html?s=2055:2850#L42">ListPurchasesParams</a>
 				<a class="permalink" href="#ListPurchasesParams">¶</a>
 				
 				
@@ -447,6 +484,8 @@
     Window <a href="../../../../go-boilerplate/internal/usecase/tools/timewindow/">timewindow</a>.<a href="../../../../go-boilerplate/internal/usecase/tools/timewindow/#Window">Window</a>
 <span id="ListPurchasesParams.StatusCodes"></span>    <span class="comment">// StatusCodes は、購入ステータスの業務キーによる絞り込みです。空の場合は全ステータスが対象です。</span>
     StatusCodes []<a href="../../../../builtin/#int16">int16</a>
+<span id="ListPurchasesParams.ProductID"></span>    <span class="comment">// ProductID は、指定商品を含む購入だけに絞る条件です。nil の場合は絞り込みません。</span>
+    ProductID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
 <span id="ListPurchasesParams.IncludeOtherUsers"></span>    <span class="comment">// IncludeOtherUsers は、他ユーザーの購入も母集団に含める場合に true です。指定は admin のみが通ります。</span>
     IncludeOtherUsers <a href="../../../../builtin/#bool">bool</a>
 }
@@ -493,7 +532,7 @@
 		
 			
 			
-			<h2 id="PayPurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=3345:3607#L85">PayPurchaseParams</a>
+			<h2 id="PayPurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=3842:4104#L99">PayPurchaseParams</a>
 				<a class="permalink" href="#PayPurchaseParams">¶</a>
 				
 				
@@ -522,7 +561,7 @@
 		
 			
 			
-			<h2 id="PayPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=3812:4131#L94">PayPurchaseView</a>
+			<h2 id="PayPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=4309:4628#L108">PayPurchaseView</a>
 				<a class="permalink" href="#PayPurchaseView">¶</a>
 				
 				
@@ -560,7 +599,7 @@
 		
 			
 			
-			<h2 id="PurchaseDetailItemView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_detail_usecase.go.html?s=509:636#L7">PurchaseDetailItemView</a>
+			<h2 id="PurchaseDetailItemView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_detail_usecase.go.html?s=550:677#L8">PurchaseDetailItemView</a>
 				<a class="permalink" href="#PurchaseDetailItemView">¶</a>
 				
 				
@@ -590,7 +629,7 @@ ProductName は購入時点ではなく現在の商品名、UnitPrice は価格�
 		
 			
 			
-			<h2 id="PurchaseDetailView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=1807:1904#L40">PurchaseDetailView</a>
+			<h2 id="PurchaseDetailView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=1986:2083#L43">PurchaseDetailView</a>
 				<a class="permalink" href="#PurchaseDetailView">¶</a>
 				
 				
@@ -618,7 +657,7 @@ ProductName は購入時点ではなく現在の商品名、UnitPrice は価格�
 		
 			
 			
-			<h2 id="PurchaseGetDetailView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_detail_usecase.go.html?s=931:1295#L16">PurchaseGetDetailView</a>
+			<h2 id="PurchaseGetDetailView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_detail_usecase.go.html?s=972:1393#L17">PurchaseGetDetailView</a>
 				<a class="permalink" href="#PurchaseGetDetailView">¶</a>
 				
 				
@@ -633,6 +672,8 @@ ProductName は購入時点ではなく現在の商品名、UnitPrice は価格�
 <span id="PurchaseGetDetailView.StatusCode"></span>    StatusCode     <a href="../../../../builtin/#int">int</a>
 <span id="PurchaseGetDetailView.StatusName"></span>    StatusName     <a href="../../../../builtin/#string">string</a>
 <span id="PurchaseGetDetailView.SubtotalAmount"></span>    SubtotalAmount <a href="../../../../builtin/#int64">int64</a>
+<span id="PurchaseGetDetailView.DiscountAmount"></span>    DiscountAmount <a href="../../../../builtin/#int64">int64</a>
+<span id="PurchaseGetDetailView.AppliedCoupon"></span>    AppliedCoupon  *<a href="#AppliedCouponView">AppliedCouponView</a>
 <span id="PurchaseGetDetailView.TaxAmount"></span>    TaxAmount      <a href="../../../../builtin/#int64">int64</a>
 <span id="PurchaseGetDetailView.ShippingFee"></span>    ShippingFee    <a href="../../../../builtin/#int64">int64</a>
 <span id="PurchaseGetDetailView.TotalAmount"></span>    TotalAmount    <a href="../../../../builtin/#int64">int64</a>
@@ -748,7 +789,7 @@ ItemCount は行を見分けるための明細の要約です。
 		
 			
 			
-			<h2 id="PurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2041:2287#L47">PurchaseView</a>
+			<h2 id="PurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2220:2521#L50">PurchaseView</a>
 				<a class="permalink" href="#PurchaseView">¶</a>
 				
 				
@@ -760,6 +801,8 @@ ItemCount は行を見分けるための明細の要約です。
 <span id="PurchaseView.UserID"></span>    UserID         <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
 <span id="PurchaseView.StatusID"></span>    StatusID       <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
 <span id="PurchaseView.SubtotalAmount"></span>    SubtotalAmount <a href="../../../../builtin/#int">int</a>
+<span id="PurchaseView.DiscountAmount"></span>    DiscountAmount <a href="../../../../builtin/#int">int</a>
+<span id="PurchaseView.AppliedCoupon"></span>    AppliedCoupon  *<a href="#AppliedCouponView">AppliedCouponView</a>
 <span id="PurchaseView.TaxAmount"></span>    TaxAmount      <a href="../../../../builtin/#int">int</a>
 <span id="PurchaseView.ShippingFee"></span>    ShippingFee    <a href="../../../../builtin/#int">int</a>
 <span id="PurchaseView.TotalAmount"></span>    TotalAmount    <a href="../../../../builtin/#int">int</a>
@@ -782,7 +825,7 @@ ItemCount は行を見分けるための明細の要約です。
 		
 			
 			
-			<h2 id="ShipPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=4334:4654#L111">ShipPurchaseView</a>
+			<h2 id="ShipPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=4831:5151#L125">ShipPurchaseView</a>
 				<a class="permalink" href="#ShipPurchaseView">¶</a>
 				
 				
@@ -849,7 +892,7 @@ ItemCount は行を見分けるための明細の要約です。
 		
 			
 			
-			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=5292:8901#L144">Usecase</a>
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=5789:9398#L158">Usecase</a>
 				<a class="permalink" href="#Usecase">¶</a>
 				
 				
@@ -903,16 +946,16 @@ ItemCount は行を見分けるための明細の要約です。
 
 			
 				
-				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=9600:9949#L204">New</a>
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=10092:10443#L218">New</a>
 					<a class="permalink" href="#New">¶</a>
 					
 					
 				</h3>
 				<pre>func New(
     txm <a href="../../../../go-boilerplate/internal/usecase/boundary/tx/">tx</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/tx/#Manager">Manager</a>,
-    cmd <a href="../../../../go-boilerplate/internal/usecase/purchase/command/">command</a>.<a href="../../../../go-boilerplate/internal/usecase/purchase/command/#CommandService">CommandService</a>,
     repo <a href="../../../../go-boilerplate/internal/domain/purchase/">purchase</a>.<a href="../../../../go-boilerplate/internal/domain/purchase/#Repository">Repository</a>,
     productRepo <a href="../../../../go-boilerplate/internal/domain/product/">product</a>.<a href="../../../../go-boilerplate/internal/domain/product/#Repository">Repository</a>,
+    couponRepo <a href="../../../../go-boilerplate/internal/domain/coupon/">coupon</a>.<a href="../../../../go-boilerplate/internal/domain/coupon/#Repository">Repository</a>,
     userLock <a href="../../../../go-boilerplate/internal/domain/user/">user</a>.<a href="../../../../go-boilerplate/internal/domain/user/#LockRepository">LockRepository</a>,
     detailQS <a href="../../../../go-boilerplate/internal/usecase/purchase/query/">query</a>.<a href="../../../../go-boilerplate/internal/usecase/purchase/query/#PurchaseDetailQueryService">PurchaseDetailQueryService</a>,
     feedQS <a href="../../../../go-boilerplate/internal/usecase/purchase/query/">query</a>.<a href="../../../../go-boilerplate/internal/usecase/purchase/query/#PurchaseFeedQueryService">PurchaseFeedQueryService</a>,

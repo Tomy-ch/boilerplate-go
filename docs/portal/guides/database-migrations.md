@@ -1,7 +1,5 @@
 # migrations
 
-English | [日本語](README.ja.md)
-
 `database/migrations` stores **database migration files managed by golang-migrate**.
 
 ## File Generation

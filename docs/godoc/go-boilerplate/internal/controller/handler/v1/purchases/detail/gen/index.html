@@ -117,6 +117,37 @@
 			
 			
 				
+				<dd><a href="#AppliedCouponResponse">type AppliedCouponResponse</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CouponDiscount">type CouponDiscount</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CouponDiscountKind">type CouponDiscountKind</a></dd>
+				
+				
+					
+					<dd>    <a href="#CouponDiscountKind.Valid">func (e CouponDiscountKind) Valid() bool</a></dd>
+				
+			
+				
+				<dd><a href="#CouponScope">type CouponScope</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CouponScopeKind">type CouponScopeKind</a></dd>
+				
+				
+					
+					<dd>    <a href="#CouponScopeKind.Valid">func (e CouponScopeKind) Valid() bool</a></dd>
+				
+			
+				
 				<dd><a href="#EchoRouter">type EchoRouter</a></dd>
 				
 				
@@ -363,6 +394,209 @@ including any per-operation middleware.
 		
 			
 			
+			</p><h2 id="AppliedCouponResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=1376:1913#L45">AppliedCouponResponse</a>
+				<a class="permalink" href="#AppliedCouponResponse">¶</a>
+				
+				
+			</h2>
+			<p>AppliedCouponResponse 購入に適用したクーポン。値引きと適用範囲の 2 軸だけを返します。
+</p><p>控えへ写さず結合で解決した現在値です（`productName` と同じ扱い）。発行済みクーポンの値引きと
+適用範囲を書き換える口が無いため、結合で解決しても内容がぶれません。
+
+			</p><pre>type AppliedCouponResponse struct {
+<span id="AppliedCouponResponse.Discount"></span>    <span class="comment">// Discount クーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。</span>
+    Discount <a href="#CouponDiscount">CouponDiscount</a> `json:&#34;discount&#34;`
+
+<span id="AppliedCouponResponse.Id"></span>    <span class="comment">// Id 適用したクーポンのID</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: 0193a1c0-0001-7000-8000-000000000002</span>
+    Id <a href="../../../../../../../../github.com/oapi-codegen/runtime/types/">openapi_types</a>.<a href="../../../../../../../../github.com/oapi-codegen/runtime/types/#UUID">UUID</a> `json:&#34;id&#34;`
+
+<span id="AppliedCouponResponse.Scope"></span>    <span class="comment">// Scope クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。</span>
+    Scope <a href="#CouponScope">CouponScope</a> `json:&#34;scope&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CouponDiscount">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=2069:2677#L59">CouponDiscount</a>
+				<a class="permalink" href="#CouponDiscount">¶</a>
+				
+				
+			</h2>
+			<p>CouponDiscount クーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。
+
+			</p><pre>type CouponDiscount struct {
+<span id="CouponDiscount.Kind"></span>    <span class="comment">// Kind 値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。</span>
+    <span class="comment">//</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: rate</span>
+    Kind <a href="#CouponDiscountKind">CouponDiscountKind</a> `json:&#34;kind&#34;`
+
+<span id="CouponDiscount.Value"></span>    <span class="comment">// Value 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、</span>
+    <span class="comment">// 正確な十進量を保つ decimal 文字列で表します（例 `&#34;0.10&#34;` は 10% 引き）。</span>
+    <span class="comment">// JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。</span>
+    <span class="comment">//</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: 0.10</span>
+    Value <a href="../../../../../../../../builtin/#string">string</a> `json:&#34;value&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CouponDiscountKind">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=2847:2877#L78">CouponDiscountKind</a>
+				<a class="permalink" href="#CouponDiscountKind">¶</a>
+				
+				
+			</h2>
+			<p>CouponDiscountKind 値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。
+</p><p>Example: rate
+
+			</p><pre>type CouponDiscountKind <a href="../../../../../../../../builtin/#string">string</a></pre>
+
+			
+				<p>Defines values for CouponDiscountKind.
+
+				</p><pre>const (
+    <span id="Flat">Flat</span> <a href="#CouponDiscountKind">CouponDiscountKind</a> = &#34;flat&#34;
+    <span id="Rate">Rate</span> <a href="#CouponDiscountKind">CouponDiscountKind</a> = &#34;rate&#34;
+)</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="CouponDiscountKind.Valid">func (CouponDiscountKind) <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=463:503#L9">Valid</a>
+					<a class="permalink" href="#CouponDiscountKind.Valid">¶</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#CouponDiscountKind">CouponDiscountKind</a>) Valid() <a href="../../../../../../../../builtin/#bool">bool</a></pre>
+				<p>Valid indicates whether the value is a known member of the CouponDiscountKind enum.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="CouponScope">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=3030:3640#L81">CouponScope</a>
+				<a class="permalink" href="#CouponScope">¶</a>
+				
+				
+			</h2>
+			<p>CouponScope クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+
+			</p><pre>type CouponScope struct {
+<span id="CouponScope.Kind"></span>    <span class="comment">// Kind 適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、</span>
+    <span class="comment">// `product` は特定の商品の明細だけを対象とします。</span>
+    <span class="comment">//</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: category</span>
+    Kind <a href="#CouponScopeKind">CouponScopeKind</a> `json:&#34;kind&#34;`
+
+<span id="CouponScope.TargetId"></span>    <span class="comment">// TargetId 範囲を絞る対象の識別子。`category` なら商品カテゴリID、`product` なら商品IDです。</span>
+    <span class="comment">// `all` では対象を持たないため null になります。</span>
+    <span class="comment">//</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: 5dd52d84-78eb-4a52-ba0b-2e11c95c2af2</span>
+    TargetId *<a href="../../../../../../../../github.com/oapi-codegen/runtime/types/">openapi_types</a>.<a href="../../../../../../../../github.com/oapi-codegen/runtime/types/#UUID">UUID</a> `json:&#34;targetId&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CouponScopeKind">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=3894:3921#L101">CouponScopeKind</a>
+				<a class="permalink" href="#CouponScopeKind">¶</a>
+				
+				
+			</h2>
+			<p>CouponScopeKind 適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+`product` は特定の商品の明細だけを対象とします。
+</p><p>Example: category
+
+			</p><pre>type CouponScopeKind <a href="../../../../../../../../builtin/#string">string</a></pre>
+
+			
+				<p>Defines values for CouponScopeKind.
+
+				</p><pre>const (
+    <span id="All">All</span>      <a href="#CouponScopeKind">CouponScopeKind</a> = &#34;all&#34;
+    <span id="Category">Category</span> <a href="#CouponScopeKind">CouponScopeKind</a> = &#34;category&#34;
+    <span id="Product">Product</span>  <a href="#CouponScopeKind">CouponScopeKind</a> = &#34;product&#34;
+)</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="CouponScopeKind.Valid">func (CouponScopeKind) <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=846:883#L28">Valid</a>
+					<a class="permalink" href="#CouponScopeKind.Valid">¶</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#CouponScopeKind">CouponScopeKind</a>) Valid() <a href="../../../../../../../../builtin/#bool">bool</a></pre>
+				<p>Valid indicates whether the value is a known member of the CouponScopeKind enum.
+
+				
+				
+				
+			
+		
+			
+			
 			</p><h2 id="EchoRouter">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/server.gen.go.html?s=1709:2466#L38">EchoRouter</a>
 				<a class="permalink" href="#EchoRouter">¶</a>
 				
@@ -398,7 +632,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ErrorResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=443:845#L3">ErrorResponse</a>
+			<h2 id="ErrorResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=4111:4513#L104">ErrorResponse</a>
 				<a class="permalink" href="#ErrorResponse">¶</a>
 				
 				
@@ -701,7 +935,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="InternalServerError500">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=5176:5219#L127">InternalServerError500</a>
+			<h2 id="InternalServerError500">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=9419:9462#L239">InternalServerError500</a>
 				<a class="permalink" href="#InternalServerError500">¶</a>
 				
 				
@@ -746,7 +980,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="MethodNotAllowed405">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=5415:5455#L130">MethodNotAllowed405</a>
+			<h2 id="MethodNotAllowed405">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=9658:9698#L242">MethodNotAllowed405</a>
 				<a class="permalink" href="#MethodNotAllowed405">¶</a>
 				
 				
@@ -791,7 +1025,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="NotFound404">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=5643:5675#L133">NotFound404</a>
+			<h2 id="NotFound404">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=9886:9918#L245">NotFound404</a>
 				<a class="permalink" href="#NotFound404">¶</a>
 				
 				
@@ -836,7 +1070,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="PurchaseCodeParam">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=4946:4977#L124">PurchaseCodeParam</a>
+			<h2 id="PurchaseCodeParam">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=9189:9220#L236">PurchaseCodeParam</a>
 				<a class="permalink" href="#PurchaseCodeParam">¶</a>
 				
 				
@@ -859,7 +1093,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="PurchaseDetailItemResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=1088:1812#L22">PurchaseDetailItemResponse</a>
+			<h2 id="PurchaseDetailItemResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=4756:5480#L123">PurchaseDetailItemResponse</a>
 				<a class="permalink" href="#PurchaseDetailItemResponse">¶</a>
 				
 				
@@ -906,7 +1140,7 @@ unitPrice は購入時点の単価スナップショットです。
 		
 			
 			
-			<h2 id="PurchaseGetDetailResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=2359:4167#L50">PurchaseGetDetailResponse</a>
+			<h2 id="PurchaseGetDetailResponse">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=6027:8410#L151">PurchaseGetDetailResponse</a>
 				<a class="permalink" href="#PurchaseGetDetailResponse">¶</a>
 				
 				
@@ -917,6 +1151,9 @@ unitPrice は購入時点の単価スナップショットです。
 すべて USD セント単位の整数、明細 unitPrice は購入時点の単価スナップショット（USD ドルの decimal 文字列）です。
 
 			</p><pre>type PurchaseGetDetailResponse struct {
+<span id="PurchaseGetDetailResponse.AppliedCoupon"></span>    <span class="comment">// AppliedCoupon 適用したクーポン。未使用の場合は null です。値引きと適用範囲は結合で解決した現在値です。</span>
+    AppliedCoupon *<a href="#AppliedCouponResponse">AppliedCouponResponse</a> `json:&#34;appliedCoupon&#34;`
+
 <span id="PurchaseGetDetailResponse.CanceledAt"></span>    <span class="comment">// CanceledAt キャンセル日時。未キャンセルの場合は null です。</span>
     <span class="comment">//</span>
     <span class="comment">// Example: 2026-07-26T00:00:00Z</span>
@@ -929,6 +1166,14 @@ unitPrice は購入時点の単価スナップショットです。
 
 <span id="PurchaseGetDetailResponse.Details"></span>    <span class="comment">// Details 購入明細の配列（商品名込み）</span>
     Details []<a href="#PurchaseDetailItemResponse">PurchaseDetailItemResponse</a> `json:&#34;details&#34;`
+
+<span id="PurchaseGetDetailResponse.DiscountAmount"></span>    <span class="comment">// DiscountAmount クーポンによる値引き額。USD セント単位の整数です。</span>
+    <span class="comment">// **非 null で、クーポン未使用および過去の購入は 0** になります。</span>
+    <span class="comment">// 値引きが立っていることと appliedCoupon が入っていることは常に一致します。</span>
+    <span class="comment">//</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: 500</span>
+    DiscountAmount <a href="../../../../../../../../builtin/#int64">int64</a> `json:&#34;discountAmount&#34;`
 
 <span id="PurchaseGetDetailResponse.OrderedAt"></span>    <span class="comment">// OrderedAt 注文日時</span>
     <span class="comment">//</span>
@@ -985,7 +1230,7 @@ unitPrice は購入時点の単価スナップショットです。
 		
 			
 			
-			<h2 id="PurchaseStatusRef">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=4447:4877#L106">PurchaseStatusRef</a>
+			<h2 id="PurchaseStatusRef">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=8690:9120#L218">PurchaseStatusRef</a>
 				<a class="permalink" href="#PurchaseStatusRef">¶</a>
 				
 				
@@ -1136,7 +1381,7 @@ unitPrice は購入時点の単価スナップショットです。
 		
 			
 			
-			</p><h2 id="ServiceUnavailable503">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=5873:5915#L136">ServiceUnavailable503</a>
+			</p><h2 id="ServiceUnavailable503">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=10116:10158#L248">ServiceUnavailable503</a>
 				<a class="permalink" href="#ServiceUnavailable503">¶</a>
 				
 				
@@ -1252,7 +1497,7 @@ unitPrice は購入時点の単価スナップショットです。
 		
 			
 			
-			<h2 id="Unauthorized401">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=6107:6143#L139">Unauthorized401</a>
+			<h2 id="Unauthorized401">type <a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/purchases/detail/gen/type.gen.go.html?s=10350:10386#L251">Unauthorized401</a>
 				<a class="permalink" href="#Unauthorized401">¶</a>
 				
 				

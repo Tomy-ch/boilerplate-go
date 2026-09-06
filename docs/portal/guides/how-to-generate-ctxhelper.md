@@ -1,7 +1,5 @@
 # genctxkey
 
-English | [日本語](README.ja.md)
-
 `genctxkey` is a tool that generates code to pass values to and from `context.Context` and `*echo.Context` in a type-safe manner.
 
 ## Overview

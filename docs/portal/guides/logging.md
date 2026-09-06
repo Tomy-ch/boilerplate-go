@@ -1,7 +1,5 @@
 # logging
 
-English | [日本語](README.ja.md)
-
 `internal/logging` provides a **structured logging foundation** used across the entire application.
 
 This package is based on `zap`, while providing an abstraction layer that allows application code to handle logging **without directly depending on zap**.
@@ -341,6 +339,14 @@ Log keys defined in `const.go`.
 |`MessageIDKey`|`message_id`|
 |`ReceiveCountKey`|`receive_count`|
 |`PanicKey`|`panic`|
+
+### Realtime
+
+|Constant|Key|
+|---|---|
+|`StreamIDKey`|`stream_id`|
+|`CloseReasonKey`|`close_reason`|
+|`OpenConnectionsKey`|`open_connections`|
 
 ### Observability
 

@@ -159,230 +159,237 @@
 <span id="L102" class="ln">   102  </span>		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(&#34;Invalid format for parameter includeUnpublished: %s&#34;, err))
 <span id="L103" class="ln">   103  </span>	}
 <span id="L104" class="ln">   104  </span>
-<span id="L105" class="ln">   105  </span>	<span class="comment">// Invoke the callback with all the unmarshaled arguments</span>
-<span id="L106" class="ln">   106  </span>	err = w.Handler.GetProductsCount(ctx, params)
-<span id="L107" class="ln">   107  </span>	return err
-<span id="L108" class="ln">   108  </span>}
-<span id="L109" class="ln">   109  </span>
-<span id="L110" class="ln">   110  </span><span class="comment">// This is a simple interface which specifies echo.Route addition functions which</span>
-<span id="L111" class="ln">   111  </span><span class="comment">// are present on both echo.Echo and echo.Group, since we want to allow using</span>
-<span id="L112" class="ln">   112  </span><span class="comment">// either of them for path registration</span>
-<span id="L113" class="ln">   113  </span>type EchoRouter interface {
-<span id="L114" class="ln">   114  </span>	CONNECT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L115" class="ln">   115  </span>	DELETE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L116" class="ln">   116  </span>	GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L117" class="ln">   117  </span>	HEAD(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L118" class="ln">   118  </span>	OPTIONS(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L119" class="ln">   119  </span>	PATCH(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L120" class="ln">   120  </span>	POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L121" class="ln">   121  </span>	PUT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L122" class="ln">   122  </span>	TRACE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L123" class="ln">   123  </span>}
-<span id="L124" class="ln">   124  </span>
-<span id="L125" class="ln">   125  </span><span class="comment">// RegisterHandlersOptions configures RegisterHandlersWithOptions.</span>
-<span id="L126" class="ln">   126  </span>type RegisterHandlersOptions struct {
-<span id="L127" class="ln">   127  </span>	<span class="comment">// BaseURL is prepended to every registered path so the API can be served</span>
-<span id="L128" class="ln">   128  </span>	<span class="comment">// under a prefix.</span>
-<span id="L129" class="ln">   129  </span>	BaseURL string
-<span id="L130" class="ln">   130  </span>	<span class="comment">// OperationMiddlewares lets the caller attach per-operation middleware at</span>
-<span id="L131" class="ln">   131  </span>	<span class="comment">// registration time. The map key is the OpenAPI `operationId` value as it</span>
-<span id="L132" class="ln">   132  </span>	<span class="comment">// appears in the spec (the raw, un-normalized form). Operations that have</span>
-<span id="L133" class="ln">   133  </span>	<span class="comment">// no entry are registered with no extra middleware. A nil map disables</span>
-<span id="L134" class="ln">   134  </span>	<span class="comment">// per-operation middleware entirely.</span>
-<span id="L135" class="ln">   135  </span>	OperationMiddlewares map[string][]echo.MiddlewareFunc
-<span id="L136" class="ln">   136  </span>}
-<span id="L137" class="ln">   137  </span>
-<span id="L138" class="ln">   138  </span><span class="comment">// RegisterHandlers adds each server route to the EchoRouter.</span>
-<span id="L139" class="ln">   139  </span>func RegisterHandlers(router EchoRouter, si ServerInterface) {
-<span id="L140" class="ln">   140  </span>	RegisterHandlersWithOptions(router, si, RegisterHandlersOptions{})
-<span id="L141" class="ln">   141  </span>}
-<span id="L142" class="ln">   142  </span>
-<span id="L143" class="ln">   143  </span><span class="comment">// RegisterHandlersWithBaseURL registers handlers and prepends BaseURL to the</span>
-<span id="L144" class="ln">   144  </span><span class="comment">// paths so the API can be served under a prefix.</span>
-<span id="L145" class="ln">   145  </span>func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL string) {
-<span id="L146" class="ln">   146  </span>	RegisterHandlersWithOptions(router, si, RegisterHandlersOptions{BaseURL: baseURL})
-<span id="L147" class="ln">   147  </span>}
-<span id="L148" class="ln">   148  </span>
-<span id="L149" class="ln">   149  </span><span class="comment">// RegisterHandlersWithOptions registers handlers using the supplied options,</span>
-<span id="L150" class="ln">   150  </span><span class="comment">// including any per-operation middleware.</span>
-<span id="L151" class="ln">   151  </span>func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options RegisterHandlersOptions) {
-<span id="L152" class="ln">   152  </span>
-<span id="L153" class="ln">   153  </span>	wrapper := ServerInterfaceWrapper{
-<span id="L154" class="ln">   154  </span>		Handler: si,
-<span id="L155" class="ln">   155  </span>	}
-<span id="L156" class="ln">   156  </span>
-<span id="L157" class="ln">   157  </span>	router.GET(options.BaseURL+&#34;/v1/products/count&#34;, wrapper.GetProductsCount, options.OperationMiddlewares[&#34;GetProductsCount&#34;]...)
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>}
-<span id="L160" class="ln">   160  </span>
-<span id="L161" class="ln">   161  </span>type BadRequest400JSONResponse ErrorResponse
-<span id="L162" class="ln">   162  </span>
-<span id="L163" class="ln">   163  </span>type Forbidden403JSONResponse ErrorResponse
-<span id="L164" class="ln">   164  </span>
-<span id="L165" class="ln">   165  </span>type InternalServerError500JSONResponse ErrorResponse
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>type MethodNotAllowed405JSONResponse ErrorResponse
-<span id="L168" class="ln">   168  </span>
-<span id="L169" class="ln">   169  </span>type ServiceUnavailable503JSONResponse ErrorResponse
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span>type Unauthorized401JSONResponse ErrorResponse
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>type GetProductsCountRequestObject struct {
-<span id="L174" class="ln">   174  </span>	Params GetProductsCountParams
-<span id="L175" class="ln">   175  </span>}
-<span id="L176" class="ln">   176  </span>
-<span id="L177" class="ln">   177  </span>type GetProductsCountResponseObject interface {
-<span id="L178" class="ln">   178  </span>	VisitGetProductsCountResponse(w http.ResponseWriter) error
-<span id="L179" class="ln">   179  </span>}
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>type GetProductsCount200JSONResponse ProductCountResponse
-<span id="L182" class="ln">   182  </span>
-<span id="L183" class="ln">   183  </span>func (response GetProductsCount200JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>	var buf bytes.Buffer
-<span id="L186" class="ln">   186  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L187" class="ln">   187  </span>		return err
-<span id="L188" class="ln">   188  </span>	}
-<span id="L189" class="ln">   189  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L190" class="ln">   190  </span>	w.WriteHeader(200)
-<span id="L191" class="ln">   191  </span>	_, err := buf.WriteTo(w)
-<span id="L192" class="ln">   192  </span>	return err
-<span id="L193" class="ln">   193  </span>}
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>type GetProductsCount400JSONResponse struct{ BadRequest400JSONResponse }
-<span id="L196" class="ln">   196  </span>
-<span id="L197" class="ln">   197  </span>func (response GetProductsCount400JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
-<span id="L198" class="ln">   198  </span>
-<span id="L199" class="ln">   199  </span>	var buf bytes.Buffer
-<span id="L200" class="ln">   200  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L201" class="ln">   201  </span>		return err
-<span id="L202" class="ln">   202  </span>	}
-<span id="L203" class="ln">   203  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L204" class="ln">   204  </span>	w.WriteHeader(400)
-<span id="L205" class="ln">   205  </span>	_, err := buf.WriteTo(w)
-<span id="L206" class="ln">   206  </span>	return err
-<span id="L207" class="ln">   207  </span>}
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>type GetProductsCount401JSONResponse struct{ Unauthorized401JSONResponse }
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>func (response GetProductsCount401JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span>	var buf bytes.Buffer
-<span id="L214" class="ln">   214  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L215" class="ln">   215  </span>		return err
-<span id="L216" class="ln">   216  </span>	}
-<span id="L217" class="ln">   217  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L218" class="ln">   218  </span>	w.WriteHeader(401)
-<span id="L219" class="ln">   219  </span>	_, err := buf.WriteTo(w)
-<span id="L220" class="ln">   220  </span>	return err
-<span id="L221" class="ln">   221  </span>}
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>type GetProductsCount403JSONResponse struct{ Forbidden403JSONResponse }
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>func (response GetProductsCount403JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
-<span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span>	var buf bytes.Buffer
-<span id="L228" class="ln">   228  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L229" class="ln">   229  </span>		return err
-<span id="L230" class="ln">   230  </span>	}
-<span id="L231" class="ln">   231  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L232" class="ln">   232  </span>	w.WriteHeader(403)
-<span id="L233" class="ln">   233  </span>	_, err := buf.WriteTo(w)
-<span id="L234" class="ln">   234  </span>	return err
-<span id="L235" class="ln">   235  </span>}
-<span id="L236" class="ln">   236  </span>
-<span id="L237" class="ln">   237  </span>type GetProductsCount405JSONResponse struct {
-<span id="L238" class="ln">   238  </span>	MethodNotAllowed405JSONResponse
-<span id="L239" class="ln">   239  </span>}
-<span id="L240" class="ln">   240  </span>
-<span id="L241" class="ln">   241  </span>func (response GetProductsCount405JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>	var buf bytes.Buffer
-<span id="L244" class="ln">   244  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L245" class="ln">   245  </span>		return err
-<span id="L246" class="ln">   246  </span>	}
-<span id="L247" class="ln">   247  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L248" class="ln">   248  </span>	w.WriteHeader(405)
-<span id="L249" class="ln">   249  </span>	_, err := buf.WriteTo(w)
-<span id="L250" class="ln">   250  </span>	return err
-<span id="L251" class="ln">   251  </span>}
-<span id="L252" class="ln">   252  </span>
-<span id="L253" class="ln">   253  </span>type GetProductsCount500JSONResponse struct {
-<span id="L254" class="ln">   254  </span>	InternalServerError500JSONResponse
-<span id="L255" class="ln">   255  </span>}
-<span id="L256" class="ln">   256  </span>
-<span id="L257" class="ln">   257  </span>func (response GetProductsCount500JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
-<span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>	var buf bytes.Buffer
-<span id="L260" class="ln">   260  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L261" class="ln">   261  </span>		return err
-<span id="L262" class="ln">   262  </span>	}
-<span id="L263" class="ln">   263  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L264" class="ln">   264  </span>	w.WriteHeader(500)
-<span id="L265" class="ln">   265  </span>	_, err := buf.WriteTo(w)
-<span id="L266" class="ln">   266  </span>	return err
-<span id="L267" class="ln">   267  </span>}
-<span id="L268" class="ln">   268  </span>
-<span id="L269" class="ln">   269  </span>type GetProductsCount503JSONResponse struct {
-<span id="L270" class="ln">   270  </span>	ServiceUnavailable503JSONResponse
-<span id="L271" class="ln">   271  </span>}
-<span id="L272" class="ln">   272  </span>
-<span id="L273" class="ln">   273  </span>func (response GetProductsCount503JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>	var buf bytes.Buffer
-<span id="L276" class="ln">   276  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L277" class="ln">   277  </span>		return err
-<span id="L278" class="ln">   278  </span>	}
-<span id="L279" class="ln">   279  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L280" class="ln">   280  </span>	w.WriteHeader(503)
-<span id="L281" class="ln">   281  </span>	_, err := buf.WriteTo(w)
-<span id="L282" class="ln">   282  </span>	return err
-<span id="L283" class="ln">   283  </span>}
-<span id="L284" class="ln">   284  </span>
-<span id="L285" class="ln">   285  </span><span class="comment">// StrictServerInterface represents all server handlers.</span>
-<span id="L286" class="ln">   286  </span>type StrictServerInterface interface {
-<span id="L287" class="ln">   287  </span>	<span class="comment">// GetProductsCount 商品検索の一致件数の取得</span>
-<span id="L288" class="ln">   288  </span>	<span class="comment">// (GET /v1/products/count)</span>
-<span id="L289" class="ln">   289  </span>	GetProductsCount(ctx context.Context, request GetProductsCountRequestObject) (GetProductsCountResponseObject, error)
+<span id="L105" class="ln">   105  </span>	<span class="comment">// ------------- Optional query parameter &#34;discontinued&#34; -------------</span>
+<span id="L106" class="ln">   106  </span>
+<span id="L107" class="ln">   107  </span>	err = runtime.BindQueryParameterWithOptions(&#34;form&#34;, true, false, &#34;discontinued&#34;, ctx.QueryParams(), &amp;params.Discontinued, runtime.BindQueryParameterOptions{Type: &#34;boolean&#34;, Format: &#34;&#34;})
+<span id="L108" class="ln">   108  </span>	if err != nil {
+<span id="L109" class="ln">   109  </span>		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(&#34;Invalid format for parameter discontinued: %s&#34;, err))
+<span id="L110" class="ln">   110  </span>	}
+<span id="L111" class="ln">   111  </span>
+<span id="L112" class="ln">   112  </span>	<span class="comment">// Invoke the callback with all the unmarshaled arguments</span>
+<span id="L113" class="ln">   113  </span>	err = w.Handler.GetProductsCount(ctx, params)
+<span id="L114" class="ln">   114  </span>	return err
+<span id="L115" class="ln">   115  </span>}
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span><span class="comment">// This is a simple interface which specifies echo.Route addition functions which</span>
+<span id="L118" class="ln">   118  </span><span class="comment">// are present on both echo.Echo and echo.Group, since we want to allow using</span>
+<span id="L119" class="ln">   119  </span><span class="comment">// either of them for path registration</span>
+<span id="L120" class="ln">   120  </span>type EchoRouter interface {
+<span id="L121" class="ln">   121  </span>	CONNECT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L122" class="ln">   122  </span>	DELETE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L123" class="ln">   123  </span>	GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L124" class="ln">   124  </span>	HEAD(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L125" class="ln">   125  </span>	OPTIONS(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L126" class="ln">   126  </span>	PATCH(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L127" class="ln">   127  </span>	POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L128" class="ln">   128  </span>	PUT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L129" class="ln">   129  </span>	TRACE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L130" class="ln">   130  </span>}
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span><span class="comment">// RegisterHandlersOptions configures RegisterHandlersWithOptions.</span>
+<span id="L133" class="ln">   133  </span>type RegisterHandlersOptions struct {
+<span id="L134" class="ln">   134  </span>	<span class="comment">// BaseURL is prepended to every registered path so the API can be served</span>
+<span id="L135" class="ln">   135  </span>	<span class="comment">// under a prefix.</span>
+<span id="L136" class="ln">   136  </span>	BaseURL string
+<span id="L137" class="ln">   137  </span>	<span class="comment">// OperationMiddlewares lets the caller attach per-operation middleware at</span>
+<span id="L138" class="ln">   138  </span>	<span class="comment">// registration time. The map key is the OpenAPI `operationId` value as it</span>
+<span id="L139" class="ln">   139  </span>	<span class="comment">// appears in the spec (the raw, un-normalized form). Operations that have</span>
+<span id="L140" class="ln">   140  </span>	<span class="comment">// no entry are registered with no extra middleware. A nil map disables</span>
+<span id="L141" class="ln">   141  </span>	<span class="comment">// per-operation middleware entirely.</span>
+<span id="L142" class="ln">   142  </span>	OperationMiddlewares map[string][]echo.MiddlewareFunc
+<span id="L143" class="ln">   143  </span>}
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span><span class="comment">// RegisterHandlers adds each server route to the EchoRouter.</span>
+<span id="L146" class="ln">   146  </span>func RegisterHandlers(router EchoRouter, si ServerInterface) {
+<span id="L147" class="ln">   147  </span>	RegisterHandlersWithOptions(router, si, RegisterHandlersOptions{})
+<span id="L148" class="ln">   148  </span>}
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span><span class="comment">// RegisterHandlersWithBaseURL registers handlers and prepends BaseURL to the</span>
+<span id="L151" class="ln">   151  </span><span class="comment">// paths so the API can be served under a prefix.</span>
+<span id="L152" class="ln">   152  </span>func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL string) {
+<span id="L153" class="ln">   153  </span>	RegisterHandlersWithOptions(router, si, RegisterHandlersOptions{BaseURL: baseURL})
+<span id="L154" class="ln">   154  </span>}
+<span id="L155" class="ln">   155  </span>
+<span id="L156" class="ln">   156  </span><span class="comment">// RegisterHandlersWithOptions registers handlers using the supplied options,</span>
+<span id="L157" class="ln">   157  </span><span class="comment">// including any per-operation middleware.</span>
+<span id="L158" class="ln">   158  </span>func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options RegisterHandlersOptions) {
+<span id="L159" class="ln">   159  </span>
+<span id="L160" class="ln">   160  </span>	wrapper := ServerInterfaceWrapper{
+<span id="L161" class="ln">   161  </span>		Handler: si,
+<span id="L162" class="ln">   162  </span>	}
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>	router.GET(options.BaseURL+&#34;/v1/products/count&#34;, wrapper.GetProductsCount, options.OperationMiddlewares[&#34;GetProductsCount&#34;]...)
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>}
+<span id="L167" class="ln">   167  </span>
+<span id="L168" class="ln">   168  </span>type BadRequest400JSONResponse ErrorResponse
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>type Forbidden403JSONResponse ErrorResponse
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>type InternalServerError500JSONResponse ErrorResponse
+<span id="L173" class="ln">   173  </span>
+<span id="L174" class="ln">   174  </span>type MethodNotAllowed405JSONResponse ErrorResponse
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>type ServiceUnavailable503JSONResponse ErrorResponse
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>type Unauthorized401JSONResponse ErrorResponse
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span>type GetProductsCountRequestObject struct {
+<span id="L181" class="ln">   181  </span>	Params GetProductsCountParams
+<span id="L182" class="ln">   182  </span>}
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>type GetProductsCountResponseObject interface {
+<span id="L185" class="ln">   185  </span>	VisitGetProductsCountResponse(w http.ResponseWriter) error
+<span id="L186" class="ln">   186  </span>}
+<span id="L187" class="ln">   187  </span>
+<span id="L188" class="ln">   188  </span>type GetProductsCount200JSONResponse ProductCountResponse
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>func (response GetProductsCount200JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>	var buf bytes.Buffer
+<span id="L193" class="ln">   193  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L194" class="ln">   194  </span>		return err
+<span id="L195" class="ln">   195  </span>	}
+<span id="L196" class="ln">   196  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L197" class="ln">   197  </span>	w.WriteHeader(200)
+<span id="L198" class="ln">   198  </span>	_, err := buf.WriteTo(w)
+<span id="L199" class="ln">   199  </span>	return err
+<span id="L200" class="ln">   200  </span>}
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>type GetProductsCount400JSONResponse struct{ BadRequest400JSONResponse }
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>func (response GetProductsCount400JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>	var buf bytes.Buffer
+<span id="L207" class="ln">   207  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L208" class="ln">   208  </span>		return err
+<span id="L209" class="ln">   209  </span>	}
+<span id="L210" class="ln">   210  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L211" class="ln">   211  </span>	w.WriteHeader(400)
+<span id="L212" class="ln">   212  </span>	_, err := buf.WriteTo(w)
+<span id="L213" class="ln">   213  </span>	return err
+<span id="L214" class="ln">   214  </span>}
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>type GetProductsCount401JSONResponse struct{ Unauthorized401JSONResponse }
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>func (response GetProductsCount401JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>	var buf bytes.Buffer
+<span id="L221" class="ln">   221  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L222" class="ln">   222  </span>		return err
+<span id="L223" class="ln">   223  </span>	}
+<span id="L224" class="ln">   224  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L225" class="ln">   225  </span>	w.WriteHeader(401)
+<span id="L226" class="ln">   226  </span>	_, err := buf.WriteTo(w)
+<span id="L227" class="ln">   227  </span>	return err
+<span id="L228" class="ln">   228  </span>}
+<span id="L229" class="ln">   229  </span>
+<span id="L230" class="ln">   230  </span>type GetProductsCount403JSONResponse struct{ Forbidden403JSONResponse }
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>func (response GetProductsCount403JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>	var buf bytes.Buffer
+<span id="L235" class="ln">   235  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L236" class="ln">   236  </span>		return err
+<span id="L237" class="ln">   237  </span>	}
+<span id="L238" class="ln">   238  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L239" class="ln">   239  </span>	w.WriteHeader(403)
+<span id="L240" class="ln">   240  </span>	_, err := buf.WriteTo(w)
+<span id="L241" class="ln">   241  </span>	return err
+<span id="L242" class="ln">   242  </span>}
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>type GetProductsCount405JSONResponse struct {
+<span id="L245" class="ln">   245  </span>	MethodNotAllowed405JSONResponse
+<span id="L246" class="ln">   246  </span>}
+<span id="L247" class="ln">   247  </span>
+<span id="L248" class="ln">   248  </span>func (response GetProductsCount405JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
+<span id="L249" class="ln">   249  </span>
+<span id="L250" class="ln">   250  </span>	var buf bytes.Buffer
+<span id="L251" class="ln">   251  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L252" class="ln">   252  </span>		return err
+<span id="L253" class="ln">   253  </span>	}
+<span id="L254" class="ln">   254  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L255" class="ln">   255  </span>	w.WriteHeader(405)
+<span id="L256" class="ln">   256  </span>	_, err := buf.WriteTo(w)
+<span id="L257" class="ln">   257  </span>	return err
+<span id="L258" class="ln">   258  </span>}
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>type GetProductsCount500JSONResponse struct {
+<span id="L261" class="ln">   261  </span>	InternalServerError500JSONResponse
+<span id="L262" class="ln">   262  </span>}
+<span id="L263" class="ln">   263  </span>
+<span id="L264" class="ln">   264  </span>func (response GetProductsCount500JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>	var buf bytes.Buffer
+<span id="L267" class="ln">   267  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L268" class="ln">   268  </span>		return err
+<span id="L269" class="ln">   269  </span>	}
+<span id="L270" class="ln">   270  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L271" class="ln">   271  </span>	w.WriteHeader(500)
+<span id="L272" class="ln">   272  </span>	_, err := buf.WriteTo(w)
+<span id="L273" class="ln">   273  </span>	return err
+<span id="L274" class="ln">   274  </span>}
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>type GetProductsCount503JSONResponse struct {
+<span id="L277" class="ln">   277  </span>	ServiceUnavailable503JSONResponse
+<span id="L278" class="ln">   278  </span>}
+<span id="L279" class="ln">   279  </span>
+<span id="L280" class="ln">   280  </span>func (response GetProductsCount503JSONResponse) VisitGetProductsCountResponse(w http.ResponseWriter) error {
+<span id="L281" class="ln">   281  </span>
+<span id="L282" class="ln">   282  </span>	var buf bytes.Buffer
+<span id="L283" class="ln">   283  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L284" class="ln">   284  </span>		return err
+<span id="L285" class="ln">   285  </span>	}
+<span id="L286" class="ln">   286  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L287" class="ln">   287  </span>	w.WriteHeader(503)
+<span id="L288" class="ln">   288  </span>	_, err := buf.WriteTo(w)
+<span id="L289" class="ln">   289  </span>	return err
 <span id="L290" class="ln">   290  </span>}
 <span id="L291" class="ln">   291  </span>
-<span id="L292" class="ln">   292  </span>type StrictHandlerFunc func(ctx *echo.Context, request any) (any, error)
-<span id="L293" class="ln">   293  </span>type StrictMiddlewareFunc func(f StrictHandlerFunc, operationID string) StrictHandlerFunc
-<span id="L294" class="ln">   294  </span>
-<span id="L295" class="ln">   295  </span>func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) ServerInterface {
-<span id="L296" class="ln">   296  </span>	return &amp;strictHandler{ssi: ssi, middlewares: middlewares}
+<span id="L292" class="ln">   292  </span><span class="comment">// StrictServerInterface represents all server handlers.</span>
+<span id="L293" class="ln">   293  </span>type StrictServerInterface interface {
+<span id="L294" class="ln">   294  </span>	<span class="comment">// GetProductsCount 商品検索の一致件数の取得</span>
+<span id="L295" class="ln">   295  </span>	<span class="comment">// (GET /v1/products/count)</span>
+<span id="L296" class="ln">   296  </span>	GetProductsCount(ctx context.Context, request GetProductsCountRequestObject) (GetProductsCountResponseObject, error)
 <span id="L297" class="ln">   297  </span>}
 <span id="L298" class="ln">   298  </span>
-<span id="L299" class="ln">   299  </span>type strictHandler struct {
-<span id="L300" class="ln">   300  </span>	ssi         StrictServerInterface
-<span id="L301" class="ln">   301  </span>	middlewares []StrictMiddlewareFunc
-<span id="L302" class="ln">   302  </span>}
-<span id="L303" class="ln">   303  </span>
-<span id="L304" class="ln">   304  </span><span class="comment">// GetProductsCount operation middleware</span>
-<span id="L305" class="ln">   305  </span>func (sh *strictHandler) GetProductsCount(ctx *echo.Context, params GetProductsCountParams) error {
-<span id="L306" class="ln">   306  </span>	var request GetProductsCountRequestObject
-<span id="L307" class="ln">   307  </span>
-<span id="L308" class="ln">   308  </span>	request.Params = params
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
-<span id="L311" class="ln">   311  </span>		return sh.ssi.GetProductsCount(ctx.Request().Context(), request.(GetProductsCountRequestObject))
-<span id="L312" class="ln">   312  </span>	}
-<span id="L313" class="ln">   313  </span>	for _, middleware := range sh.middlewares {
-<span id="L314" class="ln">   314  </span>		handler = middleware(handler, &#34;GetProductsCount&#34;)
-<span id="L315" class="ln">   315  </span>	}
+<span id="L299" class="ln">   299  </span>type StrictHandlerFunc func(ctx *echo.Context, request any) (any, error)
+<span id="L300" class="ln">   300  </span>type StrictMiddlewareFunc func(f StrictHandlerFunc, operationID string) StrictHandlerFunc
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) ServerInterface {
+<span id="L303" class="ln">   303  </span>	return &amp;strictHandler{ssi: ssi, middlewares: middlewares}
+<span id="L304" class="ln">   304  </span>}
+<span id="L305" class="ln">   305  </span>
+<span id="L306" class="ln">   306  </span>type strictHandler struct {
+<span id="L307" class="ln">   307  </span>	ssi         StrictServerInterface
+<span id="L308" class="ln">   308  </span>	middlewares []StrictMiddlewareFunc
+<span id="L309" class="ln">   309  </span>}
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span><span class="comment">// GetProductsCount operation middleware</span>
+<span id="L312" class="ln">   312  </span>func (sh *strictHandler) GetProductsCount(ctx *echo.Context, params GetProductsCountParams) error {
+<span id="L313" class="ln">   313  </span>	var request GetProductsCountRequestObject
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>	request.Params = params
 <span id="L316" class="ln">   316  </span>
-<span id="L317" class="ln">   317  </span>	response, err := handler(ctx, request)
-<span id="L318" class="ln">   318  </span>
-<span id="L319" class="ln">   319  </span>	if err != nil {
-<span id="L320" class="ln">   320  </span>		return err
-<span id="L321" class="ln">   321  </span>	} else if validResponse, ok := response.(GetProductsCountResponseObject); ok {
-<span id="L322" class="ln">   322  </span>		return validResponse.VisitGetProductsCountResponse(ctx.Response())
-<span id="L323" class="ln">   323  </span>	} else if response != nil {
-<span id="L324" class="ln">   324  </span>		return fmt.Errorf(&#34;unexpected response type: %T&#34;, response)
-<span id="L325" class="ln">   325  </span>	}
-<span id="L326" class="ln">   326  </span>	return nil
-<span id="L327" class="ln">   327  </span>}
-<span id="L328" class="ln">   328  </span>
+<span id="L317" class="ln">   317  </span>	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
+<span id="L318" class="ln">   318  </span>		return sh.ssi.GetProductsCount(ctx.Request().Context(), request.(GetProductsCountRequestObject))
+<span id="L319" class="ln">   319  </span>	}
+<span id="L320" class="ln">   320  </span>	for _, middleware := range sh.middlewares {
+<span id="L321" class="ln">   321  </span>		handler = middleware(handler, &#34;GetProductsCount&#34;)
+<span id="L322" class="ln">   322  </span>	}
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span>	response, err := handler(ctx, request)
+<span id="L325" class="ln">   325  </span>
+<span id="L326" class="ln">   326  </span>	if err != nil {
+<span id="L327" class="ln">   327  </span>		return err
+<span id="L328" class="ln">   328  </span>	} else if validResponse, ok := response.(GetProductsCountResponseObject); ok {
+<span id="L329" class="ln">   329  </span>		return validResponse.VisitGetProductsCountResponse(ctx.Response())
+<span id="L330" class="ln">   330  </span>	} else if response != nil {
+<span id="L331" class="ln">   331  </span>		return fmt.Errorf(&#34;unexpected response type: %T&#34;, response)
+<span id="L332" class="ln">   332  </span>	}
+<span id="L333" class="ln">   333  </span>	return nil
+<span id="L334" class="ln">   334  </span>}
+<span id="L335" class="ln">   335  </span>
 </pre><p><a href="../../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/count/gen/server.gen.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

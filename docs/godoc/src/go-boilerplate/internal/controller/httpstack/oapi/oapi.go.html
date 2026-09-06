@@ -70,48 +70,45 @@
 <span id="L13" class="ln">    13  </span>)
 <span id="L14" class="ln">    14  </span>
 <span id="L15" class="ln">    15  </span><span class="comment">// Middleware は、OpenAPI スキーマに基づくリクエストバリデーション（認証は authFunc 経由）を行うミドルウェアを返します。</span>
-<span id="L16" class="ln">    16  </span><span class="comment">// バリデーション実行前にリクエストコンテキストへ authn スロット（ctxhelper.WithAuthn）を注入するため、authFunc はそのスロットへ認証結果を書き込めます。</span>
-<span id="L17" class="ln">    17  </span><span class="comment">// 認証が失敗したリクエストは、spec がそれを任意と宣言していてもハンドラへ到達しません（failClosed）。</span>
-<span id="L18" class="ln">    18  </span>func Middleware(
-<span id="L19" class="ln">    19  </span>	spec *openapi3.T,
-<span id="L20" class="ln">    20  </span>	skipper echomw.Skipper,
-<span id="L21" class="ln">    21  </span>	authFunc openapi3filter.AuthenticationFunc,
-<span id="L22" class="ln">    22  </span>) echo.MiddlewareFunc {
-<span id="L23" class="ln">    23  </span>	oapiValidator := oapimw.OapiRequestValidatorWithOptions(spec, &amp;oapimw.Options{
-<span id="L24" class="ln">    24  </span>		SilenceServersWarning: true,
-<span id="L25" class="ln">    25  </span>		Skipper:               skipper,
-<span id="L26" class="ln">    26  </span>		Options: openapi3filter.Options{
-<span id="L27" class="ln">    27  </span>			AuthenticationFunc: authFunc,
-<span id="L28" class="ln">    28  </span>		},
-<span id="L29" class="ln">    29  </span>	})
-<span id="L30" class="ln">    30  </span>
-<span id="L31" class="ln">    31  </span>	return func(next echo.HandlerFunc) echo.HandlerFunc {
-<span id="L32" class="ln">    32  </span>		return func(c *echo.Context) error {
-<span id="L33" class="ln">    33  </span>			req := c.Request()
-<span id="L34" class="ln">    34  </span>			req = req.WithContext(ctxhelper.WithAuthn(req.Context()))
-<span id="L35" class="ln">    35  </span>			c.SetRequest(req)
-<span id="L36" class="ln">    36  </span>
-<span id="L37" class="ln">    37  </span>			return oapiValidator(failClosed(next))(c)
-<span id="L38" class="ln">    38  </span>		}
-<span id="L39" class="ln">    39  </span>	}
-<span id="L40" class="ln">    40  </span>}
-<span id="L41" class="ln">    41  </span>
-<span id="L42" class="ln">    42  </span><span class="comment">// failClosed は、認証に失敗したリクエストをハンドラへ到達させず、その失敗を返します。</span>
-<span id="L43" class="ln">    43  </span><span class="comment">//</span>
-<span id="L44" class="ln">    44  </span><span class="comment">// spec が複数の security requirement を並べた operation では、そのうち 1 つでも満たされれば</span>
-<span id="L45" class="ln">    45  </span><span class="comment">// バリデーションは成功する。資格情報を要求しない requirement は常に満たされるため、</span>
-<span id="L46" class="ln">    46  </span><span class="comment">// 提示された資格情報の検証失敗はバリデーションの結果に現れず、認証されていない主体が</span>
-<span id="L47" class="ln">    47  </span><span class="comment">// ハンドラへ到達する。ここで失敗を拾い直すことで、認証を任意とする宣言が</span>
-<span id="L48" class="ln">    48  </span><span class="comment">// 「検証に失敗しても通す」という意味にならないようにする。</span>
-<span id="L49" class="ln">    49  </span>func failClosed(next echo.HandlerFunc) echo.HandlerFunc {
-<span id="L50" class="ln">    50  </span>	return func(c *echo.Context) error {
-<span id="L51" class="ln">    51  </span>		if err := ctxhelper.AuthnFailure(c.Request().Context()); err != nil {
-<span id="L52" class="ln">    52  </span>			return err
-<span id="L53" class="ln">    53  </span>		}
-<span id="L54" class="ln">    54  </span>		return next(c)
-<span id="L55" class="ln">    55  </span>	}
-<span id="L56" class="ln">    56  </span>}
-<span id="L57" class="ln">    57  </span>
+<span id="L16" class="ln">    16  </span><span class="comment">// バリデーション実行前にリクエストコンテキストへ authn スロット（ctxhelper.WithAuthn）と stream grant スロット</span>
+<span id="L17" class="ln">    17  </span><span class="comment">// （ctxhelper.WithStreamGrant）を注入するため、authFunc はそのスロットへ認証結果を書き込めます。</span>
+<span id="L18" class="ln">    18  </span><span class="comment">// 認証が失敗したリクエストは、spec がそれを任意と宣言していてもハンドラへ到達しません（failClosed）。</span>
+<span id="L19" class="ln">    19  </span>func Middleware(
+<span id="L20" class="ln">    20  </span>	spec *openapi3.T,
+<span id="L21" class="ln">    21  </span>	skipper echomw.Skipper,
+<span id="L22" class="ln">    22  </span>	authFunc openapi3filter.AuthenticationFunc,
+<span id="L23" class="ln">    23  </span>) echo.MiddlewareFunc {
+<span id="L24" class="ln">    24  </span>	oapiValidator := oapimw.OapiRequestValidatorWithOptions(spec, &amp;oapimw.Options{
+<span id="L25" class="ln">    25  </span>		SilenceServersWarning: true,
+<span id="L26" class="ln">    26  </span>		Skipper:               skipper,
+<span id="L27" class="ln">    27  </span>		Options: openapi3filter.Options{
+<span id="L28" class="ln">    28  </span>			AuthenticationFunc: authFunc,
+<span id="L29" class="ln">    29  </span>		},
+<span id="L30" class="ln">    30  </span>	})
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span>	return func(next echo.HandlerFunc) echo.HandlerFunc {
+<span id="L33" class="ln">    33  </span>		return func(c *echo.Context) error {
+<span id="L34" class="ln">    34  </span>			req := c.Request()
+<span id="L35" class="ln">    35  </span>			req = req.WithContext(ctxhelper.WithStreamGrant(ctxhelper.WithAuthn(req.Context())))
+<span id="L36" class="ln">    36  </span>			c.SetRequest(req)
+<span id="L37" class="ln">    37  </span>
+<span id="L38" class="ln">    38  </span>			return oapiValidator(failClosed(next))(c)
+<span id="L39" class="ln">    39  </span>		}
+<span id="L40" class="ln">    40  </span>	}
+<span id="L41" class="ln">    41  </span>}
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span><span class="comment">// failClosed は、認証に失敗したリクエストをハンドラへ到達させず、その失敗を返します。</span>
+<span id="L44" class="ln">    44  </span><span class="comment">// 認証を任意と宣言した operation でも、提示されたうえで検証に失敗した資格情報は通さない。</span>
+<span id="L45" class="ln">    45  </span><span class="comment">// 根拠は ADR-0021 (optional-authentication-fail-closed) と README.md「Fail-closed authentication」。</span>
+<span id="L46" class="ln">    46  </span>func failClosed(next echo.HandlerFunc) echo.HandlerFunc {
+<span id="L47" class="ln">    47  </span>	return func(c *echo.Context) error {
+<span id="L48" class="ln">    48  </span>		if err := ctxhelper.AuthnFailure(c.Request().Context()); err != nil {
+<span id="L49" class="ln">    49  </span>			return err
+<span id="L50" class="ln">    50  </span>		}
+<span id="L51" class="ln">    51  </span>		return next(c)
+<span id="L52" class="ln">    52  </span>	}
+<span id="L53" class="ln">    53  </span>}
+<span id="L54" class="ln">    54  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/controller/httpstack/oapi/oapi.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

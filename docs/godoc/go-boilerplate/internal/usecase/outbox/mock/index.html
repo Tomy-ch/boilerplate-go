@@ -162,10 +162,13 @@
 					<dd>    <a href="#MockMetrics.EXPECT">func (m *MockMetrics) EXPECT() *MockMetricsMockRecorder</a></dd>
 				
 					
-					<dd>    <a href="#MockMetrics.IncDead">func (m *MockMetrics) IncDead(ctx context.Context)</a></dd>
+					<dd>    <a href="#MockMetrics.IncDead">func (m *MockMetrics) IncDead(ctx context.Context, channel string)</a></dd>
 				
 					
-					<dd>    <a href="#MockMetrics.SetLagSeconds">func (m *MockMetrics) SetLagSeconds(ctx context.Context, seconds int64)</a></dd>
+					<dd>    <a href="#MockMetrics.SetBlockedStreams">func (m *MockMetrics) SetBlockedStreams(ctx context.Context, channel string, count int64)</a></dd>
+				
+					
+					<dd>    <a href="#MockMetrics.SetLagSeconds">func (m *MockMetrics) SetLagSeconds(ctx context.Context, channel string, seconds int64)</a></dd>
 				
 			
 				
@@ -173,10 +176,13 @@
 				
 				
 					
-					<dd>    <a href="#MockMetricsMockRecorder.IncDead">func (mr *MockMetricsMockRecorder) IncDead(ctx any) *gomock.Call</a></dd>
+					<dd>    <a href="#MockMetricsMockRecorder.IncDead">func (mr *MockMetricsMockRecorder) IncDead(ctx, channel any) *gomock.Call</a></dd>
 				
 					
-					<dd>    <a href="#MockMetricsMockRecorder.SetLagSeconds">func (mr *MockMetricsMockRecorder) SetLagSeconds(ctx, seconds any) *gomock.Call</a></dd>
+					<dd>    <a href="#MockMetricsMockRecorder.SetBlockedStreams">func (mr *MockMetricsMockRecorder) SetBlockedStreams(ctx, channel, count any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockMetricsMockRecorder.SetLagSeconds">func (mr *MockMetricsMockRecorder) SetLagSeconds(ctx, channel, seconds any) *gomock.Call</a></dd>
 				
 			
 				
@@ -190,6 +196,9 @@
 					<dd>    <a href="#MockRelayUsecase.EXPECT">func (m *MockRelayUsecase) EXPECT() *MockRelayUsecaseMockRecorder</a></dd>
 				
 					
+					<dd>    <a href="#MockRelayUsecase.RecordBlockedStreams">func (m *MockRelayUsecase) RecordBlockedStreams(ctx context.Context) error</a></dd>
+				
+					
 					<dd>    <a href="#MockRelayUsecase.RecordLag">func (m *MockRelayUsecase) RecordLag(ctx context.Context) error</a></dd>
 				
 					
@@ -199,6 +208,9 @@
 				
 				<dd><a href="#MockRelayUsecaseMockRecorder">type MockRelayUsecaseMockRecorder</a></dd>
 				
+				
+					
+					<dd>    <a href="#MockRelayUsecaseMockRecorder.RecordBlockedStreams">func (mr *MockRelayUsecaseMockRecorder) RecordBlockedStreams(ctx any) *gomock.Call</a></dd>
 				
 					
 					<dd>    <a href="#MockRelayUsecaseMockRecorder.RecordLag">func (mr *MockRelayUsecaseMockRecorder) RecordLag(ctx any) *gomock.Call</a></dd>
@@ -517,12 +529,12 @@
 				
 			
 				
-				</p><h3 id="MockMetrics.IncDead">func (*MockMetrics) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1076:1126#L35">IncDead</a>
+				</p><h3 id="MockMetrics.IncDead">func (*MockMetrics) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1076:1142#L35">IncDead</a>
 					<a class="permalink" href="#MockMetrics.IncDead">¶</a>
 					
 					
 				</h3>
-				<pre>func (m *<a href="#MockMetrics">MockMetrics</a>) IncDead(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>)</pre>
+				<pre>func (m *<a href="#MockMetrics">MockMetrics</a>) IncDead(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, channel <a href="../../../../../builtin/#string">string</a>)</pre>
 				<p>IncDead mocks base method.
 
 				
@@ -530,12 +542,25 @@
 				
 			
 				
-				</p><h3 id="MockMetrics.SetLagSeconds">func (*MockMetrics) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1480:1551#L47">SetLagSeconds</a>
+				</p><h3 id="MockMetrics.SetBlockedStreams">func (*MockMetrics) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1527:1616#L47">SetBlockedStreams</a>
+					<a class="permalink" href="#MockMetrics.SetBlockedStreams">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockMetrics">MockMetrics</a>) SetBlockedStreams(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, channel <a href="../../../../../builtin/#string">string</a>, count <a href="../../../../../builtin/#int64">int64</a>)</pre>
+				<p>SetBlockedStreams mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockMetrics.SetLagSeconds">func (*MockMetrics) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2078:2165#L59">SetLagSeconds</a>
 					<a class="permalink" href="#MockMetrics.SetLagSeconds">¶</a>
 					
 					
 				</h3>
-				<pre>func (m *<a href="#MockMetrics">MockMetrics</a>) SetLagSeconds(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, seconds <a href="../../../../../builtin/#int64">int64</a>)</pre>
+				<pre>func (m *<a href="#MockMetrics">MockMetrics</a>) SetLagSeconds(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, channel <a href="../../../../../builtin/#string">string</a>, seconds <a href="../../../../../builtin/#int64">int64</a>)</pre>
 				<p>SetLagSeconds mocks base method.
 
 				
@@ -569,12 +594,12 @@
 
 			
 				
-				<h3 id="MockMetricsMockRecorder.IncDead">func (*MockMetricsMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1233:1297#L41">IncDead</a>
+				<h3 id="MockMetricsMockRecorder.IncDead">func (*MockMetricsMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1258:1331#L41">IncDead</a>
 					<a class="permalink" href="#MockMetricsMockRecorder.IncDead">¶</a>
 					
 					
 				</h3>
-				<pre>func (mr *<a href="#MockMetricsMockRecorder">MockMetricsMockRecorder</a>) IncDead(ctx <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<pre>func (mr *<a href="#MockMetricsMockRecorder">MockMetricsMockRecorder</a>) IncDead(ctx, channel <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
 				<p>IncDead indicates an expected call of IncDead.
 
 				
@@ -582,12 +607,25 @@
 				
 			
 				
-				</p><h3 id="MockMetricsMockRecorder.SetLagSeconds">func (*MockMetricsMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1685:1764#L53">SetLagSeconds</a>
+				</p><h3 id="MockMetricsMockRecorder.SetBlockedStreams">func (*MockMetricsMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1769:1859#L53">SetBlockedStreams</a>
+					<a class="permalink" href="#MockMetricsMockRecorder.SetBlockedStreams">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockMetricsMockRecorder">MockMetricsMockRecorder</a>) SetBlockedStreams(ctx, channel, count <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>SetBlockedStreams indicates an expected call of SetBlockedStreams.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockMetricsMockRecorder.SetLagSeconds">func (*MockMetricsMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2308:2396#L65">SetLagSeconds</a>
 					<a class="permalink" href="#MockMetricsMockRecorder.SetLagSeconds">¶</a>
 					
 					
 				</h3>
-				<pre>func (mr *<a href="#MockMetricsMockRecorder">MockMetricsMockRecorder</a>) SetLagSeconds(ctx, seconds <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<pre>func (mr *<a href="#MockMetricsMockRecorder">MockMetricsMockRecorder</a>) SetLagSeconds(ctx, channel, seconds <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
 				<p>SetLagSeconds indicates an expected call of SetLagSeconds.
 
 				
@@ -597,7 +635,7 @@
 		
 			
 			
-			</p><h2 id="MockRelayUsecase">type <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=1989:2109#L59">MockRelayUsecase</a>
+			</p><h2 id="MockRelayUsecase">type <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2630:2750#L71">MockRelayUsecase</a>
 				<a class="permalink" href="#MockRelayUsecase">¶</a>
 				
 				
@@ -619,7 +657,7 @@
 
 			
 				
-				<h3 id="NewMockRelayUsecase">func <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2308:2375#L71">NewMockRelayUsecase</a>
+				<h3 id="NewMockRelayUsecase">func <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2949:3016#L83">NewMockRelayUsecase</a>
 					<a class="permalink" href="#NewMockRelayUsecase">¶</a>
 					
 					
@@ -633,7 +671,7 @@
 
 			
 				
-				</p><h3 id="MockRelayUsecase.EXPECT">func (*MockRelayUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2563:2628#L78">EXPECT</a>
+				</p><h3 id="MockRelayUsecase.EXPECT">func (*MockRelayUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=3204:3269#L90">EXPECT</a>
 					<a class="permalink" href="#MockRelayUsecase.EXPECT">¶</a>
 					
 					
@@ -646,7 +684,20 @@
 				
 			
 				
-				</p><h3 id="MockRelayUsecase.RecordLag">func (*MockRelayUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2685:2748#L83">RecordLag</a>
+				</p><h3 id="MockRelayUsecase.RecordBlockedStreams">func (*MockRelayUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=3337:3411#L95">RecordBlockedStreams</a>
+					<a class="permalink" href="#MockRelayUsecase.RecordBlockedStreams">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockRelayUsecase">MockRelayUsecase</a>) RecordBlockedStreams(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) <a href="../../../../../builtin/#error">error</a></pre>
+				<p>RecordBlockedStreams mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockRelayUsecase.RecordLag">func (*MockRelayUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=3896:3959#L109">RecordLag</a>
 					<a class="permalink" href="#MockRelayUsecase.RecordLag">¶</a>
 					
 					
@@ -659,7 +710,7 @@
 				
 			
 				
-				</p><h3 id="MockRelayUsecase.RelayBatch">func (*MockRelayUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=3168:3271#L97">RelayBatch</a>
+				</p><h3 id="MockRelayUsecase.RelayBatch">func (*MockRelayUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=4379:4482#L123">RelayBatch</a>
 					<a class="permalink" href="#MockRelayUsecase.RelayBatch">¶</a>
 					
 					
@@ -674,7 +725,7 @@
 		
 			
 			
-			</p><h2 id="MockRelayUsecaseMockRecorder">type <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2186:2254#L66">MockRelayUsecaseMockRecorder</a>
+			</p><h2 id="MockRelayUsecaseMockRecorder">type <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2827:2895#L78">MockRelayUsecaseMockRecorder</a>
 				<a class="permalink" href="#MockRelayUsecaseMockRecorder">¶</a>
 				
 				
@@ -698,7 +749,20 @@
 
 			
 				
-				<h3 id="MockRelayUsecaseMockRecorder.RecordLag">func (*MockRelayUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=2908:2979#L91">RecordLag</a>
+				<h3 id="MockRelayUsecaseMockRecorder.RecordBlockedStreams">func (*MockRelayUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=3604:3686#L103">RecordBlockedStreams</a>
+					<a class="permalink" href="#MockRelayUsecaseMockRecorder.RecordBlockedStreams">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockRelayUsecaseMockRecorder">MockRelayUsecaseMockRecorder</a>) RecordBlockedStreams(ctx <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>RecordBlockedStreams indicates an expected call of RecordBlockedStreams.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockRelayUsecaseMockRecorder.RecordLag">func (*MockRelayUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=4119:4190#L117">RecordLag</a>
 					<a class="permalink" href="#MockRelayUsecaseMockRecorder.RecordLag">¶</a>
 					
 					
@@ -711,7 +775,7 @@
 				
 			
 				
-				</p><h3 id="MockRelayUsecaseMockRecorder.RelayBatch">func (*MockRelayUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=3491:3574#L106">RelayBatch</a>
+				</p><h3 id="MockRelayUsecaseMockRecorder.RelayBatch">func (*MockRelayUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/outbox/mock/mock_relay.go.gen.go.html?s=4702:4785#L132">RelayBatch</a>
 					<a class="permalink" href="#MockRelayUsecaseMockRecorder.RelayBatch">¶</a>
 					
 					

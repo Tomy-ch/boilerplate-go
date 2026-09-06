@@ -285,41 +285,42 @@
 <span id="L228" class="ln">   228  </span>			&#34;COMPOSE_PROJECT_NAME=%s\nSERVE_PROJECT=%s\n&#34;,
 <span id="L229" class="ln">   229  </span>		slot, dbLocal(slot), dbTest(slot),
 <span id="L230" class="ln">   230  </span>		p.cfg.APIBasePort+slot, p.cfg.MockAuthBase+slot, p.cfg.DlvBase+slot, p.cfg.PprofBase+slot,
-<span id="L231" class="ln">   231  </span>		p.cfg.SharedProject, serveProject(slot))
-<span id="L232" class="ln">   232  </span>	if err := os.WriteFile(p.slotFilePath(), []byte(content), filePerm); err != nil {
-<span id="L233" class="ln">   233  </span>		return xerrors.Wrap(err, &#34;failed to write .gobp-db-slot&#34;)
-<span id="L234" class="ln">   234  </span>	}
-<span id="L235" class="ln">   235  </span>	return nil
-<span id="L236" class="ln">   236  </span>}
-<span id="L237" class="ln">   237  </span>
-<span id="L238" class="ln">   238  </span>func (p *Pool) printSlotFile() error {
-<span id="L239" class="ln">   239  </span>	b, err := os.ReadFile(p.slotFilePath())
-<span id="L240" class="ln">   240  </span>	if err != nil {
-<span id="L241" class="ln">   241  </span>		return xerrors.Wrap(err, &#34;failed to read .gobp-db-slot&#34;)
-<span id="L242" class="ln">   242  </span>	}
-<span id="L243" class="ln">   243  </span>	_, _ = p.out.Write(b)
-<span id="L244" class="ln">   244  </span>	return nil
-<span id="L245" class="ln">   245  </span>}
-<span id="L246" class="ln">   246  </span>
-<span id="L247" class="ln">   247  </span><span class="comment">// heldSlot は、.gobp-db-slot に記録された保持スロット番号を返します。</span>
-<span id="L248" class="ln">   248  </span>func (p *Pool) heldSlot() (int, bool) {
-<span id="L249" class="ln">   249  </span>	b, err := os.ReadFile(p.slotFilePath())
-<span id="L250" class="ln">   250  </span>	if err != nil {
-<span id="L251" class="ln">   251  </span>		return 0, false
-<span id="L252" class="ln">   252  </span>	}
-<span id="L253" class="ln">   253  </span>	for line := range strings.SplitSeq(string(b), &#34;\n&#34;) {
-<span id="L254" class="ln">   254  </span>		if v, ok := strings.CutPrefix(line, &#34;SLOT=&#34;); ok {
-<span id="L255" class="ln">   255  </span>			n, err := strconv.Atoi(strings.TrimSpace(v))
-<span id="L256" class="ln">   256  </span>			return n, err == nil
-<span id="L257" class="ln">   257  </span>		}
-<span id="L258" class="ln">   258  </span>	}
-<span id="L259" class="ln">   259  </span>	return 0, false
-<span id="L260" class="ln">   260  </span>}
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>func dbLocal(slot int) string      { return fmt.Sprintf(&#34;wt%d_local&#34;, slot) }
-<span id="L263" class="ln">   263  </span>func dbTest(slot int) string       { return fmt.Sprintf(&#34;wt%d_test&#34;, slot) }
-<span id="L264" class="ln">   264  </span>func serveProject(slot int) string { return fmt.Sprintf(&#34;gobp-wt-%d&#34;, slot) }
-<span id="L265" class="ln">   265  </span>
+<span id="L231" class="ln">   231  </span>		p.cfg.SharedProject, serveProject(slot),
+<span id="L232" class="ln">   232  </span>	)
+<span id="L233" class="ln">   233  </span>	if err := os.WriteFile(p.slotFilePath(), []byte(content), filePerm); err != nil {
+<span id="L234" class="ln">   234  </span>		return xerrors.Wrap(err, &#34;failed to write .gobp-db-slot&#34;)
+<span id="L235" class="ln">   235  </span>	}
+<span id="L236" class="ln">   236  </span>	return nil
+<span id="L237" class="ln">   237  </span>}
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>func (p *Pool) printSlotFile() error {
+<span id="L240" class="ln">   240  </span>	b, err := os.ReadFile(p.slotFilePath())
+<span id="L241" class="ln">   241  </span>	if err != nil {
+<span id="L242" class="ln">   242  </span>		return xerrors.Wrap(err, &#34;failed to read .gobp-db-slot&#34;)
+<span id="L243" class="ln">   243  </span>	}
+<span id="L244" class="ln">   244  </span>	_, _ = p.out.Write(b)
+<span id="L245" class="ln">   245  </span>	return nil
+<span id="L246" class="ln">   246  </span>}
+<span id="L247" class="ln">   247  </span>
+<span id="L248" class="ln">   248  </span><span class="comment">// heldSlot は、.gobp-db-slot に記録された保持スロット番号を返します。</span>
+<span id="L249" class="ln">   249  </span>func (p *Pool) heldSlot() (int, bool) {
+<span id="L250" class="ln">   250  </span>	b, err := os.ReadFile(p.slotFilePath())
+<span id="L251" class="ln">   251  </span>	if err != nil {
+<span id="L252" class="ln">   252  </span>		return 0, false
+<span id="L253" class="ln">   253  </span>	}
+<span id="L254" class="ln">   254  </span>	for line := range strings.SplitSeq(string(b), &#34;\n&#34;) {
+<span id="L255" class="ln">   255  </span>		if v, ok := strings.CutPrefix(line, &#34;SLOT=&#34;); ok {
+<span id="L256" class="ln">   256  </span>			n, err := strconv.Atoi(strings.TrimSpace(v))
+<span id="L257" class="ln">   257  </span>			return n, err == nil
+<span id="L258" class="ln">   258  </span>		}
+<span id="L259" class="ln">   259  </span>	}
+<span id="L260" class="ln">   260  </span>	return 0, false
+<span id="L261" class="ln">   261  </span>}
+<span id="L262" class="ln">   262  </span>
+<span id="L263" class="ln">   263  </span>func dbLocal(slot int) string      { return fmt.Sprintf(&#34;wt%d_local&#34;, slot) }
+<span id="L264" class="ln">   264  </span>func dbTest(slot int) string       { return fmt.Sprintf(&#34;wt%d_test&#34;, slot) }
+<span id="L265" class="ln">   265  </span>func serveProject(slot int) string { return fmt.Sprintf(&#34;gobp-wt-%d&#34;, slot) }
+<span id="L266" class="ln">   266  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

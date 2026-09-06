@@ -393,65 +393,91 @@
 <span id="L336" class="ln">   336  </span>	return value
 <span id="L337" class="ln">   337  </span>}
 <span id="L338" class="ln">   338  </span>
-<span id="L339" class="ln">   339  </span><span class="comment">// report は結果を job summary へ書き出します。閾値は判断の材料であって門ではないので、</span>
-<span id="L340" class="ln">   340  </span><span class="comment">// 超過しても終了コードは 0 のままにします。</span>
+<span id="L339" class="ln">   339  </span><span class="comment">// report は結果を job summary と、後続のステップが読む出力へ書き出します。閾値は判断の材料で</span>
+<span id="L340" class="ln">   340  </span><span class="comment">// あって門ではないので、超過しても終了コードは 0 のままにします。</span>
 <span id="L341" class="ln">   341  </span>func report(summary bool, files, total, threshold int, items []pending) error {
 <span id="L342" class="ln">   342  </span>	if !summary {
 <span id="L343" class="ln">   343  </span>		return nil
 <span id="L344" class="ln">   344  </span>	}
 <span id="L345" class="ln">   345  </span>
-<span id="L346" class="ln">   346  </span>	destination := os.Getenv(&#34;GITHUB_STEP_SUMMARY&#34;)
-<span id="L347" class="ln">   347  </span>	if destination == &#34;&#34; {
-<span id="L348" class="ln">   348  </span>		return nil
-<span id="L349" class="ln">   349  </span>	}
-<span id="L350" class="ln">   350  </span>
-<span id="L351" class="ln">   351  </span>	var body strings.Builder
-<span id="L352" class="ln">   352  </span>	body.WriteString(&#34;## graphify semantic extraction\n\n&#34;)
-<span id="L353" class="ln">   353  </span>	if total &gt;= threshold &amp;&amp; threshold &gt; 0 {
-<span id="L354" class="ln">   354  </span>		fmt.Fprintf(&amp;body,
-<span id="L355" class="ln">   355  </span>			&#34;⚠️ %d files / %d changed lines are waiting (threshold %d). Run `/graphify --update`.\n\n&#34;,
-<span id="L356" class="ln">   356  </span>			files, total, threshold)
-<span id="L357" class="ln">   357  </span>	} else {
-<span id="L358" class="ln">   358  </span>		fmt.Fprintf(&amp;body, &#34;%d files / %d changed lines are waiting (threshold %d).\n\n&#34;, files, total, threshold)
-<span id="L359" class="ln">   359  </span>	}
-<span id="L360" class="ln">   360  </span>	for _, item := range items[:min(len(items), maxListedFiles)] {
-<span id="L361" class="ln">   361  </span>		fmt.Fprintf(&amp;body, &#34;- `%s` (%d)\n&#34;, item.path, item.changed)
-<span id="L362" class="ln">   362  </span>	}
-<span id="L363" class="ln">   363  </span>	if len(items) &gt; maxListedFiles {
-<span id="L364" class="ln">   364  </span>		fmt.Fprintf(&amp;body, &#34;- ... %d more\n&#34;, len(items)-maxListedFiles)
-<span id="L365" class="ln">   365  </span>	}
-<span id="L366" class="ln">   366  </span>
-<span id="L367" class="ln">   367  </span>	file, err := os.OpenFile(destination, os.O_APPEND|os.O_WRONLY|os.O_CREATE, summaryFileMode) <span class="comment">//nolint:gosec // 宛先は Actions が渡す固定の環境変数</span>
-<span id="L368" class="ln">   368  </span>	if err != nil {
-<span id="L369" class="ln">   369  </span>		return xerrors.Wrap(err, &#34;❌ job summary を開けません&#34;)
-<span id="L370" class="ln">   370  </span>	}
-<span id="L371" class="ln">   371  </span>	defer func() { _ = file.Close() }()
-<span id="L372" class="ln">   372  </span>	if _, err := file.WriteString(body.String()); err != nil {
-<span id="L373" class="ln">   373  </span>		return xerrors.Wrap(err, &#34;❌ job summary へ書けません&#34;)
+<span id="L346" class="ln">   346  </span>	if err := emitCounts(files, total); err != nil {
+<span id="L347" class="ln">   347  </span>		return err
+<span id="L348" class="ln">   348  </span>	}
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>	destination := os.Getenv(&#34;GITHUB_STEP_SUMMARY&#34;)
+<span id="L351" class="ln">   351  </span>	if destination == &#34;&#34; {
+<span id="L352" class="ln">   352  </span>		return nil
+<span id="L353" class="ln">   353  </span>	}
+<span id="L354" class="ln">   354  </span>
+<span id="L355" class="ln">   355  </span>	var body strings.Builder
+<span id="L356" class="ln">   356  </span>	body.WriteString(&#34;## graphify semantic extraction\n\n&#34;)
+<span id="L357" class="ln">   357  </span>	if total &gt;= threshold &amp;&amp; threshold &gt; 0 {
+<span id="L358" class="ln">   358  </span>		fmt.Fprintf(&amp;body,
+<span id="L359" class="ln">   359  </span>			&#34;⚠️ %d files / %d changed lines are waiting (threshold %d). Run `/graphify --update`.\n\n&#34;,
+<span id="L360" class="ln">   360  </span>			files, total, threshold)
+<span id="L361" class="ln">   361  </span>	} else {
+<span id="L362" class="ln">   362  </span>		fmt.Fprintf(&amp;body, &#34;%d files / %d changed lines are waiting (threshold %d).\n\n&#34;, files, total, threshold)
+<span id="L363" class="ln">   363  </span>	}
+<span id="L364" class="ln">   364  </span>	for _, item := range items[:min(len(items), maxListedFiles)] {
+<span id="L365" class="ln">   365  </span>		fmt.Fprintf(&amp;body, &#34;- `%s` (%d)\n&#34;, item.path, item.changed)
+<span id="L366" class="ln">   366  </span>	}
+<span id="L367" class="ln">   367  </span>	if len(items) &gt; maxListedFiles {
+<span id="L368" class="ln">   368  </span>		fmt.Fprintf(&amp;body, &#34;- ... %d more\n&#34;, len(items)-maxListedFiles)
+<span id="L369" class="ln">   369  </span>	}
+<span id="L370" class="ln">   370  </span>
+<span id="L371" class="ln">   371  </span>	file, err := os.OpenFile(destination, os.O_APPEND|os.O_WRONLY|os.O_CREATE, summaryFileMode) <span class="comment">//nolint:gosec // 宛先は Actions が渡す固定の環境変数</span>
+<span id="L372" class="ln">   372  </span>	if err != nil {
+<span id="L373" class="ln">   373  </span>		return xerrors.Wrap(err, &#34;❌ job summary を開けません&#34;)
 <span id="L374" class="ln">   374  </span>	}
-<span id="L375" class="ln">   375  </span>
-<span id="L376" class="ln">   376  </span>	return nil
-<span id="L377" class="ln">   377  </span>}
-<span id="L378" class="ln">   378  </span>
-<span id="L379" class="ln">   379  </span><span class="comment">// short はコミットハッシュを短縮します。</span>
-<span id="L380" class="ln">   380  </span>func short(commit string) string {
-<span id="L381" class="ln">   381  </span>	if len(commit) &gt; shortCommitLength {
-<span id="L382" class="ln">   382  </span>		return commit[:shortCommitLength]
-<span id="L383" class="ln">   383  </span>	}
-<span id="L384" class="ln">   384  </span>
-<span id="L385" class="ln">   385  </span>	return commit
-<span id="L386" class="ln">   386  </span>}
-<span id="L387" class="ln">   387  </span>
-<span id="L388" class="ln">   388  </span><span class="comment">// gitOutput は git を実行して標準出力を返します。</span>
-<span id="L389" class="ln">   389  </span>func gitOutput(args ...string) (string, error) {
-<span id="L390" class="ln">   390  </span>	out, err := exec.CommandContext(context.Background(), &#34;git&#34;, args...).Output() <span class="comment">//nolint:gosec // 引数は呼び出し側が組み立てた固定語とパス</span>
-<span id="L391" class="ln">   391  </span>	if err != nil {
-<span id="L392" class="ln">   392  </span>		return &#34;&#34;, xerrors.Wrap(err, &#34;git &#34;+strings.Join(args, &#34; &#34;))
-<span id="L393" class="ln">   393  </span>	}
-<span id="L394" class="ln">   394  </span>
-<span id="L395" class="ln">   395  </span>	return string(out), nil
-<span id="L396" class="ln">   396  </span>}
+<span id="L375" class="ln">   375  </span>	defer func() { _ = file.Close() }()
+<span id="L376" class="ln">   376  </span>	if _, err := file.WriteString(body.String()); err != nil {
+<span id="L377" class="ln">   377  </span>		return xerrors.Wrap(err, &#34;❌ job summary へ書けません&#34;)
+<span id="L378" class="ln">   378  </span>	}
+<span id="L379" class="ln">   379  </span>
+<span id="L380" class="ln">   380  </span>	return nil
+<span id="L381" class="ln">   381  </span>}
+<span id="L382" class="ln">   382  </span>
+<span id="L383" class="ln">   383  </span><span class="comment">// emitCounts は未処理量を後続のステップが読める形で書き出します。job summary は人が読むための</span>
+<span id="L384" class="ln">   384  </span><span class="comment">// もので、同じ数を機械が読む経路にはならない。抽出が何も生まなかったとき、それが「溜まって</span>
+<span id="L385" class="ln">   385  </span><span class="comment">// いなかった」のか「動かなかった」のかは、この数と差分の有無を突き合わせて初めて分かれる。</span>
+<span id="L386" class="ln">   386  </span>func emitCounts(files, total int) error {
+<span id="L387" class="ln">   387  </span>	destination := os.Getenv(&#34;GITHUB_OUTPUT&#34;)
+<span id="L388" class="ln">   388  </span>	if destination == &#34;&#34; {
+<span id="L389" class="ln">   389  </span>		return nil
+<span id="L390" class="ln">   390  </span>	}
+<span id="L391" class="ln">   391  </span>
+<span id="L392" class="ln">   392  </span>	file, err := os.OpenFile(destination, os.O_APPEND|os.O_WRONLY|os.O_CREATE, summaryFileMode) <span class="comment">//nolint:gosec // 宛先は Actions が渡す固定の環境変数</span>
+<span id="L393" class="ln">   393  </span>	if err != nil {
+<span id="L394" class="ln">   394  </span>		return xerrors.Wrap(err, &#34;❌ ステップ出力を開けません&#34;)
+<span id="L395" class="ln">   395  </span>	}
+<span id="L396" class="ln">   396  </span>	defer func() { _ = file.Close() }()
 <span id="L397" class="ln">   397  </span>
+<span id="L398" class="ln">   398  </span>	if _, err := fmt.Fprintf(file, &#34;files=%d\nlines=%d\n&#34;, files, total); err != nil {
+<span id="L399" class="ln">   399  </span>		return xerrors.Wrap(err, &#34;❌ ステップ出力へ書けません&#34;)
+<span id="L400" class="ln">   400  </span>	}
+<span id="L401" class="ln">   401  </span>
+<span id="L402" class="ln">   402  </span>	return nil
+<span id="L403" class="ln">   403  </span>}
+<span id="L404" class="ln">   404  </span>
+<span id="L405" class="ln">   405  </span><span class="comment">// short はコミットハッシュを短縮します。</span>
+<span id="L406" class="ln">   406  </span>func short(commit string) string {
+<span id="L407" class="ln">   407  </span>	if len(commit) &gt; shortCommitLength {
+<span id="L408" class="ln">   408  </span>		return commit[:shortCommitLength]
+<span id="L409" class="ln">   409  </span>	}
+<span id="L410" class="ln">   410  </span>
+<span id="L411" class="ln">   411  </span>	return commit
+<span id="L412" class="ln">   412  </span>}
+<span id="L413" class="ln">   413  </span>
+<span id="L414" class="ln">   414  </span><span class="comment">// gitOutput は git を実行して標準出力を返します。</span>
+<span id="L415" class="ln">   415  </span>func gitOutput(args ...string) (string, error) {
+<span id="L416" class="ln">   416  </span>	out, err := exec.CommandContext(context.Background(), &#34;git&#34;, args...).Output() <span class="comment">//nolint:gosec // 引数は呼び出し側が組み立てた固定語とパス</span>
+<span id="L417" class="ln">   417  </span>	if err != nil {
+<span id="L418" class="ln">   418  </span>		return &#34;&#34;, xerrors.Wrap(err, &#34;git &#34;+strings.Join(args, &#34; &#34;))
+<span id="L419" class="ln">   419  </span>	}
+<span id="L420" class="ln">   420  </span>
+<span id="L421" class="ln">   421  </span>	return string(out), nil
+<span id="L422" class="ln">   422  </span>}
+<span id="L423" class="ln">   423  </span>
 </pre><p><a href="../../../../src/go-boilerplate/scripts/graphify-pending/main.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

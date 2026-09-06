@@ -1,7 +1,5 @@
 # Worker エンジンガイド（`internal/controller/worker`）
 
-[English](README.md) | 日本語
-
 ## オニオンアーキテクチャでの役割
 
 - HTTP ハンドラと同格の **message-in driving adapter**。新しいアーキテクチャ層ではなく、**Usecase 層へのもう 1 つの入口**。

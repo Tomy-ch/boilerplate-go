@@ -1,0 +1,897 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>inquiry - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package inquiry
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/domain/inquiry&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package inquiry は、問い合わせドメインを定義します。利用者が運営に対して開始する一連のやり取りを
+表し、利用者 1 人につき 1 件という制約と、最終更新時刻の単調性を不変条件として保持します。
+</p><p>やり取りの中身は Message が sub-entity として表します。Message は自身の ID で取得されることも
+問い合わせを経由せず一覧されることもないため、独立した集約ではありません
+（internal/domain/README.md の Cross-aggregate reference）。追加は必ず AppendMessage を通り、
+親への逆参照は持ちません。
+</p><p>問い合わせ自身が持つ状態は「誰が始めたか」と「最後にいつ動いたか」だけで、close / reopen のような
+状態遷移は持ちません。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+			
+				
+				<dd><a href="#Attributes">type Attributes</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Author">type Author</a></dd>
+				
+					
+					<dd>    <a href="#NewAuthor">func NewAuthor(kind AuthorKind, subjectID uuid.UUID) (Author, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#Author.Kind">func (a Author) Kind() AuthorKind</a></dd>
+				
+					
+					<dd>    <a href="#Author.SubjectID">func (a Author) SubjectID() uuid.UUID</a></dd>
+				
+			
+				
+				<dd><a href="#AuthorKind">type AuthorKind</a></dd>
+				
+					
+					<dd>    <a href="#NewAuthorKind">func NewAuthorKind(value string) (AuthorKind, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#AuthorKind.String">func (k AuthorKind) String() string</a></dd>
+				
+			
+				
+				<dd><a href="#Cursor">type Cursor</a></dd>
+				
+				
+			
+				
+				<dd><a href="#HistoryParams">type HistoryParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Inquiry">type Inquiry</a></dd>
+				
+					
+					<dd>    <a href="#New">func New(id uuid.UUID, attrs Attributes) (*Inquiry, error)</a></dd>
+				
+					
+					<dd>    <a href="#Reconstruct">func Reconstruct(id uuid.UUID, attrs Attributes) (*Inquiry, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#Inquiry.AppendMessage">func (i *Inquiry) AppendMessage(id uuid.UUID, attrs MessageAttributes, now time.Time) (*Message, error)</a></dd>
+				
+					
+					<dd>    <a href="#Inquiry.CreatedAt">func (i *Inquiry) CreatedAt() time.Time</a></dd>
+				
+					
+					<dd>    <a href="#Inquiry.ID">func (i *Inquiry) ID() uuid.UUID</a></dd>
+				
+					
+					<dd>    <a href="#Inquiry.UpdatedAt">func (i *Inquiry) UpdatedAt() time.Time</a></dd>
+				
+					
+					<dd>    <a href="#Inquiry.UserID">func (i *Inquiry) UserID() uuid.UUID</a></dd>
+				
+			
+				
+				<dd><a href="#ListParams">type ListParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Message">type Message</a></dd>
+				
+					
+					<dd>    <a href="#ReconstructMessage">func ReconstructMessage(id uuid.UUID, attrs MessageAttributes) (*Message, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#Message.Author">func (m *Message) Author() Author</a></dd>
+				
+					
+					<dd>    <a href="#Message.Body">func (m *Message) Body() string</a></dd>
+				
+					
+					<dd>    <a href="#Message.CreatedAt">func (m *Message) CreatedAt() time.Time</a></dd>
+				
+					
+					<dd>    <a href="#Message.ID">func (m *Message) ID() uuid.UUID</a></dd>
+				
+					
+					<dd>    <a href="#Message.IsFrom">func (m *Message) IsFrom(kind AuthorKind, subjectID uuid.UUID) bool</a></dd>
+				
+					
+					<dd>    <a href="#Message.Sequence">func (m *Message) Sequence() int64</a></dd>
+				
+			
+				
+				<dd><a href="#MessageAttributes">type MessageAttributes</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Repository">type Repository</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/inquiry/author.go.html">author.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/inquiry/author_kind.go.html">author_kind.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/inquiry/constant.go.html">constant.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/inquiry/error.go.html">error.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html">inquiry_domain.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html">inquiry_message.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_repository.go.html">inquiry_repository.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				
+				<pre>var (
+
+    <span class="comment">// ErrInvalidID は、問い合わせ ID の検証に失敗した場合のエラーです（422）。</span>
+    <span id="ErrInvalidID">ErrInvalidID</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;id failed&#34;)
+    <span class="comment">// ErrInvalidUserID は、問い合わせを開始した利用者の ID の検証に失敗した場合のエラーです（422）。</span>
+    <span id="ErrInvalidUserID">ErrInvalidUserID</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;userID failed&#34;)
+    <span class="comment">// ErrInvalidTime は、時刻の前後関係が満たされない場合のエラーです（422）。</span>
+    <span id="ErrInvalidTime">ErrInvalidTime</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;time ordering failed&#34;)
+    <span class="comment">// ErrInvalidMessageID は、メッセージ ID の検証に失敗した場合のエラーです（422）。</span>
+    <span id="ErrInvalidMessageID">ErrInvalidMessageID</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;message id failed&#34;)
+    <span class="comment">// ErrEmptyBody は、メッセージ本文が空の場合のエラーです（422）。</span>
+    <span id="ErrEmptyBody">ErrEmptyBody</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;message body is empty&#34;)
+    <span class="comment">// ErrBodyTooLong は、メッセージ本文が上限文字数を超える場合のエラーです（422）。</span>
+    <span id="ErrBodyTooLong">ErrBodyTooLong</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;message body is too long&#34;)
+    <span class="comment">// ErrInvalidSequence は、問い合わせ内の位置が正の整数でない場合のエラーです（422）。</span>
+    <span id="ErrInvalidSequence">ErrInvalidSequence</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;message sequence failed&#34;)
+    <span class="comment">// ErrInvalidAuthorKind は、送り手の種別が既知の 2 値でない場合のエラーです（422）。</span>
+    <span id="ErrInvalidAuthorKind">ErrInvalidAuthorKind</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;message author kind failed&#34;)
+    <span class="comment">// ErrInvalidAuthorSubject は、送り手の主体 ID の検証に失敗した場合のエラーです（422）。</span>
+    <span id="ErrInvalidAuthorSubject">ErrInvalidAuthorSubject</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(errInvalid, &#34;message author subject failed&#34;)
+)</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="Attributes">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=1400:1762#L21">Attributes</a>
+				<a class="permalink" href="#Attributes">¶</a>
+				
+				
+			</h2>
+			<p>Attributes は、問い合わせの生成と再構築に必要な属性一式です。id と userID は同じ uuid.UUID の
+ため、取り違えを型で防ぐ目的で identity 以外を構造体で受けます
+（docs/rules.md の Function Signature Rules）。
+
+			</p><pre>type Attributes struct {
+<span id="Attributes.UserID"></span>    <span class="comment">// UserID は、問い合わせを開始した利用者です。</span>
+    UserID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="Attributes.CreatedAt"></span>    <span class="comment">// CreatedAt は、作成日時です。生成時はゼロ値で、DB の既定値が入ります。</span>
+    CreatedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="Attributes.UpdatedAt"></span>    <span class="comment">// UpdatedAt は、最後にメッセージが追加された日時です。生成時はゼロ値です。</span>
+    UpdatedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Author">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/author.go.html?s=299:364#L1">Author</a>
+				<a class="permalink" href="#Author">¶</a>
+				
+				
+			</h2>
+			<p>Author は、メッセージの送り手を表す値オブジェクトです。
+利用者のときは問い合わせを開始した利用者を、回答者のときは運営側の利用者を指します。
+
+			</p><pre>type Author struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewAuthor">func <a href="../../../../src/go-boilerplate/internal/domain/inquiry/author.go.html?s=561:629#L8">NewAuthor</a>
+					<a class="permalink" href="#NewAuthor">¶</a>
+					
+					
+				</h3>
+				<pre>func NewAuthor(kind <a href="#AuthorKind">AuthorKind</a>, subjectID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#Author">Author</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewAuthor は、送り手を生成します。
+種別が既知の 2 値でなければ ErrInvalidAuthorKind を、主体 ID が未設定なら
+ErrInvalidAuthorSubject を返します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Author.Kind">func (Author) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/author.go.html?s=1183:1216#L27">Kind</a>
+					<a class="permalink" href="#Author.Kind">¶</a>
+					
+					
+				</h3>
+				<pre>func (a <a href="#Author">Author</a>) Kind() <a href="#AuthorKind">AuthorKind</a></pre>
+				<p>Kind は、送り手の種別を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Author.SubjectID">func (Author) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/author.go.html?s=1296:1333#L30">SubjectID</a>
+					<a class="permalink" href="#Author.SubjectID">¶</a>
+					
+					
+				</h3>
+				<pre>func (a <a href="#Author">Author</a>) SubjectID() <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>SubjectID は、送り手の主体 ID を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="AuthorKind">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/author_kind.go.html?s=430:452#L7">AuthorKind</a>
+				<a class="permalink" href="#AuthorKind">¶</a>
+				
+				
+			</h2>
+			<p>AuthorKind は、メッセージの送り手の種別を表す値オブジェクトです。
+
+			</p><pre>type AuthorKind <a href="../../../../builtin/#string">string</a></pre>
+
+			
+				
+				<pre>const (
+    <span class="comment">// AuthorKindUser は、送り手が利用者であることを表します。</span>
+    <span id="AuthorKindUser">AuthorKindUser</span> <a href="#AuthorKind">AuthorKind</a> = &#34;user&#34;
+    <span class="comment">// AuthorKindOperator は、送り手が回答者（運営）であることを表します。</span>
+    <span id="AuthorKindOperator">AuthorKindOperator</span> <a href="#AuthorKind">AuthorKind</a> = &#34;operator&#34;
+)</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewAuthorKind">func <a href="../../../../src/go-boilerplate/internal/domain/inquiry/author_kind.go.html?s=569:621#L10">NewAuthorKind</a>
+					<a class="permalink" href="#NewAuthorKind">¶</a>
+					
+					
+				</h3>
+				<pre>func NewAuthorKind(value <a href="../../../../builtin/#string">string</a>) (<a href="#AuthorKind">AuthorKind</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewAuthorKind は、種別を生成します。既知の 2 値以外は ErrInvalidAuthorKind を返します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="AuthorKind.String">func (AuthorKind) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/author_kind.go.html?s=849:884#L19">String</a>
+					<a class="permalink" href="#AuthorKind.String">¶</a>
+					
+					
+				</h3>
+				<pre>func (k <a href="#AuthorKind">AuthorKind</a>) String() <a href="../../../../builtin/#string">string</a></pre>
+				<p>String は、種別の文字列表現を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="Cursor">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=1852:2077#L31">Cursor</a>
+				<a class="permalink" href="#Cursor">¶</a>
+				
+				
+			</h2>
+			<p>Cursor は、運営向け一覧の keyset ページネーションの位置です。
+
+			</p><pre>type Cursor struct {
+<span id="Cursor.UpdatedAt"></span>    <span class="comment">// UpdatedAt は、直前のページ末尾の更新日時です。</span>
+    UpdatedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="Cursor.ID"></span>    <span class="comment">// ID は、更新日時が同値の行を決着させる直前のページ末尾の ID です。</span>
+    ID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="HistoryParams">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_repository.go.html?s=247:647#L1">HistoryParams</a>
+				<a class="permalink" href="#HistoryParams">¶</a>
+				
+				
+			</h2>
+			<p>HistoryParams は、問い合わせのメッセージ取得条件です。
+
+			</p><pre>type HistoryParams struct {
+<span id="HistoryParams.AfterSequence"></span>    <span class="comment">// AfterSequence は、取得を開始する位置です。nil は先頭から取得します。</span>
+    AfterSequence *<a href="../../../../builtin/#int64">int64</a>
+<span id="HistoryParams.UpToSequence"></span>    <span class="comment">// UpToSequence は、取得する上限の位置です（snapshot と等価になる理由は</span>
+    <span class="comment">// docs/spec/usecase/inquiry.md の「streamCursor と snapshot」）。</span>
+    UpToSequence <a href="../../../../builtin/#int64">int64</a>
+<span id="HistoryParams.Limit"></span>    <span class="comment">// Limit は、取得する最大件数です。</span>
+    Limit <a href="../../../../builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Inquiry">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=1017:1124#L11">Inquiry</a>
+				<a class="permalink" href="#Inquiry">¶</a>
+				
+				
+			</h2>
+			<p>Inquiry は、問い合わせを表すドメイン集約です。
+
+			</p><pre>type Inquiry struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=2500:2558#L48">New</a>
+					<a class="permalink" href="#New">¶</a>
+					
+					
+				</h3>
+				<pre>func New(id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, attrs <a href="#Attributes">Attributes</a>) (*<a href="#Inquiry">Inquiry</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>New は、問い合わせを生成します。
+id が未設定なら ErrInvalidID を、UserID が未設定なら ErrInvalidUserID を返します。
+
+				
+				
+			
+				
+				</p><h3 id="Reconstruct">func <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=2910:2976#L55">Reconstruct</a>
+					<a class="permalink" href="#Reconstruct">¶</a>
+					
+					
+				</h3>
+				<pre>func Reconstruct(id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, attrs <a href="#Attributes">Attributes</a>) (*<a href="#Inquiry">Inquiry</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>Reconstruct は、永続化済みの問い合わせを再構築します。
+New と同じ不変条件を課します。保存済みデータのための緩和経路はありません。
+加えて、作成日時が設定されている場合は更新日時がそれ以降であることを要求します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Inquiry.AppendMessage">func (*Inquiry) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=4788:4891#L101">AppendMessage</a>
+					<a class="permalink" href="#Inquiry.AppendMessage">¶</a>
+					
+					
+				</h3>
+				<pre>func (i *<a href="#Inquiry">Inquiry</a>) AppendMessage(id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, attrs <a href="#MessageAttributes">MessageAttributes</a>, now <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>) (*<a href="#Message">Message</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>AppendMessage は、この問い合わせへ 1 通追加し、更新日時を now へ進めます。
+メッセージの生成は必ずこの入口を通ります（internal/domain/README.md の Aggregate consistency）。
+</p><p>now が現在の更新日時より前なら ErrInvalidTime を返します（更新日時は単調に進みます）。
+位置（sequence）は機構が採番した値を呼び出し側が渡します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Inquiry.CreatedAt">func (*Inquiry) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=4051:4090#L90">CreatedAt</a>
+					<a class="permalink" href="#Inquiry.CreatedAt">¶</a>
+					
+					
+				</h3>
+				<pre>func (i *<a href="#Inquiry">Inquiry</a>) CreatedAt() <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a></pre>
+				<p>CreatedAt は、作成日時を返します。生成直後の集約ではゼロ値で、再構築時に設定されます。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Inquiry.ID">func (*Inquiry) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=3734:3766#L84">ID</a>
+					<a class="permalink" href="#Inquiry.ID">¶</a>
+					
+					
+				</h3>
+				<pre>func (i *<a href="#Inquiry">Inquiry</a>) ID() <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>ID は、問い合わせ ID を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Inquiry.UpdatedAt">func (*Inquiry) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=4283:4322#L94">UpdatedAt</a>
+					<a class="permalink" href="#Inquiry.UpdatedAt">¶</a>
+					
+					
+				</h3>
+				<pre>func (i *<a href="#Inquiry">Inquiry</a>) UpdatedAt() <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a></pre>
+				<p>UpdatedAt は、最後にメッセージが追加された日時を返します。生成直後の集約ではゼロ値で、
+再構築時に設定されます。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Inquiry.UserID">func (*Inquiry) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=3865:3901#L87">UserID</a>
+					<a class="permalink" href="#Inquiry.UserID">¶</a>
+					
+					
+				</h3>
+				<pre>func (i *<a href="#Inquiry">Inquiry</a>) UserID() <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>UserID は、問い合わせを開始した利用者の ID を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="ListParams">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_domain.go.html?s=2142:2342#L39">ListParams</a>
+				<a class="permalink" href="#ListParams">¶</a>
+				
+				
+			</h2>
+			<p>ListParams は、運営向け一覧の取得条件です。
+
+			</p><pre>type ListParams struct {
+<span id="ListParams.Cursor"></span>    <span class="comment">// Cursor は、取得を開始する位置です。nil は先頭ページを意味します。</span>
+    Cursor *<a href="#Cursor">Cursor</a>
+<span id="ListParams.Limit"></span>    <span class="comment">// Limit は、取得する最大件数です。</span>
+    Limit <a href="../../../../builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Message">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=657:775#L8">Message</a>
+				<a class="permalink" href="#Message">¶</a>
+				
+				
+			</h2>
+			<p>Message は、問い合わせの中で一方が相手に送る 1 通を表す sub-entity です。
+作成後の編集も取り消しもありません（append-only）。
+</p><p>sequence は「その問い合わせの何通目か」を表し、配送順序の基準として Realtime Delivery が
+要求する値です。採番は機構が行い、この層は正の整数であることだけを検証します——問い合わせ内での
+一意性と単調増加は 1 通だけでは判定できません。
+
+			</p><pre>type Message struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="ReconstructMessage">func <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=1466:1546#L30">ReconstructMessage</a>
+					<a class="permalink" href="#ReconstructMessage">¶</a>
+					
+					
+				</h3>
+				<pre>func ReconstructMessage(id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, attrs <a href="#MessageAttributes">MessageAttributes</a>) (*<a href="#Message">Message</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>ReconstructMessage は、永続化済みのメッセージを再構築します。
+AppendMessage と同じ不変条件を課します。保存済みデータのための緩和経路はありません。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Message.Author">func (*Message) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=2825:2858#L75">Author</a>
+					<a class="permalink" href="#Message.Author">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#Message">Message</a>) Author() <a href="#Author">Author</a></pre>
+				<p>Author は、送り手を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Message.Body">func (*Message) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=2919:2950#L78">Body</a>
+					<a class="permalink" href="#Message.Body">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#Message">Message</a>) Body() <a href="../../../../builtin/#string">string</a></pre>
+				<p>Body は、本文を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Message.CreatedAt">func (*Message) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=3229:3268#L84">CreatedAt</a>
+					<a class="permalink" href="#Message.CreatedAt">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#Message">Message</a>) CreatedAt() <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a></pre>
+				<p>CreatedAt は、作成日時を返します。追加直後のメッセージではゼロ値で、再構築時に設定されます。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Message.ID">func (*Message) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=2731:2763#L72">ID</a>
+					<a class="permalink" href="#Message.ID">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#Message">Message</a>) ID() <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a></pre>
+				<p>ID は、メッセージ ID を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Message.IsFrom">func (*Message) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=3376:3443#L87">IsFrom</a>
+					<a class="permalink" href="#Message.IsFrom">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#Message">Message</a>) IsFrom(kind <a href="#AuthorKind">AuthorKind</a>, subjectID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>IsFrom は、送り手が指定の種別・主体であるかを返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Message.Sequence">func (*Message) <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=3034:3068#L81">Sequence</a>
+					<a class="permalink" href="#Message.Sequence">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#Message">Message</a>) Sequence() <a href="../../../../builtin/#int64">int64</a></pre>
+				<p>Sequence は、問い合わせ内の位置を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MessageAttributes">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_message.go.html?s=868:1255#L17">MessageAttributes</a>
+				<a class="permalink" href="#MessageAttributes">¶</a>
+				
+				
+			</h2>
+			<p>MessageAttributes は、メッセージの組み立てに必要な属性一式です。
+
+			</p><pre>type MessageAttributes struct {
+<span id="MessageAttributes.Author"></span>    <span class="comment">// Author は、送り手です。</span>
+    Author <a href="#Author">Author</a>
+<span id="MessageAttributes.Body"></span>    <span class="comment">// Body は、本文です。</span>
+    Body <a href="../../../../builtin/#string">string</a>
+<span id="MessageAttributes.Sequence"></span>    <span class="comment">// Sequence は、問い合わせ内の位置（1 起算）です。usecase が機構の採番結果を渡します。</span>
+    Sequence <a href="../../../../builtin/#int64">int64</a>
+<span id="MessageAttributes.CreatedAt"></span>    <span class="comment">// CreatedAt は、作成日時です。追加時はゼロ値で、DB の既定値が入ります。</span>
+    CreatedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Repository">type <a href="../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_repository.go.html?s=839:2555#L13">Repository</a>
+				<a class="permalink" href="#Repository">¶</a>
+				
+				
+			</h2>
+			<p>Repository は、問い合わせ集約の永続化を抽象化します。
+メッセージは集約の内側にあるため、その読み書きもこの Repository が担います。
+
+			</p><pre>type Repository interface {
+    <span class="comment">// FindByID は、問い合わせを 1 件取得します。存在しない場合は NotFound を返します。</span>
+    FindByID(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (*<a href="#Inquiry">Inquiry</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// FindActiveByUserID は、利用者の active な問い合わせを取得します。</span>
+    <span class="comment">// 利用者 1 人につき高々 1 件です。存在しない場合は NotFound を返します。</span>
+    FindActiveByUserID(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, userID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (*<a href="#Inquiry">Inquiry</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// CreateIfAbsent は、利用者の active な問い合わせが無ければ作り、既にある場合（並行した競合を</span>
+    <span class="comment">// 含む）はその問い合わせを衝突とせずに返します。</span>
+    CreateIfAbsent(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, inquiry *<a href="#Inquiry">Inquiry</a>) (*<a href="#Inquiry">Inquiry</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// Update は、問い合わせの更新日時を永続化します（AppendMessage が進めた値）。</span>
+    Update(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, inquiry *<a href="#Inquiry">Inquiry</a>) <a href="../../../../builtin/#error">error</a>
+
+    <span class="comment">// ListForOperator は、運営向けに問い合わせを更新日時が新しい順、同時刻は ID の降順で</span>
+    <span class="comment">// keyset ページネーションして取得します。読み取り専用です。</span>
+    ListForOperator(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, params <a href="#ListParams">ListParams</a>) ([]*<a href="#Inquiry">Inquiry</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// CreateMessage は、問い合わせへメッセージを 1 件追加します。</span>
+    <span class="comment">// 問い合わせ内の位置が重複した場合は Conflict を返します。</span>
+    CreateMessage(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, inquiryID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, message *<a href="#Message">Message</a>) <a href="../../../../builtin/#error">error</a>
+
+    <span class="comment">// ListMessages は、問い合わせのメッセージを位置の昇順で keyset ページネーションして取得します。</span>
+    <span class="comment">// History API の本体です。</span>
+    ListMessages(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, inquiryID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, params <a href="#HistoryParams">HistoryParams</a>) ([]*<a href="#Message">Message</a>, <a href="../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

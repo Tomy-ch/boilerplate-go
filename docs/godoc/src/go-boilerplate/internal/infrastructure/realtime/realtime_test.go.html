@@ -1,0 +1,191 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/infrastructure">infrastructure</a>/<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime">realtime</a>/<span class="text-muted">realtime_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/infrastructure/realtime">go-boilerplate/internal/infrastructure/realtime</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package realtime
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;testing&#34;
+<span id="L6" class="ln">     6  </span>
+<span id="L7" class="ln">     7  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L8" class="ln">     8  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L9" class="ln">     9  </span>	gomock &#34;go.uber.org/mock/gomock&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/infrastructure/awsclient&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L14" class="ln">    14  </span>	mock_realtime &#34;go-boilerplate/internal/usecase/boundary/realtime/mock&#34;
+<span id="L15" class="ln">    15  </span>)
+<span id="L16" class="ln">    16  </span>
+<span id="L17" class="ln">    17  </span>const testTopicARN = &#34;arn:aws:sns:us-east-1:000000000000:topic&#34;
+<span id="L18" class="ln">    18  </span>
+<span id="L19" class="ln">    19  </span>func testClients(t *testing.T) Clients {
+<span id="L20" class="ln">    20  </span>	t.Helper()
+<span id="L21" class="ln">    21  </span>
+<span id="L22" class="ln">    22  </span>	c, err := NewClients(
+<span id="L23" class="ln">    23  </span>		t.Context(),
+<span id="L24" class="ln">    24  </span>		ClientConfig{Endpoint: &#34;http://localhost:4100&#34;, Region: &#34;us-east-1&#34;, AccessKeyID: &#34;k&#34;, SecretAccessKey: &#34;s&#34;},
+<span id="L25" class="ln">    25  </span>	)
+<span id="L26" class="ln">    26  </span>	require.NoError(t, err)
+<span id="L27" class="ln">    27  </span>
+<span id="L28" class="ln">    28  </span>	return c
+<span id="L29" class="ln">    29  </span>}
+<span id="L30" class="ln">    30  </span>
+<span id="L31" class="ln">    31  </span>func TestNewClients(t *testing.T) {
+<span id="L32" class="ln">    32  </span>	t.Parallel()
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L35" class="ln">    35  </span>		t.Parallel()
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span>		c := testClients(t)
+<span id="L38" class="ln">    38  </span>		assert.NotNil(t, c.SNS)
+<span id="L39" class="ln">    39  </span>		assert.NotNil(t, c.SQS)
+<span id="L40" class="ln">    40  </span>	})
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L43" class="ln">    43  </span>		t.Parallel()
+<span id="L44" class="ln">    44  </span>
+<span id="L45" class="ln">    45  </span>		_, err := NewClients(t.Context(), ClientConfig{Region: &#34;us-east-1&#34;, SecretAccessKey: &#34;s&#34;})
+<span id="L46" class="ln">    46  </span>		require.ErrorIs(t, err, awsclient.ErrInvalidCredentials)
+<span id="L47" class="ln">    47  </span>	})
+<span id="L48" class="ln">    48  </span>}
+<span id="L49" class="ln">    49  </span>
+<span id="L50" class="ln">    50  </span>func TestNewPublisher(t *testing.T) {
+<span id="L51" class="ln">    51  </span>	t.Parallel()
+<span id="L52" class="ln">    52  </span>
+<span id="L53" class="ln">    53  </span>	ctrl := gomock.NewController(t)
+<span id="L54" class="ln">    54  </span>	assert.NotNil(
+<span id="L55" class="ln">    55  </span>		t,
+<span id="L56" class="ln">    56  </span>		NewPublisher(
+<span id="L57" class="ln">    57  </span>			mock_realtime.NewMockEventLogStore(ctrl),
+<span id="L58" class="ln">    58  </span>			testClients(t),
+<span id="L59" class="ln">    59  </span>			testTopicARN,
+<span id="L60" class="ln">    60  </span>			observability.NewNoopTracerFactory(t),
+<span id="L61" class="ln">    61  </span>			observability.NewNoopRealtimeMetrics(t),
+<span id="L62" class="ln">    62  </span>		),
+<span id="L63" class="ln">    63  </span>	)
+<span id="L64" class="ln">    64  </span>}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span>func TestNewRevocationNotifier(t *testing.T) {
+<span id="L67" class="ln">    67  </span>	t.Parallel()
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span>	assert.NotNil(t, NewRevocationNotifier(testClients(t), testTopicARN, observability.NewNoopTracerFactory(t)))
+<span id="L70" class="ln">    70  </span>}
+<span id="L71" class="ln">    71  </span>
+<span id="L72" class="ln">    72  </span>func TestNewInstanceSubscription(t *testing.T) {
+<span id="L73" class="ln">    73  </span>	t.Parallel()
+<span id="L74" class="ln">    74  </span>
+<span id="L75" class="ln">    75  </span>	assert.NotNil(
+<span id="L76" class="ln">    76  </span>		t,
+<span id="L77" class="ln">    77  </span>		NewInstanceSubscription(
+<span id="L78" class="ln">    78  </span>			testClients(t), SubscriptionTarget{TopicARN: testTopicARN, QueuePrefix: &#34;realtime-test&#34;},
+<span id="L79" class="ln">    79  </span>			NewQueueAttributes(QueueAttributesInput{TopicARN: testTopicARN}), observability.NewNoopTracerFactory(t),
+<span id="L80" class="ln">    80  </span>		),
+<span id="L81" class="ln">    81  </span>	)
+<span id="L82" class="ln">    82  </span>}
+<span id="L83" class="ln">    83  </span>
+<span id="L84" class="ln">    84  </span>func TestNewQueueAttributes(t *testing.T) {
+<span id="L85" class="ln">    85  </span>	t.Parallel()
+<span id="L86" class="ln">    86  </span>
+<span id="L87" class="ln">    87  </span>	attrs, err := NewQueueAttributes(QueueAttributesInput{TopicARN: testTopicARN, DLQARN: &#34;arn:dlq&#34;}).Build(&#34;arn:q&#34;)
+<span id="L88" class="ln">    88  </span>	require.NoError(t, err)
+<span id="L89" class="ln">    89  </span>	assert.Contains(t, attrs, &#34;Policy&#34;)
+<span id="L90" class="ln">    90  </span>	assert.Contains(t, attrs, &#34;RedrivePolicy&#34;)
+<span id="L91" class="ln">    91  </span>}
+<span id="L92" class="ln">    92  </span>
+<span id="L93" class="ln">    93  </span>func TestNewEmulatorQueueAttributes(t *testing.T) {
+<span id="L94" class="ln">    94  </span>	t.Parallel()
+<span id="L95" class="ln">    95  </span>
+<span id="L96" class="ln">    96  </span>	attrs, err := NewEmulatorQueueAttributes().Build(&#34;arn:q&#34;)
+<span id="L97" class="ln">    97  </span>	require.NoError(t, err)
+<span id="L98" class="ln">    98  </span>	assert.NotContains(t, attrs, &#34;Policy&#34;)
+<span id="L99" class="ln">    99  </span>	assert.Contains(t, attrs, &#34;VisibilityTimeout&#34;)
+<span id="L100" class="ln">   100  </span>}
+<span id="L101" class="ln">   101  </span>
+<span id="L102" class="ln">   102  </span>func TestEnsureTopic(t *testing.T) {
+<span id="L103" class="ln">   103  </span>	t.Parallel()
+<span id="L104" class="ln">   104  </span>
+<span id="L105" class="ln">   105  </span>	<span class="comment">// 実 substrate への往復は contract test（testkit.CreateTopic）が担う。ここは facade が ctx と client を aws 側へ渡し、</span>
+<span id="L106" class="ln">   106  </span>	<span class="comment">// その失敗が正規化されて戻ることだけを見る。</span>
+<span id="L107" class="ln">   107  </span>	ctx, cancel := context.WithCancel(t.Context())
+<span id="L108" class="ln">   108  </span>	cancel()
+<span id="L109" class="ln">   109  </span>
+<span id="L110" class="ln">   110  </span>	_, err := EnsureTopic(ctx, testClients(t), &#34;t&#34;)
+<span id="L111" class="ln">   111  </span>	require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L112" class="ln">   112  </span>}
+<span id="L113" class="ln">   113  </span>
+<span id="L114" class="ln">   114  </span>func TestNewOrphanReclaimer(t *testing.T) {
+<span id="L115" class="ln">   115  </span>	t.Parallel()
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>	assert.NotNil(
+<span id="L118" class="ln">   118  </span>		t,
+<span id="L119" class="ln">   119  </span>		NewOrphanReclaimer(
+<span id="L120" class="ln">   120  </span>			testClients(t), SubscriptionTarget{TopicARN: testTopicARN, QueuePrefix: &#34;realtime-test&#34;},
+<span id="L121" class="ln">   121  </span>			observability.NewNoopTracerFactory(t),
+<span id="L122" class="ln">   122  </span>		),
+<span id="L123" class="ln">   123  </span>	)
+<span id="L124" class="ln">   124  </span>}
+<span id="L125" class="ln">   125  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

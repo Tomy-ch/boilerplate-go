@@ -1,7 +1,5 @@
 # seed
 
-English | [日本語](README.ja.md)
-
 `database/seed` stores **transactional data (seed data) for non-production environments** (local / CI / staging).
 
 ## Role

@@ -171,341 +171,363 @@
 <span id="L114" class="ln">   114  </span>			})
 <span id="L115" class="ln">   115  </span>		})
 <span id="L116" class="ln">   116  </span>
-<span id="L117" class="ln">   117  </span>		t.Run(&#34;論理削除された画像は返さない&#34;, func(t *testing.T) {
+<span id="L117" class="ln">   117  </span>		t.Run(&#34;複数商品が存在する場合、指定したIDの画像だけを返す&#34;, func(t *testing.T) {
 <span id="L118" class="ln">   118  </span>			t.Parallel()
 <span id="L119" class="ln">   119  </span>
 <span id="L120" class="ln">   120  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L121" class="ln">   121  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;find_images_deleted_product&#34;)
-<span id="L122" class="ln">   122  </span>				entity := newProductWithImages(t, id, []domainproduct.Image{
-<span id="L123" class="ln">   123  </span>					newImage(t, &#34;find_images_deleted&#34;, &#34;products/old.png&#34;, 1),
-<span id="L124" class="ln">   124  </span>				})
-<span id="L125" class="ln">   125  </span>				require.NoError(t, repo.Create(ctx, entity))
-<span id="L126" class="ln">   126  </span>				db := gen.New(driver.New(ctx, repo.db))
-<span id="L127" class="ln">   127  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, nil)))
-<span id="L128" class="ln">   128  </span>
-<span id="L129" class="ln">   129  </span>				got, err := repo.findImagesByProductIDs(ctx, []uuid.UUID{id})
-<span id="L130" class="ln">   130  </span>
-<span id="L131" class="ln">   131  </span>				require.NoError(t, err)
-<span id="L132" class="ln">   132  </span>				assert.Empty(t, got[id])
-<span id="L133" class="ln">   133  </span>			})
-<span id="L134" class="ln">   134  </span>		})
-<span id="L135" class="ln">   135  </span>
-<span id="L136" class="ln">   136  </span>		t.Run(&#34;IDが空なら問い合わせず空を返す&#34;, func(t *testing.T) {
-<span id="L137" class="ln">   137  </span>			t.Parallel()
+<span id="L121" class="ln">   121  </span>				idA := uuidtestkit.NewTestFromSalt(t, &#34;find_images_isolation_a&#34;)
+<span id="L122" class="ln">   122  </span>				idB := uuidtestkit.NewTestFromSalt(t, &#34;find_images_isolation_b&#34;)
+<span id="L123" class="ln">   123  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, idA, []domainproduct.Image{
+<span id="L124" class="ln">   124  </span>					newImage(t, &#34;find_images_isolation_a_1&#34;, &#34;products/a.png&#34;, 1),
+<span id="L125" class="ln">   125  </span>				})))
+<span id="L126" class="ln">   126  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, idB, []domainproduct.Image{
+<span id="L127" class="ln">   127  </span>					newImage(t, &#34;find_images_isolation_b_1&#34;, &#34;products/b.png&#34;, 1),
+<span id="L128" class="ln">   128  </span>				})))
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>				got, err := repo.findImagesByProductIDs(ctx, []uuid.UUID{idA})
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span>				require.NoError(t, err)
+<span id="L133" class="ln">   133  </span>				require.Len(t, got[idA], 1)
+<span id="L134" class="ln">   134  </span>				assert.Equal(t, &#34;products/a.png&#34;, got[idA][0].ImagePath())
+<span id="L135" class="ln">   135  </span>				assert.NotContains(t, got, idB)
+<span id="L136" class="ln">   136  </span>			})
+<span id="L137" class="ln">   137  </span>		})
 <span id="L138" class="ln">   138  </span>
-<span id="L139" class="ln">   139  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L140" class="ln">   140  </span>				got, err := repo.findImagesByProductIDs(ctx, nil)
+<span id="L139" class="ln">   139  </span>		t.Run(&#34;論理削除された画像は返さない&#34;, func(t *testing.T) {
+<span id="L140" class="ln">   140  </span>			t.Parallel()
 <span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>				require.NoError(t, err)
-<span id="L143" class="ln">   143  </span>				assert.Empty(t, got)
-<span id="L144" class="ln">   144  </span>			})
-<span id="L145" class="ln">   145  </span>		})
-<span id="L146" class="ln">   146  </span>	})
-<span id="L147" class="ln">   147  </span>
-<span id="L148" class="ln">   148  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L149" class="ln">   149  </span>		t.Parallel()
+<span id="L142" class="ln">   142  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L143" class="ln">   143  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;find_images_deleted_product&#34;)
+<span id="L144" class="ln">   144  </span>				entity := newProductWithImages(t, id, []domainproduct.Image{
+<span id="L145" class="ln">   145  </span>					newImage(t, &#34;find_images_deleted&#34;, &#34;products/old.png&#34;, 1),
+<span id="L146" class="ln">   146  </span>				})
+<span id="L147" class="ln">   147  </span>				require.NoError(t, repo.Create(ctx, entity))
+<span id="L148" class="ln">   148  </span>				db := gen.New(driver.New(ctx, repo.db))
+<span id="L149" class="ln">   149  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, nil)))
 <span id="L150" class="ln">   150  </span>
-<span id="L151" class="ln">   151  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
-<span id="L152" class="ln">   152  </span>			t.Parallel()
-<span id="L153" class="ln">   153  </span>
-<span id="L154" class="ln">   154  </span>			ctx, cancel := context.WithCancel(t.Context())
-<span id="L155" class="ln">   155  </span>			cancel()
-<span id="L156" class="ln">   156  </span>
-<span id="L157" class="ln">   157  </span>			got, err := repo.findImagesByProductIDs(ctx, []uuid.UUID{uuidtestkit.NewTestFromSalt(t, &#34;canceled&#34;)})
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>			assert.Nil(t, got)
-<span id="L160" class="ln">   160  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L161" class="ln">   161  </span>		})
-<span id="L162" class="ln">   162  </span>	})
-<span id="L163" class="ln">   163  </span>}
-<span id="L164" class="ln">   164  </span>
-<span id="L165" class="ln">   165  </span>func Test_repository_syncImages(t *testing.T) {
-<span id="L166" class="ln">   166  </span>	t.Parallel()
-<span id="L167" class="ln">   167  </span>
-<span id="L168" class="ln">   168  </span>	testDB := testkit.NewTestDB(t)
-<span id="L169" class="ln">   169  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L170" class="ln">   170  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L173" class="ln">   173  </span>		t.Parallel()
-<span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>		t.Run(&#34;集合から外れた画像を論理削除し、集合の新しい画像を登録する&#34;, func(t *testing.T) {
-<span id="L176" class="ln">   176  </span>			t.Parallel()
-<span id="L177" class="ln">   177  </span>
-<span id="L178" class="ln">   178  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L179" class="ln">   179  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_product&#34;)
-<span id="L180" class="ln">   180  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L181" class="ln">   181  </span>					newImage(t, &#34;sync_before&#34;, &#34;products/before.png&#34;, 1),
-<span id="L182" class="ln">   182  </span>				})))
-<span id="L183" class="ln">   183  </span>
-<span id="L184" class="ln">   184  </span>				db := gen.New(driver.New(ctx, repo.db))
-<span id="L185" class="ln">   185  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L186" class="ln">   186  </span>					newImage(t, &#34;sync_after&#34;, &#34;products/after.png&#34;, 1),
-<span id="L187" class="ln">   187  </span>				})))
-<span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span>				got, err := repo.FindByID(ctx, id)
-<span id="L190" class="ln">   190  </span>				require.NoError(t, err)
-<span id="L191" class="ln">   191  </span>				require.Len(t, got.Images(), 1)
-<span id="L192" class="ln">   192  </span>				assert.Equal(t, &#34;products/after.png&#34;, got.Images()[0].ImagePath())
+<span id="L151" class="ln">   151  </span>				got, err := repo.findImagesByProductIDs(ctx, []uuid.UUID{id})
+<span id="L152" class="ln">   152  </span>
+<span id="L153" class="ln">   153  </span>				require.NoError(t, err)
+<span id="L154" class="ln">   154  </span>				assert.Empty(t, got[id])
+<span id="L155" class="ln">   155  </span>			})
+<span id="L156" class="ln">   156  </span>		})
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>		t.Run(&#34;IDが空なら問い合わせず空を返す&#34;, func(t *testing.T) {
+<span id="L159" class="ln">   159  </span>			t.Parallel()
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L162" class="ln">   162  </span>				got, err := repo.findImagesByProductIDs(ctx, nil)
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>				require.NoError(t, err)
+<span id="L165" class="ln">   165  </span>				assert.Empty(t, got)
+<span id="L166" class="ln">   166  </span>			})
+<span id="L167" class="ln">   167  </span>		})
+<span id="L168" class="ln">   168  </span>	})
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L171" class="ln">   171  </span>		t.Parallel()
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L174" class="ln">   174  </span>			t.Parallel()
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L177" class="ln">   177  </span>			cancel()
+<span id="L178" class="ln">   178  </span>
+<span id="L179" class="ln">   179  </span>			got, err := repo.findImagesByProductIDs(ctx, []uuid.UUID{uuidtestkit.NewTestFromSalt(t, &#34;canceled&#34;)})
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>			assert.Nil(t, got)
+<span id="L182" class="ln">   182  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L183" class="ln">   183  </span>		})
+<span id="L184" class="ln">   184  </span>	})
+<span id="L185" class="ln">   185  </span>}
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>func Test_repository_syncImages(t *testing.T) {
+<span id="L188" class="ln">   188  </span>	t.Parallel()
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>	testDB := testkit.NewTestDB(t)
+<span id="L191" class="ln">   191  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L192" class="ln">   192  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
 <span id="L193" class="ln">   193  </span>
-<span id="L194" class="ln">   194  </span>				<span class="comment">// 外れた行は消えず、論理削除として残る（差し替え履歴）。</span>
-<span id="L195" class="ln">   195  </span>				live, deleted := countProductImages(ctx, t, driver.New(ctx, testDB), id)
-<span id="L196" class="ln">   196  </span>				assert.Equal(t, 1, live)
-<span id="L197" class="ln">   197  </span>				assert.Equal(t, 1, deleted)
-<span id="L198" class="ln">   198  </span>			})
-<span id="L199" class="ln">   199  </span>		})
-<span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>		t.Run(&#34;空の集合を渡すと現在の画像がすべて外れる&#34;, func(t *testing.T) {
-<span id="L202" class="ln">   202  </span>			t.Parallel()
-<span id="L203" class="ln">   203  </span>
-<span id="L204" class="ln">   204  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L205" class="ln">   205  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_clear_product&#34;)
-<span id="L206" class="ln">   206  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L207" class="ln">   207  </span>					newImage(t, &#34;sync_clear&#34;, &#34;products/clear.png&#34;, 1),
-<span id="L208" class="ln">   208  </span>				})))
-<span id="L209" class="ln">   209  </span>
-<span id="L210" class="ln">   210  </span>				db := gen.New(driver.New(ctx, repo.db))
-<span id="L211" class="ln">   211  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, nil)))
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span>				got, err := repo.FindByID(ctx, id)
-<span id="L214" class="ln">   214  </span>				require.NoError(t, err)
-<span id="L215" class="ln">   215  </span>				assert.Empty(t, got.Images())
-<span id="L216" class="ln">   216  </span>			})
-<span id="L217" class="ln">   217  </span>		})
-<span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>		t.Run(&#34;現在の画像と同じ集合を渡すと行が一切変化しない&#34;, func(t *testing.T) {
-<span id="L220" class="ln">   220  </span>			t.Parallel()
-<span id="L221" class="ln">   221  </span>
-<span id="L222" class="ln">   222  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L223" class="ln">   223  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_noop_product&#34;)
-<span id="L224" class="ln">   224  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L225" class="ln">   225  </span>					newImage(t, &#34;sync_noop_1&#34;, &#34;products/keep1.png&#34;, 1),
-<span id="L226" class="ln">   226  </span>					newImage(t, &#34;sync_noop_2&#34;, &#34;products/keep2.png&#34;, 2),
-<span id="L227" class="ln">   227  </span>				})))
-<span id="L228" class="ln">   228  </span>
-<span id="L229" class="ln">   229  </span>				loaded, err := repo.FindByID(ctx, id)
-<span id="L230" class="ln">   230  </span>				require.NoError(t, err)
+<span id="L194" class="ln">   194  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L195" class="ln">   195  </span>		t.Parallel()
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>		t.Run(&#34;集合から外れた画像を論理削除し、集合の新しい画像を登録する&#34;, func(t *testing.T) {
+<span id="L198" class="ln">   198  </span>			t.Parallel()
+<span id="L199" class="ln">   199  </span>
+<span id="L200" class="ln">   200  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L201" class="ln">   201  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_product&#34;)
+<span id="L202" class="ln">   202  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L203" class="ln">   203  </span>					newImage(t, &#34;sync_before&#34;, &#34;products/before.png&#34;, 1),
+<span id="L204" class="ln">   204  </span>				})))
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>				db := gen.New(driver.New(ctx, repo.db))
+<span id="L207" class="ln">   207  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L208" class="ln">   208  </span>					newImage(t, &#34;sync_after&#34;, &#34;products/after.png&#34;, 1),
+<span id="L209" class="ln">   209  </span>				})))
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span>				got, err := repo.FindByID(ctx, id)
+<span id="L212" class="ln">   212  </span>				require.NoError(t, err)
+<span id="L213" class="ln">   213  </span>				require.Len(t, got.Images(), 1)
+<span id="L214" class="ln">   214  </span>				assert.Equal(t, &#34;products/after.png&#34;, got.Images()[0].ImagePath())
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>				<span class="comment">// 外れた行は消えず、論理削除として残る（差し替え履歴）。</span>
+<span id="L217" class="ln">   217  </span>				live, deleted := countProductImages(ctx, t, driver.New(ctx, testDB), id)
+<span id="L218" class="ln">   218  </span>				assert.Equal(t, 1, live)
+<span id="L219" class="ln">   219  </span>				assert.Equal(t, 1, deleted)
+<span id="L220" class="ln">   220  </span>			})
+<span id="L221" class="ln">   221  </span>		})
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>		t.Run(&#34;空の集合を渡すと現在の画像がすべて外れる&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L227" class="ln">   227  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_clear_product&#34;)
+<span id="L228" class="ln">   228  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L229" class="ln">   229  </span>					newImage(t, &#34;sync_clear&#34;, &#34;products/clear.png&#34;, 1),
+<span id="L230" class="ln">   230  </span>				})))
 <span id="L231" class="ln">   231  </span>
 <span id="L232" class="ln">   232  </span>				db := gen.New(driver.New(ctx, repo.db))
-<span id="L233" class="ln">   233  </span>				require.NoError(t, repo.syncImages(ctx, db, loaded))
+<span id="L233" class="ln">   233  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, nil)))
 <span id="L234" class="ln">   234  </span>
-<span id="L235" class="ln">   235  </span>				live, deleted := countProductImages(ctx, t, driver.New(ctx, testDB), id)
-<span id="L236" class="ln">   236  </span>				assert.Equal(t, 2, live)
-<span id="L237" class="ln">   237  </span>				assert.Equal(t, 0, deleted)
-<span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>				got, err := repo.FindByID(ctx, id)
-<span id="L240" class="ln">   240  </span>				require.NoError(t, err)
-<span id="L241" class="ln">   241  </span>				require.Len(t, got.Images(), 2)
-<span id="L242" class="ln">   242  </span>				assert.Equal(t, loaded.Images()[0].ID(), got.Images()[0].ID())
-<span id="L243" class="ln">   243  </span>				assert.Equal(t, loaded.Images()[1].ID(), got.Images()[1].ID())
-<span id="L244" class="ln">   244  </span>			})
-<span id="L245" class="ln">   245  </span>		})
-<span id="L246" class="ln">   246  </span>
-<span id="L247" class="ln">   247  </span>		t.Run(&#34;集合から外れた画像を論理削除し、複数の新しい画像をまとめて登録する&#34;, func(t *testing.T) {
-<span id="L248" class="ln">   248  </span>			t.Parallel()
-<span id="L249" class="ln">   249  </span>
-<span id="L250" class="ln">   250  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L251" class="ln">   251  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_multi_product&#34;)
-<span id="L252" class="ln">   252  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L253" class="ln">   253  </span>					newImage(t, &#34;sync_multi_before&#34;, &#34;products/before.png&#34;, 1),
-<span id="L254" class="ln">   254  </span>				})))
-<span id="L255" class="ln">   255  </span>
-<span id="L256" class="ln">   256  </span>				db := gen.New(driver.New(ctx, repo.db))
-<span id="L257" class="ln">   257  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L258" class="ln">   258  </span>					newImage(t, &#34;sync_multi_a&#34;, &#34;products/a.png&#34;, 1),
-<span id="L259" class="ln">   259  </span>					newImage(t, &#34;sync_multi_b&#34;, &#34;products/b.png&#34;, 2),
-<span id="L260" class="ln">   260  </span>					newImage(t, &#34;sync_multi_c&#34;, &#34;products/c.png&#34;, 3),
-<span id="L261" class="ln">   261  </span>				})))
-<span id="L262" class="ln">   262  </span>
-<span id="L263" class="ln">   263  </span>				got, err := repo.FindByID(ctx, id)
-<span id="L264" class="ln">   264  </span>				require.NoError(t, err)
-<span id="L265" class="ln">   265  </span>				require.Len(t, got.Images(), 3)
-<span id="L266" class="ln">   266  </span>				assert.Equal(t, &#34;products/a.png&#34;, got.Images()[0].ImagePath())
-<span id="L267" class="ln">   267  </span>				assert.Equal(t, 1, got.Images()[0].DisplaySort())
-<span id="L268" class="ln">   268  </span>				assert.Equal(t, &#34;products/b.png&#34;, got.Images()[1].ImagePath())
-<span id="L269" class="ln">   269  </span>				assert.Equal(t, 2, got.Images()[1].DisplaySort())
-<span id="L270" class="ln">   270  </span>				assert.Equal(t, &#34;products/c.png&#34;, got.Images()[2].ImagePath())
-<span id="L271" class="ln">   271  </span>				assert.Equal(t, 3, got.Images()[2].DisplaySort())
-<span id="L272" class="ln">   272  </span>			})
-<span id="L273" class="ln">   273  </span>		})
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>		t.Run(&#34;同じ表示順へ差し替えても部分UNIQUEに衝突しない&#34;, func(t *testing.T) {
-<span id="L276" class="ln">   276  </span>			t.Parallel()
+<span id="L235" class="ln">   235  </span>				got, err := repo.FindByID(ctx, id)
+<span id="L236" class="ln">   236  </span>				require.NoError(t, err)
+<span id="L237" class="ln">   237  </span>				assert.Empty(t, got.Images())
+<span id="L238" class="ln">   238  </span>			})
+<span id="L239" class="ln">   239  </span>		})
+<span id="L240" class="ln">   240  </span>
+<span id="L241" class="ln">   241  </span>		t.Run(&#34;現在の画像と同じ集合を渡すと行が一切変化しない&#34;, func(t *testing.T) {
+<span id="L242" class="ln">   242  </span>			t.Parallel()
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L245" class="ln">   245  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_noop_product&#34;)
+<span id="L246" class="ln">   246  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L247" class="ln">   247  </span>					newImage(t, &#34;sync_noop_1&#34;, &#34;products/keep1.png&#34;, 1),
+<span id="L248" class="ln">   248  </span>					newImage(t, &#34;sync_noop_2&#34;, &#34;products/keep2.png&#34;, 2),
+<span id="L249" class="ln">   249  </span>				})))
+<span id="L250" class="ln">   250  </span>
+<span id="L251" class="ln">   251  </span>				loaded, err := repo.FindByID(ctx, id)
+<span id="L252" class="ln">   252  </span>				require.NoError(t, err)
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>				db := gen.New(driver.New(ctx, repo.db))
+<span id="L255" class="ln">   255  </span>				require.NoError(t, repo.syncImages(ctx, db, loaded))
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>				live, deleted := countProductImages(ctx, t, driver.New(ctx, testDB), id)
+<span id="L258" class="ln">   258  </span>				assert.Equal(t, 2, live)
+<span id="L259" class="ln">   259  </span>				assert.Equal(t, 0, deleted)
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span>				got, err := repo.FindByID(ctx, id)
+<span id="L262" class="ln">   262  </span>				require.NoError(t, err)
+<span id="L263" class="ln">   263  </span>				require.Len(t, got.Images(), 2)
+<span id="L264" class="ln">   264  </span>				assert.Equal(t, loaded.Images()[0].ID(), got.Images()[0].ID())
+<span id="L265" class="ln">   265  </span>				assert.Equal(t, loaded.Images()[1].ID(), got.Images()[1].ID())
+<span id="L266" class="ln">   266  </span>			})
+<span id="L267" class="ln">   267  </span>		})
+<span id="L268" class="ln">   268  </span>
+<span id="L269" class="ln">   269  </span>		t.Run(&#34;集合から外れた画像を論理削除し、複数の新しい画像をまとめて登録する&#34;, func(t *testing.T) {
+<span id="L270" class="ln">   270  </span>			t.Parallel()
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L273" class="ln">   273  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_multi_product&#34;)
+<span id="L274" class="ln">   274  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L275" class="ln">   275  </span>					newImage(t, &#34;sync_multi_before&#34;, &#34;products/before.png&#34;, 1),
+<span id="L276" class="ln">   276  </span>				})))
 <span id="L277" class="ln">   277  </span>
-<span id="L278" class="ln">   278  </span>			<span class="comment">// 論理削除行を残したまま同じ (product_id, display_sort) を入れ直すのが差し替えの通常経路なので、</span>
-<span id="L279" class="ln">   279  </span>			<span class="comment">// ここが衝突すると 2 回目以降の差し替えが一切できなくなる。</span>
-<span id="L280" class="ln">   280  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L281" class="ln">   281  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_same_display_sort_product&#34;)
-<span id="L282" class="ln">   282  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L283" class="ln">   283  </span>					newImage(t, &#34;same_display_sort_1&#34;, &#34;products/first.png&#34;, 1),
-<span id="L284" class="ln">   284  </span>				})))
-<span id="L285" class="ln">   285  </span>
-<span id="L286" class="ln">   286  </span>				db := gen.New(driver.New(ctx, repo.db))
-<span id="L287" class="ln">   287  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L288" class="ln">   288  </span>					newImage(t, &#34;same_display_sort_2&#34;, &#34;products/second.png&#34;, 1),
-<span id="L289" class="ln">   289  </span>				})))
-<span id="L290" class="ln">   290  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L291" class="ln">   291  </span>					newImage(t, &#34;same_display_sort_3&#34;, &#34;products/third.png&#34;, 1),
-<span id="L292" class="ln">   292  </span>				})))
-<span id="L293" class="ln">   293  </span>
-<span id="L294" class="ln">   294  </span>				got, err := repo.FindByID(ctx, id)
-<span id="L295" class="ln">   295  </span>				require.NoError(t, err)
-<span id="L296" class="ln">   296  </span>				require.Len(t, got.Images(), 1)
-<span id="L297" class="ln">   297  </span>				assert.Equal(t, &#34;products/third.png&#34;, got.Images()[0].ImagePath())
-<span id="L298" class="ln">   298  </span>			})
-<span id="L299" class="ln">   299  </span>		})
-<span id="L300" class="ln">   300  </span>	})
-<span id="L301" class="ln">   301  </span>
-<span id="L302" class="ln">   302  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L303" class="ln">   303  </span>		t.Parallel()
-<span id="L304" class="ln">   304  </span>
-<span id="L305" class="ln">   305  </span>		t.Run(&#34;生存し続ける画像の表示順を別の画像が奪う場合は衝突として返す&#34;, func(t *testing.T) {
-<span id="L306" class="ln">   306  </span>			t.Parallel()
+<span id="L278" class="ln">   278  </span>				db := gen.New(driver.New(ctx, repo.db))
+<span id="L279" class="ln">   279  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L280" class="ln">   280  </span>					newImage(t, &#34;sync_multi_a&#34;, &#34;products/a.png&#34;, 1),
+<span id="L281" class="ln">   281  </span>					newImage(t, &#34;sync_multi_b&#34;, &#34;products/b.png&#34;, 2),
+<span id="L282" class="ln">   282  </span>					newImage(t, &#34;sync_multi_c&#34;, &#34;products/c.png&#34;, 3),
+<span id="L283" class="ln">   283  </span>				})))
+<span id="L284" class="ln">   284  </span>
+<span id="L285" class="ln">   285  </span>				got, err := repo.FindByID(ctx, id)
+<span id="L286" class="ln">   286  </span>				require.NoError(t, err)
+<span id="L287" class="ln">   287  </span>				require.Len(t, got.Images(), 3)
+<span id="L288" class="ln">   288  </span>				assert.Equal(t, &#34;products/a.png&#34;, got.Images()[0].ImagePath())
+<span id="L289" class="ln">   289  </span>				assert.Equal(t, 1, got.Images()[0].DisplaySort())
+<span id="L290" class="ln">   290  </span>				assert.Equal(t, &#34;products/b.png&#34;, got.Images()[1].ImagePath())
+<span id="L291" class="ln">   291  </span>				assert.Equal(t, 2, got.Images()[1].DisplaySort())
+<span id="L292" class="ln">   292  </span>				assert.Equal(t, &#34;products/c.png&#34;, got.Images()[2].ImagePath())
+<span id="L293" class="ln">   293  </span>				assert.Equal(t, 3, got.Images()[2].DisplaySort())
+<span id="L294" class="ln">   294  </span>			})
+<span id="L295" class="ln">   295  </span>		})
+<span id="L296" class="ln">   296  </span>
+<span id="L297" class="ln">   297  </span>		t.Run(&#34;同じ表示順へ差し替えても部分UNIQUEに衝突しない&#34;, func(t *testing.T) {
+<span id="L298" class="ln">   298  </span>			t.Parallel()
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>			<span class="comment">// 論理削除行を残したまま同じ (product_id, display_sort) を入れ直すのが差し替えの通常経路なので、</span>
+<span id="L301" class="ln">   301  </span>			<span class="comment">// ここが衝突すると 2 回目以降の差し替えが一切できなくなる。</span>
+<span id="L302" class="ln">   302  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L303" class="ln">   303  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_same_display_sort_product&#34;)
+<span id="L304" class="ln">   304  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L305" class="ln">   305  </span>					newImage(t, &#34;same_display_sort_1&#34;, &#34;products/first.png&#34;, 1),
+<span id="L306" class="ln">   306  </span>				})))
 <span id="L307" class="ln">   307  </span>
-<span id="L308" class="ln">   308  </span>			<span class="comment">// 同じ ID の画像は生存したまま表示順も据え置かれるため、その表示順を新しい画像へ回すと</span>
-<span id="L309" class="ln">   309  </span>			<span class="comment">// 生存行どうしが部分 UNIQUE で衝突する。衝突判定を主キーに限定していることの裏返しで、</span>
-<span id="L310" class="ln">   310  </span>			<span class="comment">// 内容の差し替えを新しい ID で表現するという契約はここが最後の砦になる。</span>
-<span id="L311" class="ln">   311  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L312" class="ln">   312  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_steal_display_sort_product&#34;)
-<span id="L313" class="ln">   313  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L314" class="ln">   314  </span>					newImage(t, &#34;sync_steal_kept&#34;, &#34;products/kept.png&#34;, 1),
-<span id="L315" class="ln">   315  </span>				})))
-<span id="L316" class="ln">   316  </span>
-<span id="L317" class="ln">   317  </span>				db := gen.New(driver.New(ctx, repo.db))
-<span id="L318" class="ln">   318  </span>				err := repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L319" class="ln">   319  </span>					newImage(t, &#34;sync_steal_kept&#34;, &#34;products/kept.png&#34;, 2),
-<span id="L320" class="ln">   320  </span>					newImage(t, &#34;sync_steal_new&#34;, &#34;products/new.png&#34;, 1),
-<span id="L321" class="ln">   321  </span>				}))
-<span id="L322" class="ln">   322  </span>
-<span id="L323" class="ln">   323  </span>				require.ErrorIs(t, err, apperror.ErrConflict)
-<span id="L324" class="ln">   324  </span>			})
-<span id="L325" class="ln">   325  </span>		})
+<span id="L308" class="ln">   308  </span>				db := gen.New(driver.New(ctx, repo.db))
+<span id="L309" class="ln">   309  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L310" class="ln">   310  </span>					newImage(t, &#34;same_display_sort_2&#34;, &#34;products/second.png&#34;, 1),
+<span id="L311" class="ln">   311  </span>				})))
+<span id="L312" class="ln">   312  </span>				require.NoError(t, repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L313" class="ln">   313  </span>					newImage(t, &#34;same_display_sort_3&#34;, &#34;products/third.png&#34;, 1),
+<span id="L314" class="ln">   314  </span>				})))
+<span id="L315" class="ln">   315  </span>
+<span id="L316" class="ln">   316  </span>				got, err := repo.FindByID(ctx, id)
+<span id="L317" class="ln">   317  </span>				require.NoError(t, err)
+<span id="L318" class="ln">   318  </span>				require.Len(t, got.Images(), 1)
+<span id="L319" class="ln">   319  </span>				assert.Equal(t, &#34;products/third.png&#34;, got.Images()[0].ImagePath())
+<span id="L320" class="ln">   320  </span>			})
+<span id="L321" class="ln">   321  </span>		})
+<span id="L322" class="ln">   322  </span>	})
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L325" class="ln">   325  </span>		t.Parallel()
 <span id="L326" class="ln">   326  </span>
-<span id="L327" class="ln">   327  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L327" class="ln">   327  </span>		t.Run(&#34;生存し続ける画像の表示順を別の画像が奪う場合は衝突として返す&#34;, func(t *testing.T) {
 <span id="L328" class="ln">   328  </span>			t.Parallel()
 <span id="L329" class="ln">   329  </span>
-<span id="L330" class="ln">   330  </span>			ctx, cancel := context.WithCancel(t.Context())
-<span id="L331" class="ln">   331  </span>			cancel()
-<span id="L332" class="ln">   332  </span>
-<span id="L333" class="ln">   333  </span>			db := gen.New(driver.New(ctx, repo.db))
-<span id="L334" class="ln">   334  </span>			err := repo.syncImages(ctx, db, newProductWithImages(t, uuidtestkit.NewTestFromSalt(t, &#34;canceled&#34;), nil))
-<span id="L335" class="ln">   335  </span>
-<span id="L336" class="ln">   336  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L337" class="ln">   337  </span>		})
-<span id="L338" class="ln">   338  </span>	})
-<span id="L339" class="ln">   339  </span>}
-<span id="L340" class="ln">   340  </span>
-<span id="L341" class="ln">   341  </span>func Test_repository_insertImages(t *testing.T) {
-<span id="L342" class="ln">   342  </span>	t.Parallel()
-<span id="L343" class="ln">   343  </span>
-<span id="L344" class="ln">   344  </span>	testDB := testkit.NewTestDB(t)
-<span id="L345" class="ln">   345  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L346" class="ln">   346  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
-<span id="L347" class="ln">   347  </span>
-<span id="L348" class="ln">   348  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L349" class="ln">   349  </span>		t.Parallel()
-<span id="L350" class="ln">   350  </span>
-<span id="L351" class="ln">   351  </span>		t.Run(&#34;生存行の表示順が重複する場合は衝突として返す&#34;, func(t *testing.T) {
-<span id="L352" class="ln">   352  </span>			t.Parallel()
-<span id="L353" class="ln">   353  </span>
-<span id="L354" class="ln">   354  </span>			<span class="comment">// ドメインが同一集約内の重複を弾くため通常は到達しないが、DB 側の部分 UNIQUE が</span>
-<span id="L355" class="ln">   355  </span>			<span class="comment">// 最後の砦として効いていることを固定する。</span>
-<span id="L356" class="ln">   356  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L357" class="ln">   357  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;insert_images_duplicate_product&#34;)
-<span id="L358" class="ln">   358  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L359" class="ln">   359  </span>					newImage(t, &#34;duplicate_1&#34;, &#34;products/first.png&#34;, 1),
-<span id="L360" class="ln">   360  </span>				})))
-<span id="L361" class="ln">   361  </span>
-<span id="L362" class="ln">   362  </span>				db := gen.New(driver.New(ctx, repo.db))
-<span id="L363" class="ln">   363  </span>				err := repo.insertImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L364" class="ln">   364  </span>					newImage(t, &#34;duplicate_2&#34;, &#34;products/second.png&#34;, 1),
-<span id="L365" class="ln">   365  </span>				}))
-<span id="L366" class="ln">   366  </span>
-<span id="L367" class="ln">   367  </span>				require.ErrorIs(t, err, apperror.ErrConflict)
-<span id="L368" class="ln">   368  </span>			})
-<span id="L369" class="ln">   369  </span>		})
-<span id="L370" class="ln">   370  </span>	})
-<span id="L371" class="ln">   371  </span>}
+<span id="L330" class="ln">   330  </span>			<span class="comment">// 同じ ID の画像は生存したまま表示順も据え置かれるため、その表示順を新しい画像へ回すと</span>
+<span id="L331" class="ln">   331  </span>			<span class="comment">// 生存行どうしが部分 UNIQUE で衝突する。衝突判定を主キーに限定していることの裏返しで、</span>
+<span id="L332" class="ln">   332  </span>			<span class="comment">// 内容の差し替えを新しい ID で表現するという契約はここが最後の砦になる。</span>
+<span id="L333" class="ln">   333  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L334" class="ln">   334  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;sync_images_steal_display_sort_product&#34;)
+<span id="L335" class="ln">   335  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L336" class="ln">   336  </span>					newImage(t, &#34;sync_steal_kept&#34;, &#34;products/kept.png&#34;, 1),
+<span id="L337" class="ln">   337  </span>				})))
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>				db := gen.New(driver.New(ctx, repo.db))
+<span id="L340" class="ln">   340  </span>				err := repo.syncImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L341" class="ln">   341  </span>					newImage(t, &#34;sync_steal_kept&#34;, &#34;products/kept.png&#34;, 2),
+<span id="L342" class="ln">   342  </span>					newImage(t, &#34;sync_steal_new&#34;, &#34;products/new.png&#34;, 1),
+<span id="L343" class="ln">   343  </span>				}))
+<span id="L344" class="ln">   344  </span>
+<span id="L345" class="ln">   345  </span>				require.ErrorIs(t, err, apperror.ErrConflict)
+<span id="L346" class="ln">   346  </span>			})
+<span id="L347" class="ln">   347  </span>		})
+<span id="L348" class="ln">   348  </span>
+<span id="L349" class="ln">   349  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L350" class="ln">   350  </span>			t.Parallel()
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L353" class="ln">   353  </span>			cancel()
+<span id="L354" class="ln">   354  </span>
+<span id="L355" class="ln">   355  </span>			db := gen.New(driver.New(ctx, repo.db))
+<span id="L356" class="ln">   356  </span>			err := repo.syncImages(ctx, db, newProductWithImages(t, uuidtestkit.NewTestFromSalt(t, &#34;canceled&#34;), nil))
+<span id="L357" class="ln">   357  </span>
+<span id="L358" class="ln">   358  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L359" class="ln">   359  </span>		})
+<span id="L360" class="ln">   360  </span>	})
+<span id="L361" class="ln">   361  </span>}
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span>func Test_repository_insertImages(t *testing.T) {
+<span id="L364" class="ln">   364  </span>	t.Parallel()
+<span id="L365" class="ln">   365  </span>
+<span id="L366" class="ln">   366  </span>	testDB := testkit.NewTestDB(t)
+<span id="L367" class="ln">   367  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L368" class="ln">   368  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L369" class="ln">   369  </span>
+<span id="L370" class="ln">   370  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L371" class="ln">   371  </span>		t.Parallel()
 <span id="L372" class="ln">   372  </span>
-<span id="L373" class="ln">   373  </span>func Test_repository_buildProducts(t *testing.T) {
-<span id="L374" class="ln">   374  </span>	t.Parallel()
+<span id="L373" class="ln">   373  </span>		t.Run(&#34;生存行の表示順が重複する場合は衝突として返す&#34;, func(t *testing.T) {
+<span id="L374" class="ln">   374  </span>			t.Parallel()
 <span id="L375" class="ln">   375  </span>
-<span id="L376" class="ln">   376  </span>	testDB := testkit.NewTestDB(t)
-<span id="L377" class="ln">   377  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L378" class="ln">   378  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
-<span id="L379" class="ln">   379  </span>
-<span id="L380" class="ln">   380  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L381" class="ln">   381  </span>		t.Parallel()
-<span id="L382" class="ln">   382  </span>
-<span id="L383" class="ln">   383  </span>		t.Run(&#34;行が空なら空の列を返す&#34;, func(t *testing.T) {
-<span id="L384" class="ln">   384  </span>			t.Parallel()
-<span id="L385" class="ln">   385  </span>
-<span id="L386" class="ln">   386  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L387" class="ln">   387  </span>				got, err := repo.buildProducts(ctx, nil)
+<span id="L376" class="ln">   376  </span>			<span class="comment">// ドメインが同一集約内の重複を弾くため通常は到達しないが、DB 側の部分 UNIQUE が</span>
+<span id="L377" class="ln">   377  </span>			<span class="comment">// 最後の砦として効いていることを固定する。</span>
+<span id="L378" class="ln">   378  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L379" class="ln">   379  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;insert_images_duplicate_product&#34;)
+<span id="L380" class="ln">   380  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L381" class="ln">   381  </span>					newImage(t, &#34;duplicate_1&#34;, &#34;products/first.png&#34;, 1),
+<span id="L382" class="ln">   382  </span>				})))
+<span id="L383" class="ln">   383  </span>
+<span id="L384" class="ln">   384  </span>				db := gen.New(driver.New(ctx, repo.db))
+<span id="L385" class="ln">   385  </span>				err := repo.insertImages(ctx, db, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L386" class="ln">   386  </span>					newImage(t, &#34;duplicate_2&#34;, &#34;products/second.png&#34;, 1),
+<span id="L387" class="ln">   387  </span>				}))
 <span id="L388" class="ln">   388  </span>
-<span id="L389" class="ln">   389  </span>				require.NoError(t, err)
-<span id="L390" class="ln">   390  </span>				assert.Empty(t, got)
-<span id="L391" class="ln">   391  </span>			})
-<span id="L392" class="ln">   392  </span>		})
-<span id="L393" class="ln">   393  </span>	})
+<span id="L389" class="ln">   389  </span>				require.ErrorIs(t, err, apperror.ErrConflict)
+<span id="L390" class="ln">   390  </span>			})
+<span id="L391" class="ln">   391  </span>		})
+<span id="L392" class="ln">   392  </span>	})
+<span id="L393" class="ln">   393  </span>}
 <span id="L394" class="ln">   394  </span>
-<span id="L395" class="ln">   395  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L396" class="ln">   396  </span>		t.Parallel()
+<span id="L395" class="ln">   395  </span>func Test_repository_buildProducts(t *testing.T) {
+<span id="L396" class="ln">   396  </span>	t.Parallel()
 <span id="L397" class="ln">   397  </span>
-<span id="L398" class="ln">   398  </span>		t.Run(&#34;変換失敗があれば nil とエラーを返す&#34;, func(t *testing.T) {
-<span id="L399" class="ln">   399  </span>			t.Parallel()
-<span id="L400" class="ln">   400  </span>
-<span id="L401" class="ln">   401  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L402" class="ln">   402  </span>				invalid := productRow{
-<span id="L403" class="ln">   403  </span>					p:            productsRow(t, uuidtestkit.NewTestFromSalt(t, &#34;build_products_invalid&#34;)),
-<span id="L404" class="ln">   404  </span>					statusName:   &#34;&#34;, <span class="comment">// status 名が空だと rowToProduct が検証失敗する</span>
-<span id="L405" class="ln">   405  </span>					categoryName: &#34;電子機器&#34;,
-<span id="L406" class="ln">   406  </span>				}
+<span id="L398" class="ln">   398  </span>	testDB := testkit.NewTestDB(t)
+<span id="L399" class="ln">   399  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L400" class="ln">   400  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L401" class="ln">   401  </span>
+<span id="L402" class="ln">   402  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L403" class="ln">   403  </span>		t.Parallel()
+<span id="L404" class="ln">   404  </span>
+<span id="L405" class="ln">   405  </span>		t.Run(&#34;行が空なら空の列を返す&#34;, func(t *testing.T) {
+<span id="L406" class="ln">   406  </span>			t.Parallel()
 <span id="L407" class="ln">   407  </span>
-<span id="L408" class="ln">   408  </span>				got, err := repo.buildProducts(ctx, []productRow{invalid})
-<span id="L409" class="ln">   409  </span>
-<span id="L410" class="ln">   410  </span>				require.Error(t, err)
-<span id="L411" class="ln">   411  </span>				assert.Nil(t, got)
-<span id="L412" class="ln">   412  </span>			})
-<span id="L413" class="ln">   413  </span>		})
-<span id="L414" class="ln">   414  </span>	})
-<span id="L415" class="ln">   415  </span>}
+<span id="L408" class="ln">   408  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L409" class="ln">   409  </span>				got, err := repo.buildProducts(ctx, nil)
+<span id="L410" class="ln">   410  </span>
+<span id="L411" class="ln">   411  </span>				require.NoError(t, err)
+<span id="L412" class="ln">   412  </span>				assert.Empty(t, got)
+<span id="L413" class="ln">   413  </span>			})
+<span id="L414" class="ln">   414  </span>		})
+<span id="L415" class="ln">   415  </span>	})
 <span id="L416" class="ln">   416  </span>
-<span id="L417" class="ln">   417  </span>func Test_repository_buildProduct(t *testing.T) {
-<span id="L418" class="ln">   418  </span>	t.Parallel()
+<span id="L417" class="ln">   417  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L418" class="ln">   418  </span>		t.Parallel()
 <span id="L419" class="ln">   419  </span>
-<span id="L420" class="ln">   420  </span>	testDB := testkit.NewTestDB(t)
-<span id="L421" class="ln">   421  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L422" class="ln">   422  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
-<span id="L423" class="ln">   423  </span>
-<span id="L424" class="ln">   424  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L425" class="ln">   425  </span>		t.Parallel()
-<span id="L426" class="ln">   426  </span>
-<span id="L427" class="ln">   427  </span>		t.Run(&#34;単一の行を画像込みのエンティティへ変換する&#34;, func(t *testing.T) {
-<span id="L428" class="ln">   428  </span>			t.Parallel()
+<span id="L420" class="ln">   420  </span>		t.Run(&#34;変換失敗があれば nil とエラーを返す&#34;, func(t *testing.T) {
+<span id="L421" class="ln">   421  </span>			t.Parallel()
+<span id="L422" class="ln">   422  </span>
+<span id="L423" class="ln">   423  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L424" class="ln">   424  </span>				invalid := productRow{
+<span id="L425" class="ln">   425  </span>					p:            productsRow(t, uuidtestkit.NewTestFromSalt(t, &#34;build_products_invalid&#34;)),
+<span id="L426" class="ln">   426  </span>					statusName:   &#34;&#34;, <span class="comment">// status 名が空だと rowToProduct が検証失敗する</span>
+<span id="L427" class="ln">   427  </span>					categoryName: &#34;電子機器&#34;,
+<span id="L428" class="ln">   428  </span>				}
 <span id="L429" class="ln">   429  </span>
-<span id="L430" class="ln">   430  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L431" class="ln">   431  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;build_product_single&#34;)
-<span id="L432" class="ln">   432  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
-<span id="L433" class="ln">   433  </span>					newImage(t, &#34;build_product_image&#34;, &#34;products/single.png&#34;, 1),
-<span id="L434" class="ln">   434  </span>				})))
-<span id="L435" class="ln">   435  </span>
-<span id="L436" class="ln">   436  </span>				row := productRow{
-<span id="L437" class="ln">   437  </span>					p:            productsRow(t, id),
-<span id="L438" class="ln">   438  </span>					statusName:   &#34;在庫あり&#34;,
-<span id="L439" class="ln">   439  </span>					categoryName: &#34;電子機器&#34;,
-<span id="L440" class="ln">   440  </span>				}
+<span id="L430" class="ln">   430  </span>				got, err := repo.buildProducts(ctx, []productRow{invalid})
+<span id="L431" class="ln">   431  </span>
+<span id="L432" class="ln">   432  </span>				require.Error(t, err)
+<span id="L433" class="ln">   433  </span>				assert.Nil(t, got)
+<span id="L434" class="ln">   434  </span>			})
+<span id="L435" class="ln">   435  </span>		})
+<span id="L436" class="ln">   436  </span>	})
+<span id="L437" class="ln">   437  </span>}
+<span id="L438" class="ln">   438  </span>
+<span id="L439" class="ln">   439  </span>func Test_repository_buildProduct(t *testing.T) {
+<span id="L440" class="ln">   440  </span>	t.Parallel()
 <span id="L441" class="ln">   441  </span>
-<span id="L442" class="ln">   442  </span>				got, err := repo.buildProduct(ctx, row)
-<span id="L443" class="ln">   443  </span>
-<span id="L444" class="ln">   444  </span>				require.NoError(t, err)
-<span id="L445" class="ln">   445  </span>				require.Len(t, got.Images(), 1)
-<span id="L446" class="ln">   446  </span>				assert.Equal(t, &#34;products/single.png&#34;, got.Images()[0].ImagePath())
-<span id="L447" class="ln">   447  </span>			})
-<span id="L448" class="ln">   448  </span>		})
-<span id="L449" class="ln">   449  </span>	})
-<span id="L450" class="ln">   450  </span>}
+<span id="L442" class="ln">   442  </span>	testDB := testkit.NewTestDB(t)
+<span id="L443" class="ln">   443  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L444" class="ln">   444  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L445" class="ln">   445  </span>
+<span id="L446" class="ln">   446  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L447" class="ln">   447  </span>		t.Parallel()
+<span id="L448" class="ln">   448  </span>
+<span id="L449" class="ln">   449  </span>		t.Run(&#34;単一の行を画像込みのエンティティへ変換する&#34;, func(t *testing.T) {
+<span id="L450" class="ln">   450  </span>			t.Parallel()
 <span id="L451" class="ln">   451  </span>
+<span id="L452" class="ln">   452  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L453" class="ln">   453  </span>				id := uuidtestkit.NewTestFromSalt(t, &#34;build_product_single&#34;)
+<span id="L454" class="ln">   454  </span>				require.NoError(t, repo.Create(ctx, newProductWithImages(t, id, []domainproduct.Image{
+<span id="L455" class="ln">   455  </span>					newImage(t, &#34;build_product_image&#34;, &#34;products/single.png&#34;, 1),
+<span id="L456" class="ln">   456  </span>				})))
+<span id="L457" class="ln">   457  </span>
+<span id="L458" class="ln">   458  </span>				row := productRow{
+<span id="L459" class="ln">   459  </span>					p:            productsRow(t, id),
+<span id="L460" class="ln">   460  </span>					statusName:   &#34;在庫あり&#34;,
+<span id="L461" class="ln">   461  </span>					categoryName: &#34;電子機器&#34;,
+<span id="L462" class="ln">   462  </span>				}
+<span id="L463" class="ln">   463  </span>
+<span id="L464" class="ln">   464  </span>				got, err := repo.buildProduct(ctx, row)
+<span id="L465" class="ln">   465  </span>
+<span id="L466" class="ln">   466  </span>				require.NoError(t, err)
+<span id="L467" class="ln">   467  </span>				require.Len(t, got.Images(), 1)
+<span id="L468" class="ln">   468  </span>				assert.Equal(t, &#34;products/single.png&#34;, got.Images()[0].ImagePath())
+<span id="L469" class="ln">   469  </span>			})
+<span id="L470" class="ln">   470  </span>		})
+<span id="L471" class="ln">   471  </span>	})
+<span id="L472" class="ln">   472  </span>}
+<span id="L473" class="ln">   473  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/repository/product/product_repository_images_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

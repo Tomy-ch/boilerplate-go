@@ -1,7 +1,5 @@
 # Idempotency Subsystem Design Reference
 
-[Idempotency README](../../internal/usecase/idempotency/README.md) | 日本語: [idempotency.ja.md](idempotency.ja.md)
-
 This document consolidates the idempotency (`Idempotency-Key`) subsystem's **role theory, state transitions, implementation locations, what an integrator must implement, and glossary** into a single reference, derived from a close reading of the implementation. For the overview see the README; for the HTTP path it plugs into see [rest.md](rest.md), and the GC side runs as a [job](job.md).
 
 ---

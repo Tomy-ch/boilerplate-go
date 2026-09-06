@@ -149,147 +149,148 @@
 <span id="L92" class="ln">    92  </span>				) (productuc.ProductLowStockListView, error) {
 <span id="L93" class="ln">    93  </span>					captured = params
 <span id="L94" class="ln">    94  </span>					return lowStockView(t), nil
-<span id="L95" class="ln">    95  </span>				})
-<span id="L96" class="ln">    96  </span>
-<span id="L97" class="ln">    97  </span>			productslowstockhandler.BindHandler(e, tf, uc)
-<span id="L98" class="ln">    98  </span>
-<span id="L99" class="ln">    99  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_limit&#34;))
-<span id="L100" class="ln">   100  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath+&#34;?limit=5&#34;, nil, headers)
-<span id="L101" class="ln">   101  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
-<span id="L102" class="ln">   102  </span>			assert.Equal(t, 5, captured.Limit)
-<span id="L103" class="ln">   103  </span>		})
-<span id="L104" class="ln">   104  </span>
-<span id="L105" class="ln">   105  </span>		t.Run(&#34;OpenAPIバリデーション経由でも範囲内のlimitは200で通過する&#34;, func(t *testing.T) {
-<span id="L106" class="ln">   106  </span>			t.Parallel()
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span>			e := echo.New()
-<span id="L109" class="ln">   109  </span>			ctrl := gomock.NewController(t)
-<span id="L110" class="ln">   110  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L111" class="ln">   111  </span>
-<span id="L112" class="ln">   112  </span>			uc := mock_product.NewMockUsecase(ctrl)
-<span id="L113" class="ln">   113  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).Return(lowStockView(t), nil)
-<span id="L114" class="ln">   114  </span>
-<span id="L115" class="ln">   115  </span>			productslowstockhandler.BindHandler(e, tf, uc)
-<span id="L116" class="ln">   116  </span>			useOpenAPIValidation(t, e)
-<span id="L117" class="ln">   117  </span>
-<span id="L118" class="ln">   118  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_valid&#34;))
-<span id="L119" class="ln">   119  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath+&#34;?limit=100&#34;, nil, headers)
-<span id="L120" class="ln">   120  </span>			AssertJSONResponseType[gen.ProductLowStockResponse](t, actual)
-<span id="L121" class="ln">   121  </span>		})
-<span id="L122" class="ln">   122  </span>
-<span id="L123" class="ln">   123  </span>		t.Run(&#34;対象商品が無い場合は空配列を200で返す&#34;, func(t *testing.T) {
-<span id="L124" class="ln">   124  </span>			t.Parallel()
-<span id="L125" class="ln">   125  </span>
-<span id="L126" class="ln">   126  </span>			e := echo.New()
-<span id="L127" class="ln">   127  </span>			ctrl := gomock.NewController(t)
-<span id="L128" class="ln">   128  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L129" class="ln">   129  </span>
-<span id="L130" class="ln">   130  </span>			uc := mock_product.NewMockUsecase(ctrl)
-<span id="L131" class="ln">   131  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L132" class="ln">   132  </span>				Return(productuc.ProductLowStockListView{}, nil)
-<span id="L133" class="ln">   133  </span>
-<span id="L134" class="ln">   134  </span>			productslowstockhandler.BindHandler(e, tf, uc)
-<span id="L135" class="ln">   135  </span>
-<span id="L136" class="ln">   136  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_empty&#34;))
-<span id="L137" class="ln">   137  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath, nil, headers)
-<span id="L138" class="ln">   138  </span>			AssertJSONResponseType[gen.ProductLowStockResponse](t, actual)
-<span id="L139" class="ln">   139  </span>		})
-<span id="L140" class="ln">   140  </span>	})
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L143" class="ln">   143  </span>		t.Parallel()
-<span id="L144" class="ln">   144  </span>
-<span id="L145" class="ln">   145  </span>		t.Run(&#34;未認証で401を返しUsecaseは呼ばれない&#34;, func(t *testing.T) {
-<span id="L146" class="ln">   146  </span>			t.Parallel()
-<span id="L147" class="ln">   147  </span>
-<span id="L148" class="ln">   148  </span>			e := echo.New()
-<span id="L149" class="ln">   149  </span>			UseAppErrorHandler(t, e)
-<span id="L150" class="ln">   150  </span>			ctrl := gomock.NewController(t)
-<span id="L151" class="ln">   151  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L152" class="ln">   152  </span>
-<span id="L153" class="ln">   153  </span>			uc := mock_product.NewMockUsecase(ctrl)
-<span id="L154" class="ln">   154  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L155" class="ln">   155  </span>
-<span id="L156" class="ln">   156  </span>			productslowstockhandler.BindHandler(e, tf, uc)
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath, nil, nil)
-<span id="L159" class="ln">   159  </span>			AssertErrorResponse(t, actual, http.StatusUnauthorized)
-<span id="L160" class="ln">   160  </span>		})
-<span id="L161" class="ln">   161  </span>
-<span id="L162" class="ln">   162  </span>		t.Run(&#34;非adminの権限エラーを403へ変換する&#34;, func(t *testing.T) {
-<span id="L163" class="ln">   163  </span>			t.Parallel()
-<span id="L164" class="ln">   164  </span>
-<span id="L165" class="ln">   165  </span>			e := echo.New()
-<span id="L166" class="ln">   166  </span>			UseAppErrorHandler(t, e)
-<span id="L167" class="ln">   167  </span>			ctrl := gomock.NewController(t)
-<span id="L168" class="ln">   168  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L169" class="ln">   169  </span>
-<span id="L170" class="ln">   170  </span>			uc := mock_product.NewMockUsecase(ctrl)
-<span id="L171" class="ln">   171  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L172" class="ln">   172  </span>				Return(productuc.ProductLowStockListView{}, apperror.ErrPermissionDenied)
-<span id="L173" class="ln">   173  </span>
-<span id="L174" class="ln">   174  </span>			productslowstockhandler.BindHandler(e, tf, uc)
-<span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_forbidden&#34;))
-<span id="L177" class="ln">   177  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath, nil, headers)
-<span id="L178" class="ln">   178  </span>			AssertErrorResponse(t, actual, http.StatusForbidden)
-<span id="L179" class="ln">   179  </span>		})
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>		t.Run(&#34;OpenAPIバリデーションが範囲外のlimitを400で弾く&#34;, func(t *testing.T) {
-<span id="L182" class="ln">   182  </span>			t.Parallel()
-<span id="L183" class="ln">   183  </span>
-<span id="L184" class="ln">   184  </span>			t.Run(&#34;limitが下限未満(0)&#34;, func(t *testing.T) {
-<span id="L185" class="ln">   185  </span>				t.Parallel()
-<span id="L186" class="ln">   186  </span>				assertLowStockLimitRejected(t, productsLowStockPath+&#34;?limit=0&#34;)
-<span id="L187" class="ln">   187  </span>			})
-<span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span>			t.Run(&#34;limitが上限超過(101)&#34;, func(t *testing.T) {
-<span id="L190" class="ln">   190  </span>				t.Parallel()
-<span id="L191" class="ln">   191  </span>				assertLowStockLimitRejected(t, productsLowStockPath+&#34;?limit=101&#34;)
-<span id="L192" class="ln">   192  </span>			})
-<span id="L193" class="ln">   193  </span>		})
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>		t.Run(&#34;ErrInternalで500を返す&#34;, func(t *testing.T) {
-<span id="L196" class="ln">   196  </span>			t.Parallel()
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>			e := echo.New()
-<span id="L199" class="ln">   199  </span>			UseAppErrorHandler(t, e)
-<span id="L200" class="ln">   200  </span>			ctrl := gomock.NewController(t)
-<span id="L201" class="ln">   201  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span>			uc := mock_product.NewMockUsecase(ctrl)
-<span id="L204" class="ln">   204  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L205" class="ln">   205  </span>				Return(productuc.ProductLowStockListView{}, apperror.ErrInternal)
-<span id="L206" class="ln">   206  </span>
-<span id="L207" class="ln">   207  </span>			productslowstockhandler.BindHandler(e, tf, uc)
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_err&#34;))
-<span id="L210" class="ln">   210  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath, nil, headers)
-<span id="L211" class="ln">   211  </span>			AssertErrorResponse(t, actual, http.StatusInternalServerError)
-<span id="L212" class="ln">   212  </span>		})
-<span id="L213" class="ln">   213  </span>	})
-<span id="L214" class="ln">   214  </span>}
-<span id="L215" class="ln">   215  </span>
-<span id="L216" class="ln">   216  </span><span class="comment">// assertLowStockLimitRejected は、OpenAPI バリデータが limit を 400 で弾き Usecase へ到達しないことを検証します。</span>
-<span id="L217" class="ln">   217  </span>func assertLowStockLimitRejected(t *testing.T, path string) {
-<span id="L218" class="ln">   218  </span>	t.Helper()
-<span id="L219" class="ln">   219  </span>
-<span id="L220" class="ln">   220  </span>	e := echo.New()
-<span id="L221" class="ln">   221  </span>	UseAppErrorHandler(t, e)
-<span id="L222" class="ln">   222  </span>	ctrl := gomock.NewController(t)
-<span id="L223" class="ln">   223  </span>	tf := observability.NewNoopTracerFactory(t)
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>	uc := mock_product.NewMockUsecase(ctrl)
-<span id="L226" class="ln">   226  </span>	uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L227" class="ln">   227  </span>
-<span id="L228" class="ln">   228  </span>	productslowstockhandler.BindHandler(e, tf, uc)
-<span id="L229" class="ln">   229  </span>	useOpenAPIValidation(t, e)
-<span id="L230" class="ln">   230  </span>
-<span id="L231" class="ln">   231  </span>	headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_badlimit&#34;))
-<span id="L232" class="ln">   232  </span>	actual := StartServer(t, e).DoJSON(http.MethodGet, path, nil, headers)
-<span id="L233" class="ln">   233  </span>	AssertErrorResponse(t, actual, http.StatusBadRequest)
-<span id="L234" class="ln">   234  </span>}
-<span id="L235" class="ln">   235  </span>
+<span id="L95" class="ln">    95  </span>				},
+<span id="L96" class="ln">    96  </span>			)
+<span id="L97" class="ln">    97  </span>
+<span id="L98" class="ln">    98  </span>			productslowstockhandler.BindHandler(e, tf, uc)
+<span id="L99" class="ln">    99  </span>
+<span id="L100" class="ln">   100  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_limit&#34;))
+<span id="L101" class="ln">   101  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath+&#34;?limit=5&#34;, nil, headers)
+<span id="L102" class="ln">   102  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
+<span id="L103" class="ln">   103  </span>			assert.Equal(t, 5, captured.Limit)
+<span id="L104" class="ln">   104  </span>		})
+<span id="L105" class="ln">   105  </span>
+<span id="L106" class="ln">   106  </span>		t.Run(&#34;OpenAPIバリデーション経由でも範囲内のlimitは200で通過する&#34;, func(t *testing.T) {
+<span id="L107" class="ln">   107  </span>			t.Parallel()
+<span id="L108" class="ln">   108  </span>
+<span id="L109" class="ln">   109  </span>			e := echo.New()
+<span id="L110" class="ln">   110  </span>			ctrl := gomock.NewController(t)
+<span id="L111" class="ln">   111  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span>			uc := mock_product.NewMockUsecase(ctrl)
+<span id="L114" class="ln">   114  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).Return(lowStockView(t), nil)
+<span id="L115" class="ln">   115  </span>
+<span id="L116" class="ln">   116  </span>			productslowstockhandler.BindHandler(e, tf, uc)
+<span id="L117" class="ln">   117  </span>			useOpenAPIValidation(t, e)
+<span id="L118" class="ln">   118  </span>
+<span id="L119" class="ln">   119  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_valid&#34;))
+<span id="L120" class="ln">   120  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath+&#34;?limit=100&#34;, nil, headers)
+<span id="L121" class="ln">   121  </span>			AssertJSONResponseType[gen.ProductLowStockResponse](t, actual)
+<span id="L122" class="ln">   122  </span>		})
+<span id="L123" class="ln">   123  </span>
+<span id="L124" class="ln">   124  </span>		t.Run(&#34;対象商品が無い場合は空配列を200で返す&#34;, func(t *testing.T) {
+<span id="L125" class="ln">   125  </span>			t.Parallel()
+<span id="L126" class="ln">   126  </span>
+<span id="L127" class="ln">   127  </span>			e := echo.New()
+<span id="L128" class="ln">   128  </span>			ctrl := gomock.NewController(t)
+<span id="L129" class="ln">   129  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span>			uc := mock_product.NewMockUsecase(ctrl)
+<span id="L132" class="ln">   132  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L133" class="ln">   133  </span>				Return(productuc.ProductLowStockListView{}, nil)
+<span id="L134" class="ln">   134  </span>
+<span id="L135" class="ln">   135  </span>			productslowstockhandler.BindHandler(e, tf, uc)
+<span id="L136" class="ln">   136  </span>
+<span id="L137" class="ln">   137  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_empty&#34;))
+<span id="L138" class="ln">   138  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath, nil, headers)
+<span id="L139" class="ln">   139  </span>			AssertJSONResponseType[gen.ProductLowStockResponse](t, actual)
+<span id="L140" class="ln">   140  </span>		})
+<span id="L141" class="ln">   141  </span>	})
+<span id="L142" class="ln">   142  </span>
+<span id="L143" class="ln">   143  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L144" class="ln">   144  </span>		t.Parallel()
+<span id="L145" class="ln">   145  </span>
+<span id="L146" class="ln">   146  </span>		t.Run(&#34;未認証で401を返しUsecaseは呼ばれない&#34;, func(t *testing.T) {
+<span id="L147" class="ln">   147  </span>			t.Parallel()
+<span id="L148" class="ln">   148  </span>
+<span id="L149" class="ln">   149  </span>			e := echo.New()
+<span id="L150" class="ln">   150  </span>			UseAppErrorHandler(t, e)
+<span id="L151" class="ln">   151  </span>			ctrl := gomock.NewController(t)
+<span id="L152" class="ln">   152  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span>			uc := mock_product.NewMockUsecase(ctrl)
+<span id="L155" class="ln">   155  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>			productslowstockhandler.BindHandler(e, tf, uc)
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath, nil, nil)
+<span id="L160" class="ln">   160  </span>			AssertErrorResponse(t, actual, http.StatusUnauthorized)
+<span id="L161" class="ln">   161  </span>		})
+<span id="L162" class="ln">   162  </span>
+<span id="L163" class="ln">   163  </span>		t.Run(&#34;非adminの権限エラーを403へ変換する&#34;, func(t *testing.T) {
+<span id="L164" class="ln">   164  </span>			t.Parallel()
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>			e := echo.New()
+<span id="L167" class="ln">   167  </span>			UseAppErrorHandler(t, e)
+<span id="L168" class="ln">   168  </span>			ctrl := gomock.NewController(t)
+<span id="L169" class="ln">   169  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>			uc := mock_product.NewMockUsecase(ctrl)
+<span id="L172" class="ln">   172  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L173" class="ln">   173  </span>				Return(productuc.ProductLowStockListView{}, apperror.ErrPermissionDenied)
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>			productslowstockhandler.BindHandler(e, tf, uc)
+<span id="L176" class="ln">   176  </span>
+<span id="L177" class="ln">   177  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_forbidden&#34;))
+<span id="L178" class="ln">   178  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath, nil, headers)
+<span id="L179" class="ln">   179  </span>			AssertErrorResponse(t, actual, http.StatusForbidden)
+<span id="L180" class="ln">   180  </span>		})
+<span id="L181" class="ln">   181  </span>
+<span id="L182" class="ln">   182  </span>		t.Run(&#34;OpenAPIバリデーションが範囲外のlimitを400で弾く&#34;, func(t *testing.T) {
+<span id="L183" class="ln">   183  </span>			t.Parallel()
+<span id="L184" class="ln">   184  </span>
+<span id="L185" class="ln">   185  </span>			t.Run(&#34;limitが下限未満(0)&#34;, func(t *testing.T) {
+<span id="L186" class="ln">   186  </span>				t.Parallel()
+<span id="L187" class="ln">   187  </span>				assertLowStockLimitRejected(t, productsLowStockPath+&#34;?limit=0&#34;)
+<span id="L188" class="ln">   188  </span>			})
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>			t.Run(&#34;limitが上限超過(101)&#34;, func(t *testing.T) {
+<span id="L191" class="ln">   191  </span>				t.Parallel()
+<span id="L192" class="ln">   192  </span>				assertLowStockLimitRejected(t, productsLowStockPath+&#34;?limit=101&#34;)
+<span id="L193" class="ln">   193  </span>			})
+<span id="L194" class="ln">   194  </span>		})
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>		t.Run(&#34;ErrInternalで500を返す&#34;, func(t *testing.T) {
+<span id="L197" class="ln">   197  </span>			t.Parallel()
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span>			e := echo.New()
+<span id="L200" class="ln">   200  </span>			UseAppErrorHandler(t, e)
+<span id="L201" class="ln">   201  </span>			ctrl := gomock.NewController(t)
+<span id="L202" class="ln">   202  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>			uc := mock_product.NewMockUsecase(ctrl)
+<span id="L205" class="ln">   205  </span>			uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L206" class="ln">   206  </span>				Return(productuc.ProductLowStockListView{}, apperror.ErrInternal)
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>			productslowstockhandler.BindHandler(e, tf, uc)
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_err&#34;))
+<span id="L211" class="ln">   211  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, productsLowStockPath, nil, headers)
+<span id="L212" class="ln">   212  </span>			AssertErrorResponse(t, actual, http.StatusInternalServerError)
+<span id="L213" class="ln">   213  </span>		})
+<span id="L214" class="ln">   214  </span>	})
+<span id="L215" class="ln">   215  </span>}
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span><span class="comment">// assertLowStockLimitRejected は、OpenAPI バリデータが limit を 400 で弾き Usecase へ到達しないことを検証します。</span>
+<span id="L218" class="ln">   218  </span>func assertLowStockLimitRejected(t *testing.T, path string) {
+<span id="L219" class="ln">   219  </span>	t.Helper()
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span>	e := echo.New()
+<span id="L222" class="ln">   222  </span>	UseAppErrorHandler(t, e)
+<span id="L223" class="ln">   223  </span>	ctrl := gomock.NewController(t)
+<span id="L224" class="ln">   224  </span>	tf := observability.NewNoopTracerFactory(t)
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>	uc := mock_product.NewMockUsecase(ctrl)
+<span id="L227" class="ln">   227  </span>	uc.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>	productslowstockhandler.BindHandler(e, tf, uc)
+<span id="L230" class="ln">   230  </span>	useOpenAPIValidation(t, e)
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>	headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_lowstock_badlimit&#34;))
+<span id="L233" class="ln">   233  </span>	actual := StartServer(t, e).DoJSON(http.MethodGet, path, nil, headers)
+<span id="L234" class="ln">   234  </span>	AssertErrorResponse(t, actual, http.StatusBadRequest)
+<span id="L235" class="ln">   235  </span>}
+<span id="L236" class="ln">   236  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/integration/v1_products_low_stock_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

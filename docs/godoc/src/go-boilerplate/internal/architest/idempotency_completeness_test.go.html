@@ -218,151 +218,162 @@
 <span id="L161" class="ln">   161  </span>		t.Run(&#34;IdempotencyKeyを持つParams構造体のOpを収集する&#34;, func(t *testing.T) {
 <span id="L162" class="ln">   162  </span>			t.Parallel()
 <span id="L163" class="ln">   163  </span>			lines := strings.Split(
-<span id="L164" class="ln">   164  </span>				&#34;package gen\n\ntype CreateOrderParams struct {\n\tIdempotencyKey string\n}\n&#34;, &#34;\n&#34;)
-<span id="L165" class="ln">   165  </span>
-<span id="L166" class="ln">   166  </span>			marked := map[string]string{}
-<span id="L167" class="ln">   167  </span>			seen := collectMarkedParams(lines, &#34;gen.go&#34;, marked)
-<span id="L168" class="ln">   168  </span>
-<span id="L169" class="ln">   169  </span>			assert.Equal(t, 1, seen)
-<span id="L170" class="ln">   170  </span>			assert.Equal(t, map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;}, marked)
-<span id="L171" class="ln">   171  </span>		})
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>		t.Run(&#34;IdempotencyKeyを持たないParams構造体は件数だけ数えて収集しない&#34;, func(t *testing.T) {
-<span id="L174" class="ln">   174  </span>			t.Parallel()
-<span id="L175" class="ln">   175  </span>			lines := strings.Split(
-<span id="L176" class="ln">   176  </span>				&#34;package gen\n\ntype ListOrdersParams struct {\n\tLimit int\n}\n&#34;, &#34;\n&#34;)
-<span id="L177" class="ln">   177  </span>
-<span id="L178" class="ln">   178  </span>			marked := map[string]string{}
-<span id="L179" class="ln">   179  </span>			seen := collectMarkedParams(lines, &#34;gen.go&#34;, marked)
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>			assert.Equal(t, 1, seen)
-<span id="L182" class="ln">   182  </span>			assert.Empty(t, marked)
-<span id="L183" class="ln">   183  </span>		})
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>		t.Run(&#34;複数のParams構造体をそれぞれ判定する&#34;, func(t *testing.T) {
-<span id="L186" class="ln">   186  </span>			t.Parallel()
-<span id="L187" class="ln">   187  </span>			lines := strings.Split(
-<span id="L188" class="ln">   188  </span>				&#34;package gen\n\ntype CreateOrderParams struct {\n\tIdempotencyKey string\n}\n\n&#34;+
-<span id="L189" class="ln">   189  </span>					&#34;type ListOrdersParams struct {\n\tLimit int\n}\n\n&#34;+
-<span id="L190" class="ln">   190  </span>					&#34;type PayOrderParams struct {\n\tIdempotencyKey string\n}\n&#34;, &#34;\n&#34;)
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>			marked := map[string]string{}
-<span id="L193" class="ln">   193  </span>			seen := collectMarkedParams(lines, &#34;gen.go&#34;, marked)
+<span id="L164" class="ln">   164  </span>				&#34;package gen\n\ntype CreateOrderParams struct {\n\tIdempotencyKey string\n}\n&#34;, &#34;\n&#34;,
+<span id="L165" class="ln">   165  </span>			)
+<span id="L166" class="ln">   166  </span>
+<span id="L167" class="ln">   167  </span>			marked := map[string]string{}
+<span id="L168" class="ln">   168  </span>			seen := collectMarkedParams(lines, &#34;gen.go&#34;, marked)
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>			assert.Equal(t, 1, seen)
+<span id="L171" class="ln">   171  </span>			assert.Equal(t, map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;}, marked)
+<span id="L172" class="ln">   172  </span>		})
+<span id="L173" class="ln">   173  </span>
+<span id="L174" class="ln">   174  </span>		t.Run(&#34;IdempotencyKeyを持たないParams構造体は件数だけ数えて収集しない&#34;, func(t *testing.T) {
+<span id="L175" class="ln">   175  </span>			t.Parallel()
+<span id="L176" class="ln">   176  </span>			lines := strings.Split(
+<span id="L177" class="ln">   177  </span>				&#34;package gen\n\ntype ListOrdersParams struct {\n\tLimit int\n}\n&#34;, &#34;\n&#34;,
+<span id="L178" class="ln">   178  </span>			)
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span>			marked := map[string]string{}
+<span id="L181" class="ln">   181  </span>			seen := collectMarkedParams(lines, &#34;gen.go&#34;, marked)
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>			assert.Equal(t, 1, seen)
+<span id="L184" class="ln">   184  </span>			assert.Empty(t, marked)
+<span id="L185" class="ln">   185  </span>		})
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>		t.Run(&#34;複数のParams構造体をそれぞれ判定する&#34;, func(t *testing.T) {
+<span id="L188" class="ln">   188  </span>			t.Parallel()
+<span id="L189" class="ln">   189  </span>			lines := strings.Split(
+<span id="L190" class="ln">   190  </span>				&#34;package gen\n\ntype CreateOrderParams struct {\n\tIdempotencyKey string\n}\n\n&#34;+
+<span id="L191" class="ln">   191  </span>					&#34;type ListOrdersParams struct {\n\tLimit int\n}\n\n&#34;+
+<span id="L192" class="ln">   192  </span>					&#34;type PayOrderParams struct {\n\tIdempotencyKey string\n}\n&#34;, &#34;\n&#34;,
+<span id="L193" class="ln">   193  </span>			)
 <span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>			assert.Equal(t, 3, seen)
-<span id="L196" class="ln">   196  </span>			assert.Equal(t, map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;, &#34;PayOrder&#34;: &#34;gen.go&#34;}, marked)
-<span id="L197" class="ln">   197  </span>		})
-<span id="L198" class="ln">   198  </span>
-<span id="L199" class="ln">   199  </span>		t.Run(&#34;後続の構造体のIdempotencyKeyを手前のOpへ取り違えない&#34;, func(t *testing.T) {
-<span id="L200" class="ln">   200  </span>			t.Parallel()
-<span id="L201" class="ln">   201  </span>			lines := strings.Split(
-<span id="L202" class="ln">   202  </span>				&#34;package gen\n\ntype ListOrdersParams struct {\n\tLimit int\n}\n\n&#34;+
-<span id="L203" class="ln">   203  </span>					&#34;type CreateOrderParams struct {\n\tIdempotencyKey string\n}\n&#34;, &#34;\n&#34;)
-<span id="L204" class="ln">   204  </span>
-<span id="L205" class="ln">   205  </span>			marked := map[string]string{}
-<span id="L206" class="ln">   206  </span>			collectMarkedParams(lines, &#34;gen.go&#34;, marked)
-<span id="L207" class="ln">   207  </span>
-<span id="L208" class="ln">   208  </span>			assert.Equal(t, map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;}, marked)
-<span id="L209" class="ln">   209  </span>		})
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>		t.Run(&#34;Params以外の構造体は対象にしない&#34;, func(t *testing.T) {
-<span id="L212" class="ln">   212  </span>			t.Parallel()
-<span id="L213" class="ln">   213  </span>			lines := strings.Split(
-<span id="L214" class="ln">   214  </span>				&#34;package gen\n\ntype CreateOrderRequest struct {\n\tIdempotencyKey string\n}\n&#34;, &#34;\n&#34;)
-<span id="L215" class="ln">   215  </span>
-<span id="L216" class="ln">   216  </span>			marked := map[string]string{}
-<span id="L217" class="ln">   217  </span>			seen := collectMarkedParams(lines, &#34;gen.go&#34;, marked)
-<span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>			assert.Zero(t, seen)
-<span id="L220" class="ln">   220  </span>			assert.Empty(t, marked)
-<span id="L221" class="ln">   221  </span>		})
-<span id="L222" class="ln">   222  </span>	})
-<span id="L223" class="ln">   223  </span>}
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>func Test_collectRunWrapped(t *testing.T) {
-<span id="L226" class="ln">   226  </span>	t.Parallel()
-<span id="L227" class="ln">   227  </span>
-<span id="L228" class="ln">   228  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L229" class="ln">   229  </span>		t.Parallel()
-<span id="L230" class="ln">   230  </span>
-<span id="L231" class="ln">   231  </span>		t.Run(&#34;idempotency.Runを呼ぶメソッド名を収集する&#34;, func(t *testing.T) {
-<span id="L232" class="ln">   232  </span>			t.Parallel()
-<span id="L233" class="ln">   233  </span>			lines := strings.Split(
-<span id="L234" class="ln">   234  </span>				&#34;package handler\n\nfunc (s *server) CreateOrder(ctx context.Context) error {\n&#34;+
-<span id="L235" class="ln">   235  </span>					&#34;\treturn idempotency.Run(ctx, key, fn)\n}\n&#34;, &#34;\n&#34;)
-<span id="L236" class="ln">   236  </span>
-<span id="L237" class="ln">   237  </span>			wrapped := map[string]struct{}{}
-<span id="L238" class="ln">   238  </span>			collectRunWrapped(lines, wrapped)
-<span id="L239" class="ln">   239  </span>
-<span id="L240" class="ln">   240  </span>			assert.Equal(t, map[string]struct{}{&#34;CreateOrder&#34;: {}}, wrapped)
-<span id="L241" class="ln">   241  </span>		})
+<span id="L195" class="ln">   195  </span>			marked := map[string]string{}
+<span id="L196" class="ln">   196  </span>			seen := collectMarkedParams(lines, &#34;gen.go&#34;, marked)
+<span id="L197" class="ln">   197  </span>
+<span id="L198" class="ln">   198  </span>			assert.Equal(t, 3, seen)
+<span id="L199" class="ln">   199  </span>			assert.Equal(t, map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;, &#34;PayOrder&#34;: &#34;gen.go&#34;}, marked)
+<span id="L200" class="ln">   200  </span>		})
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>		t.Run(&#34;後続の構造体のIdempotencyKeyを手前のOpへ取り違えない&#34;, func(t *testing.T) {
+<span id="L203" class="ln">   203  </span>			t.Parallel()
+<span id="L204" class="ln">   204  </span>			lines := strings.Split(
+<span id="L205" class="ln">   205  </span>				&#34;package gen\n\ntype ListOrdersParams struct {\n\tLimit int\n}\n\n&#34;+
+<span id="L206" class="ln">   206  </span>					&#34;type CreateOrderParams struct {\n\tIdempotencyKey string\n}\n&#34;, &#34;\n&#34;,
+<span id="L207" class="ln">   207  </span>			)
+<span id="L208" class="ln">   208  </span>
+<span id="L209" class="ln">   209  </span>			marked := map[string]string{}
+<span id="L210" class="ln">   210  </span>			collectMarkedParams(lines, &#34;gen.go&#34;, marked)
+<span id="L211" class="ln">   211  </span>
+<span id="L212" class="ln">   212  </span>			assert.Equal(t, map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;}, marked)
+<span id="L213" class="ln">   213  </span>		})
+<span id="L214" class="ln">   214  </span>
+<span id="L215" class="ln">   215  </span>		t.Run(&#34;Params以外の構造体は対象にしない&#34;, func(t *testing.T) {
+<span id="L216" class="ln">   216  </span>			t.Parallel()
+<span id="L217" class="ln">   217  </span>			lines := strings.Split(
+<span id="L218" class="ln">   218  </span>				&#34;package gen\n\ntype CreateOrderRequest struct {\n\tIdempotencyKey string\n}\n&#34;, &#34;\n&#34;,
+<span id="L219" class="ln">   219  </span>			)
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span>			marked := map[string]string{}
+<span id="L222" class="ln">   222  </span>			seen := collectMarkedParams(lines, &#34;gen.go&#34;, marked)
+<span id="L223" class="ln">   223  </span>
+<span id="L224" class="ln">   224  </span>			assert.Zero(t, seen)
+<span id="L225" class="ln">   225  </span>			assert.Empty(t, marked)
+<span id="L226" class="ln">   226  </span>		})
+<span id="L227" class="ln">   227  </span>	})
+<span id="L228" class="ln">   228  </span>}
+<span id="L229" class="ln">   229  </span>
+<span id="L230" class="ln">   230  </span>func Test_collectRunWrapped(t *testing.T) {
+<span id="L231" class="ln">   231  </span>	t.Parallel()
+<span id="L232" class="ln">   232  </span>
+<span id="L233" class="ln">   233  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L234" class="ln">   234  </span>		t.Parallel()
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>		t.Run(&#34;idempotency.Runを呼ぶメソッド名を収集する&#34;, func(t *testing.T) {
+<span id="L237" class="ln">   237  </span>			t.Parallel()
+<span id="L238" class="ln">   238  </span>			lines := strings.Split(
+<span id="L239" class="ln">   239  </span>				&#34;package handler\n\nfunc (s *server) CreateOrder(ctx context.Context) error {\n&#34;+
+<span id="L240" class="ln">   240  </span>					&#34;\treturn idempotency.Run(ctx, key, fn)\n}\n&#34;, &#34;\n&#34;,
+<span id="L241" class="ln">   241  </span>			)
 <span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>		t.Run(&#34;idempotency.Runを呼ばないメソッドは収集しない&#34;, func(t *testing.T) {
-<span id="L244" class="ln">   244  </span>			t.Parallel()
-<span id="L245" class="ln">   245  </span>			lines := strings.Split(
-<span id="L246" class="ln">   246  </span>				&#34;package handler\n\nfunc (s *server) ListOrders(ctx context.Context) error {\n&#34;+
-<span id="L247" class="ln">   247  </span>					&#34;\treturn s.uc.List(ctx)\n}\n&#34;, &#34;\n&#34;)
+<span id="L243" class="ln">   243  </span>			wrapped := map[string]struct{}{}
+<span id="L244" class="ln">   244  </span>			collectRunWrapped(lines, wrapped)
+<span id="L245" class="ln">   245  </span>
+<span id="L246" class="ln">   246  </span>			assert.Equal(t, map[string]struct{}{&#34;CreateOrder&#34;: {}}, wrapped)
+<span id="L247" class="ln">   247  </span>		})
 <span id="L248" class="ln">   248  </span>
-<span id="L249" class="ln">   249  </span>			wrapped := map[string]struct{}{}
-<span id="L250" class="ln">   250  </span>			collectRunWrapped(lines, wrapped)
-<span id="L251" class="ln">   251  </span>
-<span id="L252" class="ln">   252  </span>			assert.Empty(t, wrapped)
-<span id="L253" class="ln">   253  </span>		})
-<span id="L254" class="ln">   254  </span>
-<span id="L255" class="ln">   255  </span>		t.Run(&#34;メソッド以外の関数宣言でリセットし直前のメソッドへ誤帰属しない&#34;, func(t *testing.T) {
-<span id="L256" class="ln">   256  </span>			t.Parallel()
-<span id="L257" class="ln">   257  </span>			lines := strings.Split(
-<span id="L258" class="ln">   258  </span>				&#34;package handler\n\nfunc (s *server) ListOrders(ctx context.Context) error {\n&#34;+
-<span id="L259" class="ln">   259  </span>					&#34;\treturn s.uc.List(ctx)\n}\n\n&#34;+
-<span id="L260" class="ln">   260  </span>					&#34;func helper() error {\n\treturn idempotency.Run(ctx, key, fn)\n}\n&#34;, &#34;\n&#34;)
+<span id="L249" class="ln">   249  </span>		t.Run(&#34;idempotency.Runを呼ばないメソッドは収集しない&#34;, func(t *testing.T) {
+<span id="L250" class="ln">   250  </span>			t.Parallel()
+<span id="L251" class="ln">   251  </span>			lines := strings.Split(
+<span id="L252" class="ln">   252  </span>				&#34;package handler\n\nfunc (s *server) ListOrders(ctx context.Context) error {\n&#34;+
+<span id="L253" class="ln">   253  </span>					&#34;\treturn s.uc.List(ctx)\n}\n&#34;, &#34;\n&#34;,
+<span id="L254" class="ln">   254  </span>			)
+<span id="L255" class="ln">   255  </span>
+<span id="L256" class="ln">   256  </span>			wrapped := map[string]struct{}{}
+<span id="L257" class="ln">   257  </span>			collectRunWrapped(lines, wrapped)
+<span id="L258" class="ln">   258  </span>
+<span id="L259" class="ln">   259  </span>			assert.Empty(t, wrapped)
+<span id="L260" class="ln">   260  </span>		})
 <span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>			wrapped := map[string]struct{}{}
-<span id="L263" class="ln">   263  </span>			collectRunWrapped(lines, wrapped)
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>			assert.Empty(t, wrapped)
-<span id="L266" class="ln">   266  </span>		})
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>		t.Run(&#34;複数メソッドのうち呼び出しのあるものだけを収集する&#34;, func(t *testing.T) {
-<span id="L269" class="ln">   269  </span>			t.Parallel()
-<span id="L270" class="ln">   270  </span>			lines := strings.Split(
-<span id="L271" class="ln">   271  </span>				&#34;package handler\n\nfunc (s *server) CreateOrder(ctx context.Context) error {\n&#34;+
-<span id="L272" class="ln">   272  </span>					&#34;\treturn idempotency.Run(ctx, key, fn)\n}\n\n&#34;+
-<span id="L273" class="ln">   273  </span>					&#34;func (s *server) ListOrders(ctx context.Context) error {\n\treturn s.uc.List(ctx)\n}\n&#34;, &#34;\n&#34;)
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>			wrapped := map[string]struct{}{}
-<span id="L276" class="ln">   276  </span>			collectRunWrapped(lines, wrapped)
-<span id="L277" class="ln">   277  </span>
-<span id="L278" class="ln">   278  </span>			assert.Equal(t, map[string]struct{}{&#34;CreateOrder&#34;: {}}, wrapped)
-<span id="L279" class="ln">   279  </span>		})
-<span id="L280" class="ln">   280  </span>	})
-<span id="L281" class="ln">   281  </span>}
-<span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>func Test_collectUnwrappedOperations(t *testing.T) {
-<span id="L284" class="ln">   284  </span>	t.Parallel()
-<span id="L285" class="ln">   285  </span>
-<span id="L286" class="ln">   286  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L287" class="ln">   287  </span>		t.Parallel()
-<span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>		t.Run(&#34;包まれていない操作を宣言元ファイル付きで列挙する&#34;, func(t *testing.T) {
-<span id="L290" class="ln">   290  </span>			t.Parallel()
+<span id="L262" class="ln">   262  </span>		t.Run(&#34;メソッド以外の関数宣言でリセットし直前のメソッドへ誤帰属しない&#34;, func(t *testing.T) {
+<span id="L263" class="ln">   263  </span>			t.Parallel()
+<span id="L264" class="ln">   264  </span>			lines := strings.Split(
+<span id="L265" class="ln">   265  </span>				&#34;package handler\n\nfunc (s *server) ListOrders(ctx context.Context) error {\n&#34;+
+<span id="L266" class="ln">   266  </span>					&#34;\treturn s.uc.List(ctx)\n}\n\n&#34;+
+<span id="L267" class="ln">   267  </span>					&#34;func helper() error {\n\treturn idempotency.Run(ctx, key, fn)\n}\n&#34;, &#34;\n&#34;,
+<span id="L268" class="ln">   268  </span>			)
+<span id="L269" class="ln">   269  </span>
+<span id="L270" class="ln">   270  </span>			wrapped := map[string]struct{}{}
+<span id="L271" class="ln">   271  </span>			collectRunWrapped(lines, wrapped)
+<span id="L272" class="ln">   272  </span>
+<span id="L273" class="ln">   273  </span>			assert.Empty(t, wrapped)
+<span id="L274" class="ln">   274  </span>		})
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>		t.Run(&#34;複数メソッドのうち呼び出しのあるものだけを収集する&#34;, func(t *testing.T) {
+<span id="L277" class="ln">   277  </span>			t.Parallel()
+<span id="L278" class="ln">   278  </span>			lines := strings.Split(
+<span id="L279" class="ln">   279  </span>				&#34;package handler\n\nfunc (s *server) CreateOrder(ctx context.Context) error {\n&#34;+
+<span id="L280" class="ln">   280  </span>					&#34;\treturn idempotency.Run(ctx, key, fn)\n}\n\n&#34;+
+<span id="L281" class="ln">   281  </span>					&#34;func (s *server) ListOrders(ctx context.Context) error {\n\treturn s.uc.List(ctx)\n}\n&#34;, &#34;\n&#34;,
+<span id="L282" class="ln">   282  </span>			)
+<span id="L283" class="ln">   283  </span>
+<span id="L284" class="ln">   284  </span>			wrapped := map[string]struct{}{}
+<span id="L285" class="ln">   285  </span>			collectRunWrapped(lines, wrapped)
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>			assert.Equal(t, map[string]struct{}{&#34;CreateOrder&#34;: {}}, wrapped)
+<span id="L288" class="ln">   288  </span>		})
+<span id="L289" class="ln">   289  </span>	})
+<span id="L290" class="ln">   290  </span>}
 <span id="L291" class="ln">   291  </span>
-<span id="L292" class="ln">   292  </span>			violations := collectUnwrappedOperations(
-<span id="L293" class="ln">   293  </span>				map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;}, map[string]struct{}{})
+<span id="L292" class="ln">   292  </span>func Test_collectUnwrappedOperations(t *testing.T) {
+<span id="L293" class="ln">   293  </span>	t.Parallel()
 <span id="L294" class="ln">   294  </span>
-<span id="L295" class="ln">   295  </span>			assert.Equal(t, []string{&#34;CreateOrder（gen.go）&#34;}, violations)
-<span id="L296" class="ln">   296  </span>		})
+<span id="L295" class="ln">   295  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L296" class="ln">   296  </span>		t.Parallel()
 <span id="L297" class="ln">   297  </span>
-<span id="L298" class="ln">   298  </span>		t.Run(&#34;包まれている操作は列挙しない&#34;, func(t *testing.T) {
+<span id="L298" class="ln">   298  </span>		t.Run(&#34;包まれていない操作を宣言元ファイル付きで列挙する&#34;, func(t *testing.T) {
 <span id="L299" class="ln">   299  </span>			t.Parallel()
 <span id="L300" class="ln">   300  </span>
 <span id="L301" class="ln">   301  </span>			violations := collectUnwrappedOperations(
-<span id="L302" class="ln">   302  </span>				map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;}, map[string]struct{}{&#34;CreateOrder&#34;: {}})
-<span id="L303" class="ln">   303  </span>
-<span id="L304" class="ln">   304  </span>			assert.Empty(t, violations)
-<span id="L305" class="ln">   305  </span>		})
-<span id="L306" class="ln">   306  </span>	})
-<span id="L307" class="ln">   307  </span>}
-<span id="L308" class="ln">   308  </span>
+<span id="L302" class="ln">   302  </span>				map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;}, map[string]struct{}{},
+<span id="L303" class="ln">   303  </span>			)
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>			assert.Equal(t, []string{&#34;CreateOrder（gen.go）&#34;}, violations)
+<span id="L306" class="ln">   306  </span>		})
+<span id="L307" class="ln">   307  </span>
+<span id="L308" class="ln">   308  </span>		t.Run(&#34;包まれている操作は列挙しない&#34;, func(t *testing.T) {
+<span id="L309" class="ln">   309  </span>			t.Parallel()
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>			violations := collectUnwrappedOperations(
+<span id="L312" class="ln">   312  </span>				map[string]string{&#34;CreateOrder&#34;: &#34;gen.go&#34;}, map[string]struct{}{&#34;CreateOrder&#34;: {}},
+<span id="L313" class="ln">   313  </span>			)
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>			assert.Empty(t, violations)
+<span id="L316" class="ln">   316  </span>		})
+<span id="L317" class="ln">   317  </span>	})
+<span id="L318" class="ln">   318  </span>}
+<span id="L319" class="ln">   319  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/architest/idempotency_completeness_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -1,7 +1,5 @@
 # Worker Engine Guide (`internal/controller/worker`)
 
-English | [日本語](README.ja.md)
-
 ## Role in Onion Architecture
 
 - A **message-in driving adapter**, on par with the HTTP handler — it is **another entry point into the Usecase layer**, not a new architectural layer.

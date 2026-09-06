@@ -1,0 +1,385 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>dynamodbclient - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package dynamodbclient
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/infrastructure/dynamodbclient&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package dynamodbclient は、DynamoDB 互換 store へ繋ぐ AWS SDK v2 クライアントの組み立てを 1 箇所に置きます。
+Realtime Delivery の 3 つの adapter（eventlog / streamticket / instancelease）と table initializer が
+同じ接続形と同じ retry 上限で動くための substrate で、boundary interface は持ちません。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+			
+				
+				<dd><a href="#EnsureTable">func EnsureTable(ctx context.Context, c *dynamodb.Client, spec TableSpec) error</a></dd>
+			
+				
+				<dd><a href="#IsConditionalCheckFailed">func IsConditionalCheckFailed(err error) bool</a></dd>
+			
+				
+				<dd><a href="#New">func New(ctx context.Context, cfg Config) (*dynamodb.Client, error)</a></dd>
+			
+				
+				<dd><a href="#Normalize">func Normalize(err error, op string) error</a></dd>
+			
+				
+				<dd><a href="#NumberAttr">func NumberAttr(item map[string]types.AttributeValue, name, kind string) (int64, error)</a></dd>
+			
+				
+				<dd><a href="#StringAttr">func StringAttr(item map[string]types.AttributeValue, name string) string</a></dd>
+			
+			
+				
+				<dd><a href="#Config">type Config</a></dd>
+				
+				
+			
+				
+				<dd><a href="#TableSpec">type TableSpec</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html">dynamodbclient.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				
+				<pre>const (
+    <span class="comment">// MaxAttempts は、1 回の API 呼び出しの試行上限（初回 + retry 2 回）です。</span>
+    <span class="comment">// store が不達のとき無制限に retry せず、呼び出し元へ ErrUnavailable を返して上位の判断</span>
+    <span class="comment">// （503 + Retry-After、outbox の backoff）に委ねるための固定値です。</span>
+    <span id="MaxAttempts">MaxAttempts</span> = 3
+    <span class="comment">// MaxBackoff は、retry 間の待ち時間の上限です。SSE の write deadline（10 秒）の内側に収めます。</span>
+    <span id="MaxBackoff">MaxBackoff</span> = 2 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Second">Second</a>
+    <span class="comment">// CallTimeout は、1 回の API 呼び出し全体（retry を含む）に与える上限です。</span>
+    <span class="comment">//</span>
+    <span class="comment">// これが無いと、応答を返さない store に対して呼び出しがいつまでも戻りません。retry は「失敗した</span>
+    <span class="comment">// 試行」を数える機構なので返ってこない試行には一度も発火せず、SDK にも HTTP クライアントにも</span>
+    <span class="comment">// 別の上限がありません（DI が渡すクライアントは Timeout を持たず、SSRF ガードのために差し替えた</span>
+    <span class="comment">// Dialer にも Timeout はありません）。SSE の stream path は request の deadline budget から</span>
+    <span class="comment">// 外れているため、上位に頼れる上限も無く、ここが唯一の歯止めになります。</span>
+    <span class="comment">//</span>
+    <span class="comment">// 値は SSE の write deadline に揃えます。呼び出しが 1 回の書き込みより長く待つ理由がないためです。</span>
+    <span id="CallTimeout">CallTimeout</span> = 10 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Second">Second</a>
+)</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="EnsureTable">func <a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html?s=6752:6831#L128">EnsureTable</a>
+				<a class="permalink" href="#EnsureTable">¶</a>
+				
+				
+			</h2>
+			<pre>func EnsureTable(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, c *<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/">dynamodb</a>.<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/#Client">Client</a>, spec <a href="#TableSpec">TableSpec</a>) <a href="../../../../builtin/#error">error</a></pre>
+			<p>EnsureTable は、table が無ければ作り、ACTIVE を待ち、TTL が未設定なら設定します。
+既にある table に対しては何も変えずに成功するので、何度実行しても同じ状態に収束します
+（application の起動時ではなく one-shot の初期化で呼びます）。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="IsConditionalCheckFailed">func <a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html?s=5763:5808#L109">IsConditionalCheckFailed</a>
+				<a class="permalink" href="#IsConditionalCheckFailed">¶</a>
+				
+				
+			</h2>
+			<pre>func IsConditionalCheckFailed(err <a href="../../../../builtin/#error">error</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+			<p>IsConditionalCheckFailed は、条件式が成立せず書き込みが拒否されたエラーかを判定します。
+冪等な append や cleanup ownership の競合は、この失敗を「他者が先に書いた」として読みます。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="New">func <a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html?s=3951:4018#L61">New</a>
+				<a class="permalink" href="#New">¶</a>
+				
+				
+			</h2>
+			<pre>func New(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, cfg <a href="#Config">Config</a>) (*<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/">dynamodb</a>.<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/#Client">Client</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+			<p>New は、設定から DynamoDB クライアントを生成します。
+資格情報を解決できない場合はエラーを返し、認証エラーが最初の操作まで隠れないようにします。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="Normalize">func <a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html?s=6158:6200#L117">Normalize</a>
+				<a class="permalink" href="#Normalize">¶</a>
+				
+				
+			</h2>
+			<pre>func Normalize(err <a href="../../../../builtin/#error">error</a>, op <a href="../../../../builtin/#string">string</a>) <a href="../../../../builtin/#error">error</a></pre>
+			<p>Normalize は、SDK の失敗を apperror sentinel へ正規化します。context の取り消しは ErrCanceled、
+それ以外は ErrUnavailable です。条件式の不成立は呼び出し側が IsConditionalCheckFailed で先に判定します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NumberAttr">func <a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html?s=9319:9406#L194">NumberAttr</a>
+				<a class="permalink" href="#NumberAttr">¶</a>
+				
+				
+			</h2>
+			<pre>func NumberAttr(item map[<a href="../../../../builtin/#string">string</a>]<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/">types</a>.<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/#AttributeValue">AttributeValue</a>, name, kind <a href="../../../../builtin/#string">string</a>) (<a href="../../../../builtin/#int64">int64</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+			<p>NumberAttr は、item の N 属性を int64 として返します。無い・N でない・整数に読めない場合は
+ErrInternal です（この adapter が書いた覚えの無い形が store にあることを意味します）。
+kind はエラー文に載せる item の種類（例 &#34;event log&#34;）です。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="StringAttr">func <a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html?s=8822:8895#L183">StringAttr</a>
+				<a class="permalink" href="#StringAttr">¶</a>
+				
+				
+			</h2>
+			<pre>func StringAttr(item map[<a href="../../../../builtin/#string">string</a>]<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/">types</a>.<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/#AttributeValue">AttributeValue</a>, name <a href="../../../../builtin/#string">string</a>) <a href="../../../../builtin/#string">string</a></pre>
+			<p>StringAttr は、item の S 属性を返します。無い、または S でなければ空文字です。
+
+			
+			
+
+		
+		
+			
+			
+			</p><h2 id="Config">type <a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html?s=2369:3239#L34">Config</a>
+				<a class="permalink" href="#Config">¶</a>
+				
+				
+			</h2>
+			<p>Config は、DynamoDB 互換 store への接続設定です。
+
+			</p><pre>type Config struct {
+<span id="Config.Endpoint"></span>    <span class="comment">// Endpoint は、DynamoDB 互換エンドポイントです（例 DynamoDB Local: &#34;http://dynamodb_local:8000&#34;）。</span>
+    <span class="comment">// 空の場合は SDK 既定のエンドポイント解決に委ねます（本番 DynamoDB）。</span>
+    Endpoint <a href="../../../../builtin/#string">string</a>
+<span id="Config.Region"></span>    <span class="comment">// Region は、署名に用いるリージョンです。</span>
+    Region <a href="../../../../builtin/#string">string</a>
+<span id="Config.AccessKeyID"></span>    <span class="comment">// AccessKeyID / SecretAccessKey は、明示注入する静的資格情報です。両方空なら</span>
+    <span class="comment">// SDK 既定の credential chain（IAM ロール等）へ委ねます。詳細は awsclient.Resolve を参照。</span>
+    AccessKeyID     <a href="../../../../builtin/#string">string</a>
+<span id="Config.SecretAccessKey"></span>    SecretAccessKey <a href="../../../../builtin/#string">string</a>
+<span id="Config.HTTPClient"></span>    <span class="comment">// HTTPClient は、SDK が API 呼び出しに使う HTTP クライアントです。SSRF ガード付きの実装を DI が</span>
+    <span class="comment">// 注入します。nil を渡すと SDK 既定のトランスポートになり、ガードを素通りします。</span>
+    HTTPClient <a href="../../../../github.com/aws/aws-sdk-go-v2/aws/">aws</a>.<a href="../../../../github.com/aws/aws-sdk-go-v2/aws/#HTTPClient">HTTPClient</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="TableSpec">type <a href="../../../../src/go-boilerplate/internal/infrastructure/dynamodbclient/dynamodbclient.go.html?s=3373:3735#L50">TableSpec</a>
+				<a class="permalink" href="#TableSpec">¶</a>
+				
+				
+			</h2>
+			<p>TableSpec は、EnsureTable が作る table の定義です。各 adapter package が自分の table の定義を返します。
+
+			</p><pre>type TableSpec struct {
+<span id="TableSpec.Name"></span>    Name                   <a href="../../../../builtin/#string">string</a>
+<span id="TableSpec.Attributes"></span>    Attributes             []<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/">types</a>.<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/#AttributeDefinition">AttributeDefinition</a>
+<span id="TableSpec.KeySchema"></span>    KeySchema              []<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/">types</a>.<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/#KeySchemaElement">KeySchemaElement</a>
+<span id="TableSpec.GlobalSecondaryIndexes"></span>    GlobalSecondaryIndexes []<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/">types</a>.<a href="../../../../github.com/aws/aws-sdk-go-v2/service/dynamodb/types/#GlobalSecondaryIndex">GlobalSecondaryIndex</a>
+<span id="TableSpec.TTLAttribute"></span>    <span class="comment">// TTLAttribute は、期限切れ item の掃除に使う属性名（epoch 秒）です。空なら TTL を設定しません。</span>
+    TTLAttribute <a href="../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

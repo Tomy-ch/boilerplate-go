@@ -238,45 +238,46 @@
 <span id="L181" class="ln">   181  </span>							RateDate: &#34;2026-07-21&#34;,
 <span id="L182" class="ln">   182  </span>						},
 <span id="L183" class="ln">   183  </span>					}, nil
-<span id="L184" class="ln">   184  </span>				})
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span>			u := &amp;usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), xr: xr}
-<span id="L187" class="ln">   187  </span>			actual := u.referenceAmount(context.Background(), 10000, &#34;JPY&#34;)
-<span id="L188" class="ln">   188  </span>			require.NotNil(t, actual)
-<span id="L189" class="ln">   189  </span>			assert.Equal(t, &#34;JPY&#34;, actual.Currency)
-<span id="L190" class="ln">   190  </span>			assert.Equal(t, int64(15050), actual.Amount)
-<span id="L191" class="ln">   191  </span>			assert.Equal(t, &#34;150.5&#34;, actual.Rate.String())
-<span id="L192" class="ln">   192  </span>			assert.Equal(t, &#34;2026-07-21&#34;, actual.RateDate)
-<span id="L193" class="ln">   193  </span>		})
-<span id="L194" class="ln">   194  </span>	})
-<span id="L195" class="ln">   195  </span>
-<span id="L196" class="ln">   196  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L197" class="ln">   197  </span>		t.Parallel()
-<span id="L198" class="ln">   198  </span>
-<span id="L199" class="ln">   199  </span>		t.Run(&#34;換算失敗時はnilでdegradeする&#34;, func(t *testing.T) {
-<span id="L200" class="ln">   200  </span>			t.Parallel()
-<span id="L201" class="ln">   201  </span>
-<span id="L202" class="ln">   202  </span>			ctrl := gomock.NewController(t)
-<span id="L203" class="ln">   203  </span>			xr := mock_exchangerate.NewMockUsecase(ctrl)
-<span id="L204" class="ln">   204  </span>			xr.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(nil, xerrors.New(&#34;gateway down&#34;))
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>			u := &amp;usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), xr: xr}
-<span id="L207" class="ln">   207  </span>			assert.Nil(t, u.referenceAmount(context.Background(), 10000, &#34;JPY&#34;))
-<span id="L208" class="ln">   208  </span>		})
-<span id="L209" class="ln">   209  </span>
-<span id="L210" class="ln">   210  </span>		t.Run(&#34;参考換算額が無い場合はnilを返す&#34;, func(t *testing.T) {
-<span id="L211" class="ln">   211  </span>			t.Parallel()
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span>			ctrl := gomock.NewController(t)
-<span id="L214" class="ln">   214  </span>			xr := mock_exchangerate.NewMockUsecase(ctrl)
-<span id="L215" class="ln">   215  </span>			xr.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(&amp;exchangerate.ConvertResult{Reference: nil}, nil)
-<span id="L216" class="ln">   216  </span>
-<span id="L217" class="ln">   217  </span>			u := &amp;usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), xr: xr}
-<span id="L218" class="ln">   218  </span>			assert.Nil(t, u.referenceAmount(context.Background(), 10000, &#34;JPY&#34;))
-<span id="L219" class="ln">   219  </span>		})
-<span id="L220" class="ln">   220  </span>	})
-<span id="L221" class="ln">   221  </span>}
-<span id="L222" class="ln">   222  </span>
+<span id="L184" class="ln">   184  </span>				},
+<span id="L185" class="ln">   185  </span>			)
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>			u := &amp;usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), xr: xr}
+<span id="L188" class="ln">   188  </span>			actual := u.referenceAmount(context.Background(), 10000, &#34;JPY&#34;)
+<span id="L189" class="ln">   189  </span>			require.NotNil(t, actual)
+<span id="L190" class="ln">   190  </span>			assert.Equal(t, &#34;JPY&#34;, actual.Currency)
+<span id="L191" class="ln">   191  </span>			assert.Equal(t, int64(15050), actual.Amount)
+<span id="L192" class="ln">   192  </span>			assert.Equal(t, &#34;150.5&#34;, actual.Rate.String())
+<span id="L193" class="ln">   193  </span>			assert.Equal(t, &#34;2026-07-21&#34;, actual.RateDate)
+<span id="L194" class="ln">   194  </span>		})
+<span id="L195" class="ln">   195  </span>	})
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L198" class="ln">   198  </span>		t.Parallel()
+<span id="L199" class="ln">   199  </span>
+<span id="L200" class="ln">   200  </span>		t.Run(&#34;換算失敗時はnilでdegradeする&#34;, func(t *testing.T) {
+<span id="L201" class="ln">   201  </span>			t.Parallel()
+<span id="L202" class="ln">   202  </span>
+<span id="L203" class="ln">   203  </span>			ctrl := gomock.NewController(t)
+<span id="L204" class="ln">   204  </span>			xr := mock_exchangerate.NewMockUsecase(ctrl)
+<span id="L205" class="ln">   205  </span>			xr.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(nil, xerrors.New(&#34;gateway down&#34;))
+<span id="L206" class="ln">   206  </span>
+<span id="L207" class="ln">   207  </span>			u := &amp;usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), xr: xr}
+<span id="L208" class="ln">   208  </span>			assert.Nil(t, u.referenceAmount(context.Background(), 10000, &#34;JPY&#34;))
+<span id="L209" class="ln">   209  </span>		})
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span>		t.Run(&#34;参考換算額が無い場合はnilを返す&#34;, func(t *testing.T) {
+<span id="L212" class="ln">   212  </span>			t.Parallel()
+<span id="L213" class="ln">   213  </span>
+<span id="L214" class="ln">   214  </span>			ctrl := gomock.NewController(t)
+<span id="L215" class="ln">   215  </span>			xr := mock_exchangerate.NewMockUsecase(ctrl)
+<span id="L216" class="ln">   216  </span>			xr.EXPECT().Convert(gomock.Any(), gomock.Any()).Return(&amp;exchangerate.ConvertResult{Reference: nil}, nil)
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>			u := &amp;usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), xr: xr}
+<span id="L219" class="ln">   219  </span>			assert.Nil(t, u.referenceAmount(context.Background(), 10000, &#34;JPY&#34;))
+<span id="L220" class="ln">   220  </span>		})
+<span id="L221" class="ln">   221  </span>	})
+<span id="L222" class="ln">   222  </span>}
+<span id="L223" class="ln">   223  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/checkout/checkout_usecase_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

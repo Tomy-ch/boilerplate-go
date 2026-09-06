@@ -205,163 +205,166 @@
 <span id="L148" class="ln">   148  </span>				func(_ context.Context, w timewindow.Window) (query.SalesResult, error) {
 <span id="L149" class="ln">   149  </span>					salesWindow = w
 <span id="L150" class="ln">   150  </span>					return query.SalesResult{}, nil
-<span id="L151" class="ln">   151  </span>				})
-<span id="L152" class="ln">   152  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L153" class="ln">   153  </span>				func(_ context.Context, w timewindow.Window) ([]query.PurchaseStatusCountResult, error) {
-<span id="L154" class="ln">   154  </span>					statusWindow = w
-<span id="L155" class="ln">   155  </span>					return nil, nil
-<span id="L156" class="ln">   156  </span>				})
-<span id="L157" class="ln">   157  </span>			d.productRepo.EXPECT().Count(gomock.Any()).Return(product.Counts{}, nil)
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, window)
-<span id="L160" class="ln">   160  </span>			require.NoError(t, err)
-<span id="L161" class="ln">   161  </span>
-<span id="L162" class="ln">   162  </span>			assert.Equal(t, after, *salesWindow.After())
-<span id="L163" class="ln">   163  </span>			assert.Equal(t, before, *salesWindow.Before())
-<span id="L164" class="ln">   164  </span>			assert.Equal(t, salesWindow, statusWindow)
-<span id="L165" class="ln">   165  </span>		})
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>		t.Run(&#34;境界を持たない対象期間はそのままQueryServiceへ渡る&#34;, func(t *testing.T) {
-<span id="L168" class="ln">   168  </span>			t.Parallel()
-<span id="L169" class="ln">   169  </span>
-<span id="L170" class="ln">   170  </span>			u, d := newUsecase(t)
-<span id="L171" class="ln">   171  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>			var salesWindow timewindow.Window
-<span id="L174" class="ln">   174  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L175" class="ln">   175  </span>				func(_ context.Context, w timewindow.Window) (query.SalesResult, error) {
-<span id="L176" class="ln">   176  </span>					salesWindow = w
-<span id="L177" class="ln">   177  </span>					return query.SalesResult{}, nil
-<span id="L178" class="ln">   178  </span>				})
-<span id="L179" class="ln">   179  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).Return(nil, nil)
-<span id="L180" class="ln">   180  </span>			d.productRepo.EXPECT().Count(gomock.Any()).Return(product.Counts{}, nil)
-<span id="L181" class="ln">   181  </span>
-<span id="L182" class="ln">   182  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
-<span id="L183" class="ln">   183  </span>			require.NoError(t, err)
+<span id="L151" class="ln">   151  </span>				},
+<span id="L152" class="ln">   152  </span>			)
+<span id="L153" class="ln">   153  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L154" class="ln">   154  </span>				func(_ context.Context, w timewindow.Window) ([]query.PurchaseStatusCountResult, error) {
+<span id="L155" class="ln">   155  </span>					statusWindow = w
+<span id="L156" class="ln">   156  </span>					return nil, nil
+<span id="L157" class="ln">   157  </span>				},
+<span id="L158" class="ln">   158  </span>			)
+<span id="L159" class="ln">   159  </span>			d.productRepo.EXPECT().Count(gomock.Any()).Return(product.Counts{}, nil)
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, window)
+<span id="L162" class="ln">   162  </span>			require.NoError(t, err)
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>			assert.Equal(t, after, *salesWindow.After())
+<span id="L165" class="ln">   165  </span>			assert.Equal(t, before, *salesWindow.Before())
+<span id="L166" class="ln">   166  </span>			assert.Equal(t, salesWindow, statusWindow)
+<span id="L167" class="ln">   167  </span>		})
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>		t.Run(&#34;境界を持たない対象期間はそのままQueryServiceへ渡る&#34;, func(t *testing.T) {
+<span id="L170" class="ln">   170  </span>			t.Parallel()
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>			u, d := newUsecase(t)
+<span id="L173" class="ln">   173  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>			var salesWindow timewindow.Window
+<span id="L176" class="ln">   176  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L177" class="ln">   177  </span>				func(_ context.Context, w timewindow.Window) (query.SalesResult, error) {
+<span id="L178" class="ln">   178  </span>					salesWindow = w
+<span id="L179" class="ln">   179  </span>					return query.SalesResult{}, nil
+<span id="L180" class="ln">   180  </span>				},
+<span id="L181" class="ln">   181  </span>			)
+<span id="L182" class="ln">   182  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).Return(nil, nil)
+<span id="L183" class="ln">   183  </span>			d.productRepo.EXPECT().Count(gomock.Any()).Return(product.Counts{}, nil)
 <span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>			assert.Nil(t, salesWindow.After())
-<span id="L186" class="ln">   186  </span>			assert.Nil(t, salesWindow.Before())
-<span id="L187" class="ln">   187  </span>		})
-<span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span>		t.Run(&#34;集計対象が無い場合ゼロ値とnilでない空スライスを返す&#34;, func(t *testing.T) {
-<span id="L190" class="ln">   190  </span>			t.Parallel()
+<span id="L185" class="ln">   185  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
+<span id="L186" class="ln">   186  </span>			require.NoError(t, err)
+<span id="L187" class="ln">   187  </span>
+<span id="L188" class="ln">   188  </span>			assert.Nil(t, salesWindow.After())
+<span id="L189" class="ln">   189  </span>			assert.Nil(t, salesWindow.Before())
+<span id="L190" class="ln">   190  </span>		})
 <span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>			u, d := newUsecase(t)
-<span id="L193" class="ln">   193  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L194" class="ln">   194  </span>			expectAllQueries(d)
-<span id="L195" class="ln">   195  </span>
-<span id="L196" class="ln">   196  </span>			got, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
-<span id="L197" class="ln">   197  </span>			require.NoError(t, err)
+<span id="L192" class="ln">   192  </span>		t.Run(&#34;集計対象が無い場合ゼロ値とnilでない空スライスを返す&#34;, func(t *testing.T) {
+<span id="L193" class="ln">   193  </span>			t.Parallel()
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>			u, d := newUsecase(t)
+<span id="L196" class="ln">   196  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L197" class="ln">   197  </span>			expectAllQueries(d)
 <span id="L198" class="ln">   198  </span>
-<span id="L199" class="ln">   199  </span>			assert.Zero(t, got.SalesAmount)
-<span id="L200" class="ln">   200  </span>			assert.Zero(t, got.SalesCount)
-<span id="L201" class="ln">   201  </span>			assert.Zero(t, got.TotalProductCount)
-<span id="L202" class="ln">   202  </span>			assert.Zero(t, got.PublishedProductCount)
-<span id="L203" class="ln">   203  </span>			assert.NotNil(t, got.PurchaseStatusCounts)
-<span id="L204" class="ln">   204  </span>			assert.Empty(t, got.PurchaseStatusCounts)
-<span id="L205" class="ln">   205  </span>		})
-<span id="L206" class="ln">   206  </span>	})
-<span id="L207" class="ln">   207  </span>
-<span id="L208" class="ln">   208  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L209" class="ln">   209  </span>		t.Parallel()
+<span id="L199" class="ln">   199  </span>			got, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
+<span id="L200" class="ln">   200  </span>			require.NoError(t, err)
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>			assert.Zero(t, got.SalesAmount)
+<span id="L203" class="ln">   203  </span>			assert.Zero(t, got.SalesCount)
+<span id="L204" class="ln">   204  </span>			assert.Zero(t, got.TotalProductCount)
+<span id="L205" class="ln">   205  </span>			assert.Zero(t, got.PublishedProductCount)
+<span id="L206" class="ln">   206  </span>			assert.NotNil(t, got.PurchaseStatusCounts)
+<span id="L207" class="ln">   207  </span>			assert.Empty(t, got.PurchaseStatusCounts)
+<span id="L208" class="ln">   208  </span>		})
+<span id="L209" class="ln">   209  </span>	})
 <span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>		t.Run(&#34;authnがnilの場合、認可を経ずErrUnauthenticatedを返す&#34;, func(t *testing.T) {
-<span id="L212" class="ln">   212  </span>			t.Parallel()
+<span id="L211" class="ln">   211  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L212" class="ln">   212  </span>		t.Parallel()
 <span id="L213" class="ln">   213  </span>
-<span id="L214" class="ln">   214  </span>			u, d := newUsecase(t)
-<span id="L215" class="ln">   215  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L214" class="ln">   214  </span>		t.Run(&#34;authnがnilの場合、認可を経ずErrUnauthenticatedを返す&#34;, func(t *testing.T) {
+<span id="L215" class="ln">   215  </span>			t.Parallel()
 <span id="L216" class="ln">   216  </span>
-<span id="L217" class="ln">   217  </span>			_, err := u.GetDashboardSummary(context.Background(), nil, timewindow.Window{})
-<span id="L218" class="ln">   218  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
-<span id="L219" class="ln">   219  </span>		})
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>		t.Run(&#34;管理者以外の場合、認可エラーを伝播し集計を実行しない&#34;, func(t *testing.T) {
-<span id="L222" class="ln">   222  </span>			t.Parallel()
+<span id="L217" class="ln">   217  </span>			u, d := newUsecase(t)
+<span id="L218" class="ln">   218  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>			_, err := u.GetDashboardSummary(context.Background(), nil, timewindow.Window{})
+<span id="L221" class="ln">   221  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+<span id="L222" class="ln">   222  </span>		})
 <span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span>			u, d := newUsecase(t)
-<span id="L225" class="ln">   225  </span>			d.authorizer.EXPECT().
-<span id="L226" class="ln">   226  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionDashboardRead, gomock.Any()).
-<span id="L227" class="ln">   227  </span>				Return(apperror.ErrPermissionDenied)
-<span id="L228" class="ln">   228  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).Times(0)
-<span id="L229" class="ln">   229  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).Times(0)
-<span id="L230" class="ln">   230  </span>			d.productRepo.EXPECT().Count(gomock.Any()).Times(0)
-<span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
-<span id="L233" class="ln">   233  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
-<span id="L234" class="ln">   234  </span>		})
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>		t.Run(&#34;売上集計のエラーをそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L237" class="ln">   237  </span>			t.Parallel()
+<span id="L224" class="ln">   224  </span>		t.Run(&#34;管理者以外の場合、認可エラーを伝播し集計を実行しない&#34;, func(t *testing.T) {
+<span id="L225" class="ln">   225  </span>			t.Parallel()
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span>			u, d := newUsecase(t)
+<span id="L228" class="ln">   228  </span>			d.authorizer.EXPECT().
+<span id="L229" class="ln">   229  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionDashboardRead, gomock.Any()).
+<span id="L230" class="ln">   230  </span>				Return(apperror.ErrPermissionDenied)
+<span id="L231" class="ln">   231  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).Times(0)
+<span id="L232" class="ln">   232  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).Times(0)
+<span id="L233" class="ln">   233  </span>			d.productRepo.EXPECT().Count(gomock.Any()).Times(0)
+<span id="L234" class="ln">   234  </span>
+<span id="L235" class="ln">   235  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
+<span id="L236" class="ln">   236  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
+<span id="L237" class="ln">   237  </span>		})
 <span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>			u, d := newUsecase(t)
-<span id="L240" class="ln">   240  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L241" class="ln">   241  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).
-<span id="L242" class="ln">   242  </span>				Return(query.SalesResult{}, errSalesProbe)
-<span id="L243" class="ln">   243  </span>
-<span id="L244" class="ln">   244  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
-<span id="L245" class="ln">   245  </span>			require.ErrorIs(t, err, errSalesProbe)
-<span id="L246" class="ln">   246  </span>		})
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>		t.Run(&#34;ステータス別件数のエラーをそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L249" class="ln">   249  </span>			t.Parallel()
+<span id="L239" class="ln">   239  </span>		t.Run(&#34;売上集計のエラーをそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L240" class="ln">   240  </span>			t.Parallel()
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>			u, d := newUsecase(t)
+<span id="L243" class="ln">   243  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L244" class="ln">   244  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).
+<span id="L245" class="ln">   245  </span>				Return(query.SalesResult{}, errSalesProbe)
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
+<span id="L248" class="ln">   248  </span>			require.ErrorIs(t, err, errSalesProbe)
+<span id="L249" class="ln">   249  </span>		})
 <span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>			u, d := newUsecase(t)
-<span id="L252" class="ln">   252  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L253" class="ln">   253  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).Return(query.SalesResult{}, nil)
-<span id="L254" class="ln">   254  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).Return(nil, errStatusProbe)
-<span id="L255" class="ln">   255  </span>
-<span id="L256" class="ln">   256  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
-<span id="L257" class="ln">   257  </span>			require.ErrorIs(t, err, errStatusProbe)
-<span id="L258" class="ln">   258  </span>		})
-<span id="L259" class="ln">   259  </span>
-<span id="L260" class="ln">   260  </span>		t.Run(&#34;商品数取得のエラーをそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L261" class="ln">   261  </span>			t.Parallel()
+<span id="L251" class="ln">   251  </span>		t.Run(&#34;ステータス別件数のエラーをそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L252" class="ln">   252  </span>			t.Parallel()
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>			u, d := newUsecase(t)
+<span id="L255" class="ln">   255  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L256" class="ln">   256  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).Return(query.SalesResult{}, nil)
+<span id="L257" class="ln">   257  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).Return(nil, errStatusProbe)
+<span id="L258" class="ln">   258  </span>
+<span id="L259" class="ln">   259  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
+<span id="L260" class="ln">   260  </span>			require.ErrorIs(t, err, errStatusProbe)
+<span id="L261" class="ln">   261  </span>		})
 <span id="L262" class="ln">   262  </span>
-<span id="L263" class="ln">   263  </span>			u, d := newUsecase(t)
-<span id="L264" class="ln">   264  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L265" class="ln">   265  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).Return(query.SalesResult{}, nil)
-<span id="L266" class="ln">   266  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).Return(nil, nil)
-<span id="L267" class="ln">   267  </span>			d.productRepo.EXPECT().Count(gomock.Any()).Return(product.Counts{}, errProductProbe)
-<span id="L268" class="ln">   268  </span>
-<span id="L269" class="ln">   269  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
-<span id="L270" class="ln">   270  </span>			require.ErrorIs(t, err, errProductProbe)
-<span id="L271" class="ln">   271  </span>		})
-<span id="L272" class="ln">   272  </span>	})
-<span id="L273" class="ln">   273  </span>}
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>func Test_toStatusCountViews(t *testing.T) {
-<span id="L276" class="ln">   276  </span>	t.Parallel()
+<span id="L263" class="ln">   263  </span>		t.Run(&#34;商品数取得のエラーをそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L264" class="ln">   264  </span>			t.Parallel()
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>			u, d := newUsecase(t)
+<span id="L267" class="ln">   267  </span>			d.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L268" class="ln">   268  </span>			d.qs.EXPECT().SummarizeSales(gomock.Any(), gomock.Any()).Return(query.SalesResult{}, nil)
+<span id="L269" class="ln">   269  </span>			d.qs.EXPECT().CountPurchasesByStatus(gomock.Any(), gomock.Any()).Return(nil, nil)
+<span id="L270" class="ln">   270  </span>			d.productRepo.EXPECT().Count(gomock.Any()).Return(product.Counts{}, errProductProbe)
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>			_, err := u.GetDashboardSummary(context.Background(), &amp;auth.Authn{}, timewindow.Window{})
+<span id="L273" class="ln">   273  </span>			require.ErrorIs(t, err, errProductProbe)
+<span id="L274" class="ln">   274  </span>		})
+<span id="L275" class="ln">   275  </span>	})
+<span id="L276" class="ln">   276  </span>}
 <span id="L277" class="ln">   277  </span>
-<span id="L278" class="ln">   278  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L279" class="ln">   279  </span>		t.Parallel()
+<span id="L278" class="ln">   278  </span>func Test_toStatusCountViews(t *testing.T) {
+<span id="L279" class="ln">   279  </span>	t.Parallel()
 <span id="L280" class="ln">   280  </span>
-<span id="L281" class="ln">   281  </span>		t.Run(&#34;集計結果の順序を保って出力DTOへ写像する&#34;, func(t *testing.T) {
-<span id="L282" class="ln">   282  </span>			t.Parallel()
+<span id="L281" class="ln">   281  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L282" class="ln">   282  </span>		t.Parallel()
 <span id="L283" class="ln">   283  </span>
-<span id="L284" class="ln">   284  </span>			first := uuidtestkit.NewTestFromSalt(t, &#34;uc_dash_view_first&#34;)
-<span id="L285" class="ln">   285  </span>			second := uuidtestkit.NewTestFromSalt(t, &#34;uc_dash_view_second&#34;)
+<span id="L284" class="ln">   284  </span>		t.Run(&#34;集計結果の順序を保って出力DTOへ写像する&#34;, func(t *testing.T) {
+<span id="L285" class="ln">   285  </span>			t.Parallel()
 <span id="L286" class="ln">   286  </span>
-<span id="L287" class="ln">   287  </span>			got := toStatusCountViews([]query.PurchaseStatusCountResult{
-<span id="L288" class="ln">   288  </span>				{StatusID: first, StatusName: &#34;未処理&#34;, Count: 3},
-<span id="L289" class="ln">   289  </span>				{StatusID: second, StatusName: &#34;完了&#34;, Count: 5},
-<span id="L290" class="ln">   290  </span>			})
-<span id="L291" class="ln">   291  </span>
-<span id="L292" class="ln">   292  </span>			require.Len(t, got, 2)
-<span id="L293" class="ln">   293  </span>			assert.Equal(t, StatusCountView{StatusID: first, StatusName: &#34;未処理&#34;, Count: 3}, got[0])
-<span id="L294" class="ln">   294  </span>			assert.Equal(t, StatusCountView{StatusID: second, StatusName: &#34;完了&#34;, Count: 5}, got[1])
-<span id="L295" class="ln">   295  </span>		})
-<span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>		t.Run(&#34;集計結果が空の場合nilでない空スライスを返す&#34;, func(t *testing.T) {
-<span id="L298" class="ln">   298  </span>			t.Parallel()
+<span id="L287" class="ln">   287  </span>			first := uuidtestkit.NewTestFromSalt(t, &#34;uc_dash_view_first&#34;)
+<span id="L288" class="ln">   288  </span>			second := uuidtestkit.NewTestFromSalt(t, &#34;uc_dash_view_second&#34;)
+<span id="L289" class="ln">   289  </span>
+<span id="L290" class="ln">   290  </span>			got := toStatusCountViews([]query.PurchaseStatusCountResult{
+<span id="L291" class="ln">   291  </span>				{StatusID: first, StatusName: &#34;未処理&#34;, Count: 3},
+<span id="L292" class="ln">   292  </span>				{StatusID: second, StatusName: &#34;完了&#34;, Count: 5},
+<span id="L293" class="ln">   293  </span>			})
+<span id="L294" class="ln">   294  </span>
+<span id="L295" class="ln">   295  </span>			require.Len(t, got, 2)
+<span id="L296" class="ln">   296  </span>			assert.Equal(t, StatusCountView{StatusID: first, StatusName: &#34;未処理&#34;, Count: 3}, got[0])
+<span id="L297" class="ln">   297  </span>			assert.Equal(t, StatusCountView{StatusID: second, StatusName: &#34;完了&#34;, Count: 5}, got[1])
+<span id="L298" class="ln">   298  </span>		})
 <span id="L299" class="ln">   299  </span>
-<span id="L300" class="ln">   300  </span>			got := toStatusCountViews(nil)
-<span id="L301" class="ln">   301  </span>
-<span id="L302" class="ln">   302  </span>			assert.NotNil(t, got)
-<span id="L303" class="ln">   303  </span>			assert.Empty(t, got)
-<span id="L304" class="ln">   304  </span>		})
-<span id="L305" class="ln">   305  </span>	})
-<span id="L306" class="ln">   306  </span>}
-<span id="L307" class="ln">   307  </span>
+<span id="L300" class="ln">   300  </span>		t.Run(&#34;集計結果が空の場合nilでない空スライスを返す&#34;, func(t *testing.T) {
+<span id="L301" class="ln">   301  </span>			t.Parallel()
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span>			got := toStatusCountViews(nil)
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>			assert.NotNil(t, got)
+<span id="L306" class="ln">   306  </span>			assert.Empty(t, got)
+<span id="L307" class="ln">   307  </span>		})
+<span id="L308" class="ln">   308  </span>	})
+<span id="L309" class="ln">   309  </span>}
+<span id="L310" class="ln">   310  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/dashboard/dashboard_usecase_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

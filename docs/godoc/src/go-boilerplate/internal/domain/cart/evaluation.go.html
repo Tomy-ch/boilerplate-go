@@ -63,101 +63,122 @@
 <span id="L6" class="ln">     6  </span>)
 <span id="L7" class="ln">     7  </span>
 <span id="L8" class="ln">     8  </span><span class="comment">// maxIssuesPerItem は、1 明細に同時に立ちうる issue の最大数です。</span>
-<span id="L9" class="ln">     9  </span><span class="comment">// 公開状態・在庫・価格差はそれぞれ独立に判定されるため 3 つまで重なります。</span>
-<span id="L10" class="ln">    10  </span>const maxIssuesPerItem = 3
-<span id="L11" class="ln">    11  </span>
-<span id="L12" class="ln">    12  </span>const (
-<span id="L13" class="ln">    13  </span>	<span class="comment">// IssueNotFound は、商品が引けなかったことを表します。</span>
-<span id="L14" class="ln">    14  </span>	IssueNotFound Issue = &#34;notFound&#34;
-<span id="L15" class="ln">    15  </span>	<span class="comment">// IssueUnpublished は、商品が非公開であることを表します。</span>
-<span id="L16" class="ln">    16  </span>	IssueUnpublished Issue = &#34;unpublished&#34;
-<span id="L17" class="ln">    17  </span>	<span class="comment">// IssueOutOfStock は、在庫が無いことを表します。</span>
-<span id="L18" class="ln">    18  </span>	IssueOutOfStock Issue = &#34;outOfStock&#34;
-<span id="L19" class="ln">    19  </span>	<span class="comment">// IssueInsufficientStock は、在庫が要求数量に満たないことを表します。</span>
-<span id="L20" class="ln">    20  </span>	IssueInsufficientStock Issue = &#34;insufficientStock&#34;
-<span id="L21" class="ln">    21  </span>	<span class="comment">// IssuePriceIncreased は、最後に提示した価格より高いことを表します。</span>
-<span id="L22" class="ln">    22  </span>	IssuePriceIncreased Issue = &#34;priceIncreased&#34;
-<span id="L23" class="ln">    23  </span>	<span class="comment">// IssuePriceDecreased は、最後に提示した価格より安いことを表します。</span>
-<span id="L24" class="ln">    24  </span>	IssuePriceDecreased Issue = &#34;priceDecreased&#34;
-<span id="L25" class="ln">    25  </span>)
-<span id="L26" class="ln">    26  </span>
-<span id="L27" class="ln">    27  </span><span class="comment">// Issue は、明細を商品の観測値と突き合わせた結果です。</span>
-<span id="L28" class="ln">    28  </span>type Issue string
+<span id="L9" class="ln">     9  </span><span class="comment">// 公開状態・在庫・価格差の 3 軸はそれぞれ独立に判定され、軸内の値（廃番と非公開、在庫切れと</span>
+<span id="L10" class="ln">    10  </span><span class="comment">// 在庫不足）は排他なので、各軸から立つ issue は高々 1 つ、合計で 3 つまでです。</span>
+<span id="L11" class="ln">    11  </span>const maxIssuesPerItem = 3
+<span id="L12" class="ln">    12  </span>
+<span id="L13" class="ln">    13  </span>const (
+<span id="L14" class="ln">    14  </span>	<span class="comment">// IssueNotFound は、商品が引けなかったことを表します。</span>
+<span id="L15" class="ln">    15  </span>	IssueNotFound Issue = &#34;notFound&#34;
+<span id="L16" class="ln">    16  </span>	<span class="comment">// IssueUnpublished は、商品が非公開であることを表します。</span>
+<span id="L17" class="ln">    17  </span>	IssueUnpublished Issue = &#34;unpublished&#34;
+<span id="L18" class="ln">    18  </span>	<span class="comment">// IssueDiscontinued は、商品が廃番になったことを表します。</span>
+<span id="L19" class="ln">    19  </span>	IssueDiscontinued Issue = &#34;discontinued&#34;
+<span id="L20" class="ln">    20  </span>	<span class="comment">// IssueOutOfStock は、在庫が無いことを表します。</span>
+<span id="L21" class="ln">    21  </span>	IssueOutOfStock Issue = &#34;outOfStock&#34;
+<span id="L22" class="ln">    22  </span>	<span class="comment">// IssueInsufficientStock は、在庫が要求数量に満たないことを表します。</span>
+<span id="L23" class="ln">    23  </span>	IssueInsufficientStock Issue = &#34;insufficientStock&#34;
+<span id="L24" class="ln">    24  </span>	<span class="comment">// IssuePriceIncreased は、最後に提示した価格より高いことを表します。</span>
+<span id="L25" class="ln">    25  </span>	IssuePriceIncreased Issue = &#34;priceIncreased&#34;
+<span id="L26" class="ln">    26  </span>	<span class="comment">// IssuePriceDecreased は、最後に提示した価格より安いことを表します。</span>
+<span id="L27" class="ln">    27  </span>	IssuePriceDecreased Issue = &#34;priceDecreased&#34;
+<span id="L28" class="ln">    28  </span>)
 <span id="L29" class="ln">    29  </span>
-<span id="L30" class="ln">    30  </span><span class="comment">// ProductSnapshot は、再評価した時点で観測した商品の値です（設計意図は</span>
-<span id="L31" class="ln">    31  </span><span class="comment">// docs/spec/cart/domain.md の Overview を参照）。</span>
-<span id="L32" class="ln">    32  </span>type ProductSnapshot struct {
-<span id="L33" class="ln">    33  </span>	quantity  int
-<span id="L34" class="ln">    34  </span>	price     money.Price
-<span id="L35" class="ln">    35  </span>	published bool
-<span id="L36" class="ln">    36  </span>}
-<span id="L37" class="ln">    37  </span>
-<span id="L38" class="ln">    38  </span><span class="comment">// Evaluation は、明細 1 件の再評価結果です。</span>
-<span id="L39" class="ln">    39  </span>type Evaluation struct {
-<span id="L40" class="ln">    40  </span>	issues            []Issue
-<span id="L41" class="ln">    41  </span>	availableQuantity *int
-<span id="L42" class="ln">    42  </span>}
-<span id="L43" class="ln">    43  </span>
-<span id="L44" class="ln">    44  </span><span class="comment">// NewProductSnapshot は、商品の観測値を組み立てます。</span>
-<span id="L45" class="ln">    45  </span>func NewProductSnapshot(quantity int, price money.Price, published bool) ProductSnapshot {
-<span id="L46" class="ln">    46  </span>	return ProductSnapshot{quantity: quantity, price: price, published: published}
-<span id="L47" class="ln">    47  </span>}
-<span id="L48" class="ln">    48  </span>
-<span id="L49" class="ln">    49  </span><span class="comment">// Price は、観測した単価を返します。</span>
-<span id="L50" class="ln">    50  </span>func (s ProductSnapshot) Price() money.Price { return s.price }
-<span id="L51" class="ln">    51  </span>
-<span id="L52" class="ln">    52  </span><span class="comment">// Issues は、立った issue を返します。空なら現時点で購入可能です。</span>
-<span id="L53" class="ln">    53  </span>func (e Evaluation) Issues() []Issue {
-<span id="L54" class="ln">    54  </span>	copied := make([]Issue, len(e.issues))
-<span id="L55" class="ln">    55  </span>	copy(copied, e.issues)
+<span id="L30" class="ln">    30  </span><span class="comment">// Issue は、明細を商品の観測値と突き合わせた結果です。</span>
+<span id="L31" class="ln">    31  </span>type Issue string
+<span id="L32" class="ln">    32  </span>
+<span id="L33" class="ln">    33  </span><span class="comment">// ProductSnapshot は、再評価した時点で観測した商品の値です（設計意図は</span>
+<span id="L34" class="ln">    34  </span><span class="comment">// docs/spec/domain/cart.md の Overview を参照）。</span>
+<span id="L35" class="ln">    35  </span>type ProductSnapshot struct {
+<span id="L36" class="ln">    36  </span>	quantity     int
+<span id="L37" class="ln">    37  </span>	price        money.Price
+<span id="L38" class="ln">    38  </span>	published    bool
+<span id="L39" class="ln">    39  </span>	discontinued bool
+<span id="L40" class="ln">    40  </span>}
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// Evaluation は、明細 1 件の再評価結果です。</span>
+<span id="L43" class="ln">    43  </span>type Evaluation struct {
+<span id="L44" class="ln">    44  </span>	issues            []Issue
+<span id="L45" class="ln">    45  </span>	availableQuantity *int
+<span id="L46" class="ln">    46  </span>}
+<span id="L47" class="ln">    47  </span>
+<span id="L48" class="ln">    48  </span><span class="comment">// ProductSnapshotAttributes は、商品の観測値一式です。published と discontinued が同型のため</span>
+<span id="L49" class="ln">    49  </span><span class="comment">// 構造体で受けます（基準は docs/rules.md の Function Signature Rules）。</span>
+<span id="L50" class="ln">    50  </span>type ProductSnapshotAttributes struct {
+<span id="L51" class="ln">    51  </span>	Quantity     int
+<span id="L52" class="ln">    52  </span>	Price        money.Price
+<span id="L53" class="ln">    53  </span>	Published    bool
+<span id="L54" class="ln">    54  </span>	Discontinued bool
+<span id="L55" class="ln">    55  </span>}
 <span id="L56" class="ln">    56  </span>
-<span id="L57" class="ln">    57  </span>	return copied
-<span id="L58" class="ln">    58  </span>}
-<span id="L59" class="ln">    59  </span>
-<span id="L60" class="ln">    60  </span><span class="comment">// AvailableQuantity は、IssueInsufficientStock のときの今買える上限を返します。それ以外は nil です。</span>
-<span id="L61" class="ln">    61  </span>func (e Evaluation) AvailableQuantity() *int { return ptr.Copy(e.availableQuantity) }
-<span id="L62" class="ln">    62  </span>
-<span id="L63" class="ln">    63  </span><span class="comment">// hasNoIssue は、突き合わせで issue が 1 つも立たなかったかどうかを返します。</span>
-<span id="L64" class="ln">    64  </span><span class="comment">// 「購入可能」は在籍に基づく別の判定を指す語なので用いません（docs/spec/glossary.md）。</span>
-<span id="L65" class="ln">    65  </span><span class="comment">//</span>
-<span id="L66" class="ln">    66  </span><span class="comment">// ゼロ値は「まだ突き合わせていない」であって「問題が無い」ではないため false を返します。</span>
-<span id="L67" class="ln">    67  </span><span class="comment">// Evaluate は必ず非 nil の issues を返すので、nil であることがゼロ値の印になります。</span>
-<span id="L68" class="ln">    68  </span><span class="comment">// 合算に入れるかどうかがこれで決まるため、判らないものを問題無しへ倒しません。</span>
-<span id="L69" class="ln">    69  </span>func (e Evaluation) hasNoIssue() bool { return e.issues != nil &amp;&amp; len(e.issues) == 0 }
-<span id="L70" class="ln">    70  </span>
-<span id="L71" class="ln">    71  </span><span class="comment">// Evaluate は、明細を商品の観測値と突き合わせて再評価結果を返します。</span>
-<span id="L72" class="ln">    72  </span><span class="comment">// snapshot が nil の場合は商品を引けなかったことを表し、IssueNotFound だけが立ちます。</span>
-<span id="L73" class="ln">    73  </span>func (i CartItem) Evaluate(snapshot *ProductSnapshot) Evaluation {
-<span id="L74" class="ln">    74  </span>	if snapshot == nil {
-<span id="L75" class="ln">    75  </span>		return Evaluation{issues: []Issue{IssueNotFound}}
-<span id="L76" class="ln">    76  </span>	}
+<span id="L57" class="ln">    57  </span><span class="comment">// NewProductSnapshot は、商品の観測値を組み立てます。</span>
+<span id="L58" class="ln">    58  </span>func NewProductSnapshot(attrs ProductSnapshotAttributes) ProductSnapshot {
+<span id="L59" class="ln">    59  </span>	return ProductSnapshot{
+<span id="L60" class="ln">    60  </span>		quantity:     attrs.Quantity,
+<span id="L61" class="ln">    61  </span>		price:        attrs.Price,
+<span id="L62" class="ln">    62  </span>		published:    attrs.Published,
+<span id="L63" class="ln">    63  </span>		discontinued: attrs.Discontinued,
+<span id="L64" class="ln">    64  </span>	}
+<span id="L65" class="ln">    65  </span>}
+<span id="L66" class="ln">    66  </span>
+<span id="L67" class="ln">    67  </span><span class="comment">// Price は、観測した単価を返します。</span>
+<span id="L68" class="ln">    68  </span>func (s ProductSnapshot) Price() money.Price { return s.price }
+<span id="L69" class="ln">    69  </span>
+<span id="L70" class="ln">    70  </span><span class="comment">// Issues は、立った issue を返します。空なら issue が 1 つも立っていません。</span>
+<span id="L71" class="ln">    71  </span>func (e Evaluation) Issues() []Issue {
+<span id="L72" class="ln">    72  </span>	copied := make([]Issue, len(e.issues))
+<span id="L73" class="ln">    73  </span>	copy(copied, e.issues)
+<span id="L74" class="ln">    74  </span>
+<span id="L75" class="ln">    75  </span>	return copied
+<span id="L76" class="ln">    76  </span>}
 <span id="L77" class="ln">    77  </span>
-<span id="L78" class="ln">    78  </span>	issues := make([]Issue, 0, maxIssuesPerItem)
-<span id="L79" class="ln">    79  </span>	if !snapshot.published {
-<span id="L80" class="ln">    80  </span>		issues = append(issues, IssueUnpublished)
-<span id="L81" class="ln">    81  </span>	}
-<span id="L82" class="ln">    82  </span>
-<span id="L83" class="ln">    83  </span>	var availableQuantity *int
-<span id="L84" class="ln">    84  </span>	switch stock := snapshot.quantity; {
-<span id="L85" class="ln">    85  </span>	case stock &lt;= 0:
-<span id="L86" class="ln">    86  </span>		issues = append(issues, IssueOutOfStock)
-<span id="L87" class="ln">    87  </span>	case stock &lt; i.quantity:
-<span id="L88" class="ln">    88  </span>		issues = append(issues, IssueInsufficientStock)
-<span id="L89" class="ln">    89  </span>		availableQuantity = &amp;stock
-<span id="L90" class="ln">    90  </span>	}
-<span id="L91" class="ln">    91  </span>
-<span id="L92" class="ln">    92  </span>	if i.lastSeenPrice != nil {
-<span id="L93" class="ln">    93  </span>		switch snapshot.price.Decimal().Cmp(i.lastSeenPrice.Decimal()) {
-<span id="L94" class="ln">    94  </span>		case 1:
-<span id="L95" class="ln">    95  </span>			issues = append(issues, IssuePriceIncreased)
-<span id="L96" class="ln">    96  </span>		case -1:
-<span id="L97" class="ln">    97  </span>			issues = append(issues, IssuePriceDecreased)
-<span id="L98" class="ln">    98  </span>		}
-<span id="L99" class="ln">    99  </span>	}
-<span id="L100" class="ln">   100  </span>
-<span id="L101" class="ln">   101  </span>	return Evaluation{issues: issues, availableQuantity: availableQuantity}
-<span id="L102" class="ln">   102  </span>}
+<span id="L78" class="ln">    78  </span><span class="comment">// AvailableQuantity は、IssueInsufficientStock のときの今買える上限を返します。それ以外は nil です。</span>
+<span id="L79" class="ln">    79  </span>func (e Evaluation) AvailableQuantity() *int { return ptr.Copy(e.availableQuantity) }
+<span id="L80" class="ln">    80  </span>
+<span id="L81" class="ln">    81  </span><span class="comment">// hasNoIssue は、突き合わせで issue が 1 つも立たなかったかどうかを返します。</span>
+<span id="L82" class="ln">    82  </span><span class="comment">// 「購入可能」は在籍に基づく別の判定を指す語なので用いません（docs/spec/glossary.md）。</span>
+<span id="L83" class="ln">    83  </span><span class="comment">//</span>
+<span id="L84" class="ln">    84  </span><span class="comment">// ゼロ値（issues == nil）は「まだ突き合わせていない」を表すため false を返します。nil の判定を</span>
+<span id="L85" class="ln">    85  </span><span class="comment">// 落として len(e.issues) == 0 だけにしてはなりません（設計意図は docs/spec/domain/cart.md の</span>
+<span id="L86" class="ln">    86  </span><span class="comment">// Value Objects の Evaluation）。</span>
+<span id="L87" class="ln">    87  </span>func (e Evaluation) hasNoIssue() bool { return e.issues != nil &amp;&amp; len(e.issues) == 0 }
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span><span class="comment">// Evaluate は、明細を商品の観測値と突き合わせて再評価結果を返します。</span>
+<span id="L90" class="ln">    90  </span><span class="comment">// snapshot が nil の場合は商品を引けなかったことを表し、IssueNotFound だけが立ちます。</span>
+<span id="L91" class="ln">    91  </span>func (i CartItem) Evaluate(snapshot *ProductSnapshot) Evaluation {
+<span id="L92" class="ln">    92  </span>	if snapshot == nil {
+<span id="L93" class="ln">    93  </span>		return Evaluation{issues: []Issue{IssueNotFound}}
+<span id="L94" class="ln">    94  </span>	}
+<span id="L95" class="ln">    95  </span>
+<span id="L96" class="ln">    96  </span>	issues := make([]Issue, 0, maxIssuesPerItem)
+<span id="L97" class="ln">    97  </span>	switch {
+<span id="L98" class="ln">    98  </span>	case snapshot.discontinued:
+<span id="L99" class="ln">    99  </span>		issues = append(issues, IssueDiscontinued)
+<span id="L100" class="ln">   100  </span>	case !snapshot.published:
+<span id="L101" class="ln">   101  </span>		issues = append(issues, IssueUnpublished)
+<span id="L102" class="ln">   102  </span>	}
 <span id="L103" class="ln">   103  </span>
+<span id="L104" class="ln">   104  </span>	var availableQuantity *int
+<span id="L105" class="ln">   105  </span>	switch stock := snapshot.quantity; {
+<span id="L106" class="ln">   106  </span>	case stock &lt;= 0:
+<span id="L107" class="ln">   107  </span>		issues = append(issues, IssueOutOfStock)
+<span id="L108" class="ln">   108  </span>	case stock &lt; i.quantity:
+<span id="L109" class="ln">   109  </span>		issues = append(issues, IssueInsufficientStock)
+<span id="L110" class="ln">   110  </span>		availableQuantity = &amp;stock
+<span id="L111" class="ln">   111  </span>	}
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span>	if i.lastSeenPrice != nil {
+<span id="L114" class="ln">   114  </span>		switch snapshot.price.Decimal().Cmp(i.lastSeenPrice.Decimal()) {
+<span id="L115" class="ln">   115  </span>		case 1:
+<span id="L116" class="ln">   116  </span>			issues = append(issues, IssuePriceIncreased)
+<span id="L117" class="ln">   117  </span>		case -1:
+<span id="L118" class="ln">   118  </span>			issues = append(issues, IssuePriceDecreased)
+<span id="L119" class="ln">   119  </span>		}
+<span id="L120" class="ln">   120  </span>	}
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>	return Evaluation{issues: issues, availableQuantity: availableQuantity}
+<span id="L123" class="ln">   123  </span>}
+<span id="L124" class="ln">   124  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/domain/cart/evaluation.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

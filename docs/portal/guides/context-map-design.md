@@ -1,7 +1,5 @@
 # Context Map
 
-日本語: [context-map.ja.md](context-map.ja.md)
-
 This page characterises every place this system exchanges a model with something it does not own,
 using Evans's relationship vocabulary for the edges. It is about **relationships**, not mechanics:
 how each integration works belongs to its own design reference, linked from the table.

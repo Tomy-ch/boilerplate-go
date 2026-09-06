@@ -62,11 +62,11 @@
 <span id="L5" class="ln">     5  </span>	&#34;testing&#34;
 <span id="L6" class="ln">     6  </span>	&#34;time&#34;
 <span id="L7" class="ln">     7  </span>
-<span id="L8" class="ln">     8  </span>	mock_product &#34;go-boilerplate/internal/domain/product/mock&#34;
-<span id="L9" class="ln">     9  </span>	&#34;go-boilerplate/internal/observability&#34;
-<span id="L10" class="ln">    10  </span>	clocktest &#34;go-boilerplate/internal/usecase/boundary/clock/testkit&#34;
-<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/usecase/boundary/objectstorage&#34;
-<span id="L12" class="ln">    12  </span>	mock_objectstorage &#34;go-boilerplate/internal/usecase/boundary/objectstorage/mock&#34;
+<span id="L8" class="ln">     8  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L9" class="ln">     9  </span>	clocktest &#34;go-boilerplate/internal/usecase/boundary/clock/testkit&#34;
+<span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/internal/usecase/boundary/objectstorage&#34;
+<span id="L11" class="ln">    11  </span>	mock_objectstorage &#34;go-boilerplate/internal/usecase/boundary/objectstorage/mock&#34;
+<span id="L12" class="ln">    12  </span>	mock_productquery &#34;go-boilerplate/internal/usecase/product/query/mock&#34;
 <span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/usecase/testkit&#34;
 <span id="L14" class="ln">    14  </span>
 <span id="L15" class="ln">    15  </span>	&#34;github.com/stretchr/testify/assert&#34;
@@ -81,8 +81,8 @@
 <span id="L24" class="ln">    24  </span>	tf := observability.NewNoopTracerFactory(t)
 <span id="L25" class="ln">    25  </span>
 <span id="L26" class="ln">    26  </span>	uc := NewImageGC(tf, clocktest.NewMockClock(t, time.Time{}),
-<span id="L27" class="ln">    27  </span>		mock_objectstorage.NewMockStorage(ctrl), mock_product.NewMockRepository(ctrl))
-<span id="L28" class="ln">    28  </span>	require.NotNil(t, uc)
+<span id="L27" class="ln">    27  </span>		mock_objectstorage.NewMockStorage(ctrl), mock_productquery.NewMockProductImageQueryService(ctrl))
+<span id="L28" class="ln">    28  </span>	assert.NotNil(t, uc)
 <span id="L29" class="ln">    29  </span>}
 <span id="L30" class="ln">    30  </span>
 <span id="L31" class="ln">    31  </span>func Test_imageGCUsecase_SweepOrphans(t *testing.T) {
@@ -96,16 +96,16 @@
 <span id="L39" class="ln">    39  </span>	fresh := cutoff.Add(time.Minute) <span class="comment">// 猶予期間内</span>
 <span id="L40" class="ln">    40  </span>
 <span id="L41" class="ln">    41  </span>	newUsecase := func(t *testing.T, ctrl *gomock.Controller) (
-<span id="L42" class="ln">    42  </span>		*imageGCUsecase, *mock_objectstorage.MockStorage, *mock_product.MockRepository,
+<span id="L42" class="ln">    42  </span>		*imageGCUsecase, *mock_objectstorage.MockStorage, *mock_productquery.MockProductImageQueryService,
 <span id="L43" class="ln">    43  </span>	) {
 <span id="L44" class="ln">    44  </span>		t.Helper()
 <span id="L45" class="ln">    45  </span>		storage := mock_objectstorage.NewMockStorage(ctrl)
-<span id="L46" class="ln">    46  </span>		repo := mock_product.NewMockRepository(ctrl)
+<span id="L46" class="ln">    46  </span>		repo := mock_productquery.NewMockProductImageQueryService(ctrl)
 <span id="L47" class="ln">    47  </span>		return &amp;imageGCUsecase{
-<span id="L48" class="ln">    48  </span>			tracer:      observability.NewNoopTracerFactory(t).Usecase(),
-<span id="L49" class="ln">    49  </span>			clock:       clocktest.NewMockClock(t, now),
-<span id="L50" class="ln">    50  </span>			storage:     storage,
-<span id="L51" class="ln">    51  </span>			productRepo: repo,
+<span id="L48" class="ln">    48  </span>			tracer:  observability.NewNoopTracerFactory(t).Usecase(),
+<span id="L49" class="ln">    49  </span>			clock:   clocktest.NewMockClock(t, now),
+<span id="L50" class="ln">    50  </span>			storage: storage,
+<span id="L51" class="ln">    51  </span>			images:  repo,
 <span id="L52" class="ln">    52  </span>		}, storage, repo
 <span id="L53" class="ln">    53  </span>	}
 <span id="L54" class="ln">    54  </span>
@@ -410,16 +410,16 @@
 <span id="L353" class="ln">   353  </span>	aged := cutoff.Add(-time.Minute)
 <span id="L354" class="ln">   354  </span>
 <span id="L355" class="ln">   355  </span>	newUsecase := func(t *testing.T, ctrl *gomock.Controller) (
-<span id="L356" class="ln">   356  </span>		*imageGCUsecase, *mock_objectstorage.MockStorage, *mock_product.MockRepository,
+<span id="L356" class="ln">   356  </span>		*imageGCUsecase, *mock_objectstorage.MockStorage, *mock_productquery.MockProductImageQueryService,
 <span id="L357" class="ln">   357  </span>	) {
 <span id="L358" class="ln">   358  </span>		t.Helper()
 <span id="L359" class="ln">   359  </span>		storage := mock_objectstorage.NewMockStorage(ctrl)
-<span id="L360" class="ln">   360  </span>		repo := mock_product.NewMockRepository(ctrl)
+<span id="L360" class="ln">   360  </span>		repo := mock_productquery.NewMockProductImageQueryService(ctrl)
 <span id="L361" class="ln">   361  </span>		return &amp;imageGCUsecase{
-<span id="L362" class="ln">   362  </span>			tracer:      observability.NewNoopTracerFactory(t).Usecase(),
-<span id="L363" class="ln">   363  </span>			clock:       clocktest.NewMockClock(t, cutoff),
-<span id="L364" class="ln">   364  </span>			storage:     storage,
-<span id="L365" class="ln">   365  </span>			productRepo: repo,
+<span id="L362" class="ln">   362  </span>			tracer:  observability.NewNoopTracerFactory(t).Usecase(),
+<span id="L363" class="ln">   363  </span>			clock:   clocktest.NewMockClock(t, cutoff),
+<span id="L364" class="ln">   364  </span>			storage: storage,
+<span id="L365" class="ln">   365  </span>			images:  repo,
 <span id="L366" class="ln">   366  </span>		}, storage, repo
 <span id="L367" class="ln">   367  </span>	}
 <span id="L368" class="ln">   368  </span>

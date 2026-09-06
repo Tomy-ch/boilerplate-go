@@ -101,17 +101,44 @@
 			<div id="manual-nav">
 			<dl>
 			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
 			
 			
 				
 				<dd><a href="#RegisterDBCloseHooks">func RegisterDBCloseHooks(reg lifecycle.Registrar, db driver.DatabaseDriver, logger logging.Logger)</a></dd>
 			
 				
-				<dd><a href="#RegisterHTTPServerHooks">func RegisterHTTPServerHooks(srv *http.Server, reg lifecycle.Registrar, log logging.Logger, appCfg *config.ApplicationConfig, secCfg *config.SecurityConfig, srvCfg *config.ServerConfig, osCfg *config.OperatingSystemConfig, _ *extension.AppliedServerExtends)</a></dd>
+				<dd><a href="#RegisterHTTPServerHooks">func RegisterHTTPServerHooks(in HTTPServerHooksIn)</a></dd>
 			
 				
 				<dd><a href="#RegisterObservabilityShutdownHooks">func RegisterObservabilityShutdownHooks(reg lifecycle.Registrar, shutdowner observability.ProviderShutdowner)</a></dd>
 			
+			
+				
+				<dd><a href="#Drainer">type Drainer</a></dd>
+				
+				
+			
+				
+				<dd><a href="#HTTPServerHooksIn">type HTTPServerHooksIn</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Provisioner">type Provisioner</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Runner">type Runner</a></dd>
+				
+				
+			
+				
+				<dd><a href="#StartupProbe">type StartupProbe</a></dd>
+				
+				
 			
 			
 			</dl>
@@ -130,6 +157,10 @@
 			
 				<a href="../../../../../src/go-boilerplate/internal/di/server/hook/observability_hook.go.html">observability_hook.go</a>
 			
+				<a href="../../../../../src/go-boilerplate/internal/di/server/hook/participant.go.html">participant.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/di/server/hook/serve_lifecycle.go.html">serve_lifecycle.go</a>
+			
 			</span>
 			</p>
 		
@@ -138,6 +169,24 @@
 
 		
 
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<p>serve instance のライフサイクルに参加する値の fx group 名。参加者はどれも任意（値が 1 つも無くてもよい value group。
+fx の `soft` は付けない — これらの型を他から要求する者が居ないため、soft にすると constructor が走らず group が空になる）で、
+1 つも無いときの起動・停止は HTTP サーバーだけの従来どおりです。
+
+				</p><pre>const (
+    <span class="comment">// StartupGroup は、HTTP を listen する前に依存の到達性を確かめる参加者の group です。</span>
+    <span id="StartupGroup">StartupGroup</span> = &#34;serve.startup&#34;
+    <span class="comment">// ProvisionerGroup は、instance 固有の外部 resource を用意し、停止時に片付ける参加者の group です。</span>
+    <span id="ProvisionerGroup">ProvisionerGroup</span> = &#34;serve.provisioners&#34;
+    <span class="comment">// RunnerGroup は、listen 中だけ常駐する背景処理の group です。</span>
+    <span id="RunnerGroup">RunnerGroup</span> = &#34;serve.runners&#34;
+    <span class="comment">// DrainerGroup は、HTTP shutdown より前に確定済みの長寿命レスポンスを閉じ切る参加者の group です。</span>
+    <span id="DrainerGroup">DrainerGroup</span> = &#34;serve.drainers&#34;
+)</pre>
+			
 		
 		
 		
@@ -161,23 +210,21 @@
 		
 			
 			
-			</p><h2 id="RegisterHTTPServerHooks">func <a href="../../../../../src/go-boilerplate/internal/di/server/hook/http_server_hook.go.html?s=705:1059#L13">RegisterHTTPServerHooks</a>
+			</p><h2 id="RegisterHTTPServerHooks">func <a href="../../../../../src/go-boilerplate/internal/di/server/hook/serve_lifecycle.go.html?s=2554:2604#L56">RegisterHTTPServerHooks</a>
 				<a class="permalink" href="#RegisterHTTPServerHooks">¶</a>
 				
 				
 			</h2>
-			<pre>func RegisterHTTPServerHooks(
-    srv *<a href="../../../../../net/http/">http</a>.<a href="../../../../../net/http/#Server">Server</a>,
-    reg <a href="../../../../../go-boilerplate/internal/di/lifecycle/">lifecycle</a>.<a href="../../../../../go-boilerplate/internal/di/lifecycle/#Registrar">Registrar</a>,
-    log <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>,
-    appCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#ApplicationConfig">ApplicationConfig</a>,
-    secCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#SecurityConfig">SecurityConfig</a>,
-    srvCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#ServerConfig">ServerConfig</a>,
-    osCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#OperatingSystemConfig">OperatingSystemConfig</a>,
-
-    _ *<a href="../../../../../go-boilerplate/internal/di/server/extension/">extension</a>.<a href="../../../../../go-boilerplate/internal/di/server/extension/#AppliedServerExtends">AppliedServerExtends</a>,
-)</pre>
-			<p>RegisterHTTPServerHooks は、HTTPサーバーの起動・停止フックをライフサイクルに登録します。
+			<pre>func RegisterHTTPServerHooks(in <a href="#HTTPServerHooksIn">HTTPServerHooksIn</a>)</pre>
+			<p>RegisterHTTPServerHooks は、serve instance の起動・停止の順序を 1 箇所で決めて登録します。
+</p><pre>Start: 依存の到達確認 → 受信 resource の作成 → 常駐処理の開始 → HTTP listen
+Stop:  drain（新規接続の拒否を含む）→ 常駐処理の停止 → 受信 resource の片付け → HTTP shutdown
+</pre>
+<p>fx の OnStop は登録の逆順で走るため、順序を hook の登録順に委ねず、start / stop 各 1 本の中で明示的に
+呼びます（参加者が増減しても順序が変わらず、drain が HTTP shutdown より前に完了することを固定する）。
+Start は途中で失敗したら、そこまでに起動・作成したものを逆順に止めて片付けてから失敗を返します。
+Stop は参加者が失敗しても記録して次へ進み（途中で止めると resource が残る）、HTTP shutdown まで
+終えてからすべての失敗をまとめて返します。
 
 			
 			
@@ -199,6 +246,169 @@ TracerProvider / MeterProvider を Shutdown するためのフックを登録し
 
 		
 		
+			
+			
+			</p><h2 id="Drainer">type <a href="../../../../../src/go-boilerplate/internal/di/server/hook/participant.go.html?s=2856:3112#L44">Drainer</a>
+				<a class="permalink" href="#Drainer">¶</a>
+				
+				
+			</h2>
+			<p>Drainer は、HTTP shutdown より前に、確定済みの長寿命レスポンス（SSE 接続）を閉じ切る参加者です。
+新規接続の拒否もこの中で行います。Drain が返るまで常駐処理の停止と HTTP shutdown は始まりません。
+
+			</p><pre>type Drainer struct {
+<span id="Drainer.Name"></span>    <span class="comment">// Name は、ログに載せる参加者の名前です。</span>
+    Name <a href="../../../../../builtin/#string">string</a>
+<span id="Drainer.Drain"></span>    <span class="comment">// Drain は、接続を閉じ切るまで待ちます。ctx の猶予を超えたら残りを諦めて返します。</span>
+    Drain func(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) <a href="../../../../../builtin/#error">error</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="HTTPServerHooksIn">type <a href="../../../../../src/go-boilerplate/internal/di/server/hook/serve_lifecycle.go.html?s=411:1016#L9">HTTPServerHooksIn</a>
+				<a class="permalink" href="#HTTPServerHooksIn">¶</a>
+				
+				
+			</h2>
+			<p>HTTPServerHooksIn は、serve instance のライフサイクル hook が受け取る依存です。
+
+			</p><pre>type HTTPServerHooksIn struct {
+    <a href="../../../../../go.uber.org/fx/">fx</a>.<a href="../../../../../go.uber.org/fx/#In">In</a>
+
+<span id="HTTPServerHooksIn.Srv"></span>    Srv    *<a href="../../../../../net/http/">http</a>.<a href="../../../../../net/http/#Server">Server</a>
+<span id="HTTPServerHooksIn.Reg"></span>    Reg    <a href="../../../../../go-boilerplate/internal/di/lifecycle/">lifecycle</a>.<a href="../../../../../go-boilerplate/internal/di/lifecycle/#Registrar">Registrar</a>
+<span id="HTTPServerHooksIn.Log"></span>    Log    <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>
+<span id="HTTPServerHooksIn.AppCfg"></span>    AppCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#ApplicationConfig">ApplicationConfig</a>
+<span id="HTTPServerHooksIn.SecCfg"></span>    SecCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#SecurityConfig">SecurityConfig</a>
+<span id="HTTPServerHooksIn.SrvCfg"></span>    SrvCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#ServerConfig">ServerConfig</a>
+<span id="HTTPServerHooksIn.OSCfg"></span>    OSCfg  *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#OperatingSystemConfig">OperatingSystemConfig</a>
+<span id="HTTPServerHooksIn.Applied"></span>    <span class="comment">// Applied は、サーバー機能の拡張が適用されたことを示すトークンです。</span>
+    Applied *<a href="../../../../../go-boilerplate/internal/di/server/extension/">extension</a>.<a href="../../../../../go-boilerplate/internal/di/server/extension/#AppliedServerExtends">AppliedServerExtends</a>
+
+<span id="HTTPServerHooksIn.Startup"></span>    Startup      []<a href="#StartupProbe">StartupProbe</a> `group:&#34;serve.startup&#34;`
+<span id="HTTPServerHooksIn.Provisioners"></span>    Provisioners []<a href="#Provisioner">Provisioner</a>  `group:&#34;serve.provisioners&#34;`
+<span id="HTTPServerHooksIn.Runners"></span>    Runners      []<a href="#Runner">Runner</a>       `group:&#34;serve.runners&#34;`
+<span id="HTTPServerHooksIn.Drainers"></span>    Drainers     []<a href="#Drainer">Drainer</a>      `group:&#34;serve.drainers&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Provisioner">type <a href="../../../../../src/go-boilerplate/internal/di/server/hook/participant.go.html?s=1814:2183#L24">Provisioner</a>
+				<a class="permalink" href="#Provisioner">¶</a>
+				
+				
+			</h2>
+			<p>Provisioner は、instance 固有の外部 resource を起動時に用意し、停止時に片付ける参加者です。
+起動が途中で失敗したら、用意済みの参加者は逆順に Teardown されます。
+
+			</p><pre>type Provisioner struct {
+<span id="Provisioner.Name"></span>    <span class="comment">// Name は、ログに載せる参加者の名前です。</span>
+    Name <a href="../../../../../builtin/#string">string</a>
+<span id="Provisioner.Provision"></span>    <span class="comment">// Provision は、resource を用意します。</span>
+    Provision func(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) <a href="../../../../../builtin/#error">error</a>
+<span id="Provisioner.Teardown"></span>    <span class="comment">// Teardown は、resource を片付けます。Provision していなくても呼べる（何もしない）実装にします。</span>
+    Teardown func(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) <a href="../../../../../builtin/#error">error</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Runner">type <a href="../../../../../src/go-boilerplate/internal/di/server/hook/participant.go.html?s=2401:2580#L35">Runner</a>
+				<a class="permalink" href="#Runner">¶</a>
+				
+				
+			</h2>
+			<p>Runner は、HTTP を listen している間だけ常駐する背景処理です。契約は lifecycle.SupervisedRunner と同じ
+（detached、停止時に cancel して完了を猶予の範囲で待つ）。
+
+			</p><pre>type Runner struct {
+<span id="Runner.Name"></span>    <span class="comment">// Name は、ログに載せる参加者の名前です。</span>
+    Name <a href="../../../../../builtin/#string">string</a>
+<span id="Runner.Runner"></span>    <span class="comment">// Runner は、常駐処理の本体です。</span>
+    Runner <a href="../../../../../go-boilerplate/internal/di/lifecycle/">lifecycle</a>.<a href="../../../../../go-boilerplate/internal/di/lifecycle/#SupervisedRunner">SupervisedRunner</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="StartupProbe">type <a href="../../../../../src/go-boilerplate/internal/di/server/hook/participant.go.html?s=1380:1586#L15">StartupProbe</a>
+				<a class="permalink" href="#StartupProbe">¶</a>
+				
+				
+			</h2>
+			<p>StartupProbe は、HTTP を listen する前に依存の到達性を確かめる参加者です。失敗は起動失敗です
+（Realtime runtime の起動に不可欠な dependency は startup で fail-fast する — docs/design/realtime-delivery.md §2.6）。
+
+			</p><pre>type StartupProbe struct {
+<span id="StartupProbe.Name"></span>    <span class="comment">// Name は、ログに載せる参加者の名前です。</span>
+    Name <a href="../../../../../builtin/#string">string</a>
+<span id="StartupProbe.Probe"></span>    <span class="comment">// Probe は、依存に到達できるかを確かめます。</span>
+    Probe func(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) <a href="../../../../../builtin/#error">error</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
 	
 
 	
@@ -209,7 +419,7 @@ TracerProvider / MeterProvider を Shutdown するためのフックを登録し
 
 
 
-</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
 
 </div><!-- .container -->
 </div><!-- #page -->

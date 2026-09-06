@@ -1,7 +1,5 @@
 # database/dml
 
-[English](README.md) | 日本語
-
 `database/dml` は **sqlc によるコード生成の元となる SQL ファイル**を格納するディレクトリです。
 
 ここに配置された SQL は `make gen-query` で Go コード（`internal/infrastructure/rdb/sqlc/gen/`）に変換されます。

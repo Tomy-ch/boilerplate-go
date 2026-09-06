@@ -1,0 +1,219 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>testkit - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package testkit
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/infrastructure/realtime/testkit&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package testkit は、Realtime Delivery の fan-out の contract test が使う SNS / SQS クライアントと topic を提供します。
+既定は共有インフラ / CI service の GoAWS で、config.NewRealtimeTestConnection の環境変数で本番 SNS / SQS へ
+向け直しても同じテストが走ります。ARN は組み立てず API の戻り値から取ります（emulator の account は設定で変わる）。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+				
+				<dd><a href="#CreateTopic">func CreateTopic(t *testing.T, c aws.Clients, name string) string</a></dd>
+			
+				
+				<dd><a href="#Name">func Name(t *testing.T, base string) string</a></dd>
+			
+				
+				<dd><a href="#NewTestClients">func NewTestClients(t *testing.T) aws.Clients</a></dd>
+			
+				
+				<dd><a href="#TeardownOnCleanup">func TeardownOnCleanup(t *testing.T, sub rt.InstanceSubscription)</a></dd>
+			
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/testkit/testkit.go.html">testkit.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+			
+			
+			<h2 id="CreateTopic">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/testkit/testkit.go.html?s=2045:2110#L48">CreateTopic</a>
+				<a class="permalink" href="#CreateTopic">¶</a>
+				
+				
+			</h2>
+			<pre>func CreateTopic(t *<a href="../../../../../testing/">testing</a>.<a href="../../../../../testing/#T">T</a>, c <a href="../../../../../go-boilerplate/internal/infrastructure/realtime/aws/">aws</a>.<a href="../../../../../go-boilerplate/internal/infrastructure/realtime/aws/#Clients">Clients</a>, name <a href="../../../../../builtin/#string">string</a>) <a href="../../../../../builtin/#string">string</a></pre>
+			<p>CreateTopic は、name の topic を作り、テスト終了時に削除します。戻り値は API が返した ARN です。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="Name">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/testkit/testkit.go.html?s=1713:1756#L37">Name</a>
+				<a class="permalink" href="#Name">¶</a>
+				
+				
+			</h2>
+			<pre>func Name(t *<a href="../../../../../testing/">testing</a>.<a href="../../../../../testing/#T">T</a>, base <a href="../../../../../builtin/#string">string</a>) <a href="../../../../../builtin/#string">string</a></pre>
+			<p>Name は、テスト実行ごとに一意な名前（`test-&lt;base&gt;-&lt;乱数&gt;`）を返します。topic 名と queue prefix に使います。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewTestClients">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/testkit/testkit.go.html?s=1213:1258#L21">NewTestClients</a>
+				<a class="permalink" href="#NewTestClients">¶</a>
+				
+				
+			</h2>
+			<pre>func NewTestClients(t *<a href="../../../../../testing/">testing</a>.<a href="../../../../../testing/#T">T</a>) <a href="../../../../../go-boilerplate/internal/infrastructure/realtime/aws/">aws</a>.<a href="../../../../../go-boilerplate/internal/infrastructure/realtime/aws/#Clients">Clients</a></pre>
+			<p>NewTestClients は、contract test 用の SNS / SQS クライアントを返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="TeardownOnCleanup">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/testkit/testkit.go.html?s=2770:2835#L68">TeardownOnCleanup</a>
+				<a class="permalink" href="#TeardownOnCleanup">¶</a>
+				
+				
+			</h2>
+			<pre>func TeardownOnCleanup(t *<a href="../../../../../testing/">testing</a>.<a href="../../../../../testing/#T">T</a>, sub <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceSubscription">InstanceSubscription</a>)</pre>
+			<p>TeardownOnCleanup は、テスト終了時に sub の受信先を片付けます。テストの ctx はその時点で終わっている
+（t.Context は Cleanup の直前に cancel される）ため、独立の ctx で削除します。
+
+			
+			
+
+		
+		
+	
+
+	
+
+
+
+
+
+
+
+</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

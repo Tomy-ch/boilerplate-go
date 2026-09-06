@@ -235,400 +235,401 @@
 <span id="L178" class="ln">   178  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
 <span id="L179" class="ln">   179  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
 <span id="L180" class="ln">   180  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Return(
-<span id="L181" class="ln">   181  </span>				[]query.PurchaseFeedReadModel{feedItem(t, &#34;a&#34;, base)}, nil)
-<span id="L182" class="ln">   182  </span>
-<span id="L183" class="ln">   183  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L184" class="ln">   184  </span>			got, err := u.GetPurchases(
-<span id="L185" class="ln">   185  </span>				context.Background(),
-<span id="L186" class="ln">   186  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
-<span id="L187" class="ln">   187  </span>				ListPurchasesParams{Cursor: &amp;paging.Cursor{}},
-<span id="L188" class="ln">   188  </span>			)
-<span id="L189" class="ln">   189  </span>			require.NoError(t, err)
-<span id="L190" class="ln">   190  </span>			assert.Empty(t, got.Items)
-<span id="L191" class="ln">   191  </span>			assert.Nil(t, got.NextCursor)
-<span id="L192" class="ln">   192  </span>		})
-<span id="L193" class="ln">   193  </span>
-<span id="L194" class="ln">   194  </span>		t.Run(&#34;afterカーソルが復号されuserIDとkeyset境界がRepositoryへ渡る&#34;, func(t *testing.T) {
-<span id="L195" class="ln">   195  </span>			t.Parallel()
-<span id="L196" class="ln">   196  </span>
-<span id="L197" class="ln">   197  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L198" class="ln">   198  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L199" class="ln">   199  </span>
-<span id="L200" class="ln">   200  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)
-<span id="L201" class="ln">   201  </span>			boundaryID := uuidtestkit.NewTestFromSalt(t, &#34;boundary&#34;)
-<span id="L202" class="ln">   202  </span>			after := paging.EncodeCursor(base.Format(time.RFC3339Nano), boundaryID.String())
-<span id="L203" class="ln">   203  </span>			first := 2
-<span id="L204" class="ln">   204  </span>			cursor, err := paging.NewCursor(&amp;after, &amp;first)
-<span id="L205" class="ln">   205  </span>			require.NoError(t, err)
-<span id="L206" class="ln">   206  </span>
-<span id="L207" class="ln">   207  </span>			var captured query.ListFeedParams
-<span id="L208" class="ln">   208  </span>			var capturedUserID uuid.UUID
-<span id="L209" class="ln">   209  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L210" class="ln">   210  </span>				func(_ context.Context, uid uuid.UUID, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
-<span id="L211" class="ln">   211  </span>					capturedUserID = uid
-<span id="L212" class="ln">   212  </span>					captured = params
-<span id="L213" class="ln">   213  </span>					return []query.PurchaseFeedReadModel{}, nil
-<span id="L214" class="ln">   214  </span>				},
-<span id="L215" class="ln">   215  </span>			)
-<span id="L216" class="ln">   216  </span>
-<span id="L217" class="ln">   217  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L218" class="ln">   218  </span>			_, err = u.GetPurchases(context.Background(), authnOf(t, userID), ListPurchasesParams{Cursor: cursor})
-<span id="L219" class="ln">   219  </span>			require.NoError(t, err)
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>			assert.Equal(t, userID, capturedUserID)
-<span id="L222" class="ln">   222  </span>			assert.Equal(t, int32(3), captured.Limit) <span class="comment">// limit(2) + 1</span>
-<span id="L223" class="ln">   223  </span>			require.NotNil(t, captured.AfterOrderedAt)
-<span id="L224" class="ln">   224  </span>			require.NotNil(t, captured.AfterID)
-<span id="L225" class="ln">   225  </span>			assert.True(t, base.Equal(*captured.AfterOrderedAt))
-<span id="L226" class="ln">   226  </span>			assert.Equal(t, boundaryID, *captured.AfterID)
-<span id="L227" class="ln">   227  </span>			<span class="comment">// 期間指定なしでは境界を持たない対象期間が渡り、Repository 側の期間条件が効かない。</span>
-<span id="L228" class="ln">   228  </span>			assert.Nil(t, captured.Window.After())
-<span id="L229" class="ln">   229  </span>			assert.Nil(t, captured.Window.Before())
-<span id="L230" class="ln">   230  </span>		})
-<span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>		t.Run(&#34;両端を持つ対象期間がそのままRepositoryへ渡る&#34;, func(t *testing.T) {
-<span id="L233" class="ln">   233  </span>			t.Parallel()
-<span id="L234" class="ln">   234  </span>
-<span id="L235" class="ln">   235  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L236" class="ln">   236  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L237" class="ln">   237  </span>
-<span id="L238" class="ln">   238  </span>			after := time.Date(2026, time.January, 21, 0, 0, 0, 0, time.UTC)
-<span id="L239" class="ln">   239  </span>			before := time.Date(2026, time.February, 1, 0, 0, 0, 0, time.UTC)
-<span id="L240" class="ln">   240  </span>			window, err := timewindow.New(timewindow.Bounds{After: &amp;after, Before: &amp;before})
-<span id="L241" class="ln">   241  </span>			require.NoError(t, err)
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>			var captured query.ListFeedParams
-<span id="L244" class="ln">   244  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L245" class="ln">   245  </span>				func(_ context.Context, _ uuid.UUID, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
-<span id="L246" class="ln">   246  </span>					captured = params
-<span id="L247" class="ln">   247  </span>					return []query.PurchaseFeedReadModel{}, nil
-<span id="L248" class="ln">   248  </span>				},
-<span id="L249" class="ln">   249  </span>			)
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L252" class="ln">   252  </span>			_, err = u.GetPurchases(
-<span id="L253" class="ln">   253  </span>				context.Background(),
-<span id="L254" class="ln">   254  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
-<span id="L255" class="ln">   255  </span>				ListPurchasesParams{Cursor: firstCursor(t, 2), Window: window},
-<span id="L256" class="ln">   256  </span>			)
-<span id="L257" class="ln">   257  </span>			require.NoError(t, err)
-<span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>			require.NotNil(t, captured.Window.After())
-<span id="L260" class="ln">   260  </span>			require.NotNil(t, captured.Window.Before())
-<span id="L261" class="ln">   261  </span>			assert.True(t, after.Equal(*captured.Window.After()))
-<span id="L262" class="ln">   262  </span>			assert.True(t, before.Equal(*captured.Window.Before()))
-<span id="L263" class="ln">   263  </span>		})
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>		t.Run(&#34;片側だけの対象期間はその境界だけがQueryServiceへ渡る&#34;, func(t *testing.T) {
-<span id="L266" class="ln">   266  </span>			t.Parallel()
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L269" class="ln">   269  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L270" class="ln">   270  </span>
-<span id="L271" class="ln">   271  </span>			after := time.Date(2026, time.January, 21, 0, 0, 0, 0, time.UTC)
-<span id="L272" class="ln">   272  </span>			window, err := timewindow.New(timewindow.Bounds{After: &amp;after})
-<span id="L273" class="ln">   273  </span>			require.NoError(t, err)
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>			var captured query.ListFeedParams
-<span id="L276" class="ln">   276  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L277" class="ln">   277  </span>				func(_ context.Context, _ uuid.UUID, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
-<span id="L278" class="ln">   278  </span>					captured = params
-<span id="L279" class="ln">   279  </span>					return []query.PurchaseFeedReadModel{}, nil
-<span id="L280" class="ln">   280  </span>				},
-<span id="L281" class="ln">   281  </span>			)
-<span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L284" class="ln">   284  </span>			_, err = u.GetPurchases(
-<span id="L285" class="ln">   285  </span>				context.Background(),
-<span id="L286" class="ln">   286  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
-<span id="L287" class="ln">   287  </span>				ListPurchasesParams{Cursor: firstCursor(t, 2), Window: window},
-<span id="L288" class="ln">   288  </span>			)
-<span id="L289" class="ln">   289  </span>			require.NoError(t, err)
-<span id="L290" class="ln">   290  </span>
-<span id="L291" class="ln">   291  </span>			require.NotNil(t, captured.Window.After())
-<span id="L292" class="ln">   292  </span>			assert.True(t, after.Equal(*captured.Window.After()))
-<span id="L293" class="ln">   293  </span>			assert.Nil(t, captured.Window.Before())
-<span id="L294" class="ln">   294  </span>		})
-<span id="L295" class="ln">   295  </span>
-<span id="L296" class="ln">   296  </span>		t.Run(&#34;ステータスの絞り込みがそのままQueryServiceへ渡る&#34;, func(t *testing.T) {
-<span id="L297" class="ln">   297  </span>			t.Parallel()
-<span id="L298" class="ln">   298  </span>
-<span id="L299" class="ln">   299  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L300" class="ln">   300  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L301" class="ln">   301  </span>
-<span id="L302" class="ln">   302  </span>			var captured query.ListFeedParams
-<span id="L303" class="ln">   303  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L304" class="ln">   304  </span>				func(_ context.Context, _ uuid.UUID, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
-<span id="L305" class="ln">   305  </span>					captured = params
-<span id="L306" class="ln">   306  </span>					return []query.PurchaseFeedReadModel{}, nil
-<span id="L307" class="ln">   307  </span>				},
-<span id="L308" class="ln">   308  </span>			)
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L311" class="ln">   311  </span>			_, err := u.GetPurchases(
-<span id="L312" class="ln">   312  </span>				context.Background(),
-<span id="L313" class="ln">   313  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
-<span id="L314" class="ln">   314  </span>				ListPurchasesParams{
-<span id="L315" class="ln">   315  </span>					Cursor:      firstCursor(t, 2),
-<span id="L316" class="ln">   316  </span>					StatusCodes: []int16{statusCodeOf(t, domainpurchase.StatusShipped)},
-<span id="L317" class="ln">   317  </span>				},
-<span id="L318" class="ln">   318  </span>			)
-<span id="L319" class="ln">   319  </span>			require.NoError(t, err)
-<span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>			assert.Equal(t, []int16{statusCodeOf(t, domainpurchase.StatusShipped)}, captured.StatusCodes)
-<span id="L322" class="ln">   322  </span>		})
-<span id="L323" class="ln">   323  </span>	})
-<span id="L324" class="ln">   324  </span>
-<span id="L325" class="ln">   325  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L326" class="ln">   326  </span>		t.Parallel()
-<span id="L327" class="ln">   327  </span>
-<span id="L328" class="ln">   328  </span>		t.Run(&#34;cursorがnilのときErrInvalidArgumentを返しRepositoryを呼ばない&#34;, func(t *testing.T) {
-<span id="L329" class="ln">   329  </span>			t.Parallel()
-<span id="L330" class="ln">   330  </span>
-<span id="L331" class="ln">   331  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L332" class="ln">   332  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L333" class="ln">   333  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L334" class="ln">   334  </span>
-<span id="L335" class="ln">   335  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L336" class="ln">   336  </span>			got, err := u.GetPurchases(
-<span id="L337" class="ln">   337  </span>				context.Background(),
-<span id="L338" class="ln">   338  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
-<span id="L339" class="ln">   339  </span>				ListPurchasesParams{},
-<span id="L340" class="ln">   340  </span>			)
-<span id="L341" class="ln">   341  </span>			assert.Nil(t, got)
-<span id="L342" class="ln">   342  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
-<span id="L343" class="ln">   343  </span>		})
-<span id="L344" class="ln">   344  </span>
-<span id="L345" class="ln">   345  </span>		t.Run(&#34;cursorの復号に失敗したときErrInvalidArgumentを返しRepositoryを呼ばない&#34;, func(t *testing.T) {
-<span id="L346" class="ln">   346  </span>			t.Parallel()
-<span id="L347" class="ln">   347  </span>
-<span id="L348" class="ln">   348  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L349" class="ln">   349  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L350" class="ln">   350  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L351" class="ln">   351  </span>
-<span id="L352" class="ln">   352  </span>			<span class="comment">// キーが 1 個（ordered_at, id の 2 個でない）= 復号エラー。</span>
-<span id="L353" class="ln">   353  </span>			after := paging.EncodeCursor(&#34;only-one-key&#34;)
-<span id="L354" class="ln">   354  </span>			first := 2
-<span id="L355" class="ln">   355  </span>			cursor, err := paging.NewCursor(&amp;after, &amp;first)
-<span id="L356" class="ln">   356  </span>			require.NoError(t, err)
-<span id="L357" class="ln">   357  </span>
-<span id="L358" class="ln">   358  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L359" class="ln">   359  </span>			got, err := u.GetPurchases(
-<span id="L360" class="ln">   360  </span>				context.Background(),
-<span id="L361" class="ln">   361  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
-<span id="L362" class="ln">   362  </span>				ListPurchasesParams{Cursor: cursor},
-<span id="L363" class="ln">   363  </span>			)
-<span id="L364" class="ln">   364  </span>			assert.Nil(t, got)
-<span id="L365" class="ln">   365  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
-<span id="L366" class="ln">   366  </span>		})
-<span id="L367" class="ln">   367  </span>
-<span id="L368" class="ln">   368  </span>		t.Run(&#34;Repositoryのエラーが伝播する&#34;, func(t *testing.T) {
-<span id="L369" class="ln">   369  </span>			t.Parallel()
-<span id="L370" class="ln">   370  </span>
-<span id="L371" class="ln">   371  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L372" class="ln">   372  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L373" class="ln">   373  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, apperror.ErrInternal)
-<span id="L374" class="ln">   374  </span>
-<span id="L375" class="ln">   375  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L376" class="ln">   376  </span>			got, err := u.GetPurchases(
-<span id="L377" class="ln">   377  </span>				context.Background(),
-<span id="L378" class="ln">   378  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
-<span id="L379" class="ln">   379  </span>				ListPurchasesParams{Cursor: firstCursor(t, 2)},
-<span id="L380" class="ln">   380  </span>			)
-<span id="L381" class="ln">   381  </span>			assert.Nil(t, got)
-<span id="L382" class="ln">   382  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
-<span id="L383" class="ln">   383  </span>		})
-<span id="L384" class="ln">   384  </span>
-<span id="L385" class="ln">   385  </span>		t.Run(&#34;authnがnilのときErrUnauthenticatedを返しQueryServiceを呼ばない&#34;, func(t *testing.T) {
-<span id="L386" class="ln">   386  </span>			t.Parallel()
-<span id="L387" class="ln">   387  </span>
-<span id="L388" class="ln">   388  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L389" class="ln">   389  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L390" class="ln">   390  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L391" class="ln">   391  </span>			feedQS.EXPECT().FindFeedAll(gomock.Any(), gomock.Any()).Times(0)
-<span id="L392" class="ln">   392  </span>
-<span id="L393" class="ln">   393  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L394" class="ln">   394  </span>			got, err := u.GetPurchases(context.Background(), nil, ListPurchasesParams{Cursor: firstCursor(t, 2)})
-<span id="L395" class="ln">   395  </span>			assert.Nil(t, got)
-<span id="L396" class="ln">   396  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
-<span id="L397" class="ln">   397  </span>		})
-<span id="L398" class="ln">   398  </span>	})
-<span id="L399" class="ln">   399  </span>}
-<span id="L400" class="ln">   400  </span>
-<span id="L401" class="ln">   401  </span>func Test_usecase_findFeedPage(t *testing.T) {
-<span id="L402" class="ln">   402  </span>	t.Parallel()
-<span id="L403" class="ln">   403  </span>
-<span id="L404" class="ln">   404  </span>	authnOf := func(t *testing.T, salt string) *auth.Authn {
-<span id="L405" class="ln">   405  </span>		t.Helper()
-<span id="L406" class="ln">   406  </span>		a, err := auth.New(&#34;feed-page-subject&#34;, &#34;feed-page-issuer&#34;, nil, nil)
-<span id="L407" class="ln">   407  </span>		require.NoError(t, err)
-<span id="L408" class="ln">   408  </span>		resolved, err := a.WithUserID(uuidtestkit.NewTestFromSalt(t, salt))
-<span id="L409" class="ln">   409  </span>		require.NoError(t, err)
-<span id="L410" class="ln">   410  </span>		return resolved
-<span id="L411" class="ln">   411  </span>	}
-<span id="L412" class="ln">   412  </span>
-<span id="L413" class="ln">   413  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L414" class="ln">   414  </span>		t.Parallel()
-<span id="L415" class="ln">   415  </span>
-<span id="L416" class="ln">   416  </span>		t.Run(&#34;既定では認可を求めず認証主体の購入だけを読む&#34;, func(t *testing.T) {
-<span id="L417" class="ln">   417  </span>			t.Parallel()
-<span id="L418" class="ln">   418  </span>
-<span id="L419" class="ln">   419  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L420" class="ln">   420  </span>			ctrl := gomock.NewController(t)
-<span id="L421" class="ln">   421  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(ctrl)
-<span id="L422" class="ln">   422  </span>			authorizer := mock_authz.NewMockAuthorizer(ctrl)
-<span id="L423" class="ln">   423  </span>
-<span id="L424" class="ln">   424  </span>			<span class="comment">// 自分の購入を読むのに admin の能力は要らない。</span>
-<span id="L425" class="ln">   425  </span>			authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L426" class="ln">   426  </span>			feedQS.EXPECT().FindFeedAll(gomock.Any(), gomock.Any()).Times(0)
-<span id="L427" class="ln">   427  </span>
-<span id="L428" class="ln">   428  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;owner&#34;)
-<span id="L429" class="ln">   429  </span>			var capturedUserID uuid.UUID
-<span id="L430" class="ln">   430  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L431" class="ln">   431  </span>				func(_ context.Context, uid uuid.UUID, _ query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
-<span id="L432" class="ln">   432  </span>					capturedUserID = uid
-<span id="L433" class="ln">   433  </span>					return []query.PurchaseFeedReadModel{}, nil
-<span id="L434" class="ln">   434  </span>				},
-<span id="L435" class="ln">   435  </span>			)
-<span id="L436" class="ln">   436  </span>
-<span id="L437" class="ln">   437  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS, authorizer: authorizer}
-<span id="L438" class="ln">   438  </span>			authn, err := auth.New(&#34;feed-page-subject&#34;, &#34;feed-page-issuer&#34;, nil, nil)
-<span id="L439" class="ln">   439  </span>			require.NoError(t, err)
-<span id="L440" class="ln">   440  </span>			resolved, err := authn.WithUserID(userID)
-<span id="L441" class="ln">   441  </span>			require.NoError(t, err)
-<span id="L442" class="ln">   442  </span>
-<span id="L443" class="ln">   443  </span>			got, err := u.findFeedPage(context.Background(), resolved, false, query.ListFeedParams{Limit: 3})
-<span id="L444" class="ln">   444  </span>			require.NoError(t, err)
-<span id="L445" class="ln">   445  </span>			assert.Empty(t, got)
-<span id="L446" class="ln">   446  </span>			assert.Equal(t, userID, capturedUserID)
-<span id="L447" class="ln">   447  </span>		})
-<span id="L448" class="ln">   448  </span>
-<span id="L449" class="ln">   449  </span>		t.Run(&#34;他ユーザーを含める指定はadmin認可のうえ所有権で閉じない読み取りへ切り替わる&#34;, func(t *testing.T) {
-<span id="L450" class="ln">   450  </span>			t.Parallel()
-<span id="L451" class="ln">   451  </span>
-<span id="L452" class="ln">   452  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L453" class="ln">   453  </span>			ctrl := gomock.NewController(t)
-<span id="L454" class="ln">   454  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(ctrl)
-<span id="L455" class="ln">   455  </span>			authorizer := mock_authz.NewMockAuthorizer(ctrl)
-<span id="L456" class="ln">   456  </span>
-<span id="L457" class="ln">   457  </span>			<span class="comment">// 所有権で閉じる読み取りは呼ばれない（母集団が混ざらないことの固定）。</span>
-<span id="L458" class="ln">   458  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L459" class="ln">   459  </span>			authorizer.EXPECT().Authorize(
-<span id="L460" class="ln">   460  </span>				gomock.Any(), gomock.Any(), authz.ActionPurchaseReadAll, gomock.Any(),
-<span id="L461" class="ln">   461  </span>			).Return(nil)
-<span id="L462" class="ln">   462  </span>
-<span id="L463" class="ln">   463  </span>			var captured query.ListFeedParams
-<span id="L464" class="ln">   464  </span>			feedQS.EXPECT().FindFeedAll(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L465" class="ln">   465  </span>				func(_ context.Context, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
-<span id="L466" class="ln">   466  </span>					captured = params
-<span id="L467" class="ln">   467  </span>					return []query.PurchaseFeedReadModel{}, nil
-<span id="L468" class="ln">   468  </span>				},
-<span id="L469" class="ln">   469  </span>			)
-<span id="L470" class="ln">   470  </span>
-<span id="L471" class="ln">   471  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS, authorizer: authorizer}
-<span id="L472" class="ln">   472  </span>			got, err := u.findFeedPage(
-<span id="L473" class="ln">   473  </span>				context.Background(), authnOf(t, &#34;admin&#34;), true,
-<span id="L474" class="ln">   474  </span>				query.ListFeedParams{Limit: 3, StatusCodes: []int16{8}},
-<span id="L475" class="ln">   475  </span>			)
-<span id="L476" class="ln">   476  </span>			require.NoError(t, err)
-<span id="L477" class="ln">   477  </span>			assert.Empty(t, got)
-<span id="L478" class="ln">   478  </span>			<span class="comment">// 母集団が変わっても件数と絞り込みの条件はそのまま渡る。</span>
-<span id="L479" class="ln">   479  </span>			assert.Equal(t, int32(3), captured.Limit)
-<span id="L480" class="ln">   480  </span>			assert.Equal(t, []int16{8}, captured.StatusCodes)
-<span id="L481" class="ln">   481  </span>		})
-<span id="L482" class="ln">   482  </span>	})
-<span id="L483" class="ln">   483  </span>
-<span id="L484" class="ln">   484  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L485" class="ln">   485  </span>		t.Parallel()
-<span id="L486" class="ln">   486  </span>
-<span id="L487" class="ln">   487  </span>		t.Run(&#34;他ユーザーを含める指定が認可されないとき所有権で閉じない読み取りを呼ばない&#34;, func(t *testing.T) {
-<span id="L488" class="ln">   488  </span>			t.Parallel()
-<span id="L489" class="ln">   489  </span>
-<span id="L490" class="ln">   490  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L491" class="ln">   491  </span>			ctrl := gomock.NewController(t)
-<span id="L492" class="ln">   492  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(ctrl)
-<span id="L493" class="ln">   493  </span>			authorizer := mock_authz.NewMockAuthorizer(ctrl)
-<span id="L494" class="ln">   494  </span>
-<span id="L495" class="ln">   495  </span>			feedQS.EXPECT().FindFeedAll(gomock.Any(), gomock.Any()).Times(0)
-<span id="L496" class="ln">   496  </span>			<span class="comment">// 拒否された指定が自分の購入一覧へ降格しないことも同時に固定する。</span>
-<span id="L497" class="ln">   497  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L498" class="ln">   498  </span>			authorizer.EXPECT().Authorize(
-<span id="L499" class="ln">   499  </span>				gomock.Any(), gomock.Any(), authz.ActionPurchaseReadAll, gomock.Any(),
-<span id="L500" class="ln">   500  </span>			).Return(apperror.ErrPermissionDenied)
-<span id="L501" class="ln">   501  </span>
-<span id="L502" class="ln">   502  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS, authorizer: authorizer}
-<span id="L503" class="ln">   503  </span>			got, err := u.findFeedPage(context.Background(), authnOf(t, &#34;user&#34;), true, query.ListFeedParams{Limit: 3})
-<span id="L504" class="ln">   504  </span>			assert.Nil(t, got)
-<span id="L505" class="ln">   505  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
-<span id="L506" class="ln">   506  </span>		})
-<span id="L507" class="ln">   507  </span>
-<span id="L508" class="ln">   508  </span>		t.Run(&#34;認証主体のUserIDが未解決のときQueryServiceを呼ばずエラーを返す&#34;, func(t *testing.T) {
-<span id="L509" class="ln">   509  </span>			t.Parallel()
-<span id="L510" class="ln">   510  </span>
-<span id="L511" class="ln">   511  </span>			<span class="comment">// 認証は済んでいるが内部ユーザーが解決できていない Authn では、所有権の絞り込みに渡す</span>
-<span id="L512" class="ln">   512  </span>			<span class="comment">// userID が定まらない。ゼロ値で全件を引きに行かないことを固定する。</span>
-<span id="L513" class="ln">   513  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
-<span id="L514" class="ln">   514  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
-<span id="L515" class="ln">   515  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L516" class="ln">   516  </span>
-<span id="L517" class="ln">   517  </span>			unresolved, err := auth.New(&#34;feed-page-subject&#34;, &#34;feed-page-issuer&#34;, nil, nil)
-<span id="L518" class="ln">   518  </span>			require.NoError(t, err)
-<span id="L519" class="ln">   519  </span>
-<span id="L520" class="ln">   520  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
-<span id="L521" class="ln">   521  </span>			got, err := u.findFeedPage(context.Background(), unresolved, false, query.ListFeedParams{Limit: 3})
-<span id="L522" class="ln">   522  </span>			assert.Nil(t, got)
-<span id="L523" class="ln">   523  </span>			require.ErrorIs(t, err, auth.ErrUserIDUnresolved)
-<span id="L524" class="ln">   524  </span>		})
-<span id="L525" class="ln">   525  </span>	})
-<span id="L526" class="ln">   526  </span>}
-<span id="L527" class="ln">   527  </span>
-<span id="L528" class="ln">   528  </span>func Test_encodePurchaseCursor(t *testing.T) {
-<span id="L529" class="ln">   529  </span>	t.Parallel()
-<span id="L530" class="ln">   530  </span>
-<span id="L531" class="ln">   531  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L532" class="ln">   532  </span>		t.Parallel()
-<span id="L533" class="ln">   533  </span>
-<span id="L534" class="ln">   534  </span>		t.Run(&#34;注文日時とIDを符号化したカーソルはナノ秒精度のまま復号できる&#34;, func(t *testing.T) {
-<span id="L535" class="ln">   535  </span>			t.Parallel()
-<span id="L536" class="ln">   536  </span>
-<span id="L537" class="ln">   537  </span>			orderedAt := time.Date(2099, time.January, 2, 3, 4, 5, 123456789, time.UTC)
-<span id="L538" class="ln">   538  </span>			id := uuidtestkit.NewTestFromSalt(t, &#34;encode_cursor_last&#34;)
-<span id="L539" class="ln">   539  </span>
-<span id="L540" class="ln">   540  </span>			encoded := encodePurchaseCursor(query.PurchaseFeedReadModel{OrderedAt: orderedAt, ID: id})
-<span id="L541" class="ln">   541  </span>			assert.NotEmpty(t, encoded)
-<span id="L542" class="ln">   542  </span>
-<span id="L543" class="ln">   543  </span>			first := 2
-<span id="L544" class="ln">   544  </span>			cursor, err := paging.NewCursor(&amp;encoded, &amp;first)
-<span id="L545" class="ln">   545  </span>			require.NoError(t, err)
-<span id="L546" class="ln">   546  </span>
-<span id="L547" class="ln">   547  </span>			decoded, err := decodePurchaseCursor(cursor)
-<span id="L548" class="ln">   548  </span>			require.NoError(t, err)
-<span id="L549" class="ln">   549  </span>			require.NotNil(t, decoded)
-<span id="L550" class="ln">   550  </span>			assert.True(t, orderedAt.Equal(decoded.orderedAt))
-<span id="L551" class="ln">   551  </span>			assert.Equal(t, id, decoded.id)
-<span id="L552" class="ln">   552  </span>		})
-<span id="L553" class="ln">   553  </span>
-<span id="L554" class="ln">   554  </span>		t.Run(&#34;keyset境界は末尾行の注文日時とIDのみで決まりステータスなど他項目に影響されない&#34;, func(t *testing.T) {
-<span id="L555" class="ln">   555  </span>			t.Parallel()
-<span id="L556" class="ln">   556  </span>
-<span id="L557" class="ln">   557  </span>			orderedAt := time.Date(2099, time.January, 2, 3, 4, 5, 0, time.UTC)
-<span id="L558" class="ln">   558  </span>			id := uuidtestkit.NewTestFromSalt(t, &#34;encode_cursor_same_key&#34;)
-<span id="L559" class="ln">   559  </span>
-<span id="L560" class="ln">   560  </span>			base := encodePurchaseCursor(query.PurchaseFeedReadModel{OrderedAt: orderedAt, ID: id})
-<span id="L561" class="ln">   561  </span>			other := encodePurchaseCursor(query.PurchaseFeedReadModel{
-<span id="L562" class="ln">   562  </span>				Code:        &#34;code-other&#34;,
-<span id="L563" class="ln">   563  </span>				TotalAmount: 999,
-<span id="L564" class="ln">   564  </span>				StatusID:    uuidtestkit.NewTestFromSalt(t, &#34;encode_cursor_other_status&#34;),
-<span id="L565" class="ln">   565  </span>				StatusName:  &#34;キャンセル&#34;,
-<span id="L566" class="ln">   566  </span>				OrderedAt:   orderedAt,
-<span id="L567" class="ln">   567  </span>				ID:          id,
-<span id="L568" class="ln">   568  </span>			})
-<span id="L569" class="ln">   569  </span>
-<span id="L570" class="ln">   570  </span>			assert.Equal(t, base, other)
-<span id="L571" class="ln">   571  </span>		})
-<span id="L572" class="ln">   572  </span>	})
-<span id="L573" class="ln">   573  </span>}
-<span id="L574" class="ln">   574  </span>
+<span id="L181" class="ln">   181  </span>				[]query.PurchaseFeedReadModel{feedItem(t, &#34;a&#34;, base)}, nil,
+<span id="L182" class="ln">   182  </span>			)
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L185" class="ln">   185  </span>			got, err := u.GetPurchases(
+<span id="L186" class="ln">   186  </span>				context.Background(),
+<span id="L187" class="ln">   187  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
+<span id="L188" class="ln">   188  </span>				ListPurchasesParams{Cursor: &amp;paging.Cursor{}},
+<span id="L189" class="ln">   189  </span>			)
+<span id="L190" class="ln">   190  </span>			require.NoError(t, err)
+<span id="L191" class="ln">   191  </span>			assert.Empty(t, got.Items)
+<span id="L192" class="ln">   192  </span>			assert.Nil(t, got.NextCursor)
+<span id="L193" class="ln">   193  </span>		})
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>		t.Run(&#34;afterカーソルが復号されuserIDとkeyset境界がRepositoryへ渡る&#34;, func(t *testing.T) {
+<span id="L196" class="ln">   196  </span>			t.Parallel()
+<span id="L197" class="ln">   197  </span>
+<span id="L198" class="ln">   198  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L199" class="ln">   199  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)
+<span id="L202" class="ln">   202  </span>			boundaryID := uuidtestkit.NewTestFromSalt(t, &#34;boundary&#34;)
+<span id="L203" class="ln">   203  </span>			after := paging.EncodeCursor(base.Format(time.RFC3339Nano), boundaryID.String())
+<span id="L204" class="ln">   204  </span>			first := 2
+<span id="L205" class="ln">   205  </span>			cursor, err := paging.NewCursor(&amp;after, &amp;first)
+<span id="L206" class="ln">   206  </span>			require.NoError(t, err)
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>			var captured query.ListFeedParams
+<span id="L209" class="ln">   209  </span>			var capturedUserID uuid.UUID
+<span id="L210" class="ln">   210  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L211" class="ln">   211  </span>				func(_ context.Context, uid uuid.UUID, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
+<span id="L212" class="ln">   212  </span>					capturedUserID = uid
+<span id="L213" class="ln">   213  </span>					captured = params
+<span id="L214" class="ln">   214  </span>					return []query.PurchaseFeedReadModel{}, nil
+<span id="L215" class="ln">   215  </span>				},
+<span id="L216" class="ln">   216  </span>			)
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L219" class="ln">   219  </span>			_, err = u.GetPurchases(context.Background(), authnOf(t, userID), ListPurchasesParams{Cursor: cursor})
+<span id="L220" class="ln">   220  </span>			require.NoError(t, err)
+<span id="L221" class="ln">   221  </span>
+<span id="L222" class="ln">   222  </span>			assert.Equal(t, userID, capturedUserID)
+<span id="L223" class="ln">   223  </span>			assert.Equal(t, int32(3), captured.Limit) <span class="comment">// limit(2) + 1</span>
+<span id="L224" class="ln">   224  </span>			require.NotNil(t, captured.AfterOrderedAt)
+<span id="L225" class="ln">   225  </span>			require.NotNil(t, captured.AfterID)
+<span id="L226" class="ln">   226  </span>			assert.True(t, base.Equal(*captured.AfterOrderedAt))
+<span id="L227" class="ln">   227  </span>			assert.Equal(t, boundaryID, *captured.AfterID)
+<span id="L228" class="ln">   228  </span>			<span class="comment">// 期間指定なしでは境界を持たない対象期間が渡り、Repository 側の期間条件が効かない。</span>
+<span id="L229" class="ln">   229  </span>			assert.Nil(t, captured.Window.After())
+<span id="L230" class="ln">   230  </span>			assert.Nil(t, captured.Window.Before())
+<span id="L231" class="ln">   231  </span>		})
+<span id="L232" class="ln">   232  </span>
+<span id="L233" class="ln">   233  </span>		t.Run(&#34;両端を持つ対象期間がそのままRepositoryへ渡る&#34;, func(t *testing.T) {
+<span id="L234" class="ln">   234  </span>			t.Parallel()
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L237" class="ln">   237  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>			after := time.Date(2026, time.January, 21, 0, 0, 0, 0, time.UTC)
+<span id="L240" class="ln">   240  </span>			before := time.Date(2026, time.February, 1, 0, 0, 0, 0, time.UTC)
+<span id="L241" class="ln">   241  </span>			window, err := timewindow.New(timewindow.Bounds{After: &amp;after, Before: &amp;before})
+<span id="L242" class="ln">   242  </span>			require.NoError(t, err)
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>			var captured query.ListFeedParams
+<span id="L245" class="ln">   245  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L246" class="ln">   246  </span>				func(_ context.Context, _ uuid.UUID, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
+<span id="L247" class="ln">   247  </span>					captured = params
+<span id="L248" class="ln">   248  </span>					return []query.PurchaseFeedReadModel{}, nil
+<span id="L249" class="ln">   249  </span>				},
+<span id="L250" class="ln">   250  </span>			)
+<span id="L251" class="ln">   251  </span>
+<span id="L252" class="ln">   252  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L253" class="ln">   253  </span>			_, err = u.GetPurchases(
+<span id="L254" class="ln">   254  </span>				context.Background(),
+<span id="L255" class="ln">   255  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
+<span id="L256" class="ln">   256  </span>				ListPurchasesParams{Cursor: firstCursor(t, 2), Window: window},
+<span id="L257" class="ln">   257  </span>			)
+<span id="L258" class="ln">   258  </span>			require.NoError(t, err)
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>			require.NotNil(t, captured.Window.After())
+<span id="L261" class="ln">   261  </span>			require.NotNil(t, captured.Window.Before())
+<span id="L262" class="ln">   262  </span>			assert.True(t, after.Equal(*captured.Window.After()))
+<span id="L263" class="ln">   263  </span>			assert.True(t, before.Equal(*captured.Window.Before()))
+<span id="L264" class="ln">   264  </span>		})
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>		t.Run(&#34;片側だけの対象期間はその境界だけがQueryServiceへ渡る&#34;, func(t *testing.T) {
+<span id="L267" class="ln">   267  </span>			t.Parallel()
+<span id="L268" class="ln">   268  </span>
+<span id="L269" class="ln">   269  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L270" class="ln">   270  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>			after := time.Date(2026, time.January, 21, 0, 0, 0, 0, time.UTC)
+<span id="L273" class="ln">   273  </span>			window, err := timewindow.New(timewindow.Bounds{After: &amp;after})
+<span id="L274" class="ln">   274  </span>			require.NoError(t, err)
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>			var captured query.ListFeedParams
+<span id="L277" class="ln">   277  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L278" class="ln">   278  </span>				func(_ context.Context, _ uuid.UUID, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
+<span id="L279" class="ln">   279  </span>					captured = params
+<span id="L280" class="ln">   280  </span>					return []query.PurchaseFeedReadModel{}, nil
+<span id="L281" class="ln">   281  </span>				},
+<span id="L282" class="ln">   282  </span>			)
+<span id="L283" class="ln">   283  </span>
+<span id="L284" class="ln">   284  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L285" class="ln">   285  </span>			_, err = u.GetPurchases(
+<span id="L286" class="ln">   286  </span>				context.Background(),
+<span id="L287" class="ln">   287  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
+<span id="L288" class="ln">   288  </span>				ListPurchasesParams{Cursor: firstCursor(t, 2), Window: window},
+<span id="L289" class="ln">   289  </span>			)
+<span id="L290" class="ln">   290  </span>			require.NoError(t, err)
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span>			require.NotNil(t, captured.Window.After())
+<span id="L293" class="ln">   293  </span>			assert.True(t, after.Equal(*captured.Window.After()))
+<span id="L294" class="ln">   294  </span>			assert.Nil(t, captured.Window.Before())
+<span id="L295" class="ln">   295  </span>		})
+<span id="L296" class="ln">   296  </span>
+<span id="L297" class="ln">   297  </span>		t.Run(&#34;ステータスの絞り込みがそのままQueryServiceへ渡る&#34;, func(t *testing.T) {
+<span id="L298" class="ln">   298  </span>			t.Parallel()
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L301" class="ln">   301  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span>			var captured query.ListFeedParams
+<span id="L304" class="ln">   304  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L305" class="ln">   305  </span>				func(_ context.Context, _ uuid.UUID, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
+<span id="L306" class="ln">   306  </span>					captured = params
+<span id="L307" class="ln">   307  </span>					return []query.PurchaseFeedReadModel{}, nil
+<span id="L308" class="ln">   308  </span>				},
+<span id="L309" class="ln">   309  </span>			)
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L312" class="ln">   312  </span>			_, err := u.GetPurchases(
+<span id="L313" class="ln">   313  </span>				context.Background(),
+<span id="L314" class="ln">   314  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
+<span id="L315" class="ln">   315  </span>				ListPurchasesParams{
+<span id="L316" class="ln">   316  </span>					Cursor:      firstCursor(t, 2),
+<span id="L317" class="ln">   317  </span>					StatusCodes: []int16{statusCodeOf(t, domainpurchase.StatusShipped)},
+<span id="L318" class="ln">   318  </span>				},
+<span id="L319" class="ln">   319  </span>			)
+<span id="L320" class="ln">   320  </span>			require.NoError(t, err)
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>			assert.Equal(t, []int16{statusCodeOf(t, domainpurchase.StatusShipped)}, captured.StatusCodes)
+<span id="L323" class="ln">   323  </span>		})
+<span id="L324" class="ln">   324  </span>	})
+<span id="L325" class="ln">   325  </span>
+<span id="L326" class="ln">   326  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L327" class="ln">   327  </span>		t.Parallel()
+<span id="L328" class="ln">   328  </span>
+<span id="L329" class="ln">   329  </span>		t.Run(&#34;cursorがnilのときErrInvalidArgumentを返しRepositoryを呼ばない&#34;, func(t *testing.T) {
+<span id="L330" class="ln">   330  </span>			t.Parallel()
+<span id="L331" class="ln">   331  </span>
+<span id="L332" class="ln">   332  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L333" class="ln">   333  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L334" class="ln">   334  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L335" class="ln">   335  </span>
+<span id="L336" class="ln">   336  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L337" class="ln">   337  </span>			got, err := u.GetPurchases(
+<span id="L338" class="ln">   338  </span>				context.Background(),
+<span id="L339" class="ln">   339  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
+<span id="L340" class="ln">   340  </span>				ListPurchasesParams{},
+<span id="L341" class="ln">   341  </span>			)
+<span id="L342" class="ln">   342  </span>			assert.Nil(t, got)
+<span id="L343" class="ln">   343  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
+<span id="L344" class="ln">   344  </span>		})
+<span id="L345" class="ln">   345  </span>
+<span id="L346" class="ln">   346  </span>		t.Run(&#34;cursorの復号に失敗したときErrInvalidArgumentを返しRepositoryを呼ばない&#34;, func(t *testing.T) {
+<span id="L347" class="ln">   347  </span>			t.Parallel()
+<span id="L348" class="ln">   348  </span>
+<span id="L349" class="ln">   349  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L350" class="ln">   350  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L351" class="ln">   351  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L352" class="ln">   352  </span>
+<span id="L353" class="ln">   353  </span>			<span class="comment">// キーが 1 個（ordered_at, id の 2 個でない）= 復号エラー。</span>
+<span id="L354" class="ln">   354  </span>			after := paging.EncodeCursor(&#34;only-one-key&#34;)
+<span id="L355" class="ln">   355  </span>			first := 2
+<span id="L356" class="ln">   356  </span>			cursor, err := paging.NewCursor(&amp;after, &amp;first)
+<span id="L357" class="ln">   357  </span>			require.NoError(t, err)
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L360" class="ln">   360  </span>			got, err := u.GetPurchases(
+<span id="L361" class="ln">   361  </span>				context.Background(),
+<span id="L362" class="ln">   362  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
+<span id="L363" class="ln">   363  </span>				ListPurchasesParams{Cursor: cursor},
+<span id="L364" class="ln">   364  </span>			)
+<span id="L365" class="ln">   365  </span>			assert.Nil(t, got)
+<span id="L366" class="ln">   366  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
+<span id="L367" class="ln">   367  </span>		})
+<span id="L368" class="ln">   368  </span>
+<span id="L369" class="ln">   369  </span>		t.Run(&#34;Repositoryのエラーが伝播する&#34;, func(t *testing.T) {
+<span id="L370" class="ln">   370  </span>			t.Parallel()
+<span id="L371" class="ln">   371  </span>
+<span id="L372" class="ln">   372  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L373" class="ln">   373  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L374" class="ln">   374  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, apperror.ErrInternal)
+<span id="L375" class="ln">   375  </span>
+<span id="L376" class="ln">   376  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L377" class="ln">   377  </span>			got, err := u.GetPurchases(
+<span id="L378" class="ln">   378  </span>				context.Background(),
+<span id="L379" class="ln">   379  </span>				authnOf(t, uuidtestkit.NewTestFromSalt(t, &#34;user&#34;)),
+<span id="L380" class="ln">   380  </span>				ListPurchasesParams{Cursor: firstCursor(t, 2)},
+<span id="L381" class="ln">   381  </span>			)
+<span id="L382" class="ln">   382  </span>			assert.Nil(t, got)
+<span id="L383" class="ln">   383  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L384" class="ln">   384  </span>		})
+<span id="L385" class="ln">   385  </span>
+<span id="L386" class="ln">   386  </span>		t.Run(&#34;authnがnilのときErrUnauthenticatedを返しQueryServiceを呼ばない&#34;, func(t *testing.T) {
+<span id="L387" class="ln">   387  </span>			t.Parallel()
+<span id="L388" class="ln">   388  </span>
+<span id="L389" class="ln">   389  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L390" class="ln">   390  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L391" class="ln">   391  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L392" class="ln">   392  </span>			feedQS.EXPECT().FindFeedAll(gomock.Any(), gomock.Any()).Times(0)
+<span id="L393" class="ln">   393  </span>
+<span id="L394" class="ln">   394  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L395" class="ln">   395  </span>			got, err := u.GetPurchases(context.Background(), nil, ListPurchasesParams{Cursor: firstCursor(t, 2)})
+<span id="L396" class="ln">   396  </span>			assert.Nil(t, got)
+<span id="L397" class="ln">   397  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+<span id="L398" class="ln">   398  </span>		})
+<span id="L399" class="ln">   399  </span>	})
+<span id="L400" class="ln">   400  </span>}
+<span id="L401" class="ln">   401  </span>
+<span id="L402" class="ln">   402  </span>func Test_usecase_findFeedPage(t *testing.T) {
+<span id="L403" class="ln">   403  </span>	t.Parallel()
+<span id="L404" class="ln">   404  </span>
+<span id="L405" class="ln">   405  </span>	authnOf := func(t *testing.T, salt string) *auth.Authn {
+<span id="L406" class="ln">   406  </span>		t.Helper()
+<span id="L407" class="ln">   407  </span>		a, err := auth.New(&#34;feed-page-subject&#34;, &#34;feed-page-issuer&#34;, nil, nil)
+<span id="L408" class="ln">   408  </span>		require.NoError(t, err)
+<span id="L409" class="ln">   409  </span>		resolved, err := a.WithUserID(uuidtestkit.NewTestFromSalt(t, salt))
+<span id="L410" class="ln">   410  </span>		require.NoError(t, err)
+<span id="L411" class="ln">   411  </span>		return resolved
+<span id="L412" class="ln">   412  </span>	}
+<span id="L413" class="ln">   413  </span>
+<span id="L414" class="ln">   414  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L415" class="ln">   415  </span>		t.Parallel()
+<span id="L416" class="ln">   416  </span>
+<span id="L417" class="ln">   417  </span>		t.Run(&#34;既定では認可を求めず認証主体の購入だけを読む&#34;, func(t *testing.T) {
+<span id="L418" class="ln">   418  </span>			t.Parallel()
+<span id="L419" class="ln">   419  </span>
+<span id="L420" class="ln">   420  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L421" class="ln">   421  </span>			ctrl := gomock.NewController(t)
+<span id="L422" class="ln">   422  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(ctrl)
+<span id="L423" class="ln">   423  </span>			authorizer := mock_authz.NewMockAuthorizer(ctrl)
+<span id="L424" class="ln">   424  </span>
+<span id="L425" class="ln">   425  </span>			<span class="comment">// 自分の購入を読むのに admin の能力は要らない。</span>
+<span id="L426" class="ln">   426  </span>			authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L427" class="ln">   427  </span>			feedQS.EXPECT().FindFeedAll(gomock.Any(), gomock.Any()).Times(0)
+<span id="L428" class="ln">   428  </span>
+<span id="L429" class="ln">   429  </span>			userID := uuidtestkit.NewTestFromSalt(t, &#34;owner&#34;)
+<span id="L430" class="ln">   430  </span>			var capturedUserID uuid.UUID
+<span id="L431" class="ln">   431  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L432" class="ln">   432  </span>				func(_ context.Context, uid uuid.UUID, _ query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
+<span id="L433" class="ln">   433  </span>					capturedUserID = uid
+<span id="L434" class="ln">   434  </span>					return []query.PurchaseFeedReadModel{}, nil
+<span id="L435" class="ln">   435  </span>				},
+<span id="L436" class="ln">   436  </span>			)
+<span id="L437" class="ln">   437  </span>
+<span id="L438" class="ln">   438  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS, authorizer: authorizer}
+<span id="L439" class="ln">   439  </span>			authn, err := auth.New(&#34;feed-page-subject&#34;, &#34;feed-page-issuer&#34;, nil, nil)
+<span id="L440" class="ln">   440  </span>			require.NoError(t, err)
+<span id="L441" class="ln">   441  </span>			resolved, err := authn.WithUserID(userID)
+<span id="L442" class="ln">   442  </span>			require.NoError(t, err)
+<span id="L443" class="ln">   443  </span>
+<span id="L444" class="ln">   444  </span>			got, err := u.findFeedPage(context.Background(), resolved, false, query.ListFeedParams{Limit: 3})
+<span id="L445" class="ln">   445  </span>			require.NoError(t, err)
+<span id="L446" class="ln">   446  </span>			assert.Empty(t, got)
+<span id="L447" class="ln">   447  </span>			assert.Equal(t, userID, capturedUserID)
+<span id="L448" class="ln">   448  </span>		})
+<span id="L449" class="ln">   449  </span>
+<span id="L450" class="ln">   450  </span>		t.Run(&#34;他ユーザーを含める指定はadmin認可のうえ所有権で閉じない読み取りへ切り替わる&#34;, func(t *testing.T) {
+<span id="L451" class="ln">   451  </span>			t.Parallel()
+<span id="L452" class="ln">   452  </span>
+<span id="L453" class="ln">   453  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L454" class="ln">   454  </span>			ctrl := gomock.NewController(t)
+<span id="L455" class="ln">   455  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(ctrl)
+<span id="L456" class="ln">   456  </span>			authorizer := mock_authz.NewMockAuthorizer(ctrl)
+<span id="L457" class="ln">   457  </span>
+<span id="L458" class="ln">   458  </span>			<span class="comment">// 所有権で閉じる読み取りは呼ばれない（母集団が混ざらないことの固定）。</span>
+<span id="L459" class="ln">   459  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L460" class="ln">   460  </span>			authorizer.EXPECT().Authorize(
+<span id="L461" class="ln">   461  </span>				gomock.Any(), gomock.Any(), authz.ActionPurchaseReadAll, gomock.Any(),
+<span id="L462" class="ln">   462  </span>			).Return(nil)
+<span id="L463" class="ln">   463  </span>
+<span id="L464" class="ln">   464  </span>			var captured query.ListFeedParams
+<span id="L465" class="ln">   465  </span>			feedQS.EXPECT().FindFeedAll(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L466" class="ln">   466  </span>				func(_ context.Context, params query.ListFeedParams) ([]query.PurchaseFeedReadModel, error) {
+<span id="L467" class="ln">   467  </span>					captured = params
+<span id="L468" class="ln">   468  </span>					return []query.PurchaseFeedReadModel{}, nil
+<span id="L469" class="ln">   469  </span>				},
+<span id="L470" class="ln">   470  </span>			)
+<span id="L471" class="ln">   471  </span>
+<span id="L472" class="ln">   472  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS, authorizer: authorizer}
+<span id="L473" class="ln">   473  </span>			got, err := u.findFeedPage(
+<span id="L474" class="ln">   474  </span>				context.Background(), authnOf(t, &#34;admin&#34;), true,
+<span id="L475" class="ln">   475  </span>				query.ListFeedParams{Limit: 3, StatusCodes: []int16{8}},
+<span id="L476" class="ln">   476  </span>			)
+<span id="L477" class="ln">   477  </span>			require.NoError(t, err)
+<span id="L478" class="ln">   478  </span>			assert.Empty(t, got)
+<span id="L479" class="ln">   479  </span>			<span class="comment">// 母集団が変わっても件数と絞り込みの条件はそのまま渡る。</span>
+<span id="L480" class="ln">   480  </span>			assert.Equal(t, int32(3), captured.Limit)
+<span id="L481" class="ln">   481  </span>			assert.Equal(t, []int16{8}, captured.StatusCodes)
+<span id="L482" class="ln">   482  </span>		})
+<span id="L483" class="ln">   483  </span>	})
+<span id="L484" class="ln">   484  </span>
+<span id="L485" class="ln">   485  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L486" class="ln">   486  </span>		t.Parallel()
+<span id="L487" class="ln">   487  </span>
+<span id="L488" class="ln">   488  </span>		t.Run(&#34;他ユーザーを含める指定が認可されないとき所有権で閉じない読み取りを呼ばない&#34;, func(t *testing.T) {
+<span id="L489" class="ln">   489  </span>			t.Parallel()
+<span id="L490" class="ln">   490  </span>
+<span id="L491" class="ln">   491  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L492" class="ln">   492  </span>			ctrl := gomock.NewController(t)
+<span id="L493" class="ln">   493  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(ctrl)
+<span id="L494" class="ln">   494  </span>			authorizer := mock_authz.NewMockAuthorizer(ctrl)
+<span id="L495" class="ln">   495  </span>
+<span id="L496" class="ln">   496  </span>			feedQS.EXPECT().FindFeedAll(gomock.Any(), gomock.Any()).Times(0)
+<span id="L497" class="ln">   497  </span>			<span class="comment">// 拒否された指定が自分の購入一覧へ降格しないことも同時に固定する。</span>
+<span id="L498" class="ln">   498  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L499" class="ln">   499  </span>			authorizer.EXPECT().Authorize(
+<span id="L500" class="ln">   500  </span>				gomock.Any(), gomock.Any(), authz.ActionPurchaseReadAll, gomock.Any(),
+<span id="L501" class="ln">   501  </span>			).Return(apperror.ErrPermissionDenied)
+<span id="L502" class="ln">   502  </span>
+<span id="L503" class="ln">   503  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS, authorizer: authorizer}
+<span id="L504" class="ln">   504  </span>			got, err := u.findFeedPage(context.Background(), authnOf(t, &#34;user&#34;), true, query.ListFeedParams{Limit: 3})
+<span id="L505" class="ln">   505  </span>			assert.Nil(t, got)
+<span id="L506" class="ln">   506  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
+<span id="L507" class="ln">   507  </span>		})
+<span id="L508" class="ln">   508  </span>
+<span id="L509" class="ln">   509  </span>		t.Run(&#34;認証主体のUserIDが未解決のときQueryServiceを呼ばずエラーを返す&#34;, func(t *testing.T) {
+<span id="L510" class="ln">   510  </span>			t.Parallel()
+<span id="L511" class="ln">   511  </span>
+<span id="L512" class="ln">   512  </span>			<span class="comment">// 認証は済んでいるが内部ユーザーが解決できていない Authn では、所有権の絞り込みに渡す</span>
+<span id="L513" class="ln">   513  </span>			<span class="comment">// userID が定まらない。ゼロ値で全件を引きに行かないことを固定する。</span>
+<span id="L514" class="ln">   514  </span>			lt := observability.NewMockUsecaseLayerTracer(t)
+<span id="L515" class="ln">   515  </span>			feedQS := mock_query.NewMockPurchaseFeedQueryService(gomock.NewController(t))
+<span id="L516" class="ln">   516  </span>			feedQS.EXPECT().FindFeedByUserID(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L517" class="ln">   517  </span>
+<span id="L518" class="ln">   518  </span>			unresolved, err := auth.New(&#34;feed-page-subject&#34;, &#34;feed-page-issuer&#34;, nil, nil)
+<span id="L519" class="ln">   519  </span>			require.NoError(t, err)
+<span id="L520" class="ln">   520  </span>
+<span id="L521" class="ln">   521  </span>			u := &amp;usecase{tracer: lt, feedQS: feedQS}
+<span id="L522" class="ln">   522  </span>			got, err := u.findFeedPage(context.Background(), unresolved, false, query.ListFeedParams{Limit: 3})
+<span id="L523" class="ln">   523  </span>			assert.Nil(t, got)
+<span id="L524" class="ln">   524  </span>			require.ErrorIs(t, err, auth.ErrUserIDUnresolved)
+<span id="L525" class="ln">   525  </span>		})
+<span id="L526" class="ln">   526  </span>	})
+<span id="L527" class="ln">   527  </span>}
+<span id="L528" class="ln">   528  </span>
+<span id="L529" class="ln">   529  </span>func Test_encodePurchaseCursor(t *testing.T) {
+<span id="L530" class="ln">   530  </span>	t.Parallel()
+<span id="L531" class="ln">   531  </span>
+<span id="L532" class="ln">   532  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L533" class="ln">   533  </span>		t.Parallel()
+<span id="L534" class="ln">   534  </span>
+<span id="L535" class="ln">   535  </span>		t.Run(&#34;注文日時とIDを符号化したカーソルはナノ秒精度のまま復号できる&#34;, func(t *testing.T) {
+<span id="L536" class="ln">   536  </span>			t.Parallel()
+<span id="L537" class="ln">   537  </span>
+<span id="L538" class="ln">   538  </span>			orderedAt := time.Date(2099, time.January, 2, 3, 4, 5, 123456789, time.UTC)
+<span id="L539" class="ln">   539  </span>			id := uuidtestkit.NewTestFromSalt(t, &#34;encode_cursor_last&#34;)
+<span id="L540" class="ln">   540  </span>
+<span id="L541" class="ln">   541  </span>			encoded := encodePurchaseCursor(query.PurchaseFeedReadModel{OrderedAt: orderedAt, ID: id})
+<span id="L542" class="ln">   542  </span>			assert.NotEmpty(t, encoded)
+<span id="L543" class="ln">   543  </span>
+<span id="L544" class="ln">   544  </span>			first := 2
+<span id="L545" class="ln">   545  </span>			cursor, err := paging.NewCursor(&amp;encoded, &amp;first)
+<span id="L546" class="ln">   546  </span>			require.NoError(t, err)
+<span id="L547" class="ln">   547  </span>
+<span id="L548" class="ln">   548  </span>			decoded, err := decodePurchaseCursor(cursor)
+<span id="L549" class="ln">   549  </span>			require.NoError(t, err)
+<span id="L550" class="ln">   550  </span>			require.NotNil(t, decoded)
+<span id="L551" class="ln">   551  </span>			assert.True(t, orderedAt.Equal(decoded.orderedAt))
+<span id="L552" class="ln">   552  </span>			assert.Equal(t, id, decoded.id)
+<span id="L553" class="ln">   553  </span>		})
+<span id="L554" class="ln">   554  </span>
+<span id="L555" class="ln">   555  </span>		t.Run(&#34;keyset境界は末尾行の注文日時とIDのみで決まりステータスなど他項目に影響されない&#34;, func(t *testing.T) {
+<span id="L556" class="ln">   556  </span>			t.Parallel()
+<span id="L557" class="ln">   557  </span>
+<span id="L558" class="ln">   558  </span>			orderedAt := time.Date(2099, time.January, 2, 3, 4, 5, 0, time.UTC)
+<span id="L559" class="ln">   559  </span>			id := uuidtestkit.NewTestFromSalt(t, &#34;encode_cursor_same_key&#34;)
+<span id="L560" class="ln">   560  </span>
+<span id="L561" class="ln">   561  </span>			base := encodePurchaseCursor(query.PurchaseFeedReadModel{OrderedAt: orderedAt, ID: id})
+<span id="L562" class="ln">   562  </span>			other := encodePurchaseCursor(query.PurchaseFeedReadModel{
+<span id="L563" class="ln">   563  </span>				Code:        &#34;code-other&#34;,
+<span id="L564" class="ln">   564  </span>				TotalAmount: 999,
+<span id="L565" class="ln">   565  </span>				StatusID:    uuidtestkit.NewTestFromSalt(t, &#34;encode_cursor_other_status&#34;),
+<span id="L566" class="ln">   566  </span>				StatusName:  &#34;キャンセル&#34;,
+<span id="L567" class="ln">   567  </span>				OrderedAt:   orderedAt,
+<span id="L568" class="ln">   568  </span>				ID:          id,
+<span id="L569" class="ln">   569  </span>			})
+<span id="L570" class="ln">   570  </span>
+<span id="L571" class="ln">   571  </span>			assert.Equal(t, base, other)
+<span id="L572" class="ln">   572  </span>		})
+<span id="L573" class="ln">   573  </span>	})
+<span id="L574" class="ln">   574  </span>}
+<span id="L575" class="ln">   575  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/purchase/purchase_feed_usecase_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

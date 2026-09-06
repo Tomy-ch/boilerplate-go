@@ -122,8 +122,8 @@
 <span id="L65" class="ln">    65  </span>	expectedEndpointOTLP                      = &#34;http://localhost:4318&#34;
 <span id="L66" class="ln">    66  </span>	expectedObservabilityOTLPProtocol         = &#34;http/protobuf&#34;
 <span id="L67" class="ln">    67  </span>	expectedObservabilityMaskedDBQueryArgs    = false
-<span id="L68" class="ln">    68  </span>	expectedObservabilityTargetStatusCodes    = []int{400, 401, 403, 404, 405, 409, 422, 429, 500, 501, 503}
-<span id="L69" class="ln">    69  </span>	expectedObservabilityTargetStatusCodesStr = &#34;400,401,403,404,405,409,422,429,500,501,503&#34;
+<span id="L68" class="ln">    68  </span>	expectedObservabilityTargetStatusCodes    = []int{400, 401, 403, 404, 405, 409, 410, 422, 429, 500, 501, 503}
+<span id="L69" class="ln">    69  </span>	expectedObservabilityTargetStatusCodesStr = &#34;400,401,403,404,405,409,410,422,429,500,501,503&#34;
 <span id="L70" class="ln">    70  </span>	expectedObservabilityTargetStatusCodeSet  = buildStatusCodeSet(expectedObservabilityTargetStatusCodes)
 <span id="L71" class="ln">    71  </span>	<span class="comment">// database</span>
 <span id="L72" class="ln">    72  </span>	expectedDBDriver = &#34;pgx&#34;
@@ -250,348 +250,398 @@
 <span id="L193" class="ln">   193  </span>	expectedObjectStorageUsePathStyleStr         = strconv.FormatBool(expectedObjectStorageUsePathStyle)
 <span id="L194" class="ln">   194  </span>	expectedObjectStorageMaxUploadBytes    int64 = 5242880
 <span id="L195" class="ln">   195  </span>	expectedObjectStorageMaxUploadBytesStr       = strconv.FormatInt(expectedObjectStorageMaxUploadBytes, 10)
-<span id="L196" class="ln">   196  </span>)
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span><span class="comment">// MockConfigForTest は、テスト用のConfigを返します。</span>
-<span id="L199" class="ln">   199  </span><span class="comment">//</span>
-<span id="L200" class="ln">   200  </span><span class="comment">//nolint:dupl // Config の全フィールドを網羅比較するための構造体リテラルであり、テスト側期待値との重複は不可避</span>
-<span id="L201" class="ln">   201  </span>func MockConfigForTest(tb testing.TB) *Config {
-<span id="L202" class="ln">   202  </span>	tb.Helper()
-<span id="L203" class="ln">   203  </span>	return &amp;Config{
-<span id="L204" class="ln">   204  </span>		os: OperatingSystemConfig{
-<span id="L205" class="ln">   205  </span>			timezone: expectedOSTimeZone,
-<span id="L206" class="ln">   206  </span>		},
-<span id="L207" class="ln">   207  </span>		app: ApplicationConfig{
-<span id="L208" class="ln">   208  </span>			env:             expectedApplicationEnv,
-<span id="L209" class="ln">   209  </span>			name:            expectedApplicationName,
-<span id="L210" class="ln">   210  </span>			mode:            expectedApplicationMode,
-<span id="L211" class="ln">   211  </span>			logLevel:        expectedApplicationLogLevel,
-<span id="L212" class="ln">   212  </span>			shutdownTimeout: expectedAppShutdownTimeout,
-<span id="L213" class="ln">   213  </span>		},
-<span id="L214" class="ln">   214  </span>		server: ServerConfig{
-<span id="L215" class="ln">   215  </span>			host:              expectedServerHost,
-<span id="L216" class="ln">   216  </span>			port:              expectedServerPort,
-<span id="L217" class="ln">   217  </span>			readHeaderTimeout: expectedServerReadHeaderTimeout,
-<span id="L218" class="ln">   218  </span>			readTimeout:       expectedServerReadTimeout,
-<span id="L219" class="ln">   219  </span>			writeTimeout:      expectedServerWriteTimeout,
-<span id="L220" class="ln">   220  </span>			idleTimeout:       expectedServerIdleTimeout,
-<span id="L221" class="ln">   221  </span>			bodyLimitMB:       expectedServerBodyLimitMB,
-<span id="L222" class="ln">   222  </span>			requestTimeout:    expectedServerRequestTimeout,
-<span id="L223" class="ln">   223  </span>		},
-<span id="L224" class="ln">   224  </span>		metrics: MetricsConfig{
-<span id="L225" class="ln">   225  </span>			host:     expectedMetricsHost,
-<span id="L226" class="ln">   226  </span>			port:     expectedMetricsPort,
-<span id="L227" class="ln">   227  </span>			userName: expectedMetricsUserName,
-<span id="L228" class="ln">   228  </span>			password: expectedMetricsPassword,
-<span id="L229" class="ln">   229  </span>		},
-<span id="L230" class="ln">   230  </span>		observability: ObservabilityConfig{
-<span id="L231" class="ln">   231  </span>			tracesExporter:      expectedObservabilityTracesExporter,
-<span id="L232" class="ln">   232  </span>			metricsExporter:     expectedObservabilityMetricsExporter,
-<span id="L233" class="ln">   233  </span>			logsExporter:        expectedObservabilityLogsExporter,
-<span id="L234" class="ln">   234  </span>			otlpProtocol:        expectedObservabilityOTLPProtocol,
-<span id="L235" class="ln">   235  </span>			maskedDBQueryArgs:   expectedObservabilityMaskedDBQueryArgs,
-<span id="L236" class="ln">   236  </span>			targetStatusCodeSet: expectedObservabilityTargetStatusCodeSet,
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>	<span class="comment">// realtime（Endpoint は空文字＝SDK 既定解決の意味を持つため空。Topic / DLQ は既定の空値。他は required,notEmpty のため実値）</span>
+<span id="L198" class="ln">   198  </span>	expectedEndpointRealtime        = &#34;&#34;
+<span id="L199" class="ln">   199  </span>	expectedEndpointRealtimePubSub  = &#34;&#34;
+<span id="L200" class="ln">   200  </span>	expectedRealtimeRegion          = &#34;us-east-1&#34;
+<span id="L201" class="ln">   201  </span>	expectedRealtimeTableSuffix     = &#34;test&#34;
+<span id="L202" class="ln">   202  </span>	expectedRealtimeTopic           = &#34;&#34;
+<span id="L203" class="ln">   203  </span>	expectedRealtimeQueuePrefix     = &#34;realtime-test&#34;
+<span id="L204" class="ln">   204  </span>	expectedRealtimeDLQ             = &#34;&#34;
+<span id="L205" class="ln">   205  </span>	expectedRealtimeAccessKeyID     = &#34;test-access-key&#34;
+<span id="L206" class="ln">   206  </span>	expectedRealtimeSecretAccessKey = &#34;test-secret-key&#34;
+<span id="L207" class="ln">   207  </span>	<span class="comment">// MaxConnections / ReplayConcurrency は env ファイルに書かない Code default。</span>
+<span id="L208" class="ln">   208  </span>	expectedRealtimeMaxConnections    = 1000
+<span id="L209" class="ln">   209  </span>	expectedRealtimeReplayConcurrency = 16
+<span id="L210" class="ln">   210  </span>)
+<span id="L211" class="ln">   211  </span>
+<span id="L212" class="ln">   212  </span><span class="comment">// MockConfigForTest は、テスト用のConfigを返します。</span>
+<span id="L213" class="ln">   213  </span><span class="comment">//</span>
+<span id="L214" class="ln">   214  </span><span class="comment">//nolint:dupl // Config の全フィールドを網羅比較するための構造体リテラルであり、テスト側期待値との重複は不可避</span>
+<span id="L215" class="ln">   215  </span>func MockConfigForTest(tb testing.TB) *Config {
+<span id="L216" class="ln">   216  </span>	tb.Helper()
+<span id="L217" class="ln">   217  </span>	return &amp;Config{
+<span id="L218" class="ln">   218  </span>		os: OperatingSystemConfig{
+<span id="L219" class="ln">   219  </span>			timezone: expectedOSTimeZone,
+<span id="L220" class="ln">   220  </span>		},
+<span id="L221" class="ln">   221  </span>		app: ApplicationConfig{
+<span id="L222" class="ln">   222  </span>			env:             expectedApplicationEnv,
+<span id="L223" class="ln">   223  </span>			name:            expectedApplicationName,
+<span id="L224" class="ln">   224  </span>			mode:            expectedApplicationMode,
+<span id="L225" class="ln">   225  </span>			logLevel:        expectedApplicationLogLevel,
+<span id="L226" class="ln">   226  </span>			shutdownTimeout: expectedAppShutdownTimeout,
+<span id="L227" class="ln">   227  </span>		},
+<span id="L228" class="ln">   228  </span>		server: ServerConfig{
+<span id="L229" class="ln">   229  </span>			host:              expectedServerHost,
+<span id="L230" class="ln">   230  </span>			port:              expectedServerPort,
+<span id="L231" class="ln">   231  </span>			readHeaderTimeout: expectedServerReadHeaderTimeout,
+<span id="L232" class="ln">   232  </span>			readTimeout:       expectedServerReadTimeout,
+<span id="L233" class="ln">   233  </span>			writeTimeout:      expectedServerWriteTimeout,
+<span id="L234" class="ln">   234  </span>			idleTimeout:       expectedServerIdleTimeout,
+<span id="L235" class="ln">   235  </span>			bodyLimitMB:       expectedServerBodyLimitMB,
+<span id="L236" class="ln">   236  </span>			requestTimeout:    expectedServerRequestTimeout,
 <span id="L237" class="ln">   237  </span>		},
-<span id="L238" class="ln">   238  </span>		database: DatabaseConfig{
-<span id="L239" class="ln">   239  </span>			driver:                 expectedDBDriver,
-<span id="L240" class="ln">   240  </span>			host:                   expectedDBHost,
-<span id="L241" class="ln">   241  </span>			port:                   expectedDBPort,
-<span id="L242" class="ln">   242  </span>			user:                   expectedDBUser,
-<span id="L243" class="ln">   243  </span>			password:               expectedDBPassword,
-<span id="L244" class="ln">   244  </span>			name:                   expectedDBName,
-<span id="L245" class="ln">   245  </span>			sslMode:                expectedDBSSLMode,
-<span id="L246" class="ln">   246  </span>			pingTimeout:            expectedDBPingTimeout,
-<span id="L247" class="ln">   247  </span>			slowQueryWarnThreshold: expectedDBSlowQueryWarnThreshold,
-<span id="L248" class="ln">   248  </span>			statementTimeout:       expectedDBStatementTimeout,
-<span id="L249" class="ln">   249  </span>			lockTimeout:            expectedDBLockTimeout,
-<span id="L250" class="ln">   250  </span>			txMaxRetries:           expectedDBTxMaxRetries,
-<span id="L251" class="ln">   251  </span>			txRetryBaseBackoff:     expectedDBTxRetryBaseBackoff,
-<span id="L252" class="ln">   252  </span>			txRetryMaxBackoff:      expectedDBTxRetryMaxBackoff,
-<span id="L253" class="ln">   253  </span>		},
-<span id="L254" class="ln">   254  </span>		dbconnection: DBConnectionConfig{
-<span id="L255" class="ln">   255  </span>			maxConns:    expectedDBMaxConnsInt32,
-<span id="L256" class="ln">   256  </span>			minConns:    expectedDBMinConnsInt32,
-<span id="L257" class="ln">   257  </span>			maxLifetime: expectedDBMaxLifetime,
-<span id="L258" class="ln">   258  </span>			maxIdleTime: expectedDBMaxIdleTime,
-<span id="L259" class="ln">   259  </span>		},
-<span id="L260" class="ln">   260  </span>		security: SecurityConfig{
-<span id="L261" class="ln">   261  </span>			allowedOrigins:            strings.Split(expectedAllowedOrigins, &#34;,&#34;),
-<span id="L262" class="ln">   262  </span>			cidr:                      expectedCIDR,
-<span id="L263" class="ln">   263  </span>			contentTypeNosniff:        expectedContentTypeNosniff,
-<span id="L264" class="ln">   264  </span>			xFrameOptions:             expectedXFrameOptions,
-<span id="L265" class="ln">   265  </span>			hstsMaxAge:                expectedHSTSMaxAge,
-<span id="L266" class="ln">   266  </span>			hstsExcludeSubdomains:     expectedHSTSExcludeSubdomains,
-<span id="L267" class="ln">   267  </span>			hstsPreloadEnabled:        expectedHSTSPreloadEnabled,
-<span id="L268" class="ln">   268  </span>			referrerPolicy:            expectedReferrerPolicy,
-<span id="L269" class="ln">   269  </span>			crossOriginResourcePolicy: expectedCrossOriginResourcePolicy,
-<span id="L270" class="ln">   270  </span>		},
-<span id="L271" class="ln">   271  </span>		secureCookie: SecureCookieConfig{
-<span id="L272" class="ln">   272  </span>			secure:   expectedSecureCookieSecure,
-<span id="L273" class="ln">   273  </span>			sameSite: expectedSecureCookieSameSite,
-<span id="L274" class="ln">   274  </span>			domain:   expectedSecureCookieDomain,
-<span id="L275" class="ln">   275  </span>		},
-<span id="L276" class="ln">   276  </span>		worker: WorkerConfig{
-<span id="L277" class="ln">   277  </span>			concurrency:               expectedWorkerConcurrency,
-<span id="L278" class="ln">   278  </span>			maxInFlight:               expectedWorkerMaxInFlight,
-<span id="L279" class="ln">   279  </span>			batchSize:                 expectedWorkerBatchSize,
-<span id="L280" class="ln">   280  </span>			extendInterval:            expectedWorkerExtendInterval,
-<span id="L281" class="ln">   281  </span>			drainTimeout:              expectedWorkerDrainTimeout,
-<span id="L282" class="ln">   282  </span>			receiveCountWarnThreshold: expectedWorkerReceiveCountWarnThreshold,
-<span id="L283" class="ln">   283  </span>			circuitFailureThreshold:   expectedWorkerCircuitFailureThreshold,
-<span id="L284" class="ln">   284  </span>			circuitOpenBackoffInitial: expectedWorkerCircuitOpenBackoffInitial,
-<span id="L285" class="ln">   285  </span>			circuitOpenBackoffMax:     expectedWorkerCircuitOpenBackoffMax,
-<span id="L286" class="ln">   286  </span>			circuitHalfOpenProbe:      expectedWorkerCircuitHalfOpenProbe,
-<span id="L287" class="ln">   287  </span>			healthListenAddr:          expectedWorkerHealthListenAddr,
-<span id="L288" class="ln">   288  </span>			progressStaleAfter:        expectedWorkerProgressStaleAfter,
-<span id="L289" class="ln">   289  </span>			nackBackoffInitial:        expectedWorkerNackBackoffInitial,
-<span id="L290" class="ln">   290  </span>			nackBackoffMax:            expectedWorkerNackBackoffMax,
-<span id="L291" class="ln">   291  </span>		},
-<span id="L292" class="ln">   292  </span>		consumerQueue: ConsumerQueueConfig{
-<span id="L293" class="ln">   293  </span>			region:            expectedConsumerQueueRegion,
-<span id="L294" class="ln">   294  </span>			url:               expectedConsumerQueueURL,
-<span id="L295" class="ln">   295  </span>			dlqURL:            expectedConsumerQueueDLQURL,
-<span id="L296" class="ln">   296  </span>			accessKeyID:       expectedConsumerQueueAccessKeyID,
-<span id="L297" class="ln">   297  </span>			secretAccessKey:   expectedConsumerQueueSecretAccessKey,
-<span id="L298" class="ln">   298  </span>			maxMessages:       expectedConsumerQueueMaxMessagesInt32,
-<span id="L299" class="ln">   299  </span>			waitTimeSeconds:   expectedConsumerQueueWaitTimeSecondsInt32,
-<span id="L300" class="ln">   300  </span>			visibilityTimeout: expectedConsumerQueueVisibilityTimeoutInt32,
-<span id="L301" class="ln">   301  </span>		},
-<span id="L302" class="ln">   302  </span>		outbox: OutboxConfig{
-<span id="L303" class="ln">   303  </span>			publisher:            expectedOutboxPublisher,
-<span id="L304" class="ln">   304  </span>			pollInterval:         expectedOutboxPollInterval,
-<span id="L305" class="ln">   305  </span>			errorBackoff:         expectedOutboxErrorBackoff,
-<span id="L306" class="ln">   306  </span>			batchSize:            expectedOutboxBatchSize,
-<span id="L307" class="ln">   307  </span>			queueRegion:          expectedOutboxQueueRegion,
-<span id="L308" class="ln">   308  </span>			queueURL:             expectedOutboxQueueURL,
-<span id="L309" class="ln">   309  </span>			queueAccessKeyID:     expectedOutboxQueueAccessKeyID,
-<span id="L310" class="ln">   310  </span>			queueSecretAccessKey: expectedOutboxQueueSecretAccessKey,
-<span id="L311" class="ln">   311  </span>		},
-<span id="L312" class="ln">   312  </span>		auth: AuthConfig{
-<span id="L313" class="ln">   313  </span>			issuer:             expectedAuthIssuer,
-<span id="L314" class="ln">   314  </span>			audience:           expectedAuthAudience,
-<span id="L315" class="ln">   315  </span>			allowedAlgorithms:  expectedAuthAllowedAlgorithms,
-<span id="L316" class="ln">   316  </span>			clockSkew:          expectedAuthClockSkew,
-<span id="L317" class="ln">   317  </span>			jwksCacheTTL:       expectedAuthJWKSCacheTTL,
-<span id="L318" class="ln">   318  </span>			discoveryTTL:       expectedAuthDiscoveryTTL,
-<span id="L319" class="ln">   319  </span>			unknownKidCooldown: expectedAuthUnknownKidCooldown,
-<span id="L320" class="ln">   320  </span>		},
-<span id="L321" class="ln">   321  </span>		objectStorage: ObjectStorageConfig{
-<span id="L322" class="ln">   322  </span>			region:          expectedObjectStorageRegion,
-<span id="L323" class="ln">   323  </span>			bucket:          expectedObjectStorageBucket,
-<span id="L324" class="ln">   324  </span>			accessKeyID:     expectedObjectStorageAccessKeyID,
-<span id="L325" class="ln">   325  </span>			secretAccessKey: expectedObjectStorageSecretAccessKey,
-<span id="L326" class="ln">   326  </span>			usePathStyle:    expectedObjectStorageUsePathStyle,
-<span id="L327" class="ln">   327  </span>			maxUploadBytes:  expectedObjectStorageMaxUploadBytes,
-<span id="L328" class="ln">   328  </span>		},
-<span id="L329" class="ln">   329  </span>		endpoint: EndpointConfig{
-<span id="L330" class="ln">   330  </span>			otlp:          expectedEndpointOTLP,
-<span id="L331" class="ln">   331  </span>			jwks:          expectedEndpointJWKS,
-<span id="L332" class="ln">   332  </span>			objectStorage: expectedEndpointObjectStorage,
-<span id="L333" class="ln">   333  </span>			outbox:        expectedEndpointOutbox,
-<span id="L334" class="ln">   334  </span>			outboxQueue:   expectedEndpointOutboxQueue,
-<span id="L335" class="ln">   335  </span>			consumerQueue: expectedEndpointConsumerQueue,
-<span id="L336" class="ln">   336  </span>			<span class="comment">// sample-api:begin</span>
-<span id="L337" class="ln">   337  </span>			exchangeRate: expectedEndpointExchangeRate,
-<span id="L338" class="ln">   338  </span>			<span class="comment">// sample-api:end</span>
-<span id="L339" class="ln">   339  </span>		},
-<span id="L340" class="ln">   340  </span>	}
-<span id="L341" class="ln">   341  </span>}
-<span id="L342" class="ln">   342  </span>
-<span id="L343" class="ln">   343  </span><span class="comment">// mockLoader は、テスト用のLoaderを返します。</span>
-<span id="L344" class="ln">   344  </span>func mockLoader(tb testing.TB) Loader {
-<span id="L345" class="ln">   345  </span>	tb.Helper()
-<span id="L346" class="ln">   346  </span>
-<span id="L347" class="ln">   347  </span>	return Loader{
-<span id="L348" class="ln">   348  </span>		OS: OperatingSystem{
-<span id="L349" class="ln">   349  </span>			Timezone: expectedOSTimeZone,
-<span id="L350" class="ln">   350  </span>		},
-<span id="L351" class="ln">   351  </span>		App: Application{
-<span id="L352" class="ln">   352  </span>			Env:             expectedApplicationEnv,
-<span id="L353" class="ln">   353  </span>			Name:            expectedApplicationName,
-<span id="L354" class="ln">   354  </span>			Mode:            expectedApplicationMode,
-<span id="L355" class="ln">   355  </span>			LogLevel:        expectedApplicationLogLevel,
-<span id="L356" class="ln">   356  </span>			ShutdownTimeout: expectedAppShutdownTimeout,
-<span id="L357" class="ln">   357  </span>		},
-<span id="L358" class="ln">   358  </span>		Metrics: Metrics{
-<span id="L359" class="ln">   359  </span>			Host:     expectedMetricsHost,
-<span id="L360" class="ln">   360  </span>			Port:     expectedMetricsPort,
-<span id="L361" class="ln">   361  </span>			UserName: expectedMetricsUserName,
-<span id="L362" class="ln">   362  </span>			Password: expectedMetricsPassword,
-<span id="L363" class="ln">   363  </span>		},
-<span id="L364" class="ln">   364  </span>		Observability: Observability{
-<span id="L365" class="ln">   365  </span>			TracesExporter:    expectedObservabilityTracesExporter,
-<span id="L366" class="ln">   366  </span>			MetricsExporter:   expectedObservabilityMetricsExporter,
-<span id="L367" class="ln">   367  </span>			LogsExporter:      expectedObservabilityLogsExporter,
-<span id="L368" class="ln">   368  </span>			OTLPProtocol:      expectedObservabilityOTLPProtocol,
-<span id="L369" class="ln">   369  </span>			MaskedDBQueryArgs: expectedObservabilityMaskedDBQueryArgs,
-<span id="L370" class="ln">   370  </span>			TargetStatusCodes: expectedObservabilityTargetStatusCodes,
-<span id="L371" class="ln">   371  </span>		},
-<span id="L372" class="ln">   372  </span>		Endpoint: Endpoint{
-<span id="L373" class="ln">   373  </span>			OTLP:          expectedEndpointOTLP,
-<span id="L374" class="ln">   374  </span>			JWKS:          expectedEndpointJWKS,
-<span id="L375" class="ln">   375  </span>			ObjectStorage: expectedEndpointObjectStorage,
-<span id="L376" class="ln">   376  </span>			Outbox:        expectedEndpointOutbox,
-<span id="L377" class="ln">   377  </span>			OutboxQueue:   expectedEndpointOutboxQueue,
-<span id="L378" class="ln">   378  </span>			ConsumerQueue: expectedEndpointConsumerQueue,
-<span id="L379" class="ln">   379  </span>			<span class="comment">// sample-api:begin</span>
-<span id="L380" class="ln">   380  </span>			ExchangeRate: expectedEndpointExchangeRate,
-<span id="L381" class="ln">   381  </span>			<span class="comment">// sample-api:end</span>
-<span id="L382" class="ln">   382  </span>		},
-<span id="L383" class="ln">   383  </span>		Server: Server{
-<span id="L384" class="ln">   384  </span>			Host:              expectedServerHost,
-<span id="L385" class="ln">   385  </span>			Port:              expectedServerPort,
-<span id="L386" class="ln">   386  </span>			ReadHeaderTimeout: expectedServerReadHeaderTimeout,
-<span id="L387" class="ln">   387  </span>			ReadTimeout:       expectedServerReadTimeout,
-<span id="L388" class="ln">   388  </span>			WriteTimeout:      expectedServerWriteTimeout,
-<span id="L389" class="ln">   389  </span>			IdleTimeout:       expectedServerIdleTimeout,
-<span id="L390" class="ln">   390  </span>			BodyLimitMB:       expectedServerBodyLimitMB,
-<span id="L391" class="ln">   391  </span>			RequestTimeout:    expectedServerRequestTimeout,
-<span id="L392" class="ln">   392  </span>		},
-<span id="L393" class="ln">   393  </span>		Database: Database{
-<span id="L394" class="ln">   394  </span>			Host:                   expectedDBHost,
-<span id="L395" class="ln">   395  </span>			Port:                   expectedDBPort,
-<span id="L396" class="ln">   396  </span>			User:                   expectedDBUser,
-<span id="L397" class="ln">   397  </span>			Password:               expectedDBPassword,
-<span id="L398" class="ln">   398  </span>			Name:                   expectedDBName,
-<span id="L399" class="ln">   399  </span>			SSLMode:                expectedDBSSLMode,
-<span id="L400" class="ln">   400  </span>			PingTimeout:            expectedDBPingTimeout,
-<span id="L401" class="ln">   401  </span>			SlowQueryWarnThreshold: expectedDBSlowQueryWarnThreshold,
-<span id="L402" class="ln">   402  </span>			StatementTimeout:       expectedDBStatementTimeout,
-<span id="L403" class="ln">   403  </span>			LockTimeout:            expectedDBLockTimeout,
-<span id="L404" class="ln">   404  </span>			TxMaxRetries:           expectedDBTxMaxRetries,
-<span id="L405" class="ln">   405  </span>			TxRetryBaseBackoff:     expectedDBTxRetryBaseBackoff,
-<span id="L406" class="ln">   406  </span>			TxRetryMaxBackoff:      expectedDBTxRetryMaxBackoff,
-<span id="L407" class="ln">   407  </span>		},
-<span id="L408" class="ln">   408  </span>		DBConnection: DBConnection{
-<span id="L409" class="ln">   409  </span>			MaxConns:    expectedDBMaxConnsInt32,
-<span id="L410" class="ln">   410  </span>			MinConns:    expectedDBMinConnsInt32,
-<span id="L411" class="ln">   411  </span>			MaxLifetime: expectedDBMaxLifetime,
-<span id="L412" class="ln">   412  </span>			MaxIdleTime: expectedDBMaxIdleTime,
-<span id="L413" class="ln">   413  </span>		},
-<span id="L414" class="ln">   414  </span>		Security: Security{
-<span id="L415" class="ln">   415  </span>			AllowedOrigins:            strings.Split(expectedAllowedOrigins, &#34;,&#34;),
-<span id="L416" class="ln">   416  </span>			CIDR:                      expectedCIDRStr,
-<span id="L417" class="ln">   417  </span>			ContentTypeNosniff:        expectedContentTypeNosniff,
-<span id="L418" class="ln">   418  </span>			XFrameOptions:             expectedXFrameOptions,
-<span id="L419" class="ln">   419  </span>			HSTSMaxAge:                expectedHSTSMaxAge,
-<span id="L420" class="ln">   420  </span>			HSTSExcludeSubdomains:     expectedHSTSExcludeSubdomains,
-<span id="L421" class="ln">   421  </span>			HSTSPreloadEnabled:        expectedHSTSPreloadEnabled,
-<span id="L422" class="ln">   422  </span>			ReferrerPolicy:            expectedReferrerPolicy,
-<span id="L423" class="ln">   423  </span>			CrossOriginResourcePolicy: expectedCrossOriginResourcePolicy,
-<span id="L424" class="ln">   424  </span>		},
-<span id="L425" class="ln">   425  </span>		SecureCookie: SecureCookie{
-<span id="L426" class="ln">   426  </span>			Secure:   expectedSecureCookieSecure,
-<span id="L427" class="ln">   427  </span>			SameSite: expectedSecureCookieSameSite,
-<span id="L428" class="ln">   428  </span>			Domain:   expectedSecureCookieDomain,
-<span id="L429" class="ln">   429  </span>		},
-<span id="L430" class="ln">   430  </span>	}
-<span id="L431" class="ln">   431  </span>}
-<span id="L432" class="ln">   432  </span>
-<span id="L433" class="ln">   433  </span>func setEnvVarsForTesting(t *testing.T) { <span class="comment">//nolint:funlen // テスト用の環境変数設定のため長くなるのは許容する</span>
-<span id="L434" class="ln">   434  </span>	t.Helper()
-<span id="L435" class="ln">   435  </span>	<span class="comment">// OS</span>
-<span id="L436" class="ln">   436  </span>	t.Setenv(&#34;OS_TZ&#34;, expectedOSTimeZone)
-<span id="L437" class="ln">   437  </span>	<span class="comment">// Application</span>
-<span id="L438" class="ln">   438  </span>	t.Setenv(&#34;APP_ENV&#34;, expectedApplicationEnv)
-<span id="L439" class="ln">   439  </span>	t.Setenv(&#34;APP_NAME&#34;, expectedApplicationName)
-<span id="L440" class="ln">   440  </span>	t.Setenv(&#34;APP_MODE&#34;, expectedApplicationMode)
-<span id="L441" class="ln">   441  </span>	t.Setenv(&#34;APP_LOG_LEVEL&#34;, expectedApplicationLogLevel)
-<span id="L442" class="ln">   442  </span>	t.Setenv(&#34;APP_SHUTDOWN_TIMEOUT&#34;, expectedAppShutdownTimeoutStr)
-<span id="L443" class="ln">   443  </span>	<span class="comment">// Server</span>
-<span id="L444" class="ln">   444  </span>	t.Setenv(&#34;SERVER_HOST&#34;, expectedServerHost)
-<span id="L445" class="ln">   445  </span>	t.Setenv(&#34;SERVER_PORT&#34;, strconv.Itoa(expectedServerPort))
-<span id="L446" class="ln">   446  </span>	t.Setenv(&#34;SERVER_READ_HEADER_TIMEOUT&#34;, expectedServerReadHeaderTimeoutStr)
-<span id="L447" class="ln">   447  </span>	t.Setenv(&#34;SERVER_READ_TIMEOUT&#34;, expectedServerReadTimeoutStr)
-<span id="L448" class="ln">   448  </span>	t.Setenv(&#34;SERVER_WRITE_TIMEOUT&#34;, expectedServerWriteTimeoutStr)
-<span id="L449" class="ln">   449  </span>	t.Setenv(&#34;SERVER_IDLE_TIMEOUT&#34;, expectedServerIdleTimeoutStr)
-<span id="L450" class="ln">   450  </span>	t.Setenv(&#34;SERVER_BODY_LIMIT_MB&#34;, expectedServerBodyLimitMBStr)
-<span id="L451" class="ln">   451  </span>	t.Setenv(&#34;SERVER_REQUEST_TIMEOUT&#34;, expectedServerRequestTimeoutStr)
-<span id="L452" class="ln">   452  </span>	<span class="comment">// Metrics</span>
-<span id="L453" class="ln">   453  </span>	t.Setenv(&#34;METRICS_HOST&#34;, expectedMetricsHost)
-<span id="L454" class="ln">   454  </span>	t.Setenv(&#34;METRICS_PORT&#34;, strconv.Itoa(expectedMetricsPort))
-<span id="L455" class="ln">   455  </span>	t.Setenv(&#34;METRICS_USERNAME&#34;, expectedMetricsUserName)
-<span id="L456" class="ln">   456  </span>	t.Setenv(&#34;METRICS_PASSWORD&#34;, expectedMetricsPassword)
-<span id="L457" class="ln">   457  </span>	<span class="comment">// Observability</span>
-<span id="L458" class="ln">   458  </span>	t.Setenv(&#34;OBS_TRACES_EXPORTER&#34;, expectedObservabilityTracesExporter)
-<span id="L459" class="ln">   459  </span>	t.Setenv(&#34;OBS_METRICS_EXPORTER&#34;, expectedObservabilityMetricsExporter)
-<span id="L460" class="ln">   460  </span>	t.Setenv(&#34;OBS_LOGS_EXPORTER&#34;, expectedObservabilityLogsExporter)
-<span id="L461" class="ln">   461  </span>	t.Setenv(&#34;OBS_OTLP_PROTOCOL&#34;, expectedObservabilityOTLPProtocol)
-<span id="L462" class="ln">   462  </span>	t.Setenv(&#34;OBS_MASKED_DB_QUERY_ARGS&#34;, strconv.FormatBool(expectedObservabilityMaskedDBQueryArgs))
-<span id="L463" class="ln">   463  </span>	t.Setenv(&#34;OBS_TARGET_STATUS_CODES&#34;, expectedObservabilityTargetStatusCodesStr)
-<span id="L464" class="ln">   464  </span>	<span class="comment">// Database</span>
-<span id="L465" class="ln">   465  </span>	t.Setenv(&#34;DB_DRIVER&#34;, expectedDBDriver)
-<span id="L466" class="ln">   466  </span>	t.Setenv(&#34;DB_HOST&#34;, expectedDBHost)
-<span id="L467" class="ln">   467  </span>	t.Setenv(&#34;DB_PORT&#34;, strconv.Itoa(expectedDBPort))
-<span id="L468" class="ln">   468  </span>	t.Setenv(&#34;DB_USER&#34;, expectedDBUser)
-<span id="L469" class="ln">   469  </span>	t.Setenv(&#34;DB_PASSWORD&#34;, expectedDBPassword)
-<span id="L470" class="ln">   470  </span>	t.Setenv(&#34;DB_NAME&#34;, expectedDBName)
-<span id="L471" class="ln">   471  </span>	t.Setenv(&#34;DB_SSL_MODE&#34;, expectedDBSSLMode)
-<span id="L472" class="ln">   472  </span>	t.Setenv(&#34;DB_PING_TIMEOUT&#34;, expectedDBPingTimeoutStr)
-<span id="L473" class="ln">   473  </span>	t.Setenv(&#34;DB_SLOW_QUERY_WARN_THRESHOLD&#34;, expectedDBSlowQueryWarnThresholdStr)
-<span id="L474" class="ln">   474  </span>	t.Setenv(&#34;DB_STATEMENT_TIMEOUT&#34;, expectedDBStatementTimeout.String())
-<span id="L475" class="ln">   475  </span>	t.Setenv(&#34;DB_LOCK_TIMEOUT&#34;, expectedDBLockTimeout.String())
-<span id="L476" class="ln">   476  </span>	t.Setenv(&#34;DB_TX_MAX_RETRIES&#34;, expectedDBTxMaxRetriesStr)
-<span id="L477" class="ln">   477  </span>	t.Setenv(&#34;DB_TX_RETRY_BASE_BACKOFF&#34;, expectedDBTxRetryBaseBackoffStr)
-<span id="L478" class="ln">   478  </span>	t.Setenv(&#34;DB_TX_RETRY_MAX_BACKOFF&#34;, expectedDBTxRetryMaxBackoffStr)
-<span id="L479" class="ln">   479  </span>	<span class="comment">// DBConnection</span>
-<span id="L480" class="ln">   480  </span>	t.Setenv(&#34;DBCONN_MAX_CONNS&#34;, strconv.FormatInt(int64(expectedDBMaxConnsInt32), 10))
-<span id="L481" class="ln">   481  </span>	t.Setenv(&#34;DBCONN_MIN_CONNS&#34;, strconv.FormatInt(int64(expectedDBMinConnsInt32), 10))
-<span id="L482" class="ln">   482  </span>	t.Setenv(&#34;DBCONN_MAX_LIFETIME&#34;, expectedDBMaxLifetimeStr)
-<span id="L483" class="ln">   483  </span>	t.Setenv(&#34;DBCONN_MAX_IDLE_TIME&#34;, expectedDBMaxIdleTimeStr)
-<span id="L484" class="ln">   484  </span>	<span class="comment">// Security</span>
-<span id="L485" class="ln">   485  </span>	t.Setenv(&#34;SECURITY_CIDR&#34;, expectedCIDRStr)
-<span id="L486" class="ln">   486  </span>	t.Setenv(&#34;SECURITY_ALLOWED_ORIGINS&#34;, expectedAllowedOrigins)
-<span id="L487" class="ln">   487  </span>	t.Setenv(&#34;SECURITY_CONTENT_TYPE_NOSNIFF&#34;, expectedContentTypeNosniff)
-<span id="L488" class="ln">   488  </span>	t.Setenv(&#34;SECURITY_X_FRAME_OPTIONS&#34;, expectedXFrameOptions)
-<span id="L489" class="ln">   489  </span>	t.Setenv(&#34;SECURITY_HSTS_MAX_AGE&#34;, expectedHSTSMaxAgeStr)
-<span id="L490" class="ln">   490  </span>	t.Setenv(&#34;SECURITY_HSTS_EXCLUDE_SUBDOMAINS&#34;, strconv.FormatBool(expectedHSTSExcludeSubdomains))
-<span id="L491" class="ln">   491  </span>	t.Setenv(&#34;SECURITY_HSTS_PRELOAD_ENABLED&#34;, strconv.FormatBool(expectedHSTSPreloadEnabled))
-<span id="L492" class="ln">   492  </span>	t.Setenv(&#34;SECURITY_REFERRER_POLICY&#34;, expectedReferrerPolicy)
-<span id="L493" class="ln">   493  </span>	t.Setenv(&#34;SECURITY_CROSS_ORIGIN_RESOURCE_POLICY&#34;, expectedCrossOriginResourcePolicy)
-<span id="L494" class="ln">   494  </span>	<span class="comment">// Endpoint</span>
-<span id="L495" class="ln">   495  </span>	t.Setenv(&#34;ENDPOINT_OTLP&#34;, expectedEndpointOTLP)
-<span id="L496" class="ln">   496  </span>	t.Setenv(&#34;ENDPOINT_JWKS&#34;, expectedEndpointJWKS)
-<span id="L497" class="ln">   497  </span>	t.Setenv(&#34;ENDPOINT_OBJECT_STORAGE&#34;, expectedEndpointObjectStorage)
-<span id="L498" class="ln">   498  </span>	t.Setenv(&#34;ENDPOINT_OUTBOX&#34;, expectedEndpointOutbox)
-<span id="L499" class="ln">   499  </span>	t.Setenv(&#34;ENDPOINT_OUTBOX_QUEUE&#34;, expectedEndpointOutboxQueue)
-<span id="L500" class="ln">   500  </span>	t.Setenv(&#34;ENDPOINT_CONSUMER_QUEUE&#34;, expectedEndpointConsumerQueue)
-<span id="L501" class="ln">   501  </span>	<span class="comment">// sample-api:begin</span>
-<span id="L502" class="ln">   502  </span>	t.Setenv(&#34;ENDPOINT_EXCHANGE_RATE&#34;, expectedEndpointExchangeRate)
-<span id="L503" class="ln">   503  </span>	<span class="comment">// sample-api:end</span>
-<span id="L504" class="ln">   504  </span>	<span class="comment">// Secure Cookie</span>
-<span id="L505" class="ln">   505  </span>	t.Setenv(&#34;SECURE_COOKIE_SECURE&#34;, strconv.FormatBool(*expectedSecureCookieSecure))
-<span id="L506" class="ln">   506  </span>	t.Setenv(&#34;SECURE_COOKIE_SAME_SITE&#34;, expectedSecureCookieSameSite)
-<span id="L507" class="ln">   507  </span>	t.Setenv(&#34;SECURE_COOKIE_DOMAIN&#34;, expectedSecureCookieDomain)
-<span id="L508" class="ln">   508  </span>	<span class="comment">// Auth（make がスロットの issuer を渡すため、実行環境の値が混ざらないよう期待値へ固定する）</span>
-<span id="L509" class="ln">   509  </span>	t.Setenv(authIssuerEnvKey, expectedAuthIssuer)
-<span id="L510" class="ln">   510  </span>	t.Setenv(&#34;AUTH_AUDIENCE&#34;, expectedAuthAudience)
-<span id="L511" class="ln">   511  </span>	<span class="comment">// Object Storage</span>
-<span id="L512" class="ln">   512  </span>	t.Setenv(&#34;OBJECT_STORAGE_REGION&#34;, expectedObjectStorageRegion)
-<span id="L513" class="ln">   513  </span>	t.Setenv(&#34;OBJECT_STORAGE_BUCKET&#34;, expectedObjectStorageBucket)
-<span id="L514" class="ln">   514  </span>	t.Setenv(&#34;OBJECT_STORAGE_ACCESS_KEY_ID&#34;, expectedObjectStorageAccessKeyID)
-<span id="L515" class="ln">   515  </span>	t.Setenv(&#34;OBJECT_STORAGE_SECRET_ACCESS_KEY&#34;, expectedObjectStorageSecretAccessKey)
-<span id="L516" class="ln">   516  </span>	t.Setenv(&#34;OBJECT_STORAGE_USE_PATH_STYLE&#34;, expectedObjectStorageUsePathStyleStr)
-<span id="L517" class="ln">   517  </span>	t.Setenv(&#34;OBJECT_STORAGE_MAX_UPLOAD_BYTES&#34;, expectedObjectStorageMaxUploadBytesStr)
-<span id="L518" class="ln">   518  </span>}
-<span id="L519" class="ln">   519  </span>
-<span id="L520" class="ln">   520  </span><span class="comment">// testDBName は、ホストから見たテスト用データベース名を返します。環境変数 DB_NAME_TEST があればそれを、</span>
-<span id="L521" class="ln">   521  </span><span class="comment">// 無ければ既定の &#34;test&#34; を返します。DB スロットプール利用時は make が DB_NAME_TEST を各 worktree の</span>
-<span id="L522" class="ln">   522  </span><span class="comment">// テスト用データベース（wt&lt;N&gt;_test）へ設定するため、共有 DB 内の自 worktree DB へ繋ぎます。ただし</span>
-<span id="L523" class="ln">   523  </span><span class="comment">// deploy 系 env では本番 DB を誤指しないよう DB_NAME_TEST を無視します（IsLocalClassEnv、未設定は許可）。</span>
-<span id="L524" class="ln">   524  </span>func testDBName() string {
-<span id="L525" class="ln">   525  </span>	v := os.Getenv(&#34;DB_NAME_TEST&#34;)
-<span id="L526" class="ln">   526  </span>	if v == &#34;&#34; {
-<span id="L527" class="ln">   527  </span>		return defaultTestDBName
-<span id="L528" class="ln">   528  </span>	}
-<span id="L529" class="ln">   529  </span>	if env := os.Getenv(&#34;APP_ENV&#34;); env != &#34;&#34; &amp;&amp; !IsLocalClassEnv(env) {
-<span id="L530" class="ln">   530  </span>		fmt.Fprintf(os.Stderr,
-<span id="L531" class="ln">   531  </span>			&#34;[config] 警告: APP_ENV=%q は local/test 系でないため、DB スロットプールの DB_NAME_TEST=%q を無視します\n&#34;,
-<span id="L532" class="ln">   532  </span>			env, v)
-<span id="L533" class="ln">   533  </span>		return defaultTestDBName
-<span id="L534" class="ln">   534  </span>	}
-<span id="L535" class="ln">   535  </span>	return v
-<span id="L536" class="ln">   536  </span>}
-<span id="L537" class="ln">   537  </span>
+<span id="L238" class="ln">   238  </span>		metrics: MetricsConfig{
+<span id="L239" class="ln">   239  </span>			host:     expectedMetricsHost,
+<span id="L240" class="ln">   240  </span>			port:     expectedMetricsPort,
+<span id="L241" class="ln">   241  </span>			userName: expectedMetricsUserName,
+<span id="L242" class="ln">   242  </span>			password: expectedMetricsPassword,
+<span id="L243" class="ln">   243  </span>		},
+<span id="L244" class="ln">   244  </span>		observability: ObservabilityConfig{
+<span id="L245" class="ln">   245  </span>			tracesExporter:      expectedObservabilityTracesExporter,
+<span id="L246" class="ln">   246  </span>			metricsExporter:     expectedObservabilityMetricsExporter,
+<span id="L247" class="ln">   247  </span>			logsExporter:        expectedObservabilityLogsExporter,
+<span id="L248" class="ln">   248  </span>			otlpProtocol:        expectedObservabilityOTLPProtocol,
+<span id="L249" class="ln">   249  </span>			maskedDBQueryArgs:   expectedObservabilityMaskedDBQueryArgs,
+<span id="L250" class="ln">   250  </span>			targetStatusCodeSet: expectedObservabilityTargetStatusCodeSet,
+<span id="L251" class="ln">   251  </span>		},
+<span id="L252" class="ln">   252  </span>		database: DatabaseConfig{
+<span id="L253" class="ln">   253  </span>			driver:                 expectedDBDriver,
+<span id="L254" class="ln">   254  </span>			host:                   expectedDBHost,
+<span id="L255" class="ln">   255  </span>			port:                   expectedDBPort,
+<span id="L256" class="ln">   256  </span>			user:                   expectedDBUser,
+<span id="L257" class="ln">   257  </span>			password:               expectedDBPassword,
+<span id="L258" class="ln">   258  </span>			name:                   expectedDBName,
+<span id="L259" class="ln">   259  </span>			sslMode:                expectedDBSSLMode,
+<span id="L260" class="ln">   260  </span>			pingTimeout:            expectedDBPingTimeout,
+<span id="L261" class="ln">   261  </span>			slowQueryWarnThreshold: expectedDBSlowQueryWarnThreshold,
+<span id="L262" class="ln">   262  </span>			statementTimeout:       expectedDBStatementTimeout,
+<span id="L263" class="ln">   263  </span>			lockTimeout:            expectedDBLockTimeout,
+<span id="L264" class="ln">   264  </span>			txMaxRetries:           expectedDBTxMaxRetries,
+<span id="L265" class="ln">   265  </span>			txRetryBaseBackoff:     expectedDBTxRetryBaseBackoff,
+<span id="L266" class="ln">   266  </span>			txRetryMaxBackoff:      expectedDBTxRetryMaxBackoff,
+<span id="L267" class="ln">   267  </span>		},
+<span id="L268" class="ln">   268  </span>		dbconnection: DBConnectionConfig{
+<span id="L269" class="ln">   269  </span>			maxConns:    expectedDBMaxConnsInt32,
+<span id="L270" class="ln">   270  </span>			minConns:    expectedDBMinConnsInt32,
+<span id="L271" class="ln">   271  </span>			maxLifetime: expectedDBMaxLifetime,
+<span id="L272" class="ln">   272  </span>			maxIdleTime: expectedDBMaxIdleTime,
+<span id="L273" class="ln">   273  </span>		},
+<span id="L274" class="ln">   274  </span>		security: SecurityConfig{
+<span id="L275" class="ln">   275  </span>			allowedOrigins:            strings.Split(expectedAllowedOrigins, &#34;,&#34;),
+<span id="L276" class="ln">   276  </span>			cidr:                      expectedCIDR,
+<span id="L277" class="ln">   277  </span>			contentTypeNosniff:        expectedContentTypeNosniff,
+<span id="L278" class="ln">   278  </span>			xFrameOptions:             expectedXFrameOptions,
+<span id="L279" class="ln">   279  </span>			hstsMaxAge:                expectedHSTSMaxAge,
+<span id="L280" class="ln">   280  </span>			hstsExcludeSubdomains:     expectedHSTSExcludeSubdomains,
+<span id="L281" class="ln">   281  </span>			hstsPreloadEnabled:        expectedHSTSPreloadEnabled,
+<span id="L282" class="ln">   282  </span>			referrerPolicy:            expectedReferrerPolicy,
+<span id="L283" class="ln">   283  </span>			crossOriginResourcePolicy: expectedCrossOriginResourcePolicy,
+<span id="L284" class="ln">   284  </span>		},
+<span id="L285" class="ln">   285  </span>		secureCookie: SecureCookieConfig{
+<span id="L286" class="ln">   286  </span>			secure:   expectedSecureCookieSecure,
+<span id="L287" class="ln">   287  </span>			sameSite: expectedSecureCookieSameSite,
+<span id="L288" class="ln">   288  </span>			domain:   expectedSecureCookieDomain,
+<span id="L289" class="ln">   289  </span>		},
+<span id="L290" class="ln">   290  </span>		worker: WorkerConfig{
+<span id="L291" class="ln">   291  </span>			concurrency:               expectedWorkerConcurrency,
+<span id="L292" class="ln">   292  </span>			maxInFlight:               expectedWorkerMaxInFlight,
+<span id="L293" class="ln">   293  </span>			batchSize:                 expectedWorkerBatchSize,
+<span id="L294" class="ln">   294  </span>			extendInterval:            expectedWorkerExtendInterval,
+<span id="L295" class="ln">   295  </span>			drainTimeout:              expectedWorkerDrainTimeout,
+<span id="L296" class="ln">   296  </span>			receiveCountWarnThreshold: expectedWorkerReceiveCountWarnThreshold,
+<span id="L297" class="ln">   297  </span>			circuitFailureThreshold:   expectedWorkerCircuitFailureThreshold,
+<span id="L298" class="ln">   298  </span>			circuitOpenBackoffInitial: expectedWorkerCircuitOpenBackoffInitial,
+<span id="L299" class="ln">   299  </span>			circuitOpenBackoffMax:     expectedWorkerCircuitOpenBackoffMax,
+<span id="L300" class="ln">   300  </span>			circuitHalfOpenProbe:      expectedWorkerCircuitHalfOpenProbe,
+<span id="L301" class="ln">   301  </span>			healthListenAddr:          expectedWorkerHealthListenAddr,
+<span id="L302" class="ln">   302  </span>			progressStaleAfter:        expectedWorkerProgressStaleAfter,
+<span id="L303" class="ln">   303  </span>			nackBackoffInitial:        expectedWorkerNackBackoffInitial,
+<span id="L304" class="ln">   304  </span>			nackBackoffMax:            expectedWorkerNackBackoffMax,
+<span id="L305" class="ln">   305  </span>		},
+<span id="L306" class="ln">   306  </span>		consumerQueue: ConsumerQueueConfig{
+<span id="L307" class="ln">   307  </span>			region:            expectedConsumerQueueRegion,
+<span id="L308" class="ln">   308  </span>			url:               expectedConsumerQueueURL,
+<span id="L309" class="ln">   309  </span>			dlqURL:            expectedConsumerQueueDLQURL,
+<span id="L310" class="ln">   310  </span>			accessKeyID:       expectedConsumerQueueAccessKeyID,
+<span id="L311" class="ln">   311  </span>			secretAccessKey:   expectedConsumerQueueSecretAccessKey,
+<span id="L312" class="ln">   312  </span>			maxMessages:       expectedConsumerQueueMaxMessagesInt32,
+<span id="L313" class="ln">   313  </span>			waitTimeSeconds:   expectedConsumerQueueWaitTimeSecondsInt32,
+<span id="L314" class="ln">   314  </span>			visibilityTimeout: expectedConsumerQueueVisibilityTimeoutInt32,
+<span id="L315" class="ln">   315  </span>		},
+<span id="L316" class="ln">   316  </span>		outbox: OutboxConfig{
+<span id="L317" class="ln">   317  </span>			publisher:            expectedOutboxPublisher,
+<span id="L318" class="ln">   318  </span>			pollInterval:         expectedOutboxPollInterval,
+<span id="L319" class="ln">   319  </span>			errorBackoff:         expectedOutboxErrorBackoff,
+<span id="L320" class="ln">   320  </span>			batchSize:            expectedOutboxBatchSize,
+<span id="L321" class="ln">   321  </span>			queueRegion:          expectedOutboxQueueRegion,
+<span id="L322" class="ln">   322  </span>			queueURL:             expectedOutboxQueueURL,
+<span id="L323" class="ln">   323  </span>			queueAccessKeyID:     expectedOutboxQueueAccessKeyID,
+<span id="L324" class="ln">   324  </span>			queueSecretAccessKey: expectedOutboxQueueSecretAccessKey,
+<span id="L325" class="ln">   325  </span>		},
+<span id="L326" class="ln">   326  </span>		auth: AuthConfig{
+<span id="L327" class="ln">   327  </span>			issuer:             expectedAuthIssuer,
+<span id="L328" class="ln">   328  </span>			audience:           expectedAuthAudience,
+<span id="L329" class="ln">   329  </span>			allowedAlgorithms:  expectedAuthAllowedAlgorithms,
+<span id="L330" class="ln">   330  </span>			clockSkew:          expectedAuthClockSkew,
+<span id="L331" class="ln">   331  </span>			jwksCacheTTL:       expectedAuthJWKSCacheTTL,
+<span id="L332" class="ln">   332  </span>			discoveryTTL:       expectedAuthDiscoveryTTL,
+<span id="L333" class="ln">   333  </span>			unknownKidCooldown: expectedAuthUnknownKidCooldown,
+<span id="L334" class="ln">   334  </span>		},
+<span id="L335" class="ln">   335  </span>		objectStorage: ObjectStorageConfig{
+<span id="L336" class="ln">   336  </span>			region:          expectedObjectStorageRegion,
+<span id="L337" class="ln">   337  </span>			bucket:          expectedObjectStorageBucket,
+<span id="L338" class="ln">   338  </span>			accessKeyID:     expectedObjectStorageAccessKeyID,
+<span id="L339" class="ln">   339  </span>			secretAccessKey: expectedObjectStorageSecretAccessKey,
+<span id="L340" class="ln">   340  </span>			usePathStyle:    expectedObjectStorageUsePathStyle,
+<span id="L341" class="ln">   341  </span>			maxUploadBytes:  expectedObjectStorageMaxUploadBytes,
+<span id="L342" class="ln">   342  </span>		},
+<span id="L343" class="ln">   343  </span>		realtime: RealtimeConfig{
+<span id="L344" class="ln">   344  </span>			region:            expectedRealtimeRegion,
+<span id="L345" class="ln">   345  </span>			tableSuffix:       expectedRealtimeTableSuffix,
+<span id="L346" class="ln">   346  </span>			topic:             expectedRealtimeTopic,
+<span id="L347" class="ln">   347  </span>			queuePrefix:       expectedRealtimeQueuePrefix,
+<span id="L348" class="ln">   348  </span>			dlq:               expectedRealtimeDLQ,
+<span id="L349" class="ln">   349  </span>			accessKeyID:       expectedRealtimeAccessKeyID,
+<span id="L350" class="ln">   350  </span>			secretAccessKey:   expectedRealtimeSecretAccessKey,
+<span id="L351" class="ln">   351  </span>			maxConnections:    expectedRealtimeMaxConnections,
+<span id="L352" class="ln">   352  </span>			replayConcurrency: expectedRealtimeReplayConcurrency,
+<span id="L353" class="ln">   353  </span>		},
+<span id="L354" class="ln">   354  </span>		endpoint: EndpointConfig{
+<span id="L355" class="ln">   355  </span>			otlp:           expectedEndpointOTLP,
+<span id="L356" class="ln">   356  </span>			jwks:           expectedEndpointJWKS,
+<span id="L357" class="ln">   357  </span>			objectStorage:  expectedEndpointObjectStorage,
+<span id="L358" class="ln">   358  </span>			realtime:       expectedEndpointRealtime,
+<span id="L359" class="ln">   359  </span>			realtimePubSub: expectedEndpointRealtimePubSub,
+<span id="L360" class="ln">   360  </span>			outbox:         expectedEndpointOutbox,
+<span id="L361" class="ln">   361  </span>			outboxQueue:    expectedEndpointOutboxQueue,
+<span id="L362" class="ln">   362  </span>			consumerQueue:  expectedEndpointConsumerQueue,
+<span id="L363" class="ln">   363  </span>			<span class="comment">// sample-api:begin</span>
+<span id="L364" class="ln">   364  </span>			exchangeRate: expectedEndpointExchangeRate,
+<span id="L365" class="ln">   365  </span>			<span class="comment">// sample-api:end</span>
+<span id="L366" class="ln">   366  </span>		},
+<span id="L367" class="ln">   367  </span>	}
+<span id="L368" class="ln">   368  </span>}
+<span id="L369" class="ln">   369  </span>
+<span id="L370" class="ln">   370  </span><span class="comment">// mockLoader は、テスト用のLoaderを返します。</span>
+<span id="L371" class="ln">   371  </span>func mockLoader(tb testing.TB) Loader {
+<span id="L372" class="ln">   372  </span>	tb.Helper()
+<span id="L373" class="ln">   373  </span>
+<span id="L374" class="ln">   374  </span>	return Loader{
+<span id="L375" class="ln">   375  </span>		OS: OperatingSystem{
+<span id="L376" class="ln">   376  </span>			Timezone: expectedOSTimeZone,
+<span id="L377" class="ln">   377  </span>		},
+<span id="L378" class="ln">   378  </span>		App: Application{
+<span id="L379" class="ln">   379  </span>			Env:             expectedApplicationEnv,
+<span id="L380" class="ln">   380  </span>			Name:            expectedApplicationName,
+<span id="L381" class="ln">   381  </span>			Mode:            expectedApplicationMode,
+<span id="L382" class="ln">   382  </span>			LogLevel:        expectedApplicationLogLevel,
+<span id="L383" class="ln">   383  </span>			ShutdownTimeout: expectedAppShutdownTimeout,
+<span id="L384" class="ln">   384  </span>		},
+<span id="L385" class="ln">   385  </span>		Metrics: Metrics{
+<span id="L386" class="ln">   386  </span>			Host:     expectedMetricsHost,
+<span id="L387" class="ln">   387  </span>			Port:     expectedMetricsPort,
+<span id="L388" class="ln">   388  </span>			UserName: expectedMetricsUserName,
+<span id="L389" class="ln">   389  </span>			Password: expectedMetricsPassword,
+<span id="L390" class="ln">   390  </span>		},
+<span id="L391" class="ln">   391  </span>		Observability: Observability{
+<span id="L392" class="ln">   392  </span>			TracesExporter:    expectedObservabilityTracesExporter,
+<span id="L393" class="ln">   393  </span>			MetricsExporter:   expectedObservabilityMetricsExporter,
+<span id="L394" class="ln">   394  </span>			LogsExporter:      expectedObservabilityLogsExporter,
+<span id="L395" class="ln">   395  </span>			OTLPProtocol:      expectedObservabilityOTLPProtocol,
+<span id="L396" class="ln">   396  </span>			MaskedDBQueryArgs: expectedObservabilityMaskedDBQueryArgs,
+<span id="L397" class="ln">   397  </span>			TargetStatusCodes: expectedObservabilityTargetStatusCodes,
+<span id="L398" class="ln">   398  </span>		},
+<span id="L399" class="ln">   399  </span>		Realtime: Realtime{
+<span id="L400" class="ln">   400  </span>			Region:            expectedRealtimeRegion,
+<span id="L401" class="ln">   401  </span>			TableSuffix:       expectedRealtimeTableSuffix,
+<span id="L402" class="ln">   402  </span>			Topic:             expectedRealtimeTopic,
+<span id="L403" class="ln">   403  </span>			QueuePrefix:       expectedRealtimeQueuePrefix,
+<span id="L404" class="ln">   404  </span>			DLQ:               expectedRealtimeDLQ,
+<span id="L405" class="ln">   405  </span>			AccessKeyID:       expectedRealtimeAccessKeyID,
+<span id="L406" class="ln">   406  </span>			SecretAccessKey:   expectedRealtimeSecretAccessKey,
+<span id="L407" class="ln">   407  </span>			MaxConnections:    expectedRealtimeMaxConnections,
+<span id="L408" class="ln">   408  </span>			ReplayConcurrency: expectedRealtimeReplayConcurrency,
+<span id="L409" class="ln">   409  </span>		},
+<span id="L410" class="ln">   410  </span>		Endpoint: Endpoint{
+<span id="L411" class="ln">   411  </span>			OTLP:           expectedEndpointOTLP,
+<span id="L412" class="ln">   412  </span>			JWKS:           expectedEndpointJWKS,
+<span id="L413" class="ln">   413  </span>			ObjectStorage:  expectedEndpointObjectStorage,
+<span id="L414" class="ln">   414  </span>			Realtime:       expectedEndpointRealtime,
+<span id="L415" class="ln">   415  </span>			RealtimePubSub: expectedEndpointRealtimePubSub,
+<span id="L416" class="ln">   416  </span>			Outbox:         expectedEndpointOutbox,
+<span id="L417" class="ln">   417  </span>			OutboxQueue:    expectedEndpointOutboxQueue,
+<span id="L418" class="ln">   418  </span>			ConsumerQueue:  expectedEndpointConsumerQueue,
+<span id="L419" class="ln">   419  </span>			<span class="comment">// sample-api:begin</span>
+<span id="L420" class="ln">   420  </span>			ExchangeRate: expectedEndpointExchangeRate,
+<span id="L421" class="ln">   421  </span>			<span class="comment">// sample-api:end</span>
+<span id="L422" class="ln">   422  </span>		},
+<span id="L423" class="ln">   423  </span>		Server: Server{
+<span id="L424" class="ln">   424  </span>			Host:              expectedServerHost,
+<span id="L425" class="ln">   425  </span>			Port:              expectedServerPort,
+<span id="L426" class="ln">   426  </span>			ReadHeaderTimeout: expectedServerReadHeaderTimeout,
+<span id="L427" class="ln">   427  </span>			ReadTimeout:       expectedServerReadTimeout,
+<span id="L428" class="ln">   428  </span>			WriteTimeout:      expectedServerWriteTimeout,
+<span id="L429" class="ln">   429  </span>			IdleTimeout:       expectedServerIdleTimeout,
+<span id="L430" class="ln">   430  </span>			BodyLimitMB:       expectedServerBodyLimitMB,
+<span id="L431" class="ln">   431  </span>			RequestTimeout:    expectedServerRequestTimeout,
+<span id="L432" class="ln">   432  </span>		},
+<span id="L433" class="ln">   433  </span>		Database: Database{
+<span id="L434" class="ln">   434  </span>			Host:                   expectedDBHost,
+<span id="L435" class="ln">   435  </span>			Port:                   expectedDBPort,
+<span id="L436" class="ln">   436  </span>			User:                   expectedDBUser,
+<span id="L437" class="ln">   437  </span>			Password:               expectedDBPassword,
+<span id="L438" class="ln">   438  </span>			Name:                   expectedDBName,
+<span id="L439" class="ln">   439  </span>			SSLMode:                expectedDBSSLMode,
+<span id="L440" class="ln">   440  </span>			PingTimeout:            expectedDBPingTimeout,
+<span id="L441" class="ln">   441  </span>			SlowQueryWarnThreshold: expectedDBSlowQueryWarnThreshold,
+<span id="L442" class="ln">   442  </span>			StatementTimeout:       expectedDBStatementTimeout,
+<span id="L443" class="ln">   443  </span>			LockTimeout:            expectedDBLockTimeout,
+<span id="L444" class="ln">   444  </span>			TxMaxRetries:           expectedDBTxMaxRetries,
+<span id="L445" class="ln">   445  </span>			TxRetryBaseBackoff:     expectedDBTxRetryBaseBackoff,
+<span id="L446" class="ln">   446  </span>			TxRetryMaxBackoff:      expectedDBTxRetryMaxBackoff,
+<span id="L447" class="ln">   447  </span>		},
+<span id="L448" class="ln">   448  </span>		DBConnection: DBConnection{
+<span id="L449" class="ln">   449  </span>			MaxConns:    expectedDBMaxConnsInt32,
+<span id="L450" class="ln">   450  </span>			MinConns:    expectedDBMinConnsInt32,
+<span id="L451" class="ln">   451  </span>			MaxLifetime: expectedDBMaxLifetime,
+<span id="L452" class="ln">   452  </span>			MaxIdleTime: expectedDBMaxIdleTime,
+<span id="L453" class="ln">   453  </span>		},
+<span id="L454" class="ln">   454  </span>		Security: Security{
+<span id="L455" class="ln">   455  </span>			AllowedOrigins:            strings.Split(expectedAllowedOrigins, &#34;,&#34;),
+<span id="L456" class="ln">   456  </span>			CIDR:                      expectedCIDRStr,
+<span id="L457" class="ln">   457  </span>			ContentTypeNosniff:        expectedContentTypeNosniff,
+<span id="L458" class="ln">   458  </span>			XFrameOptions:             expectedXFrameOptions,
+<span id="L459" class="ln">   459  </span>			HSTSMaxAge:                expectedHSTSMaxAge,
+<span id="L460" class="ln">   460  </span>			HSTSExcludeSubdomains:     expectedHSTSExcludeSubdomains,
+<span id="L461" class="ln">   461  </span>			HSTSPreloadEnabled:        expectedHSTSPreloadEnabled,
+<span id="L462" class="ln">   462  </span>			ReferrerPolicy:            expectedReferrerPolicy,
+<span id="L463" class="ln">   463  </span>			CrossOriginResourcePolicy: expectedCrossOriginResourcePolicy,
+<span id="L464" class="ln">   464  </span>		},
+<span id="L465" class="ln">   465  </span>		SecureCookie: SecureCookie{
+<span id="L466" class="ln">   466  </span>			Secure:   expectedSecureCookieSecure,
+<span id="L467" class="ln">   467  </span>			SameSite: expectedSecureCookieSameSite,
+<span id="L468" class="ln">   468  </span>			Domain:   expectedSecureCookieDomain,
+<span id="L469" class="ln">   469  </span>		},
+<span id="L470" class="ln">   470  </span>	}
+<span id="L471" class="ln">   471  </span>}
+<span id="L472" class="ln">   472  </span>
+<span id="L473" class="ln">   473  </span>func setEnvVarsForTesting(t *testing.T) { <span class="comment">//nolint:funlen // テスト用の環境変数設定のため長くなるのは許容する</span>
+<span id="L474" class="ln">   474  </span>	t.Helper()
+<span id="L475" class="ln">   475  </span>	<span class="comment">// OS</span>
+<span id="L476" class="ln">   476  </span>	t.Setenv(&#34;OS_TZ&#34;, expectedOSTimeZone)
+<span id="L477" class="ln">   477  </span>	<span class="comment">// Application</span>
+<span id="L478" class="ln">   478  </span>	t.Setenv(&#34;APP_ENV&#34;, expectedApplicationEnv)
+<span id="L479" class="ln">   479  </span>	t.Setenv(&#34;APP_NAME&#34;, expectedApplicationName)
+<span id="L480" class="ln">   480  </span>	t.Setenv(&#34;APP_MODE&#34;, expectedApplicationMode)
+<span id="L481" class="ln">   481  </span>	t.Setenv(&#34;APP_LOG_LEVEL&#34;, expectedApplicationLogLevel)
+<span id="L482" class="ln">   482  </span>	t.Setenv(&#34;APP_SHUTDOWN_TIMEOUT&#34;, expectedAppShutdownTimeoutStr)
+<span id="L483" class="ln">   483  </span>	<span class="comment">// Server</span>
+<span id="L484" class="ln">   484  </span>	t.Setenv(&#34;SERVER_HOST&#34;, expectedServerHost)
+<span id="L485" class="ln">   485  </span>	t.Setenv(&#34;SERVER_PORT&#34;, strconv.Itoa(expectedServerPort))
+<span id="L486" class="ln">   486  </span>	t.Setenv(&#34;SERVER_READ_HEADER_TIMEOUT&#34;, expectedServerReadHeaderTimeoutStr)
+<span id="L487" class="ln">   487  </span>	t.Setenv(&#34;SERVER_READ_TIMEOUT&#34;, expectedServerReadTimeoutStr)
+<span id="L488" class="ln">   488  </span>	t.Setenv(&#34;SERVER_WRITE_TIMEOUT&#34;, expectedServerWriteTimeoutStr)
+<span id="L489" class="ln">   489  </span>	t.Setenv(&#34;SERVER_IDLE_TIMEOUT&#34;, expectedServerIdleTimeoutStr)
+<span id="L490" class="ln">   490  </span>	t.Setenv(&#34;SERVER_BODY_LIMIT_MB&#34;, expectedServerBodyLimitMBStr)
+<span id="L491" class="ln">   491  </span>	t.Setenv(&#34;SERVER_REQUEST_TIMEOUT&#34;, expectedServerRequestTimeoutStr)
+<span id="L492" class="ln">   492  </span>	<span class="comment">// Metrics</span>
+<span id="L493" class="ln">   493  </span>	t.Setenv(&#34;METRICS_HOST&#34;, expectedMetricsHost)
+<span id="L494" class="ln">   494  </span>	t.Setenv(&#34;METRICS_PORT&#34;, strconv.Itoa(expectedMetricsPort))
+<span id="L495" class="ln">   495  </span>	t.Setenv(&#34;METRICS_USERNAME&#34;, expectedMetricsUserName)
+<span id="L496" class="ln">   496  </span>	t.Setenv(&#34;METRICS_PASSWORD&#34;, expectedMetricsPassword)
+<span id="L497" class="ln">   497  </span>	<span class="comment">// Observability</span>
+<span id="L498" class="ln">   498  </span>	t.Setenv(&#34;OBS_TRACES_EXPORTER&#34;, expectedObservabilityTracesExporter)
+<span id="L499" class="ln">   499  </span>	t.Setenv(&#34;OBS_METRICS_EXPORTER&#34;, expectedObservabilityMetricsExporter)
+<span id="L500" class="ln">   500  </span>	t.Setenv(&#34;OBS_LOGS_EXPORTER&#34;, expectedObservabilityLogsExporter)
+<span id="L501" class="ln">   501  </span>	t.Setenv(&#34;OBS_OTLP_PROTOCOL&#34;, expectedObservabilityOTLPProtocol)
+<span id="L502" class="ln">   502  </span>	t.Setenv(&#34;OBS_MASKED_DB_QUERY_ARGS&#34;, strconv.FormatBool(expectedObservabilityMaskedDBQueryArgs))
+<span id="L503" class="ln">   503  </span>	t.Setenv(&#34;OBS_TARGET_STATUS_CODES&#34;, expectedObservabilityTargetStatusCodesStr)
+<span id="L504" class="ln">   504  </span>	<span class="comment">// Database</span>
+<span id="L505" class="ln">   505  </span>	t.Setenv(&#34;DB_DRIVER&#34;, expectedDBDriver)
+<span id="L506" class="ln">   506  </span>	t.Setenv(&#34;DB_HOST&#34;, expectedDBHost)
+<span id="L507" class="ln">   507  </span>	t.Setenv(&#34;DB_PORT&#34;, strconv.Itoa(expectedDBPort))
+<span id="L508" class="ln">   508  </span>	t.Setenv(&#34;DB_USER&#34;, expectedDBUser)
+<span id="L509" class="ln">   509  </span>	t.Setenv(&#34;DB_PASSWORD&#34;, expectedDBPassword)
+<span id="L510" class="ln">   510  </span>	t.Setenv(&#34;DB_NAME&#34;, expectedDBName)
+<span id="L511" class="ln">   511  </span>	t.Setenv(&#34;DB_SSL_MODE&#34;, expectedDBSSLMode)
+<span id="L512" class="ln">   512  </span>	t.Setenv(&#34;DB_PING_TIMEOUT&#34;, expectedDBPingTimeoutStr)
+<span id="L513" class="ln">   513  </span>	t.Setenv(&#34;DB_SLOW_QUERY_WARN_THRESHOLD&#34;, expectedDBSlowQueryWarnThresholdStr)
+<span id="L514" class="ln">   514  </span>	t.Setenv(&#34;DB_STATEMENT_TIMEOUT&#34;, expectedDBStatementTimeout.String())
+<span id="L515" class="ln">   515  </span>	t.Setenv(&#34;DB_LOCK_TIMEOUT&#34;, expectedDBLockTimeout.String())
+<span id="L516" class="ln">   516  </span>	t.Setenv(&#34;DB_TX_MAX_RETRIES&#34;, expectedDBTxMaxRetriesStr)
+<span id="L517" class="ln">   517  </span>	t.Setenv(&#34;DB_TX_RETRY_BASE_BACKOFF&#34;, expectedDBTxRetryBaseBackoffStr)
+<span id="L518" class="ln">   518  </span>	t.Setenv(&#34;DB_TX_RETRY_MAX_BACKOFF&#34;, expectedDBTxRetryMaxBackoffStr)
+<span id="L519" class="ln">   519  </span>	<span class="comment">// DBConnection</span>
+<span id="L520" class="ln">   520  </span>	t.Setenv(&#34;DBCONN_MAX_CONNS&#34;, strconv.FormatInt(int64(expectedDBMaxConnsInt32), 10))
+<span id="L521" class="ln">   521  </span>	t.Setenv(&#34;DBCONN_MIN_CONNS&#34;, strconv.FormatInt(int64(expectedDBMinConnsInt32), 10))
+<span id="L522" class="ln">   522  </span>	t.Setenv(&#34;DBCONN_MAX_LIFETIME&#34;, expectedDBMaxLifetimeStr)
+<span id="L523" class="ln">   523  </span>	t.Setenv(&#34;DBCONN_MAX_IDLE_TIME&#34;, expectedDBMaxIdleTimeStr)
+<span id="L524" class="ln">   524  </span>	<span class="comment">// Security</span>
+<span id="L525" class="ln">   525  </span>	t.Setenv(&#34;SECURITY_CIDR&#34;, expectedCIDRStr)
+<span id="L526" class="ln">   526  </span>	t.Setenv(&#34;SECURITY_ALLOWED_ORIGINS&#34;, expectedAllowedOrigins)
+<span id="L527" class="ln">   527  </span>	t.Setenv(&#34;SECURITY_CONTENT_TYPE_NOSNIFF&#34;, expectedContentTypeNosniff)
+<span id="L528" class="ln">   528  </span>	t.Setenv(&#34;SECURITY_X_FRAME_OPTIONS&#34;, expectedXFrameOptions)
+<span id="L529" class="ln">   529  </span>	t.Setenv(&#34;SECURITY_HSTS_MAX_AGE&#34;, expectedHSTSMaxAgeStr)
+<span id="L530" class="ln">   530  </span>	t.Setenv(&#34;SECURITY_HSTS_EXCLUDE_SUBDOMAINS&#34;, strconv.FormatBool(expectedHSTSExcludeSubdomains))
+<span id="L531" class="ln">   531  </span>	t.Setenv(&#34;SECURITY_HSTS_PRELOAD_ENABLED&#34;, strconv.FormatBool(expectedHSTSPreloadEnabled))
+<span id="L532" class="ln">   532  </span>	t.Setenv(&#34;SECURITY_REFERRER_POLICY&#34;, expectedReferrerPolicy)
+<span id="L533" class="ln">   533  </span>	t.Setenv(&#34;SECURITY_CROSS_ORIGIN_RESOURCE_POLICY&#34;, expectedCrossOriginResourcePolicy)
+<span id="L534" class="ln">   534  </span>	<span class="comment">// Endpoint</span>
+<span id="L535" class="ln">   535  </span>	t.Setenv(&#34;ENDPOINT_OTLP&#34;, expectedEndpointOTLP)
+<span id="L536" class="ln">   536  </span>	t.Setenv(&#34;ENDPOINT_JWKS&#34;, expectedEndpointJWKS)
+<span id="L537" class="ln">   537  </span>	t.Setenv(&#34;ENDPOINT_OBJECT_STORAGE&#34;, expectedEndpointObjectStorage)
+<span id="L538" class="ln">   538  </span>	t.Setenv(&#34;ENDPOINT_REALTIME&#34;, expectedEndpointRealtime)
+<span id="L539" class="ln">   539  </span>	t.Setenv(&#34;ENDPOINT_REALTIME_PUBSUB&#34;, expectedEndpointRealtimePubSub)
+<span id="L540" class="ln">   540  </span>	t.Setenv(&#34;ENDPOINT_OUTBOX&#34;, expectedEndpointOutbox)
+<span id="L541" class="ln">   541  </span>	t.Setenv(&#34;ENDPOINT_OUTBOX_QUEUE&#34;, expectedEndpointOutboxQueue)
+<span id="L542" class="ln">   542  </span>	t.Setenv(&#34;ENDPOINT_CONSUMER_QUEUE&#34;, expectedEndpointConsumerQueue)
+<span id="L543" class="ln">   543  </span>	<span class="comment">// sample-api:begin</span>
+<span id="L544" class="ln">   544  </span>	t.Setenv(&#34;ENDPOINT_EXCHANGE_RATE&#34;, expectedEndpointExchangeRate)
+<span id="L545" class="ln">   545  </span>	<span class="comment">// sample-api:end</span>
+<span id="L546" class="ln">   546  </span>	<span class="comment">// Secure Cookie</span>
+<span id="L547" class="ln">   547  </span>	t.Setenv(&#34;SECURE_COOKIE_SECURE&#34;, strconv.FormatBool(*expectedSecureCookieSecure))
+<span id="L548" class="ln">   548  </span>	t.Setenv(&#34;SECURE_COOKIE_SAME_SITE&#34;, expectedSecureCookieSameSite)
+<span id="L549" class="ln">   549  </span>	t.Setenv(&#34;SECURE_COOKIE_DOMAIN&#34;, expectedSecureCookieDomain)
+<span id="L550" class="ln">   550  </span>	<span class="comment">// Auth（make がスロットの issuer を渡すため、実行環境の値が混ざらないよう期待値へ固定する）</span>
+<span id="L551" class="ln">   551  </span>	t.Setenv(authIssuerEnvKey, expectedAuthIssuer)
+<span id="L552" class="ln">   552  </span>	t.Setenv(&#34;AUTH_AUDIENCE&#34;, expectedAuthAudience)
+<span id="L553" class="ln">   553  </span>	<span class="comment">// Object Storage</span>
+<span id="L554" class="ln">   554  </span>	t.Setenv(&#34;OBJECT_STORAGE_REGION&#34;, expectedObjectStorageRegion)
+<span id="L555" class="ln">   555  </span>	t.Setenv(&#34;OBJECT_STORAGE_BUCKET&#34;, expectedObjectStorageBucket)
+<span id="L556" class="ln">   556  </span>	t.Setenv(&#34;OBJECT_STORAGE_ACCESS_KEY_ID&#34;, expectedObjectStorageAccessKeyID)
+<span id="L557" class="ln">   557  </span>	t.Setenv(&#34;OBJECT_STORAGE_SECRET_ACCESS_KEY&#34;, expectedObjectStorageSecretAccessKey)
+<span id="L558" class="ln">   558  </span>	t.Setenv(&#34;OBJECT_STORAGE_USE_PATH_STYLE&#34;, expectedObjectStorageUsePathStyleStr)
+<span id="L559" class="ln">   559  </span>	t.Setenv(&#34;OBJECT_STORAGE_MAX_UPLOAD_BYTES&#34;, expectedObjectStorageMaxUploadBytesStr)
+<span id="L560" class="ln">   560  </span>
+<span id="L561" class="ln">   561  </span>	t.Setenv(&#34;REALTIME_REGION&#34;, expectedRealtimeRegion)
+<span id="L562" class="ln">   562  </span>	t.Setenv(&#34;REALTIME_TABLE_SUFFIX&#34;, expectedRealtimeTableSuffix)
+<span id="L563" class="ln">   563  </span>	t.Setenv(&#34;REALTIME_TOPIC&#34;, expectedRealtimeTopic)
+<span id="L564" class="ln">   564  </span>	t.Setenv(&#34;REALTIME_QUEUE_PREFIX&#34;, expectedRealtimeQueuePrefix)
+<span id="L565" class="ln">   565  </span>	t.Setenv(&#34;REALTIME_DLQ&#34;, expectedRealtimeDLQ)
+<span id="L566" class="ln">   566  </span>	t.Setenv(&#34;REALTIME_ACCESS_KEY_ID&#34;, expectedRealtimeAccessKeyID)
+<span id="L567" class="ln">   567  </span>	t.Setenv(&#34;REALTIME_SECRET_ACCESS_KEY&#34;, expectedRealtimeSecretAccessKey)
+<span id="L568" class="ln">   568  </span>}
+<span id="L569" class="ln">   569  </span>
+<span id="L570" class="ln">   570  </span><span class="comment">// testDBName は、ホストから見たテスト用データベース名を返します。環境変数 DB_NAME_TEST があればそれを、</span>
+<span id="L571" class="ln">   571  </span><span class="comment">// 無ければ既定の &#34;test&#34; を返します。DB スロットプール利用時は make が DB_NAME_TEST を各 worktree の</span>
+<span id="L572" class="ln">   572  </span><span class="comment">// テスト用データベース（wt&lt;N&gt;_test）へ設定するため、共有 DB 内の自 worktree DB へ繋ぎます。ただし</span>
+<span id="L573" class="ln">   573  </span><span class="comment">// deploy 系 env では本番 DB を誤指しないよう DB_NAME_TEST を無視します（IsLocalClassEnv、未設定は許可）。</span>
+<span id="L574" class="ln">   574  </span>func testDBName() string {
+<span id="L575" class="ln">   575  </span>	v := os.Getenv(&#34;DB_NAME_TEST&#34;)
+<span id="L576" class="ln">   576  </span>	if v == &#34;&#34; {
+<span id="L577" class="ln">   577  </span>		return defaultTestDBName
+<span id="L578" class="ln">   578  </span>	}
+<span id="L579" class="ln">   579  </span>	if env := os.Getenv(&#34;APP_ENV&#34;); env != &#34;&#34; &amp;&amp; !IsLocalClassEnv(env) {
+<span id="L580" class="ln">   580  </span>		fmt.Fprintf(os.Stderr,
+<span id="L581" class="ln">   581  </span>			&#34;[config] 警告: APP_ENV=%q は local/test 系でないため、DB スロットプールの DB_NAME_TEST=%q を無視します\n&#34;,
+<span id="L582" class="ln">   582  </span>			env, v)
+<span id="L583" class="ln">   583  </span>		return defaultTestDBName
+<span id="L584" class="ln">   584  </span>	}
+<span id="L585" class="ln">   585  </span>	return v
+<span id="L586" class="ln">   586  </span>}
+<span id="L587" class="ln">   587  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/config/config_testing_mock.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

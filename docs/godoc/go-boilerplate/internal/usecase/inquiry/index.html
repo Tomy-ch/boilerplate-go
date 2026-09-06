@@ -1,0 +1,654 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>inquiry - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package inquiry
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/inquiry&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package inquiry は、問い合わせのユースケースを提供します。利用者の投稿・履歴・購読と、
+運営の一覧・履歴・回答・購読を扱います。
+</p><p>Realtime Delivery への変換（realtime adapter）はこの package の内側に置きます。機構側は
+問い合わせの語彙を知りません（ADR-0071 (realtime-delivery-driving-mechanism)）。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#AppendMessageParams">type AppendMessageParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#HistoryParams">type HistoryParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#HistoryView">type HistoryView</a></dd>
+				
+				
+			
+				
+				<dd><a href="#InquiryListView">type InquiryListView</a></dd>
+				
+				
+			
+				
+				<dd><a href="#InquirySummaryView">type InquirySummaryView</a></dd>
+				
+				
+			
+				
+				<dd><a href="#IssueStreamTicketParams">type IssueStreamTicketParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ListInquiriesParams">type ListInquiriesParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MessageView">type MessageView</a></dd>
+				
+				
+			
+				
+				<dd><a href="#OperatorHistoryParams">type OperatorHistoryParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ReplyParams">type ReplyParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#TicketView">type TicketView</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Usecase">type Usecase</a></dd>
+				
+					
+					<dd>    <a href="#New">func New(txm tx.Manager, clk clock.Clock, repo inquiry.Repository, sequences rt.SequenceAllocator, emit outbox.EmitUsecase, tickets ucrealtime.TicketIssuer, authorizer authz.Authorizer, tf observability.TracerFactory) Usecase</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html">dto.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/error.go.html">error.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_append_message_usecase.go.html">inquiry_append_message_usecase.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_append_usecase.go.html">inquiry_append_usecase.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_history_usecase.go.html">inquiry_history_usecase.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_operator_usecase.go.html">inquiry_operator_usecase.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_ticket_usecase.go.html">inquiry_ticket_usecase.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_usecase.go.html">inquiry_usecase.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/inquiry/realtime_adapter.go.html">realtime_adapter.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="AppendMessageParams">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=184:457#L1">AppendMessageParams</a>
+				<a class="permalink" href="#AppendMessageParams">¶</a>
+				
+				
+			</h2>
+			<p>AppendMessageParams は、利用者の投稿の入力 DTO です。
+
+			</p><pre>type AppendMessageParams struct {
+<span id="AppendMessageParams.UserID"></span>    <span class="comment">// UserID は、認証済みの内部ユーザー ID です。</span>
+    UserID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="AppendMessageParams.Subject"></span>    <span class="comment">// Subject は、Realtime Delivery へ渡す feature 非依存の principal 識別子です。</span>
+    Subject <a href="../../../../builtin/#string">string</a>
+<span id="AppendMessageParams.Body"></span>    <span class="comment">// Body は、本文です。</span>
+    Body <a href="../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="HistoryParams">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=530:905#L11">HistoryParams</a>
+				<a class="permalink" href="#HistoryParams">¶</a>
+				
+				
+			</h2>
+			<p>HistoryParams は、利用者の履歴取得の入力 DTO です。
+
+			</p><pre>type HistoryParams struct {
+<span id="HistoryParams.UserID"></span>    <span class="comment">// UserID は、認証済みの内部ユーザー ID です。</span>
+    UserID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="HistoryParams.AfterSequence"></span>    <span class="comment">// AfterSequence は、取得を開始する位置です。nil は先頭から取得します。</span>
+    AfterSequence *<a href="../../../../builtin/#int64">int64</a>
+<span id="HistoryParams.First"></span>    <span class="comment">// First は、要求された取得件数です。nil や範囲外はユースケースのポリシーで正規化されます。</span>
+    First *<a href="../../../../builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="HistoryView">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=2571:3227#L66">HistoryView</a>
+				<a class="permalink" href="#HistoryView">¶</a>
+				
+				
+			</h2>
+			<p>HistoryView は、履歴 1 ページの出力 DTO です。
+
+			</p><pre>type HistoryView struct {
+<span id="HistoryView.InquiryID"></span>    <span class="comment">// InquiryID は、対象の問い合わせです。問い合わせが無い場合はゼロ値です。</span>
+    InquiryID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="HistoryView.Messages"></span>    <span class="comment">// Messages は、位置の昇順に並んだメッセージです。StreamCursor 以下の位置だけを含みます。</span>
+    Messages []<a href="#MessageView">MessageView</a>
+<span id="HistoryView.NextAfterSequence"></span>    <span class="comment">// NextAfterSequence は、次ページの開始位置です。次ページが無ければ nil です。</span>
+    NextAfterSequence *<a href="../../../../builtin/#int64">int64</a>
+<span id="HistoryView.StreamCursor"></span>    <span class="comment">// StreamCursor は、問い合わせ stream の現在位置です。</span>
+    <span class="comment">// client がこれを接続時の開始位置に使うと、履歴の取得と購読の間の event を取りこぼしません。</span>
+    StreamCursor <a href="../../../../builtin/#int64">int64</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="InquiryListView">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=3889:4085#L97">InquiryListView</a>
+				<a class="permalink" href="#InquiryListView">¶</a>
+				
+				
+			</h2>
+			<p>InquiryListView は、運営向け一覧 1 ページの出力 DTO です。
+
+			</p><pre>type InquiryListView struct {
+<span id="InquiryListView.Items"></span>    Items []<a href="#InquirySummaryView">InquirySummaryView</a>
+<span id="InquiryListView.NextCursor"></span>    <span class="comment">// NextCursor は、次ページ取得用の不透明カーソルです。次ページが無ければ nil です。</span>
+    NextCursor *<a href="../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="InquirySummaryView">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=3690:3808#L89">InquirySummaryView</a>
+				<a class="permalink" href="#InquirySummaryView">¶</a>
+				
+				
+			</h2>
+			<p>InquirySummaryView は、運営向け一覧の 1 件分の出力 DTO です。
+
+			</p><pre>type InquirySummaryView struct {
+<span id="InquirySummaryView.ID"></span>    ID        <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="InquirySummaryView.UserID"></span>    UserID    <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="InquirySummaryView.CreatedAt"></span>    CreatedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="InquirySummaryView.UpdatedAt"></span>    UpdatedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="IssueStreamTicketParams">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=1007:1219#L21">IssueStreamTicketParams</a>
+				<a class="permalink" href="#IssueStreamTicketParams">¶</a>
+				
+				
+			</h2>
+			<p>IssueStreamTicketParams は、利用者の会話 stream 用 ticket 発行の入力 DTO です。
+
+			</p><pre>type IssueStreamTicketParams struct {
+<span id="IssueStreamTicketParams.UserID"></span>    <span class="comment">// UserID は、認証済みの内部ユーザー ID です。</span>
+    UserID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="IssueStreamTicketParams.Subject"></span>    <span class="comment">// Subject は、Realtime Delivery へ渡す principal 識別子です。</span>
+    Subject <a href="../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ListInquiriesParams">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=1295:1540#L29">ListInquiriesParams</a>
+				<a class="permalink" href="#ListInquiriesParams">¶</a>
+				
+				
+			</h2>
+			<p>ListInquiriesParams は、運営の一覧取得の入力 DTO です。
+
+			</p><pre>type ListInquiriesParams struct {
+<span id="ListInquiriesParams.Cursor"></span>    <span class="comment">// Cursor は、取得位置と件数です。keyset の境界は不透明キー列として運ばれます</span>
+    <span class="comment">// （購入フィードと同じ機構: internal/usecase/tools/paging）。</span>
+    Cursor *<a href="../../../../go-boilerplate/internal/usecase/tools/paging/">paging</a>.<a href="../../../../go-boilerplate/internal/usecase/tools/paging/#Cursor">Cursor</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MessageView">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=2357:2506#L56">MessageView</a>
+				<a class="permalink" href="#MessageView">¶</a>
+				
+				
+			</h2>
+			<p>MessageView は、メッセージ 1 通の出力 DTO です。
+
+			</p><pre>type MessageView struct {
+<span id="MessageView.ID"></span>    ID         <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="MessageView.InquiryID"></span>    InquiryID  <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="MessageView.AuthorKind"></span>    AuthorKind <a href="../../../../builtin/#string">string</a>
+<span id="MessageView.Body"></span>    Body       <a href="../../../../builtin/#string">string</a>
+<span id="MessageView.Sequence"></span>    Sequence   <a href="../../../../builtin/#int64">int64</a>
+<span id="MessageView.CreatedAt"></span>    CreatedAt  <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="OperatorHistoryParams">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=1618:1994#L36">OperatorHistoryParams</a>
+				<a class="permalink" href="#OperatorHistoryParams">¶</a>
+				
+				
+			</h2>
+			<p>OperatorHistoryParams は、運営の履歴取得の入力 DTO です。
+
+			</p><pre>type OperatorHistoryParams struct {
+<span id="OperatorHistoryParams.InquiryID"></span>    <span class="comment">// InquiryID は、対象の問い合わせです。</span>
+    InquiryID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="OperatorHistoryParams.AfterSequence"></span>    <span class="comment">// AfterSequence は、取得を開始する位置です。nil は先頭から取得します。</span>
+    AfterSequence *<a href="../../../../builtin/#int64">int64</a>
+<span id="OperatorHistoryParams.First"></span>    <span class="comment">// First は、要求された取得件数です。nil や範囲外はユースケースのポリシーで正規化されます。</span>
+    First *<a href="../../../../builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ReplyParams">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=2056:2289#L46">ReplyParams</a>
+				<a class="permalink" href="#ReplyParams">¶</a>
+				
+				
+			</h2>
+			<p>ReplyParams は、運営の回答の入力 DTO です。
+
+			</p><pre>type ReplyParams struct {
+<span id="ReplyParams.InquiryID"></span>    <span class="comment">// InquiryID は、対象の問い合わせです。</span>
+    InquiryID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="ReplyParams.OperatorID"></span>    <span class="comment">// OperatorID は、回答者の内部ユーザー ID です。</span>
+    OperatorID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="ReplyParams.Body"></span>    <span class="comment">// Body は、本文です。</span>
+    Body <a href="../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="TicketView">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/dto.go.html?s=3293:3606#L79">TicketView</a>
+				<a class="permalink" href="#TicketView">¶</a>
+				
+				
+			</h2>
+			<p>TicketView は、発行した ticket の出力 DTO です。
+
+			</p><pre>type TicketView struct {
+<span id="TicketView.Ticket"></span>    <span class="comment">// Ticket は、生値です。応答本文にのみ載せ、log / trace へは出しません。</span>
+    Ticket <a href="../../../../builtin/#string">string</a>
+<span id="TicketView.StreamID"></span>    <span class="comment">// StreamID は、接続先の stream です。</span>
+    StreamID <a href="../../../../builtin/#string">string</a>
+<span id="TicketView.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、この ticket で新しい接続を始められる期限です。</span>
+    ExpiresAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_usecase.go.html?s=1320:2839#L20">Usecase</a>
+				<a class="permalink" href="#Usecase">¶</a>
+				
+				
+			</h2>
+			<p>Usecase は、問い合わせのユースケースです。
+
+			</p><pre>type Usecase interface {
+    <span class="comment">// AppendMessage は、利用者の投稿を追加します。</span>
+    <span class="comment">// active な問い合わせが無ければ作成し、以降の投稿は同じ問い合わせへ追加します。</span>
+    AppendMessage(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, params <a href="#AppendMessageParams">AppendMessageParams</a>) (<a href="#MessageView">MessageView</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// GetHistory は、利用者自身の履歴を位置の昇順で 1 ページ返します。</span>
+    <span class="comment">// 問い合わせを持たない利用者には空の履歴を返します。</span>
+    GetHistory(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, params <a href="#HistoryParams">HistoryParams</a>) (*<a href="#HistoryView">HistoryView</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// IssueStreamTicket は、利用者の会話 stream を購読するための ticket を発行します。</span>
+    IssueStreamTicket(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, params <a href="#IssueStreamTicketParams">IssueStreamTicketParams</a>) (<a href="#TicketView">TicketView</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// ListInquiries は、運営向けに問い合わせを更新日時の新しい順で 1 ページ返します。</span>
+    ListInquiries(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">authbd</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="#ListInquiriesParams">ListInquiriesParams</a>) (*<a href="#InquiryListView">InquiryListView</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// GetInquiryHistory は、運営向けに任意の問い合わせの履歴を 1 ページ返します。</span>
+    GetInquiryHistory(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">authbd</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="#OperatorHistoryParams">OperatorHistoryParams</a>) (*<a href="#HistoryView">HistoryView</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// Reply は、運営の回答を追加します。</span>
+    Reply(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">authbd</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="#ReplyParams">ReplyParams</a>) (<a href="#MessageView">MessageView</a>, <a href="../../../../builtin/#error">error</a>)
+
+    <span class="comment">// IssueFeedTicket は、運営の feed stream を購読するための ticket を発行します。</span>
+    IssueFeedTicket(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">authbd</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>) (<a href="#TicketView">TicketView</a>, <a href="../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/inquiry/inquiry_usecase.go.html?s=3179:3415#L57">New</a>
+					<a class="permalink" href="#New">¶</a>
+					
+					
+				</h3>
+				<pre>func New(
+    txm <a href="../../../../go-boilerplate/internal/usecase/boundary/tx/">tx</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/tx/#Manager">Manager</a>,
+    clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>,
+    repo <a href="../../../../go-boilerplate/internal/domain/inquiry/">inquiry</a>.<a href="../../../../go-boilerplate/internal/domain/inquiry/#Repository">Repository</a>,
+    sequences <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#SequenceAllocator">SequenceAllocator</a>,
+    emit <a href="../../../../go-boilerplate/internal/usecase/outbox/">outbox</a>.<a href="../../../../go-boilerplate/internal/usecase/outbox/#EmitUsecase">EmitUsecase</a>,
+    tickets <a href="../../../../go-boilerplate/internal/usecase/realtime/">ucrealtime</a>.<a href="../../../../go-boilerplate/internal/usecase/realtime/#TicketIssuer">TicketIssuer</a>,
+    authorizer <a href="../../../../go-boilerplate/internal/usecase/boundary/authz/">authz</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/authz/#Authorizer">Authorizer</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+) <a href="#Usecase">Usecase</a></pre>
+				<p>New は、問い合わせユースケースを生成します。
+
+				
+				
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		</p><h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

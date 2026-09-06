@@ -218,7 +218,7 @@
 <span id="L161" class="ln">   161  </span>				})
 <span id="L162" class="ln">   162  </span>			})
 <span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span>			t.Run(&#34;/healthzは計測されない&#34;, func(t *testing.T) {
+<span id="L164" class="ln">   164  </span>			t.Run(&#34;SSEとして確定した接続は計測されない&#34;, func(t *testing.T) {
 <span id="L165" class="ln">   165  </span>				t.Parallel()
 <span id="L166" class="ln">   166  </span>
 <span id="L167" class="ln">   167  </span>				ctrl := gomock.NewController(t)
@@ -226,86 +226,123 @@
 <span id="L169" class="ln">   169  </span>				<span class="comment">// Observe の EXPECT を設定しない＝呼び出されれば失敗。</span>
 <span id="L170" class="ln">   170  </span>
 <span id="L171" class="ln">   171  </span>				serve(t, rec, serveCfg{
-<span id="L172" class="ln">   172  </span>					registerPath: &#34;/healthz&#34;,
-<span id="L173" class="ln">   173  </span>					requestPath:  &#34;/healthz&#34;,
-<span id="L174" class="ln">   174  </span>					handler:      okHandler(),
-<span id="L175" class="ln">   175  </span>				})
-<span id="L176" class="ln">   176  </span>			})
+<span id="L172" class="ln">   172  </span>					registerPath: &#34;/v1/streams/:destination&#34;,
+<span id="L173" class="ln">   173  </span>					requestPath:  &#34;/v1/streams/destination-1&#34;,
+<span id="L174" class="ln">   174  </span>					handler: func(c *echo.Context) error {
+<span id="L175" class="ln">   175  </span>						c.Response().Header().Set(&#34;Content-Type&#34;, &#34;text/event-stream&#34;)
+<span id="L176" class="ln">   176  </span>						c.Response().WriteHeader(http.StatusOK)
 <span id="L177" class="ln">   177  </span>
-<span id="L178" class="ln">   178  </span>			t.Run(&#34;/readyは計測されない&#34;, func(t *testing.T) {
-<span id="L179" class="ln">   179  </span>				t.Parallel()
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>				ctrl := gomock.NewController(t)
-<span id="L182" class="ln">   182  </span>				rec := mock_redmetrics.NewMockRecorder(ctrl)
-<span id="L183" class="ln">   183  </span>				<span class="comment">// Observe の EXPECT を設定しない＝呼び出されれば失敗。</span>
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>				serve(t, rec, serveCfg{
-<span id="L186" class="ln">   186  </span>					registerPath: &#34;/ready&#34;,
-<span id="L187" class="ln">   187  </span>					requestPath:  &#34;/ready&#34;,
-<span id="L188" class="ln">   188  </span>					handler:      okHandler(),
-<span id="L189" class="ln">   189  </span>				})
-<span id="L190" class="ln">   190  </span>			})
+<span id="L178" class="ln">   178  </span>						return nil
+<span id="L179" class="ln">   179  </span>					},
+<span id="L180" class="ln">   180  </span>				})
+<span id="L181" class="ln">   181  </span>			})
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>			t.Run(&#34;stream pathでも確定前の拒否は計測される&#34;, func(t *testing.T) {
+<span id="L184" class="ln">   184  </span>				t.Parallel()
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span>				ctrl := gomock.NewController(t)
+<span id="L187" class="ln">   187  </span>				rec := mock_redmetrics.NewMockRecorder(ctrl)
+<span id="L188" class="ln">   188  </span>				rec.EXPECT().
+<span id="L189" class="ln">   189  </span>					Observe(http.MethodGet, &#34;/v1/streams/:destination&#34;, http.StatusUnauthorized, &#34;4xx&#34;, gomock.Any()).
+<span id="L190" class="ln">   190  </span>					Times(1)
 <span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>			t.Run(&#34;/versionは計測されない&#34;, func(t *testing.T) {
-<span id="L193" class="ln">   193  </span>				t.Parallel()
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>				ctrl := gomock.NewController(t)
-<span id="L196" class="ln">   196  </span>				rec := mock_redmetrics.NewMockRecorder(ctrl)
-<span id="L197" class="ln">   197  </span>				<span class="comment">// Observe の EXPECT を設定しない＝呼び出されれば失敗。</span>
-<span id="L198" class="ln">   198  </span>
-<span id="L199" class="ln">   199  </span>				serve(t, rec, serveCfg{
-<span id="L200" class="ln">   200  </span>					registerPath: &#34;/version&#34;,
-<span id="L201" class="ln">   201  </span>					requestPath:  &#34;/version&#34;,
-<span id="L202" class="ln">   202  </span>					handler:      okHandler(),
-<span id="L203" class="ln">   203  </span>				})
-<span id="L204" class="ln">   204  </span>			})
-<span id="L205" class="ln">   205  </span>		})
-<span id="L206" class="ln">   206  </span>	})
+<span id="L192" class="ln">   192  </span>				serve(t, rec, serveCfg{
+<span id="L193" class="ln">   193  </span>					registerPath: &#34;/v1/streams/:destination&#34;,
+<span id="L194" class="ln">   194  </span>					requestPath:  &#34;/v1/streams/destination-1&#34;,
+<span id="L195" class="ln">   195  </span>					handler: func(c *echo.Context) error {
+<span id="L196" class="ln">   196  </span>						return c.JSON(http.StatusUnauthorized, map[string]string{&#34;code&#34;: &#34;UNAUTHORIZED&#34;})
+<span id="L197" class="ln">   197  </span>					},
+<span id="L198" class="ln">   198  </span>				})
+<span id="L199" class="ln">   199  </span>			})
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>			t.Run(&#34;/healthzは計測されない&#34;, func(t *testing.T) {
+<span id="L202" class="ln">   202  </span>				t.Parallel()
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>				ctrl := gomock.NewController(t)
+<span id="L205" class="ln">   205  </span>				rec := mock_redmetrics.NewMockRecorder(ctrl)
+<span id="L206" class="ln">   206  </span>				<span class="comment">// Observe の EXPECT を設定しない＝呼び出されれば失敗。</span>
 <span id="L207" class="ln">   207  </span>
-<span id="L208" class="ln">   208  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L209" class="ln">   209  </span>		t.Parallel()
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>		t.Run(&#34;500応答でstatus_classが5xxになる&#34;, func(t *testing.T) {
-<span id="L212" class="ln">   212  </span>			t.Parallel()
-<span id="L213" class="ln">   213  </span>
-<span id="L214" class="ln">   214  </span>			ctrl := gomock.NewController(t)
-<span id="L215" class="ln">   215  </span>			rec := mock_redmetrics.NewMockRecorder(ctrl)
-<span id="L216" class="ln">   216  </span>			rec.EXPECT().Observe(http.MethodGet, &#34;/boom&#34;, http.StatusInternalServerError, &#34;5xx&#34;, gomock.Any()).Times(1)
+<span id="L208" class="ln">   208  </span>				serve(t, rec, serveCfg{
+<span id="L209" class="ln">   209  </span>					registerPath: &#34;/healthz&#34;,
+<span id="L210" class="ln">   210  </span>					requestPath:  &#34;/healthz&#34;,
+<span id="L211" class="ln">   211  </span>					handler:      okHandler(),
+<span id="L212" class="ln">   212  </span>				})
+<span id="L213" class="ln">   213  </span>			})
+<span id="L214" class="ln">   214  </span>
+<span id="L215" class="ln">   215  </span>			t.Run(&#34;/readyは計測されない&#34;, func(t *testing.T) {
+<span id="L216" class="ln">   216  </span>				t.Parallel()
 <span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span>			serve(t, rec, serveCfg{
-<span id="L219" class="ln">   219  </span>				registerPath: &#34;/boom&#34;,
-<span id="L220" class="ln">   220  </span>				requestPath:  &#34;/boom&#34;,
-<span id="L221" class="ln">   221  </span>				handler: func(_ *echo.Context) error {
-<span id="L222" class="ln">   222  </span>					return echo.NewHTTPError(http.StatusInternalServerError, &#34;&#34;)
-<span id="L223" class="ln">   223  </span>				},
-<span id="L224" class="ln">   224  </span>			})
-<span id="L225" class="ln">   225  </span>		})
-<span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span>		t.Run(&#34;レスポンスを取り出せない場合は計測せず素通しする&#34;, func(t *testing.T) {
-<span id="L228" class="ln">   228  </span>			t.Parallel()
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			ctrl := gomock.NewController(t)
-<span id="L231" class="ln">   231  </span>			rec := mock_redmetrics.NewMockRecorder(ctrl)
-<span id="L232" class="ln">   232  </span>			<span class="comment">// Observe の EXPECT を設定しない＝呼び出されれば失敗。</span>
-<span id="L233" class="ln">   233  </span>
-<span id="L234" class="ln">   234  </span>			e := echo.New()
-<span id="L235" class="ln">   235  </span>			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, &#34;/boom&#34;, nil)
-<span id="L236" class="ln">   236  </span>			c := e.NewContext(req, httptest.NewRecorder())
-<span id="L237" class="ln">   237  </span>			<span class="comment">// Echo のレスポンスへ辿れないライタへ差し替える。</span>
-<span id="L238" class="ln">   238  </span>			c.SetResponse(httptest.NewRecorder())
-<span id="L239" class="ln">   239  </span>
-<span id="L240" class="ln">   240  </span>			called := false
-<span id="L241" class="ln">   241  </span>			handler := Middleware(rec)(func(_ *echo.Context) error {
-<span id="L242" class="ln">   242  </span>				called = true
-<span id="L243" class="ln">   243  </span>				return nil
-<span id="L244" class="ln">   244  </span>			})
-<span id="L245" class="ln">   245  </span>
-<span id="L246" class="ln">   246  </span>			require.NoError(t, handler(c))
-<span id="L247" class="ln">   247  </span>			assert.True(t, called, &#34;計測できなくても後続ハンドラは実行される&#34;)
-<span id="L248" class="ln">   248  </span>		})
-<span id="L249" class="ln">   249  </span>	})
-<span id="L250" class="ln">   250  </span>}
-<span id="L251" class="ln">   251  </span>
+<span id="L218" class="ln">   218  </span>				ctrl := gomock.NewController(t)
+<span id="L219" class="ln">   219  </span>				rec := mock_redmetrics.NewMockRecorder(ctrl)
+<span id="L220" class="ln">   220  </span>				<span class="comment">// Observe の EXPECT を設定しない＝呼び出されれば失敗。</span>
+<span id="L221" class="ln">   221  </span>
+<span id="L222" class="ln">   222  </span>				serve(t, rec, serveCfg{
+<span id="L223" class="ln">   223  </span>					registerPath: &#34;/ready&#34;,
+<span id="L224" class="ln">   224  </span>					requestPath:  &#34;/ready&#34;,
+<span id="L225" class="ln">   225  </span>					handler:      okHandler(),
+<span id="L226" class="ln">   226  </span>				})
+<span id="L227" class="ln">   227  </span>			})
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>			t.Run(&#34;/versionは計測されない&#34;, func(t *testing.T) {
+<span id="L230" class="ln">   230  </span>				t.Parallel()
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>				ctrl := gomock.NewController(t)
+<span id="L233" class="ln">   233  </span>				rec := mock_redmetrics.NewMockRecorder(ctrl)
+<span id="L234" class="ln">   234  </span>				<span class="comment">// Observe の EXPECT を設定しない＝呼び出されれば失敗。</span>
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>				serve(t, rec, serveCfg{
+<span id="L237" class="ln">   237  </span>					registerPath: &#34;/version&#34;,
+<span id="L238" class="ln">   238  </span>					requestPath:  &#34;/version&#34;,
+<span id="L239" class="ln">   239  </span>					handler:      okHandler(),
+<span id="L240" class="ln">   240  </span>				})
+<span id="L241" class="ln">   241  </span>			})
+<span id="L242" class="ln">   242  </span>		})
+<span id="L243" class="ln">   243  </span>	})
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L246" class="ln">   246  </span>		t.Parallel()
+<span id="L247" class="ln">   247  </span>
+<span id="L248" class="ln">   248  </span>		t.Run(&#34;500応答でstatus_classが5xxになる&#34;, func(t *testing.T) {
+<span id="L249" class="ln">   249  </span>			t.Parallel()
+<span id="L250" class="ln">   250  </span>
+<span id="L251" class="ln">   251  </span>			ctrl := gomock.NewController(t)
+<span id="L252" class="ln">   252  </span>			rec := mock_redmetrics.NewMockRecorder(ctrl)
+<span id="L253" class="ln">   253  </span>			rec.EXPECT().Observe(http.MethodGet, &#34;/boom&#34;, http.StatusInternalServerError, &#34;5xx&#34;, gomock.Any()).Times(1)
+<span id="L254" class="ln">   254  </span>
+<span id="L255" class="ln">   255  </span>			serve(t, rec, serveCfg{
+<span id="L256" class="ln">   256  </span>				registerPath: &#34;/boom&#34;,
+<span id="L257" class="ln">   257  </span>				requestPath:  &#34;/boom&#34;,
+<span id="L258" class="ln">   258  </span>				handler: func(_ *echo.Context) error {
+<span id="L259" class="ln">   259  </span>					return echo.NewHTTPError(http.StatusInternalServerError, &#34;&#34;)
+<span id="L260" class="ln">   260  </span>				},
+<span id="L261" class="ln">   261  </span>			})
+<span id="L262" class="ln">   262  </span>		})
+<span id="L263" class="ln">   263  </span>
+<span id="L264" class="ln">   264  </span>		t.Run(&#34;レスポンスを取り出せない場合は計測せず素通しする&#34;, func(t *testing.T) {
+<span id="L265" class="ln">   265  </span>			t.Parallel()
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>			ctrl := gomock.NewController(t)
+<span id="L268" class="ln">   268  </span>			rec := mock_redmetrics.NewMockRecorder(ctrl)
+<span id="L269" class="ln">   269  </span>			<span class="comment">// Observe の EXPECT を設定しない＝呼び出されれば失敗。</span>
+<span id="L270" class="ln">   270  </span>
+<span id="L271" class="ln">   271  </span>			e := echo.New()
+<span id="L272" class="ln">   272  </span>			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, &#34;/boom&#34;, nil)
+<span id="L273" class="ln">   273  </span>			c := e.NewContext(req, httptest.NewRecorder())
+<span id="L274" class="ln">   274  </span>			<span class="comment">// Echo のレスポンスへ辿れないライタへ差し替える。</span>
+<span id="L275" class="ln">   275  </span>			c.SetResponse(httptest.NewRecorder())
+<span id="L276" class="ln">   276  </span>
+<span id="L277" class="ln">   277  </span>			called := false
+<span id="L278" class="ln">   278  </span>			handler := Middleware(rec)(func(_ *echo.Context) error {
+<span id="L279" class="ln">   279  </span>				called = true
+<span id="L280" class="ln">   280  </span>				return nil
+<span id="L281" class="ln">   281  </span>			})
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span>			require.NoError(t, handler(c))
+<span id="L284" class="ln">   284  </span>			assert.True(t, called, &#34;計測できなくても後続ハンドラは実行される&#34;)
+<span id="L285" class="ln">   285  </span>		})
+<span id="L286" class="ln">   286  </span>	})
+<span id="L287" class="ln">   287  </span>}
+<span id="L288" class="ln">   288  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/controller/httpstack/redmetrics/middleware_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

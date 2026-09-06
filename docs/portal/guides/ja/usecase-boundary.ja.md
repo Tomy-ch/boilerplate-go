@@ -1,7 +1,5 @@
 # boundary
 
-[English](README.md) | 日本語
-
 `internal/usecase/boundary` は、**Usecase 層が外部（Infrastructure 層）に要求するインターフェース群**を定義するディレクトリです。
 
 ## オニオンアーキテクチャにおける位置づけ
@@ -50,6 +48,7 @@ Domain Repository は「Aggregate をどう保存するか」を抽象化する�
 |`objectstorage`|`Storage`|実体非依存のオブジェクトストレージ境界（キー指定でオブジェクトを `Put` / `List` / `Delete` する）|`internal/infrastructure/objectstorage/s3/`|
 |`outbox`|`Store`|トランザクショナル outbox テーブルの永続化境界|`internal/infrastructure/rdb/system_cqrs/outbox/`|
 |`publisher`|`Publisher`|publish 先非依存の outbound メッセージ publish 境界|`internal/infrastructure/publisher/`|
+|`realtime`|`SequenceAllocator`, `EventLogStore`, `StreamTicketStore`, `InstanceLeaseStore`, `SecretGenerator`, `RevocationNotifier`|Realtime Delivery の seam。feature 中立な封筒 `DeliveryEvent` と、replay store / ticket store / instance lease / ticket 生値 / 失効通知の各境界（詳細は package README）|`internal/infrastructure/{eventlog,streamticket,instancelease}/dynamodb/`、`internal/infrastructure/realtimesecret/`、SNS fan-out の publisher（Phase 7）|
 |`token`|`Generator`|推測できない不透明なトークン文字列を生成する|`internal/infrastructure/token/`<!-- sample-api:line -->|
 |`tx`|`Manager`|トランザクション境界の管理|`internal/infrastructure/rdb/driver/`|
 |`worker`|`Consumer`, `Handler`, `FailureHandler`, `Worker`, `State`|broker 非依存の worker seam（pull-ack）|`internal/infrastructure/queue/sqs/`|
@@ -170,13 +169,16 @@ Domain / Usecase が `time.Now()` に直接依存しないための抽象。テ�
 |---|---|
 |`Store`|outbox テーブルの永続化境界インターフェース|
 |`Insert(ctx, p)`|業務 tx 内で outbox 行を 1 行 INSERT し、採番された `message_id` を返す|
-|`ClaimPending(ctx, limit)`|pending 行を最大 `limit` 件 claim（`FOR UPDATE SKIP LOCKED`）|
+|`Channel`|行が属する配送レーン（`ChannelHTTP` / `ChannelRealtime`）。relay プロセスはちょうど 1 つを捌く|
+|`ParseChannel(s)`|文字列を `Channel` へ変換し、既知でない値を拒否する（`ErrUnknownChannel`）|
+|`ClaimPending(ctx, channel, limit)`|当該チャネルの、再試行時刻に達した pending 行を最大 `limit` 件 claim（`FOR UPDATE SKIP LOCKED`）。同一順序キーの先行位置が未 publish の行は選ばない|
 |`MarkPublished(ctx, id)`|publish 成功行を `published` へ遷移（pending でなければ no-op）|
-|`MarkFailed(ctx, id, lastErr)`|`attempts` を加算し `last_error` を記録、加算後の試行回数を返す|
+|`MarkFailed(ctx, id, lastErr, nextAttemptAt)`|`last_error` を記録し、次に claim してよい時刻を先へ進める。行は `pending` のまま|
 |`MarkDead(ctx, id)`|行を `dead` へ遷移（pending でなければ no-op）|
 |`ReplayDead(ctx, messageID)`|`dead` 行を `pending` へ戻す（`messageID` が nil なら全 dead 行）。戻した件数を返す|
 |`DeletePublished(ctx, cutoff, limit)`|`cutoff` より古い published 行を `limit` 件まで削除（GC）。削除件数を返す|
-|`OldestPendingCreatedAt(ctx)`|最古 pending 行の `created_at` を返す（outbox-lag SLI 用、無ければ `ok=false`）|
+|`OldestPendingCreatedAt(ctx, channel)`|当該チャネルの最古 pending 行の `created_at` を返す（outbox-lag SLI 用、無ければ `ok=false`）|
+|`CountBlockedStreams(ctx, channel)`|先頭行が `dead` になり後続が claim されなくなったストリーム数を返す|
 
 入出力の値オブジェクト：`EmitParams`（INSERT 入力）、`PendingMessage`（claim した未 publish 行）。
 

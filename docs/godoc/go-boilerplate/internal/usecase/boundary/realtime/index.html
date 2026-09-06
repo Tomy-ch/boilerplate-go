@@ -1,0 +1,1190 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package realtime
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package realtime は、Realtime Delivery（docs/design/realtime-delivery.md）の seam を定義します。
+feature 中立な封筒 DeliveryEvent と、それを保存・配送する側が実装する境界
+（EventLogStore / StreamTicketStore / InstanceLeaseStore / SecretGenerator / SequenceAllocator）を置きます。
+DynamoDB / AWS の語彙（table / partition / TTL 等）はこの
+package に現れません。feature の語彙（会話・メッセージ等）も現れません。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+			
+				
+				<dd><a href="#CleanupClaim">type CleanupClaim</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CleanupRelease">type CleanupRelease</a></dd>
+				
+				
+			
+				
+				<dd><a href="#DeliveryEvent">type DeliveryEvent</a></dd>
+				
+					
+					<dd>    <a href="#ParseDeliveryEvent">func ParseDeliveryEvent(b []byte) (DeliveryEvent, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#DeliveryEvent.MarshalJSON">func (e DeliveryEvent) MarshalJSON() ([]byte, error)</a></dd>
+				
+					
+					<dd>    <a href="#DeliveryEvent.Validate">func (e DeliveryEvent) Validate() error</a></dd>
+				
+			
+				
+				<dd><a href="#EventLogStore">type EventLogStore</a></dd>
+				
+				
+			
+				
+				<dd><a href="#InstanceID">type InstanceID</a></dd>
+				
+				
+			
+				
+				<dd><a href="#InstanceLease">type InstanceLease</a></dd>
+				
+				
+			
+				
+				<dd><a href="#InstanceLeaseStore">type InstanceLeaseStore</a></dd>
+				
+				
+			
+				
+				<dd><a href="#InstanceSubscription">type InstanceSubscription</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Notification">type Notification</a></dd>
+				
+				
+			
+				
+				<dd><a href="#NotificationKind">type NotificationKind</a></dd>
+				
+				
+			
+				
+				<dd><a href="#OrphanReclaimer">type OrphanReclaimer</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ReadAfterQuery">type ReadAfterQuery</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ReadAfterResult">type ReadAfterResult</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Revocation">type Revocation</a></dd>
+				
+				
+			
+				
+				<dd><a href="#RevocationNotifier">type RevocationNotifier</a></dd>
+				
+				
+			
+				
+				<dd><a href="#SecretGenerator">type SecretGenerator</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Sequence">type Sequence</a></dd>
+				
+				
+					
+					<dd>    <a href="#Sequence.String">func (s Sequence) String() string</a></dd>
+				
+			
+				
+				<dd><a href="#SequenceAllocator">type SequenceAllocator</a></dd>
+				
+				
+			
+				
+				<dd><a href="#StreamGrant">type StreamGrant</a></dd>
+				
+				
+			
+				
+				<dd><a href="#StreamID">type StreamID</a></dd>
+				
+				
+					
+					<dd>    <a href="#StreamID.String">func (s StreamID) String() string</a></dd>
+				
+			
+				
+				<dd><a href="#StreamTicket">type StreamTicket</a></dd>
+				
+				
+			
+				
+				<dd><a href="#StreamTicketStore">type StreamTicketStore</a></dd>
+				
+				
+			
+				
+				<dd><a href="#TicketHash">type TicketHash</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Wakeup">type Wakeup</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/cleanup.go.html">cleanup.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/error.go.html">error.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/event.go.html">event.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/eventlog.go.html">eventlog.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/fanout.go.html">fanout.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/lease.go.html">lease.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/revocation.go.html">revocation.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/secret.go.html">secret.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/sequence.go.html">sequence.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/ticket.go.html">ticket.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				
+				<pre>const (
+    <span class="comment">// MaxSerializedBytes は、DeliveryEvent を JSON に直列化したときの上限（64 KiB）です。</span>
+    <span class="comment">// payload 単体ではなく封筒全体で判定します（SSE の 1 event として送る大きさがこれだからです）。</span>
+    <span id="MaxSerializedBytes">MaxSerializedBytes</span> = 64 * 1024
+
+    <span class="comment">// EventLogRetention は、event を replay できる期間です。store はこの期間を過ぎた item を掃除してよく、</span>
+    <span class="comment">// usecase は OccurredAt がこの期間より古い位置への cursor を失効と判定します（ADR-0072）。</span>
+    <span id="EventLogRetention">EventLogRetention</span> = 7 * 24 * <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Hour">Hour</a>
+)</pre>
+			
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				
+				<pre>var (
+    <span class="comment">// ErrInvalidEvent は、DeliveryEvent が必須項目を欠くか JSON として不正な場合のエラーです。</span>
+    <span id="ErrInvalidEvent">ErrInvalidEvent</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrValidation">ErrValidation</a>, &#34;realtime: invalid delivery event&#34;)
+    <span class="comment">// ErrPayloadTooLarge は、直列化した DeliveryEvent が MaxSerializedBytes を超える場合のエラーです。</span>
+    <span id="ErrPayloadTooLarge">ErrPayloadTooLarge</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrPayloadTooLarge">ErrPayloadTooLarge</a>, &#34;realtime: serialized event exceeds the limit&#34;)
+    <span class="comment">// ErrSequenceConflict は、同じ (StreamID, Sequence) に異なる EventID の event が既にある場合のエラーです。</span>
+    <span class="comment">// 順序の連鎖（ADR-0072）が壊れたことを意味し、retry では解消しません。</span>
+    <span id="ErrSequenceConflict">ErrSequenceConflict</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrConflict">ErrConflict</a>, &#34;realtime: sequence already holds a different event&#34;)
+    <span class="comment">// ErrReceivingEndGone は、instance の受信先が使えないことを示すエラーです。まだ作っていない場合と、</span>
+    <span class="comment">// 作った後に外から消された場合（orphan cleanup が停滞した instance を誤って回収した場合）の両方を指します。</span>
+    <span class="comment">// どちらも受信を再試行しても直らず、受信先を作り直す必要があるため、通常の一時障害と区別して返します。</span>
+    <span class="comment">// 作り直しは lease を先に書き直す順序が要るので、受信先の実装ではなく順序を持つ側が行います。</span>
+    <span id="ErrReceivingEndGone">ErrReceivingEndGone</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrUnavailable">ErrUnavailable</a>, &#34;realtime: instance receiving end is gone&#34;)
+)</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="CleanupClaim">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/lease.go.html?s=1142:1708#L19">CleanupClaim</a>
+				<a class="permalink" href="#CleanupClaim">¶</a>
+				
+				
+			</h2>
+			<p>CleanupClaim は、死んだ instance の回収を引き受ける要求です。
+
+			</p><pre>type CleanupClaim struct {
+<span id="CleanupClaim.InstanceID"></span>    <span class="comment">// InstanceID は、回収対象です。</span>
+    InstanceID <a href="#InstanceID">InstanceID</a>
+<span id="CleanupClaim.Owner"></span>    <span class="comment">// Owner は、引き受ける主体の識別子です。</span>
+    Owner <a href="../../../../../builtin/#string">string</a>
+<span id="CleanupClaim.ExpiredBefore"></span>    <span class="comment">// ExpiredBefore は、lease の ExpiresAt がこの時刻より前であるときだけ引き受けます</span>
+    <span class="comment">// （expiry に safety margin を足した値を呼び出し側が渡します）。</span>
+    ExpiredBefore <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+<span id="CleanupClaim.Now"></span>    <span class="comment">// Now は、既存の引き受けが失効しているかの判定時刻です。</span>
+    Now <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+<span id="CleanupClaim.OwnerUntil"></span>    <span class="comment">// OwnerUntil は、引き受けの有効期限です。</span>
+    OwnerUntil <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CleanupRelease">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/lease.go.html?s=1787:2256#L34">CleanupRelease</a>
+				<a class="permalink" href="#CleanupRelease">¶</a>
+				
+				
+			</h2>
+			<p>CleanupRelease は、回収を終えた lease を閉じる要求です。
+
+			</p><pre>type CleanupRelease struct {
+<span id="CleanupRelease.InstanceID"></span>    <span class="comment">// InstanceID は、閉じる対象です。</span>
+    InstanceID <a href="#InstanceID">InstanceID</a>
+<span id="CleanupRelease.Owner"></span>    <span class="comment">// Owner は、回収を引き受けていた主体の識別子です。</span>
+    Owner <a href="../../../../../builtin/#string">string</a>
+<span id="CleanupRelease.ExpiredBefore"></span>    <span class="comment">// ExpiredBefore は、lease の ExpiresAt がこの時刻より前であるときだけ閉じます。引き受けている間に</span>
+    <span class="comment">// instance が heartbeat を再開していれば、その lease はもう回収対象ではないので閉じません。</span>
+    ExpiredBefore <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="DeliveryEvent">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/event.go.html?s=1741:2962#L25">DeliveryEvent</a>
+				<a class="permalink" href="#DeliveryEvent">¶</a>
+				
+				
+			</h2>
+			<p>DeliveryEvent は、feature 中立な配送封筒です。EventID は outbox の message_id と同じ値で、
+同じ (StreamID, Sequence) への再 append が冪等かどうかを判定する基準になります。
+
+			</p><pre>type DeliveryEvent struct {
+<span id="DeliveryEvent.EventID"></span>    <span class="comment">// EventID は、event の一意な識別子（= outbox message_id）です。</span>
+    EventID <a href="../../../../../builtin/#string">string</a>
+<span id="DeliveryEvent.StreamID"></span>    <span class="comment">// StreamID は、event が属する stream です。</span>
+    StreamID <a href="#StreamID">StreamID</a>
+<span id="DeliveryEvent.Sequence"></span>    <span class="comment">// Sequence は、stream 内の位置です。</span>
+    Sequence <a href="#Sequence">Sequence</a>
+<span id="DeliveryEvent.Type"></span>    <span class="comment">// Type は、event 種別（`&lt;feature&gt;.&lt;noun&gt;.&lt;verb&gt;.vN`）です。機構は解釈しません。</span>
+    Type <a href="../../../../../builtin/#string">string</a>
+<span id="DeliveryEvent.OccurredAt"></span>    <span class="comment">// OccurredAt は、event が起きた時刻（UTC）です。保持期間の判定に使います。</span>
+    OccurredAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+<span id="DeliveryEvent.SchemaVersion"></span>    <span class="comment">// SchemaVersion は、Payload の schema 版です。</span>
+    SchemaVersion <a href="../../../../../builtin/#int">int</a>
+<span id="DeliveryEvent.Payload"></span>    <span class="comment">// Payload は、feature が定義する JSON です。機構は中身を解釈しません。</span>
+    Payload <a href="../../../../../encoding/json/">json</a>.<a href="../../../../../encoding/json/#RawMessage">RawMessage</a>
+<span id="DeliveryEvent.Origin"></span>    <span class="comment">// Origin は、この event を生んだ command の trace を運ぶ不透明な carrier です。項目名は observability</span>
+    <span class="comment">// だけが知り、機構は解釈せず運ぶだけです（outbox の Message.Headers と同じ扱い）。client には届きません</span>
+    <span class="comment">// （直列化形に含めない）。nil でも構いません — link の無い span になるだけです</span>
+    <span class="comment">// （配送・replay の span がここへ link を張る契約は docs/design/realtime-delivery.md §3.4）。</span>
+    Origin map[<a href="../../../../../builtin/#string">string</a>]<a href="../../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="ParseDeliveryEvent">func <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/event.go.html?s=4540:4596#L88">ParseDeliveryEvent</a>
+					<a class="permalink" href="#ParseDeliveryEvent">¶</a>
+					
+					
+				</h3>
+				<pre>func ParseDeliveryEvent(b []<a href="../../../../../builtin/#byte">byte</a>) (<a href="#DeliveryEvent">DeliveryEvent</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>ParseDeliveryEvent は、MarshalJSON の形（sequence は 10 進文字列）から封筒を復元します。JSON でないか
+sequence が 10 進整数でなければ ErrInvalidEvent を返します。復元した封筒が保存・配送できる形かは Validate が別に判定します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="DeliveryEvent.MarshalJSON">func (DeliveryEvent) <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/event.go.html?s=3746:3798#L64">MarshalJSON</a>
+					<a class="permalink" href="#DeliveryEvent.MarshalJSON">¶</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#DeliveryEvent">DeliveryEvent</a>) MarshalJSON() ([]<a href="../../../../../builtin/#byte">byte</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>MarshalJSON は、client に届く形（sequence は 10 進文字列、時刻は RFC 3339）で直列化します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="DeliveryEvent.Validate">func (DeliveryEvent) <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/event.go.html?s=5387:5426#L112">Validate</a>
+					<a class="permalink" href="#DeliveryEvent.Validate">¶</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#DeliveryEvent">DeliveryEvent</a>) Validate() <a href="../../../../../builtin/#error">error</a></pre>
+				<p>Validate は、封筒が保存・配送できる形かを判定します。必須項目の欠落は ErrInvalidEvent、
+直列化後の大きさが MaxSerializedBytes を超えるものは ErrPayloadTooLarge を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="EventLogStore">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/eventlog.go.html?s=454:2045#L1">EventLogStore</a>
+				<a class="permalink" href="#EventLogStore">¶</a>
+				
+				
+			</h2>
+			<p>EventLogStore は、stream ごとに sequence 順で event を保持する有界の replay store です
+（ADR-0072: 現在状態の正本ではなく、保持期間内の replay のためだけに置く）。
+失敗は apperror sentinel（読めない・書けないは ErrUnavailable）で返します。
+
+			</p><pre>type EventLogStore interface {
+    <span class="comment">// Append は、event を (StreamID, Sequence) の位置へ 1 度だけ書きます。</span>
+    <span class="comment">// 同じ位置に同じ EventID の event が既にあれば成功として返します。</span>
+    <span class="comment">// 同じ位置に異なる EventID の event があれば ErrSequenceConflict を返します。</span>
+    <span class="comment">// 実装は書く前に event.Validate() を呼び、不正な封筒を保存しません。</span>
+    Append(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, event <a href="#DeliveryEvent">DeliveryEvent</a>) <a href="../../../../../builtin/#error">error</a>
+    <span class="comment">// ReadAfter は、q.After より後ろの event を sequence 昇順に、最大 q.Limit 件返します。</span>
+    <span class="comment">// 書き込み直後の読み取りでも取りこぼさない（強い一貫性の）読み取りです。</span>
+    <span class="comment">// 続きがあれば HasMore が true になり、呼び出し側は最後の event の Sequence を次の After に渡します。</span>
+    ReadAfter(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, q <a href="#ReadAfterQuery">ReadAfterQuery</a>) (<a href="#ReadAfterResult">ReadAfterResult</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// Latest は、stream の最後の event を返します。1 件も無ければ ok=false を返します。</span>
+    Latest(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, streamID <a href="#StreamID">StreamID</a>) (<a href="#DeliveryEvent">DeliveryEvent</a>, <a href="../../../../../builtin/#bool">bool</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// Find は、stream の指定 sequence の event を返します。無ければ ok=false を返します。</span>
+    Find(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, streamID <a href="#StreamID">StreamID</a>, seq <a href="#Sequence">Sequence</a>) (<a href="#DeliveryEvent">DeliveryEvent</a>, <a href="../../../../../builtin/#bool">bool</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// AppendedThrough は、この stream へ追記した最大の位置を返します。1 度も追記していなければ 0 です</span>
+    <span class="comment">// （この値の使い方は docs/design/realtime-delivery.md の Glossary「append watermark」）。</span>
+    AppendedThrough(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, streamID <a href="#StreamID">StreamID</a>) (<a href="#Sequence">Sequence</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="InstanceID">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/lease.go.html?s=208:230#L1">InstanceID</a>
+				<a class="permalink" href="#InstanceID">¶</a>
+				
+				
+			</h2>
+			<p>InstanceID は、serve instance の識別子です。
+
+			</p><pre>type InstanceID <a href="../../../../../builtin/#string">string</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="InstanceLease">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/lease.go.html?s=451:1056#L5">InstanceLease</a>
+				<a class="permalink" href="#InstanceLease">¶</a>
+				
+				
+			</h2>
+			<p>InstanceLease は、serve instance の生存記録です。lock でも leader election でもなく、
+crash した instance の配送 resource を後から回収するためだけに使います（ADR-0073）。
+
+			</p><pre>type InstanceLease struct {
+<span id="InstanceLease.InstanceID"></span>    <span class="comment">// InstanceID は、記録の主です。</span>
+    InstanceID <a href="#InstanceID">InstanceID</a>
+<span id="InstanceLease.HeartbeatAt"></span>    <span class="comment">// HeartbeatAt は、最後に生存を報告した時刻です。</span>
+    HeartbeatAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+<span id="InstanceLease.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、この時刻を過ぎて更新が無ければ instance を死んだと見なす期限です。</span>
+    ExpiresAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+<span id="InstanceLease.CleanupOwner"></span>    <span class="comment">// CleanupOwner は、回収を引き受けた主体の識別子です。未回収なら空です。</span>
+    CleanupOwner <a href="../../../../../builtin/#string">string</a>
+<span id="InstanceLease.CleanupOwnerUntil"></span>    <span class="comment">// CleanupOwnerUntil は、回収の引き受けが有効な期限です。過ぎれば他の主体が引き受け直せます。</span>
+    CleanupOwnerUntil <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="InstanceLeaseStore">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/lease.go.html?s=2372:3614#L45">InstanceLeaseStore</a>
+				<a class="permalink" href="#InstanceLeaseStore">¶</a>
+				
+				
+			</h2>
+			<p>InstanceLeaseStore は、instance lease の保存境界です。失敗は apperror sentinel で返します。
+
+			</p><pre>type InstanceLeaseStore interface {
+    <span class="comment">// Heartbeat は、lease を作成または更新します（HeartbeatAt / ExpiresAt を書き換える）。</span>
+    Heartbeat(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, lease <a href="#InstanceLease">InstanceLease</a>) <a href="../../../../../builtin/#error">error</a>
+    <span class="comment">// Delete は、lease を削除します。無くてもエラーになりません。</span>
+    Delete(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, id <a href="#InstanceID">InstanceID</a>) <a href="../../../../../builtin/#error">error</a>
+    <span class="comment">// ListExpired は、asOf 時点で ExpiresAt を過ぎた lease を返します。</span>
+    ListExpired(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, asOf <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>) ([]<a href="#InstanceLease">InstanceLease</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// AcquireCleanup は、claim の条件（期限切れ、かつ未回収か引き受けが失効）を満たすときだけ</span>
+    <span class="comment">// 引き受けを記録して true を返します。他の主体が先に引き受けていれば false を返します。</span>
+    AcquireCleanup(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, claim <a href="#CleanupClaim">CleanupClaim</a>) (<a href="../../../../../builtin/#bool">bool</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// ReleaseCleanup は、release の条件（引き受けが owner のままで、かつ lease がまだ期限切れ）を</span>
+    <span class="comment">// 満たすときだけ lease を削除して true を返します。引き受けが他へ移った、instance が heartbeat を</span>
+    <span class="comment">// 再開した、lease が既に無い、のいずれでも false を返します。</span>
+    ReleaseCleanup(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, release <a href="#CleanupRelease">CleanupRelease</a>) (<a href="../../../../../builtin/#bool">bool</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="InstanceSubscription">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/fanout.go.html?s=2341:3169#L39">InstanceSubscription</a>
+				<a class="permalink" href="#InstanceSubscription">¶</a>
+				
+				
+			</h2>
+			<p>InstanceSubscription は、serve instance 固有の受信先の境界です。受信先の作成から削除までを 1 つの instance の
+生存期間に閉じ、substrate 固有の識別子（ARN / URL / receipt handle の中身）は外に出しません。
+失敗は apperror sentinel で返します。
+
+			</p><pre>type InstanceSubscription interface {
+    <span class="comment">// Provision は、id の instance 専用の受信先を作り、fan-out 元へ登録します。同じ id で繰り返し呼んでも 1 組に収束します。</span>
+    Provision(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, id <a href="#InstanceID">InstanceID</a>) <a href="../../../../../builtin/#error">error</a>
+    <span class="comment">// Receive は、届いた通知を最大 limit 件返します。通知が無ければ有限時間待ってから空を返し、ctx 完了でも返ります。</span>
+    Receive(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, limit <a href="../../../../../builtin/#int">int</a>) ([]<a href="#Notification">Notification</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// Delete は、処理済みの 1 件を受信先から取り除きます。取り除かなかった通知は再配送されます。</span>
+    Delete(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, n <a href="#Notification">Notification</a>) <a href="../../../../../builtin/#error">error</a>
+    <span class="comment">// Teardown は、登録を解除して受信先を削除します。Provision していなければ何もしません。</span>
+    Teardown(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) <a href="../../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Notification">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/fanout.go.html?s=1903:2021#L29">Notification</a>
+				<a class="permalink" href="#Notification">¶</a>
+				
+				
+			</h2>
+			<p>Notification は、instance の受信先から取り出した 1 件です。Kind に応じて Wakeup か Revocation のどちらかが埋まります。
+種別が読めない通知は Kind が KindUnknown（空文字）のまま返ります。
+Receipt は受信先固有の削除鍵で、機構は中身を解釈しません。
+
+			</p><pre>type Notification struct {
+<span id="Notification.Kind"></span>    Kind       <a href="#NotificationKind">NotificationKind</a>
+<span id="Notification.Wakeup"></span>    Wakeup     <a href="#Wakeup">Wakeup</a>
+<span id="Notification.Revocation"></span>    Revocation <a href="#Revocation">Revocation</a>
+<span id="Notification.Receipt"></span>    Receipt    <a href="../../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="NotificationKind">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/fanout.go.html?s=769:797#L7">NotificationKind</a>
+				<a class="permalink" href="#NotificationKind">¶</a>
+				
+				
+			</h2>
+			<p>NotificationKind は、instance の受信先に届く通知の種別です。
+
+			</p><pre>type NotificationKind <a href="../../../../../builtin/#string">string</a></pre>
+
+			
+				
+				<pre>const (
+    <span class="comment">// KindUnknown は、種別が読めなかった通知です。受け取る側は Delete で取り除きます（残すと再配送され続けるため）。</span>
+    <span id="KindUnknown">KindUnknown</span> <a href="#NotificationKind">NotificationKind</a> = &#34;&#34;
+    <span class="comment">// KindWakeup は「stream を自分の cursor 以降で読み直せ」の合図です。状態は運びません（ADR-0073）。</span>
+    <span id="KindWakeup">KindWakeup</span> <a href="#NotificationKind">NotificationKind</a> = &#34;wakeup&#34;
+    <span class="comment">// KindRevocation は、subject の destination への権利が取り下げられたことの通知です（ADR-0074）。</span>
+    <span id="KindRevocation">KindRevocation</span> <a href="#NotificationKind">NotificationKind</a> = &#34;revocation&#34;
+)</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="OrphanReclaimer">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/cleanup.go.html?s=569:788#L1">OrphanReclaimer</a>
+				<a class="permalink" href="#OrphanReclaimer">¶</a>
+				
+				
+			</h2>
+			<p>OrphanReclaimer は、死んだ instance が残した受信先を識別子から辿って片付ける境界です。
+InstanceSubscription が自分の生存期間に閉じるのに対し、こちらは他の instance の残骸を対象にします。
+対象が無いことは成功で、同じ識別子に対して繰り返し呼んでも同じ状態に収束します。
+失敗は apperror sentinel で返します。
+
+			</p><pre>type OrphanReclaimer interface {
+    <span class="comment">// Reclaim は、id の instance の登録を解除して受信先を削除します。どちらも無ければ何もしません。</span>
+    Reclaim(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, id <a href="#InstanceID">InstanceID</a>) <a href="../../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ReadAfterQuery">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/eventlog.go.html?s=2115:2443#L20">ReadAfterQuery</a>
+				<a class="permalink" href="#ReadAfterQuery">¶</a>
+				
+				
+			</h2>
+			<p>ReadAfterQuery は、cursor 以降の読み取り条件です。
+
+			</p><pre>type ReadAfterQuery struct {
+<span id="ReadAfterQuery.StreamID"></span>    <span class="comment">// StreamID は、読む stream です。</span>
+    StreamID <a href="#StreamID">StreamID</a>
+<span id="ReadAfterQuery.After"></span>    <span class="comment">// After は、この位置より後ろを読みます。0 なら stream の先頭から読みます。</span>
+    After <a href="#Sequence">Sequence</a>
+<span id="ReadAfterQuery.Limit"></span>    <span class="comment">// Limit は、1 回で返す最大件数です。0 以下なら実装の既定値になります。</span>
+    Limit <a href="../../../../../builtin/#int32">int32</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ReadAfterResult">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/eventlog.go.html?s=2509:2905#L30">ReadAfterResult</a>
+				<a class="permalink" href="#ReadAfterResult">¶</a>
+				
+				
+			</h2>
+			<p>ReadAfterResult は、1 回分の読み取り結果です。
+
+			</p><pre>type ReadAfterResult struct {
+<span id="ReadAfterResult.Events"></span>    <span class="comment">// Events は、sequence 昇順の event です。gap はありません。</span>
+    Events []<a href="#DeliveryEvent">DeliveryEvent</a>
+<span id="ReadAfterResult.HasMore"></span>    <span class="comment">// HasMore は、Limit（または store の 1 回の読み取り上限）で打ち切られたことを示します。true でも次の読み取りが</span>
+    <span class="comment">// 0 件のことはあり、false なら続きは無い、という片方向の保証です。</span>
+    HasMore <a href="../../../../../builtin/#bool">bool</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Revocation">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/fanout.go.html?s=1496:1564#L21">Revocation</a>
+				<a class="permalink" href="#Revocation">¶</a>
+				
+				
+			</h2>
+			<p>Revocation は、subject × destination の失効通知です。受け取った instance は該当する接続を閉じます。
+
+			</p><pre>type Revocation struct {
+<span id="Revocation.Subject"></span>    Subject     <a href="../../../../../builtin/#string">string</a>
+<span id="Revocation.Destination"></span>    Destination <a href="#StreamID">StreamID</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="RevocationNotifier">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/revocation.go.html?s=440:651#L1">RevocationNotifier</a>
+				<a class="permalink" href="#RevocationNotifier">¶</a>
+				
+				
+			</h2>
+			<p>RevocationNotifier は、subject の destination への権利が取り下げられたことを、接続を抱える全 serve instance へ伝える境界です。
+受け取った instance は該当する接続を STOP で閉じます（ADR-0074）。失敗は apperror sentinel で返します。
+
+			</p><pre>type RevocationNotifier interface {
+    <span class="comment">// NotifyRevoked は、subject × destination の失効を全 instance へ通知します。</span>
+    NotifyRevoked(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, subject <a href="../../../../../builtin/#string">string</a>, destination <a href="#StreamID">StreamID</a>) <a href="../../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="SecretGenerator">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/secret.go.html?s=437:695#L1">SecretGenerator</a>
+				<a class="permalink" href="#SecretGenerator">¶</a>
+				
+				
+			</h2>
+			<p>SecretGenerator は、ticket の生値（256 bit の推測不能な不透明値）を生成する境界です。
+乱数を usecase から隔離するための seam で、feature 側の token 境界とは独立に持ちます
+（sample feature を削除しても Realtime Delivery が成り立つため）。
+
+			</p><pre>type SecretGenerator interface {
+    <span class="comment">// Generate は、新しい生値を返します。呼ぶたびに異なり、生成済みの値から次を推測できません。</span>
+    <span class="comment">// 乱数源が使えなければエラーを返します。</span>
+    Generate() (<a href="../../../../../builtin/#string">string</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Sequence">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/event.go.html?s=1497:1516#L21">Sequence</a>
+				<a class="permalink" href="#Sequence">¶</a>
+				
+				
+			</h2>
+			<p>Sequence は、stream 内の位置です。1 から始まり gap 無く増えます。0 値は番兵ではなく、
+未採番かどうかは SequenceAllocator.Current の ok で表します。
+
+			</p><pre>type Sequence <a href="../../../../../builtin/#int64">int64</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="Sequence.String">func (Sequence) <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/event.go.html?s=3547:3580#L59">String</a>
+					<a class="permalink" href="#Sequence.String">¶</a>
+					
+					
+				</h3>
+				<pre>func (s <a href="#Sequence">Sequence</a>) String() <a href="../../../../../builtin/#string">string</a></pre>
+				<p>String は、sequence の 10 進表記（ゼロ埋めなし）を返します。SSE の id と cursor はこの形です。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="SequenceAllocator">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/sequence.go.html?s=210:774#L1">SequenceAllocator</a>
+				<a class="permalink" href="#SequenceAllocator">¶</a>
+				
+				
+			</h2>
+			<p>SequenceAllocator は、ストリームの採番境界です。
+
+			</p><pre>type SequenceAllocator interface {
+    <span class="comment">// Allocate は、業務 tx 内で呼ばれ、ストリームの次の位置を採番します。</span>
+    <span class="comment">// 採番行のロックは呼び出し側 tx の commit まで保持されるため、同一ストリームの採番は直列化されます。</span>
+    Allocate(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, streamID <a href="#StreamID">StreamID</a>) (<a href="#Sequence">Sequence</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// Current は、ストリームの現在位置を返します。まだ採番されていなければ ok=false を返します。</span>
+    Current(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, streamID <a href="#StreamID">StreamID</a>) (seq <a href="#Sequence">Sequence</a>, ok <a href="../../../../../builtin/#bool">bool</a>, err <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="StreamGrant">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/ticket.go.html?s=1491:1896#L24">StreamGrant</a>
+				<a class="permalink" href="#StreamGrant">¶</a>
+				
+				
+			</h2>
+			<p>StreamGrant は、検証を通った ticket が接続に与える束縛です。生値は含まず、ticket と違い保存もされません。
+InitialCursor は開始位置であって認可の下限ではありません（design/realtime-delivery.md §2.3）。
+
+			</p><pre>type StreamGrant struct {
+<span id="StreamGrant.Subject"></span>    <span class="comment">// Subject は、ticket を発行された subject です。</span>
+    Subject <a href="../../../../../builtin/#string">string</a>
+<span id="StreamGrant.Destination"></span>    <span class="comment">// Destination は、接続を許す stream です。</span>
+    Destination <a href="#StreamID">StreamID</a>
+<span id="StreamGrant.Scope"></span>    <span class="comment">// Scope は、feature が ticket に与えた権限の範囲です。機構は解釈しません。</span>
+    Scope <a href="../../../../../builtin/#string">string</a>
+<span id="StreamGrant.InitialCursor"></span>    <span class="comment">// InitialCursor は、cursor 無しで接続したときの開始位置です。</span>
+    InitialCursor <a href="#Sequence">Sequence</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="StreamID">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/event.go.html?s=1276:1296#L17">StreamID</a>
+				<a class="permalink" href="#StreamID">¶</a>
+				
+				
+			</h2>
+			<p>StreamID は、event が属する stream（= 配送先 destination）の識別子です。
+
+			</p><pre>type StreamID <a href="../../../../../builtin/#string">string</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="StreamID.String">func (StreamID) <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/sequence.go.html?s=838:871#L9">String</a>
+					<a class="permalink" href="#StreamID.String">¶</a>
+					
+					
+				</h3>
+				<pre>func (s <a href="#StreamID">StreamID</a>) String() <a href="../../../../../builtin/#string">string</a></pre>
+				<p>String は、StreamID の文字列表現を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="StreamTicket">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/ticket.go.html?s=477:1218#L5">StreamTicket</a>
+				<a class="permalink" href="#StreamTicket">¶</a>
+				
+				
+			</h2>
+			<p>StreamTicket は、subject が destination へ接続してよいことの記録です。
+生値は client だけが持ち、店側は Hash で照合します。
+
+			</p><pre>type StreamTicket struct {
+<span id="StreamTicket.Hash"></span>    <span class="comment">// Hash は、ticket 生値の hash です。</span>
+    Hash <a href="#TicketHash">TicketHash</a>
+<span id="StreamTicket.Subject"></span>    <span class="comment">// Subject は、ticket を発行された認証済み subject です。</span>
+    Subject <a href="../../../../../builtin/#string">string</a>
+<span id="StreamTicket.Destination"></span>    <span class="comment">// Destination は、接続してよい stream です。cursor はこの stream に対してだけ有効です。</span>
+    Destination <a href="#StreamID">StreamID</a>
+<span id="StreamTicket.Scope"></span>    <span class="comment">// Scope は、feature が定めた権限の範囲（読み取り専用の識別子）です。機構は解釈しません。</span>
+    Scope <a href="../../../../../builtin/#string">string</a>
+<span id="StreamTicket.InitialCursor"></span>    <span class="comment">// InitialCursor は、cursor を持たずに接続したときの開始位置です。</span>
+    InitialCursor <a href="#Sequence">Sequence</a>
+<span id="StreamTicket.IssuedAt"></span>    <span class="comment">// IssuedAt は、発行時刻です。</span>
+    IssuedAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+<span id="StreamTicket.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、この ticket で新しい接続を始められる期限です。</span>
+    ExpiresAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="StreamTicketStore">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/ticket.go.html?s=2016:2785#L36">StreamTicketStore</a>
+				<a class="permalink" href="#StreamTicketStore">¶</a>
+				
+				
+			</h2>
+			<p>StreamTicketStore は、発行済み ticket の保存境界です。失敗は apperror sentinel で返します。
+
+			</p><pre>type StreamTicketStore interface {
+    <span class="comment">// Save は、ticket を保存します。同じ Hash への再保存は上書きです。</span>
+    Save(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, ticket <a href="#StreamTicket">StreamTicket</a>) <a href="../../../../../builtin/#error">error</a>
+    <span class="comment">// Find は、hash に対応する ticket を返します。無い、または asOf 時点で ExpiresAt を過ぎている</span>
+    <span class="comment">// ものは ok=false を返します（期限切れの掃除は保存側の都合であり、判定の正本ではありません）。</span>
+    Find(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, hash <a href="#TicketHash">TicketHash</a>, asOf <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>) (<a href="#StreamTicket">StreamTicket</a>, <a href="../../../../../builtin/#bool">bool</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// Invalidate は、subject × destination に発行された ticket をすべて無効にします。</span>
+    <span class="comment">// 該当が無くてもエラーになりません。</span>
+    Invalidate(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, subject <a href="../../../../../builtin/#string">string</a>, destination <a href="#StreamID">StreamID</a>) <a href="../../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="TicketHash">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/ticket.go.html?s=286:308#L1">TicketHash</a>
+				<a class="permalink" href="#TicketHash">¶</a>
+				
+				
+			</h2>
+			<p>TicketHash は、ticket の生値を一方向 hash した保存形です。生値そのものは保存しません（ADR-0074）。
+
+			</p><pre>type TicketHash <a href="../../../../../builtin/#string">string</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Wakeup">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/fanout.go.html?s=1007:1362#L11">Wakeup</a>
+				<a class="permalink" href="#Wakeup">¶</a>
+				
+				
+			</h2>
+			<p>Wakeup は、EventLog に event が 1 件増えたことを全 instance へ伝える通知です。
+重複・欠落しうるので受け取る側は冪等でなければなりません（ADR-0073）。
+
+			</p><pre>type Wakeup struct {
+<span id="Wakeup.EventID"></span>    <span class="comment">// EventID は、増えた event の識別子です（outbox の message_id と同じ）。</span>
+    EventID <a href="../../../../../builtin/#string">string</a>
+<span id="Wakeup.StreamID"></span>    <span class="comment">// StreamID は、読み直す stream です。</span>
+    StreamID <a href="#StreamID">StreamID</a>
+<span id="Wakeup.Sequence"></span>    <span class="comment">// Sequence は、増えた event の位置です。受け取る側はこれ以下の cursor を持つ接続だけを起こせます。</span>
+    Sequence <a href="#Sequence">Sequence</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

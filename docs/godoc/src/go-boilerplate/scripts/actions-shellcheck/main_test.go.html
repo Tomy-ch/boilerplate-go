@@ -1043,797 +1043,798 @@
 <span id="L986" class="ln">   986  </span>			t.Parallel()
 <span id="L987" class="ln">   987  </span>			requireShellcheck(t)
 <span id="L988" class="ln">   988  </span>			steps, err := parseAction(&#34;action.yaml&#34;, []byte(strings.Replace(
-<span id="L989" class="ln">   989  </span>				compositeAction, &#34;        echo world\n&#34;, &#34;        x=\&#34;a b\&#34;; echo $x\n&#34;, 1)))
-<span id="L990" class="ln">   990  </span>			require.NoError(t, err)
-<span id="L991" class="ln">   991  </span>			res, err := check(t.Context(), steps)
-<span id="L992" class="ln">   992  </span>			require.NoError(t, err)
-<span id="L993" class="ln">   993  </span>			assert.Equal(t, 2, res.checked)
-<span id="L994" class="ln">   994  </span>			require.Len(t, res.findings, 1)
-<span id="L995" class="ln">   995  </span>			assert.Contains(t, res.findings[0], &#34;action.yaml:10:&#34;)
-<span id="L996" class="ln">   996  </span>			assert.Contains(t, res.findings[0], &#34;SC2086&#34;)
-<span id="L997" class="ln">   997  </span>		})
-<span id="L998" class="ln">   998  </span>
-<span id="L999" class="ln">   999  </span>		t.Run(&#34;alias で共有された run も shellcheck に掛けアンカー先の位置で報告する&#34;, func(t *testing.T) {
-<span id="L1000" class="ln">  1000  </span>			t.Parallel()
-<span id="L1001" class="ln">  1001  </span>			requireShellcheck(t)
-<span id="L1002" class="ln">  1002  </span>			_, steps, err := collectSteps(testFS(map[string]string{
-<span id="L1003" class="ln">  1003  </span>				&#34;.github/actions/a/action.yaml&#34;: aliasDefectAction,
-<span id="L1004" class="ln">  1004  </span>			}))
-<span id="L1005" class="ln">  1005  </span>			require.NoError(t, err)
-<span id="L1006" class="ln">  1006  </span>			res, err := check(t.Context(), steps)
-<span id="L1007" class="ln">  1007  </span>			require.NoError(t, err)
-<span id="L1008" class="ln">  1008  </span>			assert.Equal(t, 2, res.checked)
-<span id="L1009" class="ln">  1009  </span>			require.Len(t, res.findings, 2)
-<span id="L1010" class="ln">  1010  </span>			for _, finding := range res.findings {
-<span id="L1011" class="ln">  1011  </span>				assert.Contains(t, finding, &#34;.github/actions/a/action.yaml:8:14:&#34;)
-<span id="L1012" class="ln">  1012  </span>				assert.Contains(t, finding, &#34;SC2086&#34;)
-<span id="L1013" class="ln">  1013  </span>			}
-<span id="L1014" class="ln">  1014  </span>		})
-<span id="L1015" class="ln">  1015  </span>
-<span id="L1016" class="ln">  1016  </span>		t.Run(&#34;引用符付きスカラーの run も列位置ごと報告する&#34;, func(t *testing.T) {
-<span id="L1017" class="ln">  1017  </span>			t.Parallel()
-<span id="L1018" class="ln">  1018  </span>			requireShellcheck(t)
-<span id="L1019" class="ln">  1019  </span>			_, steps, err := collectSteps(testFS(map[string]string{
-<span id="L1020" class="ln">  1020  </span>				&#34;.github/actions/a/action.yaml&#34;: quotedDefectAction,
-<span id="L1021" class="ln">  1021  </span>			}))
-<span id="L1022" class="ln">  1022  </span>			require.NoError(t, err)
-<span id="L1023" class="ln">  1023  </span>			res, err := check(t.Context(), steps)
-<span id="L1024" class="ln">  1024  </span>			require.NoError(t, err)
-<span id="L1025" class="ln">  1025  </span>			assert.Equal(t, 1, res.checked)
-<span id="L1026" class="ln">  1026  </span>			require.Len(t, res.findings, 1)
-<span id="L1027" class="ln">  1027  </span>			assert.Contains(t, res.findings[0], &#34;.github/actions/a/action.yaml:5:27:&#34;)
-<span id="L1028" class="ln">  1028  </span>			assert.Contains(t, res.findings[0], &#34;SC2086&#34;)
-<span id="L1029" class="ln">  1029  </span>		})
-<span id="L1030" class="ln">  1030  </span>
-<span id="L1031" class="ln">  1031  </span>		t.Run(&#34;マージキーで継承した plain スカラーの run も列位置ごと報告する&#34;, func(t *testing.T) {
-<span id="L1032" class="ln">  1032  </span>			t.Parallel()
-<span id="L1033" class="ln">  1033  </span>			requireShellcheck(t)
-<span id="L1034" class="ln">  1034  </span>			_, steps, err := collectSteps(testFS(map[string]string{
-<span id="L1035" class="ln">  1035  </span>				&#34;.github/actions/a/action.yaml&#34;: mergeDefectAction,
-<span id="L1036" class="ln">  1036  </span>			}))
-<span id="L1037" class="ln">  1037  </span>			require.NoError(t, err)
-<span id="L1038" class="ln">  1038  </span>			res, err := check(t.Context(), steps)
-<span id="L1039" class="ln">  1039  </span>			require.NoError(t, err)
-<span id="L1040" class="ln">  1040  </span>			assert.Equal(t, 2, res.checked)
-<span id="L1041" class="ln">  1041  </span>			require.Len(t, res.findings, 2)
-<span id="L1042" class="ln">  1042  </span>			for _, finding := range res.findings {
-<span id="L1043" class="ln">  1043  </span>				assert.Contains(t, finding, &#34;.github/actions/a/action.yaml:7:26:&#34;)
-<span id="L1044" class="ln">  1044  </span>				assert.Contains(t, finding, &#34;SC2086&#34;)
-<span id="L1045" class="ln">  1045  </span>			}
-<span id="L1046" class="ln">  1046  </span>		})
-<span id="L1047" class="ln">  1047  </span>	})
-<span id="L1048" class="ln">  1048  </span>
-<span id="L1049" class="ln">  1049  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1050" class="ln">  1050  </span>		t.Parallel()
-<span id="L1051" class="ln">  1051  </span>
-<span id="L1052" class="ln">  1052  </span>		t.Run(&#34;shellcheck の失敗はそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L1053" class="ln">  1053  </span>			t.Parallel()
-<span id="L1054" class="ln">  1054  </span>			requireShellcheck(t)
-<span id="L1055" class="ln">  1055  </span>			steps := []step{{file: &#34;action.yaml&#34;, shell: &#34;bash&#34;, script: &#34;echo ok\n&#34;, firstLine: 1}}
-<span id="L1056" class="ln">  1056  </span>			res, err := check(canceledContext(t), steps)
-<span id="L1057" class="ln">  1057  </span>			require.Error(t, err)
-<span id="L1058" class="ln">  1058  </span>			require.ErrorIs(t, err, shellcheck.ErrRun)
-<span id="L1059" class="ln">  1059  </span>			assert.Zero(t, res.checked)
-<span id="L1060" class="ln">  1060  </span>			assert.Empty(t, res.findings)
-<span id="L1061" class="ln">  1061  </span>		})
-<span id="L1062" class="ln">  1062  </span>
-<span id="L1063" class="ln">  1063  </span>		t.Run(&#34;閉じていない式は検査せずエラーにする&#34;, func(t *testing.T) {
-<span id="L1064" class="ln">  1064  </span>			t.Parallel()
-<span id="L1065" class="ln">  1065  </span>			requireShellcheck(t)
-<span id="L1066" class="ln">  1066  </span>			steps := []step{{file: &#34;action.yaml&#34;, shell: &#34;bash&#34;, script: &#34;echo ${{ inputs.a\n&#34;, firstLine: 9}}
-<span id="L1067" class="ln">  1067  </span>			_, err := check(t.Context(), steps)
-<span id="L1068" class="ln">  1068  </span>			require.Error(t, err)
-<span id="L1069" class="ln">  1069  </span>			require.ErrorIs(t, err, errUnterminatedExpr)
-<span id="L1070" class="ln">  1070  </span>			require.ErrorContains(t, err, &#34;action.yaml:9&#34;)
-<span id="L1071" class="ln">  1071  </span>		})
-<span id="L1072" class="ln">  1072  </span>	})
-<span id="L1073" class="ln">  1073  </span>}
-<span id="L1074" class="ln">  1074  </span>
-<span id="L1075" class="ln">  1075  </span>func Test_appendSymlink(t *testing.T) {
-<span id="L1076" class="ln">  1076  </span>	t.Parallel()
-<span id="L1077" class="ln">  1077  </span>
-<span id="L1078" class="ln">  1078  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1079" class="ln">  1079  </span>		t.Parallel()
-<span id="L1080" class="ln">  1080  </span>
-<span id="L1081" class="ln">  1081  </span>		t.Run(&#34;action 定義ファイルへのリンクは既に集めたパスを保ったまま追記する&#34;, func(t *testing.T) {
-<span id="L1082" class="ln">  1082  </span>			t.Parallel()
-<span id="L1083" class="ln">  1083  </span>			files := []string{&#34;.github/actions/first/action.yml&#34;}
-<span id="L1084" class="ln">  1084  </span>			err := appendSymlink(symlinkFS(t), &#34;.github/actions/link/action.yml&#34;, &#34;action.yml&#34;, &amp;files)
-<span id="L1085" class="ln">  1085  </span>			require.NoError(t, err)
-<span id="L1086" class="ln">  1086  </span>			assert.Equal(t, []string{
-<span id="L1087" class="ln">  1087  </span>				&#34;.github/actions/first/action.yml&#34;,
-<span id="L1088" class="ln">  1088  </span>				&#34;.github/actions/link/action.yml&#34;,
-<span id="L1089" class="ln">  1089  </span>			}, files)
-<span id="L1090" class="ln">  1090  </span>		})
-<span id="L1091" class="ln">  1091  </span>
-<span id="L1092" class="ln">  1092  </span>		t.Run(&#34;action 定義でない名前のリンクは追記しない&#34;, func(t *testing.T) {
-<span id="L1093" class="ln">  1093  </span>			t.Parallel()
-<span id="L1094" class="ln">  1094  </span>			files := []string{&#34;.github/actions/first/action.yml&#34;}
-<span id="L1095" class="ln">  1095  </span>			err := appendSymlink(symlinkFS(t), &#34;.github/actions/link/dist.yml&#34;, &#34;dist.yml&#34;, &amp;files)
-<span id="L1096" class="ln">  1096  </span>			require.NoError(t, err)
-<span id="L1097" class="ln">  1097  </span>			assert.Equal(t, []string{&#34;.github/actions/first/action.yml&#34;}, files)
-<span id="L1098" class="ln">  1098  </span>		})
-<span id="L1099" class="ln">  1099  </span>	})
-<span id="L1100" class="ln">  1100  </span>
-<span id="L1101" class="ln">  1101  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1102" class="ln">  1102  </span>		t.Parallel()
-<span id="L1103" class="ln">  1103  </span>
-<span id="L1104" class="ln">  1104  </span>		t.Run(&#34;ディレクトリへのリンクは対象のパスを添えてエラーにする&#34;, func(t *testing.T) {
-<span id="L1105" class="ln">  1105  </span>			t.Parallel()
-<span id="L1106" class="ln">  1106  </span>			files := []string{&#34;.github/actions/first/action.yml&#34;}
-<span id="L1107" class="ln">  1107  </span>			err := appendSymlink(symlinkFS(t), &#34;.github/actions/dirlink&#34;, &#34;dirlink&#34;, &amp;files)
-<span id="L1108" class="ln">  1108  </span>			require.ErrorIs(t, err, errActionSymlinkDir)
-<span id="L1109" class="ln">  1109  </span>			require.ErrorContains(t, err, &#34;.github/actions/dirlink&#34;)
-<span id="L1110" class="ln">  1110  </span>			assert.Equal(t, []string{&#34;.github/actions/first/action.yml&#34;}, files)
-<span id="L1111" class="ln">  1111  </span>		})
-<span id="L1112" class="ln">  1112  </span>
-<span id="L1113" class="ln">  1113  </span>		t.Run(&#34;解決できないリンクは対象のパスを添えてエラーにする&#34;, func(t *testing.T) {
-<span id="L1114" class="ln">  1114  </span>			t.Parallel()
-<span id="L1115" class="ln">  1115  </span>			files := []string{&#34;.github/actions/first/action.yml&#34;}
-<span id="L1116" class="ln">  1116  </span>			err := appendSymlink(symlinkFS(t), &#34;.github/actions/broken/action.yml&#34;, &#34;action.yml&#34;, &amp;files)
-<span id="L1117" class="ln">  1117  </span>			require.ErrorIs(t, err, errActionSymlinkUnresolved)
-<span id="L1118" class="ln">  1118  </span>			require.ErrorContains(t, err, &#34;.github/actions/broken/action.yml&#34;)
-<span id="L1119" class="ln">  1119  </span>			assert.Equal(t, []string{&#34;.github/actions/first/action.yml&#34;}, files)
-<span id="L1120" class="ln">  1120  </span>		})
-<span id="L1121" class="ln">  1121  </span>	})
-<span id="L1122" class="ln">  1122  </span>}
-<span id="L1123" class="ln">  1123  </span>
-<span id="L1124" class="ln">  1124  </span>func Test_isActionFile(t *testing.T) {
-<span id="L1125" class="ln">  1125  </span>	t.Parallel()
-<span id="L1126" class="ln">  1126  </span>
-<span id="L1127" class="ln">  1127  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1128" class="ln">  1128  </span>		t.Parallel()
-<span id="L1129" class="ln">  1129  </span>
-<span id="L1130" class="ln">  1130  </span>		t.Run(&#34;action.yml は action 定義ファイルとして扱う&#34;, func(t *testing.T) {
-<span id="L1131" class="ln">  1131  </span>			t.Parallel()
-<span id="L1132" class="ln">  1132  </span>			assert.True(t, isActionFile(&#34;action.yml&#34;))
-<span id="L1133" class="ln">  1133  </span>		})
-<span id="L1134" class="ln">  1134  </span>
-<span id="L1135" class="ln">  1135  </span>		t.Run(&#34;action.yaml は action 定義ファイルとして扱う&#34;, func(t *testing.T) {
-<span id="L1136" class="ln">  1136  </span>			t.Parallel()
-<span id="L1137" class="ln">  1137  </span>			assert.True(t, isActionFile(&#34;action.yaml&#34;))
-<span id="L1138" class="ln">  1138  </span>		})
-<span id="L1139" class="ln">  1139  </span>	})
-<span id="L1140" class="ln">  1140  </span>
-<span id="L1141" class="ln">  1141  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1142" class="ln">  1142  </span>		t.Parallel()
-<span id="L1143" class="ln">  1143  </span>
-<span id="L1144" class="ln">  1144  </span>		t.Run(&#34;接尾辞が一致するだけの名前は対象にしない&#34;, func(t *testing.T) {
-<span id="L1145" class="ln">  1145  </span>			t.Parallel()
-<span id="L1146" class="ln">  1146  </span>			assert.False(t, isActionFile(&#34;my-action.yaml&#34;))
-<span id="L1147" class="ln">  1147  </span>		})
-<span id="L1148" class="ln">  1148  </span>
-<span id="L1149" class="ln">  1149  </span>		t.Run(&#34;拡張子の後ろに続きがある名前は対象にしない&#34;, func(t *testing.T) {
-<span id="L1150" class="ln">  1150  </span>			t.Parallel()
-<span id="L1151" class="ln">  1151  </span>			assert.False(t, isActionFile(&#34;action.yaml.bak&#34;))
-<span id="L1152" class="ln">  1152  </span>		})
-<span id="L1153" class="ln">  1153  </span>
-<span id="L1154" class="ln">  1154  </span>		t.Run(&#34;action と綴りが異なる名前は対象にしない&#34;, func(t *testing.T) {
-<span id="L1155" class="ln">  1155  </span>			t.Parallel()
-<span id="L1156" class="ln">  1156  </span>			assert.False(t, isActionFile(&#34;actions.yaml&#34;))
-<span id="L1157" class="ln">  1157  </span>		})
-<span id="L1158" class="ln">  1158  </span>
-<span id="L1159" class="ln">  1159  </span>		t.Run(&#34;空の名前は対象にしない&#34;, func(t *testing.T) {
-<span id="L1160" class="ln">  1160  </span>			t.Parallel()
-<span id="L1161" class="ln">  1161  </span>			assert.False(t, isActionFile(&#34;&#34;))
-<span id="L1162" class="ln">  1162  </span>		})
-<span id="L1163" class="ln">  1163  </span>	})
-<span id="L1164" class="ln">  1164  </span>}
-<span id="L1165" class="ln">  1165  </span>
-<span id="L1166" class="ln">  1166  </span>func Test_requireSingleDocument(t *testing.T) {
-<span id="L1167" class="ln">  1167  </span>	t.Parallel()
-<span id="L1168" class="ln">  1168  </span>
-<span id="L1169" class="ln">  1169  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1170" class="ln">  1170  </span>		t.Parallel()
-<span id="L1171" class="ln">  1171  </span>
-<span id="L1172" class="ln">  1172  </span>		t.Run(&#34;単一ドキュメントならエラーにしない&#34;, func(t *testing.T) {
-<span id="L1173" class="ln">  1173  </span>			t.Parallel()
-<span id="L1174" class="ln">  1174  </span>			require.NoError(t, requireSingleDocument(&#34;action.yaml&#34;, []byte(compositeAction)))
-<span id="L1175" class="ln">  1175  </span>		})
-<span id="L1176" class="ln">  1176  </span>
-<span id="L1177" class="ln">  1177  </span>		t.Run(&#34;空ファイルならエラーにしない&#34;, func(t *testing.T) {
-<span id="L1178" class="ln">  1178  </span>			t.Parallel()
-<span id="L1179" class="ln">  1179  </span>			require.NoError(t, requireSingleDocument(&#34;action.yaml&#34;, nil))
-<span id="L1180" class="ln">  1180  </span>		})
-<span id="L1181" class="ln">  1181  </span>	})
-<span id="L1182" class="ln">  1182  </span>
-<span id="L1183" class="ln">  1183  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1184" class="ln">  1184  </span>		t.Parallel()
-<span id="L1185" class="ln">  1185  </span>
-<span id="L1186" class="ln">  1186  </span>		t.Run(&#34;2 番目のドキュメントがあればファイル名を添えてエラーにする&#34;, func(t *testing.T) {
-<span id="L1187" class="ln">  1187  </span>			t.Parallel()
-<span id="L1188" class="ln">  1188  </span>			err := requireSingleDocument(&#34;action.yaml&#34;, []byte(&#34;name: a\n---\nname: b\n&#34;))
-<span id="L1189" class="ln">  1189  </span>			require.ErrorIs(t, err, errMultipleDocuments)
-<span id="L1190" class="ln">  1190  </span>			require.ErrorContains(t, err, &#34;action.yaml&#34;)
-<span id="L1191" class="ln">  1191  </span>		})
-<span id="L1192" class="ln">  1192  </span>
-<span id="L1193" class="ln">  1193  </span>		t.Run(&#34;1 番目のドキュメントが壊れていればエラーにする&#34;, func(t *testing.T) {
-<span id="L1194" class="ln">  1194  </span>			t.Parallel()
-<span id="L1195" class="ln">  1195  </span>			err := requireSingleDocument(&#34;action.yaml&#34;, []byte(&#34;runs: [\n&#34;))
-<span id="L1196" class="ln">  1196  </span>			require.Error(t, err)
-<span id="L1197" class="ln">  1197  </span>			require.ErrorContains(t, err, &#34;parse action.yaml&#34;)
-<span id="L1198" class="ln">  1198  </span>		})
-<span id="L1199" class="ln">  1199  </span>
-<span id="L1200" class="ln">  1200  </span>		t.Run(&#34;2 番目のドキュメントが壊れていればエラーにする&#34;, func(t *testing.T) {
-<span id="L1201" class="ln">  1201  </span>			t.Parallel()
-<span id="L1202" class="ln">  1202  </span>			err := requireSingleDocument(&#34;action.yaml&#34;, []byte(&#34;name: a\n---\nruns: [\n&#34;))
-<span id="L1203" class="ln">  1203  </span>			require.Error(t, err)
-<span id="L1204" class="ln">  1204  </span>			require.ErrorContains(t, err, &#34;parse action.yaml&#34;)
-<span id="L1205" class="ln">  1205  </span>		})
-<span id="L1206" class="ln">  1206  </span>	})
-<span id="L1207" class="ln">  1207  </span>}
-<span id="L1208" class="ln">  1208  </span>
-<span id="L1209" class="ln">  1209  </span>func Test_fieldValue(t *testing.T) {
-<span id="L1210" class="ln">  1210  </span>	t.Parallel()
-<span id="L1211" class="ln">  1211  </span>
-<span id="L1212" class="ln">  1212  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1213" class="ln">  1213  </span>		t.Parallel()
-<span id="L1214" class="ln">  1214  </span>
-<span id="L1215" class="ln">  1215  </span>		t.Run(&#34;マッピングからキーに対応する値を返す&#34;, func(t *testing.T) {
-<span id="L1216" class="ln">  1216  </span>			t.Parallel()
-<span id="L1217" class="ln">  1217  </span>			node := map[string]any{&#34;runs&#34;: &#34;composite&#34;, &#34;name&#34;: &#34;sample&#34;}
-<span id="L1218" class="ln">  1218  </span>			assert.Equal(t, &#34;composite&#34;, fieldValue(node, &#34;runs&#34;))
-<span id="L1219" class="ln">  1219  </span>		})
-<span id="L1220" class="ln">  1220  </span>	})
-<span id="L1221" class="ln">  1221  </span>
-<span id="L1222" class="ln">  1222  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1223" class="ln">  1223  </span>		t.Parallel()
-<span id="L1224" class="ln">  1224  </span>
-<span id="L1225" class="ln">  1225  </span>		t.Run(&#34;存在しないキーは nil を返す&#34;, func(t *testing.T) {
-<span id="L1226" class="ln">  1226  </span>			t.Parallel()
-<span id="L1227" class="ln">  1227  </span>			assert.Nil(t, fieldValue(map[string]any{&#34;name&#34;: &#34;sample&#34;}, &#34;runs&#34;))
-<span id="L1228" class="ln">  1228  </span>		})
-<span id="L1229" class="ln">  1229  </span>
-<span id="L1230" class="ln">  1230  </span>		t.Run(&#34;マッピングでない値は nil を返す&#34;, func(t *testing.T) {
-<span id="L1231" class="ln">  1231  </span>			t.Parallel()
-<span id="L1232" class="ln">  1232  </span>			assert.Nil(t, fieldValue([]any{&#34;runs&#34;}, &#34;runs&#34;))
-<span id="L1233" class="ln">  1233  </span>		})
-<span id="L1234" class="ln">  1234  </span>
-<span id="L1235" class="ln">  1235  </span>		t.Run(&#34;nil は nil を返す&#34;, func(t *testing.T) {
-<span id="L1236" class="ln">  1236  </span>			t.Parallel()
-<span id="L1237" class="ln">  1237  </span>			assert.Nil(t, fieldValue(nil, &#34;runs&#34;))
-<span id="L1238" class="ln">  1238  </span>		})
-<span id="L1239" class="ln">  1239  </span>	})
-<span id="L1240" class="ln">  1240  </span>}
-<span id="L1241" class="ln">  1241  </span>
-<span id="L1242" class="ln">  1242  </span>func Test_extractSteps(t *testing.T) {
-<span id="L1243" class="ln">  1243  </span>	t.Parallel()
-<span id="L1244" class="ln">  1244  </span>
-<span id="L1245" class="ln">  1245  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1246" class="ln">  1246  </span>		t.Parallel()
-<span id="L1247" class="ln">  1247  </span>
-<span id="L1248" class="ln">  1248  </span>		t.Run(&#34;抽出したステップは指摘の写し戻し先となる対象ファイル名を持つ&#34;, func(t *testing.T) {
-<span id="L1249" class="ln">  1249  </span>			t.Parallel()
-<span id="L1250" class="ln">  1250  </span>			file := &#34;.github/actions/a/action.yaml&#34;
-<span id="L1251" class="ln">  1251  </span>			steps, err := extractSteps(file, []byte(compositeAction), parseDoc(t, compositeAction))
-<span id="L1252" class="ln">  1252  </span>			require.NoError(t, err)
-<span id="L1253" class="ln">  1253  </span>			require.Len(t, steps, 2)
-<span id="L1254" class="ln">  1254  </span>			assert.Equal(t, file, steps[0].file)
-<span id="L1255" class="ln">  1255  </span>			assert.Equal(t, file, steps[1].file)
-<span id="L1256" class="ln">  1256  </span>		})
-<span id="L1257" class="ln">  1257  </span>
-<span id="L1258" class="ln">  1258  </span>		t.Run(&#34;using が composite でない action は抽出せずエラーにもしない&#34;, func(t *testing.T) {
-<span id="L1259" class="ln">  1259  </span>			t.Parallel()
-<span id="L1260" class="ln">  1260  </span>			body := &#34;runs:\n  using: node20\n  steps:\n    - shell: bash\n      run: echo hi\n&#34;
-<span id="L1261" class="ln">  1261  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
-<span id="L1262" class="ln">  1262  </span>			require.NoError(t, err)
-<span id="L1263" class="ln">  1263  </span>			assert.Empty(t, steps)
-<span id="L1264" class="ln">  1264  </span>		})
-<span id="L1265" class="ln">  1265  </span>
-<span id="L1266" class="ln">  1266  </span>		t.Run(&#34;using が無い action は抽出せずエラーにもしない&#34;, func(t *testing.T) {
-<span id="L1267" class="ln">  1267  </span>			t.Parallel()
-<span id="L1268" class="ln">  1268  </span>			body := &#34;runs:\n  steps:\n    - shell: bash\n      run: echo hi\n&#34;
-<span id="L1269" class="ln">  1269  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
-<span id="L1270" class="ln">  1270  </span>			require.NoError(t, err)
-<span id="L1271" class="ln">  1271  </span>			assert.Empty(t, steps)
-<span id="L1272" class="ln">  1272  </span>		})
-<span id="L1273" class="ln">  1273  </span>
-<span id="L1274" class="ln">  1274  </span>		t.Run(&#34;steps を持たない composite は抽出せずエラーにもしない&#34;, func(t *testing.T) {
-<span id="L1275" class="ln">  1275  </span>			t.Parallel()
-<span id="L1276" class="ln">  1276  </span>			body := &#34;runs:\n  using: composite\n&#34;
-<span id="L1277" class="ln">  1277  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
-<span id="L1278" class="ln">  1278  </span>			require.NoError(t, err)
-<span id="L1279" class="ln">  1279  </span>			assert.Empty(t, steps)
-<span id="L1280" class="ln">  1280  </span>		})
-<span id="L1281" class="ln">  1281  </span>
-<span id="L1282" class="ln">  1282  </span>		t.Run(&#34;run を持たないステップは読み飛ばして後続の run を抽出する&#34;, func(t *testing.T) {
-<span id="L1283" class="ln">  1283  </span>			t.Parallel()
-<span id="L1284" class="ln">  1284  </span>			body := &#34;runs:\n  using: composite\n  steps:\n    - uses: actions/checkout@v7\n&#34; +
-<span id="L1285" class="ln">  1285  </span>				&#34;    - shell: bash\n      run: echo hi\n&#34;
-<span id="L1286" class="ln">  1286  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
-<span id="L1287" class="ln">  1287  </span>			require.NoError(t, err)
-<span id="L1288" class="ln">  1288  </span>			require.Len(t, steps, 1)
-<span id="L1289" class="ln">  1289  </span>			assert.Equal(t, &#34;echo hi&#34;, steps[0].script)
-<span id="L1290" class="ln">  1290  </span>		})
-<span id="L1291" class="ln">  1291  </span>	})
-<span id="L1292" class="ln">  1292  </span>
-<span id="L1293" class="ln">  1293  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1294" class="ln">  1294  </span>		t.Parallel()
-<span id="L1295" class="ln">  1295  </span>
-<span id="L1296" class="ln">  1296  </span>		t.Run(&#34;shell を欠くステップがあれば後続が健全でも 1 件も返さずエラーにする&#34;, func(t *testing.T) {
-<span id="L1297" class="ln">  1297  </span>			t.Parallel()
-<span id="L1298" class="ln">  1298  </span>			body := &#34;runs:\n  using: composite\n  steps:\n    - run: echo first\n&#34; +
-<span id="L1299" class="ln">  1299  </span>				&#34;    - shell: bash\n      run: echo second\n&#34;
-<span id="L1300" class="ln">  1300  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
-<span id="L1301" class="ln">  1301  </span>			require.ErrorIs(t, err, errNoShell)
-<span id="L1302" class="ln">  1302  </span>			assert.Empty(t, steps)
-<span id="L1303" class="ln">  1303  </span>		})
-<span id="L1304" class="ln">  1304  </span>	})
-<span id="L1305" class="ln">  1305  </span>}
-<span id="L1306" class="ln">  1306  </span>
-<span id="L1307" class="ln">  1307  </span>func Test_documentRoot(t *testing.T) {
-<span id="L1308" class="ln">  1308  </span>	t.Parallel()
-<span id="L1309" class="ln">  1309  </span>
-<span id="L1310" class="ln">  1310  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1311" class="ln">  1311  </span>		t.Parallel()
-<span id="L1312" class="ln">  1312  </span>
-<span id="L1313" class="ln">  1313  </span>		t.Run(&#34;ドキュメントノードの最初の要素を返す&#34;, func(t *testing.T) {
-<span id="L1314" class="ln">  1314  </span>			t.Parallel()
-<span id="L1315" class="ln">  1315  </span>			root := documentRoot(parseDoc(t, &#34;runs:\n  using: composite\n&#34;))
-<span id="L1316" class="ln">  1316  </span>			require.NotNil(t, root)
-<span id="L1317" class="ln">  1317  </span>			assert.Equal(t, yaml.MappingNode, root.Kind)
-<span id="L1318" class="ln">  1318  </span>			assert.Equal(t, &#34;runs&#34;, root.Content[0].Value)
-<span id="L1319" class="ln">  1319  </span>		})
-<span id="L1320" class="ln">  1320  </span>	})
-<span id="L1321" class="ln">  1321  </span>
-<span id="L1322" class="ln">  1322  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1323" class="ln">  1323  </span>		t.Parallel()
-<span id="L1324" class="ln">  1324  </span>
-<span id="L1325" class="ln">  1325  </span>		t.Run(&#34;ドキュメントノードでなければ nil を返す&#34;, func(t *testing.T) {
-<span id="L1326" class="ln">  1326  </span>			t.Parallel()
-<span id="L1327" class="ln">  1327  </span>			assert.Nil(t, documentRoot(&amp;yaml.Node{Kind: yaml.MappingNode}))
-<span id="L1328" class="ln">  1328  </span>		})
-<span id="L1329" class="ln">  1329  </span>
-<span id="L1330" class="ln">  1330  </span>		t.Run(&#34;内容の無いドキュメントは nil を返す&#34;, func(t *testing.T) {
-<span id="L1331" class="ln">  1331  </span>			t.Parallel()
-<span id="L1332" class="ln">  1332  </span>			assert.Nil(t, documentRoot(&amp;yaml.Node{Kind: yaml.DocumentNode}))
-<span id="L1333" class="ln">  1333  </span>		})
-<span id="L1334" class="ln">  1334  </span>	})
-<span id="L1335" class="ln">  1335  </span>}
-<span id="L1336" class="ln">  1336  </span>
-<span id="L1337" class="ln">  1337  </span>func Test_mapValue(t *testing.T) {
-<span id="L1338" class="ln">  1338  </span>	t.Parallel()
-<span id="L1339" class="ln">  1339  </span>
-<span id="L1340" class="ln">  1340  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1341" class="ln">  1341  </span>		t.Parallel()
-<span id="L1342" class="ln">  1342  </span>
-<span id="L1343" class="ln">  1343  </span>		t.Run(&#34;キーに対応する値ノードを返す&#34;, func(t *testing.T) {
-<span id="L1344" class="ln">  1344  </span>			t.Parallel()
-<span id="L1345" class="ln">  1345  </span>			v := mapValue(parseDocRoot(t, &#34;using: composite\nname: sample\n&#34;), &#34;using&#34;)
-<span id="L1346" class="ln">  1346  </span>			require.NotNil(t, v)
-<span id="L1347" class="ln">  1347  </span>			assert.Equal(t, &#34;composite&#34;, v.Value)
-<span id="L1348" class="ln">  1348  </span>		})
-<span id="L1349" class="ln">  1349  </span>
-<span id="L1350" class="ln">  1350  </span>		t.Run(&#34;値がエイリアスならアンカー先を解決して返す&#34;, func(t *testing.T) {
-<span id="L1351" class="ln">  1351  </span>			t.Parallel()
-<span id="L1352" class="ln">  1352  </span>			v := mapValue(parseDocRoot(t, &#34;a: &amp;anchor composite\nb: *anchor\n&#34;), &#34;b&#34;)
-<span id="L1353" class="ln">  1353  </span>			require.NotNil(t, v)
-<span id="L1354" class="ln">  1354  </span>			assert.Equal(t, &#34;composite&#34;, v.Value)
-<span id="L1355" class="ln">  1355  </span>		})
-<span id="L1356" class="ln">  1356  </span>
-<span id="L1357" class="ln">  1357  </span>		t.Run(&#34;マッピング自体がエイリアスでも解決して引ける&#34;, func(t *testing.T) {
-<span id="L1358" class="ln">  1358  </span>			t.Parallel()
-<span id="L1359" class="ln">  1359  </span>			root := parseDocRoot(t, &#34;base: &amp;base\n  shell: sh\nuse: *base\n&#34;)
-<span id="L1360" class="ln">  1360  </span>			v := mapValue(mapValue(root, &#34;use&#34;), &#34;shell&#34;)
-<span id="L1361" class="ln">  1361  </span>			require.NotNil(t, v)
-<span id="L1362" class="ln">  1362  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
-<span id="L1363" class="ln">  1363  </span>		})
-<span id="L1364" class="ln">  1364  </span>
-<span id="L1365" class="ln">  1365  </span>		t.Run(&#34;直接書かれたキーはマージキー経由の値より優先する&#34;, func(t *testing.T) {
-<span id="L1366" class="ln">  1366  </span>			t.Parallel()
-<span id="L1367" class="ln">  1367  </span>			root := parseDocRoot(t, &#34;base: &amp;base\n  shell: sh\nstep:\n  &lt;&lt;: *base\n  shell: bash\n&#34;)
-<span id="L1368" class="ln">  1368  </span>			v := mapValue(mapValue(root, &#34;step&#34;), &#34;shell&#34;)
-<span id="L1369" class="ln">  1369  </span>			require.NotNil(t, v)
-<span id="L1370" class="ln">  1370  </span>			assert.Equal(t, &#34;bash&#34;, v.Value)
-<span id="L1371" class="ln">  1371  </span>		})
-<span id="L1372" class="ln">  1372  </span>
-<span id="L1373" class="ln">  1373  </span>		t.Run(&#34;直接書かれたキーが無ければマージキー経由で引く&#34;, func(t *testing.T) {
-<span id="L1374" class="ln">  1374  </span>			t.Parallel()
-<span id="L1375" class="ln">  1375  </span>			root := parseDocRoot(t, &#34;base: &amp;base\n  shell: sh\nstep:\n  &lt;&lt;: *base\n  name: second\n&#34;)
-<span id="L1376" class="ln">  1376  </span>			v := mapValue(mapValue(root, &#34;step&#34;), &#34;shell&#34;)
-<span id="L1377" class="ln">  1377  </span>			require.NotNil(t, v)
-<span id="L1378" class="ln">  1378  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
-<span id="L1379" class="ln">  1379  </span>		})
-<span id="L1380" class="ln">  1380  </span>	})
-<span id="L1381" class="ln">  1381  </span>
-<span id="L1382" class="ln">  1382  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1383" class="ln">  1383  </span>		t.Parallel()
-<span id="L1384" class="ln">  1384  </span>
-<span id="L1385" class="ln">  1385  </span>		t.Run(&#34;存在しないキーは nil を返す&#34;, func(t *testing.T) {
-<span id="L1386" class="ln">  1386  </span>			t.Parallel()
-<span id="L1387" class="ln">  1387  </span>			assert.Nil(t, mapValue(parseDocRoot(t, &#34;using: composite\n&#34;), &#34;steps&#34;))
-<span id="L1388" class="ln">  1388  </span>		})
-<span id="L1389" class="ln">  1389  </span>
-<span id="L1390" class="ln">  1390  </span>		t.Run(&#34;マッピングでないノードは nil を返す&#34;, func(t *testing.T) {
-<span id="L1391" class="ln">  1391  </span>			t.Parallel()
-<span id="L1392" class="ln">  1392  </span>			assert.Nil(t, mapValue(parseDocRoot(t, &#34;- a\n- b\n&#34;), &#34;using&#34;))
-<span id="L1393" class="ln">  1393  </span>		})
-<span id="L1394" class="ln">  1394  </span>
-<span id="L1395" class="ln">  1395  </span>		t.Run(&#34;nil ノードは nil を返す&#34;, func(t *testing.T) {
-<span id="L1396" class="ln">  1396  </span>			t.Parallel()
-<span id="L1397" class="ln">  1397  </span>			assert.Nil(t, mapValue(nil, &#34;using&#34;))
-<span id="L1398" class="ln">  1398  </span>		})
-<span id="L1399" class="ln">  1399  </span>	})
-<span id="L1400" class="ln">  1400  </span>}
-<span id="L1401" class="ln">  1401  </span>
-<span id="L1402" class="ln">  1402  </span>func Test_mergeValue(t *testing.T) {
-<span id="L1403" class="ln">  1403  </span>	t.Parallel()
-<span id="L1404" class="ln">  1404  </span>
-<span id="L1405" class="ln">  1405  </span>	shellMapping := func(value string) *yaml.Node {
-<span id="L1406" class="ln">  1406  </span>		return &amp;yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{
-<span id="L1407" class="ln">  1407  </span>			{Kind: yaml.ScalarNode, Value: &#34;shell&#34;},
-<span id="L1408" class="ln">  1408  </span>			{Kind: yaml.ScalarNode, Value: value},
-<span id="L1409" class="ln">  1409  </span>		}}
-<span id="L1410" class="ln">  1410  </span>	}
-<span id="L1411" class="ln">  1411  </span>	nameMapping := &amp;yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{
-<span id="L1412" class="ln">  1412  </span>		{Kind: yaml.ScalarNode, Value: &#34;name&#34;},
-<span id="L1413" class="ln">  1413  </span>		{Kind: yaml.ScalarNode, Value: &#34;second&#34;},
-<span id="L1414" class="ln">  1414  </span>	}}
-<span id="L1415" class="ln">  1415  </span>
-<span id="L1416" class="ln">  1416  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1417" class="ln">  1417  </span>		t.Parallel()
-<span id="L1418" class="ln">  1418  </span>
-<span id="L1419" class="ln">  1419  </span>		t.Run(&#34;マージ元がマッピングならそのキーを引く&#34;, func(t *testing.T) {
-<span id="L1420" class="ln">  1420  </span>			t.Parallel()
-<span id="L1421" class="ln">  1421  </span>			v := mergeValue(shellMapping(&#34;sh&#34;), &#34;shell&#34;)
-<span id="L1422" class="ln">  1422  </span>			require.NotNil(t, v)
-<span id="L1423" class="ln">  1423  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
-<span id="L1424" class="ln">  1424  </span>		})
-<span id="L1425" class="ln">  1425  </span>
-<span id="L1426" class="ln">  1426  </span>		t.Run(&#34;マージ元がリストなら先に並んだ側を優先する&#34;, func(t *testing.T) {
-<span id="L1427" class="ln">  1427  </span>			t.Parallel()
-<span id="L1428" class="ln">  1428  </span>			seq := &amp;yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{
-<span id="L1429" class="ln">  1429  </span>				shellMapping(&#34;sh&#34;), shellMapping(&#34;bash&#34;),
-<span id="L1430" class="ln">  1430  </span>			}}
-<span id="L1431" class="ln">  1431  </span>			v := mergeValue(seq, &#34;shell&#34;)
-<span id="L1432" class="ln">  1432  </span>			require.NotNil(t, v)
-<span id="L1433" class="ln">  1433  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
-<span id="L1434" class="ln">  1434  </span>		})
-<span id="L1435" class="ln">  1435  </span>
-<span id="L1436" class="ln">  1436  </span>		t.Run(&#34;リストの先頭にキーが無ければ後続から引く&#34;, func(t *testing.T) {
-<span id="L1437" class="ln">  1437  </span>			t.Parallel()
-<span id="L1438" class="ln">  1438  </span>			seq := &amp;yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{
-<span id="L1439" class="ln">  1439  </span>				nameMapping, shellMapping(&#34;bash&#34;),
-<span id="L1440" class="ln">  1440  </span>			}}
-<span id="L1441" class="ln">  1441  </span>			v := mergeValue(seq, &#34;shell&#34;)
-<span id="L1442" class="ln">  1442  </span>			require.NotNil(t, v)
-<span id="L1443" class="ln">  1443  </span>			assert.Equal(t, &#34;bash&#34;, v.Value)
-<span id="L1444" class="ln">  1444  </span>		})
-<span id="L1445" class="ln">  1445  </span>
-<span id="L1446" class="ln">  1446  </span>		t.Run(&#34;マージ元がエイリアスでも解決して引く&#34;, func(t *testing.T) {
-<span id="L1447" class="ln">  1447  </span>			t.Parallel()
-<span id="L1448" class="ln">  1448  </span>			alias := &amp;yaml.Node{Kind: yaml.AliasNode, Alias: shellMapping(&#34;sh&#34;)}
-<span id="L1449" class="ln">  1449  </span>			v := mergeValue(alias, &#34;shell&#34;)
-<span id="L1450" class="ln">  1450  </span>			require.NotNil(t, v)
-<span id="L1451" class="ln">  1451  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
-<span id="L1452" class="ln">  1452  </span>		})
-<span id="L1453" class="ln">  1453  </span>	})
-<span id="L1454" class="ln">  1454  </span>
-<span id="L1455" class="ln">  1455  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1456" class="ln">  1456  </span>		t.Parallel()
-<span id="L1457" class="ln">  1457  </span>
-<span id="L1458" class="ln">  1458  </span>		t.Run(&#34;マージ元が無ければ nil を返す&#34;, func(t *testing.T) {
-<span id="L1459" class="ln">  1459  </span>			t.Parallel()
-<span id="L1460" class="ln">  1460  </span>			assert.Nil(t, mergeValue(nil, &#34;shell&#34;))
-<span id="L1461" class="ln">  1461  </span>		})
-<span id="L1462" class="ln">  1462  </span>
-<span id="L1463" class="ln">  1463  </span>		t.Run(&#34;リストのどこにもキーが無ければ nil を返す&#34;, func(t *testing.T) {
-<span id="L1464" class="ln">  1464  </span>			t.Parallel()
-<span id="L1465" class="ln">  1465  </span>			seq := &amp;yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{nameMapping}}
-<span id="L1466" class="ln">  1466  </span>			assert.Nil(t, mergeValue(seq, &#34;shell&#34;))
-<span id="L1467" class="ln">  1467  </span>		})
-<span id="L1468" class="ln">  1468  </span>
-<span id="L1469" class="ln">  1469  </span>		t.Run(&#34;マッピングでもリストでもないノードは nil を返す&#34;, func(t *testing.T) {
-<span id="L1470" class="ln">  1470  </span>			t.Parallel()
-<span id="L1471" class="ln">  1471  </span>			assert.Nil(t, mergeValue(&amp;yaml.Node{Kind: yaml.ScalarNode, Value: &#34;sh&#34;}, &#34;shell&#34;))
-<span id="L1472" class="ln">  1472  </span>		})
-<span id="L1473" class="ln">  1473  </span>	})
-<span id="L1474" class="ln">  1474  </span>}
-<span id="L1475" class="ln">  1475  </span>
-<span id="L1476" class="ln">  1476  </span>func Test_resolveAlias(t *testing.T) {
-<span id="L1477" class="ln">  1477  </span>	t.Parallel()
-<span id="L1478" class="ln">  1478  </span>
-<span id="L1479" class="ln">  1479  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1480" class="ln">  1480  </span>		t.Parallel()
-<span id="L1481" class="ln">  1481  </span>
-<span id="L1482" class="ln">  1482  </span>		t.Run(&#34;エイリアスの連鎖を辿って実体のノードを返す&#34;, func(t *testing.T) {
-<span id="L1483" class="ln">  1483  </span>			t.Parallel()
-<span id="L1484" class="ln">  1484  </span>			target := &amp;yaml.Node{Kind: yaml.ScalarNode, Value: &#34;echo hi&#34;}
-<span id="L1485" class="ln">  1485  </span>			outer := &amp;yaml.Node{Kind: yaml.AliasNode, Alias: &amp;yaml.Node{Kind: yaml.AliasNode, Alias: target}}
-<span id="L1486" class="ln">  1486  </span>			assert.Same(t, target, resolveAlias(outer))
-<span id="L1487" class="ln">  1487  </span>		})
-<span id="L1488" class="ln">  1488  </span>
-<span id="L1489" class="ln">  1489  </span>		t.Run(&#34;エイリアスでないノードはそのまま返す&#34;, func(t *testing.T) {
-<span id="L1490" class="ln">  1490  </span>			t.Parallel()
-<span id="L1491" class="ln">  1491  </span>			target := &amp;yaml.Node{Kind: yaml.ScalarNode, Value: &#34;echo hi&#34;}
-<span id="L1492" class="ln">  1492  </span>			assert.Same(t, target, resolveAlias(target))
-<span id="L1493" class="ln">  1493  </span>		})
-<span id="L1494" class="ln">  1494  </span>	})
-<span id="L1495" class="ln">  1495  </span>
-<span id="L1496" class="ln">  1496  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1497" class="ln">  1497  </span>		t.Parallel()
-<span id="L1498" class="ln">  1498  </span>
-<span id="L1499" class="ln">  1499  </span>		t.Run(&#34;nil は nil を返す&#34;, func(t *testing.T) {
-<span id="L1500" class="ln">  1500  </span>			t.Parallel()
-<span id="L1501" class="ln">  1501  </span>			assert.Nil(t, resolveAlias(nil))
-<span id="L1502" class="ln">  1502  </span>		})
-<span id="L1503" class="ln">  1503  </span>	})
-<span id="L1504" class="ln">  1504  </span>}
-<span id="L1505" class="ln">  1505  </span>
-<span id="L1506" class="ln">  1506  </span>func Test_bodyFirstLine(t *testing.T) {
-<span id="L1507" class="ln">  1507  </span>	t.Parallel()
-<span id="L1508" class="ln">  1508  </span>
-<span id="L1509" class="ln">  1509  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1510" class="ln">  1510  </span>		t.Parallel()
-<span id="L1511" class="ln">  1511  </span>
-<span id="L1512" class="ln">  1512  </span>		t.Run(&#34;literal ブロックの本文はキー行の次の行から始まる&#34;, func(t *testing.T) {
-<span id="L1513" class="ln">  1513  </span>			t.Parallel()
-<span id="L1514" class="ln">  1514  </span>			assert.Equal(t, 10, bodyFirstLine(&amp;yaml.Node{Style: yaml.LiteralStyle, Line: 9}))
-<span id="L1515" class="ln">  1515  </span>		})
-<span id="L1516" class="ln">  1516  </span>
-<span id="L1517" class="ln">  1517  </span>		t.Run(&#34;plain スカラーの本文はキー行そのものから始まる&#34;, func(t *testing.T) {
-<span id="L1518" class="ln">  1518  </span>			t.Parallel()
-<span id="L1519" class="ln">  1519  </span>			assert.Equal(t, 9, bodyFirstLine(&amp;yaml.Node{Line: 9}))
-<span id="L1520" class="ln">  1520  </span>		})
-<span id="L1521" class="ln">  1521  </span>
-<span id="L1522" class="ln">  1522  </span>		t.Run(&#34;引用符付きスカラーの本文はキー行そのものから始まる&#34;, func(t *testing.T) {
-<span id="L1523" class="ln">  1523  </span>			t.Parallel()
-<span id="L1524" class="ln">  1524  </span>			assert.Equal(t, 9, bodyFirstLine(&amp;yaml.Node{Style: yaml.DoubleQuotedStyle, Line: 9}))
-<span id="L1525" class="ln">  1525  </span>		})
-<span id="L1526" class="ln">  1526  </span>	})
-<span id="L1527" class="ln">  1527  </span>}
-<span id="L1528" class="ln">  1528  </span>
-<span id="L1529" class="ln">  1529  </span>func Test_bodyColumnBase(t *testing.T) {
-<span id="L1530" class="ln">  1530  </span>	t.Parallel()
-<span id="L1531" class="ln">  1531  </span>
-<span id="L1532" class="ln">  1532  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1533" class="ln">  1533  </span>		t.Parallel()
-<span id="L1534" class="ln">  1534  </span>
-<span id="L1535" class="ln">  1535  </span>		t.Run(&#34;literal ブロックはキー行の列でなく剥がされたインデント幅を基準にする&#34;, func(t *testing.T) {
-<span id="L1536" class="ln">  1536  </span>			t.Parallel()
-<span id="L1537" class="ln">  1537  </span>			data := []byte(&#34;      run: |\n        echo hi\n&#34;)
-<span id="L1538" class="ln">  1538  </span>			run := &amp;yaml.Node{Style: yaml.LiteralStyle, Column: 12, Value: &#34;echo hi\n&#34;}
-<span id="L1539" class="ln">  1539  </span>			assert.Equal(t, 8, bodyColumnBase(data, run, 2))
-<span id="L1540" class="ln">  1540  </span>		})
-<span id="L1541" class="ln">  1541  </span>
-<span id="L1542" class="ln">  1542  </span>		t.Run(&#34;シングルクォートのスカラーは開き引用符の分だけ進めた位置を基準にする&#34;, func(t *testing.T) {
-<span id="L1543" class="ln">  1543  </span>			t.Parallel()
-<span id="L1544" class="ln">  1544  </span>			assert.Equal(t, 12, bodyColumnBase(nil, &amp;yaml.Node{Style: yaml.SingleQuotedStyle, Column: 12}, 1))
-<span id="L1545" class="ln">  1545  </span>		})
-<span id="L1546" class="ln">  1546  </span>
-<span id="L1547" class="ln">  1547  </span>		t.Run(&#34;ダブルクォートのスカラーは開き引用符の分だけ進めた位置を基準にする&#34;, func(t *testing.T) {
-<span id="L1548" class="ln">  1548  </span>			t.Parallel()
-<span id="L1549" class="ln">  1549  </span>			assert.Equal(t, 12, bodyColumnBase(nil, &amp;yaml.Node{Style: yaml.DoubleQuotedStyle, Column: 12}, 1))
-<span id="L1550" class="ln">  1550  </span>		})
-<span id="L1551" class="ln">  1551  </span>
-<span id="L1552" class="ln">  1552  </span>		t.Run(&#34;plain スカラーは値の開始位置の 1 つ手前を基準にする&#34;, func(t *testing.T) {
-<span id="L1553" class="ln">  1553  </span>			t.Parallel()
-<span id="L1554" class="ln">  1554  </span>			assert.Equal(t, 11, bodyColumnBase(nil, &amp;yaml.Node{Column: 12}, 1))
-<span id="L1555" class="ln">  1555  </span>		})
-<span id="L1556" class="ln">  1556  </span>	})
-<span id="L1557" class="ln">  1557  </span>}
-<span id="L1558" class="ln">  1558  </span>
-<span id="L1559" class="ln">  1559  </span>func Test_firstIndentWidth(t *testing.T) {
-<span id="L1560" class="ln">  1560  </span>	t.Parallel()
-<span id="L1561" class="ln">  1561  </span>
-<span id="L1562" class="ln">  1562  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1563" class="ln">  1563  </span>		t.Parallel()
-<span id="L1564" class="ln">  1564  </span>
-<span id="L1565" class="ln">  1565  </span>		t.Run(&#34;最初の非空行のインデント幅を返す&#34;, func(t *testing.T) {
-<span id="L1566" class="ln">  1566  </span>			t.Parallel()
-<span id="L1567" class="ln">  1567  </span>			width, ok := firstIndentWidth([]string{&#34;    echo hi&#34;, &#34;  echo bye&#34;})
-<span id="L1568" class="ln">  1568  </span>			require.True(t, ok)
-<span id="L1569" class="ln">  1569  </span>			assert.Equal(t, 4, width)
-<span id="L1570" class="ln">  1570  </span>		})
-<span id="L1571" class="ln">  1571  </span>
-<span id="L1572" class="ln">  1572  </span>		t.Run(&#34;空行と空白だけの行は読み飛ばす&#34;, func(t *testing.T) {
-<span id="L1573" class="ln">  1573  </span>			t.Parallel()
-<span id="L1574" class="ln">  1574  </span>			width, ok := firstIndentWidth([]string{&#34;&#34;, &#34;   &#34;, &#34;  echo hi&#34;})
-<span id="L1575" class="ln">  1575  </span>			require.True(t, ok)
-<span id="L1576" class="ln">  1576  </span>			assert.Equal(t, 2, width)
-<span id="L1577" class="ln">  1577  </span>		})
-<span id="L1578" class="ln">  1578  </span>
-<span id="L1579" class="ln">  1579  </span>		t.Run(&#34;タブもインデント幅として数える&#34;, func(t *testing.T) {
-<span id="L1580" class="ln">  1580  </span>			t.Parallel()
-<span id="L1581" class="ln">  1581  </span>			width, ok := firstIndentWidth([]string{&#34;\t\techo hi&#34;})
-<span id="L1582" class="ln">  1582  </span>			require.True(t, ok)
-<span id="L1583" class="ln">  1583  </span>			assert.Equal(t, 2, width)
-<span id="L1584" class="ln">  1584  </span>		})
-<span id="L1585" class="ln">  1585  </span>	})
-<span id="L1586" class="ln">  1586  </span>
-<span id="L1587" class="ln">  1587  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1588" class="ln">  1588  </span>		t.Parallel()
-<span id="L1589" class="ln">  1589  </span>
-<span id="L1590" class="ln">  1590  </span>		t.Run(&#34;非空行が無ければ幅なしとして返す&#34;, func(t *testing.T) {
-<span id="L1591" class="ln">  1591  </span>			t.Parallel()
-<span id="L1592" class="ln">  1592  </span>			width, ok := firstIndentWidth([]string{&#34;&#34;, &#34;  &#34;, &#34;\t&#34;})
-<span id="L1593" class="ln">  1593  </span>			assert.False(t, ok)
-<span id="L1594" class="ln">  1594  </span>			assert.Zero(t, width)
-<span id="L1595" class="ln">  1595  </span>		})
-<span id="L1596" class="ln">  1596  </span>
-<span id="L1597" class="ln">  1597  </span>		t.Run(&#34;行が 1 つも無ければ幅なしとして返す&#34;, func(t *testing.T) {
-<span id="L1598" class="ln">  1598  </span>			t.Parallel()
-<span id="L1599" class="ln">  1599  </span>			width, ok := firstIndentWidth(nil)
-<span id="L1600" class="ln">  1600  </span>			assert.False(t, ok)
-<span id="L1601" class="ln">  1601  </span>			assert.Zero(t, width)
-<span id="L1602" class="ln">  1602  </span>		})
-<span id="L1603" class="ln">  1603  </span>	})
-<span id="L1604" class="ln">  1604  </span>}
-<span id="L1605" class="ln">  1605  </span>
-<span id="L1606" class="ln">  1606  </span>func Test_isAssignment(t *testing.T) {
-<span id="L1607" class="ln">  1607  </span>	t.Parallel()
-<span id="L1608" class="ln">  1608  </span>
-<span id="L1609" class="ln">  1609  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1610" class="ln">  1610  </span>		t.Parallel()
-<span id="L1611" class="ln">  1611  </span>
-<span id="L1612" class="ln">  1612  </span>		t.Run(&#34;英字で始まる名前の代入は代入として扱う&#34;, func(t *testing.T) {
-<span id="L1613" class="ln">  1613  </span>			t.Parallel()
-<span id="L1614" class="ln">  1614  </span>			assert.True(t, isAssignment(&#34;FOO=bar&#34;))
-<span id="L1615" class="ln">  1615  </span>		})
-<span id="L1616" class="ln">  1616  </span>
-<span id="L1617" class="ln">  1617  </span>		t.Run(&#34;アンダースコア始まりで数字を含む名前も代入として扱う&#34;, func(t *testing.T) {
-<span id="L1618" class="ln">  1618  </span>			t.Parallel()
-<span id="L1619" class="ln">  1619  </span>			assert.True(t, isAssignment(&#34;_X2=1&#34;))
-<span id="L1620" class="ln">  1620  </span>		})
-<span id="L1621" class="ln">  1621  </span>
-<span id="L1622" class="ln">  1622  </span>		t.Run(&#34;値が空の代入も代入として扱う&#34;, func(t *testing.T) {
-<span id="L1623" class="ln">  1623  </span>			t.Parallel()
-<span id="L1624" class="ln">  1624  </span>			assert.True(t, isAssignment(&#34;FOO=&#34;))
-<span id="L1625" class="ln">  1625  </span>		})
-<span id="L1626" class="ln">  1626  </span>	})
-<span id="L1627" class="ln">  1627  </span>
-<span id="L1628" class="ln">  1628  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1629" class="ln">  1629  </span>		t.Parallel()
-<span id="L1630" class="ln">  1630  </span>
-<span id="L1631" class="ln">  1631  </span>		t.Run(&#34;= を含まない語は代入として扱わない&#34;, func(t *testing.T) {
-<span id="L1632" class="ln">  1632  </span>			t.Parallel()
-<span id="L1633" class="ln">  1633  </span>			assert.False(t, isAssignment(&#34;bash&#34;))
-<span id="L1634" class="ln">  1634  </span>		})
-<span id="L1635" class="ln">  1635  </span>
-<span id="L1636" class="ln">  1636  </span>		t.Run(&#34;名前が空の語は代入として扱わない&#34;, func(t *testing.T) {
-<span id="L1637" class="ln">  1637  </span>			t.Parallel()
-<span id="L1638" class="ln">  1638  </span>			assert.False(t, isAssignment(&#34;=bar&#34;))
-<span id="L1639" class="ln">  1639  </span>		})
-<span id="L1640" class="ln">  1640  </span>
-<span id="L1641" class="ln">  1641  </span>		t.Run(&#34;数字で始まる名前は代入として扱わない&#34;, func(t *testing.T) {
-<span id="L1642" class="ln">  1642  </span>			t.Parallel()
-<span id="L1643" class="ln">  1643  </span>			assert.False(t, isAssignment(&#34;2FOO=bar&#34;))
-<span id="L1644" class="ln">  1644  </span>		})
-<span id="L1645" class="ln">  1645  </span>
-<span id="L1646" class="ln">  1646  </span>		t.Run(&#34;名前に記号を含む語は代入として扱わない&#34;, func(t *testing.T) {
-<span id="L1647" class="ln">  1647  </span>			t.Parallel()
-<span id="L1648" class="ln">  1648  </span>			assert.False(t, isAssignment(&#34;FOO-BAR=1&#34;))
-<span id="L1649" class="ln">  1649  </span>		})
-<span id="L1650" class="ln">  1650  </span>	})
-<span id="L1651" class="ln">  1651  </span>}
-<span id="L1652" class="ln">  1652  </span>
-<span id="L1653" class="ln">  1653  </span>func Test_fieldBase(t *testing.T) {
-<span id="L1654" class="ln">  1654  </span>	t.Parallel()
-<span id="L1655" class="ln">  1655  </span>
-<span id="L1656" class="ln">  1656  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1657" class="ln">  1657  </span>		t.Parallel()
-<span id="L1658" class="ln">  1658  </span>
-<span id="L1659" class="ln">  1659  </span>		t.Run(&#34;パス区切りの末尾だけを返す&#34;, func(t *testing.T) {
-<span id="L1660" class="ln">  1660  </span>			t.Parallel()
-<span id="L1661" class="ln">  1661  </span>			assert.Equal(t, &#34;bash&#34;, fieldBase(&#34;/usr/bin/bash&#34;))
-<span id="L1662" class="ln">  1662  </span>		})
-<span id="L1663" class="ln">  1663  </span>
-<span id="L1664" class="ln">  1664  </span>		t.Run(&#34;区切りが無ければそのまま返す&#34;, func(t *testing.T) {
-<span id="L1665" class="ln">  1665  </span>			t.Parallel()
-<span id="L1666" class="ln">  1666  </span>			assert.Equal(t, &#34;bash&#34;, fieldBase(&#34;bash&#34;))
-<span id="L1667" class="ln">  1667  </span>		})
-<span id="L1668" class="ln">  1668  </span>	})
-<span id="L1669" class="ln">  1669  </span>
-<span id="L1670" class="ln">  1670  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1671" class="ln">  1671  </span>		t.Parallel()
-<span id="L1672" class="ln">  1672  </span>
-<span id="L1673" class="ln">  1673  </span>		t.Run(&#34;区切りで終わる場合は空文字を返す&#34;, func(t *testing.T) {
-<span id="L1674" class="ln">  1674  </span>			t.Parallel()
-<span id="L1675" class="ln">  1675  </span>			assert.Empty(t, fieldBase(&#34;/usr/bin/&#34;))
-<span id="L1676" class="ln">  1676  </span>		})
-<span id="L1677" class="ln">  1677  </span>
-<span id="L1678" class="ln">  1678  </span>		t.Run(&#34;空文字はそのまま空文字を返す&#34;, func(t *testing.T) {
-<span id="L1679" class="ln">  1679  </span>			t.Parallel()
-<span id="L1680" class="ln">  1680  </span>			assert.Empty(t, fieldBase(&#34;&#34;))
-<span id="L1681" class="ln">  1681  </span>		})
-<span id="L1682" class="ln">  1682  </span>	})
-<span id="L1683" class="ln">  1683  </span>}
-<span id="L1684" class="ln">  1684  </span>
-<span id="L1685" class="ln">  1685  </span><span class="comment">// stubWD は、固定のディレクトリを返す作業ディレクトリの取得手段です。</span>
-<span id="L1686" class="ln">  1686  </span>func stubWD(root string) func() (string, error) {
-<span id="L1687" class="ln">  1687  </span>	return func() (string, error) { return root, nil }
-<span id="L1688" class="ln">  1688  </span>}
-<span id="L1689" class="ln">  1689  </span>
-<span id="L1690" class="ln">  1690  </span><span class="comment">// stubLookPath は、shellcheck の所在確認の結果を固定する取得手段です。</span>
-<span id="L1691" class="ln">  1691  </span>func stubLookPath(err error) func(string) (string, error) {
-<span id="L1692" class="ln">  1692  </span>	return func(name string) (string, error) { return name, err }
-<span id="L1693" class="ln">  1693  </span>}
-<span id="L1694" class="ln">  1694  </span>
-<span id="L1695" class="ln">  1695  </span><span class="comment">// writeActionRoot は action 定義 1 件を含む作業ディレクトリを作り、その絶対パスを返します。</span>
-<span id="L1696" class="ln">  1696  </span>func writeActionRoot(t *testing.T, body string) string {
-<span id="L1697" class="ln">  1697  </span>	t.Helper()
-<span id="L1698" class="ln">  1698  </span>	root := t.TempDir()
-<span id="L1699" class="ln">  1699  </span>	path := filepath.Join(root, actionsDir, &#34;sample&#34;, &#34;action.yml&#34;)
-<span id="L1700" class="ln">  1700  </span>	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o750))
-<span id="L1701" class="ln">  1701  </span>	require.NoError(t, os.WriteFile(path, []byte(body), 0o600))
-<span id="L1702" class="ln">  1702  </span>
-<span id="L1703" class="ln">  1703  </span>	return root
-<span id="L1704" class="ln">  1704  </span>}
-<span id="L1705" class="ln">  1705  </span>
-<span id="L1706" class="ln">  1706  </span>func Test_run(t *testing.T) {
-<span id="L1707" class="ln">  1707  </span>	t.Parallel()
-<span id="L1708" class="ln">  1708  </span>
-<span id="L1709" class="ln">  1709  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1710" class="ln">  1710  </span>		t.Parallel()
-<span id="L1711" class="ln">  1711  </span>
-<span id="L1712" class="ln">  1712  </span>		t.Run(&#34;対象外の shell しか無ければ shellcheck を呼ばずに成功する&#34;, func(t *testing.T) {
-<span id="L1713" class="ln">  1713  </span>			t.Parallel()
-<span id="L1714" class="ln">  1714  </span>			root := writeActionRoot(t, &#34;runs:\n  using: composite\n  steps:\n    - shell: python\n      run: print(1)\n&#34;)
-<span id="L1715" class="ln">  1715  </span>
-<span id="L1716" class="ln">  1716  </span>			require.NoError(t, run(t.Context(), stubWD(root), stubLookPath(nil)))
-<span id="L1717" class="ln">  1717  </span>		})
-<span id="L1718" class="ln">  1718  </span>
-<span id="L1719" class="ln">  1719  </span>		t.Run(&#34;指摘の無いスクリプトは成功する&#34;, func(t *testing.T) {
-<span id="L1720" class="ln">  1720  </span>			t.Parallel()
-<span id="L1721" class="ln">  1721  </span>			requireShellcheck(t)
-<span id="L1722" class="ln">  1722  </span>			root := writeActionRoot(t, compositeAction)
-<span id="L1723" class="ln">  1723  </span>
-<span id="L1724" class="ln">  1724  </span>			require.NoError(t, run(t.Context(), stubWD(root), stubLookPath(nil)))
-<span id="L1725" class="ln">  1725  </span>		})
-<span id="L1726" class="ln">  1726  </span>	})
-<span id="L1727" class="ln">  1727  </span>
-<span id="L1728" class="ln">  1728  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1729" class="ln">  1729  </span>		t.Parallel()
-<span id="L1730" class="ln">  1730  </span>
-<span id="L1731" class="ln">  1731  </span>		t.Run(&#34;shellcheck が PATH に無ければ走査へ進まず失敗する&#34;, func(t *testing.T) {
-<span id="L1732" class="ln">  1732  </span>			t.Parallel()
-<span id="L1733" class="ln">  1733  </span>
-<span id="L1734" class="ln">  1734  </span>			err := run(t.Context(), stubWD(writeActionRoot(t, compositeAction)), stubLookPath(errLookPath))
-<span id="L1735" class="ln">  1735  </span>
-<span id="L1736" class="ln">  1736  </span>			require.ErrorIs(t, err, shellcheck.ErrMissing)
-<span id="L1737" class="ln">  1737  </span>			assert.ErrorContains(t, err, errLookPath.Error())
-<span id="L1738" class="ln">  1738  </span>		})
-<span id="L1739" class="ln">  1739  </span>
-<span id="L1740" class="ln">  1740  </span>		t.Run(&#34;作業ディレクトリを取得できなければ失敗する&#34;, func(t *testing.T) {
-<span id="L1741" class="ln">  1741  </span>			t.Parallel()
-<span id="L1742" class="ln">  1742  </span>
-<span id="L1743" class="ln">  1743  </span>			err := run(t.Context(), func() (string, error) { return &#34;&#34;, errWD }, stubLookPath(nil))
-<span id="L1744" class="ln">  1744  </span>
-<span id="L1745" class="ln">  1745  </span>			require.ErrorIs(t, err, errWD)
-<span id="L1746" class="ln">  1746  </span>			assert.ErrorContains(t, err, &#34;getwd&#34;)
-<span id="L1747" class="ln">  1747  </span>		})
-<span id="L1748" class="ln">  1748  </span>
-<span id="L1749" class="ln">  1749  </span>		t.Run(&#34;action 定義を解釈できなければ失敗する&#34;, func(t *testing.T) {
-<span id="L1750" class="ln">  1750  </span>			t.Parallel()
-<span id="L1751" class="ln">  1751  </span>			root := writeActionRoot(t, &#34;runs:\n  using: composite\n  steps: 1\n&#34;)
-<span id="L1752" class="ln">  1752  </span>
-<span id="L1753" class="ln">  1753  </span>			err := run(t.Context(), stubWD(root), stubLookPath(nil))
-<span id="L1754" class="ln">  1754  </span>
-<span id="L1755" class="ln">  1755  </span>			require.ErrorIs(t, err, errStepsNotSequence)
-<span id="L1756" class="ln">  1756  </span>		})
-<span id="L1757" class="ln">  1757  </span>
-<span id="L1758" class="ln">  1758  </span>		t.Run(&#34;検査に掛けられないステップがあれば失敗する&#34;, func(t *testing.T) {
-<span id="L1759" class="ln">  1759  </span>			t.Parallel()
-<span id="L1760" class="ln">  1760  </span>			root := writeActionRoot(t, &#34;runs:\n  using: composite\n  steps:\n    - shell: bash\n      run: echo ${{ inputs.a\n&#34;)
-<span id="L1761" class="ln">  1761  </span>
-<span id="L1762" class="ln">  1762  </span>			err := run(t.Context(), stubWD(root), stubLookPath(nil))
-<span id="L1763" class="ln">  1763  </span>
-<span id="L1764" class="ln">  1764  </span>			require.ErrorIs(t, err, errUnterminatedExpr)
-<span id="L1765" class="ln">  1765  </span>		})
-<span id="L1766" class="ln">  1766  </span>
-<span id="L1767" class="ln">  1767  </span>		t.Run(&#34;指摘が残っていれば件数を添えて失敗する&#34;, func(t *testing.T) {
-<span id="L1768" class="ln">  1768  </span>			t.Parallel()
-<span id="L1769" class="ln">  1769  </span>			requireShellcheck(t)
-<span id="L1770" class="ln">  1770  </span>			root := writeActionRoot(t, quotedDefectAction)
-<span id="L1771" class="ln">  1771  </span>
-<span id="L1772" class="ln">  1772  </span>			err := run(t.Context(), stubWD(root), stubLookPath(nil))
-<span id="L1773" class="ln">  1773  </span>
-<span id="L1774" class="ln">  1774  </span>			require.ErrorIs(t, err, errFindings)
-<span id="L1775" class="ln">  1775  </span>			assert.ErrorContains(t, err, &#34;検査 1 ステップ&#34;)
-<span id="L1776" class="ln">  1776  </span>		})
-<span id="L1777" class="ln">  1777  </span>	})
-<span id="L1778" class="ln">  1778  </span>}
-<span id="L1779" class="ln">  1779  </span>
+<span id="L989" class="ln">   989  </span>				compositeAction, &#34;        echo world\n&#34;, &#34;        x=\&#34;a b\&#34;; echo $x\n&#34;, 1,
+<span id="L990" class="ln">   990  </span>			)))
+<span id="L991" class="ln">   991  </span>			require.NoError(t, err)
+<span id="L992" class="ln">   992  </span>			res, err := check(t.Context(), steps)
+<span id="L993" class="ln">   993  </span>			require.NoError(t, err)
+<span id="L994" class="ln">   994  </span>			assert.Equal(t, 2, res.checked)
+<span id="L995" class="ln">   995  </span>			require.Len(t, res.findings, 1)
+<span id="L996" class="ln">   996  </span>			assert.Contains(t, res.findings[0], &#34;action.yaml:10:&#34;)
+<span id="L997" class="ln">   997  </span>			assert.Contains(t, res.findings[0], &#34;SC2086&#34;)
+<span id="L998" class="ln">   998  </span>		})
+<span id="L999" class="ln">   999  </span>
+<span id="L1000" class="ln">  1000  </span>		t.Run(&#34;alias で共有された run も shellcheck に掛けアンカー先の位置で報告する&#34;, func(t *testing.T) {
+<span id="L1001" class="ln">  1001  </span>			t.Parallel()
+<span id="L1002" class="ln">  1002  </span>			requireShellcheck(t)
+<span id="L1003" class="ln">  1003  </span>			_, steps, err := collectSteps(testFS(map[string]string{
+<span id="L1004" class="ln">  1004  </span>				&#34;.github/actions/a/action.yaml&#34;: aliasDefectAction,
+<span id="L1005" class="ln">  1005  </span>			}))
+<span id="L1006" class="ln">  1006  </span>			require.NoError(t, err)
+<span id="L1007" class="ln">  1007  </span>			res, err := check(t.Context(), steps)
+<span id="L1008" class="ln">  1008  </span>			require.NoError(t, err)
+<span id="L1009" class="ln">  1009  </span>			assert.Equal(t, 2, res.checked)
+<span id="L1010" class="ln">  1010  </span>			require.Len(t, res.findings, 2)
+<span id="L1011" class="ln">  1011  </span>			for _, finding := range res.findings {
+<span id="L1012" class="ln">  1012  </span>				assert.Contains(t, finding, &#34;.github/actions/a/action.yaml:8:14:&#34;)
+<span id="L1013" class="ln">  1013  </span>				assert.Contains(t, finding, &#34;SC2086&#34;)
+<span id="L1014" class="ln">  1014  </span>			}
+<span id="L1015" class="ln">  1015  </span>		})
+<span id="L1016" class="ln">  1016  </span>
+<span id="L1017" class="ln">  1017  </span>		t.Run(&#34;引用符付きスカラーの run も列位置ごと報告する&#34;, func(t *testing.T) {
+<span id="L1018" class="ln">  1018  </span>			t.Parallel()
+<span id="L1019" class="ln">  1019  </span>			requireShellcheck(t)
+<span id="L1020" class="ln">  1020  </span>			_, steps, err := collectSteps(testFS(map[string]string{
+<span id="L1021" class="ln">  1021  </span>				&#34;.github/actions/a/action.yaml&#34;: quotedDefectAction,
+<span id="L1022" class="ln">  1022  </span>			}))
+<span id="L1023" class="ln">  1023  </span>			require.NoError(t, err)
+<span id="L1024" class="ln">  1024  </span>			res, err := check(t.Context(), steps)
+<span id="L1025" class="ln">  1025  </span>			require.NoError(t, err)
+<span id="L1026" class="ln">  1026  </span>			assert.Equal(t, 1, res.checked)
+<span id="L1027" class="ln">  1027  </span>			require.Len(t, res.findings, 1)
+<span id="L1028" class="ln">  1028  </span>			assert.Contains(t, res.findings[0], &#34;.github/actions/a/action.yaml:5:27:&#34;)
+<span id="L1029" class="ln">  1029  </span>			assert.Contains(t, res.findings[0], &#34;SC2086&#34;)
+<span id="L1030" class="ln">  1030  </span>		})
+<span id="L1031" class="ln">  1031  </span>
+<span id="L1032" class="ln">  1032  </span>		t.Run(&#34;マージキーで継承した plain スカラーの run も列位置ごと報告する&#34;, func(t *testing.T) {
+<span id="L1033" class="ln">  1033  </span>			t.Parallel()
+<span id="L1034" class="ln">  1034  </span>			requireShellcheck(t)
+<span id="L1035" class="ln">  1035  </span>			_, steps, err := collectSteps(testFS(map[string]string{
+<span id="L1036" class="ln">  1036  </span>				&#34;.github/actions/a/action.yaml&#34;: mergeDefectAction,
+<span id="L1037" class="ln">  1037  </span>			}))
+<span id="L1038" class="ln">  1038  </span>			require.NoError(t, err)
+<span id="L1039" class="ln">  1039  </span>			res, err := check(t.Context(), steps)
+<span id="L1040" class="ln">  1040  </span>			require.NoError(t, err)
+<span id="L1041" class="ln">  1041  </span>			assert.Equal(t, 2, res.checked)
+<span id="L1042" class="ln">  1042  </span>			require.Len(t, res.findings, 2)
+<span id="L1043" class="ln">  1043  </span>			for _, finding := range res.findings {
+<span id="L1044" class="ln">  1044  </span>				assert.Contains(t, finding, &#34;.github/actions/a/action.yaml:7:26:&#34;)
+<span id="L1045" class="ln">  1045  </span>				assert.Contains(t, finding, &#34;SC2086&#34;)
+<span id="L1046" class="ln">  1046  </span>			}
+<span id="L1047" class="ln">  1047  </span>		})
+<span id="L1048" class="ln">  1048  </span>	})
+<span id="L1049" class="ln">  1049  </span>
+<span id="L1050" class="ln">  1050  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1051" class="ln">  1051  </span>		t.Parallel()
+<span id="L1052" class="ln">  1052  </span>
+<span id="L1053" class="ln">  1053  </span>		t.Run(&#34;shellcheck の失敗はそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L1054" class="ln">  1054  </span>			t.Parallel()
+<span id="L1055" class="ln">  1055  </span>			requireShellcheck(t)
+<span id="L1056" class="ln">  1056  </span>			steps := []step{{file: &#34;action.yaml&#34;, shell: &#34;bash&#34;, script: &#34;echo ok\n&#34;, firstLine: 1}}
+<span id="L1057" class="ln">  1057  </span>			res, err := check(canceledContext(t), steps)
+<span id="L1058" class="ln">  1058  </span>			require.Error(t, err)
+<span id="L1059" class="ln">  1059  </span>			require.ErrorIs(t, err, shellcheck.ErrRun)
+<span id="L1060" class="ln">  1060  </span>			assert.Zero(t, res.checked)
+<span id="L1061" class="ln">  1061  </span>			assert.Empty(t, res.findings)
+<span id="L1062" class="ln">  1062  </span>		})
+<span id="L1063" class="ln">  1063  </span>
+<span id="L1064" class="ln">  1064  </span>		t.Run(&#34;閉じていない式は検査せずエラーにする&#34;, func(t *testing.T) {
+<span id="L1065" class="ln">  1065  </span>			t.Parallel()
+<span id="L1066" class="ln">  1066  </span>			requireShellcheck(t)
+<span id="L1067" class="ln">  1067  </span>			steps := []step{{file: &#34;action.yaml&#34;, shell: &#34;bash&#34;, script: &#34;echo ${{ inputs.a\n&#34;, firstLine: 9}}
+<span id="L1068" class="ln">  1068  </span>			_, err := check(t.Context(), steps)
+<span id="L1069" class="ln">  1069  </span>			require.Error(t, err)
+<span id="L1070" class="ln">  1070  </span>			require.ErrorIs(t, err, errUnterminatedExpr)
+<span id="L1071" class="ln">  1071  </span>			require.ErrorContains(t, err, &#34;action.yaml:9&#34;)
+<span id="L1072" class="ln">  1072  </span>		})
+<span id="L1073" class="ln">  1073  </span>	})
+<span id="L1074" class="ln">  1074  </span>}
+<span id="L1075" class="ln">  1075  </span>
+<span id="L1076" class="ln">  1076  </span>func Test_appendSymlink(t *testing.T) {
+<span id="L1077" class="ln">  1077  </span>	t.Parallel()
+<span id="L1078" class="ln">  1078  </span>
+<span id="L1079" class="ln">  1079  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1080" class="ln">  1080  </span>		t.Parallel()
+<span id="L1081" class="ln">  1081  </span>
+<span id="L1082" class="ln">  1082  </span>		t.Run(&#34;action 定義ファイルへのリンクは既に集めたパスを保ったまま追記する&#34;, func(t *testing.T) {
+<span id="L1083" class="ln">  1083  </span>			t.Parallel()
+<span id="L1084" class="ln">  1084  </span>			files := []string{&#34;.github/actions/first/action.yml&#34;}
+<span id="L1085" class="ln">  1085  </span>			err := appendSymlink(symlinkFS(t), &#34;.github/actions/link/action.yml&#34;, &#34;action.yml&#34;, &amp;files)
+<span id="L1086" class="ln">  1086  </span>			require.NoError(t, err)
+<span id="L1087" class="ln">  1087  </span>			assert.Equal(t, []string{
+<span id="L1088" class="ln">  1088  </span>				&#34;.github/actions/first/action.yml&#34;,
+<span id="L1089" class="ln">  1089  </span>				&#34;.github/actions/link/action.yml&#34;,
+<span id="L1090" class="ln">  1090  </span>			}, files)
+<span id="L1091" class="ln">  1091  </span>		})
+<span id="L1092" class="ln">  1092  </span>
+<span id="L1093" class="ln">  1093  </span>		t.Run(&#34;action 定義でない名前のリンクは追記しない&#34;, func(t *testing.T) {
+<span id="L1094" class="ln">  1094  </span>			t.Parallel()
+<span id="L1095" class="ln">  1095  </span>			files := []string{&#34;.github/actions/first/action.yml&#34;}
+<span id="L1096" class="ln">  1096  </span>			err := appendSymlink(symlinkFS(t), &#34;.github/actions/link/dist.yml&#34;, &#34;dist.yml&#34;, &amp;files)
+<span id="L1097" class="ln">  1097  </span>			require.NoError(t, err)
+<span id="L1098" class="ln">  1098  </span>			assert.Equal(t, []string{&#34;.github/actions/first/action.yml&#34;}, files)
+<span id="L1099" class="ln">  1099  </span>		})
+<span id="L1100" class="ln">  1100  </span>	})
+<span id="L1101" class="ln">  1101  </span>
+<span id="L1102" class="ln">  1102  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1103" class="ln">  1103  </span>		t.Parallel()
+<span id="L1104" class="ln">  1104  </span>
+<span id="L1105" class="ln">  1105  </span>		t.Run(&#34;ディレクトリへのリンクは対象のパスを添えてエラーにする&#34;, func(t *testing.T) {
+<span id="L1106" class="ln">  1106  </span>			t.Parallel()
+<span id="L1107" class="ln">  1107  </span>			files := []string{&#34;.github/actions/first/action.yml&#34;}
+<span id="L1108" class="ln">  1108  </span>			err := appendSymlink(symlinkFS(t), &#34;.github/actions/dirlink&#34;, &#34;dirlink&#34;, &amp;files)
+<span id="L1109" class="ln">  1109  </span>			require.ErrorIs(t, err, errActionSymlinkDir)
+<span id="L1110" class="ln">  1110  </span>			require.ErrorContains(t, err, &#34;.github/actions/dirlink&#34;)
+<span id="L1111" class="ln">  1111  </span>			assert.Equal(t, []string{&#34;.github/actions/first/action.yml&#34;}, files)
+<span id="L1112" class="ln">  1112  </span>		})
+<span id="L1113" class="ln">  1113  </span>
+<span id="L1114" class="ln">  1114  </span>		t.Run(&#34;解決できないリンクは対象のパスを添えてエラーにする&#34;, func(t *testing.T) {
+<span id="L1115" class="ln">  1115  </span>			t.Parallel()
+<span id="L1116" class="ln">  1116  </span>			files := []string{&#34;.github/actions/first/action.yml&#34;}
+<span id="L1117" class="ln">  1117  </span>			err := appendSymlink(symlinkFS(t), &#34;.github/actions/broken/action.yml&#34;, &#34;action.yml&#34;, &amp;files)
+<span id="L1118" class="ln">  1118  </span>			require.ErrorIs(t, err, errActionSymlinkUnresolved)
+<span id="L1119" class="ln">  1119  </span>			require.ErrorContains(t, err, &#34;.github/actions/broken/action.yml&#34;)
+<span id="L1120" class="ln">  1120  </span>			assert.Equal(t, []string{&#34;.github/actions/first/action.yml&#34;}, files)
+<span id="L1121" class="ln">  1121  </span>		})
+<span id="L1122" class="ln">  1122  </span>	})
+<span id="L1123" class="ln">  1123  </span>}
+<span id="L1124" class="ln">  1124  </span>
+<span id="L1125" class="ln">  1125  </span>func Test_isActionFile(t *testing.T) {
+<span id="L1126" class="ln">  1126  </span>	t.Parallel()
+<span id="L1127" class="ln">  1127  </span>
+<span id="L1128" class="ln">  1128  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1129" class="ln">  1129  </span>		t.Parallel()
+<span id="L1130" class="ln">  1130  </span>
+<span id="L1131" class="ln">  1131  </span>		t.Run(&#34;action.yml は action 定義ファイルとして扱う&#34;, func(t *testing.T) {
+<span id="L1132" class="ln">  1132  </span>			t.Parallel()
+<span id="L1133" class="ln">  1133  </span>			assert.True(t, isActionFile(&#34;action.yml&#34;))
+<span id="L1134" class="ln">  1134  </span>		})
+<span id="L1135" class="ln">  1135  </span>
+<span id="L1136" class="ln">  1136  </span>		t.Run(&#34;action.yaml は action 定義ファイルとして扱う&#34;, func(t *testing.T) {
+<span id="L1137" class="ln">  1137  </span>			t.Parallel()
+<span id="L1138" class="ln">  1138  </span>			assert.True(t, isActionFile(&#34;action.yaml&#34;))
+<span id="L1139" class="ln">  1139  </span>		})
+<span id="L1140" class="ln">  1140  </span>	})
+<span id="L1141" class="ln">  1141  </span>
+<span id="L1142" class="ln">  1142  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1143" class="ln">  1143  </span>		t.Parallel()
+<span id="L1144" class="ln">  1144  </span>
+<span id="L1145" class="ln">  1145  </span>		t.Run(&#34;接尾辞が一致するだけの名前は対象にしない&#34;, func(t *testing.T) {
+<span id="L1146" class="ln">  1146  </span>			t.Parallel()
+<span id="L1147" class="ln">  1147  </span>			assert.False(t, isActionFile(&#34;my-action.yaml&#34;))
+<span id="L1148" class="ln">  1148  </span>		})
+<span id="L1149" class="ln">  1149  </span>
+<span id="L1150" class="ln">  1150  </span>		t.Run(&#34;拡張子の後ろに続きがある名前は対象にしない&#34;, func(t *testing.T) {
+<span id="L1151" class="ln">  1151  </span>			t.Parallel()
+<span id="L1152" class="ln">  1152  </span>			assert.False(t, isActionFile(&#34;action.yaml.bak&#34;))
+<span id="L1153" class="ln">  1153  </span>		})
+<span id="L1154" class="ln">  1154  </span>
+<span id="L1155" class="ln">  1155  </span>		t.Run(&#34;action と綴りが異なる名前は対象にしない&#34;, func(t *testing.T) {
+<span id="L1156" class="ln">  1156  </span>			t.Parallel()
+<span id="L1157" class="ln">  1157  </span>			assert.False(t, isActionFile(&#34;actions.yaml&#34;))
+<span id="L1158" class="ln">  1158  </span>		})
+<span id="L1159" class="ln">  1159  </span>
+<span id="L1160" class="ln">  1160  </span>		t.Run(&#34;空の名前は対象にしない&#34;, func(t *testing.T) {
+<span id="L1161" class="ln">  1161  </span>			t.Parallel()
+<span id="L1162" class="ln">  1162  </span>			assert.False(t, isActionFile(&#34;&#34;))
+<span id="L1163" class="ln">  1163  </span>		})
+<span id="L1164" class="ln">  1164  </span>	})
+<span id="L1165" class="ln">  1165  </span>}
+<span id="L1166" class="ln">  1166  </span>
+<span id="L1167" class="ln">  1167  </span>func Test_requireSingleDocument(t *testing.T) {
+<span id="L1168" class="ln">  1168  </span>	t.Parallel()
+<span id="L1169" class="ln">  1169  </span>
+<span id="L1170" class="ln">  1170  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1171" class="ln">  1171  </span>		t.Parallel()
+<span id="L1172" class="ln">  1172  </span>
+<span id="L1173" class="ln">  1173  </span>		t.Run(&#34;単一ドキュメントならエラーにしない&#34;, func(t *testing.T) {
+<span id="L1174" class="ln">  1174  </span>			t.Parallel()
+<span id="L1175" class="ln">  1175  </span>			require.NoError(t, requireSingleDocument(&#34;action.yaml&#34;, []byte(compositeAction)))
+<span id="L1176" class="ln">  1176  </span>		})
+<span id="L1177" class="ln">  1177  </span>
+<span id="L1178" class="ln">  1178  </span>		t.Run(&#34;空ファイルならエラーにしない&#34;, func(t *testing.T) {
+<span id="L1179" class="ln">  1179  </span>			t.Parallel()
+<span id="L1180" class="ln">  1180  </span>			require.NoError(t, requireSingleDocument(&#34;action.yaml&#34;, nil))
+<span id="L1181" class="ln">  1181  </span>		})
+<span id="L1182" class="ln">  1182  </span>	})
+<span id="L1183" class="ln">  1183  </span>
+<span id="L1184" class="ln">  1184  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1185" class="ln">  1185  </span>		t.Parallel()
+<span id="L1186" class="ln">  1186  </span>
+<span id="L1187" class="ln">  1187  </span>		t.Run(&#34;2 番目のドキュメントがあればファイル名を添えてエラーにする&#34;, func(t *testing.T) {
+<span id="L1188" class="ln">  1188  </span>			t.Parallel()
+<span id="L1189" class="ln">  1189  </span>			err := requireSingleDocument(&#34;action.yaml&#34;, []byte(&#34;name: a\n---\nname: b\n&#34;))
+<span id="L1190" class="ln">  1190  </span>			require.ErrorIs(t, err, errMultipleDocuments)
+<span id="L1191" class="ln">  1191  </span>			require.ErrorContains(t, err, &#34;action.yaml&#34;)
+<span id="L1192" class="ln">  1192  </span>		})
+<span id="L1193" class="ln">  1193  </span>
+<span id="L1194" class="ln">  1194  </span>		t.Run(&#34;1 番目のドキュメントが壊れていればエラーにする&#34;, func(t *testing.T) {
+<span id="L1195" class="ln">  1195  </span>			t.Parallel()
+<span id="L1196" class="ln">  1196  </span>			err := requireSingleDocument(&#34;action.yaml&#34;, []byte(&#34;runs: [\n&#34;))
+<span id="L1197" class="ln">  1197  </span>			require.Error(t, err)
+<span id="L1198" class="ln">  1198  </span>			require.ErrorContains(t, err, &#34;parse action.yaml&#34;)
+<span id="L1199" class="ln">  1199  </span>		})
+<span id="L1200" class="ln">  1200  </span>
+<span id="L1201" class="ln">  1201  </span>		t.Run(&#34;2 番目のドキュメントが壊れていればエラーにする&#34;, func(t *testing.T) {
+<span id="L1202" class="ln">  1202  </span>			t.Parallel()
+<span id="L1203" class="ln">  1203  </span>			err := requireSingleDocument(&#34;action.yaml&#34;, []byte(&#34;name: a\n---\nruns: [\n&#34;))
+<span id="L1204" class="ln">  1204  </span>			require.Error(t, err)
+<span id="L1205" class="ln">  1205  </span>			require.ErrorContains(t, err, &#34;parse action.yaml&#34;)
+<span id="L1206" class="ln">  1206  </span>		})
+<span id="L1207" class="ln">  1207  </span>	})
+<span id="L1208" class="ln">  1208  </span>}
+<span id="L1209" class="ln">  1209  </span>
+<span id="L1210" class="ln">  1210  </span>func Test_fieldValue(t *testing.T) {
+<span id="L1211" class="ln">  1211  </span>	t.Parallel()
+<span id="L1212" class="ln">  1212  </span>
+<span id="L1213" class="ln">  1213  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1214" class="ln">  1214  </span>		t.Parallel()
+<span id="L1215" class="ln">  1215  </span>
+<span id="L1216" class="ln">  1216  </span>		t.Run(&#34;マッピングからキーに対応する値を返す&#34;, func(t *testing.T) {
+<span id="L1217" class="ln">  1217  </span>			t.Parallel()
+<span id="L1218" class="ln">  1218  </span>			node := map[string]any{&#34;runs&#34;: &#34;composite&#34;, &#34;name&#34;: &#34;sample&#34;}
+<span id="L1219" class="ln">  1219  </span>			assert.Equal(t, &#34;composite&#34;, fieldValue(node, &#34;runs&#34;))
+<span id="L1220" class="ln">  1220  </span>		})
+<span id="L1221" class="ln">  1221  </span>	})
+<span id="L1222" class="ln">  1222  </span>
+<span id="L1223" class="ln">  1223  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1224" class="ln">  1224  </span>		t.Parallel()
+<span id="L1225" class="ln">  1225  </span>
+<span id="L1226" class="ln">  1226  </span>		t.Run(&#34;存在しないキーは nil を返す&#34;, func(t *testing.T) {
+<span id="L1227" class="ln">  1227  </span>			t.Parallel()
+<span id="L1228" class="ln">  1228  </span>			assert.Nil(t, fieldValue(map[string]any{&#34;name&#34;: &#34;sample&#34;}, &#34;runs&#34;))
+<span id="L1229" class="ln">  1229  </span>		})
+<span id="L1230" class="ln">  1230  </span>
+<span id="L1231" class="ln">  1231  </span>		t.Run(&#34;マッピングでない値は nil を返す&#34;, func(t *testing.T) {
+<span id="L1232" class="ln">  1232  </span>			t.Parallel()
+<span id="L1233" class="ln">  1233  </span>			assert.Nil(t, fieldValue([]any{&#34;runs&#34;}, &#34;runs&#34;))
+<span id="L1234" class="ln">  1234  </span>		})
+<span id="L1235" class="ln">  1235  </span>
+<span id="L1236" class="ln">  1236  </span>		t.Run(&#34;nil は nil を返す&#34;, func(t *testing.T) {
+<span id="L1237" class="ln">  1237  </span>			t.Parallel()
+<span id="L1238" class="ln">  1238  </span>			assert.Nil(t, fieldValue(nil, &#34;runs&#34;))
+<span id="L1239" class="ln">  1239  </span>		})
+<span id="L1240" class="ln">  1240  </span>	})
+<span id="L1241" class="ln">  1241  </span>}
+<span id="L1242" class="ln">  1242  </span>
+<span id="L1243" class="ln">  1243  </span>func Test_extractSteps(t *testing.T) {
+<span id="L1244" class="ln">  1244  </span>	t.Parallel()
+<span id="L1245" class="ln">  1245  </span>
+<span id="L1246" class="ln">  1246  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1247" class="ln">  1247  </span>		t.Parallel()
+<span id="L1248" class="ln">  1248  </span>
+<span id="L1249" class="ln">  1249  </span>		t.Run(&#34;抽出したステップは指摘の写し戻し先となる対象ファイル名を持つ&#34;, func(t *testing.T) {
+<span id="L1250" class="ln">  1250  </span>			t.Parallel()
+<span id="L1251" class="ln">  1251  </span>			file := &#34;.github/actions/a/action.yaml&#34;
+<span id="L1252" class="ln">  1252  </span>			steps, err := extractSteps(file, []byte(compositeAction), parseDoc(t, compositeAction))
+<span id="L1253" class="ln">  1253  </span>			require.NoError(t, err)
+<span id="L1254" class="ln">  1254  </span>			require.Len(t, steps, 2)
+<span id="L1255" class="ln">  1255  </span>			assert.Equal(t, file, steps[0].file)
+<span id="L1256" class="ln">  1256  </span>			assert.Equal(t, file, steps[1].file)
+<span id="L1257" class="ln">  1257  </span>		})
+<span id="L1258" class="ln">  1258  </span>
+<span id="L1259" class="ln">  1259  </span>		t.Run(&#34;using が composite でない action は抽出せずエラーにもしない&#34;, func(t *testing.T) {
+<span id="L1260" class="ln">  1260  </span>			t.Parallel()
+<span id="L1261" class="ln">  1261  </span>			body := &#34;runs:\n  using: node20\n  steps:\n    - shell: bash\n      run: echo hi\n&#34;
+<span id="L1262" class="ln">  1262  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
+<span id="L1263" class="ln">  1263  </span>			require.NoError(t, err)
+<span id="L1264" class="ln">  1264  </span>			assert.Empty(t, steps)
+<span id="L1265" class="ln">  1265  </span>		})
+<span id="L1266" class="ln">  1266  </span>
+<span id="L1267" class="ln">  1267  </span>		t.Run(&#34;using が無い action は抽出せずエラーにもしない&#34;, func(t *testing.T) {
+<span id="L1268" class="ln">  1268  </span>			t.Parallel()
+<span id="L1269" class="ln">  1269  </span>			body := &#34;runs:\n  steps:\n    - shell: bash\n      run: echo hi\n&#34;
+<span id="L1270" class="ln">  1270  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
+<span id="L1271" class="ln">  1271  </span>			require.NoError(t, err)
+<span id="L1272" class="ln">  1272  </span>			assert.Empty(t, steps)
+<span id="L1273" class="ln">  1273  </span>		})
+<span id="L1274" class="ln">  1274  </span>
+<span id="L1275" class="ln">  1275  </span>		t.Run(&#34;steps を持たない composite は抽出せずエラーにもしない&#34;, func(t *testing.T) {
+<span id="L1276" class="ln">  1276  </span>			t.Parallel()
+<span id="L1277" class="ln">  1277  </span>			body := &#34;runs:\n  using: composite\n&#34;
+<span id="L1278" class="ln">  1278  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
+<span id="L1279" class="ln">  1279  </span>			require.NoError(t, err)
+<span id="L1280" class="ln">  1280  </span>			assert.Empty(t, steps)
+<span id="L1281" class="ln">  1281  </span>		})
+<span id="L1282" class="ln">  1282  </span>
+<span id="L1283" class="ln">  1283  </span>		t.Run(&#34;run を持たないステップは読み飛ばして後続の run を抽出する&#34;, func(t *testing.T) {
+<span id="L1284" class="ln">  1284  </span>			t.Parallel()
+<span id="L1285" class="ln">  1285  </span>			body := &#34;runs:\n  using: composite\n  steps:\n    - uses: actions/checkout@v7\n&#34; +
+<span id="L1286" class="ln">  1286  </span>				&#34;    - shell: bash\n      run: echo hi\n&#34;
+<span id="L1287" class="ln">  1287  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
+<span id="L1288" class="ln">  1288  </span>			require.NoError(t, err)
+<span id="L1289" class="ln">  1289  </span>			require.Len(t, steps, 1)
+<span id="L1290" class="ln">  1290  </span>			assert.Equal(t, &#34;echo hi&#34;, steps[0].script)
+<span id="L1291" class="ln">  1291  </span>		})
+<span id="L1292" class="ln">  1292  </span>	})
+<span id="L1293" class="ln">  1293  </span>
+<span id="L1294" class="ln">  1294  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1295" class="ln">  1295  </span>		t.Parallel()
+<span id="L1296" class="ln">  1296  </span>
+<span id="L1297" class="ln">  1297  </span>		t.Run(&#34;shell を欠くステップがあれば後続が健全でも 1 件も返さずエラーにする&#34;, func(t *testing.T) {
+<span id="L1298" class="ln">  1298  </span>			t.Parallel()
+<span id="L1299" class="ln">  1299  </span>			body := &#34;runs:\n  using: composite\n  steps:\n    - run: echo first\n&#34; +
+<span id="L1300" class="ln">  1300  </span>				&#34;    - shell: bash\n      run: echo second\n&#34;
+<span id="L1301" class="ln">  1301  </span>			steps, err := extractSteps(&#34;action.yaml&#34;, []byte(body), parseDoc(t, body))
+<span id="L1302" class="ln">  1302  </span>			require.ErrorIs(t, err, errNoShell)
+<span id="L1303" class="ln">  1303  </span>			assert.Empty(t, steps)
+<span id="L1304" class="ln">  1304  </span>		})
+<span id="L1305" class="ln">  1305  </span>	})
+<span id="L1306" class="ln">  1306  </span>}
+<span id="L1307" class="ln">  1307  </span>
+<span id="L1308" class="ln">  1308  </span>func Test_documentRoot(t *testing.T) {
+<span id="L1309" class="ln">  1309  </span>	t.Parallel()
+<span id="L1310" class="ln">  1310  </span>
+<span id="L1311" class="ln">  1311  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1312" class="ln">  1312  </span>		t.Parallel()
+<span id="L1313" class="ln">  1313  </span>
+<span id="L1314" class="ln">  1314  </span>		t.Run(&#34;ドキュメントノードの最初の要素を返す&#34;, func(t *testing.T) {
+<span id="L1315" class="ln">  1315  </span>			t.Parallel()
+<span id="L1316" class="ln">  1316  </span>			root := documentRoot(parseDoc(t, &#34;runs:\n  using: composite\n&#34;))
+<span id="L1317" class="ln">  1317  </span>			require.NotNil(t, root)
+<span id="L1318" class="ln">  1318  </span>			assert.Equal(t, yaml.MappingNode, root.Kind)
+<span id="L1319" class="ln">  1319  </span>			assert.Equal(t, &#34;runs&#34;, root.Content[0].Value)
+<span id="L1320" class="ln">  1320  </span>		})
+<span id="L1321" class="ln">  1321  </span>	})
+<span id="L1322" class="ln">  1322  </span>
+<span id="L1323" class="ln">  1323  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1324" class="ln">  1324  </span>		t.Parallel()
+<span id="L1325" class="ln">  1325  </span>
+<span id="L1326" class="ln">  1326  </span>		t.Run(&#34;ドキュメントノードでなければ nil を返す&#34;, func(t *testing.T) {
+<span id="L1327" class="ln">  1327  </span>			t.Parallel()
+<span id="L1328" class="ln">  1328  </span>			assert.Nil(t, documentRoot(&amp;yaml.Node{Kind: yaml.MappingNode}))
+<span id="L1329" class="ln">  1329  </span>		})
+<span id="L1330" class="ln">  1330  </span>
+<span id="L1331" class="ln">  1331  </span>		t.Run(&#34;内容の無いドキュメントは nil を返す&#34;, func(t *testing.T) {
+<span id="L1332" class="ln">  1332  </span>			t.Parallel()
+<span id="L1333" class="ln">  1333  </span>			assert.Nil(t, documentRoot(&amp;yaml.Node{Kind: yaml.DocumentNode}))
+<span id="L1334" class="ln">  1334  </span>		})
+<span id="L1335" class="ln">  1335  </span>	})
+<span id="L1336" class="ln">  1336  </span>}
+<span id="L1337" class="ln">  1337  </span>
+<span id="L1338" class="ln">  1338  </span>func Test_mapValue(t *testing.T) {
+<span id="L1339" class="ln">  1339  </span>	t.Parallel()
+<span id="L1340" class="ln">  1340  </span>
+<span id="L1341" class="ln">  1341  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1342" class="ln">  1342  </span>		t.Parallel()
+<span id="L1343" class="ln">  1343  </span>
+<span id="L1344" class="ln">  1344  </span>		t.Run(&#34;キーに対応する値ノードを返す&#34;, func(t *testing.T) {
+<span id="L1345" class="ln">  1345  </span>			t.Parallel()
+<span id="L1346" class="ln">  1346  </span>			v := mapValue(parseDocRoot(t, &#34;using: composite\nname: sample\n&#34;), &#34;using&#34;)
+<span id="L1347" class="ln">  1347  </span>			require.NotNil(t, v)
+<span id="L1348" class="ln">  1348  </span>			assert.Equal(t, &#34;composite&#34;, v.Value)
+<span id="L1349" class="ln">  1349  </span>		})
+<span id="L1350" class="ln">  1350  </span>
+<span id="L1351" class="ln">  1351  </span>		t.Run(&#34;値がエイリアスならアンカー先を解決して返す&#34;, func(t *testing.T) {
+<span id="L1352" class="ln">  1352  </span>			t.Parallel()
+<span id="L1353" class="ln">  1353  </span>			v := mapValue(parseDocRoot(t, &#34;a: &amp;anchor composite\nb: *anchor\n&#34;), &#34;b&#34;)
+<span id="L1354" class="ln">  1354  </span>			require.NotNil(t, v)
+<span id="L1355" class="ln">  1355  </span>			assert.Equal(t, &#34;composite&#34;, v.Value)
+<span id="L1356" class="ln">  1356  </span>		})
+<span id="L1357" class="ln">  1357  </span>
+<span id="L1358" class="ln">  1358  </span>		t.Run(&#34;マッピング自体がエイリアスでも解決して引ける&#34;, func(t *testing.T) {
+<span id="L1359" class="ln">  1359  </span>			t.Parallel()
+<span id="L1360" class="ln">  1360  </span>			root := parseDocRoot(t, &#34;base: &amp;base\n  shell: sh\nuse: *base\n&#34;)
+<span id="L1361" class="ln">  1361  </span>			v := mapValue(mapValue(root, &#34;use&#34;), &#34;shell&#34;)
+<span id="L1362" class="ln">  1362  </span>			require.NotNil(t, v)
+<span id="L1363" class="ln">  1363  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
+<span id="L1364" class="ln">  1364  </span>		})
+<span id="L1365" class="ln">  1365  </span>
+<span id="L1366" class="ln">  1366  </span>		t.Run(&#34;直接書かれたキーはマージキー経由の値より優先する&#34;, func(t *testing.T) {
+<span id="L1367" class="ln">  1367  </span>			t.Parallel()
+<span id="L1368" class="ln">  1368  </span>			root := parseDocRoot(t, &#34;base: &amp;base\n  shell: sh\nstep:\n  &lt;&lt;: *base\n  shell: bash\n&#34;)
+<span id="L1369" class="ln">  1369  </span>			v := mapValue(mapValue(root, &#34;step&#34;), &#34;shell&#34;)
+<span id="L1370" class="ln">  1370  </span>			require.NotNil(t, v)
+<span id="L1371" class="ln">  1371  </span>			assert.Equal(t, &#34;bash&#34;, v.Value)
+<span id="L1372" class="ln">  1372  </span>		})
+<span id="L1373" class="ln">  1373  </span>
+<span id="L1374" class="ln">  1374  </span>		t.Run(&#34;直接書かれたキーが無ければマージキー経由で引く&#34;, func(t *testing.T) {
+<span id="L1375" class="ln">  1375  </span>			t.Parallel()
+<span id="L1376" class="ln">  1376  </span>			root := parseDocRoot(t, &#34;base: &amp;base\n  shell: sh\nstep:\n  &lt;&lt;: *base\n  name: second\n&#34;)
+<span id="L1377" class="ln">  1377  </span>			v := mapValue(mapValue(root, &#34;step&#34;), &#34;shell&#34;)
+<span id="L1378" class="ln">  1378  </span>			require.NotNil(t, v)
+<span id="L1379" class="ln">  1379  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
+<span id="L1380" class="ln">  1380  </span>		})
+<span id="L1381" class="ln">  1381  </span>	})
+<span id="L1382" class="ln">  1382  </span>
+<span id="L1383" class="ln">  1383  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1384" class="ln">  1384  </span>		t.Parallel()
+<span id="L1385" class="ln">  1385  </span>
+<span id="L1386" class="ln">  1386  </span>		t.Run(&#34;存在しないキーは nil を返す&#34;, func(t *testing.T) {
+<span id="L1387" class="ln">  1387  </span>			t.Parallel()
+<span id="L1388" class="ln">  1388  </span>			assert.Nil(t, mapValue(parseDocRoot(t, &#34;using: composite\n&#34;), &#34;steps&#34;))
+<span id="L1389" class="ln">  1389  </span>		})
+<span id="L1390" class="ln">  1390  </span>
+<span id="L1391" class="ln">  1391  </span>		t.Run(&#34;マッピングでないノードは nil を返す&#34;, func(t *testing.T) {
+<span id="L1392" class="ln">  1392  </span>			t.Parallel()
+<span id="L1393" class="ln">  1393  </span>			assert.Nil(t, mapValue(parseDocRoot(t, &#34;- a\n- b\n&#34;), &#34;using&#34;))
+<span id="L1394" class="ln">  1394  </span>		})
+<span id="L1395" class="ln">  1395  </span>
+<span id="L1396" class="ln">  1396  </span>		t.Run(&#34;nil ノードは nil を返す&#34;, func(t *testing.T) {
+<span id="L1397" class="ln">  1397  </span>			t.Parallel()
+<span id="L1398" class="ln">  1398  </span>			assert.Nil(t, mapValue(nil, &#34;using&#34;))
+<span id="L1399" class="ln">  1399  </span>		})
+<span id="L1400" class="ln">  1400  </span>	})
+<span id="L1401" class="ln">  1401  </span>}
+<span id="L1402" class="ln">  1402  </span>
+<span id="L1403" class="ln">  1403  </span>func Test_mergeValue(t *testing.T) {
+<span id="L1404" class="ln">  1404  </span>	t.Parallel()
+<span id="L1405" class="ln">  1405  </span>
+<span id="L1406" class="ln">  1406  </span>	shellMapping := func(value string) *yaml.Node {
+<span id="L1407" class="ln">  1407  </span>		return &amp;yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{
+<span id="L1408" class="ln">  1408  </span>			{Kind: yaml.ScalarNode, Value: &#34;shell&#34;},
+<span id="L1409" class="ln">  1409  </span>			{Kind: yaml.ScalarNode, Value: value},
+<span id="L1410" class="ln">  1410  </span>		}}
+<span id="L1411" class="ln">  1411  </span>	}
+<span id="L1412" class="ln">  1412  </span>	nameMapping := &amp;yaml.Node{Kind: yaml.MappingNode, Content: []*yaml.Node{
+<span id="L1413" class="ln">  1413  </span>		{Kind: yaml.ScalarNode, Value: &#34;name&#34;},
+<span id="L1414" class="ln">  1414  </span>		{Kind: yaml.ScalarNode, Value: &#34;second&#34;},
+<span id="L1415" class="ln">  1415  </span>	}}
+<span id="L1416" class="ln">  1416  </span>
+<span id="L1417" class="ln">  1417  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1418" class="ln">  1418  </span>		t.Parallel()
+<span id="L1419" class="ln">  1419  </span>
+<span id="L1420" class="ln">  1420  </span>		t.Run(&#34;マージ元がマッピングならそのキーを引く&#34;, func(t *testing.T) {
+<span id="L1421" class="ln">  1421  </span>			t.Parallel()
+<span id="L1422" class="ln">  1422  </span>			v := mergeValue(shellMapping(&#34;sh&#34;), &#34;shell&#34;)
+<span id="L1423" class="ln">  1423  </span>			require.NotNil(t, v)
+<span id="L1424" class="ln">  1424  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
+<span id="L1425" class="ln">  1425  </span>		})
+<span id="L1426" class="ln">  1426  </span>
+<span id="L1427" class="ln">  1427  </span>		t.Run(&#34;マージ元がリストなら先に並んだ側を優先する&#34;, func(t *testing.T) {
+<span id="L1428" class="ln">  1428  </span>			t.Parallel()
+<span id="L1429" class="ln">  1429  </span>			seq := &amp;yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{
+<span id="L1430" class="ln">  1430  </span>				shellMapping(&#34;sh&#34;), shellMapping(&#34;bash&#34;),
+<span id="L1431" class="ln">  1431  </span>			}}
+<span id="L1432" class="ln">  1432  </span>			v := mergeValue(seq, &#34;shell&#34;)
+<span id="L1433" class="ln">  1433  </span>			require.NotNil(t, v)
+<span id="L1434" class="ln">  1434  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
+<span id="L1435" class="ln">  1435  </span>		})
+<span id="L1436" class="ln">  1436  </span>
+<span id="L1437" class="ln">  1437  </span>		t.Run(&#34;リストの先頭にキーが無ければ後続から引く&#34;, func(t *testing.T) {
+<span id="L1438" class="ln">  1438  </span>			t.Parallel()
+<span id="L1439" class="ln">  1439  </span>			seq := &amp;yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{
+<span id="L1440" class="ln">  1440  </span>				nameMapping, shellMapping(&#34;bash&#34;),
+<span id="L1441" class="ln">  1441  </span>			}}
+<span id="L1442" class="ln">  1442  </span>			v := mergeValue(seq, &#34;shell&#34;)
+<span id="L1443" class="ln">  1443  </span>			require.NotNil(t, v)
+<span id="L1444" class="ln">  1444  </span>			assert.Equal(t, &#34;bash&#34;, v.Value)
+<span id="L1445" class="ln">  1445  </span>		})
+<span id="L1446" class="ln">  1446  </span>
+<span id="L1447" class="ln">  1447  </span>		t.Run(&#34;マージ元がエイリアスでも解決して引く&#34;, func(t *testing.T) {
+<span id="L1448" class="ln">  1448  </span>			t.Parallel()
+<span id="L1449" class="ln">  1449  </span>			alias := &amp;yaml.Node{Kind: yaml.AliasNode, Alias: shellMapping(&#34;sh&#34;)}
+<span id="L1450" class="ln">  1450  </span>			v := mergeValue(alias, &#34;shell&#34;)
+<span id="L1451" class="ln">  1451  </span>			require.NotNil(t, v)
+<span id="L1452" class="ln">  1452  </span>			assert.Equal(t, &#34;sh&#34;, v.Value)
+<span id="L1453" class="ln">  1453  </span>		})
+<span id="L1454" class="ln">  1454  </span>	})
+<span id="L1455" class="ln">  1455  </span>
+<span id="L1456" class="ln">  1456  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1457" class="ln">  1457  </span>		t.Parallel()
+<span id="L1458" class="ln">  1458  </span>
+<span id="L1459" class="ln">  1459  </span>		t.Run(&#34;マージ元が無ければ nil を返す&#34;, func(t *testing.T) {
+<span id="L1460" class="ln">  1460  </span>			t.Parallel()
+<span id="L1461" class="ln">  1461  </span>			assert.Nil(t, mergeValue(nil, &#34;shell&#34;))
+<span id="L1462" class="ln">  1462  </span>		})
+<span id="L1463" class="ln">  1463  </span>
+<span id="L1464" class="ln">  1464  </span>		t.Run(&#34;リストのどこにもキーが無ければ nil を返す&#34;, func(t *testing.T) {
+<span id="L1465" class="ln">  1465  </span>			t.Parallel()
+<span id="L1466" class="ln">  1466  </span>			seq := &amp;yaml.Node{Kind: yaml.SequenceNode, Content: []*yaml.Node{nameMapping}}
+<span id="L1467" class="ln">  1467  </span>			assert.Nil(t, mergeValue(seq, &#34;shell&#34;))
+<span id="L1468" class="ln">  1468  </span>		})
+<span id="L1469" class="ln">  1469  </span>
+<span id="L1470" class="ln">  1470  </span>		t.Run(&#34;マッピングでもリストでもないノードは nil を返す&#34;, func(t *testing.T) {
+<span id="L1471" class="ln">  1471  </span>			t.Parallel()
+<span id="L1472" class="ln">  1472  </span>			assert.Nil(t, mergeValue(&amp;yaml.Node{Kind: yaml.ScalarNode, Value: &#34;sh&#34;}, &#34;shell&#34;))
+<span id="L1473" class="ln">  1473  </span>		})
+<span id="L1474" class="ln">  1474  </span>	})
+<span id="L1475" class="ln">  1475  </span>}
+<span id="L1476" class="ln">  1476  </span>
+<span id="L1477" class="ln">  1477  </span>func Test_resolveAlias(t *testing.T) {
+<span id="L1478" class="ln">  1478  </span>	t.Parallel()
+<span id="L1479" class="ln">  1479  </span>
+<span id="L1480" class="ln">  1480  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1481" class="ln">  1481  </span>		t.Parallel()
+<span id="L1482" class="ln">  1482  </span>
+<span id="L1483" class="ln">  1483  </span>		t.Run(&#34;エイリアスの連鎖を辿って実体のノードを返す&#34;, func(t *testing.T) {
+<span id="L1484" class="ln">  1484  </span>			t.Parallel()
+<span id="L1485" class="ln">  1485  </span>			target := &amp;yaml.Node{Kind: yaml.ScalarNode, Value: &#34;echo hi&#34;}
+<span id="L1486" class="ln">  1486  </span>			outer := &amp;yaml.Node{Kind: yaml.AliasNode, Alias: &amp;yaml.Node{Kind: yaml.AliasNode, Alias: target}}
+<span id="L1487" class="ln">  1487  </span>			assert.Same(t, target, resolveAlias(outer))
+<span id="L1488" class="ln">  1488  </span>		})
+<span id="L1489" class="ln">  1489  </span>
+<span id="L1490" class="ln">  1490  </span>		t.Run(&#34;エイリアスでないノードはそのまま返す&#34;, func(t *testing.T) {
+<span id="L1491" class="ln">  1491  </span>			t.Parallel()
+<span id="L1492" class="ln">  1492  </span>			target := &amp;yaml.Node{Kind: yaml.ScalarNode, Value: &#34;echo hi&#34;}
+<span id="L1493" class="ln">  1493  </span>			assert.Same(t, target, resolveAlias(target))
+<span id="L1494" class="ln">  1494  </span>		})
+<span id="L1495" class="ln">  1495  </span>	})
+<span id="L1496" class="ln">  1496  </span>
+<span id="L1497" class="ln">  1497  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1498" class="ln">  1498  </span>		t.Parallel()
+<span id="L1499" class="ln">  1499  </span>
+<span id="L1500" class="ln">  1500  </span>		t.Run(&#34;nil は nil を返す&#34;, func(t *testing.T) {
+<span id="L1501" class="ln">  1501  </span>			t.Parallel()
+<span id="L1502" class="ln">  1502  </span>			assert.Nil(t, resolveAlias(nil))
+<span id="L1503" class="ln">  1503  </span>		})
+<span id="L1504" class="ln">  1504  </span>	})
+<span id="L1505" class="ln">  1505  </span>}
+<span id="L1506" class="ln">  1506  </span>
+<span id="L1507" class="ln">  1507  </span>func Test_bodyFirstLine(t *testing.T) {
+<span id="L1508" class="ln">  1508  </span>	t.Parallel()
+<span id="L1509" class="ln">  1509  </span>
+<span id="L1510" class="ln">  1510  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1511" class="ln">  1511  </span>		t.Parallel()
+<span id="L1512" class="ln">  1512  </span>
+<span id="L1513" class="ln">  1513  </span>		t.Run(&#34;literal ブロックの本文はキー行の次の行から始まる&#34;, func(t *testing.T) {
+<span id="L1514" class="ln">  1514  </span>			t.Parallel()
+<span id="L1515" class="ln">  1515  </span>			assert.Equal(t, 10, bodyFirstLine(&amp;yaml.Node{Style: yaml.LiteralStyle, Line: 9}))
+<span id="L1516" class="ln">  1516  </span>		})
+<span id="L1517" class="ln">  1517  </span>
+<span id="L1518" class="ln">  1518  </span>		t.Run(&#34;plain スカラーの本文はキー行そのものから始まる&#34;, func(t *testing.T) {
+<span id="L1519" class="ln">  1519  </span>			t.Parallel()
+<span id="L1520" class="ln">  1520  </span>			assert.Equal(t, 9, bodyFirstLine(&amp;yaml.Node{Line: 9}))
+<span id="L1521" class="ln">  1521  </span>		})
+<span id="L1522" class="ln">  1522  </span>
+<span id="L1523" class="ln">  1523  </span>		t.Run(&#34;引用符付きスカラーの本文はキー行そのものから始まる&#34;, func(t *testing.T) {
+<span id="L1524" class="ln">  1524  </span>			t.Parallel()
+<span id="L1525" class="ln">  1525  </span>			assert.Equal(t, 9, bodyFirstLine(&amp;yaml.Node{Style: yaml.DoubleQuotedStyle, Line: 9}))
+<span id="L1526" class="ln">  1526  </span>		})
+<span id="L1527" class="ln">  1527  </span>	})
+<span id="L1528" class="ln">  1528  </span>}
+<span id="L1529" class="ln">  1529  </span>
+<span id="L1530" class="ln">  1530  </span>func Test_bodyColumnBase(t *testing.T) {
+<span id="L1531" class="ln">  1531  </span>	t.Parallel()
+<span id="L1532" class="ln">  1532  </span>
+<span id="L1533" class="ln">  1533  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1534" class="ln">  1534  </span>		t.Parallel()
+<span id="L1535" class="ln">  1535  </span>
+<span id="L1536" class="ln">  1536  </span>		t.Run(&#34;literal ブロックはキー行の列でなく剥がされたインデント幅を基準にする&#34;, func(t *testing.T) {
+<span id="L1537" class="ln">  1537  </span>			t.Parallel()
+<span id="L1538" class="ln">  1538  </span>			data := []byte(&#34;      run: |\n        echo hi\n&#34;)
+<span id="L1539" class="ln">  1539  </span>			run := &amp;yaml.Node{Style: yaml.LiteralStyle, Column: 12, Value: &#34;echo hi\n&#34;}
+<span id="L1540" class="ln">  1540  </span>			assert.Equal(t, 8, bodyColumnBase(data, run, 2))
+<span id="L1541" class="ln">  1541  </span>		})
+<span id="L1542" class="ln">  1542  </span>
+<span id="L1543" class="ln">  1543  </span>		t.Run(&#34;シングルクォートのスカラーは開き引用符の分だけ進めた位置を基準にする&#34;, func(t *testing.T) {
+<span id="L1544" class="ln">  1544  </span>			t.Parallel()
+<span id="L1545" class="ln">  1545  </span>			assert.Equal(t, 12, bodyColumnBase(nil, &amp;yaml.Node{Style: yaml.SingleQuotedStyle, Column: 12}, 1))
+<span id="L1546" class="ln">  1546  </span>		})
+<span id="L1547" class="ln">  1547  </span>
+<span id="L1548" class="ln">  1548  </span>		t.Run(&#34;ダブルクォートのスカラーは開き引用符の分だけ進めた位置を基準にする&#34;, func(t *testing.T) {
+<span id="L1549" class="ln">  1549  </span>			t.Parallel()
+<span id="L1550" class="ln">  1550  </span>			assert.Equal(t, 12, bodyColumnBase(nil, &amp;yaml.Node{Style: yaml.DoubleQuotedStyle, Column: 12}, 1))
+<span id="L1551" class="ln">  1551  </span>		})
+<span id="L1552" class="ln">  1552  </span>
+<span id="L1553" class="ln">  1553  </span>		t.Run(&#34;plain スカラーは値の開始位置の 1 つ手前を基準にする&#34;, func(t *testing.T) {
+<span id="L1554" class="ln">  1554  </span>			t.Parallel()
+<span id="L1555" class="ln">  1555  </span>			assert.Equal(t, 11, bodyColumnBase(nil, &amp;yaml.Node{Column: 12}, 1))
+<span id="L1556" class="ln">  1556  </span>		})
+<span id="L1557" class="ln">  1557  </span>	})
+<span id="L1558" class="ln">  1558  </span>}
+<span id="L1559" class="ln">  1559  </span>
+<span id="L1560" class="ln">  1560  </span>func Test_firstIndentWidth(t *testing.T) {
+<span id="L1561" class="ln">  1561  </span>	t.Parallel()
+<span id="L1562" class="ln">  1562  </span>
+<span id="L1563" class="ln">  1563  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1564" class="ln">  1564  </span>		t.Parallel()
+<span id="L1565" class="ln">  1565  </span>
+<span id="L1566" class="ln">  1566  </span>		t.Run(&#34;最初の非空行のインデント幅を返す&#34;, func(t *testing.T) {
+<span id="L1567" class="ln">  1567  </span>			t.Parallel()
+<span id="L1568" class="ln">  1568  </span>			width, ok := firstIndentWidth([]string{&#34;    echo hi&#34;, &#34;  echo bye&#34;})
+<span id="L1569" class="ln">  1569  </span>			require.True(t, ok)
+<span id="L1570" class="ln">  1570  </span>			assert.Equal(t, 4, width)
+<span id="L1571" class="ln">  1571  </span>		})
+<span id="L1572" class="ln">  1572  </span>
+<span id="L1573" class="ln">  1573  </span>		t.Run(&#34;空行と空白だけの行は読み飛ばす&#34;, func(t *testing.T) {
+<span id="L1574" class="ln">  1574  </span>			t.Parallel()
+<span id="L1575" class="ln">  1575  </span>			width, ok := firstIndentWidth([]string{&#34;&#34;, &#34;   &#34;, &#34;  echo hi&#34;})
+<span id="L1576" class="ln">  1576  </span>			require.True(t, ok)
+<span id="L1577" class="ln">  1577  </span>			assert.Equal(t, 2, width)
+<span id="L1578" class="ln">  1578  </span>		})
+<span id="L1579" class="ln">  1579  </span>
+<span id="L1580" class="ln">  1580  </span>		t.Run(&#34;タブもインデント幅として数える&#34;, func(t *testing.T) {
+<span id="L1581" class="ln">  1581  </span>			t.Parallel()
+<span id="L1582" class="ln">  1582  </span>			width, ok := firstIndentWidth([]string{&#34;\t\techo hi&#34;})
+<span id="L1583" class="ln">  1583  </span>			require.True(t, ok)
+<span id="L1584" class="ln">  1584  </span>			assert.Equal(t, 2, width)
+<span id="L1585" class="ln">  1585  </span>		})
+<span id="L1586" class="ln">  1586  </span>	})
+<span id="L1587" class="ln">  1587  </span>
+<span id="L1588" class="ln">  1588  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1589" class="ln">  1589  </span>		t.Parallel()
+<span id="L1590" class="ln">  1590  </span>
+<span id="L1591" class="ln">  1591  </span>		t.Run(&#34;非空行が無ければ幅なしとして返す&#34;, func(t *testing.T) {
+<span id="L1592" class="ln">  1592  </span>			t.Parallel()
+<span id="L1593" class="ln">  1593  </span>			width, ok := firstIndentWidth([]string{&#34;&#34;, &#34;  &#34;, &#34;\t&#34;})
+<span id="L1594" class="ln">  1594  </span>			assert.False(t, ok)
+<span id="L1595" class="ln">  1595  </span>			assert.Zero(t, width)
+<span id="L1596" class="ln">  1596  </span>		})
+<span id="L1597" class="ln">  1597  </span>
+<span id="L1598" class="ln">  1598  </span>		t.Run(&#34;行が 1 つも無ければ幅なしとして返す&#34;, func(t *testing.T) {
+<span id="L1599" class="ln">  1599  </span>			t.Parallel()
+<span id="L1600" class="ln">  1600  </span>			width, ok := firstIndentWidth(nil)
+<span id="L1601" class="ln">  1601  </span>			assert.False(t, ok)
+<span id="L1602" class="ln">  1602  </span>			assert.Zero(t, width)
+<span id="L1603" class="ln">  1603  </span>		})
+<span id="L1604" class="ln">  1604  </span>	})
+<span id="L1605" class="ln">  1605  </span>}
+<span id="L1606" class="ln">  1606  </span>
+<span id="L1607" class="ln">  1607  </span>func Test_isAssignment(t *testing.T) {
+<span id="L1608" class="ln">  1608  </span>	t.Parallel()
+<span id="L1609" class="ln">  1609  </span>
+<span id="L1610" class="ln">  1610  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1611" class="ln">  1611  </span>		t.Parallel()
+<span id="L1612" class="ln">  1612  </span>
+<span id="L1613" class="ln">  1613  </span>		t.Run(&#34;英字で始まる名前の代入は代入として扱う&#34;, func(t *testing.T) {
+<span id="L1614" class="ln">  1614  </span>			t.Parallel()
+<span id="L1615" class="ln">  1615  </span>			assert.True(t, isAssignment(&#34;FOO=bar&#34;))
+<span id="L1616" class="ln">  1616  </span>		})
+<span id="L1617" class="ln">  1617  </span>
+<span id="L1618" class="ln">  1618  </span>		t.Run(&#34;アンダースコア始まりで数字を含む名前も代入として扱う&#34;, func(t *testing.T) {
+<span id="L1619" class="ln">  1619  </span>			t.Parallel()
+<span id="L1620" class="ln">  1620  </span>			assert.True(t, isAssignment(&#34;_X2=1&#34;))
+<span id="L1621" class="ln">  1621  </span>		})
+<span id="L1622" class="ln">  1622  </span>
+<span id="L1623" class="ln">  1623  </span>		t.Run(&#34;値が空の代入も代入として扱う&#34;, func(t *testing.T) {
+<span id="L1624" class="ln">  1624  </span>			t.Parallel()
+<span id="L1625" class="ln">  1625  </span>			assert.True(t, isAssignment(&#34;FOO=&#34;))
+<span id="L1626" class="ln">  1626  </span>		})
+<span id="L1627" class="ln">  1627  </span>	})
+<span id="L1628" class="ln">  1628  </span>
+<span id="L1629" class="ln">  1629  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1630" class="ln">  1630  </span>		t.Parallel()
+<span id="L1631" class="ln">  1631  </span>
+<span id="L1632" class="ln">  1632  </span>		t.Run(&#34;= を含まない語は代入として扱わない&#34;, func(t *testing.T) {
+<span id="L1633" class="ln">  1633  </span>			t.Parallel()
+<span id="L1634" class="ln">  1634  </span>			assert.False(t, isAssignment(&#34;bash&#34;))
+<span id="L1635" class="ln">  1635  </span>		})
+<span id="L1636" class="ln">  1636  </span>
+<span id="L1637" class="ln">  1637  </span>		t.Run(&#34;名前が空の語は代入として扱わない&#34;, func(t *testing.T) {
+<span id="L1638" class="ln">  1638  </span>			t.Parallel()
+<span id="L1639" class="ln">  1639  </span>			assert.False(t, isAssignment(&#34;=bar&#34;))
+<span id="L1640" class="ln">  1640  </span>		})
+<span id="L1641" class="ln">  1641  </span>
+<span id="L1642" class="ln">  1642  </span>		t.Run(&#34;数字で始まる名前は代入として扱わない&#34;, func(t *testing.T) {
+<span id="L1643" class="ln">  1643  </span>			t.Parallel()
+<span id="L1644" class="ln">  1644  </span>			assert.False(t, isAssignment(&#34;2FOO=bar&#34;))
+<span id="L1645" class="ln">  1645  </span>		})
+<span id="L1646" class="ln">  1646  </span>
+<span id="L1647" class="ln">  1647  </span>		t.Run(&#34;名前に記号を含む語は代入として扱わない&#34;, func(t *testing.T) {
+<span id="L1648" class="ln">  1648  </span>			t.Parallel()
+<span id="L1649" class="ln">  1649  </span>			assert.False(t, isAssignment(&#34;FOO-BAR=1&#34;))
+<span id="L1650" class="ln">  1650  </span>		})
+<span id="L1651" class="ln">  1651  </span>	})
+<span id="L1652" class="ln">  1652  </span>}
+<span id="L1653" class="ln">  1653  </span>
+<span id="L1654" class="ln">  1654  </span>func Test_fieldBase(t *testing.T) {
+<span id="L1655" class="ln">  1655  </span>	t.Parallel()
+<span id="L1656" class="ln">  1656  </span>
+<span id="L1657" class="ln">  1657  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1658" class="ln">  1658  </span>		t.Parallel()
+<span id="L1659" class="ln">  1659  </span>
+<span id="L1660" class="ln">  1660  </span>		t.Run(&#34;パス区切りの末尾だけを返す&#34;, func(t *testing.T) {
+<span id="L1661" class="ln">  1661  </span>			t.Parallel()
+<span id="L1662" class="ln">  1662  </span>			assert.Equal(t, &#34;bash&#34;, fieldBase(&#34;/usr/bin/bash&#34;))
+<span id="L1663" class="ln">  1663  </span>		})
+<span id="L1664" class="ln">  1664  </span>
+<span id="L1665" class="ln">  1665  </span>		t.Run(&#34;区切りが無ければそのまま返す&#34;, func(t *testing.T) {
+<span id="L1666" class="ln">  1666  </span>			t.Parallel()
+<span id="L1667" class="ln">  1667  </span>			assert.Equal(t, &#34;bash&#34;, fieldBase(&#34;bash&#34;))
+<span id="L1668" class="ln">  1668  </span>		})
+<span id="L1669" class="ln">  1669  </span>	})
+<span id="L1670" class="ln">  1670  </span>
+<span id="L1671" class="ln">  1671  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1672" class="ln">  1672  </span>		t.Parallel()
+<span id="L1673" class="ln">  1673  </span>
+<span id="L1674" class="ln">  1674  </span>		t.Run(&#34;区切りで終わる場合は空文字を返す&#34;, func(t *testing.T) {
+<span id="L1675" class="ln">  1675  </span>			t.Parallel()
+<span id="L1676" class="ln">  1676  </span>			assert.Empty(t, fieldBase(&#34;/usr/bin/&#34;))
+<span id="L1677" class="ln">  1677  </span>		})
+<span id="L1678" class="ln">  1678  </span>
+<span id="L1679" class="ln">  1679  </span>		t.Run(&#34;空文字はそのまま空文字を返す&#34;, func(t *testing.T) {
+<span id="L1680" class="ln">  1680  </span>			t.Parallel()
+<span id="L1681" class="ln">  1681  </span>			assert.Empty(t, fieldBase(&#34;&#34;))
+<span id="L1682" class="ln">  1682  </span>		})
+<span id="L1683" class="ln">  1683  </span>	})
+<span id="L1684" class="ln">  1684  </span>}
+<span id="L1685" class="ln">  1685  </span>
+<span id="L1686" class="ln">  1686  </span><span class="comment">// stubWD は、固定のディレクトリを返す作業ディレクトリの取得手段です。</span>
+<span id="L1687" class="ln">  1687  </span>func stubWD(root string) func() (string, error) {
+<span id="L1688" class="ln">  1688  </span>	return func() (string, error) { return root, nil }
+<span id="L1689" class="ln">  1689  </span>}
+<span id="L1690" class="ln">  1690  </span>
+<span id="L1691" class="ln">  1691  </span><span class="comment">// stubLookPath は、shellcheck の所在確認の結果を固定する取得手段です。</span>
+<span id="L1692" class="ln">  1692  </span>func stubLookPath(err error) func(string) (string, error) {
+<span id="L1693" class="ln">  1693  </span>	return func(name string) (string, error) { return name, err }
+<span id="L1694" class="ln">  1694  </span>}
+<span id="L1695" class="ln">  1695  </span>
+<span id="L1696" class="ln">  1696  </span><span class="comment">// writeActionRoot は action 定義 1 件を含む作業ディレクトリを作り、その絶対パスを返します。</span>
+<span id="L1697" class="ln">  1697  </span>func writeActionRoot(t *testing.T, body string) string {
+<span id="L1698" class="ln">  1698  </span>	t.Helper()
+<span id="L1699" class="ln">  1699  </span>	root := t.TempDir()
+<span id="L1700" class="ln">  1700  </span>	path := filepath.Join(root, actionsDir, &#34;sample&#34;, &#34;action.yml&#34;)
+<span id="L1701" class="ln">  1701  </span>	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o750))
+<span id="L1702" class="ln">  1702  </span>	require.NoError(t, os.WriteFile(path, []byte(body), 0o600))
+<span id="L1703" class="ln">  1703  </span>
+<span id="L1704" class="ln">  1704  </span>	return root
+<span id="L1705" class="ln">  1705  </span>}
+<span id="L1706" class="ln">  1706  </span>
+<span id="L1707" class="ln">  1707  </span>func Test_run(t *testing.T) {
+<span id="L1708" class="ln">  1708  </span>	t.Parallel()
+<span id="L1709" class="ln">  1709  </span>
+<span id="L1710" class="ln">  1710  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1711" class="ln">  1711  </span>		t.Parallel()
+<span id="L1712" class="ln">  1712  </span>
+<span id="L1713" class="ln">  1713  </span>		t.Run(&#34;対象外の shell しか無ければ shellcheck を呼ばずに成功する&#34;, func(t *testing.T) {
+<span id="L1714" class="ln">  1714  </span>			t.Parallel()
+<span id="L1715" class="ln">  1715  </span>			root := writeActionRoot(t, &#34;runs:\n  using: composite\n  steps:\n    - shell: python\n      run: print(1)\n&#34;)
+<span id="L1716" class="ln">  1716  </span>
+<span id="L1717" class="ln">  1717  </span>			require.NoError(t, run(t.Context(), stubWD(root), stubLookPath(nil)))
+<span id="L1718" class="ln">  1718  </span>		})
+<span id="L1719" class="ln">  1719  </span>
+<span id="L1720" class="ln">  1720  </span>		t.Run(&#34;指摘の無いスクリプトは成功する&#34;, func(t *testing.T) {
+<span id="L1721" class="ln">  1721  </span>			t.Parallel()
+<span id="L1722" class="ln">  1722  </span>			requireShellcheck(t)
+<span id="L1723" class="ln">  1723  </span>			root := writeActionRoot(t, compositeAction)
+<span id="L1724" class="ln">  1724  </span>
+<span id="L1725" class="ln">  1725  </span>			require.NoError(t, run(t.Context(), stubWD(root), stubLookPath(nil)))
+<span id="L1726" class="ln">  1726  </span>		})
+<span id="L1727" class="ln">  1727  </span>	})
+<span id="L1728" class="ln">  1728  </span>
+<span id="L1729" class="ln">  1729  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1730" class="ln">  1730  </span>		t.Parallel()
+<span id="L1731" class="ln">  1731  </span>
+<span id="L1732" class="ln">  1732  </span>		t.Run(&#34;shellcheck が PATH に無ければ走査へ進まず失敗する&#34;, func(t *testing.T) {
+<span id="L1733" class="ln">  1733  </span>			t.Parallel()
+<span id="L1734" class="ln">  1734  </span>
+<span id="L1735" class="ln">  1735  </span>			err := run(t.Context(), stubWD(writeActionRoot(t, compositeAction)), stubLookPath(errLookPath))
+<span id="L1736" class="ln">  1736  </span>
+<span id="L1737" class="ln">  1737  </span>			require.ErrorIs(t, err, shellcheck.ErrMissing)
+<span id="L1738" class="ln">  1738  </span>			assert.ErrorContains(t, err, errLookPath.Error())
+<span id="L1739" class="ln">  1739  </span>		})
+<span id="L1740" class="ln">  1740  </span>
+<span id="L1741" class="ln">  1741  </span>		t.Run(&#34;作業ディレクトリを取得できなければ失敗する&#34;, func(t *testing.T) {
+<span id="L1742" class="ln">  1742  </span>			t.Parallel()
+<span id="L1743" class="ln">  1743  </span>
+<span id="L1744" class="ln">  1744  </span>			err := run(t.Context(), func() (string, error) { return &#34;&#34;, errWD }, stubLookPath(nil))
+<span id="L1745" class="ln">  1745  </span>
+<span id="L1746" class="ln">  1746  </span>			require.ErrorIs(t, err, errWD)
+<span id="L1747" class="ln">  1747  </span>			assert.ErrorContains(t, err, &#34;getwd&#34;)
+<span id="L1748" class="ln">  1748  </span>		})
+<span id="L1749" class="ln">  1749  </span>
+<span id="L1750" class="ln">  1750  </span>		t.Run(&#34;action 定義を解釈できなければ失敗する&#34;, func(t *testing.T) {
+<span id="L1751" class="ln">  1751  </span>			t.Parallel()
+<span id="L1752" class="ln">  1752  </span>			root := writeActionRoot(t, &#34;runs:\n  using: composite\n  steps: 1\n&#34;)
+<span id="L1753" class="ln">  1753  </span>
+<span id="L1754" class="ln">  1754  </span>			err := run(t.Context(), stubWD(root), stubLookPath(nil))
+<span id="L1755" class="ln">  1755  </span>
+<span id="L1756" class="ln">  1756  </span>			require.ErrorIs(t, err, errStepsNotSequence)
+<span id="L1757" class="ln">  1757  </span>		})
+<span id="L1758" class="ln">  1758  </span>
+<span id="L1759" class="ln">  1759  </span>		t.Run(&#34;検査に掛けられないステップがあれば失敗する&#34;, func(t *testing.T) {
+<span id="L1760" class="ln">  1760  </span>			t.Parallel()
+<span id="L1761" class="ln">  1761  </span>			root := writeActionRoot(t, &#34;runs:\n  using: composite\n  steps:\n    - shell: bash\n      run: echo ${{ inputs.a\n&#34;)
+<span id="L1762" class="ln">  1762  </span>
+<span id="L1763" class="ln">  1763  </span>			err := run(t.Context(), stubWD(root), stubLookPath(nil))
+<span id="L1764" class="ln">  1764  </span>
+<span id="L1765" class="ln">  1765  </span>			require.ErrorIs(t, err, errUnterminatedExpr)
+<span id="L1766" class="ln">  1766  </span>		})
+<span id="L1767" class="ln">  1767  </span>
+<span id="L1768" class="ln">  1768  </span>		t.Run(&#34;指摘が残っていれば件数を添えて失敗する&#34;, func(t *testing.T) {
+<span id="L1769" class="ln">  1769  </span>			t.Parallel()
+<span id="L1770" class="ln">  1770  </span>			requireShellcheck(t)
+<span id="L1771" class="ln">  1771  </span>			root := writeActionRoot(t, quotedDefectAction)
+<span id="L1772" class="ln">  1772  </span>
+<span id="L1773" class="ln">  1773  </span>			err := run(t.Context(), stubWD(root), stubLookPath(nil))
+<span id="L1774" class="ln">  1774  </span>
+<span id="L1775" class="ln">  1775  </span>			require.ErrorIs(t, err, errFindings)
+<span id="L1776" class="ln">  1776  </span>			assert.ErrorContains(t, err, &#34;検査 1 ステップ&#34;)
+<span id="L1777" class="ln">  1777  </span>		})
+<span id="L1778" class="ln">  1778  </span>	})
+<span id="L1779" class="ln">  1779  </span>}
+<span id="L1780" class="ln">  1780  </span>
 </pre><p><a href="../../../../src/go-boilerplate/scripts/actions-shellcheck/main_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

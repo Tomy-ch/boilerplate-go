@@ -1,0 +1,162 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>coupons - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../../../src/go-boilerplate/internal/controller">controller</a>/<a href="../../../../../../../../src/go-boilerplate/internal/controller/handler">handler</a>/<a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1">v1</a>/<a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts">carts</a>/<a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/coupons">coupons</a>/<span class="text-muted">v1_carts_coupons_handler.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../../../go-boilerplate/internal/controller/handler/v1/carts/coupons">go-boilerplate/internal/controller/handler/v1/carts/coupons</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">//go:generate oapi-codegen --include-tags=v1/carts/me/coupons --package=gen --generate=types -o ./gen/type.gen.go /app/openapi/openapi.gen.yaml</span>
+<span id="L2" class="ln">     2  </span><span class="comment">//go:generate oapi-codegen --include-tags=v1/carts/me/coupons --package=gen --generate=echo5-server,strict-server -o ./gen/server.gen.go /app/openapi/openapi.gen.yaml</span>
+<span id="L3" class="ln">     3  </span>
+<span id="L4" class="ln">     4  </span><span class="comment">// Package cartscoupons は、/v1/carts/me/coupons エンドポイントに関連するハンドラを提供します。</span>
+<span id="L5" class="ln">     5  </span>package cartscoupons
+<span id="L6" class="ln">     6  </span>
+<span id="L7" class="ln">     7  </span>import (
+<span id="L8" class="ln">     8  </span>	&#34;context&#34;
+<span id="L9" class="ln">     9  </span>
+<span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/internal/controller/ctxhelper&#34;
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/controller/handler/v1/carts/coupons/gen&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L13" class="ln">    13  </span>	couponuc &#34;go-boilerplate/internal/usecase/coupon&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span>	openapi_types &#34;github.com/oapi-codegen/runtime/types&#34;
+<span id="L17" class="ln">    17  </span>
+<span id="L18" class="ln">    18  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L19" class="ln">    19  </span>)
+<span id="L20" class="ln">    20  </span>
+<span id="L21" class="ln">    21  </span>type server struct {
+<span id="L22" class="ln">    22  </span>	tracer observability.LayerTracer
+<span id="L23" class="ln">    23  </span>	uc     couponuc.Usecase
+<span id="L24" class="ln">    24  </span>}
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span><span class="comment">// BindHandler は、いまのカートに使えるクーポンのハンドラを Echo に登録します。</span>
+<span id="L27" class="ln">    27  </span>func BindHandler(e *echo.Echo, tf observability.TracerFactory, uc couponuc.Usecase) {
+<span id="L28" class="ln">    28  </span>	gen.RegisterHandlers(e, gen.NewStrictHandler(&amp;server{
+<span id="L29" class="ln">    29  </span>		tracer: tf.Controller(),
+<span id="L30" class="ln">    30  </span>		uc:     uc,
+<span id="L31" class="ln">    31  </span>	}, nil))
+<span id="L32" class="ln">    32  </span>}
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span><span class="comment">// GetCartsMeCoupons は、認証コンテキストの内部 UserID に該当するユーザーのカートに使えるクーポンを取得します。</span>
+<span id="L35" class="ln">    35  </span>func (s *server) GetCartsMeCoupons(
+<span id="L36" class="ln">    36  </span>	ctx context.Context, _ gen.GetCartsMeCouponsRequestObject,
+<span id="L37" class="ln">    37  </span>) (gen.GetCartsMeCouponsResponseObject, error) {
+<span id="L38" class="ln">    38  </span>	ctx, endSpan := s.tracer.Start(ctx)
+<span id="L39" class="ln">    39  </span>	defer endSpan()
+<span id="L40" class="ln">    40  </span>
+<span id="L41" class="ln">    41  </span>	authn, err := ctxhelper.RequireAuthn(ctx)
+<span id="L42" class="ln">    42  </span>	if err != nil {
+<span id="L43" class="ln">    43  </span>		return nil, err
+<span id="L44" class="ln">    44  </span>	}
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span>	views, err := s.uc.ListApplicableToMyCart(ctx, &amp;authn)
+<span id="L47" class="ln">    47  </span>	if err != nil {
+<span id="L48" class="ln">    48  </span>		return nil, err
+<span id="L49" class="ln">    49  </span>	}
+<span id="L50" class="ln">    50  </span>
+<span id="L51" class="ln">    51  </span>	return gen.GetCartsMeCoupons200JSONResponse(gen.CartCouponListResponse{
+<span id="L52" class="ln">    52  </span>		Coupons: toCartCouponResponses(views),
+<span id="L53" class="ln">    53  </span>	}), nil
+<span id="L54" class="ln">    54  </span>}
+<span id="L55" class="ln">    55  </span>
+<span id="L56" class="ln">    56  </span><span class="comment">// toCartCouponResponses は、ユースケース出力を応答の語彙へ写します。</span>
+<span id="L57" class="ln">    57  </span>func toCartCouponResponses(views []couponuc.CartCouponView) []gen.CartCouponResponse {
+<span id="L58" class="ln">    58  </span>	responses := make([]gen.CartCouponResponse, len(views))
+<span id="L59" class="ln">    59  </span>	for i, v := range views {
+<span id="L60" class="ln">    60  </span>		responses[i] = gen.CartCouponResponse{
+<span id="L61" class="ln">    61  </span>			Coupon:         toCouponResponse(v.Coupon),
+<span id="L62" class="ln">    62  </span>			DiscountAmount: int64(v.DiscountAmount),
+<span id="L63" class="ln">    63  </span>		}
+<span id="L64" class="ln">    64  </span>	}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span>	return responses
+<span id="L67" class="ln">    67  </span>}
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span><span class="comment">// toPrimitivePtr は、任意の UUID を OpenAPI 生成型のポインタへ写します。nil はそのまま nil です。</span>
+<span id="L70" class="ln">    70  </span>func toPrimitivePtr(id *uuid.UUID) *openapi_types.UUID {
+<span id="L71" class="ln">    71  </span>	if id == nil {
+<span id="L72" class="ln">    72  </span>		return nil
+<span id="L73" class="ln">    73  </span>	}
+<span id="L74" class="ln">    74  </span>	p := id.ToPrimitive()
+<span id="L75" class="ln">    75  </span>
+<span id="L76" class="ln">    76  </span>	return &amp;p
+<span id="L77" class="ln">    77  </span>}
+<span id="L78" class="ln">    78  </span>
+<span id="L79" class="ln">    79  </span><span class="comment">// toCouponResponse は、クーポン 1 枚を応答の語彙へ写します。</span>
+<span id="L80" class="ln">    80  </span>func toCouponResponse(v couponuc.CouponView) gen.CouponResponse {
+<span id="L81" class="ln">    81  </span>	return gen.CouponResponse{
+<span id="L82" class="ln">    82  </span>		Id: v.ID.ToPrimitive(),
+<span id="L83" class="ln">    83  </span>		Discount: gen.CouponDiscount{
+<span id="L84" class="ln">    84  </span>			Kind:  gen.CouponDiscountKind(v.DiscountKind),
+<span id="L85" class="ln">    85  </span>			Value: v.DiscountValue.String(),
+<span id="L86" class="ln">    86  </span>		},
+<span id="L87" class="ln">    87  </span>		Scope: gen.CouponScope{
+<span id="L88" class="ln">    88  </span>			Kind:     gen.CouponScopeKind(v.ScopeKind),
+<span id="L89" class="ln">    89  </span>			TargetId: toPrimitivePtr(v.ScopeTargetID),
+<span id="L90" class="ln">    90  </span>		},
+<span id="L91" class="ln">    91  </span>		ExpiresAt: v.ExpiresAt,
+<span id="L92" class="ln">    92  </span>		UsedAt:    v.UsedAt,
+<span id="L93" class="ln">    93  </span>		IssuedAt:  v.IssuedAt,
+<span id="L94" class="ln">    94  </span>	}
+<span id="L95" class="ln">    95  </span>}
+<span id="L96" class="ln">    96  </span>
+</pre><p><a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/carts/coupons/v1_carts_coupons_handler.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

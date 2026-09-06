@@ -101,124 +101,138 @@
 <span id="L44" class="ln">    44  </span>}
 <span id="L45" class="ln">    45  </span>
 <span id="L46" class="ln">    46  </span><span class="comment">// ClaimPending mocks base method.</span>
-<span id="L47" class="ln">    47  </span>func (m *MockStore) ClaimPending(ctx context.Context, limit int32) ([]outbox.PendingMessage, error) {
+<span id="L47" class="ln">    47  </span>func (m *MockStore) ClaimPending(ctx context.Context, channel outbox.Channel, limit int32) ([]outbox.PendingMessage, error) {
 <span id="L48" class="ln">    48  </span>	m.ctrl.T.Helper()
-<span id="L49" class="ln">    49  </span>	ret := m.ctrl.Call(m, &#34;ClaimPending&#34;, ctx, limit)
+<span id="L49" class="ln">    49  </span>	ret := m.ctrl.Call(m, &#34;ClaimPending&#34;, ctx, channel, limit)
 <span id="L50" class="ln">    50  </span>	ret0, _ := ret[0].([]outbox.PendingMessage)
 <span id="L51" class="ln">    51  </span>	ret1, _ := ret[1].(error)
 <span id="L52" class="ln">    52  </span>	return ret0, ret1
 <span id="L53" class="ln">    53  </span>}
 <span id="L54" class="ln">    54  </span>
 <span id="L55" class="ln">    55  </span><span class="comment">// ClaimPending indicates an expected call of ClaimPending.</span>
-<span id="L56" class="ln">    56  </span>func (mr *MockStoreMockRecorder) ClaimPending(ctx, limit any) *gomock.Call {
+<span id="L56" class="ln">    56  </span>func (mr *MockStoreMockRecorder) ClaimPending(ctx, channel, limit any) *gomock.Call {
 <span id="L57" class="ln">    57  </span>	mr.mock.ctrl.T.Helper()
-<span id="L58" class="ln">    58  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;ClaimPending&#34;, reflect.TypeOf((*MockStore)(nil).ClaimPending), ctx, limit)
+<span id="L58" class="ln">    58  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;ClaimPending&#34;, reflect.TypeOf((*MockStore)(nil).ClaimPending), ctx, channel, limit)
 <span id="L59" class="ln">    59  </span>}
 <span id="L60" class="ln">    60  </span>
-<span id="L61" class="ln">    61  </span><span class="comment">// DeletePublished mocks base method.</span>
-<span id="L62" class="ln">    62  </span>func (m *MockStore) DeletePublished(ctx context.Context, cutoff time.Time, limit int32) (int64, error) {
+<span id="L61" class="ln">    61  </span><span class="comment">// CountBlockedStreams mocks base method.</span>
+<span id="L62" class="ln">    62  </span>func (m *MockStore) CountBlockedStreams(ctx context.Context, channel outbox.Channel) (int64, error) {
 <span id="L63" class="ln">    63  </span>	m.ctrl.T.Helper()
-<span id="L64" class="ln">    64  </span>	ret := m.ctrl.Call(m, &#34;DeletePublished&#34;, ctx, cutoff, limit)
+<span id="L64" class="ln">    64  </span>	ret := m.ctrl.Call(m, &#34;CountBlockedStreams&#34;, ctx, channel)
 <span id="L65" class="ln">    65  </span>	ret0, _ := ret[0].(int64)
 <span id="L66" class="ln">    66  </span>	ret1, _ := ret[1].(error)
 <span id="L67" class="ln">    67  </span>	return ret0, ret1
 <span id="L68" class="ln">    68  </span>}
 <span id="L69" class="ln">    69  </span>
-<span id="L70" class="ln">    70  </span><span class="comment">// DeletePublished indicates an expected call of DeletePublished.</span>
-<span id="L71" class="ln">    71  </span>func (mr *MockStoreMockRecorder) DeletePublished(ctx, cutoff, limit any) *gomock.Call {
+<span id="L70" class="ln">    70  </span><span class="comment">// CountBlockedStreams indicates an expected call of CountBlockedStreams.</span>
+<span id="L71" class="ln">    71  </span>func (mr *MockStoreMockRecorder) CountBlockedStreams(ctx, channel any) *gomock.Call {
 <span id="L72" class="ln">    72  </span>	mr.mock.ctrl.T.Helper()
-<span id="L73" class="ln">    73  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;DeletePublished&#34;, reflect.TypeOf((*MockStore)(nil).DeletePublished), ctx, cutoff, limit)
+<span id="L73" class="ln">    73  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;CountBlockedStreams&#34;, reflect.TypeOf((*MockStore)(nil).CountBlockedStreams), ctx, channel)
 <span id="L74" class="ln">    74  </span>}
 <span id="L75" class="ln">    75  </span>
-<span id="L76" class="ln">    76  </span><span class="comment">// Insert mocks base method.</span>
-<span id="L77" class="ln">    77  </span>func (m *MockStore) Insert(ctx context.Context, p outbox.EmitParams) (uuid.UUID, error) {
+<span id="L76" class="ln">    76  </span><span class="comment">// DeletePublished mocks base method.</span>
+<span id="L77" class="ln">    77  </span>func (m *MockStore) DeletePublished(ctx context.Context, cutoff time.Time, limit int32) (int64, error) {
 <span id="L78" class="ln">    78  </span>	m.ctrl.T.Helper()
-<span id="L79" class="ln">    79  </span>	ret := m.ctrl.Call(m, &#34;Insert&#34;, ctx, p)
-<span id="L80" class="ln">    80  </span>	ret0, _ := ret[0].(uuid.UUID)
+<span id="L79" class="ln">    79  </span>	ret := m.ctrl.Call(m, &#34;DeletePublished&#34;, ctx, cutoff, limit)
+<span id="L80" class="ln">    80  </span>	ret0, _ := ret[0].(int64)
 <span id="L81" class="ln">    81  </span>	ret1, _ := ret[1].(error)
 <span id="L82" class="ln">    82  </span>	return ret0, ret1
 <span id="L83" class="ln">    83  </span>}
 <span id="L84" class="ln">    84  </span>
-<span id="L85" class="ln">    85  </span><span class="comment">// Insert indicates an expected call of Insert.</span>
-<span id="L86" class="ln">    86  </span>func (mr *MockStoreMockRecorder) Insert(ctx, p any) *gomock.Call {
+<span id="L85" class="ln">    85  </span><span class="comment">// DeletePublished indicates an expected call of DeletePublished.</span>
+<span id="L86" class="ln">    86  </span>func (mr *MockStoreMockRecorder) DeletePublished(ctx, cutoff, limit any) *gomock.Call {
 <span id="L87" class="ln">    87  </span>	mr.mock.ctrl.T.Helper()
-<span id="L88" class="ln">    88  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;Insert&#34;, reflect.TypeOf((*MockStore)(nil).Insert), ctx, p)
+<span id="L88" class="ln">    88  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;DeletePublished&#34;, reflect.TypeOf((*MockStore)(nil).DeletePublished), ctx, cutoff, limit)
 <span id="L89" class="ln">    89  </span>}
 <span id="L90" class="ln">    90  </span>
-<span id="L91" class="ln">    91  </span><span class="comment">// MarkDead mocks base method.</span>
-<span id="L92" class="ln">    92  </span>func (m *MockStore) MarkDead(ctx context.Context, id int64) error {
+<span id="L91" class="ln">    91  </span><span class="comment">// Insert mocks base method.</span>
+<span id="L92" class="ln">    92  </span>func (m *MockStore) Insert(ctx context.Context, p outbox.EmitParams) (uuid.UUID, error) {
 <span id="L93" class="ln">    93  </span>	m.ctrl.T.Helper()
-<span id="L94" class="ln">    94  </span>	ret := m.ctrl.Call(m, &#34;MarkDead&#34;, ctx, id)
-<span id="L95" class="ln">    95  </span>	ret0, _ := ret[0].(error)
-<span id="L96" class="ln">    96  </span>	return ret0
-<span id="L97" class="ln">    97  </span>}
-<span id="L98" class="ln">    98  </span>
-<span id="L99" class="ln">    99  </span><span class="comment">// MarkDead indicates an expected call of MarkDead.</span>
-<span id="L100" class="ln">   100  </span>func (mr *MockStoreMockRecorder) MarkDead(ctx, id any) *gomock.Call {
-<span id="L101" class="ln">   101  </span>	mr.mock.ctrl.T.Helper()
-<span id="L102" class="ln">   102  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;MarkDead&#34;, reflect.TypeOf((*MockStore)(nil).MarkDead), ctx, id)
-<span id="L103" class="ln">   103  </span>}
-<span id="L104" class="ln">   104  </span>
-<span id="L105" class="ln">   105  </span><span class="comment">// MarkFailed mocks base method.</span>
-<span id="L106" class="ln">   106  </span>func (m *MockStore) MarkFailed(ctx context.Context, id int64, lastErr string) (int32, error) {
-<span id="L107" class="ln">   107  </span>	m.ctrl.T.Helper()
-<span id="L108" class="ln">   108  </span>	ret := m.ctrl.Call(m, &#34;MarkFailed&#34;, ctx, id, lastErr)
-<span id="L109" class="ln">   109  </span>	ret0, _ := ret[0].(int32)
-<span id="L110" class="ln">   110  </span>	ret1, _ := ret[1].(error)
-<span id="L111" class="ln">   111  </span>	return ret0, ret1
+<span id="L94" class="ln">    94  </span>	ret := m.ctrl.Call(m, &#34;Insert&#34;, ctx, p)
+<span id="L95" class="ln">    95  </span>	ret0, _ := ret[0].(uuid.UUID)
+<span id="L96" class="ln">    96  </span>	ret1, _ := ret[1].(error)
+<span id="L97" class="ln">    97  </span>	return ret0, ret1
+<span id="L98" class="ln">    98  </span>}
+<span id="L99" class="ln">    99  </span>
+<span id="L100" class="ln">   100  </span><span class="comment">// Insert indicates an expected call of Insert.</span>
+<span id="L101" class="ln">   101  </span>func (mr *MockStoreMockRecorder) Insert(ctx, p any) *gomock.Call {
+<span id="L102" class="ln">   102  </span>	mr.mock.ctrl.T.Helper()
+<span id="L103" class="ln">   103  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;Insert&#34;, reflect.TypeOf((*MockStore)(nil).Insert), ctx, p)
+<span id="L104" class="ln">   104  </span>}
+<span id="L105" class="ln">   105  </span>
+<span id="L106" class="ln">   106  </span><span class="comment">// MarkDead mocks base method.</span>
+<span id="L107" class="ln">   107  </span>func (m *MockStore) MarkDead(ctx context.Context, id int64) error {
+<span id="L108" class="ln">   108  </span>	m.ctrl.T.Helper()
+<span id="L109" class="ln">   109  </span>	ret := m.ctrl.Call(m, &#34;MarkDead&#34;, ctx, id)
+<span id="L110" class="ln">   110  </span>	ret0, _ := ret[0].(error)
+<span id="L111" class="ln">   111  </span>	return ret0
 <span id="L112" class="ln">   112  </span>}
 <span id="L113" class="ln">   113  </span>
-<span id="L114" class="ln">   114  </span><span class="comment">// MarkFailed indicates an expected call of MarkFailed.</span>
-<span id="L115" class="ln">   115  </span>func (mr *MockStoreMockRecorder) MarkFailed(ctx, id, lastErr any) *gomock.Call {
+<span id="L114" class="ln">   114  </span><span class="comment">// MarkDead indicates an expected call of MarkDead.</span>
+<span id="L115" class="ln">   115  </span>func (mr *MockStoreMockRecorder) MarkDead(ctx, id any) *gomock.Call {
 <span id="L116" class="ln">   116  </span>	mr.mock.ctrl.T.Helper()
-<span id="L117" class="ln">   117  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;MarkFailed&#34;, reflect.TypeOf((*MockStore)(nil).MarkFailed), ctx, id, lastErr)
+<span id="L117" class="ln">   117  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;MarkDead&#34;, reflect.TypeOf((*MockStore)(nil).MarkDead), ctx, id)
 <span id="L118" class="ln">   118  </span>}
 <span id="L119" class="ln">   119  </span>
-<span id="L120" class="ln">   120  </span><span class="comment">// MarkPublished mocks base method.</span>
-<span id="L121" class="ln">   121  </span>func (m *MockStore) MarkPublished(ctx context.Context, id int64) error {
+<span id="L120" class="ln">   120  </span><span class="comment">// MarkFailed mocks base method.</span>
+<span id="L121" class="ln">   121  </span>func (m *MockStore) MarkFailed(ctx context.Context, id int64, lastErr string, nextAttemptAt time.Time) error {
 <span id="L122" class="ln">   122  </span>	m.ctrl.T.Helper()
-<span id="L123" class="ln">   123  </span>	ret := m.ctrl.Call(m, &#34;MarkPublished&#34;, ctx, id)
+<span id="L123" class="ln">   123  </span>	ret := m.ctrl.Call(m, &#34;MarkFailed&#34;, ctx, id, lastErr, nextAttemptAt)
 <span id="L124" class="ln">   124  </span>	ret0, _ := ret[0].(error)
 <span id="L125" class="ln">   125  </span>	return ret0
 <span id="L126" class="ln">   126  </span>}
 <span id="L127" class="ln">   127  </span>
-<span id="L128" class="ln">   128  </span><span class="comment">// MarkPublished indicates an expected call of MarkPublished.</span>
-<span id="L129" class="ln">   129  </span>func (mr *MockStoreMockRecorder) MarkPublished(ctx, id any) *gomock.Call {
+<span id="L128" class="ln">   128  </span><span class="comment">// MarkFailed indicates an expected call of MarkFailed.</span>
+<span id="L129" class="ln">   129  </span>func (mr *MockStoreMockRecorder) MarkFailed(ctx, id, lastErr, nextAttemptAt any) *gomock.Call {
 <span id="L130" class="ln">   130  </span>	mr.mock.ctrl.T.Helper()
-<span id="L131" class="ln">   131  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;MarkPublished&#34;, reflect.TypeOf((*MockStore)(nil).MarkPublished), ctx, id)
+<span id="L131" class="ln">   131  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;MarkFailed&#34;, reflect.TypeOf((*MockStore)(nil).MarkFailed), ctx, id, lastErr, nextAttemptAt)
 <span id="L132" class="ln">   132  </span>}
 <span id="L133" class="ln">   133  </span>
-<span id="L134" class="ln">   134  </span><span class="comment">// OldestPendingCreatedAt mocks base method.</span>
-<span id="L135" class="ln">   135  </span>func (m *MockStore) OldestPendingCreatedAt(ctx context.Context) (time.Time, bool, error) {
+<span id="L134" class="ln">   134  </span><span class="comment">// MarkPublished mocks base method.</span>
+<span id="L135" class="ln">   135  </span>func (m *MockStore) MarkPublished(ctx context.Context, id int64) error {
 <span id="L136" class="ln">   136  </span>	m.ctrl.T.Helper()
-<span id="L137" class="ln">   137  </span>	ret := m.ctrl.Call(m, &#34;OldestPendingCreatedAt&#34;, ctx)
-<span id="L138" class="ln">   138  </span>	ret0, _ := ret[0].(time.Time)
-<span id="L139" class="ln">   139  </span>	ret1, _ := ret[1].(bool)
-<span id="L140" class="ln">   140  </span>	ret2, _ := ret[2].(error)
-<span id="L141" class="ln">   141  </span>	return ret0, ret1, ret2
-<span id="L142" class="ln">   142  </span>}
-<span id="L143" class="ln">   143  </span>
-<span id="L144" class="ln">   144  </span><span class="comment">// OldestPendingCreatedAt indicates an expected call of OldestPendingCreatedAt.</span>
-<span id="L145" class="ln">   145  </span>func (mr *MockStoreMockRecorder) OldestPendingCreatedAt(ctx any) *gomock.Call {
-<span id="L146" class="ln">   146  </span>	mr.mock.ctrl.T.Helper()
-<span id="L147" class="ln">   147  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;OldestPendingCreatedAt&#34;, reflect.TypeOf((*MockStore)(nil).OldestPendingCreatedAt), ctx)
-<span id="L148" class="ln">   148  </span>}
-<span id="L149" class="ln">   149  </span>
-<span id="L150" class="ln">   150  </span><span class="comment">// ReplayDead mocks base method.</span>
-<span id="L151" class="ln">   151  </span>func (m *MockStore) ReplayDead(ctx context.Context, messageID *uuid.UUID) (int64, error) {
-<span id="L152" class="ln">   152  </span>	m.ctrl.T.Helper()
-<span id="L153" class="ln">   153  </span>	ret := m.ctrl.Call(m, &#34;ReplayDead&#34;, ctx, messageID)
-<span id="L154" class="ln">   154  </span>	ret0, _ := ret[0].(int64)
-<span id="L155" class="ln">   155  </span>	ret1, _ := ret[1].(error)
-<span id="L156" class="ln">   156  </span>	return ret0, ret1
-<span id="L157" class="ln">   157  </span>}
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span><span class="comment">// ReplayDead indicates an expected call of ReplayDead.</span>
-<span id="L160" class="ln">   160  </span>func (mr *MockStoreMockRecorder) ReplayDead(ctx, messageID any) *gomock.Call {
-<span id="L161" class="ln">   161  </span>	mr.mock.ctrl.T.Helper()
-<span id="L162" class="ln">   162  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;ReplayDead&#34;, reflect.TypeOf((*MockStore)(nil).ReplayDead), ctx, messageID)
-<span id="L163" class="ln">   163  </span>}
-<span id="L164" class="ln">   164  </span>
+<span id="L137" class="ln">   137  </span>	ret := m.ctrl.Call(m, &#34;MarkPublished&#34;, ctx, id)
+<span id="L138" class="ln">   138  </span>	ret0, _ := ret[0].(error)
+<span id="L139" class="ln">   139  </span>	return ret0
+<span id="L140" class="ln">   140  </span>}
+<span id="L141" class="ln">   141  </span>
+<span id="L142" class="ln">   142  </span><span class="comment">// MarkPublished indicates an expected call of MarkPublished.</span>
+<span id="L143" class="ln">   143  </span>func (mr *MockStoreMockRecorder) MarkPublished(ctx, id any) *gomock.Call {
+<span id="L144" class="ln">   144  </span>	mr.mock.ctrl.T.Helper()
+<span id="L145" class="ln">   145  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;MarkPublished&#34;, reflect.TypeOf((*MockStore)(nil).MarkPublished), ctx, id)
+<span id="L146" class="ln">   146  </span>}
+<span id="L147" class="ln">   147  </span>
+<span id="L148" class="ln">   148  </span><span class="comment">// OldestPendingCreatedAt mocks base method.</span>
+<span id="L149" class="ln">   149  </span>func (m *MockStore) OldestPendingCreatedAt(ctx context.Context, channel outbox.Channel) (time.Time, bool, error) {
+<span id="L150" class="ln">   150  </span>	m.ctrl.T.Helper()
+<span id="L151" class="ln">   151  </span>	ret := m.ctrl.Call(m, &#34;OldestPendingCreatedAt&#34;, ctx, channel)
+<span id="L152" class="ln">   152  </span>	ret0, _ := ret[0].(time.Time)
+<span id="L153" class="ln">   153  </span>	ret1, _ := ret[1].(bool)
+<span id="L154" class="ln">   154  </span>	ret2, _ := ret[2].(error)
+<span id="L155" class="ln">   155  </span>	return ret0, ret1, ret2
+<span id="L156" class="ln">   156  </span>}
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span><span class="comment">// OldestPendingCreatedAt indicates an expected call of OldestPendingCreatedAt.</span>
+<span id="L159" class="ln">   159  </span>func (mr *MockStoreMockRecorder) OldestPendingCreatedAt(ctx, channel any) *gomock.Call {
+<span id="L160" class="ln">   160  </span>	mr.mock.ctrl.T.Helper()
+<span id="L161" class="ln">   161  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;OldestPendingCreatedAt&#34;, reflect.TypeOf((*MockStore)(nil).OldestPendingCreatedAt), ctx, channel)
+<span id="L162" class="ln">   162  </span>}
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span><span class="comment">// ReplayDead mocks base method.</span>
+<span id="L165" class="ln">   165  </span>func (m *MockStore) ReplayDead(ctx context.Context, messageID *uuid.UUID) (int64, error) {
+<span id="L166" class="ln">   166  </span>	m.ctrl.T.Helper()
+<span id="L167" class="ln">   167  </span>	ret := m.ctrl.Call(m, &#34;ReplayDead&#34;, ctx, messageID)
+<span id="L168" class="ln">   168  </span>	ret0, _ := ret[0].(int64)
+<span id="L169" class="ln">   169  </span>	ret1, _ := ret[1].(error)
+<span id="L170" class="ln">   170  </span>	return ret0, ret1
+<span id="L171" class="ln">   171  </span>}
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span><span class="comment">// ReplayDead indicates an expected call of ReplayDead.</span>
+<span id="L174" class="ln">   174  </span>func (mr *MockStoreMockRecorder) ReplayDead(ctx, messageID any) *gomock.Call {
+<span id="L175" class="ln">   175  </span>	mr.mock.ctrl.T.Helper()
+<span id="L176" class="ln">   176  </span>	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, &#34;ReplayDead&#34;, reflect.TypeOf((*MockStore)(nil).ReplayDead), ctx, messageID)
+<span id="L177" class="ln">   177  </span>}
+<span id="L178" class="ln">   178  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

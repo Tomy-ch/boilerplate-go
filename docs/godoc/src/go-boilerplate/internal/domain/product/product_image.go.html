@@ -101,42 +101,50 @@
 <span id="L44" class="ln">    44  </span>func (i Image) DisplaySort() int { return i.displaySort }
 <span id="L45" class="ln">    45  </span>
 <span id="L46" class="ln">    46  </span><span class="comment">// validateImages は、商品が保持する画像の集合が満たすべき不変条件を検証します。</span>
-<span id="L47" class="ln">    47  </span><span class="comment">// ID が未設定、画像パスが空、表示順が保持できる範囲外の場合はそれぞれ ErrInvalidID /</span>
-<span id="L48" class="ln">    48  </span><span class="comment">// ErrInvalidImagePath / ErrInvalidImageDisplaySort を、同一商品内で表示順が重複する場合は</span>
-<span id="L49" class="ln">    49  </span><span class="comment">// ErrDuplicateImageDisplaySort を返します。画像を持たない商品は許容します。</span>
-<span id="L50" class="ln">    50  </span>func validateImages(images []Image) error {
-<span id="L51" class="ln">    51  </span>	seen := make(map[int]struct{}, len(images))
-<span id="L52" class="ln">    52  </span>	for _, img := range images {
-<span id="L53" class="ln">    53  </span>		if img.id.IsNil() {
-<span id="L54" class="ln">    54  </span>			return xerrors.Wrap(ErrInvalidID, &#34;image id is required&#34;)
-<span id="L55" class="ln">    55  </span>		}
-<span id="L56" class="ln">    56  </span>		if img.imagePath == &#34;&#34; {
-<span id="L57" class="ln">    57  </span>			return xerrors.Wrap(ErrInvalidImagePath, &#34;image path is required&#34;)
-<span id="L58" class="ln">    58  </span>		}
-<span id="L59" class="ln">    59  </span>		if img.displaySort &lt; minImageDisplaySort || img.displaySort &gt; maxImageDisplaySort {
-<span id="L60" class="ln">    60  </span>			return xerrors.Wrap(
-<span id="L61" class="ln">    61  </span>				ErrInvalidImageDisplaySort,
-<span id="L62" class="ln">    62  </span>				fmt.Sprintf(&#34;image displaySort must be between %d and %d, got %d&#34;, minImageDisplaySort, maxImageDisplaySort, img.displaySort),
-<span id="L63" class="ln">    63  </span>			)
-<span id="L64" class="ln">    64  </span>		}
-<span id="L65" class="ln">    65  </span>		if _, ok := seen[img.displaySort]; ok {
-<span id="L66" class="ln">    66  </span>			return xerrors.Wrap(ErrDuplicateImageDisplaySort, fmt.Sprintf(&#34;image displaySort %d is duplicated&#34;, img.displaySort))
-<span id="L67" class="ln">    67  </span>		}
-<span id="L68" class="ln">    68  </span>		seen[img.displaySort] = struct{}{}
-<span id="L69" class="ln">    69  </span>	}
-<span id="L70" class="ln">    70  </span>	return nil
-<span id="L71" class="ln">    71  </span>}
-<span id="L72" class="ln">    72  </span>
-<span id="L73" class="ln">    73  </span><span class="comment">// sortImagesByDisplaySort は、画像を表示順の昇順に並べた新しいスライスを返します。</span>
-<span id="L74" class="ln">    74  </span><span class="comment">// 集約の構築時に一度だけ通すことで、どの読み出し経路から取り出しても並びが同じになります。</span>
-<span id="L75" class="ln">    75  </span>func sortImagesByDisplaySort(images []Image) []Image {
-<span id="L76" class="ln">    76  </span>	sorted := make([]Image, len(images))
-<span id="L77" class="ln">    77  </span>	copy(sorted, images)
-<span id="L78" class="ln">    78  </span>	slices.SortFunc(sorted, func(a, b Image) int { return a.displaySort - b.displaySort })
-<span id="L79" class="ln">    79  </span>
-<span id="L80" class="ln">    80  </span>	return sorted
-<span id="L81" class="ln">    81  </span>}
-<span id="L82" class="ln">    82  </span>
+<span id="L47" class="ln">    47  </span><span class="comment">// 枚数が maxImages を超える場合は ErrTooManyImages を、ID が未設定、画像パスが空、表示順が保持できる</span>
+<span id="L48" class="ln">    48  </span><span class="comment">// 範囲外の場合はそれぞれ ErrInvalidID / ErrInvalidImagePath / ErrInvalidImageDisplaySort を、</span>
+<span id="L49" class="ln">    49  </span><span class="comment">// 同一商品内で表示順が重複する場合は ErrDuplicateImageDisplaySort を返します。</span>
+<span id="L50" class="ln">    50  </span><span class="comment">// 画像を持たない商品は許容します。</span>
+<span id="L51" class="ln">    51  </span>func validateImages(images []Image) error {
+<span id="L52" class="ln">    52  </span>	if len(images) &gt; maxImages {
+<span id="L53" class="ln">    53  </span>		return xerrors.Wrap(
+<span id="L54" class="ln">    54  </span>			ErrTooManyImages,
+<span id="L55" class="ln">    55  </span>			fmt.Sprintf(&#34;images must be %d or fewer, got %d&#34;, maxImages, len(images)),
+<span id="L56" class="ln">    56  </span>		)
+<span id="L57" class="ln">    57  </span>	}
+<span id="L58" class="ln">    58  </span>
+<span id="L59" class="ln">    59  </span>	seen := make(map[int]struct{}, len(images))
+<span id="L60" class="ln">    60  </span>	for _, img := range images {
+<span id="L61" class="ln">    61  </span>		if img.id.IsNil() {
+<span id="L62" class="ln">    62  </span>			return xerrors.Wrap(ErrInvalidID, &#34;image id is required&#34;)
+<span id="L63" class="ln">    63  </span>		}
+<span id="L64" class="ln">    64  </span>		if img.imagePath == &#34;&#34; {
+<span id="L65" class="ln">    65  </span>			return xerrors.Wrap(ErrInvalidImagePath, &#34;image path is required&#34;)
+<span id="L66" class="ln">    66  </span>		}
+<span id="L67" class="ln">    67  </span>		if img.displaySort &lt; minImageDisplaySort || img.displaySort &gt; maxImageDisplaySort {
+<span id="L68" class="ln">    68  </span>			return xerrors.Wrap(
+<span id="L69" class="ln">    69  </span>				ErrInvalidImageDisplaySort,
+<span id="L70" class="ln">    70  </span>				fmt.Sprintf(&#34;image displaySort must be between %d and %d, got %d&#34;, minImageDisplaySort, maxImageDisplaySort, img.displaySort),
+<span id="L71" class="ln">    71  </span>			)
+<span id="L72" class="ln">    72  </span>		}
+<span id="L73" class="ln">    73  </span>		if _, ok := seen[img.displaySort]; ok {
+<span id="L74" class="ln">    74  </span>			return xerrors.Wrap(ErrDuplicateImageDisplaySort, fmt.Sprintf(&#34;image displaySort %d is duplicated&#34;, img.displaySort))
+<span id="L75" class="ln">    75  </span>		}
+<span id="L76" class="ln">    76  </span>		seen[img.displaySort] = struct{}{}
+<span id="L77" class="ln">    77  </span>	}
+<span id="L78" class="ln">    78  </span>	return nil
+<span id="L79" class="ln">    79  </span>}
+<span id="L80" class="ln">    80  </span>
+<span id="L81" class="ln">    81  </span><span class="comment">// sortImagesByDisplaySort は、画像を表示順の昇順に並べた新しいスライスを返します。</span>
+<span id="L82" class="ln">    82  </span><span class="comment">// 集約の構築時に一度だけ通すことで、どの読み出し経路から取り出しても並びが同じになります。</span>
+<span id="L83" class="ln">    83  </span>func sortImagesByDisplaySort(images []Image) []Image {
+<span id="L84" class="ln">    84  </span>	sorted := make([]Image, len(images))
+<span id="L85" class="ln">    85  </span>	copy(sorted, images)
+<span id="L86" class="ln">    86  </span>	slices.SortFunc(sorted, func(a, b Image) int { return a.displaySort - b.displaySort })
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span>	return sorted
+<span id="L89" class="ln">    89  </span>}
+<span id="L90" class="ln">    90  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/domain/product/product_image.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

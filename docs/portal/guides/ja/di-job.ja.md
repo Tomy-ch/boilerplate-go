@@ -1,7 +1,5 @@
 # job DI モジュール
 
-[English](README.md) | 日本語
-
 `internal/di/job` は、ジョブ実行に関わる **DI（依存性注入）コンポーネント**を提供するパッケージです。
 
 ## 役割

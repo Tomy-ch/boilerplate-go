@@ -218,117 +218,119 @@
 <span id="L161" class="ln">   161  </span>		t.Run(&#34;有効な3キーのカーソルはallProductCursorへ復号される&#34;, func(t *testing.T) {
 <span id="L162" class="ln">   162  </span>			t.Parallel()
 <span id="L163" class="ln">   163  </span>			encoded := paging.EncodeCursor(
-<span id="L164" class="ln">   164  </span>				allProductCursorTag, validTime.Format(time.RFC3339Nano), validID.String())
-<span id="L165" class="ln">   165  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
-<span id="L166" class="ln">   166  </span>			require.NoError(t, err)
-<span id="L167" class="ln">   167  </span>
-<span id="L168" class="ln">   168  </span>			actual, decErr := decodeAllProductCursor(cursor)
-<span id="L169" class="ln">   169  </span>			require.NoError(t, decErr)
-<span id="L170" class="ln">   170  </span>			require.NotNil(t, actual)
-<span id="L171" class="ln">   171  </span>			assert.Equal(t, validTime, actual.createdAt)
-<span id="L172" class="ln">   172  </span>			assert.Equal(t, validID, actual.id)
-<span id="L173" class="ln">   173  </span>		})
-<span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>		t.Run(&#34;先頭ページ(カーソル無し)の場合はnilを返す&#34;, func(t *testing.T) {
-<span id="L176" class="ln">   176  </span>			t.Parallel()
-<span id="L177" class="ln">   177  </span>			cursor, err := paging.NewCursor(nil, nil)
-<span id="L178" class="ln">   178  </span>			require.NoError(t, err)
-<span id="L179" class="ln">   179  </span>
-<span id="L180" class="ln">   180  </span>			actual, decErr := decodeAllProductCursor(cursor)
-<span id="L181" class="ln">   181  </span>			require.NoError(t, decErr)
-<span id="L182" class="ln">   182  </span>			assert.Nil(t, actual)
-<span id="L183" class="ln">   183  </span>		})
-<span id="L184" class="ln">   184  </span>	})
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L187" class="ln">   187  </span>		t.Parallel()
-<span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span>		t.Run(&#34;既定の可視範囲で得た2キーのカーソルはErrInvalidArgumentを返す&#34;, func(t *testing.T) {
-<span id="L190" class="ln">   190  </span>			t.Parallel()
-<span id="L191" class="ln">   191  </span>			<span class="comment">// 2 つのモードは並び順の軸が異なるため、公開日時を登録日時として解釈させてはならない。</span>
-<span id="L192" class="ln">   192  </span>			encoded := paging.EncodeCursor(validTime.Format(time.RFC3339Nano), validID.String())
-<span id="L193" class="ln">   193  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
-<span id="L194" class="ln">   194  </span>			require.NoError(t, err)
-<span id="L195" class="ln">   195  </span>
-<span id="L196" class="ln">   196  </span>			actual, decErr := decodeAllProductCursor(cursor)
-<span id="L197" class="ln">   197  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
-<span id="L198" class="ln">   198  </span>			assert.Nil(t, actual)
-<span id="L199" class="ln">   199  </span>		})
-<span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>		t.Run(&#34;キー数は3だが識別子が異なる場合はErrInvalidArgumentを返す&#34;, func(t *testing.T) {
-<span id="L202" class="ln">   202  </span>			t.Parallel()
-<span id="L203" class="ln">   203  </span>			encoded := paging.EncodeCursor(&#34;published&#34;, validTime.Format(time.RFC3339Nano), validID.String())
-<span id="L204" class="ln">   204  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
-<span id="L205" class="ln">   205  </span>			require.NoError(t, err)
-<span id="L206" class="ln">   206  </span>
-<span id="L207" class="ln">   207  </span>			actual, decErr := decodeAllProductCursor(cursor)
-<span id="L208" class="ln">   208  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
-<span id="L209" class="ln">   209  </span>			assert.Nil(t, actual)
-<span id="L210" class="ln">   210  </span>		})
-<span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span>		t.Run(&#34;created_atがRFC3339Nanoでない場合はErrInvalidArgumentを返す&#34;, func(t *testing.T) {
-<span id="L213" class="ln">   213  </span>			t.Parallel()
-<span id="L214" class="ln">   214  </span>			encoded := paging.EncodeCursor(allProductCursorTag, &#34;not-a-time&#34;, validID.String())
-<span id="L215" class="ln">   215  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
-<span id="L216" class="ln">   216  </span>			require.NoError(t, err)
-<span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span>			actual, decErr := decodeAllProductCursor(cursor)
-<span id="L219" class="ln">   219  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
-<span id="L220" class="ln">   220  </span>			assert.Nil(t, actual)
-<span id="L221" class="ln">   221  </span>		})
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>		t.Run(&#34;idがUUIDでない場合はErrInvalidArgumentを返す&#34;, func(t *testing.T) {
-<span id="L224" class="ln">   224  </span>			t.Parallel()
-<span id="L225" class="ln">   225  </span>			encoded := paging.EncodeCursor(
-<span id="L226" class="ln">   226  </span>				allProductCursorTag, validTime.Format(time.RFC3339Nano), &#34;not-a-uuid&#34;)
-<span id="L227" class="ln">   227  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
-<span id="L228" class="ln">   228  </span>			require.NoError(t, err)
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			actual, decErr := decodeAllProductCursor(cursor)
-<span id="L231" class="ln">   231  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
-<span id="L232" class="ln">   232  </span>			assert.Nil(t, actual)
-<span id="L233" class="ln">   233  </span>		})
-<span id="L234" class="ln">   234  </span>	})
-<span id="L235" class="ln">   235  </span>}
-<span id="L236" class="ln">   236  </span>
-<span id="L237" class="ln">   237  </span>func Test_encodeAllProductCursor(t *testing.T) {
-<span id="L238" class="ln">   238  </span>	t.Parallel()
-<span id="L239" class="ln">   239  </span>
-<span id="L240" class="ln">   240  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L241" class="ln">   241  </span>		t.Parallel()
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>		t.Run(&#34;識別子と登録日時とIDの3キーへ符号化される&#34;, func(t *testing.T) {
-<span id="L244" class="ln">   244  </span>			t.Parallel()
-<span id="L245" class="ln">   245  </span>			id, attrs := validCursorProductArgs(t)
-<span id="L246" class="ln">   246  </span>			p, err := product.Reconstruct(id, attrs, 1, testCreatedAt)
-<span id="L247" class="ln">   247  </span>			require.NoError(t, err)
-<span id="L248" class="ln">   248  </span>
-<span id="L249" class="ln">   249  </span>			encoded := encodeAllProductCursor(p)
-<span id="L250" class="ln">   250  </span>			cursor, curErr := paging.NewCursor(&amp;encoded, nil)
-<span id="L251" class="ln">   251  </span>			require.NoError(t, curErr)
-<span id="L252" class="ln">   252  </span>
-<span id="L253" class="ln">   253  </span>			assert.Equal(t,
-<span id="L254" class="ln">   254  </span>				[]string{allProductCursorTag, testCreatedAt.Format(time.RFC3339Nano), id.String()},
-<span id="L255" class="ln">   255  </span>				cursor.Keys())
-<span id="L256" class="ln">   256  </span>		})
-<span id="L257" class="ln">   257  </span>
-<span id="L258" class="ln">   258  </span>		t.Run(&#34;符号化したカーソルは既定の可視範囲では復号できない&#34;, func(t *testing.T) {
-<span id="L259" class="ln">   259  </span>			t.Parallel()
-<span id="L260" class="ln">   260  </span>			id, attrs := validCursorProductArgs(t)
-<span id="L261" class="ln">   261  </span>			p, err := product.Reconstruct(id, attrs, 1, testCreatedAt)
-<span id="L262" class="ln">   262  </span>			require.NoError(t, err)
-<span id="L263" class="ln">   263  </span>
-<span id="L264" class="ln">   264  </span>			encoded := encodeAllProductCursor(p)
-<span id="L265" class="ln">   265  </span>			cursor, curErr := paging.NewCursor(&amp;encoded, nil)
-<span id="L266" class="ln">   266  </span>			require.NoError(t, curErr)
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>			actual, decErr := decodeProductCursor(cursor)
-<span id="L269" class="ln">   269  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
-<span id="L270" class="ln">   270  </span>			assert.Nil(t, actual)
-<span id="L271" class="ln">   271  </span>		})
-<span id="L272" class="ln">   272  </span>	})
-<span id="L273" class="ln">   273  </span>}
-<span id="L274" class="ln">   274  </span>
+<span id="L164" class="ln">   164  </span>				allProductCursorTag, validTime.Format(time.RFC3339Nano), validID.String(),
+<span id="L165" class="ln">   165  </span>			)
+<span id="L166" class="ln">   166  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
+<span id="L167" class="ln">   167  </span>			require.NoError(t, err)
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>			actual, decErr := decodeAllProductCursor(cursor)
+<span id="L170" class="ln">   170  </span>			require.NoError(t, decErr)
+<span id="L171" class="ln">   171  </span>			require.NotNil(t, actual)
+<span id="L172" class="ln">   172  </span>			assert.Equal(t, validTime, actual.createdAt)
+<span id="L173" class="ln">   173  </span>			assert.Equal(t, validID, actual.id)
+<span id="L174" class="ln">   174  </span>		})
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>		t.Run(&#34;先頭ページ(カーソル無し)の場合はnilを返す&#34;, func(t *testing.T) {
+<span id="L177" class="ln">   177  </span>			t.Parallel()
+<span id="L178" class="ln">   178  </span>			cursor, err := paging.NewCursor(nil, nil)
+<span id="L179" class="ln">   179  </span>			require.NoError(t, err)
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>			actual, decErr := decodeAllProductCursor(cursor)
+<span id="L182" class="ln">   182  </span>			require.NoError(t, decErr)
+<span id="L183" class="ln">   183  </span>			assert.Nil(t, actual)
+<span id="L184" class="ln">   184  </span>		})
+<span id="L185" class="ln">   185  </span>	})
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L188" class="ln">   188  </span>		t.Parallel()
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>		t.Run(&#34;既定の可視範囲で得た2キーのカーソルはErrInvalidArgumentを返す&#34;, func(t *testing.T) {
+<span id="L191" class="ln">   191  </span>			t.Parallel()
+<span id="L192" class="ln">   192  </span>			<span class="comment">// 2 つのモードは並び順の軸が異なるため、公開日時を登録日時として解釈させてはならない。</span>
+<span id="L193" class="ln">   193  </span>			encoded := paging.EncodeCursor(validTime.Format(time.RFC3339Nano), validID.String())
+<span id="L194" class="ln">   194  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
+<span id="L195" class="ln">   195  </span>			require.NoError(t, err)
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>			actual, decErr := decodeAllProductCursor(cursor)
+<span id="L198" class="ln">   198  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
+<span id="L199" class="ln">   199  </span>			assert.Nil(t, actual)
+<span id="L200" class="ln">   200  </span>		})
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>		t.Run(&#34;キー数は3だが識別子が異なる場合はErrInvalidArgumentを返す&#34;, func(t *testing.T) {
+<span id="L203" class="ln">   203  </span>			t.Parallel()
+<span id="L204" class="ln">   204  </span>			encoded := paging.EncodeCursor(&#34;published&#34;, validTime.Format(time.RFC3339Nano), validID.String())
+<span id="L205" class="ln">   205  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
+<span id="L206" class="ln">   206  </span>			require.NoError(t, err)
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>			actual, decErr := decodeAllProductCursor(cursor)
+<span id="L209" class="ln">   209  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
+<span id="L210" class="ln">   210  </span>			assert.Nil(t, actual)
+<span id="L211" class="ln">   211  </span>		})
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>		t.Run(&#34;created_atがRFC3339Nanoでない場合はErrInvalidArgumentを返す&#34;, func(t *testing.T) {
+<span id="L214" class="ln">   214  </span>			t.Parallel()
+<span id="L215" class="ln">   215  </span>			encoded := paging.EncodeCursor(allProductCursorTag, &#34;not-a-time&#34;, validID.String())
+<span id="L216" class="ln">   216  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
+<span id="L217" class="ln">   217  </span>			require.NoError(t, err)
+<span id="L218" class="ln">   218  </span>
+<span id="L219" class="ln">   219  </span>			actual, decErr := decodeAllProductCursor(cursor)
+<span id="L220" class="ln">   220  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
+<span id="L221" class="ln">   221  </span>			assert.Nil(t, actual)
+<span id="L222" class="ln">   222  </span>		})
+<span id="L223" class="ln">   223  </span>
+<span id="L224" class="ln">   224  </span>		t.Run(&#34;idがUUIDでない場合はErrInvalidArgumentを返す&#34;, func(t *testing.T) {
+<span id="L225" class="ln">   225  </span>			t.Parallel()
+<span id="L226" class="ln">   226  </span>			encoded := paging.EncodeCursor(
+<span id="L227" class="ln">   227  </span>				allProductCursorTag, validTime.Format(time.RFC3339Nano), &#34;not-a-uuid&#34;,
+<span id="L228" class="ln">   228  </span>			)
+<span id="L229" class="ln">   229  </span>			cursor, err := paging.NewCursor(&amp;encoded, nil)
+<span id="L230" class="ln">   230  </span>			require.NoError(t, err)
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>			actual, decErr := decodeAllProductCursor(cursor)
+<span id="L233" class="ln">   233  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
+<span id="L234" class="ln">   234  </span>			assert.Nil(t, actual)
+<span id="L235" class="ln">   235  </span>		})
+<span id="L236" class="ln">   236  </span>	})
+<span id="L237" class="ln">   237  </span>}
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>func Test_encodeAllProductCursor(t *testing.T) {
+<span id="L240" class="ln">   240  </span>	t.Parallel()
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L243" class="ln">   243  </span>		t.Parallel()
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>		t.Run(&#34;識別子と登録日時とIDの3キーへ符号化される&#34;, func(t *testing.T) {
+<span id="L246" class="ln">   246  </span>			t.Parallel()
+<span id="L247" class="ln">   247  </span>			id, attrs := validCursorProductArgs(t)
+<span id="L248" class="ln">   248  </span>			p, err := product.Reconstruct(id, attrs, 1, testCreatedAt)
+<span id="L249" class="ln">   249  </span>			require.NoError(t, err)
+<span id="L250" class="ln">   250  </span>
+<span id="L251" class="ln">   251  </span>			encoded := encodeAllProductCursor(p)
+<span id="L252" class="ln">   252  </span>			cursor, curErr := paging.NewCursor(&amp;encoded, nil)
+<span id="L253" class="ln">   253  </span>			require.NoError(t, curErr)
+<span id="L254" class="ln">   254  </span>
+<span id="L255" class="ln">   255  </span>			assert.Equal(t,
+<span id="L256" class="ln">   256  </span>				[]string{allProductCursorTag, testCreatedAt.Format(time.RFC3339Nano), id.String()},
+<span id="L257" class="ln">   257  </span>				cursor.Keys())
+<span id="L258" class="ln">   258  </span>		})
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>		t.Run(&#34;符号化したカーソルは既定の可視範囲では復号できない&#34;, func(t *testing.T) {
+<span id="L261" class="ln">   261  </span>			t.Parallel()
+<span id="L262" class="ln">   262  </span>			id, attrs := validCursorProductArgs(t)
+<span id="L263" class="ln">   263  </span>			p, err := product.Reconstruct(id, attrs, 1, testCreatedAt)
+<span id="L264" class="ln">   264  </span>			require.NoError(t, err)
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>			encoded := encodeAllProductCursor(p)
+<span id="L267" class="ln">   267  </span>			cursor, curErr := paging.NewCursor(&amp;encoded, nil)
+<span id="L268" class="ln">   268  </span>			require.NoError(t, curErr)
+<span id="L269" class="ln">   269  </span>
+<span id="L270" class="ln">   270  </span>			actual, decErr := decodeProductCursor(cursor)
+<span id="L271" class="ln">   271  </span>			require.ErrorIs(t, decErr, apperror.ErrInvalidArgument)
+<span id="L272" class="ln">   272  </span>			assert.Nil(t, actual)
+<span id="L273" class="ln">   273  </span>		})
+<span id="L274" class="ln">   274  </span>	})
+<span id="L275" class="ln">   275  </span>}
+<span id="L276" class="ln">   276  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/product/product_cursor_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

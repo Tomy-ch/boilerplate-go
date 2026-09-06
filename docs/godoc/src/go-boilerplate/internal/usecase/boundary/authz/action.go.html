@@ -76,31 +76,42 @@
 <span id="L19" class="ln">    19  </span>	ActionProductUpdate Action = &#34;product:update&#34;
 <span id="L20" class="ln">    20  </span>	<span class="comment">// ActionProductStockUpdate は、商品在庫の増減操作（admin）を表します。</span>
 <span id="L21" class="ln">    21  </span>	ActionProductStockUpdate Action = &#34;product:stock:update&#34;
-<span id="L22" class="ln">    22  </span>	<span class="comment">// ActionProductListLowStock は、在庫僅少商品一覧の参照操作（admin）を表します。</span>
-<span id="L23" class="ln">    23  </span>	ActionProductListLowStock Action = &#34;product:low-stock:list&#34;
-<span id="L24" class="ln">    24  </span>	<span class="comment">// ActionProductReadUnpublished は、未公開商品を含む商品の参照操作（admin）を表します。</span>
-<span id="L25" class="ln">    25  </span>	<span class="comment">// 一覧・一致件数・詳細が同じ能力を共有するため、3 つの経路で同一の Action を用います。</span>
-<span id="L26" class="ln">    26  </span>	ActionProductReadUnpublished Action = &#34;product:unpublished:read&#34;
-<span id="L27" class="ln">    27  </span>	<span class="comment">// ActionPurchaseReadAll は、購入者を問わない購入の参照操作（admin）を表します。</span>
-<span id="L28" class="ln">    28  </span>	ActionPurchaseReadAll Action = &#34;purchase:all:read&#34;
-<span id="L29" class="ln">    29  </span>	<span class="comment">// ActionPurchaseListShippable は、発送待ち購入一覧の参照操作（admin）を表します。</span>
-<span id="L30" class="ln">    30  </span>	ActionPurchaseListShippable Action = &#34;purchase:shippable:list&#34;
-<span id="L31" class="ln">    31  </span>	<span class="comment">// ActionPurchaseShip は、購入の発送操作（admin）を表します。</span>
-<span id="L32" class="ln">    32  </span>	ActionPurchaseShip Action = &#34;purchase:ship&#34;
-<span id="L33" class="ln">    33  </span>	<span class="comment">// ActionPurchaseDeliver は、購入の配達完了操作（admin）を表します。</span>
-<span id="L34" class="ln">    34  </span>	ActionPurchaseDeliver Action = &#34;purchase:deliver&#34;
-<span id="L35" class="ln">    35  </span>	<span class="comment">// ActionDashboardRead は、ダッシュボード集計の参照操作（admin）を表します。</span>
-<span id="L36" class="ln">    36  </span>	ActionDashboardRead Action = &#34;dashboard:read&#34;
-<span id="L37" class="ln">    37  </span>)
-<span id="L38" class="ln">    38  </span>
-<span id="L39" class="ln">    39  </span><span class="comment">// sample-api:end</span>
-<span id="L40" class="ln">    40  </span>
-<span id="L41" class="ln">    41  </span><span class="comment">// Action は、認可対象の操作を表す値オブジェクトです（例: &#34;user:delete&#34;）。</span>
-<span id="L42" class="ln">    42  </span>type Action string
-<span id="L43" class="ln">    43  </span>
-<span id="L44" class="ln">    44  </span><span class="comment">// String は、Action の文字列表現を返します。</span>
-<span id="L45" class="ln">    45  </span>func (a Action) String() string { return string(a) }
-<span id="L46" class="ln">    46  </span>
+<span id="L22" class="ln">    22  </span>	<span class="comment">// ActionProductDiscontinue は、商品の廃番操作と、その影響の見積もりの参照（admin）を表します。</span>
+<span id="L23" class="ln">    23  </span>	<span class="comment">// 見積もりは廃番を実行できる主体だけが見るべき情報なので、実行と同じ権限で守ります。</span>
+<span id="L24" class="ln">    24  </span>	ActionProductDiscontinue Action = &#34;product:discontinue&#34;
+<span id="L25" class="ln">    25  </span>	<span class="comment">// ActionProductListLowStock は、在庫僅少商品一覧の参照操作（admin）を表します。</span>
+<span id="L26" class="ln">    26  </span>	ActionProductListLowStock Action = &#34;product:low-stock:list&#34;
+<span id="L27" class="ln">    27  </span>	<span class="comment">// ActionProductReadUnpublished は、未公開商品を含む商品の参照操作（admin）を表します。</span>
+<span id="L28" class="ln">    28  </span>	<span class="comment">// 一覧・一致件数・詳細が同じ能力を共有するため、3 つの経路で同一の Action を用います。</span>
+<span id="L29" class="ln">    29  </span>	ActionProductReadUnpublished Action = &#34;product:unpublished:read&#34;
+<span id="L30" class="ln">    30  </span>	<span class="comment">// ActionPurchaseReadAll は、購入者を問わない購入の参照操作（admin）を表します。</span>
+<span id="L31" class="ln">    31  </span>	ActionPurchaseReadAll Action = &#34;purchase:all:read&#34;
+<span id="L32" class="ln">    32  </span>	<span class="comment">// ActionPurchaseListShippable は、発送待ち購入一覧の参照操作（admin）を表します。</span>
+<span id="L33" class="ln">    33  </span>	ActionPurchaseListShippable Action = &#34;purchase:shippable:list&#34;
+<span id="L34" class="ln">    34  </span>	<span class="comment">// ActionPurchaseShip は、購入の発送操作（admin）を表します。</span>
+<span id="L35" class="ln">    35  </span>	ActionPurchaseShip Action = &#34;purchase:ship&#34;
+<span id="L36" class="ln">    36  </span>	<span class="comment">// ActionPurchaseDeliver は、購入の配達完了操作（admin）を表します。</span>
+<span id="L37" class="ln">    37  </span>	ActionPurchaseDeliver Action = &#34;purchase:deliver&#34;
+<span id="L38" class="ln">    38  </span>	<span class="comment">// ActionDashboardRead は、ダッシュボード集計の参照操作（admin）を表します。</span>
+<span id="L39" class="ln">    39  </span>	ActionDashboardRead Action = &#34;dashboard:read&#34;
+<span id="L40" class="ln">    40  </span>	<span class="comment">// ActionInquiryList は、問い合わせの列挙操作（admin）を表します。</span>
+<span id="L41" class="ln">    41  </span>	ActionInquiryList Action = &#34;inquiry:list&#34;
+<span id="L42" class="ln">    42  </span>	<span class="comment">// ActionInquiryReadAll は、利用者を問わない問い合わせの参照操作（admin）を表します。</span>
+<span id="L43" class="ln">    43  </span>	ActionInquiryReadAll Action = &#34;inquiry:read-all&#34;
+<span id="L44" class="ln">    44  </span>	<span class="comment">// ActionInquiryReply は、問い合わせへの回答操作（admin）を表します。</span>
+<span id="L45" class="ln">    45  </span>	ActionInquiryReply Action = &#34;inquiry:reply&#34;
+<span id="L46" class="ln">    46  </span>	<span class="comment">// ActionInquiryFeedSubscribe は、問い合わせ更新フィードの購読操作（admin）を表します。</span>
+<span id="L47" class="ln">    47  </span>	ActionInquiryFeedSubscribe Action = &#34;inquiry-feed:subscribe&#34;
+<span id="L48" class="ln">    48  </span>)
+<span id="L49" class="ln">    49  </span>
+<span id="L50" class="ln">    50  </span><span class="comment">// sample-api:end</span>
+<span id="L51" class="ln">    51  </span>
+<span id="L52" class="ln">    52  </span><span class="comment">// Action は、認可対象の操作を表す値オブジェクトです（例: &#34;user:delete&#34;）。</span>
+<span id="L53" class="ln">    53  </span>type Action string
+<span id="L54" class="ln">    54  </span>
+<span id="L55" class="ln">    55  </span><span class="comment">// String は、Action の文字列表現を返します。</span>
+<span id="L56" class="ln">    56  </span>func (a Action) String() string { return string(a) }
+<span id="L57" class="ln">    57  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/authz/action.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

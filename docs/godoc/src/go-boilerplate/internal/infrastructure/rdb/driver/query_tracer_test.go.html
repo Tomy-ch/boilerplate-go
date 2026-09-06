@@ -329,77 +329,79 @@
 <span id="L272" class="ln">   272  </span>			qtMasked.maskArgs = true
 <span id="L273" class="ln">   273  </span>			qtMasked.slowThreshold = time.Second
 <span id="L274" class="ln">   274  </span>			qtMasked.TraceQueryEnd(
-<span id="L275" class="ln">   275  </span>				context.WithValue(context.Background(), queryLogKey{}, ld), nil, pgx.TraceQueryEndData{})
-<span id="L276" class="ln">   276  </span>
-<span id="L277" class="ln">   277  </span>			plainLogger, plainLogs := logging.NewObservedTestLogger(t)
-<span id="L278" class="ln">   278  </span>			qtPlain := newObservedQueryTracer(t, plainLogger)
-<span id="L279" class="ln">   279  </span>			qtPlain.maskArgs = false
-<span id="L280" class="ln">   280  </span>			qtPlain.slowThreshold = time.Second
-<span id="L281" class="ln">   281  </span>			qtPlain.TraceQueryEnd(
-<span id="L282" class="ln">   282  </span>				context.WithValue(context.Background(), queryLogKey{}, ld), nil, pgx.TraceQueryEndData{})
-<span id="L283" class="ln">   283  </span>
-<span id="L284" class="ln">   284  </span>			maskedEntries := maskedLogs.FilterMessage(&#34;DB query completed&#34;).All()
-<span id="L285" class="ln">   285  </span>			require.Len(t, maskedEntries, 1)
-<span id="L286" class="ln">   286  </span>			plainEntries := plainLogs.FilterMessage(&#34;DB query completed&#34;).All()
-<span id="L287" class="ln">   287  </span>			require.Len(t, plainEntries, 1)
-<span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>			<span class="comment">// マスク時は args 件数キーが付かず、非マスク時は付く。</span>
-<span id="L290" class="ln">   290  </span>			assert.NotContains(t, maskedEntries[0].ContextMap(), logging.QueryArgsCountKey)
-<span id="L291" class="ln">   291  </span>			assert.Contains(t, plainEntries[0].ContextMap(), logging.QueryArgsCountKey)
-<span id="L292" class="ln">   292  </span>		})
-<span id="L293" class="ln">   293  </span>	})
-<span id="L294" class="ln">   294  </span>}
-<span id="L295" class="ln">   295  </span>
-<span id="L296" class="ln">   296  </span>func Test_queryTracer_recordQueryMetric(t *testing.T) {
-<span id="L297" class="ln">   297  </span>	t.Parallel()
-<span id="L298" class="ln">   298  </span>
-<span id="L299" class="ln">   299  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L300" class="ln">   300  </span>		t.Parallel()
-<span id="L301" class="ln">   301  </span>
-<span id="L302" class="ln">   302  </span>		t.Run(&#34;recorderが設定されている場合はObserveが呼ばれる&#34;, func(t *testing.T) {
-<span id="L303" class="ln">   303  </span>			t.Parallel()
-<span id="L304" class="ln">   304  </span>
-<span id="L305" class="ln">   305  </span>			rec := &amp;fakeQueryRecorder{}
-<span id="L306" class="ln">   306  </span>			qt := &amp;queryTracer{recorder: rec}
-<span id="L307" class="ln">   307  </span>			qt.recordQueryMetric(context.Background(), &#34;SELECT 1&#34;, time.Millisecond, nil)
-<span id="L308" class="ln">   308  </span>
-<span id="L309" class="ln">   309  </span>			assert.Equal(t, 1, rec.observed)
-<span id="L310" class="ln">   310  </span>		})
-<span id="L311" class="ln">   311  </span>
-<span id="L312" class="ln">   312  </span>		t.Run(&#34;recorderがnilの場合は何もしない&#34;, func(t *testing.T) {
-<span id="L313" class="ln">   313  </span>			t.Parallel()
-<span id="L314" class="ln">   314  </span>
-<span id="L315" class="ln">   315  </span>			qt := &amp;queryTracer{recorder: nil}
-<span id="L316" class="ln">   316  </span>			<span class="comment">// nil recorder でも panic せず no-op で終了する。</span>
-<span id="L317" class="ln">   317  </span>			qt.recordQueryMetric(context.Background(), &#34;SELECT 1&#34;, time.Millisecond, nil)
-<span id="L318" class="ln">   318  </span>		})
-<span id="L319" class="ln">   319  </span>	})
-<span id="L320" class="ln">   320  </span>}
-<span id="L321" class="ln">   321  </span>
-<span id="L322" class="ln">   322  </span>func Test_queryTracer_endFields(t *testing.T) {
-<span id="L323" class="ln">   323  </span>	t.Parallel()
-<span id="L324" class="ln">   324  </span>
-<span id="L325" class="ln">   325  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L326" class="ln">   326  </span>		t.Parallel()
-<span id="L327" class="ln">   327  </span>
-<span id="L328" class="ln">   328  </span>		ld := queryLogData{sql: &#34;SELECT $1&#34;, args: []any{&#34;secret&#34;}, start: time.Now()}
+<span id="L275" class="ln">   275  </span>				context.WithValue(context.Background(), queryLogKey{}, ld), nil, pgx.TraceQueryEndData{},
+<span id="L276" class="ln">   276  </span>			)
+<span id="L277" class="ln">   277  </span>
+<span id="L278" class="ln">   278  </span>			plainLogger, plainLogs := logging.NewObservedTestLogger(t)
+<span id="L279" class="ln">   279  </span>			qtPlain := newObservedQueryTracer(t, plainLogger)
+<span id="L280" class="ln">   280  </span>			qtPlain.maskArgs = false
+<span id="L281" class="ln">   281  </span>			qtPlain.slowThreshold = time.Second
+<span id="L282" class="ln">   282  </span>			qtPlain.TraceQueryEnd(
+<span id="L283" class="ln">   283  </span>				context.WithValue(context.Background(), queryLogKey{}, ld), nil, pgx.TraceQueryEndData{},
+<span id="L284" class="ln">   284  </span>			)
+<span id="L285" class="ln">   285  </span>
+<span id="L286" class="ln">   286  </span>			maskedEntries := maskedLogs.FilterMessage(&#34;DB query completed&#34;).All()
+<span id="L287" class="ln">   287  </span>			require.Len(t, maskedEntries, 1)
+<span id="L288" class="ln">   288  </span>			plainEntries := plainLogs.FilterMessage(&#34;DB query completed&#34;).All()
+<span id="L289" class="ln">   289  </span>			require.Len(t, plainEntries, 1)
+<span id="L290" class="ln">   290  </span>
+<span id="L291" class="ln">   291  </span>			<span class="comment">// マスク時は args 件数キーが付かず、非マスク時は付く。</span>
+<span id="L292" class="ln">   292  </span>			assert.NotContains(t, maskedEntries[0].ContextMap(), logging.QueryArgsCountKey)
+<span id="L293" class="ln">   293  </span>			assert.Contains(t, plainEntries[0].ContextMap(), logging.QueryArgsCountKey)
+<span id="L294" class="ln">   294  </span>		})
+<span id="L295" class="ln">   295  </span>	})
+<span id="L296" class="ln">   296  </span>}
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span>func Test_queryTracer_recordQueryMetric(t *testing.T) {
+<span id="L299" class="ln">   299  </span>	t.Parallel()
+<span id="L300" class="ln">   300  </span>
+<span id="L301" class="ln">   301  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L302" class="ln">   302  </span>		t.Parallel()
+<span id="L303" class="ln">   303  </span>
+<span id="L304" class="ln">   304  </span>		t.Run(&#34;recorderが設定されている場合はObserveが呼ばれる&#34;, func(t *testing.T) {
+<span id="L305" class="ln">   305  </span>			t.Parallel()
+<span id="L306" class="ln">   306  </span>
+<span id="L307" class="ln">   307  </span>			rec := &amp;fakeQueryRecorder{}
+<span id="L308" class="ln">   308  </span>			qt := &amp;queryTracer{recorder: rec}
+<span id="L309" class="ln">   309  </span>			qt.recordQueryMetric(context.Background(), &#34;SELECT 1&#34;, time.Millisecond, nil)
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>			assert.Equal(t, 1, rec.observed)
+<span id="L312" class="ln">   312  </span>		})
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span>		t.Run(&#34;recorderがnilの場合は何もしない&#34;, func(t *testing.T) {
+<span id="L315" class="ln">   315  </span>			t.Parallel()
+<span id="L316" class="ln">   316  </span>
+<span id="L317" class="ln">   317  </span>			qt := &amp;queryTracer{recorder: nil}
+<span id="L318" class="ln">   318  </span>			<span class="comment">// nil recorder でも panic せず no-op で終了する。</span>
+<span id="L319" class="ln">   319  </span>			qt.recordQueryMetric(context.Background(), &#34;SELECT 1&#34;, time.Millisecond, nil)
+<span id="L320" class="ln">   320  </span>		})
+<span id="L321" class="ln">   321  </span>	})
+<span id="L322" class="ln">   322  </span>}
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span>func Test_queryTracer_endFields(t *testing.T) {
+<span id="L325" class="ln">   325  </span>	t.Parallel()
+<span id="L326" class="ln">   326  </span>
+<span id="L327" class="ln">   327  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L328" class="ln">   328  </span>		t.Parallel()
 <span id="L329" class="ln">   329  </span>
-<span id="L330" class="ln">   330  </span>		t.Run(&#34;maskArgsがfalseの場合はargs件数フィールドを含むフィールド列を返す&#34;, func(t *testing.T) {
-<span id="L331" class="ln">   331  </span>			t.Parallel()
-<span id="L332" class="ln">   332  </span>
-<span id="L333" class="ln">   333  </span>			qt, _ := newTestQueryTracer(t)
-<span id="L334" class="ln">   334  </span>			qt.maskArgs = false
-<span id="L335" class="ln">   335  </span>			plain := qt.endFields(ld, time.Millisecond, nil)
-<span id="L336" class="ln">   336  </span>
-<span id="L337" class="ln">   337  </span>			qt.maskArgs = true
-<span id="L338" class="ln">   338  </span>			masked := qt.endFields(ld, time.Millisecond, nil)
-<span id="L339" class="ln">   339  </span>
-<span id="L340" class="ln">   340  </span>			<span class="comment">// マスク時は args を nil にするため args_count フィールドが 1 つ減る。</span>
-<span id="L341" class="ln">   341  </span>			assert.Len(t, masked, len(plain)-1)
-<span id="L342" class="ln">   342  </span>		})
-<span id="L343" class="ln">   343  </span>	})
-<span id="L344" class="ln">   344  </span>}
-<span id="L345" class="ln">   345  </span>
+<span id="L330" class="ln">   330  </span>		ld := queryLogData{sql: &#34;SELECT $1&#34;, args: []any{&#34;secret&#34;}, start: time.Now()}
+<span id="L331" class="ln">   331  </span>
+<span id="L332" class="ln">   332  </span>		t.Run(&#34;maskArgsがfalseの場合はargs件数フィールドを含むフィールド列を返す&#34;, func(t *testing.T) {
+<span id="L333" class="ln">   333  </span>			t.Parallel()
+<span id="L334" class="ln">   334  </span>
+<span id="L335" class="ln">   335  </span>			qt, _ := newTestQueryTracer(t)
+<span id="L336" class="ln">   336  </span>			qt.maskArgs = false
+<span id="L337" class="ln">   337  </span>			plain := qt.endFields(ld, time.Millisecond, nil)
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>			qt.maskArgs = true
+<span id="L340" class="ln">   340  </span>			masked := qt.endFields(ld, time.Millisecond, nil)
+<span id="L341" class="ln">   341  </span>
+<span id="L342" class="ln">   342  </span>			<span class="comment">// マスク時は args を nil にするため args_count フィールドが 1 つ減る。</span>
+<span id="L343" class="ln">   343  </span>			assert.Len(t, masked, len(plain)-1)
+<span id="L344" class="ln">   344  </span>		})
+<span id="L345" class="ln">   345  </span>	})
+<span id="L346" class="ln">   346  </span>}
+<span id="L347" class="ln">   347  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/driver/query_tracer_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

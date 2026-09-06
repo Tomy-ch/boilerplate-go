@@ -1,0 +1,109 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>stream - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/controller">controller</a>/<a href="../../../../../src/go-boilerplate/internal/controller/stream">stream</a>/<span class="text-muted">streamer.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/controller/stream">go-boilerplate/internal/controller/stream</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package stream
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>
+<span id="L6" class="ln">     6  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L7" class="ln">     7  </span>
+<span id="L8" class="ln">     8  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L9" class="ln">     9  </span>)
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span><span class="comment">// StreamRequest は、検証を通った接続の要求です。ticket の束縛と、解決済みの開始位置を運びます。</span>
+<span id="L12" class="ln">    12  </span>type StreamRequest struct {
+<span id="L13" class="ln">    13  </span>	<span class="comment">// Subject は、ticket を発行された subject です。</span>
+<span id="L14" class="ln">    14  </span>	Subject string
+<span id="L15" class="ln">    15  </span>	<span class="comment">// Destination は、接続先を表す stream の識別子です。path の destination と ticket の束縛が一致していることは検証済みです。</span>
+<span id="L16" class="ln">    16  </span>	Destination rt.StreamID
+<span id="L17" class="ln">    17  </span>	<span class="comment">// Scope は、ticket が与えた権限の範囲です（意味は boundary/realtime.StreamGrant.Scope）。</span>
+<span id="L18" class="ln">    18  </span>	Scope string
+<span id="L19" class="ln">    19  </span>	<span class="comment">// Cursor は、この位置より後の event から配信を始めます。replay floor 以上であることは検証済みです。</span>
+<span id="L20" class="ln">    20  </span>	Cursor rt.Sequence
+<span id="L21" class="ln">    21  </span>	<span class="comment">// Resumed は、client が位置を指定して繋ぎ直したかどうかです（Last-Event-ID か after を伴う接続）。</span>
+<span id="L22" class="ln">    22  </span>	<span class="comment">// Cursor から導けません — 位置を省いた接続にも ticket 発行時の初期位置が入るためです。</span>
+<span id="L23" class="ln">    23  </span>	Resumed bool
+<span id="L24" class="ln">    24  </span>	<span class="comment">// Revalidate は、接続を索引へ載せた後に ticket をもう一度検証し直します（README「What happens on connect」step 5）。</span>
+<span id="L25" class="ln">    25  </span>	<span class="comment">// nil なら再検証しません。</span>
+<span id="L26" class="ln">    26  </span>	Revalidate func(ctx context.Context) error
+<span id="L27" class="ln">    27  </span>}
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span><span class="comment">// FanoutHealth は、fan-out から通知を受け取れているかを答える受け口です。</span>
+<span id="L30" class="ln">    30  </span><span class="comment">// 受け取れていない instance に繋いだ client は周期の catch-up でしか event を受け取れないので、</span>
+<span id="L31" class="ln">    31  </span><span class="comment">// 新規接続はここで断ります。判定そのものは usecase 側が持ちます。</span>
+<span id="L32" class="ln">    32  </span>type FanoutHealth interface {
+<span id="L33" class="ln">    33  </span>	<span class="comment">// FanoutDegraded は、通知を受け取れていないなら true を返します。</span>
+<span id="L34" class="ln">    34  </span>	FanoutDegraded() bool
+<span id="L35" class="ln">    35  </span>}
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span><span class="comment">// Streamer は、検証を通った接続に対して SSE のレスポンスを確定し、event を書き続ける境界です。</span>
+<span id="L38" class="ln">    38  </span><span class="comment">// 戻るのは接続を閉じるときで、確定後の指示は in-band の control event で client に伝えます。</span>
+<span id="L39" class="ln">    39  </span>type Streamer interface {
+<span id="L40" class="ln">    40  </span>	<span class="comment">// Stream は、req の位置から destination の event を c のレスポンスへ書き続けます。</span>
+<span id="L41" class="ln">    41  </span>	Stream(c *echo.Context, req StreamRequest) error
+<span id="L42" class="ln">    42  </span>}
+<span id="L43" class="ln">    43  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/controller/stream/streamer.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

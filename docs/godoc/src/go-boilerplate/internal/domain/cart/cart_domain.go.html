@@ -191,7 +191,7 @@
 <span id="L134" class="ln">   134  </span>}
 <span id="L135" class="ln">   135  </span>
 <span id="L136" class="ln">   136  </span><span class="comment">// validateOwnership は、所有者とセッショントークンがちょうど一方だけ設定されていることを検証します。</span>
-<span id="L137" class="ln">   137  </span><span class="comment">// どちらの側も構築を許しません（排他の理由: docs/spec/cart/domain.md の Cross-field Invariants）。</span>
+<span id="L137" class="ln">   137  </span><span class="comment">// どちらの側も構築を許しません（排他の理由: docs/spec/domain/cart.md の Cross-field Invariants）。</span>
 <span id="L138" class="ln">   138  </span>func validateOwnership(ownerID *uuid.UUID, token *SessionToken) error {
 <span id="L139" class="ln">   139  </span>	if (ownerID == nil) == (token == nil) {
 <span id="L140" class="ln">   140  </span>		return ErrInvalidOwner
@@ -313,7 +313,7 @@
 <span id="L256" class="ln">   256  </span><span class="comment">// 上限を超える分は追加が新しいものから切り捨てます（先に入っていたものを優先して残す）。</span>
 <span id="L257" class="ln">   257  </span><span class="comment">// 失われた分は戻り値で報告されます。</span>
 <span id="L258" class="ln">   258  </span><span class="comment">//</span>
-<span id="L259" class="ln">   259  </span><span class="comment">// error を返しません（理由: docs/spec/cart/domain.md の Behavior Methods の Merge）。</span>
+<span id="L259" class="ln">   259  </span><span class="comment">// error を返しません（理由: docs/spec/domain/cart.md の Behavior Methods の Merge）。</span>
 <span id="L260" class="ln">   260  </span><span class="comment">// 取り込み元は変更しません。</span>
 <span id="L261" class="ln">   261  </span>func (c *Cart) Merge(other *Cart, now time.Time) MergeResult {
 <span id="L262" class="ln">   262  </span>	if other == nil {
@@ -363,7 +363,7 @@
 <span id="L306" class="ln">   306  </span><span class="comment">// prices に現れない商品の明細は変更しません（非公開化などで価格を引けなかった場合）。</span>
 <span id="L307" class="ln">   307  </span><span class="comment">//</span>
 <span id="L308" class="ln">   308  </span><span class="comment">// ここに記録される値は表示の履歴であって約束ではありません</span>
-<span id="L309" class="ln">   309  </span><span class="comment">// （詳細: docs/spec/cart/domain.md の Behavior Methods の MarkSeen）。</span>
+<span id="L309" class="ln">   309  </span><span class="comment">// （詳細: docs/spec/domain/cart.md の Behavior Methods の MarkSeen）。</span>
 <span id="L310" class="ln">   310  </span>func (c *Cart) MarkSeen(prices map[uuid.UUID]money.Price) {
 <span id="L311" class="ln">   311  </span>	for idx := range c.items {
 <span id="L312" class="ln">   312  </span>		price, ok := prices[c.items[idx].productID]

@@ -1,7 +1,5 @@
 # GitHub Actions Workflows
 
-[English](README.md) | 日本語
-
 このディレクトリには CI/CD 用の GitHub Actions ワークフロー定義を格納しています。ワークフローは目的別にグルーピングされており、PR ゲート（lint / test / セキュリティスキャン）、push 起点のデプロイ、リリースブランチ起点のドキュメント再生成という構成です。
 
 ## トリガー戦略
@@ -42,7 +40,7 @@
 
 **不在だけでは判定の半分にしかならないので、呼び出し側も打ち切り時の見出しを渡します。** 多くの検査ステップは出力を `tee` でそのまま本文ファイルへ流し、`title` は終了コードを見たあとに出力します。検査の途中で打ち切られると、そのジョブは**書きかけのファイル**を残すため、action からは完成した本文と区別がつきません。一方 title は出力されないままです。そこで呼び出し側が判定のもう半分を `${{ steps.<id>.outputs.title || '## ⚠️ <検査名>: CUT OFF (no result produced)' }}` の形で持ちます。フォールバックは本文を作るステップが自らの結論に到達しなかったときにちょうど発火し、書きかけのログはその下にそのまま残ります。見出しがステップ出力ではなくリテラルの箇所（`image-scan.yaml` / `sync-versions-check.yaml`）では、同じ判定をそのステップの `outcome` / 出力への条件として書きます。書くときは GitHub の式の罠に注意してください。`cond && '' || X` は空文字が falsy なので常に `X` になります。見出しは真の側の枝に置く必要があります。
 
-**全ジョブに `timeout-minutes` を置きます。** 無いと GitHub 既定の 360 分まで走るため、1 つのハングがランナーを 6 時間占有します。値は「実測の最大所要 × 3 を 5 分単位で切り上げ、下限 10 分」です。下限は混雑したランナーでのセットアップ変動を吸収するためで、直近に完了実行が無いジョブは 15 分とします。この式から外れる値だけを以下に挙げます。他は全て下限であり、値は一覧を引くのではなく式から再導出できます。
+**全ジョブに `timeout-minutes` を置きます。** 無いと GitHub 既定の 360 分まで走るため、1 つのハングがランナーを 6 時間占有します。値は「実測の最大所要 × 3 を 5 分単位で切り上げ、下限 10 分」です。下限は混雑したランナーでのセットアップ変動を吸収するためで、直近に完了実行が無いジョブは 15 分とします。この式から外れる値だけを以下に挙げます。他は全て式が与える値であり、一覧を引くのではなく式から再導出できます。
 
 | ジョブ | 分 | 式から外した理由 |
 | --- | --- | --- |
@@ -50,7 +48,7 @@
 | `go-test.yaml` `go-test` | 20 | 実測 約 5 分 |
 | `image-scan.yaml` `build`、`deploy-app.yaml` `build` | 15 | レイヤキャッシュが冷えたイメージビルドは実測を大きく超えて振れる |
 | `deploy-app.yaml` `deploy` | 30 | 現状はプレースホルダ。作成先が実デプロイを配線したときに 10 分の上限へ当てない |
-| `fuzz.yaml`、`scorecard.yaml`、`notify.yaml`、`osv-release-gate.yaml`、`checkov.yaml` | 15 | 直近に完了実行が無く実測できない |
+| `fuzz.yaml`、`scorecard.yaml`、`notify.yaml`、`osv-release-gate.yaml`、`checkov.yaml`、`closed-loop-weekly.yaml`、`scan-issue-report.yaml` | 15 | 直近に完了実行が無く実測できない |
 | `zap-api-scan.yaml` `dast` | 30 | 完了実行が無く実測できないうえ、スキャンの前にアプリケーションをビルドして起動し、スキャン自体の長さは OpenAPI 定義の規模で決まる |
 | `code-ql.yaml` `codeql` | 30 | 上限は matrix の最も遅い leg に掛かるが、`go` 以外の leg には完了実行が無く実測できない。加えて `security-extended` は従前の値を測ったスイートより大きい |
 | `secret-scan.yaml`、`trufflehog.yaml` | 15 | 実測は差分を見る PR 実行のみ。週次は全履歴を走査するが、その完了実行が一度も無く実測できない |
@@ -58,6 +56,10 @@
 | `sonarqube.yaml` `sonarqube` | 15 | ベンダー側の解析キューが最大 10 分待つため。テストとカバレッジのゲートはそれぞれの所有ワークフローで実行する |
 | `app-di-startup-check.yaml`、`gen-go-artifacts-check.yaml` | 15 | 式より前から存在する値。動いている上限を下げてもリスクしか増えないためそのまま |
 | `claude.yaml`、`go-lint.yaml`、`sample-removal-check.yaml` | 30 | 同上。`go-lint` は golangci-lint 自身の timeout を無効化して走らせているため、これがそのジョブ唯一の打ち切り点でもある |
+| `graphify-extract.yaml` `graphify-extract` | 60 | 変更されたドキュメントの数だけアシスタントを走らせるうえ、後述の理由で `--max-turns` を持たないため、これがこのジョブ唯一の上限になる |
+| `closed-loop-summarize.yaml` `summarize` | 20 | こちらもアシスタントを走らせる。完了実行が存在しない時点で置いた値 |
+| `setup-scripts-check.yaml`、`doc-language-removal-check.yaml` | 20 | 実測できる実行が無い作成時点で置いた値。いずれも撤去を通しで実行したうえで撤去後のリポジトリを検証し直す |
+| `eslint.yaml` `eslint` | 15 | 同上。その後の実測は大きく下回るが、動いている上限を下げてもリスクしか増えないためそのまま |
 
 上限に当たり始めたジョブは実測を追い越しているということなので、数字を小突くのではなく測り直して式に掛け直します。reusable workflow を呼ぶジョブには `timeout-minutes` を書けません（invalid key）。検査はそれらを除外し、上限は呼ばれる側のジョブが持ちます。
 
@@ -85,12 +87,28 @@
 |App Boot Check|`app-di-startup-check.yaml`|DB 付きでアプリケーションサーバが正常に起動するか検証|
 |Job Boot Check|`job-boot-check.yaml`|ジョブのエントリポイントが起動し、未知のジョブを拒否するか検証|
 |Worker Boot Check|`worker-boot-check.yaml`|worker のエントリポイントが起動（DI / DB）し、未知の worker を拒否するか検証|
+|Outbox Relay Boot Check|`outbox-relay-boot-check.yaml`|outbox relay が realtime チャネルで起動（DI / DB）し、正常にシャットダウンするか検証|
 |Dockerfile Lint|`docker-lint.yaml`|hadolint による Dockerfile の検証（go_tool_runner 経由）|
 |Markdown Lint|`md-lint.yaml`|markdownlint による Markdown 体裁の検証、実 mermaid パーサによる ` ```mermaid ` フェンスの構文検証、`.claude/**` のスキル / エージェント定義の実態一致と `.codex/**` との存在対応の検証|
 |Commitlint|`commitlint.yaml`|PR が base ブランチへ加えるコミットのメッセージを検証（`commit-msg` フックが覆えない経路を担う）|
 |Pin Actions Check|`pin-actions-check.yaml`|GitHub Actions が SHA でピン留めされているか検証（サプライチェーン対策）|
 |Pin Images Check|`pin-images-check.yaml`|Docker base image が lockfile 通り digest でピン留めされているか検証（サプライチェーン対策）|
 |Egress Check|`egress-check.yaml`|各ジョブのインライン `allowed-endpoints` が SSOT 通りか検証（[ランナーのハードニング](#ランナーのハードニング)を参照）|
+|Graphify Check|`graphify-check.yaml`|追跡している graphify の生成物が可搬なまま保たれているか検証。`.gitignore` のホワイトリスト外が追跡されていないこと、生成したマシンの絶対パスがどの生成物にも残っていないこと|
+|Setup Scripts Check|`setup-scripts-check.yaml`|文書化されたローカライズ手順を実際に走らせ、結果を検証する。dry run が何も書かないこと、再実行で何も起きないこと、ツールとその `make` ターゲットが揃って自爆すること、サンプル撤去がまだ必要とする共有モジュールは残ること<!-- boilerplate-only:line -->|
+|Sample Removal Check|`sample-removal-check.yaml`|サンプル API を撤去し、縮んだ spec から再生成したうえで、撤去後のリポジトリが build / lint / test / migrate を通り、参照の取りこぼしが無いことを検証<!-- sample-api:line -->|
+|Licensed Scanners Removal Check|`licensed-scanners-removal-check.yaml`|ライセンス条件付きのスキャナを撤去し、その後も `make pin-actions-check` / `make egress-check` / Markdown lint が緑であることを検証する。いずれも「どの workflow も参照しないエントリ」で落ちるため、取りこぼしは撤去を走らせたリポジトリでしか現れない|
+|Doc Language Removal Check|`doc-language-removal-check.yaml`|ドキュメントを 1 言語へ畳み、畳んだ後のリポジトリが緑であることを検証する。`ja` 経路では正本のフロントマターが移植されたことも含む — 失えばスキルが 1 本も読み込まれなくなるが、ファイルは全て在るため他の何も報告しない<!-- lang-choice:line -->|
+
+<!-- boilerplate-only:begin -->
+表の末尾にある初期化・撤去系の検査は、他と性質が違います。テンプレートから作られたリポジトリが
+一度だけ走らせるツールを実際に動かすもので、どれもこのリポジトリを守りません。対象のコードが
+走るのは他人の checkout の中で一度きりであり、そこで失敗してもこちらでは何も赤くなりません。
+通常のチェックとして走らせることが、まだ直せる人の目の前へその失敗を出す唯一の手段になります。
+いずれも撤去を本当に実行したうえで撤去後のリポジトリを検証し直します。壊れるのは、撤去が持ち
+去った生成物を前提に書かれた検査の側だからです。各検査は自分が動かすツールと一緒に落ちるので、
+作成先は対応する判断を下すたびに 1 本ずつ失っていきます。
+<!-- boilerplate-only:end -->
 
 ### セキュリティ
 
@@ -111,6 +129,7 @@
 |OpenSSF Scorecard|`scorecard.yaml`|リポジトリのセキュリティ姿勢のスコアリングと結果の公開|
 |Go Cooldown|`go-cooldown.yaml`|cooldown 窓の内側で公開された direct Go モジュールを足す / 上げる PR をゲート|
 |Tool Cooldown|`tool-cooldown.yaml`|cooldown 窓の内側で公開された CLI ツール版（`mise.toml` / `python/*.in` の宣言）を pin する PR をゲート|
+|Pnpm Cooldown|`pnpm-cooldown.yaml`|期限が切れた・3 ヶ月を越えた・lockfile ともう一致しない `minimumReleaseAgeExclude` エントリを失敗させる|
 |Config Scan|`trivy-config.yaml`|Trivy による Dockerfile の設定不備スキャン（HIGH 以上でゲート）|
 |Checkov Scan|`checkov.yaml`|zizmor も Trivy も持たないルールセットによる、ワークフロー定義と Dockerfile への Checkov ポリシースキャン（報告専用）|
 |SAST|`opengrep.yaml`|Opengrep（Semgrep 互換）による自前の Go / TypeScript ソースの解析（taint 追跡あり）|
@@ -125,6 +144,7 @@
 |Capability Diff|`capability-diff.yaml`|capslock による Go 依存グラフの capability 差分報告（report-only）|
 |Agent Config Scan|`trustabl.yaml`|AI エージェント設定—— `.claude/` 配下の subagent / skill 宣言と MCP サーバー宣言——に対する trustabl のスキャン（報告専用。[エージェント設定スキャン](#エージェント設定スキャン)を参照）|
 |Notify|`notify.yaml`|定期実行の失敗、および非ブロッキングなスキャナの検出を人へ届ける `workflow_call` の再利用ワークフロー|
+|Scan Issue Report|`scan-issue-report.yaml`|完了したスキャナの報告をツールごとの `Code Scan Report: <tool>` issue へ集約し、件数が 0 になったらその issue を閉じる。PR にとってのコメントに当たる、定期実行にとっての常設の記録（[検出通知のトリガー](#検出通知のトリガー)を参照）|
 
 各スキャナは可能な限り SARIF を GitHub code scanning へ送り、検出は共通の `upsert-pr-comment` アクションで PR にコメントします（そもそもコメントを書くのがどういうときかは [結果コメント](#結果コメント) を参照）。
 
@@ -157,7 +177,7 @@
 | DevSkim | 全 PR | `develop` / `staging` / `production` / `release/*` | 週次 |
 | Bearer | Go / TypeScript 変更 PR | 同上 | 週次 |
 | ESLint（security） | TypeScript ワークスペース変更 PR | 同上 | 週次 |
-| SonarQube Cloud | Go / TypeScript / `sonar-project.properties` 変更 PR | 同上 | 週次 |
+| SonarQube Cloud | Go / TypeScript / `sonar-project.properties` 変更 PR | 同上 | — （下記参照） |
 | lockfile-lint | lockfile 変更 PR | 不要 | 不要 |
 | Spectral（OpenAPI） | spec 変更 PR | `release/*` / デプロイ先ブランチ | 不要 |
 | capslock | `go.mod` 変更 PR | 不要 | 不要 |
@@ -165,15 +185,15 @@
 | OWASP ZAP（DAST） | `zap-api-scan.yaml` / `.github/zap/**` 変更時 | `develop` / `staging` / `production` / `release/*` | 週次 |
 | trustabl（エージェント設定） | — | — | 週次 |
 
-週次実行は月曜未明（UTC）に **15 分刻み**で 1 スロット 1 本ずつずらしています。同一時刻に全スキャナが並ぶのを避けるためです。スロットの割り当ては `00:00` Trivy FS、`00:15` govulncheck、`00:30` TruffleHog、`00:45` OSV-Scanner、`01:00` Scorecard、`01:15` CodeQL、`01:30` Image Scan、`01:45` gitleaks（全履歴）、`02:00` zizmor（オンライン監査）、`02:15` Go cooldown、`02:30` Opengrep、`02:45` fuzz、`03:00` ZAP（DAST）、`03:15` Grype、`03:30` DevSkim、`03:45` ESLint、`04:00` Bearer、`04:15` Checkov、`04:30` trustabl、`04:45` tool cooldown、`05:00` SonarQube Cloud、`05:15` Closed Loop Weekly。
+週次実行は月曜未明（UTC）に **15 分刻み**で 1 スロット 1 本ずつずらしています。同一時刻に全スキャナが並ぶのを避けるためです。スロットの割り当ては `00:00` Trivy FS、`00:15` govulncheck、`00:30` TruffleHog、`00:45` OSV-Scanner、`01:00` Scorecard、`01:15` CodeQL、`01:30` Image Scan、`01:45` gitleaks（全履歴）、`02:00` zizmor（オンライン監査）、`02:15` Go cooldown、`02:30` Opengrep、`02:45` fuzz、`03:00` ZAP（DAST）、`03:15` Grype、`03:30` DevSkim、`03:45` ESLint、`04:00` Bearer、`04:15` Checkov、`04:30` trustabl、`04:45` tool cooldown、`05:00` pnpm cooldown、`05:15` Closed Loop Weekly。
 
-刻みが 1 時間でなく 15 分なのは、対象が 22 本まで増えたためです。1 時間刻みだと最後の 1 本が翌日の夜まで始まらず、並べて読むべき検出どうしが 1 日離れてしまいます。定期実行のワークフローを追加するときは次の空きスロットを取ります。2 本が同じスロットを共有しているのは好みの問題ではなく欠陥です。順序には意図があるので、追加は末尾ではなく相応しい位置へ入れます。
+刻みが 1 時間でなく 15 分なのは、対象が 21 本まで増えたためです。1 時間刻みだと最後の 1 本が翌日の夜まで始まらず、並べて読むべき検出どうしが 1 日離れてしまいます。定期実行のワークフローを追加するときは次の空きスロットを取ります。2 本が同じスロットを共有しているのは好みの問題ではなく欠陥です。順序には意図があるので、追加は末尾ではなく相応しい位置へ入れます。
 
 GitHub は指定時刻を厳密には守らず、負荷次第でスロットよりかなり遅れて始まることがあります。このずらしは重なりを減らすものであって無くすものではありません。スケジューラが保証しない間隔を細かく調整しても意味がありません。
 
 DAST は `03:00` に入ります。スキャンの前にアプリケーションをビルドして起動する唯一のワークフローで、いちばん長く、他の前に並べても得るものが無いため、ファイルを読むだけのスキャナ群より後ろに置いています。
 
-最後のスロットは SonarQube Cloud です。解析がベンダーのサーバ側で走るため、DAST を全ファイル読み取り系の後ろへ置いたのと同じ理由で最後に並べています。所要時間がこのリポジトリの制御外のキューに左右されるため、自前のランナーで完結するスキャナより前に積む利点がありません。
+SonarQube Cloud にスロットはありません。無料プランは organization ごとに 1 ブランチしか解析せず他は拒否するため、定期実行のブランチ解析はここでは成功し得ません。ベンダーが例外としている pull request と、code scanning のベースラインを保つための保護ブランチへの push でだけ走ります。`05:00` は SonarQube Cloud が手放したスロットで、空いたままです。次に増える定期実行がそこを取ります。
 
 #### 検出通知のトリガー
 
@@ -191,7 +211,7 @@ DAST は `03:00` に入ります。スキャンの前にアプリケーション
 | `grype.yaml` | 脆弱性の検出 | schedule |
 | `devskim.yaml` | 検出あり | schedule |
 
-他の定期実行スキャナに検出通知は不要です。gitleaks / Trivy secret / TruffleHog / Opengrep / zizmor（high）/ image-scan のゲート / fuzzing はいずれも検出時にジョブが落ちるため、失敗モードが既に届けています。意図的に未接続のものが 4 つあります。Trivy のライセンス集計は「まだ誰も問題だと合意していないライセンス」を並べるもので（SARIF を書かないのと同じ理由）、CodeQL と Scorecard は結果を code scanning ダッシュボードへ publish するだけでワークフロー側に検出件数が出てきません。Scorecard の「スコア低下」通知には加えて前回スコアの保持が要りますが、それを持つ仕組みはここにありません。Checkov も同じ条件で未接続です。このリポジトリに対するベースラインが 20 件あり、その大半は 1 つのルールがワークフローファイルごとに 1 回ずつ出ているものです。Dockle と `trivy sbom` は自前の配線が要りません。どちらも `image-scan.yaml` の中で走り、その定期実行の失敗は既に人へ届きます。ESLint と Bearer と trustabl は理由が別で未接続です。ベースラインが 0 件ではない（ESLint は 100 件超の warning、Bearer は 14 件の検出、trustabl は `.claude/agents/` 配下の読み取り専用 subagent 1 本につき high が 1 件）ため「検出あり」で発火する通知は変更の内容によらず毎週鳴り続けます。それは人が読まなくなる形の通知です。SonarQube Cloud も同じ理由で未接続です。セキュリティと並んで保守性を報告するため、既存コードベースに対するベースラインが 0 件になることはありません。
+他の定期実行スキャナに検出通知は不要です。gitleaks / Trivy secret / TruffleHog / Opengrep / zizmor（high）/ image-scan のゲート / fuzzing はいずれも検出時にジョブが落ちるため、失敗モードが既に届けています。意図的に未接続のものが 4 つあります。Trivy のライセンス集計は「まだ誰も問題だと合意していないライセンス」を並べるもので（SARIF を書かないのと同じ理由）、CodeQL と Scorecard は結果を code scanning ダッシュボードへ publish するだけでワークフロー側に検出件数が出てきません。Scorecard の「スコア低下」通知には加えて前回スコアの保持が要りますが、それを持つ仕組みはここにありません。Checkov も同じ条件で未接続です。このリポジトリに対するベースラインが 20 件あり、その大半は 1 つのルールがワークフローファイルごとに 1 回ずつ出ているものです。Dockle と `trivy sbom` は自前の配線が要りません。どちらも `image-scan.yaml` の中で走り、その定期実行の失敗は既に人へ届きます。ESLint と Bearer と trustabl は理由が別で未接続です。ベースラインが 0 件ではない（ESLint は 100 件超の warning、Bearer は 14 件の検出、trustabl は `.claude/agents/` 配下の読み取り専用 subagent 1 本につき high が 1 件）ため「検出あり」で発火する通知は変更の内容によらず毎週鳴り続けます。それは人が読まなくなる形の通知です。SonarQube Cloud はもっと単純な理由で未接続です。通知の元になる定期実行を持っていません。
 
 #### 検知が重なる面
 
@@ -317,6 +337,14 @@ OSV ゲートの深刻度は advisory 自身の評価を使い、無ければ os
 
 `make required-check-lint` は、required context がちょうど 1 つの job から宣言されていること、およびその workflow の `pull_request` トリガーがフィルタを持たないことを検査します。**デッドロックを塞いでいるのは後半で**、これが検査できるのは条件が 1 箇所にしか書かれていないからです。フィルタとその反転に分けて書くと、不変条件は 2 つのリストの一致という、ここでは誰も比較できないものへ移ります。そして食い違いは、片側に足し忘れたパスを変更した pull request でだけ表面化します。
 
+#### pnpm の cooldown 例外
+
+pnpm は、Go と Tool の cooldown が番人との間に持つ関係を反転させています。解決器自身が公開直後の版を拒否し、しかも解決時だけでなく install のたびに lockfile 全体を照らし直す——`--frozen-lockfile` も含めて——ので、ここでの窓はパッケージマネージャが強制しており、記録されずに迂回することはできません。したがって `pnpm-cooldown.yaml` は窓の番人ではありません。
+
+番人が居なかったのは逃げ道のほうです。[`minimumReleaseAgeExclude`](../../scripts/pnpm-workspace.yaml) は特定の 1 バージョンについて窓を外すもので、その期限は誰も読まない散文コメントにしかありませんでした。兄弟のバイパスファイルが `expires` を持つのは、誰も見直さない免除が静かに恒久 allowlist へ変わるのを防ぐためであり、pnpm の例外は同じ債務を日付なしで抱えていました。このワークフローが、同じ形のファイルでそれを与えます——[`pnpm-cooldown-bypass.toml`](../pnpm-cooldown-bypass.toml) が例外ごとに `expires` / `issue` / `reason` を持ちます。期限を `pnpm-workspace.yaml` の外に置くのは、それが pnpm にとって意味を持たず、pnpm が読むファイルを占める筋合いが無いからで、加えてそこを読む検査はコメント解釈になり、pnpm が honor するのに解釈側が取りこぼす書き方が期限の無い免除を通してしまうためです。期限の無い例外、期限切れや長すぎる期限、どの例外にも対応しないエントリ、lockfile がもう解決していない版で失敗します。
+
+期限は `pnpm-workspace.yaml` が変わらなくても訪れるため、スケジュールが必要になります——Go と Tool の cooldown がスケジュールを持つのと同じ理由です。lockfile もトリガーのパスに入れてあります。解決から外れた版を指す例外は残骸であり、解決が動いた時点で表に出すべきだからです。
+
 #### Go モジュールの cooldown
 
 Go には `min-release-age` に当たるものがありません。`go get` に「新しすぎるから採るな」と言わせる手段が無い、ということです。これがツールと防御の関係を逆にします。pnpm は新しすぎるバージョンを依存解決の時点で拒否するのでリゾルバ自体が防御ですが、こちらは検査そのものが防御であり、報告に留めれば窓はどこにも存在しないままになります。
@@ -394,6 +422,8 @@ SARIF アップロードと sticky な PR コメントはどちらも切って�
 |ワークフロー|ファイル|トリガー|説明|
 |---|---|---|---|
 |Auto-generate Docs|`auto-generate-docs.yaml`|release/* への push|`release/vX.Y.Z` のブランチ名から OpenAPI `info.version` を同期し、OpenAPI バンドル / 埋め込み spec / ドキュメント、ER 図、ポータルドキュメントを自動生成|
+|Graphify Sync|`graphify-sync.yaml`|release/* への push|内容が変わったコードファイルをナレッジグラフへ再抽出し、結果を PR で出す。決定論的な半分だけを担い、併せて意味抽出がどれだけ溜まったかを報告する|
+|Graphify Extract|`graphify-extract.yaml`|手動実行（`workflow_dispatch`）|変更されたドキュメントに対する意味抽出をアシスタントとして走らせ、PR で出す。sync と別の workflow なのは、書き込み権限を持つアシスタントを走らせるのがこれだけだから。`CLAUDE_CODE_TOKEN` が未設定なら自分をスキップするので、テンプレート由来のリポジトリが用意していないトークンを使うことはない|
 
 ### アシスタント（コメント）
 
@@ -422,8 +452,10 @@ SARIF アップロードと sticky な PR コメントはどちらも切って�
 
 |アクション|目的|
 |---|---|
+|`setup-mise`|digest を検証したうえで固定版の mise バイナリを導入し、続いて呼び出し側が指定したツールを導入する（[Mise のセットアップ](#mise-のセットアップ)を参照）|
 |`setup-postgres`|Postgres サービスコンテナの待機・初期化（DB 依存ジョブで使用）|
 |`upsert-pr-comment`|マーカーで既存コメントを検出して update / create する PR コメントの upsert。Commit / UpdatedAt フッターを共通付与し、結果コメント系ワークフローで使用。`status: success` は既存コメントを更新するが新規作成はしない|
+|`notify-detail`|スキャナの Markdown サマリを検出行だけへ削る。検出通知が「何を見つけたか」を名指ししつつ、PR コメント向けに書かれた散文を持ち込まないようにするため|
 |`osv-scan`|osv-scanner を実行し、各 finding をリリースゲートの深刻度ポリシーで分類する。OSV の報告用ワークフローと OSV リリースゲートで共用|
 
 ## 補足
@@ -434,7 +466,10 @@ SARIF アップロードと sticky な PR コメントはどちらも切って�
   （[`docs/rules.md`](../../docs/rules.md) § Comment Rules）はそのまま適用される — 手順のナレーション・
   開発経緯・言い換えは書かず、非自明な Why は残す
 - `auto-generate-docs.yaml` は `auto/docs-update/<base>` というブランチ名で auto-PR を作成（release base ごとに 1 ブランチを `delete-branch: true` で再利用）。再帰実行を避けるため自己ブランチでは workflow をスキップ
+- **アプリケーションや Realtime Delivery の contract test を起動するジョブは、service container を 2 つ追加する。** `dynamodb_local` は Realtime Delivery のストア、`goaws` はそのファンアウトが publish する先の SNS / SQS エミュレータで、それぞれ `docker-compose.yaml` 上の同名サービスと同じバージョンへ固定し、CI とローカル開発を乖離させない。service container は command も config file も受け取れないため、両者ともイメージの既定値で動く。そのため `dynamodb_local` は compose が与える永続ボリュームではなく `-inMemory` になり、`goaws` は compose が設定する `000000000000` ではなくイメージに焼き込まれたアカウント id `100010001000` で応答する。`env/.env` の topic ARN をそのまま CI ジョブへ持ち込んでも解決しないのはこのためである
+- **実サーバを起動するジョブは、先に `go run ./cmd/ realtime-init` を走らせる。** Realtime Delivery の table と topic はこの one-shot が作成するのであってアプリ起動時には作られないため、これが無いと起動時 probe の接続先が存在せず、グラフが壊れているように見える形で失敗する
 - **auto-PR は `GITHUB_TOKEN` ではなく GitHub App のトークンで作成する。** ワークフローが自分の `GITHUB_TOKEN` で起こしたイベントを GitHub は抑止するため、そのトークンで作成した pull request はワークフローを 1 本も起動しない。そして報告されない required context は「該当しない」とは読まれず、待つ対象の無いまま待ち続ける。そこで `auto-generate-docs.yaml` / `graphify-sync.yaml` / `graphify-extract.yaml` は `AUTO_PR_APP_ID` / `AUTO_PR_APP_PRIVATE_KEY` から installation token を発行し、`contents: write` と `pull-requests: write` に絞って渡す（ブランチを push して pull request を開くのが仕事のすべてなので）。App の登録は人間の手順で、未登録のうちは警告を出して `GITHUB_TOKEN` へフォールバックする。pull request は開くが、チェックは付かず、required がある限りマージはできない。3 本のコミットメッセージから `[skip ci]` を外したのも同じ理由による。このキーワードは `push` **と `pull_request`** の両方を抑止するが、これらの workflow はそもそも `auto/` ブランチを見ていない（`push` フィルタは `release/**`）ので、実際に抑止していたのは auto-PR 自身のチェックだけだった
+- `graphify-sync.yaml` と `graphify-extract.yaml` は `auto/graphify-update/<base>` 上で同じ形を取る。2 本を別 workflow にしているのは意図的で、後者は `contents: write` を持つアシスタントを走らせるため、条件分岐として前者へ畳むとリリース push のたびに走るジョブへその権限が付く。`graphify-extract.yaml` が `--max-turns` を持たないのも同じ性質による。抽出は変更されたドキュメントの数で長さが決まる連続処理なので、ターン上限は途中で切ってグラフを書きかけのまま残す。ここに置くべき上限は `timeout-minutes` の方である。そもそもグラフをリリース線で更新している理由は、これがどのソースファイルの移動でも書き換わる 45 万行の単一ファイルであり、並行する feature ブランチが必ず衝突するうえ、生成物の常道である「正本から再生成」が意味抽出の半分にモデルを要するため使えないからである。そこで `graphify-check.yaml` は `graphify-out/` への変更を含む pull request を落とし、sync ブランチ自身を除くすべてで `BASE` を渡す。生成物をまだ持たない base はツール自身が設ける例外で、グラフの導入は何とも衝突せず、ここで止めると生成物に入り口が無くなる
 - デプロイ系 workflow の target ブランチ（`production` / `staging` / `develop`）はすべてブランチ保護を有効化。マージは必ず PR レビュー経由
 - セキュリティスキャンのトリガーは上記「セキュリティのトリガーマトリクス」でツールごとに定義。CodeQL / Trivy で high-severity が出るとブランチ保護ルールでマージブロック
 - `trivy-fs.yaml` と `osv-scanner.yaml` は**チェックを落とさない**。修正版の有無に関わらず全 finding を code scanning と PR コメントへ載せ、ブロックの判定は上記のリリースゲートに委ねる。これにより、既知の脆弱性が黙って昇格に載ることはなく、かつ通常の PR がその PR の持ち込みでない脆弱性に足止めされることもない
@@ -455,6 +490,12 @@ SARIF アップロードと sticky な PR コメントはどちらも切って�
 **攻撃者が内容を制御できるテキストを囲むフェンスは、そのテキストから長さを決める。固定長にはしない**。`upsert-pr-comment` は本文中の最長バッククォート連 + 1 をフェンス長とするが、これが働くのは `details-summary` 経路だけである。この入力が無い呼び出しでは本文を素通しする — 見出し・表・自前の `<details>` をそのままレンダリングさせたい呼び出しが複数あるためで、一律フェンスは表示を壊す。したがって素通し経路で本文の一部を自前でフェンスする呼び出しは、フェンスの責任を自分で負う。固定 3 連は、ソース行をそのまま再現する本文には閉じられる — lint が PR 提出者の書いたファイルを引用すればブロック内に 3 連が入り、以降が bot 名義の生 Markdown としてレンダリングされる。`sql-lint.yaml` は自前でフェンスを組むためログごとに長さを計算し、`capability-diff.yaml` はフェンスをアクションへ委ね step summary だけを包む。あわせて本文はアクションの `max-length` を下回るよう呼び出し側で切り詰める。この切り詰めはフェンスより**前**に適用されるため、そこで削られた本文は閉じフェンスを失う。機械的に判定できる 3 点 — `run:` からリテラルのフェンスを出さないこと、複製された `fence_for` が同一であること、素通しのワークフローが inline code span へ値を補間しないこと — は `make actions-comment-fence-lint` が見るが、「その本文が攻撃者制御か」は判定できないので、支えているのは規約の側
 
 **同じ規則は inline code span にも及ぶ。span は長さ 1 のフェンスでしかない**。補間した値にバッククォートが 1 つあれば span はそこで閉じ、以降は生 Markdown に戻る。刺さるのはパスの場合である。パスに使えない文字は NUL と `/` だけなので、バッククォート・`@`・リンク構文はいずれも使え、`git diff --name-only` で得たファイル名は手を加えられないままコメントへ届く（`core.quotePath` がエスケープするのは非 ASCII と制御文字であって、これらではない）。したがって素通しの呼び出しは、リポジトリ由来のパスを span にも裸の Markdown にも置かず、上と同じく一覧全体をその一覧から決めた長さのフェンスで包む。`gen-*-artifacts-check.yaml` 4 本と `sync-versions-check.yaml` のファイル一覧はこの形。本文をレンダリングさせ続ける必要がある場合、本文全体を包む解は採れない。`image-scan.yaml` の SBOM summary が見出しと強調ラベルから始まるのは、この本文がログではなくレビュアーが読むインベントリだからである。そこではテンプレートを生の Markdown のまま残し、代わりに値ごとに長さを値自身から決める。スカラーは自身の最長バッククォート連 + 1 の span へ入れ（CommonMark が剥がす空白で両端を埋めるので、値がバッククォートで始まっても終わってもよい）、一覧は上と同じくその一覧から決めた長さのフェンスで包み、digest は `^[0-9a-f]{64}$` に一致しなければ `unknown` へ落とす。SBOM 由来の文字列はパスと違って何にも有界でないため、長い連を潰し、値ごとに長さの上限を掛けてからフェンス長を決める。この上限こそが仕組み全体の土台である。フェンスから閉じ行を奪う `max-length` の切り詰めは、span からも同じように閉じデリミタを奪い、閉じられなかった span は以降の本文を生 Markdown へ戻すからである。したがって本文に寄与するものはすべて、合計が上限の内側に収まるよう有界にしてある。lint はこれらのいずれにも乗っていない本文のために、ファイル単位の除外機構を残している。運用は `.github/zizmor.yml` と同じで、エントリは追跡 issue を明記し、その指摘を直したら消す。恒久的な allowlist ではない。変数経由や `jq` の連結で組んだ span は検査から見えないので、ここでも規約が lint を上回る。なお検査は `details-summary` のキーの有無ではなく**値**を読む。この入力が空だとアクションは本文を素通しへ落とすためで、したがって `details-summary` には静的な非空文字列を渡す。空になり得る式は素通し扱いとして検査対象に含める
+
+### Mise のセットアップ
+
+mise 管理下のツールを要するワークフローはすべて [`.github/actions/setup-mise`](../actions/setup-mise/action.yaml) を使います。この action は固定版の mise バイナリをリトライ付きでファイルへダウンロードし、そのバイナリをバージョンと digest でキャッシュし、実行のたびに SHA256 を検証します。キャッシュから復元できたというだけで信頼することはありません。不一致なら捨てて再ダウンロードし、2 度目の不一致でジョブを落とします。
+
+呼び出し側の任意入力 `tools` の導入は、バイナリが検証を通ったあとで行います。ツールのバージョンは [`mise.toml`](../../mise.toml) に残り、呼び出し側が渡すのは必要なツールの backend 修飾付き指定だけです。`make actions-mise-pin-lint` は Actions Lint の一部として走り、action のバージョン・digest・キャッシュキーの食い違いを弾きます。mise 自体を更新するときは、チェックサムをリリースの `SHASUMS256.txt` から取得し、3 つの値をまとめて更新してください。
 
 ### キャッシュの安全性
 

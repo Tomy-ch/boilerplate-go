@@ -1,0 +1,686 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>aws - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package aws
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/infrastructure/realtime/aws&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package aws は、Realtime Delivery の fan-out substrate（SNS topic → serve instance ごとの SQS queue）の
+AWS SDK v2 実装です。publish 側（EventLog へ append してから wakeup を publish する outbox publisher と、
+失効通知の RevocationNotifier）と、受信側（instance 固有の queue と subscription の lifecycle）を持ちます。
+wakeup は状態を運ばず、重複は同じ読み直しに畳まれ、欠落は periodic catch-up が覆います（ADR-0073）。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+				
+				<dd><a href="#EnsureTopic">func EnsureTopic(ctx context.Context, snsAPI SNSAPI, name string) (string, error)</a></dd>
+			
+				
+				<dd><a href="#NewInstanceSubscription">func NewInstanceSubscription(snsAPI SNSAPI, sqsAPI SQSAPI, target SubscriptionTarget, attrs AttributesBuilder, tf observability.TracerFactory) rt.InstanceSubscription</a></dd>
+			
+				
+				<dd><a href="#NewOrphanReclaimer">func NewOrphanReclaimer(snsAPI SNSAPI, sqsAPI SQSAPI, target SubscriptionTarget, tf observability.TracerFactory) rt.OrphanReclaimer</a></dd>
+			
+				
+				<dd><a href="#NewPublisher">func NewPublisher(log rt.EventLogStore, snsAPI SNSAPI, topicARN string, tf observability.TracerFactory, metrics *observability.RealtimeMetrics) publisherbndry.Publisher</a></dd>
+			
+				
+				<dd><a href="#NewRevocationNotifier">func NewRevocationNotifier(snsAPI SNSAPI, topicARN string, tf observability.TracerFactory) rt.RevocationNotifier</a></dd>
+			
+				
+				<dd><a href="#QueueName">func QueueName(prefix string, id rt.InstanceID) (string, error)</a></dd>
+			
+				
+				<dd><a href="#TimingAttributes">func TimingAttributes() map[string]string</a></dd>
+			
+			
+				
+				<dd><a href="#AttributesBuilder">type AttributesBuilder</a></dd>
+				
+					
+					<dd>    <a href="#NewQueueAttributes">func NewQueueAttributes(in QueueAttributesInput) AttributesBuilder</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ClientConfig">type ClientConfig</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Clients">type Clients</a></dd>
+				
+					
+					<dd>    <a href="#NewClients">func NewClients(ctx context.Context, cfg ClientConfig) (Clients, error)</a></dd>
+				
+				
+			
+				
+				<dd><a href="#QueueAttributesInput">type QueueAttributesInput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#SNSAPI">type SNSAPI</a></dd>
+				
+				
+			
+				
+				<dd><a href="#SQSAPI">type SQSAPI</a></dd>
+				
+				
+			
+				
+				<dd><a href="#SubscriptionTarget">type SubscriptionTarget</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/api.go.html">api.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/attributes.go.html">attributes.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/client.go.html">client.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/errors.go.html">errors.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/message.go.html">message.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/policy.go.html">policy.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/publisher.go.html">publisher.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/reclaimer.go.html">reclaimer.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/revocation.go.html">revocation.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/subscription.go.html">subscription.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/topic.go.html">topic.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<p>AttrKind は、wakeup と失効通知を 1 つの topic で見分ける MessageAttribute の名前です。
+本文の形は ADR-0073 が固定しているので、種別は本文ではなく属性で運びます（RawMessageDelivery でも透過する）。
+
+				</p><pre>const <span id="AttrKind">AttrKind</span> = &#34;type&#34;</pre>
+			
+				
+				<pre>const (
+    <span class="comment">// CallTimeout は、1 回の API 呼び出し全体（retry を含む）に与える上限です。</span>
+    <span class="comment">//</span>
+    <span class="comment">// これが無いと、応答を返さない substrate に対して呼び出しがいつまでも戻りません。SDK にも HTTP</span>
+    <span class="comment">// クライアントにも別の上限がなく（DI が渡すクライアントは Timeout を持たず、SSRF ガードのために</span>
+    <span class="comment">// 差し替えた Dialer にも Timeout はありません）、awsclient.Resolve の上限は起動時の資格情報解決</span>
+    <span class="comment">// 1 回にしか掛かりません。one-shot の job は既定で全体のタイムアウトを持たないため、1 呼び出しが</span>
+    <span class="comment">// 戻らないとジョブごと戻らなくなります。</span>
+    <span class="comment">//</span>
+    <span class="comment">// 値は dynamodbclient.CallTimeout に揃えます。同じ機構が使う 2 つの substrate で、1 呼び出しに</span>
+    <span class="comment">// 与える猶予を変える理由がないためです。</span>
+    <span id="CallTimeout">CallTimeout</span> = 10 * <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Second">Second</a>
+)</pre>
+			
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrEventIDMismatch は、payload の eventId が outbox の message_id と食い違うことを示すエラーです（分類は Publish の doc）。
+
+				</p><pre>var <span id="ErrEventIDMismatch">ErrEventIDMismatch</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(
+    <a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrPermanent">ErrPermanent</a>,
+    &#34;realtime: payload eventId does not match the outbox message id&#34;,
+)</pre>
+			
+				<p>ErrInvalidQueueName は、prefix と instance の識別子から作った queue 名が SQS の制約を満たさないことを示すエラーです。
+
+				</p><pre>var <span id="ErrInvalidQueueName">ErrInvalidQueueName</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>, &#34;realtime: invalid instance queue name&#34;)</pre>
+			
+		
+		
+			
+			
+			<h2 id="EnsureTopic">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/topic.go.html?s=504:585#L5">EnsureTopic</a>
+				<a class="permalink" href="#EnsureTopic">¶</a>
+				
+				
+			</h2>
+			<pre>func EnsureTopic(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, snsAPI <a href="#SNSAPI">SNSAPI</a>, name <a href="../../../../../builtin/#string">string</a>) (<a href="../../../../../builtin/#string">string</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+			<p>EnsureTopic は、name の topic を実在させ、その ARN を返します。CreateTopic は既にある topic をそのまま返すので
+何度呼んでも同じ状態に収束します。application の起動時ではなく one-shot の初期化（realtime-init）と contract test が呼びます。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewInstanceSubscription">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/subscription.go.html?s=2317:2487#L53">NewInstanceSubscription</a>
+				<a class="permalink" href="#NewInstanceSubscription">¶</a>
+				
+				
+			</h2>
+			<pre>func NewInstanceSubscription(
+    snsAPI <a href="#SNSAPI">SNSAPI</a>, sqsAPI <a href="#SQSAPI">SQSAPI</a>, target <a href="#SubscriptionTarget">SubscriptionTarget</a>, attrs <a href="#AttributesBuilder">AttributesBuilder</a>, tf <a href="../../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+) <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceSubscription">InstanceSubscription</a></pre>
+			<p>NewInstanceSubscription は、target の topic に対する instance 固有の受信先を管理する InstanceSubscription を返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewOrphanReclaimer">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/reclaimer.go.html?s=1197:1332#L26">NewOrphanReclaimer</a>
+				<a class="permalink" href="#NewOrphanReclaimer">¶</a>
+				
+				
+			</h2>
+			<pre>func NewOrphanReclaimer(
+    snsAPI <a href="#SNSAPI">SNSAPI</a>, sqsAPI <a href="#SQSAPI">SQSAPI</a>, target <a href="#SubscriptionTarget">SubscriptionTarget</a>, tf <a href="../../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+) <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#OrphanReclaimer">OrphanReclaimer</a></pre>
+			<p>NewOrphanReclaimer は、target の topic と queue 名の規則に対する OrphanReclaimer を返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewPublisher">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/publisher.go.html?s=1109:1285#L25">NewPublisher</a>
+				<a class="permalink" href="#NewPublisher">¶</a>
+				
+				
+			</h2>
+			<pre>func NewPublisher(
+    log <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#EventLogStore">EventLogStore</a>,
+    snsAPI <a href="#SNSAPI">SNSAPI</a>,
+    topicARN <a href="../../../../../builtin/#string">string</a>,
+    tf <a href="../../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+    metrics *<a href="../../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../../go-boilerplate/internal/observability/#RealtimeMetrics">RealtimeMetrics</a>,
+) <a href="../../../../../go-boilerplate/internal/usecase/boundary/publisher/">publisherbndry</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/publisher/#Publisher">Publisher</a></pre>
+			<p>NewPublisher は、log へ append し topicARN へ wakeup を publish する Publisher を返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewRevocationNotifier">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/revocation.go.html?s=613:725#L13">NewRevocationNotifier</a>
+				<a class="permalink" href="#NewRevocationNotifier">¶</a>
+				
+				
+			</h2>
+			<pre>func NewRevocationNotifier(snsAPI <a href="#SNSAPI">SNSAPI</a>, topicARN <a href="../../../../../builtin/#string">string</a>, tf <a href="../../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>) <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#RevocationNotifier">RevocationNotifier</a></pre>
+			<p>NewRevocationNotifier は、topicARN へ失効通知を publish する RevocationNotifier を返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="QueueName">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/subscription.go.html?s=2802:2865#L61">QueueName</a>
+				<a class="permalink" href="#QueueName">¶</a>
+				
+				
+			</h2>
+			<pre>func QueueName(prefix <a href="../../../../../builtin/#string">string</a>, id <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceID">InstanceID</a>) (<a href="../../../../../builtin/#string">string</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+			<p>QueueName は、prefix と instance の識別子から instance queue の名前を返します。SQS の制約（使える文字と長さ）を
+満たさなければ ErrInvalidQueueName を返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="TimingAttributes">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/attributes.go.html?s=3093:3134#L72">TimingAttributes</a>
+				<a class="permalink" href="#TimingAttributes">¶</a>
+				
+				
+			</h2>
+			<pre>func TimingAttributes() map[<a href="../../../../../builtin/#string">string</a>]<a href="../../../../../builtin/#string">string</a></pre>
+			<p>TimingAttributes は、long polling と visibility timeout の属性を返します。
+
+			
+			
+
+		
+		
+			
+			
+			</p><h2 id="AttributesBuilder">type <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/attributes.go.html?s=1380:1578#L24">AttributesBuilder</a>
+				<a class="permalink" href="#AttributesBuilder">¶</a>
+				
+				
+			</h2>
+			<p>AttributesBuilder は、instance queue に設定する属性の集合を組み立てる境界です。
+production は全属性（policy / redrive / 暗号化 / timings）を返し、間引きは emulator 向けの
+実装側が行います（README の Emulator compatibility）。
+
+			</p><pre>type AttributesBuilder interface {
+    <span class="comment">// Build は、queueARN の queue に設定する属性を返します。空なら何も設定しません。</span>
+    Build(queueARN <a href="../../../../../builtin/#string">string</a>) (map[<a href="../../../../../builtin/#string">string</a>]<a href="../../../../../builtin/#string">string</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewQueueAttributes">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/attributes.go.html?s=2344:2410#L44">NewQueueAttributes</a>
+					<a class="permalink" href="#NewQueueAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func NewQueueAttributes(in <a href="#QueueAttributesInput">QueueAttributesInput</a>) <a href="#AttributesBuilder">AttributesBuilder</a></pre>
+				<p>NewQueueAttributes は、in.TopicARN からの送信だけを許す policy、in.DLQARN への redrive（空なら付けない）、
+SQS 管理の暗号化、long polling と visibility timeout を設定する AttributesBuilder を返します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="ClientConfig">type <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/client.go.html?s=2209:2925#L30">ClientConfig</a>
+				<a class="permalink" href="#ClientConfig">¶</a>
+				
+				
+			</h2>
+			<p>ClientConfig は、SNS / SQS クライアントの接続設定です。1 つの endpoint が両方の API を受けます
+（GoAWS も本番も同じ組み立てで、差は endpoint と資格情報だけ）。
+
+			</p><pre>type ClientConfig struct {
+<span id="ClientConfig.Endpoint"></span>    <span class="comment">// Endpoint は、SNS / SQS 互換エンドポイントです。空なら SDK 既定の解決（本番 AWS）に委ねます。</span>
+    Endpoint <a href="../../../../../builtin/#string">string</a>
+<span id="ClientConfig.Region"></span>    <span class="comment">// Region は、署名に用いるリージョンです。</span>
+    Region <a href="../../../../../builtin/#string">string</a>
+<span id="ClientConfig.AccessKeyID"></span>    <span class="comment">// AccessKeyID / SecretAccessKey は、明示注入する静的資格情報です。両方空なら SDK 既定の</span>
+    <span class="comment">// credential chain へ委ねます。詳細は awsclient.Resolve を参照。</span>
+    AccessKeyID     <a href="../../../../../builtin/#string">string</a>
+<span id="ClientConfig.SecretAccessKey"></span>    SecretAccessKey <a href="../../../../../builtin/#string">string</a>
+<span id="ClientConfig.HTTPClient"></span>    <span class="comment">// HTTPClient は、SDK が API 呼び出しに使う HTTP クライアントです。nil を渡すと SDK 既定の</span>
+    <span class="comment">// トランスポートになり、SSRF ガードを素通りします。</span>
+    HTTPClient <a href="../../../../../github.com/aws/aws-sdk-go-v2/aws/">awssdk</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/aws/#HTTPClient">HTTPClient</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Clients">type <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/client.go.html?s=3025:3082#L45">Clients</a>
+				<a class="permalink" href="#Clients">¶</a>
+				
+				
+			</h2>
+			<p>Clients は、同じ資格情報で組み立てた SNS / SQS クライアントの組です。
+
+			</p><pre>type Clients struct {
+<span id="Clients.SNS"></span>    SNS *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Client">Client</a>
+<span id="Clients.SQS"></span>    SQS *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Client">Client</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewClients">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/client.go.html?s=3572:3643#L54">NewClients</a>
+					<a class="permalink" href="#NewClients">¶</a>
+					
+					
+				</h3>
+				<pre>func NewClients(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, cfg <a href="#ClientConfig">ClientConfig</a>) (<a href="#Clients">Clients</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>NewClients は、設定から SNS / SQS クライアントを生成します。資格情報の解決は 1 回で、失敗すれば
+エラーを返し、認証エラーが最初の publish / receive まで隠れないようにします。
+NewClients は、設定から SNS / SQS クライアントを生成します。資格情報の解決は 1 回で、失敗すれば
+エラーを返し、認証エラーが最初の publish / receive まで隠れないようにします。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="QueueAttributesInput">type <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/attributes.go.html?s=1700:1974#L30">QueueAttributesInput</a>
+				<a class="permalink" href="#QueueAttributesInput">¶</a>
+				
+				
+			</h2>
+			<p>QueueAttributesInput は、production の属性を組み立てるのに要る deployment 依存の識別子です。
+
+			</p><pre>type QueueAttributesInput struct {
+<span id="QueueAttributesInput.TopicARN"></span>    <span class="comment">// TopicARN は、この queue への送信を許す唯一の topic です（access policy の aws:SourceArn 条件）。</span>
+    TopicARN <a href="../../../../../builtin/#string">string</a>
+<span id="QueueAttributesInput.DLQARN"></span>    <span class="comment">// DLQARN は、redrive 先です。空なら RedrivePolicy を付けません。</span>
+    DLQARN <a href="../../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="SNSAPI">type <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/api.go.html?s=873:1711#L7">SNSAPI</a>
+				<a class="permalink" href="#SNSAPI">¶</a>
+				
+				
+			</h2>
+			<p>SNSAPI は、この package が使う SNS の操作だけを抽象化したものです（*sns.Client が満たします）。
+
+			</p><pre>type SNSAPI interface {
+    CreateTopic(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#CreateTopicInput">CreateTopicInput</a>, opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#CreateTopicOutput">CreateTopicOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    Publish(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#PublishInput">PublishInput</a>, opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#PublishOutput">PublishOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    Subscribe(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#SubscribeInput">SubscribeInput</a>, opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#SubscribeOutput">SubscribeOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    SetSubscriptionAttributes(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#SetSubscriptionAttributesInput">SetSubscriptionAttributesInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#SetSubscriptionAttributesOutput">SetSubscriptionAttributesOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    Unsubscribe(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#UnsubscribeInput">UnsubscribeInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#UnsubscribeOutput">UnsubscribeOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    ListSubscriptionsByTopic(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#ListSubscriptionsByTopicInput">ListSubscriptionsByTopicInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#ListSubscriptionsByTopicOutput">ListSubscriptionsByTopicOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="SQSAPI">type <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/api.go.html?s=1843:2835#L29">SQSAPI</a>
+				<a class="permalink" href="#SQSAPI">¶</a>
+				
+				
+			</h2>
+			<p>SQSAPI は、この package が使う SQS の操作だけを抽象化したものです（*sqs.Client が満たします）。
+
+			</p><pre>type SQSAPI interface {
+    CreateQueue(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#CreateQueueInput">CreateQueueInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#CreateQueueOutput">CreateQueueOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    GetQueueAttributes(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#GetQueueAttributesInput">GetQueueAttributesInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#GetQueueAttributesOutput">GetQueueAttributesOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    SetQueueAttributes(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#SetQueueAttributesInput">SetQueueAttributesInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#SetQueueAttributesOutput">SetQueueAttributesOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    ReceiveMessage(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#ReceiveMessageInput">ReceiveMessageInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#ReceiveMessageOutput">ReceiveMessageOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    DeleteMessage(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#DeleteMessageInput">DeleteMessageInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#DeleteMessageOutput">DeleteMessageOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    DeleteQueue(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#DeleteQueueInput">DeleteQueueInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#DeleteQueueOutput">DeleteQueueOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+    GetQueueUrl(
+        ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>,
+        in *<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#GetQueueUrlInput">GetQueueUrlInput</a>,
+        opts ...func(*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>),
+    ) (*<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#GetQueueUrlOutput">GetQueueUrlOutput</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="SubscriptionTarget">type <a href="../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/subscription.go.html?s=1484:1709#L29">SubscriptionTarget</a>
+				<a class="permalink" href="#SubscriptionTarget">¶</a>
+				
+				
+			</h2>
+			<p>SubscriptionTarget は、instance の受信先をどの topic に、どの名前で作るかです。
+
+			</p><pre>type SubscriptionTarget struct {
+<span id="SubscriptionTarget.TopicARN"></span>    <span class="comment">// TopicARN は、subscribe する topic です。</span>
+    TopicARN <a href="../../../../../builtin/#string">string</a>
+<span id="SubscriptionTarget.QueuePrefix"></span>    <span class="comment">// QueuePrefix は、instance queue 名の先頭です（名前は &lt;QueuePrefix&gt;-&lt;instance id&gt;）。</span>
+    QueuePrefix <a href="../../../../../builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

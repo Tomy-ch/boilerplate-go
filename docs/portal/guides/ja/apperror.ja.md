@@ -1,7 +1,5 @@
 # app error
 
-[English](README.md) | 日本語
-
 `apperror` パッケージは、層に依存しない「アプリケーション共通のエラー分類」を定義します。
 
 このパッケージは **Domain / Usecase / Controller / Infrastructure のすべての層から参照可能**であり、
@@ -245,6 +243,7 @@ flowchart TB
 | `ErrUnsupportedMediaType` | サポートされていない Content-Type / メディア形式 | 415 Unsupported Media Type |
 | `ErrPayloadTooLarge` | リクエストペイロードが許容サイズを超過 | 413 Payload Too Large |
 | `ErrTooManyRequests` | リクエスト過多（流量制限・外部 API のスロットリング応答の伝播など） | 429 Too Many Requests |
+| `ErrGone` | 対象が既に失われ、正本を取り直さない限り再要求しても回復しない（保持期間外の位置からの再開など） | 410 Gone |
 | `ErrCanceled` | クライアントがリクエストをキャンセル/切断 | 499 Client Closed Request |
 | `ErrInternal` | 想定外の内部エラー | 500 Internal Server Error |
 | `ErrUnimplemented` | 未実装 / 非サポート機能 | 501 Not Implemented |

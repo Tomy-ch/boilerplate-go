@@ -1,7 +1,5 @@
 # server Dockerfile
 
-[English](README.md) | 日本語
-
 アプリケーションサーバーの Docker イメージを定義する Dockerfile です。マルチステージビルドにより、本番・ローカル開発の各ターゲットを提供します。
 
 ## 役割
@@ -12,9 +10,9 @@
 
 |ターゲット|ベースイメージ|用途|
 |---|---|---|
-|`builder`|`golang:1.26.6-alpine`|Go バイナリのビルド（`ldflags` でバージョン / リビジョン / ビルド日時を埋め込み）|
+|`builder`|`golang:1.27.1-alpine`|Go バイナリのビルド（`ldflags` でバージョン / リビジョン / ビルド日時を埋め込み）|
 |`runtime`|`alpine:3.24`|本番実行用コンテナ（非 root ユーザー `app`）。command override でマイグレーションも実行|
-|`tooling`|`golang:1.26.6-alpine`|ローカル開発環境（ホットリロード + デバッグ）|
+|`tooling`|`golang:1.27.1-alpine`|ローカル開発環境（ホットリロード + デバッグ）|
 
 ## runtime
 

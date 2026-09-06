@@ -1,0 +1,804 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package realtime
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/realtime&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package realtime は、Realtime Delivery の機構側 usecase — cursor の失効判定、ticket の発行 / 検証、
+replay の読み取り — を提供します。feature の語彙は持たず、boundary/realtime にだけ依存します。
+replay をいつ行うかと lease の heartbeat / orphan cleanup の呼び出し側は、
+それぞれ connection registry と serve lifecycle が持ちます。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+			
+				
+				<dd><a href="#AccessRevoker">type AccessRevoker</a></dd>
+				
+					
+					<dd>    <a href="#NewAccessRevoker">func NewAccessRevoker(tickets rt.StreamTicketStore, notifier rt.RevocationNotifier, tf observability.TracerFactory) AccessRevoker</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CursorValidator">type CursorValidator</a></dd>
+				
+					
+					<dd>    <a href="#NewCursorValidator">func NewCursorValidator(log rt.EventLogStore, clk clock.Clock, tf observability.TracerFactory) CursorValidator</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Health">type Health</a></dd>
+				
+					
+					<dd>    <a href="#NewHealth">func NewHealth(log rt.EventLogStore) *Health</a></dd>
+				
+				
+					
+					<dd>    <a href="#Health.Check">func (h *Health) Check(ctx context.Context) error</a></dd>
+				
+					
+					<dd>    <a href="#Health.FanoutDegraded">func (h *Health) FanoutDegraded() bool</a></dd>
+				
+					
+					<dd>    <a href="#Health.ObserveFanout">func (h *Health) ObserveFanout(err error)</a></dd>
+				
+			
+				
+				<dd><a href="#IssueTicketInput">type IssueTicketInput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#LeaseKeeper">type LeaseKeeper</a></dd>
+				
+					
+					<dd>    <a href="#NewLeaseKeeper">func NewLeaseKeeper(store rt.InstanceLeaseStore, clk clock.Clock, tf observability.TracerFactory) LeaseKeeper</a></dd>
+				
+				
+			
+				
+				<dd><a href="#OrphanSweeper">type OrphanSweeper</a></dd>
+				
+					
+					<dd>    <a href="#NewOrphanSweeper">func NewOrphanSweeper(leases rt.InstanceLeaseStore, reclaimer rt.OrphanReclaimer, owner string, clk clock.Clock, tf observability.TracerFactory) OrphanSweeper</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Replayer">type Replayer</a></dd>
+				
+					
+					<dd>    <a href="#NewReplayer">func NewReplayer(log rt.EventLogStore, tf observability.TracerFactory) Replayer</a></dd>
+				
+				
+			
+				
+				<dd><a href="#SweepResult">type SweepResult</a></dd>
+				
+				
+			
+				
+				<dd><a href="#TicketIssuer">type TicketIssuer</a></dd>
+				
+					
+					<dd>    <a href="#NewTicketIssuer">func NewTicketIssuer(store rt.StreamTicketStore, secrets rt.SecretGenerator, clk clock.Clock, tf observability.TracerFactory) TicketIssuer</a></dd>
+				
+				
+			
+				
+				<dd><a href="#TicketVerifier">type TicketVerifier</a></dd>
+				
+					
+					<dd>    <a href="#NewTicketVerifier">func NewTicketVerifier(store rt.StreamTicketStore, clk clock.Clock, tf observability.TracerFactory) TicketVerifier</a></dd>
+				
+				
+			
+				
+				<dd><a href="#TicketView">type TicketView</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/realtime/cleanup.go.html">cleanup.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/realtime/cursor.go.html">cursor.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/realtime/error.go.html">error.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/realtime/health.go.html">health.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/realtime/lease.go.html">lease.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/realtime/replay.go.html">replay.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/realtime/revocation.go.html">revocation.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/realtime/ticket.go.html">ticket.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<p>instance lease の固定値（ADR-0073 / docs/design/realtime-delivery.md §3.3）。
+
+				</p><pre>const (
+    <span class="comment">// LeaseHeartbeatInterval は、serve instance が生存を記録し直す間隔です。</span>
+    <span id="LeaseHeartbeatInterval">LeaseHeartbeatInterval</span> = 30 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Second">Second</a>
+    <span class="comment">// LeaseExpiry は、記録が途絶えた instance を死んだと見なすまでの期間です。</span>
+    <span id="LeaseExpiry">LeaseExpiry</span> = 2 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Minute">Minute</a>
+    <span class="comment">// LeaseCleanupMargin は、期限切れからさらに待ってから resource を回収する安全余裕です（回収は orphan cleanup の job）。</span>
+    <span id="LeaseCleanupMargin">LeaseCleanupMargin</span> = 5 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Minute">Minute</a>
+)</pre>
+			
+				<p>LeaseCleanupOwnershipTTL は、回収の引き受けが有効な期間です。回収は数回の API 呼び出しで終わるため
+これで足り、引き受けたまま倒れた掃除役が居ても、この期間を過ぎれば次の掃除役が引き受け直せます。
+死んだと見なすまでの余裕（LeaseCleanupMargin）とは別の量なので、値を共有しません。
+
+				</p><pre>const <span id="LeaseCleanupOwnershipTTL">LeaseCleanupOwnershipTTL</span> = 10 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Minute">Minute</a></pre>
+			
+				<p>ReplayPageLimit は、1 回の読み取りで返す event の上限です。接続の送出 buffer はこれと同じ大きさを取り、
+1 ページが buffer を溢れさせないという関係を保ちます。
+
+				</p><pre>const <span id="ReplayPageLimit">ReplayPageLimit</span> = 64</pre>
+			
+				<p>SubsystemName は、この subsystem の名前です。名乗る場所が違っても同じ値を使います。
+
+				</p><pre>const <span id="SubsystemName">SubsystemName</span> = &#34;realtime&#34;</pre>
+			
+				<p>TicketTTL は、発行した ticket で新しい接続を始められる期間です（ADR-0074）。
+確立済みの接続はこれとは別に最大接続時間で区切られます。
+
+				</p><pre>const <span id="TicketTTL">TicketTTL</span> = 5 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Minute">Minute</a></pre>
+			
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				
+				<pre>var (
+    <span class="comment">// ErrCursorExpired は、cursor が replay floor より前で、そこからの replay が成り立たないことを示します。</span>
+    <span class="comment">// client は canonical recovery path（History の再読み込み）へ戻ります。HTTP への写像は README を参照。</span>
+    <span id="ErrCursorExpired">ErrCursorExpired</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#New">New</a>(&#34;realtime: stream cursor expired&#34;)
+    <span class="comment">// ErrTicketInvalid は、提示された ticket が無い・期限切れ・destination 違いのいずれかであることを示します。</span>
+    <span class="comment">// 認証の失敗として扱われます。</span>
+    <span id="ErrTicketInvalid">ErrTicketInvalid</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrUnauthenticated">ErrUnauthenticated</a>, &#34;realtime: ticket invalid&#34;)
+    <span class="comment">// ErrFanoutUnreachable は、fan-out から通知を受け取れていないことを示します。</span>
+    <span class="comment">// 稼働中の縮退を表すもので、既存の接続は周期の catch-up で配信を続けます。</span>
+    <span id="ErrFanoutUnreachable">ErrFanoutUnreachable</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrUnavailable">ErrUnavailable</a>, &#34;realtime: fan-out unreachable&#34;)
+)</pre>
+			
+		
+		
+		
+			
+			
+			<h2 id="AccessRevoker">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/revocation.go.html?s=497:998#L4">AccessRevoker</a>
+				<a class="permalink" href="#AccessRevoker">¶</a>
+				
+				
+			</h2>
+			<p>AccessRevoker は、feature が subject の destination への権利を取り下げたときに呼ぶ失効の seam です。
+この service の中で起きた失効は即時に伝わり（ADR-0074）、IdP 側の失効はここを通りません。
+
+			</p><pre>type AccessRevoker interface {
+    <span class="comment">// Revoke は、subject へ destination に対して発行済みの ticket をすべて無効にしたうえで、</span>
+    <span class="comment">// 開いている接続を閉じるよう各 instance へ伝えます。該当する ticket や接続が無くてもエラーになりません。</span>
+    <span class="comment">// 無効化が先で、通知に失敗しても無効化は成立しています（順序の根拠は README / ADR-0074）。</span>
+    Revoke(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, subject <a href="../../../../builtin/#string">string</a>, destination <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>) <a href="../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewAccessRevoker">func <a href="../../../../src/go-boilerplate/internal/usecase/realtime/revocation.go.html?s=1192:1327#L18">NewAccessRevoker</a>
+					<a class="permalink" href="#NewAccessRevoker">¶</a>
+					
+					
+				</h3>
+				<pre>func NewAccessRevoker(
+    tickets <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamTicketStore">StreamTicketStore</a>,
+    notifier <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#RevocationNotifier">RevocationNotifier</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+) <a href="#AccessRevoker">AccessRevoker</a></pre>
+				<p>NewAccessRevoker は、AccessRevoker を生成します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="CursorValidator">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/cursor.go.html?s=854:1317#L9">CursorValidator</a>
+				<a class="permalink" href="#CursorValidator">¶</a>
+				
+				
+			</h2>
+			<p>CursorValidator は、client が提示した cursor から replay を始められるかを判定します。
+
+			</p><pre>type CursorValidator interface {
+    <span class="comment">// Validate は、cursor より後ろを欠けなく replay できるなら nil を返します。replay floor（ADR-0072 —</span>
+    <span class="comment">// 保存せず導出する）より前なら ErrCursorExpired、EventLog が読めなければ apperror.ErrUnavailable</span>
+    <span class="comment">// （retry 可能）を返します。cursor 0 は初期位置（stream の先頭から）です。</span>
+    Validate(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, streamID <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>, cursor <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>) <a href="../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewCursorValidator">func <a href="../../../../src/go-boilerplate/internal/usecase/realtime/cursor.go.html?s=1497:1607#L23">NewCursorValidator</a>
+					<a class="permalink" href="#NewCursorValidator">¶</a>
+					
+					
+				</h3>
+				<pre>func NewCursorValidator(log <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#EventLogStore">EventLogStore</a>, clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>) <a href="#CursorValidator">CursorValidator</a></pre>
+				<p>NewCursorValidator は、CursorValidator を生成します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="Health">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/health.go.html?s=1106:1261#L11">Health</a>
+				<a class="permalink" href="#Health">¶</a>
+				
+				
+			</h2>
+			<p>Health は、Realtime Delivery が稼働中に配信を続けられる状態かを答えます。EventLog は Check のたびに
+読んで確かめ、fan-out は consumer が ObserveFanout で報告した直近の結果を使います — Check 自身が
+受信を試みてはなりません（consumer と取り合いになります）。答えるのは degraded かどうかだけで、
+instance を落とすかどうかではありません（README の Health 行、docs/design/realtime-delivery.md §2.6）。
+
+			</p><pre>type Health struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewHealth">func <a href="../../../../src/go-boilerplate/internal/usecase/realtime/health.go.html?s=1388:1432#L18">NewHealth</a>
+					<a class="permalink" href="#NewHealth">¶</a>
+					
+					
+				</h3>
+				<pre>func NewHealth(log <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#EventLogStore">EventLogStore</a>) *<a href="#Health">Health</a></pre>
+				<p>NewHealth は、EventLog を log で確かめる Health を返します。fan-out は健全な状態から始めます。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Health.Check">func (*Health) <a href="../../../../src/go-boilerplate/internal/usecase/realtime/health.go.html?s=2170:2219#L35">Check</a>
+					<a class="permalink" href="#Health.Check">¶</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="#Health">Health</a>) Check(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a></pre>
+				<p>Check は、Realtime Delivery の依存へ到達できるかを確かめます。
+起動時の fail-fast と稼働中の readiness が同じ定義を使うよう、EventLog の到達性はここだけで判定します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Health.FanoutDegraded">func (*Health) <a href="../../../../src/go-boilerplate/internal/usecase/realtime/health.go.html?s=1866:1904#L29">FanoutDegraded</a>
+					<a class="permalink" href="#Health.FanoutDegraded">¶</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="#Health">Health</a>) FanoutDegraded() <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>FanoutDegraded は、fan-out が不調と観測されているかを返します
+（新規接続の受け入れ判断に使う縮退の扱いは docs/design/realtime-delivery.md §2.6）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Health.ObserveFanout">func (*Health) <a href="../../../../src/go-boilerplate/internal/usecase/realtime/health.go.html?s=1587:1628#L23">ObserveFanout</a>
+					<a class="permalink" href="#Health.ObserveFanout">¶</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="#Health">Health</a>) ObserveFanout(err <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>ObserveFanout は、consumer が受信を試みた結果を記録します。err が nil なら健全へ戻します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="IssueTicketInput">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/ticket.go.html?s=700:1178#L12">IssueTicketInput</a>
+				<a class="permalink" href="#IssueTicketInput">¶</a>
+				
+				
+			</h2>
+			<p>IssueTicketInput は、feature が subject × destination を認可した後に渡す発行要求です。
+
+			</p><pre>type IssueTicketInput struct {
+<span id="IssueTicketInput.Subject"></span>    <span class="comment">// Subject は、認可された subject です。</span>
+    Subject <a href="../../../../builtin/#string">string</a>
+<span id="IssueTicketInput.Destination"></span>    <span class="comment">// Destination は、接続を許す stream です。</span>
+    Destination <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>
+<span id="IssueTicketInput.Scope"></span>    <span class="comment">// Scope は、feature が定めた権限の範囲です。機構は解釈しません。</span>
+    Scope <a href="../../../../builtin/#string">string</a>
+<span id="IssueTicketInput.InitialCursor"></span>    <span class="comment">// InitialCursor は、cursor 無しで接続したときの開始位置です。認可の下限ではありません</span>
+    <span class="comment">// （design/realtime-delivery.md §2.3）。</span>
+    InitialCursor <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="LeaseKeeper">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/lease.go.html?s=1086:1496#L16">LeaseKeeper</a>
+				<a class="permalink" href="#LeaseKeeper">¶</a>
+				
+				
+			</h2>
+			<p>LeaseKeeper は、serve instance の生存記録を書き、正常終了時に取り消す seam です。
+記録は crash した instance の resource を後から回収するためだけにあります（ADR-0073）。
+
+			</p><pre>type LeaseKeeper interface {
+    <span class="comment">// Beat は、id の instance が今生きていることを記録します。期限は今から LeaseExpiry 後です。</span>
+    Beat(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, id <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceID">InstanceID</a>) <a href="../../../../builtin/#error">error</a>
+    <span class="comment">// Release は、id の記録を取り消します。resource を自分で片付けた instance が呼び、無くてもエラーになりません。</span>
+    Release(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, id <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceID">InstanceID</a>) <a href="../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewLeaseKeeper">func <a href="../../../../src/go-boilerplate/internal/usecase/realtime/lease.go.html?s=1669:1778#L30">NewLeaseKeeper</a>
+					<a class="permalink" href="#NewLeaseKeeper">¶</a>
+					
+					
+				</h3>
+				<pre>func NewLeaseKeeper(store <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceLeaseStore">InstanceLeaseStore</a>, clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>) <a href="#LeaseKeeper">LeaseKeeper</a></pre>
+				<p>NewLeaseKeeper は、LeaseKeeper を生成します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="OrphanSweeper">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/cleanup.go.html?s=1670:1914#L26">OrphanSweeper</a>
+				<a class="permalink" href="#OrphanSweeper">¶</a>
+				
+				
+			</h2>
+			<p>OrphanSweeper は、死んだ instance が残した受信先を回収する seam です。回収は引き受けを条件付きで
+取った主体だけが行い、同時に走った掃除役のうち 1 つだけが 1 つの instance を回収します（ADR-0073）。
+
+			</p><pre>type OrphanSweeper interface {
+    <span class="comment">// Sweep は、回収できる lease をすべて処理して内訳を返します。1 件の失敗では止まらず、</span>
+    <span class="comment">// 最後にまとめて返します。</span>
+    Sweep(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) (<a href="#SweepResult">SweepResult</a>, <a href="../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewOrphanSweeper">func <a href="../../../../src/go-boilerplate/internal/usecase/realtime/cleanup.go.html?s=2193:2359#L41">NewOrphanSweeper</a>
+					<a class="permalink" href="#NewOrphanSweeper">¶</a>
+					
+					
+				</h3>
+				<pre>func NewOrphanSweeper(
+    leases <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceLeaseStore">InstanceLeaseStore</a>,
+    reclaimer <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#OrphanReclaimer">OrphanReclaimer</a>,
+    owner <a href="../../../../builtin/#string">string</a>,
+    clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+) <a href="#OrphanSweeper">OrphanSweeper</a></pre>
+				<p>NewOrphanSweeper は、owner の名前で回収を引き受ける OrphanSweeper を生成します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="Replayer">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/replay.go.html?s=732:1224#L8">Replayer</a>
+				<a class="permalink" href="#Replayer">¶</a>
+				
+				
+			</h2>
+			<p>Replayer は、cursor より後ろの event を 1 ページずつ読みます。接続を開いたときの replay と、
+wakeup / 周期 catch-up による読み直しは同じ読み取りで、違うのは呼ぶ契機だけです。
+
+			</p><pre>type Replayer interface {
+    <span class="comment">// ReadPage は、after より後ろの event を sequence 昇順に最大 ReplayPageLimit 件返します。</span>
+    <span class="comment">// 続きがあれば hasMore が true になり、呼び出し側は最後の event の Sequence を次の after に渡します。</span>
+    <span class="comment">// EventLog が読めなければ apperror.ErrUnavailable（retry 可能）を返します。</span>
+    ReadPage(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, streamID <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>, after <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>) (events []<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#DeliveryEvent">DeliveryEvent</a>, hasMore <a href="../../../../builtin/#bool">bool</a>, err <a href="../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewReplayer">func <a href="../../../../src/go-boilerplate/internal/usecase/realtime/replay.go.html?s=1363:1442#L21">NewReplayer</a>
+					<a class="permalink" href="#NewReplayer">¶</a>
+					
+					
+				</h3>
+				<pre>func NewReplayer(log <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#EventLogStore">EventLogStore</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>) <a href="#Replayer">Replayer</a></pre>
+				<p>NewReplayer は、Replayer を生成します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="SweepResult">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/cleanup.go.html?s=836:1393#L11">SweepResult</a>
+				<a class="permalink" href="#SweepResult">¶</a>
+				
+				
+			</h2>
+			<p>SweepResult は、1 回の掃除の内訳です。
+
+			</p><pre>type SweepResult struct {
+<span id="SweepResult.Detected"></span>    <span class="comment">// Detected は、期限切れが安全余裕を過ぎていた lease の数です。</span>
+    Detected <a href="../../../../builtin/#int">int</a>
+<span id="SweepResult.Claimed"></span>    <span class="comment">// Claimed は、回収を引き受けられた数です。</span>
+    Claimed <a href="../../../../builtin/#int">int</a>
+<span id="SweepResult.Reclaimed"></span>    <span class="comment">// Reclaimed は、受信先を片付けて lease まで閉じられた数です。</span>
+    Reclaimed <a href="../../../../builtin/#int">int</a>
+<span id="SweepResult.Skipped"></span>    <span class="comment">// Skipped は、他の掃除役が先に引き受けていた、または instance が復帰していて閉じなかった数です。</span>
+    Skipped <a href="../../../../builtin/#int">int</a>
+<span id="SweepResult.Failed"></span>    <span class="comment">// Failed は、引き受け・回収・閉じるのいずれかが失敗した数です。</span>
+    Failed <a href="../../../../builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="TicketIssuer">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/ticket.go.html?s=1520:1740#L31">TicketIssuer</a>
+				<a class="permalink" href="#TicketIssuer">¶</a>
+				
+				
+			</h2>
+			<p>TicketIssuer は、ticket を発行します。feature の ticket-issuing usecase が認可の後に呼びます。
+
+			</p><pre>type TicketIssuer interface {
+    <span class="comment">// Issue は、生値を生成し、その hash を bindings と共に保存して、生値と期限を返します。</span>
+    Issue(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, in <a href="#IssueTicketInput">IssueTicketInput</a>) (<a href="#TicketView">TicketView</a>, <a href="../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewTicketIssuer">func <a href="../../../../src/go-boilerplate/internal/usecase/realtime/ticket.go.html?s=2509:2654#L52">NewTicketIssuer</a>
+					<a class="permalink" href="#NewTicketIssuer">¶</a>
+					
+					
+				</h3>
+				<pre>func NewTicketIssuer(
+    store <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamTicketStore">StreamTicketStore</a>,
+    secrets <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#SecretGenerator">SecretGenerator</a>,
+    clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+) <a href="#TicketIssuer">TicketIssuer</a></pre>
+				<p>NewTicketIssuer は、TicketIssuer を生成します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="TicketVerifier">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/ticket.go.html?s=1823:2302#L37">TicketVerifier</a>
+				<a class="permalink" href="#TicketVerifier">¶</a>
+				
+				
+			</h2>
+			<p>TicketVerifier は、接続時に提示された ticket を検証します。
+
+			</p><pre>type TicketVerifier interface {
+    <span class="comment">// Verify は、生値の hash に対応する ticket が期限内にあり、destination が一致するときその束縛（StreamGrant）を</span>
+    <span class="comment">// 返します。無い・期限切れ・destination 違いはいずれも ErrTicketInvalid で、理由は区別しません（README）。</span>
+    <span class="comment">// store が読めなければ apperror.ErrUnavailable です。</span>
+    Verify(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, value <a href="../../../../builtin/#string">string</a>, destination <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>) (<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamGrant">StreamGrant</a>, <a href="../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewTicketVerifier">func <a href="../../../../src/go-boilerplate/internal/usecase/realtime/ticket.go.html?s=2774:2888#L62">NewTicketVerifier</a>
+					<a class="permalink" href="#NewTicketVerifier">¶</a>
+					
+					
+				</h3>
+				<pre>func NewTicketVerifier(store <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamTicketStore">StreamTicketStore</a>, clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>) <a href="#TicketVerifier">TicketVerifier</a></pre>
+				<p>NewTicketVerifier は、TicketVerifier を生成します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="TicketView">type <a href="../../../../src/go-boilerplate/internal/usecase/realtime/ticket.go.html?s=1334:1399#L25">TicketView</a>
+				<a class="permalink" href="#TicketView">¶</a>
+				
+				
+			</h2>
+			<p>TicketView は、発行の結果として client に 1 度だけ渡す ticket の生値と期限です。生値はどこにも保存されません。
+
+			</p><pre>type TicketView struct {
+<span id="TicketView.Value"></span>    Value     <a href="../../../../builtin/#string">string</a>
+<span id="TicketView.ExpiresAt"></span>    ExpiresAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

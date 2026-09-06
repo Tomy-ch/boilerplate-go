@@ -1,0 +1,286 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>query - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package query
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/product/query&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package query は、商品の読み取り専用クエリ（QueryService）のインターフェースを提供します。
+置き場を Repository ではなく QueryService とする判定基準は docs/design/data-access-pattern.md の §3.3。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#DiscontinueImpactQueryService">type DiscontinueImpactQueryService</a></dd>
+				
+				
+			
+				
+				<dd><a href="#DiscontinueImpactReadModel">type DiscontinueImpactReadModel</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ProductImageQueryService">type ProductImageQueryService</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/product/query/discontinue_impact_query_service.go.html">discontinue_impact_query_service.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/product/query/product_image_query_service.go.html">product_image_query_service.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="DiscontinueImpactQueryService">type <a href="../../../../../src/go-boilerplate/internal/usecase/product/query/discontinue_impact_query_service.go.html?s=1171:2033#L15">DiscontinueImpactQueryService</a>
+				<a class="permalink" href="#DiscontinueImpactQueryService">¶</a>
+				
+				
+			</h2>
+			<p>DiscontinueImpactQueryService は、廃番の影響の集約跨ぎ read 投影を提供する QueryService です。
+カート・ユーザー・購入をまたぐ件数の投影であり、どの集約も再構成しないため読み取り側に置きます
+（ADR-0032 (lightweight-cqrs)）。
+
+			</p><pre>type DiscontinueImpactQueryService interface {
+    <span class="comment">// EstimateDiscontinueImpact は、商品を廃番にした場合の影響を件数で返します。</span>
+    <span class="comment">//</span>
+    <span class="comment">// **行をロックしません。** 返した値は返した瞬間から古くなり、実行時の件数と一致する保証はありません。</span>
+    <span class="comment">// 押す前に規模を見せるための読み取りであり、可否の判定そのものは実行時のトランザクションが持ちます。</span>
+    <span class="comment">//</span>
+    <span class="comment">// カート数と受給者数の母集団は CommandService 側の書き込みと対で、進行中購入数は実行時の</span>
+    <span class="comment">// 可否判定と対です。対の片方だけを変えると、見積もりと実行が食い違って押す前に見せた数字の</span>
+    <span class="comment">// 意味が失われます。</span>
+    EstimateDiscontinueImpact(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, productID <a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#DiscontinueImpactReadModel">DiscontinueImpactReadModel</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="DiscontinueImpactReadModel">type <a href="../../../../../src/go-boilerplate/internal/usecase/product/query/discontinue_impact_query_service.go.html?s=268:864#L2">DiscontinueImpactReadModel</a>
+				<a class="permalink" href="#DiscontinueImpactReadModel">¶</a>
+				
+				
+			</h2>
+			<p>DiscontinueImpactReadModel は、商品を廃番にしたときの影響の見積もりです。
+
+			</p><pre>type DiscontinueImpactReadModel struct {
+<span id="DiscontinueImpactReadModel.AffectedCartCount"></span>    <span class="comment">// AffectedCartCount は、対象商品の明細を持つカートの件数です。ゲストのカートも含みます。</span>
+    AffectedCartCount <a href="../../../../../builtin/#int64">int64</a>
+<span id="DiscontinueImpactReadModel.AffectedUserCount"></span>    <span class="comment">// AffectedUserCount は、クーポンの受給対象になる確定済みユーザーの数です。</span>
+    <span class="comment">// ゲストのカートと退会済みユーザーを除くため AffectedCartCount 以下になります。</span>
+    AffectedUserCount <a href="../../../../../builtin/#int64">int64</a>
+<span id="DiscontinueImpactReadModel.InProgressPurchaseCount"></span>    <span class="comment">// InProgressPurchaseCount は、対象商品を含む進行中の購入の件数です。1 以上なら廃番は拒まれます。</span>
+    InProgressPurchaseCount <a href="../../../../../builtin/#int64">int64</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ProductImageQueryService">type <a href="../../../../../src/go-boilerplate/internal/usecase/product/query/product_image_query_service.go.html?s=499:1104#L1">ProductImageQueryService</a>
+				<a class="permalink" href="#ProductImageQueryService">¶</a>
+				
+				
+			</h2>
+			<p>ProductImageQueryService は、商品画像の横断的な参照照合を提供する QueryService です。
+
+			</p><pre>type ProductImageQueryService interface {
+    <span class="comment">// FilterExistingImagePaths は、paths のうち、いずれかの商品が現在の画像として参照しているものを</span>
+    <span class="comment">// 返します。重複は取り除き、順序は保証しません。paths が空の場合は空を返します。</span>
+    <span class="comment">//</span>
+    <span class="comment">// 返らなかったパスは、どの商品からも参照されていないことを意味します。置き換えで論理削除された</span>
+    <span class="comment">// 画像は現在の参照ではないため、参照元として数えません。</span>
+    FilterExistingImagePaths(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, paths []<a href="../../../../../builtin/#string">string</a>) ([]<a href="../../../../../builtin/#string">string</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

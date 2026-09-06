@@ -66,520 +66,537 @@
 <span id="L9" class="ln">     9  </span>	&#34;strings&#34;
 <span id="L10" class="ln">    10  </span>	&#34;testing&#34;
 <span id="L11" class="ln">    11  </span>
-<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
-<span id="L13" class="ln">    13  </span>
-<span id="L14" class="ln">    14  </span>	&#34;github.com/labstack/echo/v5&#34;
-<span id="L15" class="ln">    15  </span>	&#34;github.com/stretchr/testify/assert&#34;
-<span id="L16" class="ln">    16  </span>	&#34;github.com/stretchr/testify/require&#34;
-<span id="L17" class="ln">    17  </span>)
-<span id="L18" class="ln">    18  </span>
-<span id="L19" class="ln">    19  </span>func newEchoWithUserRoute() *echo.Echo {
-<span id="L20" class="ln">    20  </span>	e := echo.New()
-<span id="L21" class="ln">    21  </span>	e.GET(&#34;/users/:id&#34;, func(c *echo.Context) error {
-<span id="L22" class="ln">    22  </span>		return c.String(http.StatusOK, &#34;user:&#34;+c.Param(&#34;id&#34;))
-<span id="L23" class="ln">    23  </span>	})
-<span id="L24" class="ln">    24  </span>	return e
-<span id="L25" class="ln">    25  </span>}
-<span id="L26" class="ln">    26  </span>
-<span id="L27" class="ln">    27  </span>func TestNewEchoTestClient(t *testing.T) {
-<span id="L28" class="ln">    28  </span>	t.Parallel()
-<span id="L29" class="ln">    29  </span>
-<span id="L30" class="ln">    30  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L31" class="ln">    31  </span>		t.Parallel()
-<span id="L32" class="ln">    32  </span>
-<span id="L33" class="ln">    33  </span>		t.Run(&#34;渡したEchoを保持し設定前のビルダは空で初期化される&#34;, func(t *testing.T) {
-<span id="L34" class="ln">    34  </span>			t.Parallel()
-<span id="L35" class="ln">    35  </span>			e := echo.New()
-<span id="L36" class="ln">    36  </span>
-<span id="L37" class="ln">    37  </span>			client := NewEchoTestClient(t, e)
-<span id="L38" class="ln">    38  </span>
-<span id="L39" class="ln">    39  </span>			assert.Same(t, e, client.e)
-<span id="L40" class="ln">    40  </span>			require.NotNil(t, client.headers)
-<span id="L41" class="ln">    41  </span>			assert.Empty(t, client.headers)
-<span id="L42" class="ln">    42  </span>			assert.Empty(t, client.method)
-<span id="L43" class="ln">    43  </span>			assert.Empty(t, client.routePattern)
-<span id="L44" class="ln">    44  </span>			assert.Empty(t, client.requestURL)
-<span id="L45" class="ln">    45  </span>			assert.Nil(t, client.body)
-<span id="L46" class="ln">    46  </span>		})
-<span id="L47" class="ln">    47  </span>	})
-<span id="L48" class="ln">    48  </span>}
-<span id="L49" class="ln">    49  </span>
-<span id="L50" class="ln">    50  </span>func TestEchoTestClient_Build(t *testing.T) {
-<span id="L51" class="ln">    51  </span>	t.Parallel()
-<span id="L52" class="ln">    52  </span>
-<span id="L53" class="ln">    53  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L54" class="ln">    54  </span>		t.Parallel()
-<span id="L55" class="ln">    55  </span>
-<span id="L56" class="ln">    56  </span>		t.Run(&#34;RequestURLモードではルータ解決でパスが設定される&#34;, func(t *testing.T) {
-<span id="L57" class="ln">    57  </span>			t.Parallel()
-<span id="L58" class="ln">    58  </span>			client := NewEchoTestClient(t, newEchoWithUserRoute()).
-<span id="L59" class="ln">    59  </span>				Method(http.MethodGet).
-<span id="L60" class="ln">    60  </span>				RequestURL(&#34;/users/456&#34;)
-<span id="L61" class="ln">    61  </span>
-<span id="L62" class="ln">    62  </span>			req, rec, c := client.Build()
-<span id="L63" class="ln">    63  </span>			require.NotNil(t, req)
-<span id="L64" class="ln">    64  </span>			require.NotNil(t, rec)
-<span id="L65" class="ln">    65  </span>			assert.Equal(t, &#34;/users/:id&#34;, c.Path())
-<span id="L66" class="ln">    66  </span>			assert.Equal(t, &#34;456&#34;, c.Param(&#34;id&#34;))
-<span id="L67" class="ln">    67  </span>		})
-<span id="L68" class="ln">    68  </span>
-<span id="L69" class="ln">    69  </span>		t.Run(&#34;RoutePatternモードではSetPathとPathParamsが設定される&#34;, func(t *testing.T) {
-<span id="L70" class="ln">    70  </span>			t.Parallel()
-<span id="L71" class="ln">    71  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L72" class="ln">    72  </span>				Method(http.MethodGet).
-<span id="L73" class="ln">    73  </span>				RoutePattern(&#34;/users/:id&#34;).
-<span id="L74" class="ln">    74  </span>				PathParams([]EchoTestParam{{Name: &#34;id&#34;, Value: &#34;123&#34;}})
-<span id="L75" class="ln">    75  </span>
-<span id="L76" class="ln">    76  </span>			_, _, c := client.Build()
-<span id="L77" class="ln">    77  </span>			assert.Equal(t, &#34;/users/:id&#34;, c.Path())
-<span id="L78" class="ln">    78  </span>			assert.Equal(t, &#34;123&#34;, c.Param(&#34;id&#34;))
-<span id="L79" class="ln">    79  </span>		})
-<span id="L80" class="ln">    80  </span>
-<span id="L81" class="ln">    81  </span>		t.Run(&#34;RoutePatternモードでPathParamsが無ければパラメータは設定されない&#34;, func(t *testing.T) {
-<span id="L82" class="ln">    82  </span>			t.Parallel()
-<span id="L83" class="ln">    83  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L84" class="ln">    84  </span>				Method(http.MethodGet).
-<span id="L85" class="ln">    85  </span>				RoutePattern(&#34;/health&#34;)
-<span id="L86" class="ln">    86  </span>
-<span id="L87" class="ln">    87  </span>			_, _, c := client.Build()
-<span id="L88" class="ln">    88  </span>			assert.Equal(t, &#34;/health&#34;, c.Path())
-<span id="L89" class="ln">    89  </span>			assert.Empty(t, c.PathValues())
-<span id="L90" class="ln">    90  </span>		})
-<span id="L91" class="ln">    91  </span>	})
-<span id="L92" class="ln">    92  </span>}
-<span id="L93" class="ln">    93  </span>
-<span id="L94" class="ln">    94  </span>func TestEchoTestClient_buildRequest(t *testing.T) {
-<span id="L95" class="ln">    95  </span>	t.Parallel()
-<span id="L96" class="ln">    96  </span>
-<span id="L97" class="ln">    97  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L98" class="ln">    98  </span>		t.Parallel()
-<span id="L99" class="ln">    99  </span>
-<span id="L100" class="ln">   100  </span>		t.Run(&#34;ヘッダとクエリパラメータが反映される&#34;, func(t *testing.T) {
-<span id="L101" class="ln">   101  </span>			t.Parallel()
-<span id="L102" class="ln">   102  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L103" class="ln">   103  </span>				Method(http.MethodGet).
-<span id="L104" class="ln">   104  </span>				RoutePattern(&#34;/test&#34;).
-<span id="L105" class="ln">   105  </span>				Header(&#34;X-Test&#34;, &#34;value&#34;).
-<span id="L106" class="ln">   106  </span>				QueryParams([]EchoTestParam{{Name: &#34;foo&#34;, Value: &#34;bar&#34;}})
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span>			req, rec := client.buildRequest()
-<span id="L109" class="ln">   109  </span>			require.NotNil(t, req)
-<span id="L110" class="ln">   110  </span>			require.NotNil(t, rec)
-<span id="L111" class="ln">   111  </span>			assert.Equal(t, &#34;value&#34;, req.Header.Get(&#34;X-Test&#34;))
-<span id="L112" class="ln">   112  </span>			assert.Equal(t, &#34;bar&#34;, req.URL.Query().Get(&#34;foo&#34;))
-<span id="L113" class="ln">   113  </span>			assert.Equal(t, &#34;/test&#34;, req.URL.Path)
-<span id="L114" class="ln">   114  </span>		})
-<span id="L115" class="ln">   115  </span>
-<span id="L116" class="ln">   116  </span>		t.Run(&#34;ボディが設定される&#34;, func(t *testing.T) {
-<span id="L117" class="ln">   117  </span>			t.Parallel()
-<span id="L118" class="ln">   118  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L119" class="ln">   119  </span>				Method(http.MethodPost).
-<span id="L120" class="ln">   120  </span>				RoutePattern(&#34;/test&#34;).
-<span id="L121" class="ln">   121  </span>				RawBody(strings.NewReader(&#34;payload&#34;), &#34;text/plain&#34;)
-<span id="L122" class="ln">   122  </span>
-<span id="L123" class="ln">   123  </span>			req, _ := client.buildRequest()
-<span id="L124" class="ln">   124  </span>			got, err := io.ReadAll(req.Body)
-<span id="L125" class="ln">   125  </span>			require.NoError(t, err)
-<span id="L126" class="ln">   126  </span>			assert.Equal(t, &#34;payload&#34;, string(got))
-<span id="L127" class="ln">   127  </span>		})
-<span id="L128" class="ln">   128  </span>	})
-<span id="L129" class="ln">   129  </span>}
-<span id="L130" class="ln">   130  </span>
-<span id="L131" class="ln">   131  </span>func TestEchoTestClient_resolveTarget(t *testing.T) {
-<span id="L132" class="ln">   132  </span>	t.Parallel()
-<span id="L133" class="ln">   133  </span>
-<span id="L134" class="ln">   134  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L135" class="ln">   135  </span>		t.Parallel()
-<span id="L136" class="ln">   136  </span>
-<span id="L137" class="ln">   137  </span>		t.Run(&#34;RequestURLのみ指定でURLを返す&#34;, func(t *testing.T) {
-<span id="L138" class="ln">   138  </span>			t.Parallel()
-<span id="L139" class="ln">   139  </span>			client := NewEchoTestClient(t, echo.New())
-<span id="L140" class="ln">   140  </span>			client.RequestURL(&#34;/users/1&#34;)
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>			got, err := client.resolveTarget()
-<span id="L143" class="ln">   143  </span>			require.NoError(t, err)
-<span id="L144" class="ln">   144  </span>			assert.Equal(t, &#34;/users/1&#34;, got)
-<span id="L145" class="ln">   145  </span>		})
-<span id="L146" class="ln">   146  </span>
-<span id="L147" class="ln">   147  </span>		t.Run(&#34;RoutePatternのみ指定でパターンを返す&#34;, func(t *testing.T) {
-<span id="L148" class="ln">   148  </span>			t.Parallel()
-<span id="L149" class="ln">   149  </span>			client := NewEchoTestClient(t, echo.New())
-<span id="L150" class="ln">   150  </span>			client.RoutePattern(&#34;/users/:id&#34;)
-<span id="L151" class="ln">   151  </span>
-<span id="L152" class="ln">   152  </span>			got, err := client.resolveTarget()
-<span id="L153" class="ln">   153  </span>			require.NoError(t, err)
-<span id="L154" class="ln">   154  </span>			assert.Equal(t, &#34;/users/:id&#34;, got)
-<span id="L155" class="ln">   155  </span>		})
-<span id="L156" class="ln">   156  </span>	})
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L159" class="ln">   159  </span>		t.Parallel()
-<span id="L160" class="ln">   160  </span>
-<span id="L161" class="ln">   161  </span>		t.Run(&#34;未指定はerrTargetUnsetを返す&#34;, func(t *testing.T) {
-<span id="L162" class="ln">   162  </span>			t.Parallel()
-<span id="L163" class="ln">   163  </span>			client := NewEchoTestClient(t, echo.New())
-<span id="L164" class="ln">   164  </span>
-<span id="L165" class="ln">   165  </span>			got, err := client.resolveTarget()
-<span id="L166" class="ln">   166  </span>			require.ErrorIs(t, err, errTargetUnset)
-<span id="L167" class="ln">   167  </span>			assert.Empty(t, got)
-<span id="L168" class="ln">   168  </span>		})
-<span id="L169" class="ln">   169  </span>
-<span id="L170" class="ln">   170  </span>		t.Run(&#34;RequestURLとRoutePattern併用はerrModeConflictを返す&#34;, func(t *testing.T) {
-<span id="L171" class="ln">   171  </span>			t.Parallel()
-<span id="L172" class="ln">   172  </span>			client := NewEchoTestClient(t, echo.New())
-<span id="L173" class="ln">   173  </span>			client.RequestURL(&#34;/users/1&#34;).RoutePattern(&#34;/users/:id&#34;)
-<span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>			got, err := client.resolveTarget()
-<span id="L176" class="ln">   176  </span>			require.ErrorIs(t, err, errModeConflict)
-<span id="L177" class="ln">   177  </span>			assert.Empty(t, got)
-<span id="L178" class="ln">   178  </span>		})
-<span id="L179" class="ln">   179  </span>
-<span id="L180" class="ln">   180  </span>		t.Run(&#34;RequestURLとPathParams併用はerrModeConflictを返す&#34;, func(t *testing.T) {
-<span id="L181" class="ln">   181  </span>			t.Parallel()
-<span id="L182" class="ln">   182  </span>			client := NewEchoTestClient(t, echo.New())
-<span id="L183" class="ln">   183  </span>			client.RequestURL(&#34;/users/1&#34;).PathParams([]EchoTestParam{{Name: &#34;id&#34;, Value: &#34;1&#34;}})
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>			got, err := client.resolveTarget()
-<span id="L186" class="ln">   186  </span>			require.ErrorIs(t, err, errModeConflict)
-<span id="L187" class="ln">   187  </span>			assert.Empty(t, got)
-<span id="L188" class="ln">   188  </span>		})
-<span id="L189" class="ln">   189  </span>	})
-<span id="L190" class="ln">   190  </span>}
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>func TestEchoTestClient_WithAppErrorHandler(t *testing.T) {
-<span id="L193" class="ln">   193  </span>	t.Parallel()
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L196" class="ln">   196  </span>		t.Parallel()
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>		t.Run(&#34;エラーを返すハンドラがアプリ標準のJSONエラー応答になる&#34;, func(t *testing.T) {
-<span id="L199" class="ln">   199  </span>			t.Parallel()
-<span id="L200" class="ln">   200  </span>			e := echo.New()
-<span id="L201" class="ln">   201  </span>			e.GET(&#34;/boom&#34;, func(_ *echo.Context) error {
-<span id="L202" class="ln">   202  </span>				return xerrors.New(&#34;boom&#34;)
-<span id="L203" class="ln">   203  </span>			})
-<span id="L204" class="ln">   204  </span>
-<span id="L205" class="ln">   205  </span>			rec := NewEchoTestClient(t, e).
-<span id="L206" class="ln">   206  </span>				WithAppErrorHandler().
-<span id="L207" class="ln">   207  </span>				Method(http.MethodGet).
-<span id="L208" class="ln">   208  </span>				RequestURL(&#34;/boom&#34;).
-<span id="L209" class="ln">   209  </span>				Serve()
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>			assert.Equal(t, http.StatusInternalServerError, rec.Code)
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span>			var body map[string]any
-<span id="L214" class="ln">   214  </span>			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &amp;body))
-<span id="L215" class="ln">   215  </span>			assert.NotEmpty(t, body[&#34;code&#34;])
-<span id="L216" class="ln">   216  </span>		})
-<span id="L217" class="ln">   217  </span>	})
-<span id="L218" class="ln">   218  </span>}
-<span id="L219" class="ln">   219  </span>
-<span id="L220" class="ln">   220  </span>func TestEchoTestClient_JSONBody(t *testing.T) {
-<span id="L221" class="ln">   221  </span>	t.Parallel()
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L224" class="ln">   224  </span>		t.Parallel()
-<span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>		t.Run(&#34;JSONBodyでContent-Typeとボディが設定される&#34;, func(t *testing.T) {
-<span id="L227" class="ln">   227  </span>			t.Parallel()
-<span id="L228" class="ln">   228  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L229" class="ln">   229  </span>				Method(http.MethodPost).
-<span id="L230" class="ln">   230  </span>				RoutePattern(&#34;/test&#34;).
-<span id="L231" class="ln">   231  </span>				JSONBody(map[string]string{&#34;foo&#34;: &#34;bar&#34;})
-<span id="L232" class="ln">   232  </span>
-<span id="L233" class="ln">   233  </span>			_, _, c := client.Build()
-<span id="L234" class="ln">   234  </span>			assert.Equal(t, &#34;application/json&#34;, c.Request().Header.Get(&#34;Content-Type&#34;))
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>			got, err := io.ReadAll(c.Request().Body)
-<span id="L237" class="ln">   237  </span>			require.NoError(t, err)
-<span id="L238" class="ln">   238  </span>			assert.JSONEq(t, `{&#34;foo&#34;:&#34;bar&#34;}`, string(got))
-<span id="L239" class="ln">   239  </span>		})
-<span id="L240" class="ln">   240  </span>	})
-<span id="L241" class="ln">   241  </span>}
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>func TestEchoTestClient_QueryParams(t *testing.T) {
-<span id="L244" class="ln">   244  </span>	t.Parallel()
-<span id="L245" class="ln">   245  </span>
-<span id="L246" class="ln">   246  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L247" class="ln">   247  </span>		t.Parallel()
-<span id="L248" class="ln">   248  </span>
-<span id="L249" class="ln">   249  </span>		t.Run(&#34;QueryParamsでクエリパラメータが設定できる&#34;, func(t *testing.T) {
-<span id="L250" class="ln">   250  </span>			t.Parallel()
-<span id="L251" class="ln">   251  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L252" class="ln">   252  </span>				Method(http.MethodGet).
-<span id="L253" class="ln">   253  </span>				RoutePattern(&#34;/test&#34;).
-<span id="L254" class="ln">   254  </span>				QueryParams([]EchoTestParam{{Name: &#34;foo&#34;, Value: &#34;bar&#34;}})
-<span id="L255" class="ln">   255  </span>
-<span id="L256" class="ln">   256  </span>			_, _, c := client.Build()
-<span id="L257" class="ln">   257  </span>			assert.Equal(t, &#34;bar&#34;, c.QueryParam(&#34;foo&#34;))
-<span id="L258" class="ln">   258  </span>		})
-<span id="L259" class="ln">   259  </span>	})
-<span id="L260" class="ln">   260  </span>}
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>func TestEchoTestClient_RawBody(t *testing.T) {
-<span id="L263" class="ln">   263  </span>	t.Parallel()
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L266" class="ln">   266  </span>		t.Parallel()
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>		t.Run(&#34;RawBodyでContent-Typeとボディが指定通りになる&#34;, func(t *testing.T) {
-<span id="L269" class="ln">   269  </span>			t.Parallel()
-<span id="L270" class="ln">   270  </span>			body := &#34;raw-body-content&#34;
-<span id="L271" class="ln">   271  </span>			contentType := &#34;text/plain&#34;
-<span id="L272" class="ln">   272  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L273" class="ln">   273  </span>				Method(http.MethodPost).
-<span id="L274" class="ln">   274  </span>				RoutePattern(&#34;/test&#34;).
-<span id="L275" class="ln">   275  </span>				RawBody(strings.NewReader(body), contentType)
-<span id="L276" class="ln">   276  </span>
-<span id="L277" class="ln">   277  </span>			_, _, c := client.Build()
-<span id="L278" class="ln">   278  </span>			assert.Equal(t, contentType, c.Request().Header.Get(&#34;Content-Type&#34;))
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>			got, err := io.ReadAll(c.Request().Body)
-<span id="L281" class="ln">   281  </span>			require.NoError(t, err)
-<span id="L282" class="ln">   282  </span>			assert.Equal(t, body, string(got))
-<span id="L283" class="ln">   283  </span>		})
-<span id="L284" class="ln">   284  </span>
-<span id="L285" class="ln">   285  </span>		t.Run(&#34;RawBodyでContent-Typeが空の場合、Content-Typeは設定されない&#34;, func(t *testing.T) {
-<span id="L286" class="ln">   286  </span>			t.Parallel()
-<span id="L287" class="ln">   287  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L288" class="ln">   288  </span>				Method(http.MethodPost).
-<span id="L289" class="ln">   289  </span>				RoutePattern(&#34;/test&#34;).
-<span id="L290" class="ln">   290  </span>				RawBody(strings.NewReader(&#34;raw-body-content&#34;), &#34;&#34;)
-<span id="L291" class="ln">   291  </span>
-<span id="L292" class="ln">   292  </span>			_, _, c := client.Build()
-<span id="L293" class="ln">   293  </span>			assert.Empty(t, c.Request().Header.Get(&#34;Content-Type&#34;))
-<span id="L294" class="ln">   294  </span>		})
-<span id="L295" class="ln">   295  </span>	})
-<span id="L296" class="ln">   296  </span>}
-<span id="L297" class="ln">   297  </span>
-<span id="L298" class="ln">   298  </span>func TestEchoTestClient_Method(t *testing.T) {
-<span id="L299" class="ln">   299  </span>	t.Parallel()
-<span id="L300" class="ln">   300  </span>
-<span id="L301" class="ln">   301  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L302" class="ln">   302  </span>		t.Parallel()
-<span id="L303" class="ln">   303  </span>
-<span id="L304" class="ln">   304  </span>		t.Run(&#34;設定したメソッドがリクエストに反映されチェーン用に自身を返す&#34;, func(t *testing.T) {
-<span id="L305" class="ln">   305  </span>			t.Parallel()
-<span id="L306" class="ln">   306  </span>			client := NewEchoTestClient(t, echo.New()).RoutePattern(&#34;/test&#34;)
-<span id="L307" class="ln">   307  </span>
-<span id="L308" class="ln">   308  </span>			assert.Same(t, client, client.Method(http.MethodPatch))
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>			req, _ := client.buildRequest()
-<span id="L311" class="ln">   311  </span>			assert.Equal(t, http.MethodPatch, req.Method)
-<span id="L312" class="ln">   312  </span>		})
-<span id="L313" class="ln">   313  </span>	})
-<span id="L314" class="ln">   314  </span>}
-<span id="L315" class="ln">   315  </span>
-<span id="L316" class="ln">   316  </span>func TestEchoTestClient_RoutePattern(t *testing.T) {
-<span id="L317" class="ln">   317  </span>	t.Parallel()
-<span id="L318" class="ln">   318  </span>
-<span id="L319" class="ln">   319  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L320" class="ln">   320  </span>		t.Parallel()
-<span id="L321" class="ln">   321  </span>
-<span id="L322" class="ln">   322  </span>		t.Run(&#34;設定したパターンがコンテキストのパスになりチェーン用に自身を返す&#34;, func(t *testing.T) {
-<span id="L323" class="ln">   323  </span>			t.Parallel()
-<span id="L324" class="ln">   324  </span>			client := NewEchoTestClient(t, echo.New()).Method(http.MethodGet)
-<span id="L325" class="ln">   325  </span>
-<span id="L326" class="ln">   326  </span>			assert.Same(t, client, client.RoutePattern(&#34;/users/:id&#34;))
-<span id="L327" class="ln">   327  </span>
-<span id="L328" class="ln">   328  </span>			req, _, c := client.Build()
-<span id="L329" class="ln">   329  </span>			assert.Equal(t, &#34;/users/:id&#34;, c.Path())
-<span id="L330" class="ln">   330  </span>			<span class="comment">// ルータ登録に依らず、パターン文字列がそのままリクエスト先になる。</span>
-<span id="L331" class="ln">   331  </span>			assert.Equal(t, &#34;/users/:id&#34;, req.URL.Path)
-<span id="L332" class="ln">   332  </span>		})
-<span id="L333" class="ln">   333  </span>	})
-<span id="L334" class="ln">   334  </span>}
-<span id="L335" class="ln">   335  </span>
-<span id="L336" class="ln">   336  </span>func TestEchoTestClient_RequestURL(t *testing.T) {
-<span id="L337" class="ln">   337  </span>	t.Parallel()
-<span id="L338" class="ln">   338  </span>
-<span id="L339" class="ln">   339  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L340" class="ln">   340  </span>		t.Parallel()
-<span id="L341" class="ln">   341  </span>
-<span id="L342" class="ln">   342  </span>		t.Run(&#34;クエリを含むURLがそのままリクエスト先になりチェーン用に自身を返す&#34;, func(t *testing.T) {
-<span id="L343" class="ln">   343  </span>			t.Parallel()
-<span id="L344" class="ln">   344  </span>			client := NewEchoTestClient(t, newEchoWithUserRoute()).Method(http.MethodGet)
-<span id="L345" class="ln">   345  </span>
-<span id="L346" class="ln">   346  </span>			assert.Same(t, client, client.RequestURL(&#34;/users/456?limit=10&#34;))
-<span id="L347" class="ln">   347  </span>
-<span id="L348" class="ln">   348  </span>			req, _, c := client.Build()
-<span id="L349" class="ln">   349  </span>			assert.Equal(t, &#34;/users/456&#34;, req.URL.Path)
-<span id="L350" class="ln">   350  </span>			assert.Equal(t, &#34;10&#34;, req.URL.Query().Get(&#34;limit&#34;))
-<span id="L351" class="ln">   351  </span>			<span class="comment">// ルータ解決を通るため、パスパラメータを渡さなくても解決済みの経路情報が入る。</span>
-<span id="L352" class="ln">   352  </span>			assert.Equal(t, &#34;/users/:id&#34;, c.Path())
-<span id="L353" class="ln">   353  </span>			assert.Equal(t, &#34;456&#34;, c.Param(&#34;id&#34;))
-<span id="L354" class="ln">   354  </span>		})
-<span id="L355" class="ln">   355  </span>	})
-<span id="L356" class="ln">   356  </span>}
-<span id="L357" class="ln">   357  </span>
-<span id="L358" class="ln">   358  </span>func TestEchoTestClient_PathParams(t *testing.T) {
-<span id="L359" class="ln">   359  </span>	t.Parallel()
-<span id="L360" class="ln">   360  </span>
-<span id="L361" class="ln">   361  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L362" class="ln">   362  </span>		t.Parallel()
-<span id="L363" class="ln">   363  </span>
-<span id="L364" class="ln">   364  </span>		t.Run(&#34;設定したパスパラメータがコンテキストから引けチェーン用に自身を返す&#34;, func(t *testing.T) {
-<span id="L365" class="ln">   365  </span>			t.Parallel()
-<span id="L366" class="ln">   366  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L367" class="ln">   367  </span>				Method(http.MethodGet).
-<span id="L368" class="ln">   368  </span>				RoutePattern(&#34;/users/:id&#34;)
-<span id="L369" class="ln">   369  </span>
-<span id="L370" class="ln">   370  </span>			assert.Same(t, client, client.PathParams([]EchoTestParam{{Name: &#34;id&#34;, Value: &#34;123&#34;}}))
-<span id="L371" class="ln">   371  </span>
-<span id="L372" class="ln">   372  </span>			_, _, c := client.Build()
-<span id="L373" class="ln">   373  </span>			assert.Equal(t, &#34;123&#34;, c.Param(&#34;id&#34;))
-<span id="L374" class="ln">   374  </span>		})
-<span id="L375" class="ln">   375  </span>
-<span id="L376" class="ln">   376  </span>		t.Run(&#34;複数のパスパラメータをすべて設定する&#34;, func(t *testing.T) {
-<span id="L377" class="ln">   377  </span>			t.Parallel()
-<span id="L378" class="ln">   378  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L379" class="ln">   379  </span>				Method(http.MethodGet).
-<span id="L380" class="ln">   380  </span>				RoutePattern(&#34;/orgs/:orgId/users/:id&#34;).
-<span id="L381" class="ln">   381  </span>				PathParams([]EchoTestParam{{Name: &#34;orgId&#34;, Value: &#34;o-1&#34;}, {Name: &#34;id&#34;, Value: &#34;123&#34;}})
-<span id="L382" class="ln">   382  </span>
-<span id="L383" class="ln">   383  </span>			_, _, c := client.Build()
-<span id="L384" class="ln">   384  </span>			assert.Equal(t, &#34;o-1&#34;, c.Param(&#34;orgId&#34;))
-<span id="L385" class="ln">   385  </span>			assert.Equal(t, &#34;123&#34;, c.Param(&#34;id&#34;))
-<span id="L386" class="ln">   386  </span>		})
-<span id="L387" class="ln">   387  </span>	})
-<span id="L388" class="ln">   388  </span>}
-<span id="L389" class="ln">   389  </span>
-<span id="L390" class="ln">   390  </span>func TestEchoTestClient_Header(t *testing.T) {
-<span id="L391" class="ln">   391  </span>	t.Parallel()
-<span id="L392" class="ln">   392  </span>
-<span id="L393" class="ln">   393  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L394" class="ln">   394  </span>		t.Parallel()
-<span id="L395" class="ln">   395  </span>
-<span id="L396" class="ln">   396  </span>		t.Run(&#34;設定したヘッダがリクエストに反映されチェーン用に自身を返す&#34;, func(t *testing.T) {
-<span id="L397" class="ln">   397  </span>			t.Parallel()
-<span id="L398" class="ln">   398  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L399" class="ln">   399  </span>				Method(http.MethodGet).
-<span id="L400" class="ln">   400  </span>				RoutePattern(&#34;/test&#34;)
-<span id="L401" class="ln">   401  </span>
-<span id="L402" class="ln">   402  </span>			assert.Same(t, client, client.Header(&#34;X-Test&#34;, &#34;value&#34;))
-<span id="L403" class="ln">   403  </span>
-<span id="L404" class="ln">   404  </span>			_, _, c := client.Build()
-<span id="L405" class="ln">   405  </span>			assert.Equal(t, &#34;value&#34;, c.Request().Header.Get(&#34;X-Test&#34;))
-<span id="L406" class="ln">   406  </span>		})
-<span id="L407" class="ln">   407  </span>
-<span id="L408" class="ln">   408  </span>		t.Run(&#34;同じキーを再設定すると後の値で上書きされる&#34;, func(t *testing.T) {
-<span id="L409" class="ln">   409  </span>			t.Parallel()
-<span id="L410" class="ln">   410  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L411" class="ln">   411  </span>				Method(http.MethodGet).
-<span id="L412" class="ln">   412  </span>				RoutePattern(&#34;/test&#34;).
-<span id="L413" class="ln">   413  </span>				Header(&#34;X-Test&#34;, &#34;first&#34;).
-<span id="L414" class="ln">   414  </span>				Header(&#34;X-Test&#34;, &#34;second&#34;)
-<span id="L415" class="ln">   415  </span>
-<span id="L416" class="ln">   416  </span>			_, _, c := client.Build()
-<span id="L417" class="ln">   417  </span>			assert.Equal(t, []string{&#34;second&#34;}, c.Request().Header.Values(&#34;X-Test&#34;))
-<span id="L418" class="ln">   418  </span>		})
-<span id="L419" class="ln">   419  </span>	})
-<span id="L420" class="ln">   420  </span>}
-<span id="L421" class="ln">   421  </span>
-<span id="L422" class="ln">   422  </span>func TestEchoTestClient_AuthBearer(t *testing.T) {
-<span id="L423" class="ln">   423  </span>	t.Parallel()
-<span id="L424" class="ln">   424  </span>
-<span id="L425" class="ln">   425  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L426" class="ln">   426  </span>		t.Parallel()
-<span id="L427" class="ln">   427  </span>
-<span id="L428" class="ln">   428  </span>		t.Run(&#34;BearerプレフィックスつきでAuthorizationヘッダを設定しチェーン用に自身を返す&#34;, func(t *testing.T) {
-<span id="L429" class="ln">   429  </span>			t.Parallel()
-<span id="L430" class="ln">   430  </span>			client := NewEchoTestClient(t, echo.New()).
-<span id="L431" class="ln">   431  </span>				Method(http.MethodGet).
-<span id="L432" class="ln">   432  </span>				RoutePattern(&#34;/test&#34;)
-<span id="L433" class="ln">   433  </span>
-<span id="L434" class="ln">   434  </span>			assert.Same(t, client, client.AuthBearer(&#34;abc.def.ghi&#34;))
-<span id="L435" class="ln">   435  </span>
-<span id="L436" class="ln">   436  </span>			_, _, c := client.Build()
-<span id="L437" class="ln">   437  </span>			assert.Equal(t, &#34;Bearer abc.def.ghi&#34;, c.Request().Header.Get(echo.HeaderAuthorization))
-<span id="L438" class="ln">   438  </span>		})
-<span id="L439" class="ln">   439  </span>	})
-<span id="L440" class="ln">   440  </span>}
-<span id="L441" class="ln">   441  </span>
-<span id="L442" class="ln">   442  </span>func TestEchoTestClient_Serve(t *testing.T) {
-<span id="L443" class="ln">   443  </span>	t.Parallel()
-<span id="L444" class="ln">   444  </span>
-<span id="L445" class="ln">   445  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L446" class="ln">   446  </span>		t.Parallel()
-<span id="L447" class="ln">   447  </span>
-<span id="L448" class="ln">   448  </span>		t.Run(&#34;登録済みルートへ送信しハンドラのレスポンスを返す&#34;, func(t *testing.T) {
-<span id="L449" class="ln">   449  </span>			t.Parallel()
-<span id="L450" class="ln">   450  </span>
-<span id="L451" class="ln">   451  </span>			rec := NewEchoTestClient(t, newEchoWithUserRoute()).
-<span id="L452" class="ln">   452  </span>				Method(http.MethodGet).
-<span id="L453" class="ln">   453  </span>				RequestURL(&#34;/users/789&#34;).
-<span id="L454" class="ln">   454  </span>				Serve()
-<span id="L455" class="ln">   455  </span>
-<span id="L456" class="ln">   456  </span>			assert.Equal(t, http.StatusOK, rec.Code)
-<span id="L457" class="ln">   457  </span>			assert.Equal(t, &#34;user:789&#34;, rec.Body.String())
-<span id="L458" class="ln">   458  </span>		})
-<span id="L459" class="ln">   459  </span>	})
-<span id="L460" class="ln">   460  </span>
-<span id="L461" class="ln">   461  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L462" class="ln">   462  </span>		t.Parallel()
-<span id="L463" class="ln">   463  </span>
-<span id="L464" class="ln">   464  </span>		t.Run(&#34;未登録ルートへ送信するとEchoの404が返る&#34;, func(t *testing.T) {
-<span id="L465" class="ln">   465  </span>			t.Parallel()
-<span id="L466" class="ln">   466  </span>
-<span id="L467" class="ln">   467  </span>			rec := NewEchoTestClient(t, newEchoWithUserRoute()).
-<span id="L468" class="ln">   468  </span>				Method(http.MethodGet).
-<span id="L469" class="ln">   469  </span>				RequestURL(&#34;/no/such/path&#34;).
-<span id="L470" class="ln">   470  </span>				Serve()
-<span id="L471" class="ln">   471  </span>
-<span id="L472" class="ln">   472  </span>			assert.Equal(t, http.StatusNotFound, rec.Code)
-<span id="L473" class="ln">   473  </span>		})
-<span id="L474" class="ln">   474  </span>	})
-<span id="L475" class="ln">   475  </span>}
-<span id="L476" class="ln">   476  </span>
-<span id="L477" class="ln">   477  </span>func Test_newTestDetailPolicy(t *testing.T) {
-<span id="L478" class="ln">   478  </span>	t.Parallel()
-<span id="L479" class="ln">   479  </span>
-<span id="L480" class="ln">   480  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L481" class="ln">   481  </span>		t.Parallel()
-<span id="L482" class="ln">   482  </span>
-<span id="L483" class="ln">   483  </span>		<span class="comment">// sample-api:replace-begin</span>
-<span id="L484" class="ln">   484  </span>		t.Run(&#34;実specからdetails公開をopt-inしたoperationを許可するポリシーを返す&#34;, func(t *testing.T) {
-<span id="L485" class="ln">   485  </span>			<span class="comment">// sample-api:replace-with</span>
-<span id="L486" class="ln">   486  </span>			<span class="comment">// = t.Run(&#34;実specから構築したポリシーが未opt-inのoperationを拒否する&#34;, func(t *testing.T) {</span>
-<span id="L487" class="ln">   487  </span>			<span class="comment">// sample-api:replace-end</span>
-<span id="L488" class="ln">   488  </span>			t.Parallel()
-<span id="L489" class="ln">   489  </span>
-<span id="L490" class="ln">   490  </span>			policy := newTestDetailPolicy(t)
-<span id="L491" class="ln">   491  </span>
-<span id="L492" class="ln">   492  </span>			require.NotNil(t, policy)
-<span id="L493" class="ln">   493  </span>			<span class="comment">// sample-api:replace-begin</span>
-<span id="L494" class="ln">   494  </span>			req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, &#34;/v1/users&#34;, nil)
-<span id="L495" class="ln">   495  </span>			assert.True(t, policy.Allows(req))
-<span id="L496" class="ln">   496  </span>			<span class="comment">// sample-api:replace-with</span>
-<span id="L497" class="ln">   497  </span>			<span class="comment">// = req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, &#34;/health&#34;, nil)</span>
-<span id="L498" class="ln">   498  </span>			<span class="comment">// = assert.False(t, policy.Allows(req))</span>
-<span id="L499" class="ln">   499  </span>			<span class="comment">// sample-api:replace-end</span>
-<span id="L500" class="ln">   500  </span>		})
-<span id="L501" class="ln">   501  </span>	})
-<span id="L502" class="ln">   502  </span>}
-<span id="L503" class="ln">   503  </span>
-<span id="L504" class="ln">   504  </span>func Test_newTestAllowPolicy(t *testing.T) {
-<span id="L505" class="ln">   505  </span>	t.Parallel()
-<span id="L506" class="ln">   506  </span>
-<span id="L507" class="ln">   507  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L508" class="ln">   508  </span>		t.Parallel()
-<span id="L509" class="ln">   509  </span>
-<span id="L510" class="ln">   510  </span>		t.Run(&#34;実specからパスごとの許可メソッドを解決するポリシーを返す&#34;, func(t *testing.T) {
-<span id="L511" class="ln">   511  </span>			t.Parallel()
-<span id="L512" class="ln">   512  </span>
-<span id="L513" class="ln">   513  </span>			policy := newTestAllowPolicy(t)
-<span id="L514" class="ln">   514  </span>
-<span id="L515" class="ln">   515  </span>			require.NotNil(t, policy)
-<span id="L516" class="ln">   516  </span>			<span class="comment">// sample-api:replace-begin</span>
-<span id="L517" class="ln">   517  </span>			req := httptest.NewRequestWithContext(context.Background(), http.MethodDelete, &#34;/v1/prefectures&#34;, nil)
-<span id="L518" class="ln">   518  </span>			<span class="comment">// sample-api:replace-with</span>
-<span id="L519" class="ln">   519  </span>			<span class="comment">// = req := httptest.NewRequestWithContext(context.Background(), http.MethodDelete, &#34;/health&#34;, nil)</span>
-<span id="L520" class="ln">   520  </span>			<span class="comment">// sample-api:replace-end</span>
-<span id="L521" class="ln">   521  </span>			assert.Equal(t, &#34;OPTIONS, GET&#34;, policy.Allow(req))
-<span id="L522" class="ln">   522  </span>		})
-<span id="L523" class="ln">   523  </span>	})
-<span id="L524" class="ln">   524  </span>}
-<span id="L525" class="ln">   525  </span>
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/controller/httpstack/redaction&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L14" class="ln">    14  </span>
+<span id="L15" class="ln">    15  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L16" class="ln">    16  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L17" class="ln">    17  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L18" class="ln">    18  </span>)
+<span id="L19" class="ln">    19  </span>
+<span id="L20" class="ln">    20  </span>func newEchoWithUserRoute() *echo.Echo {
+<span id="L21" class="ln">    21  </span>	e := echo.New()
+<span id="L22" class="ln">    22  </span>	e.GET(&#34;/users/:id&#34;, func(c *echo.Context) error {
+<span id="L23" class="ln">    23  </span>		return c.String(http.StatusOK, &#34;user:&#34;+c.Param(&#34;id&#34;))
+<span id="L24" class="ln">    24  </span>	})
+<span id="L25" class="ln">    25  </span>	return e
+<span id="L26" class="ln">    26  </span>}
+<span id="L27" class="ln">    27  </span>
+<span id="L28" class="ln">    28  </span>func TestNewEchoTestClient(t *testing.T) {
+<span id="L29" class="ln">    29  </span>	t.Parallel()
+<span id="L30" class="ln">    30  </span>
+<span id="L31" class="ln">    31  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L32" class="ln">    32  </span>		t.Parallel()
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span>		t.Run(&#34;渡したEchoを保持し設定前のビルダは空で初期化される&#34;, func(t *testing.T) {
+<span id="L35" class="ln">    35  </span>			t.Parallel()
+<span id="L36" class="ln">    36  </span>			e := echo.New()
+<span id="L37" class="ln">    37  </span>
+<span id="L38" class="ln">    38  </span>			client := NewEchoTestClient(t, e)
+<span id="L39" class="ln">    39  </span>
+<span id="L40" class="ln">    40  </span>			assert.Same(t, e, client.e)
+<span id="L41" class="ln">    41  </span>			require.NotNil(t, client.headers)
+<span id="L42" class="ln">    42  </span>			assert.Empty(t, client.headers)
+<span id="L43" class="ln">    43  </span>			assert.Empty(t, client.method)
+<span id="L44" class="ln">    44  </span>			assert.Empty(t, client.routePattern)
+<span id="L45" class="ln">    45  </span>			assert.Empty(t, client.requestURL)
+<span id="L46" class="ln">    46  </span>			assert.Nil(t, client.body)
+<span id="L47" class="ln">    47  </span>		})
+<span id="L48" class="ln">    48  </span>	})
+<span id="L49" class="ln">    49  </span>}
+<span id="L50" class="ln">    50  </span>
+<span id="L51" class="ln">    51  </span>func TestEchoTestClient_Build(t *testing.T) {
+<span id="L52" class="ln">    52  </span>	t.Parallel()
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L55" class="ln">    55  </span>		t.Parallel()
+<span id="L56" class="ln">    56  </span>
+<span id="L57" class="ln">    57  </span>		t.Run(&#34;RequestURLモードではルータ解決でパスが設定される&#34;, func(t *testing.T) {
+<span id="L58" class="ln">    58  </span>			t.Parallel()
+<span id="L59" class="ln">    59  </span>			client := NewEchoTestClient(t, newEchoWithUserRoute()).
+<span id="L60" class="ln">    60  </span>				Method(http.MethodGet).
+<span id="L61" class="ln">    61  </span>				RequestURL(&#34;/users/456&#34;)
+<span id="L62" class="ln">    62  </span>
+<span id="L63" class="ln">    63  </span>			req, rec, c := client.Build()
+<span id="L64" class="ln">    64  </span>			require.NotNil(t, req)
+<span id="L65" class="ln">    65  </span>			require.NotNil(t, rec)
+<span id="L66" class="ln">    66  </span>			assert.Equal(t, &#34;/users/:id&#34;, c.Path())
+<span id="L67" class="ln">    67  </span>			assert.Equal(t, &#34;456&#34;, c.Param(&#34;id&#34;))
+<span id="L68" class="ln">    68  </span>		})
+<span id="L69" class="ln">    69  </span>
+<span id="L70" class="ln">    70  </span>		t.Run(&#34;RoutePatternモードではSetPathとPathParamsが設定される&#34;, func(t *testing.T) {
+<span id="L71" class="ln">    71  </span>			t.Parallel()
+<span id="L72" class="ln">    72  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L73" class="ln">    73  </span>				Method(http.MethodGet).
+<span id="L74" class="ln">    74  </span>				RoutePattern(&#34;/users/:id&#34;).
+<span id="L75" class="ln">    75  </span>				PathParams([]EchoTestParam{{Name: &#34;id&#34;, Value: &#34;123&#34;}})
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>			_, _, c := client.Build()
+<span id="L78" class="ln">    78  </span>			assert.Equal(t, &#34;/users/:id&#34;, c.Path())
+<span id="L79" class="ln">    79  </span>			assert.Equal(t, &#34;123&#34;, c.Param(&#34;id&#34;))
+<span id="L80" class="ln">    80  </span>		})
+<span id="L81" class="ln">    81  </span>
+<span id="L82" class="ln">    82  </span>		t.Run(&#34;RoutePatternモードでPathParamsが無ければパラメータは設定されない&#34;, func(t *testing.T) {
+<span id="L83" class="ln">    83  </span>			t.Parallel()
+<span id="L84" class="ln">    84  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L85" class="ln">    85  </span>				Method(http.MethodGet).
+<span id="L86" class="ln">    86  </span>				RoutePattern(&#34;/health&#34;)
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span>			_, _, c := client.Build()
+<span id="L89" class="ln">    89  </span>			assert.Equal(t, &#34;/health&#34;, c.Path())
+<span id="L90" class="ln">    90  </span>			assert.Empty(t, c.PathValues())
+<span id="L91" class="ln">    91  </span>		})
+<span id="L92" class="ln">    92  </span>	})
+<span id="L93" class="ln">    93  </span>}
+<span id="L94" class="ln">    94  </span>
+<span id="L95" class="ln">    95  </span>func TestEchoTestClient_buildRequest(t *testing.T) {
+<span id="L96" class="ln">    96  </span>	t.Parallel()
+<span id="L97" class="ln">    97  </span>
+<span id="L98" class="ln">    98  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L99" class="ln">    99  </span>		t.Parallel()
+<span id="L100" class="ln">   100  </span>
+<span id="L101" class="ln">   101  </span>		t.Run(&#34;ヘッダとクエリパラメータが反映される&#34;, func(t *testing.T) {
+<span id="L102" class="ln">   102  </span>			t.Parallel()
+<span id="L103" class="ln">   103  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L104" class="ln">   104  </span>				Method(http.MethodGet).
+<span id="L105" class="ln">   105  </span>				RoutePattern(&#34;/test&#34;).
+<span id="L106" class="ln">   106  </span>				Header(&#34;X-Test&#34;, &#34;value&#34;).
+<span id="L107" class="ln">   107  </span>				QueryParams([]EchoTestParam{{Name: &#34;foo&#34;, Value: &#34;bar&#34;}})
+<span id="L108" class="ln">   108  </span>
+<span id="L109" class="ln">   109  </span>			req, rec := client.buildRequest()
+<span id="L110" class="ln">   110  </span>			require.NotNil(t, req)
+<span id="L111" class="ln">   111  </span>			require.NotNil(t, rec)
+<span id="L112" class="ln">   112  </span>			assert.Equal(t, &#34;value&#34;, req.Header.Get(&#34;X-Test&#34;))
+<span id="L113" class="ln">   113  </span>			assert.Equal(t, &#34;bar&#34;, req.URL.Query().Get(&#34;foo&#34;))
+<span id="L114" class="ln">   114  </span>			assert.Equal(t, &#34;/test&#34;, req.URL.Path)
+<span id="L115" class="ln">   115  </span>		})
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>		t.Run(&#34;ボディが設定される&#34;, func(t *testing.T) {
+<span id="L118" class="ln">   118  </span>			t.Parallel()
+<span id="L119" class="ln">   119  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L120" class="ln">   120  </span>				Method(http.MethodPost).
+<span id="L121" class="ln">   121  </span>				RoutePattern(&#34;/test&#34;).
+<span id="L122" class="ln">   122  </span>				RawBody(strings.NewReader(&#34;payload&#34;), &#34;text/plain&#34;)
+<span id="L123" class="ln">   123  </span>
+<span id="L124" class="ln">   124  </span>			req, _ := client.buildRequest()
+<span id="L125" class="ln">   125  </span>			got, err := io.ReadAll(req.Body)
+<span id="L126" class="ln">   126  </span>			require.NoError(t, err)
+<span id="L127" class="ln">   127  </span>			assert.Equal(t, &#34;payload&#34;, string(got))
+<span id="L128" class="ln">   128  </span>		})
+<span id="L129" class="ln">   129  </span>	})
+<span id="L130" class="ln">   130  </span>}
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span>func TestEchoTestClient_resolveTarget(t *testing.T) {
+<span id="L133" class="ln">   133  </span>	t.Parallel()
+<span id="L134" class="ln">   134  </span>
+<span id="L135" class="ln">   135  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L136" class="ln">   136  </span>		t.Parallel()
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>		t.Run(&#34;RequestURLのみ指定でURLを返す&#34;, func(t *testing.T) {
+<span id="L139" class="ln">   139  </span>			t.Parallel()
+<span id="L140" class="ln">   140  </span>			client := NewEchoTestClient(t, echo.New())
+<span id="L141" class="ln">   141  </span>			client.RequestURL(&#34;/users/1&#34;)
+<span id="L142" class="ln">   142  </span>
+<span id="L143" class="ln">   143  </span>			got, err := client.resolveTarget()
+<span id="L144" class="ln">   144  </span>			require.NoError(t, err)
+<span id="L145" class="ln">   145  </span>			assert.Equal(t, &#34;/users/1&#34;, got)
+<span id="L146" class="ln">   146  </span>		})
+<span id="L147" class="ln">   147  </span>
+<span id="L148" class="ln">   148  </span>		t.Run(&#34;RoutePatternのみ指定でパターンを返す&#34;, func(t *testing.T) {
+<span id="L149" class="ln">   149  </span>			t.Parallel()
+<span id="L150" class="ln">   150  </span>			client := NewEchoTestClient(t, echo.New())
+<span id="L151" class="ln">   151  </span>			client.RoutePattern(&#34;/users/:id&#34;)
+<span id="L152" class="ln">   152  </span>
+<span id="L153" class="ln">   153  </span>			got, err := client.resolveTarget()
+<span id="L154" class="ln">   154  </span>			require.NoError(t, err)
+<span id="L155" class="ln">   155  </span>			assert.Equal(t, &#34;/users/:id&#34;, got)
+<span id="L156" class="ln">   156  </span>		})
+<span id="L157" class="ln">   157  </span>	})
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L160" class="ln">   160  </span>		t.Parallel()
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>		t.Run(&#34;未指定はerrTargetUnsetを返す&#34;, func(t *testing.T) {
+<span id="L163" class="ln">   163  </span>			t.Parallel()
+<span id="L164" class="ln">   164  </span>			client := NewEchoTestClient(t, echo.New())
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>			got, err := client.resolveTarget()
+<span id="L167" class="ln">   167  </span>			require.ErrorIs(t, err, errTargetUnset)
+<span id="L168" class="ln">   168  </span>			assert.Empty(t, got)
+<span id="L169" class="ln">   169  </span>		})
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>		t.Run(&#34;RequestURLとRoutePattern併用はerrModeConflictを返す&#34;, func(t *testing.T) {
+<span id="L172" class="ln">   172  </span>			t.Parallel()
+<span id="L173" class="ln">   173  </span>			client := NewEchoTestClient(t, echo.New())
+<span id="L174" class="ln">   174  </span>			client.RequestURL(&#34;/users/1&#34;).RoutePattern(&#34;/users/:id&#34;)
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>			got, err := client.resolveTarget()
+<span id="L177" class="ln">   177  </span>			require.ErrorIs(t, err, errModeConflict)
+<span id="L178" class="ln">   178  </span>			assert.Empty(t, got)
+<span id="L179" class="ln">   179  </span>		})
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>		t.Run(&#34;RequestURLとPathParams併用はerrModeConflictを返す&#34;, func(t *testing.T) {
+<span id="L182" class="ln">   182  </span>			t.Parallel()
+<span id="L183" class="ln">   183  </span>			client := NewEchoTestClient(t, echo.New())
+<span id="L184" class="ln">   184  </span>			client.RequestURL(&#34;/users/1&#34;).PathParams([]EchoTestParam{{Name: &#34;id&#34;, Value: &#34;1&#34;}})
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span>			got, err := client.resolveTarget()
+<span id="L187" class="ln">   187  </span>			require.ErrorIs(t, err, errModeConflict)
+<span id="L188" class="ln">   188  </span>			assert.Empty(t, got)
+<span id="L189" class="ln">   189  </span>		})
+<span id="L190" class="ln">   190  </span>	})
+<span id="L191" class="ln">   191  </span>}
+<span id="L192" class="ln">   192  </span>
+<span id="L193" class="ln">   193  </span>func TestEchoTestClient_WithAppErrorHandler(t *testing.T) {
+<span id="L194" class="ln">   194  </span>	t.Parallel()
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L197" class="ln">   197  </span>		t.Parallel()
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span>		t.Run(&#34;エラーを返すハンドラがアプリ標準のJSONエラー応答になる&#34;, func(t *testing.T) {
+<span id="L200" class="ln">   200  </span>			t.Parallel()
+<span id="L201" class="ln">   201  </span>			e := echo.New()
+<span id="L202" class="ln">   202  </span>			e.GET(&#34;/boom&#34;, func(_ *echo.Context) error {
+<span id="L203" class="ln">   203  </span>				return xerrors.New(&#34;boom&#34;)
+<span id="L204" class="ln">   204  </span>			})
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>			rec := NewEchoTestClient(t, e).
+<span id="L207" class="ln">   207  </span>				WithAppErrorHandler().
+<span id="L208" class="ln">   208  </span>				Method(http.MethodGet).
+<span id="L209" class="ln">   209  </span>				RequestURL(&#34;/boom&#34;).
+<span id="L210" class="ln">   210  </span>				Serve()
+<span id="L211" class="ln">   211  </span>
+<span id="L212" class="ln">   212  </span>			assert.Equal(t, http.StatusInternalServerError, rec.Code)
+<span id="L213" class="ln">   213  </span>
+<span id="L214" class="ln">   214  </span>			var body map[string]any
+<span id="L215" class="ln">   215  </span>			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &amp;body))
+<span id="L216" class="ln">   216  </span>			assert.NotEmpty(t, body[&#34;code&#34;])
+<span id="L217" class="ln">   217  </span>		})
+<span id="L218" class="ln">   218  </span>	})
+<span id="L219" class="ln">   219  </span>}
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span>func TestEchoTestClient_JSONBody(t *testing.T) {
+<span id="L222" class="ln">   222  </span>	t.Parallel()
+<span id="L223" class="ln">   223  </span>
+<span id="L224" class="ln">   224  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L225" class="ln">   225  </span>		t.Parallel()
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span>		t.Run(&#34;JSONBodyでContent-Typeとボディが設定される&#34;, func(t *testing.T) {
+<span id="L228" class="ln">   228  </span>			t.Parallel()
+<span id="L229" class="ln">   229  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L230" class="ln">   230  </span>				Method(http.MethodPost).
+<span id="L231" class="ln">   231  </span>				RoutePattern(&#34;/test&#34;).
+<span id="L232" class="ln">   232  </span>				JSONBody(map[string]string{&#34;foo&#34;: &#34;bar&#34;})
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>			_, _, c := client.Build()
+<span id="L235" class="ln">   235  </span>			assert.Equal(t, &#34;application/json&#34;, c.Request().Header.Get(&#34;Content-Type&#34;))
+<span id="L236" class="ln">   236  </span>
+<span id="L237" class="ln">   237  </span>			got, err := io.ReadAll(c.Request().Body)
+<span id="L238" class="ln">   238  </span>			require.NoError(t, err)
+<span id="L239" class="ln">   239  </span>			assert.JSONEq(t, `{&#34;foo&#34;:&#34;bar&#34;}`, string(got))
+<span id="L240" class="ln">   240  </span>		})
+<span id="L241" class="ln">   241  </span>	})
+<span id="L242" class="ln">   242  </span>}
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>func TestEchoTestClient_QueryParams(t *testing.T) {
+<span id="L245" class="ln">   245  </span>	t.Parallel()
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L248" class="ln">   248  </span>		t.Parallel()
+<span id="L249" class="ln">   249  </span>
+<span id="L250" class="ln">   250  </span>		t.Run(&#34;QueryParamsでクエリパラメータが設定できる&#34;, func(t *testing.T) {
+<span id="L251" class="ln">   251  </span>			t.Parallel()
+<span id="L252" class="ln">   252  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L253" class="ln">   253  </span>				Method(http.MethodGet).
+<span id="L254" class="ln">   254  </span>				RoutePattern(&#34;/test&#34;).
+<span id="L255" class="ln">   255  </span>				QueryParams([]EchoTestParam{{Name: &#34;foo&#34;, Value: &#34;bar&#34;}})
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>			_, _, c := client.Build()
+<span id="L258" class="ln">   258  </span>			assert.Equal(t, &#34;bar&#34;, c.QueryParam(&#34;foo&#34;))
+<span id="L259" class="ln">   259  </span>		})
+<span id="L260" class="ln">   260  </span>	})
+<span id="L261" class="ln">   261  </span>}
+<span id="L262" class="ln">   262  </span>
+<span id="L263" class="ln">   263  </span>func TestEchoTestClient_RawBody(t *testing.T) {
+<span id="L264" class="ln">   264  </span>	t.Parallel()
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L267" class="ln">   267  </span>		t.Parallel()
+<span id="L268" class="ln">   268  </span>
+<span id="L269" class="ln">   269  </span>		t.Run(&#34;RawBodyでContent-Typeとボディが指定通りになる&#34;, func(t *testing.T) {
+<span id="L270" class="ln">   270  </span>			t.Parallel()
+<span id="L271" class="ln">   271  </span>			body := &#34;raw-body-content&#34;
+<span id="L272" class="ln">   272  </span>			contentType := &#34;text/plain&#34;
+<span id="L273" class="ln">   273  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L274" class="ln">   274  </span>				Method(http.MethodPost).
+<span id="L275" class="ln">   275  </span>				RoutePattern(&#34;/test&#34;).
+<span id="L276" class="ln">   276  </span>				RawBody(strings.NewReader(body), contentType)
+<span id="L277" class="ln">   277  </span>
+<span id="L278" class="ln">   278  </span>			_, _, c := client.Build()
+<span id="L279" class="ln">   279  </span>			assert.Equal(t, contentType, c.Request().Header.Get(&#34;Content-Type&#34;))
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span>			got, err := io.ReadAll(c.Request().Body)
+<span id="L282" class="ln">   282  </span>			require.NoError(t, err)
+<span id="L283" class="ln">   283  </span>			assert.Equal(t, body, string(got))
+<span id="L284" class="ln">   284  </span>		})
+<span id="L285" class="ln">   285  </span>
+<span id="L286" class="ln">   286  </span>		t.Run(&#34;RawBodyでContent-Typeが空の場合、Content-Typeは設定されない&#34;, func(t *testing.T) {
+<span id="L287" class="ln">   287  </span>			t.Parallel()
+<span id="L288" class="ln">   288  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L289" class="ln">   289  </span>				Method(http.MethodPost).
+<span id="L290" class="ln">   290  </span>				RoutePattern(&#34;/test&#34;).
+<span id="L291" class="ln">   291  </span>				RawBody(strings.NewReader(&#34;raw-body-content&#34;), &#34;&#34;)
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>			_, _, c := client.Build()
+<span id="L294" class="ln">   294  </span>			assert.Empty(t, c.Request().Header.Get(&#34;Content-Type&#34;))
+<span id="L295" class="ln">   295  </span>		})
+<span id="L296" class="ln">   296  </span>	})
+<span id="L297" class="ln">   297  </span>}
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>func TestEchoTestClient_Method(t *testing.T) {
+<span id="L300" class="ln">   300  </span>	t.Parallel()
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L303" class="ln">   303  </span>		t.Parallel()
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>		t.Run(&#34;設定したメソッドがリクエストに反映されチェーン用に自身を返す&#34;, func(t *testing.T) {
+<span id="L306" class="ln">   306  </span>			t.Parallel()
+<span id="L307" class="ln">   307  </span>			client := NewEchoTestClient(t, echo.New()).RoutePattern(&#34;/test&#34;)
+<span id="L308" class="ln">   308  </span>
+<span id="L309" class="ln">   309  </span>			assert.Same(t, client, client.Method(http.MethodPatch))
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>			req, _ := client.buildRequest()
+<span id="L312" class="ln">   312  </span>			assert.Equal(t, http.MethodPatch, req.Method)
+<span id="L313" class="ln">   313  </span>		})
+<span id="L314" class="ln">   314  </span>	})
+<span id="L315" class="ln">   315  </span>}
+<span id="L316" class="ln">   316  </span>
+<span id="L317" class="ln">   317  </span>func TestEchoTestClient_RoutePattern(t *testing.T) {
+<span id="L318" class="ln">   318  </span>	t.Parallel()
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L321" class="ln">   321  </span>		t.Parallel()
+<span id="L322" class="ln">   322  </span>
+<span id="L323" class="ln">   323  </span>		t.Run(&#34;設定したパターンがコンテキストのパスになりチェーン用に自身を返す&#34;, func(t *testing.T) {
+<span id="L324" class="ln">   324  </span>			t.Parallel()
+<span id="L325" class="ln">   325  </span>			client := NewEchoTestClient(t, echo.New()).Method(http.MethodGet)
+<span id="L326" class="ln">   326  </span>
+<span id="L327" class="ln">   327  </span>			assert.Same(t, client, client.RoutePattern(&#34;/users/:id&#34;))
+<span id="L328" class="ln">   328  </span>
+<span id="L329" class="ln">   329  </span>			req, _, c := client.Build()
+<span id="L330" class="ln">   330  </span>			assert.Equal(t, &#34;/users/:id&#34;, c.Path())
+<span id="L331" class="ln">   331  </span>			<span class="comment">// ルータ登録に依らず、パターン文字列がそのままリクエスト先になる。</span>
+<span id="L332" class="ln">   332  </span>			assert.Equal(t, &#34;/users/:id&#34;, req.URL.Path)
+<span id="L333" class="ln">   333  </span>		})
+<span id="L334" class="ln">   334  </span>	})
+<span id="L335" class="ln">   335  </span>}
+<span id="L336" class="ln">   336  </span>
+<span id="L337" class="ln">   337  </span>func TestEchoTestClient_RequestURL(t *testing.T) {
+<span id="L338" class="ln">   338  </span>	t.Parallel()
+<span id="L339" class="ln">   339  </span>
+<span id="L340" class="ln">   340  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L341" class="ln">   341  </span>		t.Parallel()
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span>		t.Run(&#34;クエリを含むURLがそのままリクエスト先になりチェーン用に自身を返す&#34;, func(t *testing.T) {
+<span id="L344" class="ln">   344  </span>			t.Parallel()
+<span id="L345" class="ln">   345  </span>			client := NewEchoTestClient(t, newEchoWithUserRoute()).Method(http.MethodGet)
+<span id="L346" class="ln">   346  </span>
+<span id="L347" class="ln">   347  </span>			assert.Same(t, client, client.RequestURL(&#34;/users/456?limit=10&#34;))
+<span id="L348" class="ln">   348  </span>
+<span id="L349" class="ln">   349  </span>			req, _, c := client.Build()
+<span id="L350" class="ln">   350  </span>			assert.Equal(t, &#34;/users/456&#34;, req.URL.Path)
+<span id="L351" class="ln">   351  </span>			assert.Equal(t, &#34;10&#34;, req.URL.Query().Get(&#34;limit&#34;))
+<span id="L352" class="ln">   352  </span>			<span class="comment">// ルータ解決を通るため、パスパラメータを渡さなくても解決済みの経路情報が入る。</span>
+<span id="L353" class="ln">   353  </span>			assert.Equal(t, &#34;/users/:id&#34;, c.Path())
+<span id="L354" class="ln">   354  </span>			assert.Equal(t, &#34;456&#34;, c.Param(&#34;id&#34;))
+<span id="L355" class="ln">   355  </span>		})
+<span id="L356" class="ln">   356  </span>	})
+<span id="L357" class="ln">   357  </span>}
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>func TestEchoTestClient_PathParams(t *testing.T) {
+<span id="L360" class="ln">   360  </span>	t.Parallel()
+<span id="L361" class="ln">   361  </span>
+<span id="L362" class="ln">   362  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L363" class="ln">   363  </span>		t.Parallel()
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>		t.Run(&#34;設定したパスパラメータがコンテキストから引けチェーン用に自身を返す&#34;, func(t *testing.T) {
+<span id="L366" class="ln">   366  </span>			t.Parallel()
+<span id="L367" class="ln">   367  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L368" class="ln">   368  </span>				Method(http.MethodGet).
+<span id="L369" class="ln">   369  </span>				RoutePattern(&#34;/users/:id&#34;)
+<span id="L370" class="ln">   370  </span>
+<span id="L371" class="ln">   371  </span>			assert.Same(t, client, client.PathParams([]EchoTestParam{{Name: &#34;id&#34;, Value: &#34;123&#34;}}))
+<span id="L372" class="ln">   372  </span>
+<span id="L373" class="ln">   373  </span>			_, _, c := client.Build()
+<span id="L374" class="ln">   374  </span>			assert.Equal(t, &#34;123&#34;, c.Param(&#34;id&#34;))
+<span id="L375" class="ln">   375  </span>		})
+<span id="L376" class="ln">   376  </span>
+<span id="L377" class="ln">   377  </span>		t.Run(&#34;複数のパスパラメータをすべて設定する&#34;, func(t *testing.T) {
+<span id="L378" class="ln">   378  </span>			t.Parallel()
+<span id="L379" class="ln">   379  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L380" class="ln">   380  </span>				Method(http.MethodGet).
+<span id="L381" class="ln">   381  </span>				RoutePattern(&#34;/orgs/:orgId/users/:id&#34;).
+<span id="L382" class="ln">   382  </span>				PathParams([]EchoTestParam{{Name: &#34;orgId&#34;, Value: &#34;o-1&#34;}, {Name: &#34;id&#34;, Value: &#34;123&#34;}})
+<span id="L383" class="ln">   383  </span>
+<span id="L384" class="ln">   384  </span>			_, _, c := client.Build()
+<span id="L385" class="ln">   385  </span>			assert.Equal(t, &#34;o-1&#34;, c.Param(&#34;orgId&#34;))
+<span id="L386" class="ln">   386  </span>			assert.Equal(t, &#34;123&#34;, c.Param(&#34;id&#34;))
+<span id="L387" class="ln">   387  </span>		})
+<span id="L388" class="ln">   388  </span>	})
+<span id="L389" class="ln">   389  </span>}
+<span id="L390" class="ln">   390  </span>
+<span id="L391" class="ln">   391  </span>func TestEchoTestClient_Header(t *testing.T) {
+<span id="L392" class="ln">   392  </span>	t.Parallel()
+<span id="L393" class="ln">   393  </span>
+<span id="L394" class="ln">   394  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L395" class="ln">   395  </span>		t.Parallel()
+<span id="L396" class="ln">   396  </span>
+<span id="L397" class="ln">   397  </span>		t.Run(&#34;設定したヘッダがリクエストに反映されチェーン用に自身を返す&#34;, func(t *testing.T) {
+<span id="L398" class="ln">   398  </span>			t.Parallel()
+<span id="L399" class="ln">   399  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L400" class="ln">   400  </span>				Method(http.MethodGet).
+<span id="L401" class="ln">   401  </span>				RoutePattern(&#34;/test&#34;)
+<span id="L402" class="ln">   402  </span>
+<span id="L403" class="ln">   403  </span>			assert.Same(t, client, client.Header(&#34;X-Test&#34;, &#34;value&#34;))
+<span id="L404" class="ln">   404  </span>
+<span id="L405" class="ln">   405  </span>			_, _, c := client.Build()
+<span id="L406" class="ln">   406  </span>			assert.Equal(t, &#34;value&#34;, c.Request().Header.Get(&#34;X-Test&#34;))
+<span id="L407" class="ln">   407  </span>		})
+<span id="L408" class="ln">   408  </span>
+<span id="L409" class="ln">   409  </span>		t.Run(&#34;同じキーを再設定すると後の値で上書きされる&#34;, func(t *testing.T) {
+<span id="L410" class="ln">   410  </span>			t.Parallel()
+<span id="L411" class="ln">   411  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L412" class="ln">   412  </span>				Method(http.MethodGet).
+<span id="L413" class="ln">   413  </span>				RoutePattern(&#34;/test&#34;).
+<span id="L414" class="ln">   414  </span>				Header(&#34;X-Test&#34;, &#34;first&#34;).
+<span id="L415" class="ln">   415  </span>				Header(&#34;X-Test&#34;, &#34;second&#34;)
+<span id="L416" class="ln">   416  </span>
+<span id="L417" class="ln">   417  </span>			_, _, c := client.Build()
+<span id="L418" class="ln">   418  </span>			assert.Equal(t, []string{&#34;second&#34;}, c.Request().Header.Values(&#34;X-Test&#34;))
+<span id="L419" class="ln">   419  </span>		})
+<span id="L420" class="ln">   420  </span>	})
+<span id="L421" class="ln">   421  </span>}
+<span id="L422" class="ln">   422  </span>
+<span id="L423" class="ln">   423  </span>func TestEchoTestClient_AuthBearer(t *testing.T) {
+<span id="L424" class="ln">   424  </span>	t.Parallel()
+<span id="L425" class="ln">   425  </span>
+<span id="L426" class="ln">   426  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L427" class="ln">   427  </span>		t.Parallel()
+<span id="L428" class="ln">   428  </span>
+<span id="L429" class="ln">   429  </span>		t.Run(&#34;BearerプレフィックスつきでAuthorizationヘッダを設定しチェーン用に自身を返す&#34;, func(t *testing.T) {
+<span id="L430" class="ln">   430  </span>			t.Parallel()
+<span id="L431" class="ln">   431  </span>			client := NewEchoTestClient(t, echo.New()).
+<span id="L432" class="ln">   432  </span>				Method(http.MethodGet).
+<span id="L433" class="ln">   433  </span>				RoutePattern(&#34;/test&#34;)
+<span id="L434" class="ln">   434  </span>
+<span id="L435" class="ln">   435  </span>			assert.Same(t, client, client.AuthBearer(&#34;abc.def.ghi&#34;))
+<span id="L436" class="ln">   436  </span>
+<span id="L437" class="ln">   437  </span>			_, _, c := client.Build()
+<span id="L438" class="ln">   438  </span>			assert.Equal(t, &#34;Bearer abc.def.ghi&#34;, c.Request().Header.Get(echo.HeaderAuthorization))
+<span id="L439" class="ln">   439  </span>		})
+<span id="L440" class="ln">   440  </span>	})
+<span id="L441" class="ln">   441  </span>}
+<span id="L442" class="ln">   442  </span>
+<span id="L443" class="ln">   443  </span>func TestEchoTestClient_Serve(t *testing.T) {
+<span id="L444" class="ln">   444  </span>	t.Parallel()
+<span id="L445" class="ln">   445  </span>
+<span id="L446" class="ln">   446  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L447" class="ln">   447  </span>		t.Parallel()
+<span id="L448" class="ln">   448  </span>
+<span id="L449" class="ln">   449  </span>		t.Run(&#34;登録済みルートへ送信しハンドラのレスポンスを返す&#34;, func(t *testing.T) {
+<span id="L450" class="ln">   450  </span>			t.Parallel()
+<span id="L451" class="ln">   451  </span>
+<span id="L452" class="ln">   452  </span>			rec := NewEchoTestClient(t, newEchoWithUserRoute()).
+<span id="L453" class="ln">   453  </span>				Method(http.MethodGet).
+<span id="L454" class="ln">   454  </span>				RequestURL(&#34;/users/789&#34;).
+<span id="L455" class="ln">   455  </span>				Serve()
+<span id="L456" class="ln">   456  </span>
+<span id="L457" class="ln">   457  </span>			assert.Equal(t, http.StatusOK, rec.Code)
+<span id="L458" class="ln">   458  </span>			assert.Equal(t, &#34;user:789&#34;, rec.Body.String())
+<span id="L459" class="ln">   459  </span>		})
+<span id="L460" class="ln">   460  </span>	})
+<span id="L461" class="ln">   461  </span>
+<span id="L462" class="ln">   462  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L463" class="ln">   463  </span>		t.Parallel()
+<span id="L464" class="ln">   464  </span>
+<span id="L465" class="ln">   465  </span>		t.Run(&#34;未登録ルートへ送信するとEchoの404が返る&#34;, func(t *testing.T) {
+<span id="L466" class="ln">   466  </span>			t.Parallel()
+<span id="L467" class="ln">   467  </span>
+<span id="L468" class="ln">   468  </span>			rec := NewEchoTestClient(t, newEchoWithUserRoute()).
+<span id="L469" class="ln">   469  </span>				Method(http.MethodGet).
+<span id="L470" class="ln">   470  </span>				RequestURL(&#34;/no/such/path&#34;).
+<span id="L471" class="ln">   471  </span>				Serve()
+<span id="L472" class="ln">   472  </span>
+<span id="L473" class="ln">   473  </span>			assert.Equal(t, http.StatusNotFound, rec.Code)
+<span id="L474" class="ln">   474  </span>		})
+<span id="L475" class="ln">   475  </span>	})
+<span id="L476" class="ln">   476  </span>}
+<span id="L477" class="ln">   477  </span>
+<span id="L478" class="ln">   478  </span>func Test_newTestDetailPolicy(t *testing.T) {
+<span id="L479" class="ln">   479  </span>	t.Parallel()
+<span id="L480" class="ln">   480  </span>
+<span id="L481" class="ln">   481  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L482" class="ln">   482  </span>		t.Parallel()
+<span id="L483" class="ln">   483  </span>
+<span id="L484" class="ln">   484  </span>		<span class="comment">// sample-api:replace-begin</span>
+<span id="L485" class="ln">   485  </span>		t.Run(&#34;実specからdetails公開をopt-inしたoperationを許可するポリシーを返す&#34;, func(t *testing.T) {
+<span id="L486" class="ln">   486  </span>			<span class="comment">// sample-api:replace-with</span>
+<span id="L487" class="ln">   487  </span>			<span class="comment">// = t.Run(&#34;実specから構築したポリシーが未opt-inのoperationを拒否する&#34;, func(t *testing.T) {</span>
+<span id="L488" class="ln">   488  </span>			<span class="comment">// sample-api:replace-end</span>
+<span id="L489" class="ln">   489  </span>			t.Parallel()
+<span id="L490" class="ln">   490  </span>
+<span id="L491" class="ln">   491  </span>			policy := newTestDetailPolicy(t)
+<span id="L492" class="ln">   492  </span>
+<span id="L493" class="ln">   493  </span>			require.NotNil(t, policy)
+<span id="L494" class="ln">   494  </span>			<span class="comment">// sample-api:replace-begin</span>
+<span id="L495" class="ln">   495  </span>			req := httptest.NewRequestWithContext(context.Background(), http.MethodPost, &#34;/v1/users&#34;, nil)
+<span id="L496" class="ln">   496  </span>			assert.True(t, policy.Allows(req))
+<span id="L497" class="ln">   497  </span>			<span class="comment">// sample-api:replace-with</span>
+<span id="L498" class="ln">   498  </span>			<span class="comment">// = req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, &#34;/health&#34;, nil)</span>
+<span id="L499" class="ln">   499  </span>			<span class="comment">// = assert.False(t, policy.Allows(req))</span>
+<span id="L500" class="ln">   500  </span>			<span class="comment">// sample-api:replace-end</span>
+<span id="L501" class="ln">   501  </span>		})
+<span id="L502" class="ln">   502  </span>	})
+<span id="L503" class="ln">   503  </span>}
+<span id="L504" class="ln">   504  </span>
+<span id="L505" class="ln">   505  </span>func Test_newTestAllowPolicy(t *testing.T) {
+<span id="L506" class="ln">   506  </span>	t.Parallel()
+<span id="L507" class="ln">   507  </span>
+<span id="L508" class="ln">   508  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L509" class="ln">   509  </span>		t.Parallel()
+<span id="L510" class="ln">   510  </span>
+<span id="L511" class="ln">   511  </span>		t.Run(&#34;実specからパスごとの許可メソッドを解決するポリシーを返す&#34;, func(t *testing.T) {
+<span id="L512" class="ln">   512  </span>			t.Parallel()
+<span id="L513" class="ln">   513  </span>
+<span id="L514" class="ln">   514  </span>			policy := newTestAllowPolicy(t)
+<span id="L515" class="ln">   515  </span>
+<span id="L516" class="ln">   516  </span>			require.NotNil(t, policy)
+<span id="L517" class="ln">   517  </span>			<span class="comment">// sample-api:replace-begin</span>
+<span id="L518" class="ln">   518  </span>			req := httptest.NewRequestWithContext(context.Background(), http.MethodDelete, &#34;/v1/prefectures&#34;, nil)
+<span id="L519" class="ln">   519  </span>			<span class="comment">// sample-api:replace-with</span>
+<span id="L520" class="ln">   520  </span>			<span class="comment">// = req := httptest.NewRequestWithContext(context.Background(), http.MethodDelete, &#34;/health&#34;, nil)</span>
+<span id="L521" class="ln">   521  </span>			<span class="comment">// sample-api:replace-end</span>
+<span id="L522" class="ln">   522  </span>			assert.Equal(t, &#34;OPTIONS, GET&#34;, policy.Allow(req))
+<span id="L523" class="ln">   523  </span>		})
+<span id="L524" class="ln">   524  </span>	})
+<span id="L525" class="ln">   525  </span>}
+<span id="L526" class="ln">   526  </span>
+<span id="L527" class="ln">   527  </span>func Test_newTestRedactor(t *testing.T) {
+<span id="L528" class="ln">   528  </span>	t.Parallel()
+<span id="L529" class="ln">   529  </span>
+<span id="L530" class="ln">   530  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L531" class="ln">   531  </span>		t.Parallel()
+<span id="L532" class="ln">   532  </span>
+<span id="L533" class="ln">   533  </span>		t.Run(&#34;実specのquery apiKeyを秘匿するRedactorを返す&#34;, func(t *testing.T) {
+<span id="L534" class="ln">   534  </span>			t.Parallel()
+<span id="L535" class="ln">   535  </span>
+<span id="L536" class="ln">   536  </span>			r := newTestRedactor(t)
+<span id="L537" class="ln">   537  </span>
+<span id="L538" class="ln">   538  </span>			assert.Equal(t, &#34;/v1/streams/s?ticket=&#34;+redaction.RedactedValue, r.URI(&#34;/v1/streams/s?ticket=raw-value&#34;))
+<span id="L539" class="ln">   539  </span>		})
+<span id="L540" class="ln">   540  </span>	})
+<span id="L541" class="ln">   541  </span>}
+<span id="L542" class="ln">   542  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/controller/handler/testkit/testecho/test_echo_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -87,145 +87,137 @@
 <span id="L30" class="ln">    30  </span>	txBackoffMultiplier = 2
 <span id="L31" class="ln">    31  </span>)
 <span id="L32" class="ln">    32  </span>
-<span id="L33" class="ln">    33  </span><span class="comment">// txManager は、トランザクションの管理を行います。</span>
-<span id="L34" class="ln">    34  </span>type txManager struct {
-<span id="L35" class="ln">    35  </span>	db          DatabaseDriver
-<span id="L36" class="ln">    36  </span>	logger      logging.Logger
-<span id="L37" class="ln">    37  </span>	sleeper     clock.Sleeper
-<span id="L38" class="ln">    38  </span>	maxAttempts int
-<span id="L39" class="ln">    39  </span>	backoff     backoff.Exponential
-<span id="L40" class="ln">    40  </span>}
-<span id="L41" class="ln">    41  </span>
-<span id="L42" class="ln">    42  </span><span class="comment">// NewTransactionManager は、トランザクションマネージャを初期化します。</span>
-<span id="L43" class="ln">    43  </span><span class="comment">//</span>
-<span id="L44" class="ln">    44  </span><span class="comment">// serialization failure / deadlock 検出時に fn を有限回まで再試行します。</span>
-<span id="L45" class="ln">    45  </span><span class="comment">// リトライ上限・backoff は config（DB_TX_MAX_RETRIES / DB_TX_RETRY_BASE_BACKOFF /</span>
-<span id="L46" class="ln">    46  </span><span class="comment">// DB_TX_RETRY_MAX_BACKOFF）から取得します。0 以下の場合は既定値にフォールバックします。</span>
-<span id="L47" class="ln">    47  </span>func NewTransactionManager(
-<span id="L48" class="ln">    48  </span>	db DatabaseDriver, dbCfg *config.DatabaseConfig, logger logging.Logger, sleeper clock.Sleeper,
-<span id="L49" class="ln">    49  </span>) tx.Manager {
-<span id="L50" class="ln">    50  </span>	maxAttempts := dbCfg.TxMaxRetries()
-<span id="L51" class="ln">    51  </span>	if maxAttempts &lt;= 0 {
-<span id="L52" class="ln">    52  </span>		maxAttempts = defaultTxMaxAttempts
+<span id="L33" class="ln">    33  </span>type txManager struct {
+<span id="L34" class="ln">    34  </span>	db          DatabaseDriver
+<span id="L35" class="ln">    35  </span>	logger      logging.Logger
+<span id="L36" class="ln">    36  </span>	sleeper     clock.Sleeper
+<span id="L37" class="ln">    37  </span>	maxAttempts int
+<span id="L38" class="ln">    38  </span>	backoff     backoff.Exponential
+<span id="L39" class="ln">    39  </span>}
+<span id="L40" class="ln">    40  </span>
+<span id="L41" class="ln">    41  </span><span class="comment">// NewTransactionManager は、リトライ上限と backoff を config から読んで組み立てます。</span>
+<span id="L42" class="ln">    42  </span><span class="comment">// 0 以下の値は既定値へ倒します（リトライ方針そのものは ADR-0035）。</span>
+<span id="L43" class="ln">    43  </span>func NewTransactionManager(
+<span id="L44" class="ln">    44  </span>	db DatabaseDriver, dbCfg *config.DatabaseConfig, logger logging.Logger, sleeper clock.Sleeper,
+<span id="L45" class="ln">    45  </span>) tx.Manager {
+<span id="L46" class="ln">    46  </span>	maxAttempts := dbCfg.TxMaxRetries()
+<span id="L47" class="ln">    47  </span>	if maxAttempts &lt;= 0 {
+<span id="L48" class="ln">    48  </span>		maxAttempts = defaultTxMaxAttempts
+<span id="L49" class="ln">    49  </span>	}
+<span id="L50" class="ln">    50  </span>	initialBackoff := dbCfg.TxRetryBaseBackoff()
+<span id="L51" class="ln">    51  </span>	if initialBackoff &lt;= 0 {
+<span id="L52" class="ln">    52  </span>		initialBackoff = defaultTxBackoffInitial
 <span id="L53" class="ln">    53  </span>	}
-<span id="L54" class="ln">    54  </span>	initialBackoff := dbCfg.TxRetryBaseBackoff()
-<span id="L55" class="ln">    55  </span>	if initialBackoff &lt;= 0 {
-<span id="L56" class="ln">    56  </span>		initialBackoff = defaultTxBackoffInitial
+<span id="L54" class="ln">    54  </span>	maxBackoff := dbCfg.TxRetryMaxBackoff()
+<span id="L55" class="ln">    55  </span>	if maxBackoff &lt;= 0 {
+<span id="L56" class="ln">    56  </span>		maxBackoff = defaultTxBackoffMax
 <span id="L57" class="ln">    57  </span>	}
-<span id="L58" class="ln">    58  </span>	maxBackoff := dbCfg.TxRetryMaxBackoff()
-<span id="L59" class="ln">    59  </span>	if maxBackoff &lt;= 0 {
-<span id="L60" class="ln">    60  </span>		maxBackoff = defaultTxBackoffMax
-<span id="L61" class="ln">    61  </span>	}
-<span id="L62" class="ln">    62  </span>
-<span id="L63" class="ln">    63  </span>	return &amp;txManager{
-<span id="L64" class="ln">    64  </span>		db:          db,
-<span id="L65" class="ln">    65  </span>		logger:      logger,
-<span id="L66" class="ln">    66  </span>		sleeper:     sleeper,
-<span id="L67" class="ln">    67  </span>		maxAttempts: maxAttempts,
-<span id="L68" class="ln">    68  </span>		backoff: backoff.Exponential{
-<span id="L69" class="ln">    69  </span>			Initial:    initialBackoff,
-<span id="L70" class="ln">    70  </span>			Max:        maxBackoff,
-<span id="L71" class="ln">    71  </span>			Multiplier: txBackoffMultiplier,
-<span id="L72" class="ln">    72  </span>		},
-<span id="L73" class="ln">    73  </span>	}
-<span id="L74" class="ln">    74  </span>}
-<span id="L75" class="ln">    75  </span>
-<span id="L76" class="ln">    76  </span><span class="comment">// Do は、トランザクションを開始し、引数で渡された fn を実行します。</span>
-<span id="L77" class="ln">    77  </span><span class="comment">//</span>
-<span id="L78" class="ln">    78  </span><span class="comment">// serialization failure / deadlock を検出した場合、有限回（maxAttempts）まで tx 全体を</span>
-<span id="L79" class="ln">    79  </span><span class="comment">// 再試行します（指数 backoff + full jitter、pkg/retry）。fn の冪等性契約は tx.Manager</span>
-<span id="L80" class="ln">    80  </span><span class="comment">// （internal/usecase/boundary/tx）の doc を参照。nested（既存 tx 再利用）経路はリトライ対象外（1 回）。</span>
-<span id="L81" class="ln">    81  </span>func (t *txManager) Do(ctx context.Context, fn func(ctx context.Context) error) error {
-<span id="L82" class="ln">    82  </span>	if _, ok := ctx.Value(txKey{}).(pgx.Tx); ok {
-<span id="L83" class="ln">    83  </span>		return fn(ctx) <span class="comment">// nested: savepoint 相当・リトライしない（最外の Do が正規化する）</span>
-<span id="L84" class="ln">    84  </span>	}
-<span id="L85" class="ln">    85  </span>
-<span id="L86" class="ln">    86  </span>	err := retry.Do(ctx, t.sleeper,
-<span id="L87" class="ln">    87  </span>		retry.Policy{MaxAttempts: t.maxAttempts, Backoff: t.backoff.Duration},
-<span id="L88" class="ln">    88  </span>		pgerror.IsRetryableTxError,
-<span id="L89" class="ln">    89  </span>		func(c context.Context) error { return t.doOnce(c, fn) },
-<span id="L90" class="ln">    90  </span>	)
-<span id="L91" class="ln">    91  </span>	return normalizeTxResult(err)
-<span id="L92" class="ln">    92  </span>}
-<span id="L93" class="ln">    93  </span>
-<span id="L94" class="ln">    94  </span><span class="comment">// normalizeTxResult は、リトライ後の最終エラーを apperror へ正規化します。</span>
-<span id="L95" class="ln">    95  </span><span class="comment">// begin / commit 由来の DB エラー（生 pg / 接続）および context キャンセル・期限超過を</span>
-<span id="L96" class="ln">    96  </span><span class="comment">// apperror へ写像します。fn が返したエラー（apperror や rollback sentinel 等）は</span>
-<span id="L97" class="ln">    97  </span><span class="comment">// そのまま通し、呼出側のエラー判定に干渉しません。</span>
-<span id="L98" class="ln">    98  </span>func normalizeTxResult(err error) error {
-<span id="L99" class="ln">    99  </span>	if err == nil {
-<span id="L100" class="ln">   100  </span>		return nil
-<span id="L101" class="ln">   101  </span>	}
-<span id="L102" class="ln">   102  </span>	var pgErr *pgconn.PgError
-<span id="L103" class="ln">   103  </span>	if xerrors.As(err, &amp;pgErr) || pgerror.IsUnavailable(err) {
-<span id="L104" class="ln">   104  </span>		return pgerror.NormalizeError(err)
-<span id="L105" class="ln">   105  </span>	}
-<span id="L106" class="ln">   106  </span>	if xerrors.Is(err, context.Canceled) || xerrors.Is(err, context.DeadlineExceeded) {
-<span id="L107" class="ln">   107  </span>		return pgerror.NormalizeError(err)
-<span id="L108" class="ln">   108  </span>	}
-<span id="L109" class="ln">   109  </span>	return err
-<span id="L110" class="ln">   110  </span>}
-<span id="L111" class="ln">   111  </span>
-<span id="L112" class="ln">   112  </span><span class="comment">// doOnce は、1 回分のトランザクション（begin → fn → commit / rollback）を実行します。</span>
-<span id="L113" class="ln">   113  </span><span class="comment">//</span>
-<span id="L114" class="ln">   114  </span><span class="comment">// エラーは正規化せず**生のまま**返します。fn 内の repository は NormalizeError 済みのエラーを返しますが、</span>
-<span id="L115" class="ln">   115  </span><span class="comment">// それは xerrors.Join で元の PgError を chain に保持するため、IsRetryableTxError は正規化後でも</span>
-<span id="L116" class="ln">   116  </span><span class="comment">// 生 SQLSTATE（40001/40P01）を errors.As で参照でき、fn 内の serialization failure / deadlock も</span>
-<span id="L117" class="ln">   117  </span><span class="comment">// リトライ対象になります。最終的な apperror への写像は呼出元 Do がリトライ後に 1 度だけ行います。</span>
-<span id="L118" class="ln">   118  </span>func (t *txManager) doOnce(ctx context.Context, fn func(ctx context.Context) error) error {
-<span id="L119" class="ln">   119  </span>	tx, err := t.db.Begin(ctx)
-<span id="L120" class="ln">   120  </span>	if err != nil {
-<span id="L121" class="ln">   121  </span>		return err
-<span id="L122" class="ln">   122  </span>	}
-<span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>	completed := false
-<span id="L125" class="ln">   125  </span>	defer func(ctx context.Context) {
-<span id="L126" class="ln">   126  </span>		if completed {
-<span id="L127" class="ln">   127  </span>			return
-<span id="L128" class="ln">   128  </span>		}
-<span id="L129" class="ln">   129  </span>		if p := recover(); p != nil {
-<span id="L130" class="ln">   130  </span>			t.rollback(ctx, tx, logging.Any(&#34;panic&#34;, p))
-<span id="L131" class="ln">   131  </span>			panic(p)
-<span id="L132" class="ln">   132  </span>		}
-<span id="L133" class="ln">   133  </span>		<span class="comment">// fn が runtime.Goexit（testify の FailNow 等）で中断した場合の後始末。</span>
-<span id="L134" class="ln">   134  </span>		t.rollback(ctx, tx)
-<span id="L135" class="ln">   135  </span>	}(ctx)
-<span id="L136" class="ln">   136  </span>
-<span id="L137" class="ln">   137  </span>	ctx = withTx(ctx, tx)
-<span id="L138" class="ln">   138  </span>
-<span id="L139" class="ln">   139  </span>	if err := fn(ctx); err != nil {
-<span id="L140" class="ln">   140  </span>		t.rollback(ctx, tx, logging.Error(logging.OriginalErrorKey, err))
-<span id="L141" class="ln">   141  </span>		completed = true
-<span id="L142" class="ln">   142  </span>		return err
-<span id="L143" class="ln">   143  </span>	}
-<span id="L144" class="ln">   144  </span>
-<span id="L145" class="ln">   145  </span>	if err := tx.Commit(ctx); err != nil {
-<span id="L146" class="ln">   146  </span>		completed = true
-<span id="L147" class="ln">   147  </span>		return err
-<span id="L148" class="ln">   148  </span>	}
-<span id="L149" class="ln">   149  </span>
-<span id="L150" class="ln">   150  </span>	completed = true
-<span id="L151" class="ln">   151  </span>	return nil
-<span id="L152" class="ln">   152  </span>}
-<span id="L153" class="ln">   153  </span>
-<span id="L154" class="ln">   154  </span><span class="comment">// rollback はロールバックし、失敗時に fields を併記してログを残します。</span>
-<span id="L155" class="ln">   155  </span>func (t *txManager) rollback(ctx context.Context, tx pgx.Tx, fields ...*logging.Field) {
-<span id="L156" class="ln">   156  </span>	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cleanupTimeout)
-<span id="L157" class="ln">   157  </span>	defer cancel()
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>	if pgErr := tx.Rollback(cleanupCtx); pgErr != nil {
-<span id="L160" class="ln">   160  </span>		logFields := append([]*logging.Field{logging.Error(logging.ErrorKey, pgErr)}, fields...)
-<span id="L161" class="ln">   161  </span>		t.logger.CallerSkip(callerSkipCount).Named(&#34;TransactionManager&#34;).Error(
-<span id="L162" class="ln">   162  </span>			ctx, &#34;Failed to rollback transaction&#34;, logFields...,
-<span id="L163" class="ln">   163  </span>		)
-<span id="L164" class="ln">   164  </span>	}
-<span id="L165" class="ln">   165  </span>}
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span><span class="comment">// withTx は、context.Contextにトランザクションを設定します。</span>
-<span id="L168" class="ln">   168  </span>func withTx(ctx context.Context, tx pgx.Tx) context.Context {
-<span id="L169" class="ln">   169  </span>	return context.WithValue(ctx, txKey{}, tx)
-<span id="L170" class="ln">   170  </span>}
-<span id="L171" class="ln">   171  </span>
+<span id="L58" class="ln">    58  </span>
+<span id="L59" class="ln">    59  </span>	return &amp;txManager{
+<span id="L60" class="ln">    60  </span>		db:          db,
+<span id="L61" class="ln">    61  </span>		logger:      logger,
+<span id="L62" class="ln">    62  </span>		sleeper:     sleeper,
+<span id="L63" class="ln">    63  </span>		maxAttempts: maxAttempts,
+<span id="L64" class="ln">    64  </span>		backoff: backoff.Exponential{
+<span id="L65" class="ln">    65  </span>			Initial:    initialBackoff,
+<span id="L66" class="ln">    66  </span>			Max:        maxBackoff,
+<span id="L67" class="ln">    67  </span>			Multiplier: txBackoffMultiplier,
+<span id="L68" class="ln">    68  </span>		},
+<span id="L69" class="ln">    69  </span>	}
+<span id="L70" class="ln">    70  </span>}
+<span id="L71" class="ln">    71  </span>
+<span id="L72" class="ln">    72  </span><span class="comment">// Do は、pkg/retry で tx 全体を包み、指数 backoff + full jitter で有限回まで再試行します。</span>
+<span id="L73" class="ln">    73  </span><span class="comment">// 何を再試行の対象とするか、fn に課される冪等性契約、nested が 1 回だけであることは</span>
+<span id="L74" class="ln">    74  </span><span class="comment">// tx.Manager（internal/usecase/boundary/tx）の doc が述べています。</span>
+<span id="L75" class="ln">    75  </span>func (t *txManager) Do(ctx context.Context, fn func(ctx context.Context) error) error {
+<span id="L76" class="ln">    76  </span>	if _, ok := ctx.Value(txKey{}).(pgx.Tx); ok {
+<span id="L77" class="ln">    77  </span>		return fn(ctx) <span class="comment">// nested: 外側の tx をそのまま使い 1 回だけ実行する（ADR-0035）</span>
+<span id="L78" class="ln">    78  </span>	}
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span>	err := retry.Do(ctx, t.sleeper,
+<span id="L81" class="ln">    81  </span>		retry.Policy{MaxAttempts: t.maxAttempts, Backoff: t.backoff.Duration},
+<span id="L82" class="ln">    82  </span>		pgerror.IsRetryableTxError,
+<span id="L83" class="ln">    83  </span>		func(c context.Context) error { return t.doOnce(c, fn) },
+<span id="L84" class="ln">    84  </span>	)
+<span id="L85" class="ln">    85  </span>	return normalizeTxResult(err)
+<span id="L86" class="ln">    86  </span>}
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span><span class="comment">// normalizeTxResult は、リトライ後の最終エラーを apperror へ正規化します。</span>
+<span id="L89" class="ln">    89  </span><span class="comment">// begin / commit 由来の DB エラー（生 pg / 接続）および context キャンセル・期限超過を</span>
+<span id="L90" class="ln">    90  </span><span class="comment">// apperror へ写像します。fn が返したエラー（apperror や rollback sentinel 等）は</span>
+<span id="L91" class="ln">    91  </span><span class="comment">// そのまま通し、呼出側のエラー判定に干渉しません。</span>
+<span id="L92" class="ln">    92  </span>func normalizeTxResult(err error) error {
+<span id="L93" class="ln">    93  </span>	if err == nil {
+<span id="L94" class="ln">    94  </span>		return nil
+<span id="L95" class="ln">    95  </span>	}
+<span id="L96" class="ln">    96  </span>	var pgErr *pgconn.PgError
+<span id="L97" class="ln">    97  </span>	if xerrors.As(err, &amp;pgErr) || pgerror.IsUnavailable(err) {
+<span id="L98" class="ln">    98  </span>		return pgerror.NormalizeError(err)
+<span id="L99" class="ln">    99  </span>	}
+<span id="L100" class="ln">   100  </span>	if xerrors.Is(err, context.Canceled) || xerrors.Is(err, context.DeadlineExceeded) {
+<span id="L101" class="ln">   101  </span>		return pgerror.NormalizeError(err)
+<span id="L102" class="ln">   102  </span>	}
+<span id="L103" class="ln">   103  </span>	return err
+<span id="L104" class="ln">   104  </span>}
+<span id="L105" class="ln">   105  </span>
+<span id="L106" class="ln">   106  </span><span class="comment">// doOnce は、1 回分のトランザクション（begin → fn → commit / rollback）を実行します。</span>
+<span id="L107" class="ln">   107  </span><span class="comment">//</span>
+<span id="L108" class="ln">   108  </span><span class="comment">// エラーは正規化せず生のまま返します。IsRetryableTxError が生 SQLSTATE を errors.As で</span>
+<span id="L109" class="ln">   109  </span><span class="comment">// 参照できる必要があるためで、apperror への写像は呼出元 Do がリトライ後に 1 度だけ行います</span>
+<span id="L110" class="ln">   110  </span><span class="comment">// （chain に PgError が残る理由は ADR-0035）。</span>
+<span id="L111" class="ln">   111  </span>func (t *txManager) doOnce(ctx context.Context, fn func(ctx context.Context) error) error {
+<span id="L112" class="ln">   112  </span>	tx, err := t.db.Begin(ctx)
+<span id="L113" class="ln">   113  </span>	if err != nil {
+<span id="L114" class="ln">   114  </span>		return err
+<span id="L115" class="ln">   115  </span>	}
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>	completed := false
+<span id="L118" class="ln">   118  </span>	defer func(ctx context.Context) {
+<span id="L119" class="ln">   119  </span>		if completed {
+<span id="L120" class="ln">   120  </span>			return
+<span id="L121" class="ln">   121  </span>		}
+<span id="L122" class="ln">   122  </span>		if p := recover(); p != nil {
+<span id="L123" class="ln">   123  </span>			t.rollback(ctx, tx, logging.Any(&#34;panic&#34;, p))
+<span id="L124" class="ln">   124  </span>			panic(p)
+<span id="L125" class="ln">   125  </span>		}
+<span id="L126" class="ln">   126  </span>		<span class="comment">// fn が runtime.Goexit（testify の FailNow 等）で中断した場合の後始末。</span>
+<span id="L127" class="ln">   127  </span>		t.rollback(ctx, tx)
+<span id="L128" class="ln">   128  </span>	}(ctx)
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>	ctx = withTx(ctx, tx)
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span>	if err := fn(ctx); err != nil {
+<span id="L133" class="ln">   133  </span>		t.rollback(ctx, tx, logging.Error(logging.OriginalErrorKey, err))
+<span id="L134" class="ln">   134  </span>		completed = true
+<span id="L135" class="ln">   135  </span>		return err
+<span id="L136" class="ln">   136  </span>	}
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>	if err := tx.Commit(ctx); err != nil {
+<span id="L139" class="ln">   139  </span>		completed = true
+<span id="L140" class="ln">   140  </span>		return err
+<span id="L141" class="ln">   141  </span>	}
+<span id="L142" class="ln">   142  </span>
+<span id="L143" class="ln">   143  </span>	completed = true
+<span id="L144" class="ln">   144  </span>	return nil
+<span id="L145" class="ln">   145  </span>}
+<span id="L146" class="ln">   146  </span>
+<span id="L147" class="ln">   147  </span><span class="comment">// rollback はロールバックし、失敗時に fields を併記してログを残します。</span>
+<span id="L148" class="ln">   148  </span>func (t *txManager) rollback(ctx context.Context, tx pgx.Tx, fields ...*logging.Field) {
+<span id="L149" class="ln">   149  </span>	cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cleanupTimeout)
+<span id="L150" class="ln">   150  </span>	defer cancel()
+<span id="L151" class="ln">   151  </span>
+<span id="L152" class="ln">   152  </span>	if pgErr := tx.Rollback(cleanupCtx); pgErr != nil {
+<span id="L153" class="ln">   153  </span>		logFields := append([]*logging.Field{logging.Error(logging.ErrorKey, pgErr)}, fields...)
+<span id="L154" class="ln">   154  </span>		t.logger.CallerSkip(callerSkipCount).Named(&#34;TransactionManager&#34;).Error(
+<span id="L155" class="ln">   155  </span>			ctx, &#34;Failed to rollback transaction&#34;, logFields...,
+<span id="L156" class="ln">   156  </span>		)
+<span id="L157" class="ln">   157  </span>	}
+<span id="L158" class="ln">   158  </span>}
+<span id="L159" class="ln">   159  </span>
+<span id="L160" class="ln">   160  </span>func withTx(ctx context.Context, tx pgx.Tx) context.Context {
+<span id="L161" class="ln">   161  </span>	return context.WithValue(ctx, txKey{}, tx)
+<span id="L162" class="ln">   162  </span>}
+<span id="L163" class="ln">   163  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/driver/transaction.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

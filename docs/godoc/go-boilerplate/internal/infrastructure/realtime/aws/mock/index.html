@@ -1,0 +1,878 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>mock - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package mock_aws
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/infrastructure/realtime/aws/mock&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package mock_aws is a generated GoMock package.
+</p><p>Package mock_aws is a generated GoMock package.
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#MockAttributesBuilder">type MockAttributesBuilder</a></dd>
+				
+					
+					<dd>    <a href="#NewMockAttributesBuilder">func NewMockAttributesBuilder(ctrl *gomock.Controller) *MockAttributesBuilder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockAttributesBuilder.Build">func (m *MockAttributesBuilder) Build(queueARN string) (map[string]string, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockAttributesBuilder.EXPECT">func (m *MockAttributesBuilder) EXPECT() *MockAttributesBuilderMockRecorder</a></dd>
+				
+			
+				
+				<dd><a href="#MockAttributesBuilderMockRecorder">type MockAttributesBuilderMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockAttributesBuilderMockRecorder.Build">func (mr *MockAttributesBuilderMockRecorder) Build(queueARN any) *gomock.Call</a></dd>
+				
+			
+				
+				<dd><a href="#MockSNSAPI">type MockSNSAPI</a></dd>
+				
+					
+					<dd>    <a href="#NewMockSNSAPI">func NewMockSNSAPI(ctrl *gomock.Controller) *MockSNSAPI</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockSNSAPI.CreateTopic">func (m *MockSNSAPI) CreateTopic(ctx context.Context, in *sns.CreateTopicInput, opts ...func(*sns.Options)) (*sns.CreateTopicOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPI.EXPECT">func (m *MockSNSAPI) EXPECT() *MockSNSAPIMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPI.ListSubscriptionsByTopic">func (m *MockSNSAPI) ListSubscriptionsByTopic(ctx context.Context, in *sns.ListSubscriptionsByTopicInput, opts ...func(*sns.Options)) (*sns.ListSubscriptionsByTopicOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPI.Publish">func (m *MockSNSAPI) Publish(ctx context.Context, in *sns.PublishInput, opts ...func(*sns.Options)) (*sns.PublishOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPI.SetSubscriptionAttributes">func (m *MockSNSAPI) SetSubscriptionAttributes(ctx context.Context, in *sns.SetSubscriptionAttributesInput, opts ...func(*sns.Options)) (*sns.SetSubscriptionAttributesOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPI.Subscribe">func (m *MockSNSAPI) Subscribe(ctx context.Context, in *sns.SubscribeInput, opts ...func(*sns.Options)) (*sns.SubscribeOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPI.Unsubscribe">func (m *MockSNSAPI) Unsubscribe(ctx context.Context, in *sns.UnsubscribeInput, opts ...func(*sns.Options)) (*sns.UnsubscribeOutput, error)</a></dd>
+				
+			
+				
+				<dd><a href="#MockSNSAPIMockRecorder">type MockSNSAPIMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockSNSAPIMockRecorder.CreateTopic">func (mr *MockSNSAPIMockRecorder) CreateTopic(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPIMockRecorder.ListSubscriptionsByTopic">func (mr *MockSNSAPIMockRecorder) ListSubscriptionsByTopic(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPIMockRecorder.Publish">func (mr *MockSNSAPIMockRecorder) Publish(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPIMockRecorder.SetSubscriptionAttributes">func (mr *MockSNSAPIMockRecorder) SetSubscriptionAttributes(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPIMockRecorder.Subscribe">func (mr *MockSNSAPIMockRecorder) Subscribe(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSNSAPIMockRecorder.Unsubscribe">func (mr *MockSNSAPIMockRecorder) Unsubscribe(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+			
+				
+				<dd><a href="#MockSQSAPI">type MockSQSAPI</a></dd>
+				
+					
+					<dd>    <a href="#NewMockSQSAPI">func NewMockSQSAPI(ctrl *gomock.Controller) *MockSQSAPI</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockSQSAPI.CreateQueue">func (m *MockSQSAPI) CreateQueue(ctx context.Context, in *sqs.CreateQueueInput, opts ...func(*sqs.Options)) (*sqs.CreateQueueOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPI.DeleteMessage">func (m *MockSQSAPI) DeleteMessage(ctx context.Context, in *sqs.DeleteMessageInput, opts ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPI.DeleteQueue">func (m *MockSQSAPI) DeleteQueue(ctx context.Context, in *sqs.DeleteQueueInput, opts ...func(*sqs.Options)) (*sqs.DeleteQueueOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPI.EXPECT">func (m *MockSQSAPI) EXPECT() *MockSQSAPIMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPI.GetQueueAttributes">func (m *MockSQSAPI) GetQueueAttributes(ctx context.Context, in *sqs.GetQueueAttributesInput, opts ...func(*sqs.Options)) (*sqs.GetQueueAttributesOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPI.GetQueueUrl">func (m *MockSQSAPI) GetQueueUrl(ctx context.Context, in *sqs.GetQueueUrlInput, opts ...func(*sqs.Options)) (*sqs.GetQueueUrlOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPI.ReceiveMessage">func (m *MockSQSAPI) ReceiveMessage(ctx context.Context, in *sqs.ReceiveMessageInput, opts ...func(*sqs.Options)) (*sqs.ReceiveMessageOutput, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPI.SetQueueAttributes">func (m *MockSQSAPI) SetQueueAttributes(ctx context.Context, in *sqs.SetQueueAttributesInput, opts ...func(*sqs.Options)) (*sqs.SetQueueAttributesOutput, error)</a></dd>
+				
+			
+				
+				<dd><a href="#MockSQSAPIMockRecorder">type MockSQSAPIMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockSQSAPIMockRecorder.CreateQueue">func (mr *MockSQSAPIMockRecorder) CreateQueue(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPIMockRecorder.DeleteMessage">func (mr *MockSQSAPIMockRecorder) DeleteMessage(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPIMockRecorder.DeleteQueue">func (mr *MockSQSAPIMockRecorder) DeleteQueue(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPIMockRecorder.GetQueueAttributes">func (mr *MockSQSAPIMockRecorder) GetQueueAttributes(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPIMockRecorder.GetQueueUrl">func (mr *MockSQSAPIMockRecorder) GetQueueUrl(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPIMockRecorder.ReceiveMessage">func (mr *MockSQSAPIMockRecorder) ReceiveMessage(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockSQSAPIMockRecorder.SetQueueAttributes">func (mr *MockSQSAPIMockRecorder) SetQueueAttributes(ctx, in any, opts ...any) *gomock.Call</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html">mock_api.go.gen.go</a>
+			
+				<a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_attributes.go.gen.go.html">mock_attributes.go.gen.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="MockAttributesBuilder">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_attributes.go.gen.go.html?s=405:535#L9">MockAttributesBuilder</a>
+				<a class="permalink" href="#MockAttributesBuilder">¶</a>
+				
+				
+			</h2>
+			<p>MockAttributesBuilder is a mock of AttributesBuilder interface.
+
+			</p><pre>type MockAttributesBuilder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockAttributesBuilder">func <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_attributes.go.gen.go.html?s=759:836#L21">NewMockAttributesBuilder</a>
+					<a class="permalink" href="#NewMockAttributesBuilder">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockAttributesBuilder(ctrl *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockAttributesBuilder">MockAttributesBuilder</a></pre>
+				<p>NewMockAttributesBuilder creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockAttributesBuilder.Build">func (*MockAttributesBuilder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_attributes.go.gen.go.html?s=1162:1243#L33">Build</a>
+					<a class="permalink" href="#MockAttributesBuilder.Build">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockAttributesBuilder">MockAttributesBuilder</a>) Build(queueARN <a href="../../../../../../builtin/#string">string</a>) (map[<a href="../../../../../../builtin/#string">string</a>]<a href="../../../../../../builtin/#string">string</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>Build mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockAttributesBuilder.EXPECT">func (*MockAttributesBuilder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_attributes.go.gen.go.html?s=1034:1109#L28">EXPECT</a>
+					<a class="permalink" href="#MockAttributesBuilder.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockAttributesBuilder">MockAttributesBuilder</a>) EXPECT() *<a href="#MockAttributesBuilderMockRecorder">MockAttributesBuilderMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockAttributesBuilderMockRecorder">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_attributes.go.gen.go.html?s=622:700#L16">MockAttributesBuilderMockRecorder</a>
+				<a class="permalink" href="#MockAttributesBuilderMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockAttributesBuilderMockRecorder is the mock recorder for MockAttributesBuilder.
+
+			</p><pre>type MockAttributesBuilderMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockAttributesBuilderMockRecorder.Build">func (*MockAttributesBuilderMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_attributes.go.gen.go.html?s=1441:1518#L42">Build</a>
+					<a class="permalink" href="#MockAttributesBuilderMockRecorder.Build">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockAttributesBuilderMockRecorder">MockAttributesBuilderMockRecorder</a>) Build(queueARN <a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Build indicates an expected call of Build.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockSNSAPI">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=477:585#L12">MockSNSAPI</a>
+				<a class="permalink" href="#MockSNSAPI">¶</a>
+				
+				
+			</h2>
+			<p>MockSNSAPI is a mock of SNSAPI interface.
+
+			</p><pre>type MockSNSAPI struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockSNSAPI">func <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=754:809#L24">NewMockSNSAPI</a>
+					<a class="permalink" href="#NewMockSNSAPI">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockSNSAPI(ctrl *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockSNSAPI">MockSNSAPI</a></pre>
+				<p>NewMockSNSAPI creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockSNSAPI.CreateTopic">func (*MockSNSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=1097:1236#L36">CreateTopic</a>
+					<a class="permalink" href="#MockSNSAPI.CreateTopic">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSNSAPI">MockSNSAPI</a>) CreateTopic(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#CreateTopicInput">CreateTopicInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#CreateTopicOutput">CreateTopicOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>CreateTopic mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPI.EXPECT">func (*MockSNSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=985:1038#L31">EXPECT</a>
+					<a class="permalink" href="#MockSNSAPI.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSNSAPI">MockSNSAPI</a>) EXPECT() *<a href="#MockSNSAPIMockRecorder">MockSNSAPIMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPI.ListSubscriptionsByTopic">func (*MockSNSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=1882:2060#L56">ListSubscriptionsByTopic</a>
+					<a class="permalink" href="#MockSNSAPI.ListSubscriptionsByTopic">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSNSAPI">MockSNSAPI</a>) ListSubscriptionsByTopic(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#ListSubscriptionsByTopicInput">ListSubscriptionsByTopicInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#ListSubscriptionsByTopicOutput">ListSubscriptionsByTopicOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>ListSubscriptionsByTopic mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPI.Publish">func (*MockSNSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=2780:2907#L76">Publish</a>
+					<a class="permalink" href="#MockSNSAPI.Publish">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSNSAPI">MockSNSAPI</a>) Publish(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#PublishInput">PublishInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#PublishOutput">PublishOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>Publish mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPI.SetSubscriptionAttributes">func (*MockSNSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=3526:3707#L96">SetSubscriptionAttributes</a>
+					<a class="permalink" href="#MockSNSAPI.SetSubscriptionAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSNSAPI">MockSNSAPI</a>) SetSubscriptionAttributes(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#SetSubscriptionAttributesInput">SetSubscriptionAttributesInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#SetSubscriptionAttributesOutput">SetSubscriptionAttributesOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>SetSubscriptionAttributes mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPI.Subscribe">func (*MockSNSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=4436:4569#L116">Subscribe</a>
+					<a class="permalink" href="#MockSNSAPI.Subscribe">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSNSAPI">MockSNSAPI</a>) Subscribe(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#SubscribeInput">SubscribeInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#SubscribeOutput">SubscribeOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>Subscribe mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPI.Unsubscribe">func (*MockSNSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=5188:5327#L136">Unsubscribe</a>
+					<a class="permalink" href="#MockSNSAPI.Unsubscribe">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSNSAPI">MockSNSAPI</a>) Unsubscribe(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#UnsubscribeInput">UnsubscribeInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/">sns</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sns/#UnsubscribeOutput">UnsubscribeOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>Unsubscribe mocks base method.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockSNSAPIMockRecorder">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=650:706#L19">MockSNSAPIMockRecorder</a>
+				<a class="permalink" href="#MockSNSAPIMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockSNSAPIMockRecorder is the mock recorder for MockSNSAPI.
+
+			</p><pre>type MockSNSAPIMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockSNSAPIMockRecorder.CreateTopic">func (*MockSNSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=1546:1630#L49">CreateTopic</a>
+					<a class="permalink" href="#MockSNSAPIMockRecorder.CreateTopic">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSNSAPIMockRecorder">MockSNSAPIMockRecorder</a>) CreateTopic(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>CreateTopic indicates an expected call of CreateTopic.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPIMockRecorder.ListSubscriptionsByTopic">func (*MockSNSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=2422:2519#L69">ListSubscriptionsByTopic</a>
+					<a class="permalink" href="#MockSNSAPIMockRecorder.ListSubscriptionsByTopic">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSNSAPIMockRecorder">MockSNSAPIMockRecorder</a>) ListSubscriptionsByTopic(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>ListSubscriptionsByTopic indicates an expected call of ListSubscriptionsByTopic.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPIMockRecorder.Publish">func (*MockSNSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=3201:3281#L89">Publish</a>
+					<a class="permalink" href="#MockSNSAPIMockRecorder.Publish">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSNSAPIMockRecorder">MockSNSAPIMockRecorder</a>) Publish(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Publish indicates an expected call of Publish.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPIMockRecorder.SetSubscriptionAttributes">func (*MockSNSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=4073:4171#L109">SetSubscriptionAttributes</a>
+					<a class="permalink" href="#MockSNSAPIMockRecorder.SetSubscriptionAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSNSAPIMockRecorder">MockSNSAPIMockRecorder</a>) SetSubscriptionAttributes(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>SetSubscriptionAttributes indicates an expected call of SetSubscriptionAttributes.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPIMockRecorder.Subscribe">func (*MockSNSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=4871:4953#L129">Subscribe</a>
+					<a class="permalink" href="#MockSNSAPIMockRecorder.Subscribe">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSNSAPIMockRecorder">MockSNSAPIMockRecorder</a>) Subscribe(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Subscribe indicates an expected call of Subscribe.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSNSAPIMockRecorder.Unsubscribe">func (*MockSNSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=5637:5721#L149">Unsubscribe</a>
+					<a class="permalink" href="#MockSNSAPIMockRecorder.Unsubscribe">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSNSAPIMockRecorder">MockSNSAPIMockRecorder</a>) Unsubscribe(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Unsubscribe indicates an expected call of Unsubscribe.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockSQSAPI">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=5971:6079#L156">MockSQSAPI</a>
+				<a class="permalink" href="#MockSQSAPI">¶</a>
+				
+				
+			</h2>
+			<p>MockSQSAPI is a mock of SQSAPI interface.
+
+			</p><pre>type MockSQSAPI struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockSQSAPI">func <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=6248:6303#L168">NewMockSQSAPI</a>
+					<a class="permalink" href="#NewMockSQSAPI">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockSQSAPI(ctrl *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockSQSAPI">MockSQSAPI</a></pre>
+				<p>NewMockSQSAPI creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockSQSAPI.CreateQueue">func (*MockSQSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=6591:6730#L180">CreateQueue</a>
+					<a class="permalink" href="#MockSQSAPI.CreateQueue">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSQSAPI">MockSQSAPI</a>) CreateQueue(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#CreateQueueInput">CreateQueueInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#CreateQueueOutput">CreateQueueOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>CreateQueue mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPI.DeleteMessage">func (*MockSQSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=7365:7510#L200">DeleteMessage</a>
+					<a class="permalink" href="#MockSQSAPI.DeleteMessage">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSQSAPI">MockSQSAPI</a>) DeleteMessage(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#DeleteMessageInput">DeleteMessageInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#DeleteMessageOutput">DeleteMessageOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>DeleteMessage mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPI.DeleteQueue">func (*MockSQSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=8157:8296#L220">DeleteQueue</a>
+					<a class="permalink" href="#MockSQSAPI.DeleteQueue">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSQSAPI">MockSQSAPI</a>) DeleteQueue(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#DeleteQueueInput">DeleteQueueInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#DeleteQueueOutput">DeleteQueueOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>DeleteQueue mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPI.EXPECT">func (*MockSQSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=6479:6532#L175">EXPECT</a>
+					<a class="permalink" href="#MockSQSAPI.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSQSAPI">MockSQSAPI</a>) EXPECT() *<a href="#MockSQSAPIMockRecorder">MockSQSAPIMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPI.GetQueueAttributes">func (*MockSQSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=8936:9096#L240">GetQueueAttributes</a>
+					<a class="permalink" href="#MockSQSAPI.GetQueueAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSQSAPI">MockSQSAPI</a>) GetQueueAttributes(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#GetQueueAttributesInput">GetQueueAttributesInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#GetQueueAttributesOutput">GetQueueAttributesOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>GetQueueAttributes mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPI.GetQueueUrl">func (*MockSQSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=9778:9917#L260">GetQueueUrl</a>
+					<a class="permalink" href="#MockSQSAPI.GetQueueUrl">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSQSAPI">MockSQSAPI</a>) GetQueueUrl(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#GetQueueUrlInput">GetQueueUrlInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#GetQueueUrlOutput">GetQueueUrlOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>GetQueueUrl mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPI.ReceiveMessage">func (*MockSQSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=10553:10701#L280">ReceiveMessage</a>
+					<a class="permalink" href="#MockSQSAPI.ReceiveMessage">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSQSAPI">MockSQSAPI</a>) ReceiveMessage(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#ReceiveMessageInput">ReceiveMessageInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#ReceiveMessageOutput">ReceiveMessageOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>ReceiveMessage mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPI.SetQueueAttributes">func (*MockSQSAPI) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=11362:11522#L300">SetQueueAttributes</a>
+					<a class="permalink" href="#MockSQSAPI.SetQueueAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockSQSAPI">MockSQSAPI</a>) SetQueueAttributes(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, in *<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#SetQueueAttributesInput">SetQueueAttributesInput</a>, opts ...func(*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#Options">Options</a>)) (*<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/">sqs</a>.<a href="../../../../../../github.com/aws/aws-sdk-go-v2/service/sqs/#SetQueueAttributesOutput">SetQueueAttributesOutput</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>SetQueueAttributes mocks base method.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockSQSAPIMockRecorder">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=6144:6200#L163">MockSQSAPIMockRecorder</a>
+				<a class="permalink" href="#MockSQSAPIMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockSQSAPIMockRecorder is the mock recorder for MockSQSAPI.
+
+			</p><pre>type MockSQSAPIMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockSQSAPIMockRecorder.CreateQueue">func (*MockSQSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=7040:7124#L193">CreateQueue</a>
+					<a class="permalink" href="#MockSQSAPIMockRecorder.CreateQueue">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSQSAPIMockRecorder">MockSQSAPIMockRecorder</a>) CreateQueue(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>CreateQueue indicates an expected call of CreateQueue.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPIMockRecorder.DeleteMessage">func (*MockSQSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=7828:7914#L213">DeleteMessage</a>
+					<a class="permalink" href="#MockSQSAPIMockRecorder.DeleteMessage">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSQSAPIMockRecorder">MockSQSAPIMockRecorder</a>) DeleteMessage(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>DeleteMessage indicates an expected call of DeleteMessage.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPIMockRecorder.DeleteQueue">func (*MockSQSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=8606:8690#L233">DeleteQueue</a>
+					<a class="permalink" href="#MockSQSAPIMockRecorder.DeleteQueue">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSQSAPIMockRecorder">MockSQSAPIMockRecorder</a>) DeleteQueue(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>DeleteQueue indicates an expected call of DeleteQueue.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPIMockRecorder.GetQueueAttributes">func (*MockSQSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=9434:9525#L253">GetQueueAttributes</a>
+					<a class="permalink" href="#MockSQSAPIMockRecorder.GetQueueAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSQSAPIMockRecorder">MockSQSAPIMockRecorder</a>) GetQueueAttributes(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>GetQueueAttributes indicates an expected call of GetQueueAttributes.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPIMockRecorder.GetQueueUrl">func (*MockSQSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=10227:10311#L273">GetQueueUrl</a>
+					<a class="permalink" href="#MockSQSAPIMockRecorder.GetQueueUrl">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSQSAPIMockRecorder">MockSQSAPIMockRecorder</a>) GetQueueUrl(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>GetQueueUrl indicates an expected call of GetQueueUrl.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPIMockRecorder.ReceiveMessage">func (*MockSQSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=11023:11110#L293">ReceiveMessage</a>
+					<a class="permalink" href="#MockSQSAPIMockRecorder.ReceiveMessage">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSQSAPIMockRecorder">MockSQSAPIMockRecorder</a>) ReceiveMessage(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>ReceiveMessage indicates an expected call of ReceiveMessage.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockSQSAPIMockRecorder.SetQueueAttributes">func (*MockSQSAPIMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/mock/mock_api.go.gen.go.html?s=11860:11951#L313">SetQueueAttributes</a>
+					<a class="permalink" href="#MockSQSAPIMockRecorder.SetQueueAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockSQSAPIMockRecorder">MockSQSAPIMockRecorder</a>) SetQueueAttributes(ctx, in <a href="../../../../../../builtin/#any">any</a>, opts ...<a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>SetQueueAttributes indicates an expected call of SetQueueAttributes.
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

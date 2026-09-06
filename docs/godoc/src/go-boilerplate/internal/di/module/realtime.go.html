@@ -1,0 +1,443 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>module - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/di">di</a>/<a href="../../../../../src/go-boilerplate/internal/di/module">module</a>/<span class="text-muted">realtime.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/di/module">go-boilerplate/internal/di/module</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package module
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>
+<span id="L6" class="ln">     6  </span>	awsdynamodb &#34;github.com/aws/aws-sdk-go-v2/service/dynamodb&#34;
+<span id="L7" class="ln">     7  </span>	&#34;go.uber.org/fx&#34;
+<span id="L8" class="ln">     8  </span>
+<span id="L9" class="ln">     9  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/internal/config&#34;
+<span id="L11" class="ln">    11  </span>	oapiauth &#34;go-boilerplate/internal/controller/httpstack/oapi/auth&#34;
+<span id="L12" class="ln">    12  </span>	ctrlrealtime &#34;go-boilerplate/internal/controller/realtime&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/controller/stream&#34;
+<span id="L14" class="ln">    14  </span>	streamauth &#34;go-boilerplate/internal/controller/stream/auth&#34;
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/di/lifecycle&#34;
+<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/di/server/hook&#34;
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/infrastructure/eventlog&#34;
+<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/internal/infrastructure/instancelease&#34;
+<span id="L19" class="ln">    19  </span>	realtimeinfra &#34;go-boilerplate/internal/infrastructure/realtime&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/logging&#34;
+<span id="L21" class="ln">    21  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L22" class="ln">    22  </span>	&#34;go-boilerplate/internal/usecase/boundary/clock&#34;
+<span id="L23" class="ln">    23  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L24" class="ln">    24  </span>	&#34;go-boilerplate/internal/usecase/healthcheck&#34;
+<span id="L25" class="ln">    25  </span>	ucrealtime &#34;go-boilerplate/internal/usecase/realtime&#34;
+<span id="L26" class="ln">    26  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L27" class="ln">    27  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L28" class="ln">    28  </span>)
+<span id="L29" class="ln">    29  </span>
+<span id="L30" class="ln">    30  </span>const (
+<span id="L31" class="ln">    31  </span>	<span class="comment">// realtimeParticipantName は、serve lifecycle のログに載せる Realtime Delivery の参加者名です。</span>
+<span id="L32" class="ln">    32  </span>	<span class="comment">// /ready に出る依存名と同じ値を使います（同じ subsystem を 2 つの名前で呼ばないため）。</span>
+<span id="L33" class="ln">    33  </span>	realtimeParticipantName = ucrealtime.SubsystemName
+<span id="L34" class="ln">    34  </span>)
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span><span class="comment">// ErrRealtimeTopicNotConfigured は、fan-out を配線したのに REALTIME_TOPIC が空であることを示すエラーです。</span>
+<span id="L37" class="ln">    37  </span>var ErrRealtimeTopicNotConfigured = xerrors.Wrap(
+<span id="L38" class="ln">    38  </span>	apperror.ErrInvalidArgument,
+<span id="L39" class="ln">    39  </span>	&#34;REALTIME_TOPIC must be set when the realtime fan-out is wired&#34;,
+<span id="L40" class="ln">    40  </span>)
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// realtimeFanout は、fan-out の publish 側と受信側が共有する SNS / SQS クライアントと topic です。</span>
+<span id="L43" class="ln">    43  </span>type realtimeFanout struct {
+<span id="L44" class="ln">    44  </span>	clients  realtimeinfra.Clients
+<span id="L45" class="ln">    45  </span>	topicARN string
+<span id="L46" class="ln">    46  </span>}
+<span id="L47" class="ln">    47  </span>
+<span id="L48" class="ln">    48  </span><span class="comment">// ServeRealtimeModule は、Realtime Delivery の受信側 runtime を serve profile へ結線する入口です。</span>
+<span id="L49" class="ln">    49  </span><span class="comment">// 呼び出しは feature の realtime adapter と同じ sample-api マーカー行にだけ載せます</span>
+<span id="L50" class="ln">    50  </span><span class="comment">// （adapter と一緒に消える理由は internal/di/module/README.md「Module List」ServeRealtimeModule()）。</span>
+<span id="L51" class="ln">    51  </span><span class="comment">//</span>
+<span id="L52" class="ln">    52  </span><span class="comment">// RealtimeAdapterModule() は realtimeModule() が合成するので、両方を同じ graph へ結線してはいけません。</span>
+<span id="L53" class="ln">    53  </span>func ServeRealtimeModule() fx.Option {
+<span id="L54" class="ln">    54  </span>	return realtimeModule()
+<span id="L55" class="ln">    55  </span>}
+<span id="L56" class="ln">    56  </span>
+<span id="L57" class="ln">    57  </span><span class="comment">// realtimeModule は、Realtime Delivery の store・機構側 usecase・fan-out・SSE の stream handler・serve lifecycle の</span>
+<span id="L58" class="ln">    58  </span><span class="comment">// 参加者を提供する fx.Module です。InfrastructureModule() には束ねず serve profile にだけ配線します</span>
+<span id="L59" class="ln">    59  </span><span class="comment">// （内訳は internal/di/module/README.md「Design Policy」、配線条件は docs/design/realtime-delivery.md §1）。</span>
+<span id="L60" class="ln">    60  </span><span class="comment">// registry を複数の受け口へ出す配線は provideStreamer を参照。</span>
+<span id="L61" class="ln">    61  </span>func realtimeModule() fx.Option {
+<span id="L62" class="ln">    62  </span>	return fx.Module(&#34;realtime&#34;,
+<span id="L63" class="ln">    63  </span>		RealtimeAdapterModule(),
+<span id="L64" class="ln">    64  </span>		fx.Provide(
+<span id="L65" class="ln">    65  </span>			observability.NewRealtimeMetrics,
+<span id="L66" class="ln">    66  </span>			provideEventLogStore,
+<span id="L67" class="ln">    67  </span>			provideInstanceLeaseStore,
+<span id="L68" class="ln">    68  </span>			provideCursorValidator,
+<span id="L69" class="ln">    69  </span>			provideReplayer,
+<span id="L70" class="ln">    70  </span>			provideRealtimeHealth,
+<span id="L71" class="ln">    71  </span>			provideFanoutObserver,
+<span id="L72" class="ln">    72  </span>			fx.Annotate(provideRealtimeReadinessProbe, fx.ResultTags(`group:&#34;`+readinessProbeGroup+`&#34;`)),
+<span id="L73" class="ln">    73  </span>			provideConnectionRegistry,
+<span id="L74" class="ln">    74  </span>			provideStreamer,
+<span id="L75" class="ln">    75  </span>			provideWaker,
+<span id="L76" class="ln">    76  </span>			provideRevoker,
+<span id="L77" class="ln">    77  </span>			provideTicketVerifier,
+<span id="L78" class="ln">    78  </span>			fx.Annotate(provideStreamTicketScheme, fx.ResultTags(`group:&#34;`+oapiauth.SchemeGroup+`&#34;`)),
+<span id="L79" class="ln">    79  </span>			provideRealtimeFanout,
+<span id="L80" class="ln">    80  </span>			provideRevocationNotifier,
+<span id="L81" class="ln">    81  </span>			provideAccessRevoker,
+<span id="L82" class="ln">    82  </span>			provideInstanceID,
+<span id="L83" class="ln">    83  </span>			provideInstanceQueueAttributes,
+<span id="L84" class="ln">    84  </span>			provideInstanceSubscription,
+<span id="L85" class="ln">    85  </span>			provideLeaseKeeper,
+<span id="L86" class="ln">    86  </span>			provideRealtimeReprovisioner,
+<span id="L87" class="ln">    87  </span>			provideRealtimeConsumer,
+<span id="L88" class="ln">    88  </span>			provideRealtimeHeartbeat,
+<span id="L89" class="ln">    89  </span>			fx.Annotate(provideRealtimeStartupProbe, fx.ResultTags(`group:&#34;`+hook.StartupGroup+`&#34;`)),
+<span id="L90" class="ln">    90  </span>			fx.Annotate(provideRealtimeProvisioner, fx.ResultTags(`group:&#34;`+hook.ProvisionerGroup+`&#34;`)),
+<span id="L91" class="ln">    91  </span>			fx.Annotate(provideRealtimeConsumerRunner, fx.ResultTags(`group:&#34;`+hook.RunnerGroup+`&#34;`)),
+<span id="L92" class="ln">    92  </span>			fx.Annotate(provideRealtimeHeartbeatRunner, fx.ResultTags(`group:&#34;`+hook.RunnerGroup+`&#34;`)),
+<span id="L93" class="ln">    93  </span>			fx.Annotate(provideRealtimeStreamDrainer, fx.ResultTags(`group:&#34;`+hook.DrainerGroup+`&#34;`)),
+<span id="L94" class="ln">    94  </span>		),
+<span id="L95" class="ln">    95  </span>		fx.Invoke(
+<span id="L96" class="ln">    96  </span>			stream.BindHandler,
+<span id="L97" class="ln">    97  </span>		),
+<span id="L98" class="ln">    98  </span>	)
+<span id="L99" class="ln">    99  </span>}
+<span id="L100" class="ln">   100  </span>
+<span id="L101" class="ln">   101  </span><span class="comment">// provideRealtimeFanout は、fan-out のクライアントを組み立てます。topic の ARN が空なら起動を失敗させます</span>
+<span id="L102" class="ln">   102  </span><span class="comment">// （publish 先の無い fan-out を黙って起動させない。ENDPOINT_OUTBOX と同じ扱い）。</span>
+<span id="L103" class="ln">   103  </span>func provideRealtimeFanout(
+<span id="L104" class="ln">   104  </span>	cfg *config.RealtimeConfig,
+<span id="L105" class="ln">   105  </span>	epCfg *config.EndpointConfig,
+<span id="L106" class="ln">   106  </span>	outbound *observability.OutboundHTTPClient,
+<span id="L107" class="ln">   107  </span>) (realtimeFanout, error) {
+<span id="L108" class="ln">   108  </span>	return newRealtimeFanout(context.Background(), cfg.Topic(), realtimeinfra.ClientConfig{
+<span id="L109" class="ln">   109  </span>		Endpoint:        epCfg.RealtimePubSub(),
+<span id="L110" class="ln">   110  </span>		Region:          cfg.Region(),
+<span id="L111" class="ln">   111  </span>		AccessKeyID:     cfg.AccessKeyID(),
+<span id="L112" class="ln">   112  </span>		SecretAccessKey: cfg.SecretAccessKey(),
+<span id="L113" class="ln">   113  </span>		HTTPClient:      outbound,
+<span id="L114" class="ln">   114  </span>	})
+<span id="L115" class="ln">   115  </span>}
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>func newRealtimeFanout(ctx context.Context, topicARN string, cc realtimeinfra.ClientConfig) (realtimeFanout, error) {
+<span id="L118" class="ln">   118  </span>	if topicARN == &#34;&#34; {
+<span id="L119" class="ln">   119  </span>		return realtimeFanout{}, ErrRealtimeTopicNotConfigured
+<span id="L120" class="ln">   120  </span>	}
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>	clients, err := realtimeinfra.NewClients(ctx, cc)
+<span id="L123" class="ln">   123  </span>	if err != nil {
+<span id="L124" class="ln">   124  </span>		return realtimeFanout{}, err
+<span id="L125" class="ln">   125  </span>	}
+<span id="L126" class="ln">   126  </span>
+<span id="L127" class="ln">   127  </span>	return realtimeFanout{clients: clients, topicARN: topicARN}, nil
+<span id="L128" class="ln">   128  </span>}
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>func provideRevocationNotifier(f realtimeFanout, tf observability.TracerFactory) rt.RevocationNotifier {
+<span id="L131" class="ln">   131  </span>	return realtimeinfra.NewRevocationNotifier(f.clients, f.topicARN, tf)
+<span id="L132" class="ln">   132  </span>}
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>func provideAccessRevoker(
+<span id="L135" class="ln">   135  </span>	tickets rt.StreamTicketStore,
+<span id="L136" class="ln">   136  </span>	notifier rt.RevocationNotifier,
+<span id="L137" class="ln">   137  </span>	tf observability.TracerFactory,
+<span id="L138" class="ln">   138  </span>) ucrealtime.AccessRevoker {
+<span id="L139" class="ln">   139  </span>	return ucrealtime.NewAccessRevoker(tickets, notifier, tf)
+<span id="L140" class="ln">   140  </span>}
+<span id="L141" class="ln">   141  </span>
+<span id="L142" class="ln">   142  </span><span class="comment">// provideInstanceID は、この process の serve instance の識別子を起動ごとに採番します。</span>
+<span id="L143" class="ln">   143  </span><span class="comment">// 再起動をまたいで安定な値（hostname など）から導いてはいけません（docs/design/realtime-delivery.md §2.5）。</span>
+<span id="L144" class="ln">   144  </span>func provideInstanceID() (rt.InstanceID, error) {
+<span id="L145" class="ln">   145  </span>	id, err := uuid.New()
+<span id="L146" class="ln">   146  </span>	if err != nil {
+<span id="L147" class="ln">   147  </span>		return &#34;&#34;, xerrors.Wrap(err, &#34;generate realtime instance id&#34;)
+<span id="L148" class="ln">   148  </span>	}
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span>	return rt.InstanceID(id.String()), nil
+<span id="L151" class="ln">   151  </span>}
+<span id="L152" class="ln">   152  </span>
+<span id="L153" class="ln">   153  </span><span class="comment">// provideInstanceQueueAttributes は、instance queue に設定する属性の組み立て手を環境で選びます。</span>
+<span id="L154" class="ln">   154  </span><span class="comment">// emulator（GoAWS）が受け付けない属性と、どの環境がどちらの実装を使うかは</span>
+<span id="L155" class="ln">   155  </span><span class="comment">// internal/infrastructure/realtime/README.md「Emulator compatibility」を参照。</span>
+<span id="L156" class="ln">   156  </span>func provideInstanceQueueAttributes(
+<span id="L157" class="ln">   157  </span>	appCfg *config.ApplicationConfig,
+<span id="L158" class="ln">   158  </span>	cfg *config.RealtimeConfig,
+<span id="L159" class="ln">   159  </span>) (realtimeinfra.AttributesBuilder, error) {
+<span id="L160" class="ln">   160  </span>	switch env := appCfg.Env(); env {
+<span id="L161" class="ln">   161  </span>	case config.EnvLocal, config.EnvCI, config.EnvTest, config.EnvDast:
+<span id="L162" class="ln">   162  </span>		return realtimeinfra.NewEmulatorQueueAttributes(), nil
+<span id="L163" class="ln">   163  </span>	case config.EnvDevelopment, config.EnvStaging, config.EnvProduction:
+<span id="L164" class="ln">   164  </span>		return realtimeinfra.NewQueueAttributes(realtimeinfra.QueueAttributesInput{TopicARN: cfg.Topic(), DLQARN: cfg.DLQ()}), nil
+<span id="L165" class="ln">   165  </span>	default:
+<span id="L166" class="ln">   166  </span>		return nil, xerrors.Wrap(apperror.ErrInvalidArgument, &#34;no instance queue attribute policy for env &#34;+env)
+<span id="L167" class="ln">   167  </span>	}
+<span id="L168" class="ln">   168  </span>}
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>func provideInstanceSubscription(
+<span id="L171" class="ln">   171  </span>	f realtimeFanout, cfg *config.RealtimeConfig, attrs realtimeinfra.AttributesBuilder, tf observability.TracerFactory,
+<span id="L172" class="ln">   172  </span>) rt.InstanceSubscription {
+<span id="L173" class="ln">   173  </span>	return realtimeinfra.NewInstanceSubscription(
+<span id="L174" class="ln">   174  </span>		f.clients, realtimeinfra.SubscriptionTarget{TopicARN: f.topicARN, QueuePrefix: cfg.QueuePrefix()}, attrs, tf,
+<span id="L175" class="ln">   175  </span>	)
+<span id="L176" class="ln">   176  </span>}
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>func provideLeaseKeeper(
+<span id="L179" class="ln">   179  </span>	store rt.InstanceLeaseStore,
+<span id="L180" class="ln">   180  </span>	clk clock.Clock,
+<span id="L181" class="ln">   181  </span>	tf observability.TracerFactory,
+<span id="L182" class="ln">   182  </span>) ucrealtime.LeaseKeeper {
+<span id="L183" class="ln">   183  </span>	return ucrealtime.NewLeaseKeeper(store, clk, tf)
+<span id="L184" class="ln">   184  </span>}
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span>func provideRealtimeConsumer(
+<span id="L187" class="ln">   187  </span>	sub rt.InstanceSubscription,
+<span id="L188" class="ln">   188  </span>	reprovision ctrlrealtime.Reprovisioner,
+<span id="L189" class="ln">   189  </span>	fanout ctrlrealtime.FanoutObserver,
+<span id="L190" class="ln">   190  </span>	wakeups ctrlrealtime.Waker,
+<span id="L191" class="ln">   191  </span>	revocations ctrlrealtime.Revoker,
+<span id="L192" class="ln">   192  </span>	sleeper clock.Sleeper,
+<span id="L193" class="ln">   193  </span>	log logging.Logger,
+<span id="L194" class="ln">   194  </span>	tf observability.TracerFactory,
+<span id="L195" class="ln">   195  </span>	metrics *observability.RealtimeMetrics,
+<span id="L196" class="ln">   196  </span>) *ctrlrealtime.Engine {
+<span id="L197" class="ln">   197  </span>	return ctrlrealtime.NewEngine(
+<span id="L198" class="ln">   198  </span>		sub, reprovision, fanout, wakeups, revocations, sleeper, log, tf, metrics, ctrlrealtime.Settings{},
+<span id="L199" class="ln">   199  </span>	)
+<span id="L200" class="ln">   200  </span>}
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span><span class="comment">// provideRealtimeReprovisioner は、消えた受信先の作り直しを、起動時の participant（provideRealtimeProvisioner）と</span>
+<span id="L203" class="ln">   203  </span><span class="comment">// 同じ順序（lease → 受信先）で合成します（順序の根拠は docs/design/realtime-delivery.md §2.5）。</span>
+<span id="L204" class="ln">   204  </span>func provideRealtimeReprovisioner(
+<span id="L205" class="ln">   205  </span>	sub rt.InstanceSubscription,
+<span id="L206" class="ln">   206  </span>	keeper ucrealtime.LeaseKeeper,
+<span id="L207" class="ln">   207  </span>	id rt.InstanceID,
+<span id="L208" class="ln">   208  </span>) ctrlrealtime.Reprovisioner {
+<span id="L209" class="ln">   209  </span>	return ctrlrealtime.ReprovisionFunc(func(ctx context.Context) error {
+<span id="L210" class="ln">   210  </span>		if err := keeper.Beat(ctx, id); err != nil {
+<span id="L211" class="ln">   211  </span>			return err
+<span id="L212" class="ln">   212  </span>		}
+<span id="L213" class="ln">   213  </span>
+<span id="L214" class="ln">   214  </span>		return sub.Provision(ctx, id)
+<span id="L215" class="ln">   215  </span>	})
+<span id="L216" class="ln">   216  </span>}
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>func provideRealtimeHeartbeat(
+<span id="L219" class="ln">   219  </span>	keeper ucrealtime.LeaseKeeper,
+<span id="L220" class="ln">   220  </span>	id rt.InstanceID,
+<span id="L221" class="ln">   221  </span>	sleeper clock.Sleeper,
+<span id="L222" class="ln">   222  </span>	log logging.Logger,
+<span id="L223" class="ln">   223  </span>	tf observability.TracerFactory,
+<span id="L224" class="ln">   224  </span>	metrics *observability.RealtimeMetrics,
+<span id="L225" class="ln">   225  </span>) *ctrlrealtime.Heartbeat {
+<span id="L226" class="ln">   226  </span>	return ctrlrealtime.NewHeartbeat(keeper, id, sleeper, log, tf, metrics)
+<span id="L227" class="ln">   227  </span>}
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span><span class="comment">// provideRealtimeStartupProbe は、HTTP を listen する前に依存へ到達できることを確かめる</span>
+<span id="L230" class="ln">   230  </span><span class="comment">// [hook.StartupProbe] を返します。判定は provideRealtimeHealth の Health を共有します。</span>
+<span id="L231" class="ln">   231  </span>func provideRealtimeStartupProbe(health *ucrealtime.Health) hook.StartupProbe {
+<span id="L232" class="ln">   232  </span>	return hook.StartupProbe{Name: realtimeParticipantName, Probe: health.Check}
+<span id="L233" class="ln">   233  </span>}
+<span id="L234" class="ln">   234  </span>
+<span id="L235" class="ln">   235  </span><span class="comment">// provideRealtimeHealth は、Realtime Delivery の縮退を答える値を組み立てます。</span>
+<span id="L236" class="ln">   236  </span><span class="comment">// 起動時の probe（provideRealtimeStartupProbe）・/ready の readiness（provideRealtimeReadinessProbe）・</span>
+<span id="L237" class="ln">   237  </span><span class="comment">// consumer engine の受信可否（provideFanoutObserver）・新規接続の可否（provideConnectionRegistry）が</span>
+<span id="L238" class="ln">   238  </span><span class="comment">// すべてこの 1 つの値を見るので、「到達できる」の意味が起動時と稼働中でずれません。</span>
+<span id="L239" class="ln">   239  </span>func provideRealtimeHealth(log rt.EventLogStore) *ucrealtime.Health {
+<span id="L240" class="ln">   240  </span>	return ucrealtime.NewHealth(log)
+<span id="L241" class="ln">   241  </span>}
+<span id="L242" class="ln">   242  </span>
+<span id="L243" class="ln">   243  </span><span class="comment">// provideFanoutObserver は、provideRealtimeHealth の Health を consumer engine の受け口として graph へ出します。</span>
+<span id="L244" class="ln">   244  </span>func provideFanoutObserver(health *ucrealtime.Health) ctrlrealtime.FanoutObserver { return health }
+<span id="L245" class="ln">   245  </span>
+<span id="L246" class="ln">   246  </span><span class="comment">// provideRealtimeReadinessProbe は、provideRealtimeHealth の Health を /ready の依存一覧へ加えます</span>
+<span id="L247" class="ln">   247  </span><span class="comment">// （healthcheck 側が Realtime を知らない理由は internal/usecase/healthcheck/README.md「Degradable dependencies」）。</span>
+<span id="L248" class="ln">   248  </span>func provideRealtimeReadinessProbe(health *ucrealtime.Health) healthcheck.Probe {
+<span id="L249" class="ln">   249  </span>	return healthcheck.Probe{Name: ucrealtime.SubsystemName, Check: health.Check}
+<span id="L250" class="ln">   250  </span>}
+<span id="L251" class="ln">   251  </span>
+<span id="L252" class="ln">   252  </span><span class="comment">// provideRealtimeProvisioner は、lease の記録と instance の受信先を 1 つの参加者に合成し、</span>
+<span id="L253" class="ln">   253  </span><span class="comment">// 起動は lease → 受信先、片付けは 受信先 → lease の順に固定します</span>
+<span id="L254" class="ln">   254  </span><span class="comment">// （fx の value group は順序を保証しない。順序そのものの根拠は docs/design/realtime-delivery.md §2.5）。</span>
+<span id="L255" class="ln">   255  </span>func provideRealtimeProvisioner(
+<span id="L256" class="ln">   256  </span>	sub rt.InstanceSubscription,
+<span id="L257" class="ln">   257  </span>	keeper ucrealtime.LeaseKeeper,
+<span id="L258" class="ln">   258  </span>	id rt.InstanceID,
+<span id="L259" class="ln">   259  </span>) hook.Provisioner {
+<span id="L260" class="ln">   260  </span>	return hook.Provisioner{
+<span id="L261" class="ln">   261  </span>		Name: realtimeParticipantName,
+<span id="L262" class="ln">   262  </span>		Provision: func(ctx context.Context) error {
+<span id="L263" class="ln">   263  </span>			if err := keeper.Beat(ctx, id); err != nil {
+<span id="L264" class="ln">   264  </span>				return err
+<span id="L265" class="ln">   265  </span>			}
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>			if err := sub.Provision(ctx, id); err != nil {
+<span id="L268" class="ln">   268  </span>				if terr := sub.Teardown(ctx); terr != nil {
+<span id="L269" class="ln">   269  </span>					return xerrors.Join(err, terr) <span class="comment">// 受信先が残ったので lease は残す</span>
+<span id="L270" class="ln">   270  </span>				}
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>				return xerrors.Join(err, keeper.Release(ctx, id))
+<span id="L273" class="ln">   273  </span>			}
+<span id="L274" class="ln">   274  </span>
+<span id="L275" class="ln">   275  </span>			return nil
+<span id="L276" class="ln">   276  </span>		},
+<span id="L277" class="ln">   277  </span>		Teardown: func(ctx context.Context) error {
+<span id="L278" class="ln">   278  </span>			if err := sub.Teardown(ctx); err != nil {
+<span id="L279" class="ln">   279  </span>				return err <span class="comment">// 受信先が残ったので lease は残す</span>
+<span id="L280" class="ln">   280  </span>			}
+<span id="L281" class="ln">   281  </span>
+<span id="L282" class="ln">   282  </span>			return keeper.Release(ctx, id)
+<span id="L283" class="ln">   283  </span>		},
+<span id="L284" class="ln">   284  </span>	}
+<span id="L285" class="ln">   285  </span>}
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>func provideRealtimeConsumerRunner(engine *ctrlrealtime.Engine) hook.Runner {
+<span id="L288" class="ln">   288  </span>	return hook.Runner{Name: realtimeParticipantName + &#34;-consumer&#34;, Runner: lifecycle.SupervisedRunner{
+<span id="L289" class="ln">   289  </span>		Body: func(ctx context.Context) { _ = engine.Run(ctx) },
+<span id="L290" class="ln">   290  </span>	}}
+<span id="L291" class="ln">   291  </span>}
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>func provideRealtimeHeartbeatRunner(heartbeat *ctrlrealtime.Heartbeat) hook.Runner {
+<span id="L294" class="ln">   294  </span>	return hook.Runner{Name: realtimeParticipantName + &#34;-heartbeat&#34;, Runner: lifecycle.SupervisedRunner{
+<span id="L295" class="ln">   295  </span>		Body: func(ctx context.Context) { _ = heartbeat.Run(ctx) },
+<span id="L296" class="ln">   296  </span>	}}
+<span id="L297" class="ln">   297  </span>}
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>func provideEventLogStore(
+<span id="L300" class="ln">   300  </span>	c *awsdynamodb.Client,
+<span id="L301" class="ln">   301  </span>	cfg *config.RealtimeConfig,
+<span id="L302" class="ln">   302  </span>	tf observability.TracerFactory,
+<span id="L303" class="ln">   303  </span>) rt.EventLogStore {
+<span id="L304" class="ln">   304  </span>	return eventlog.New(c, cfg.EventLogTable(), tf)
+<span id="L305" class="ln">   305  </span>}
+<span id="L306" class="ln">   306  </span>
+<span id="L307" class="ln">   307  </span>func provideInstanceLeaseStore(
+<span id="L308" class="ln">   308  </span>	c *awsdynamodb.Client,
+<span id="L309" class="ln">   309  </span>	cfg *config.RealtimeConfig,
+<span id="L310" class="ln">   310  </span>	tf observability.TracerFactory,
+<span id="L311" class="ln">   311  </span>) rt.InstanceLeaseStore {
+<span id="L312" class="ln">   312  </span>	return instancelease.New(c, cfg.InstanceLeaseTable(), tf)
+<span id="L313" class="ln">   313  </span>}
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span><span class="comment">// provideConnectionRegistry は、この instance が保持する SSE 接続の索引を組み立てます。</span>
+<span id="L316" class="ln">   316  </span><span class="comment">// 上限値は typed config から取り、0 以下は Settings 側で既定値へ寄ります。</span>
+<span id="L317" class="ln">   317  </span>func provideConnectionRegistry(
+<span id="L318" class="ln">   318  </span>	cfg *config.RealtimeConfig,
+<span id="L319" class="ln">   319  </span>	replayer ucrealtime.Replayer,
+<span id="L320" class="ln">   320  </span>	sleeper clock.Sleeper,
+<span id="L321" class="ln">   321  </span>	log logging.Logger,
+<span id="L322" class="ln">   322  </span>	tf observability.TracerFactory,
+<span id="L323" class="ln">   323  </span>	metrics *observability.RealtimeMetrics,
+<span id="L324" class="ln">   324  </span>	health *ucrealtime.Health,
+<span id="L325" class="ln">   325  </span>) *stream.Registry {
+<span id="L326" class="ln">   326  </span>	return stream.NewRegistry(replayer, sleeper, log, tf, metrics, health, newStreamSettings(cfg))
+<span id="L327" class="ln">   327  </span>}
+<span id="L328" class="ln">   328  </span>
+<span id="L329" class="ln">   329  </span><span class="comment">// newStreamSettings は、typed config を Streamer のチューニング値へ写します。</span>
+<span id="L330" class="ln">   330  </span><span class="comment">// 2 つとも int なので、取り違えても型では気づけません。写像はここだけに置きます。</span>
+<span id="L331" class="ln">   331  </span>func newStreamSettings(cfg *config.RealtimeConfig) stream.Settings {
+<span id="L332" class="ln">   332  </span>	return stream.Settings{
+<span id="L333" class="ln">   333  </span>		MaxConnections:    cfg.MaxConnections(),
+<span id="L334" class="ln">   334  </span>		ReplayConcurrency: cfg.ReplayConcurrency(),
+<span id="L335" class="ln">   335  </span>	}
+<span id="L336" class="ln">   336  </span>}
+<span id="L337" class="ln">   337  </span>
+<span id="L338" class="ln">   338  </span><span class="comment">// provideStreamer / provideWaker / provideRevoker は、同じ registry を 3 つの受け口として graph へ出します。</span>
+<span id="L339" class="ln">   339  </span><span class="comment">// drain の参加者（provideRealtimeStreamDrainer）も同じ値です。1 つの値で足りる理由は</span>
+<span id="L340" class="ln">   340  </span><span class="comment">// internal/controller/stream/README.md「Runtime: what one connection does after commit」。</span>
+<span id="L341" class="ln">   341  </span>func provideStreamer(registry *stream.Registry) stream.Streamer { return registry }
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span>func provideWaker(registry *stream.Registry) ctrlrealtime.Waker { return registry }
+<span id="L344" class="ln">   344  </span>
+<span id="L345" class="ln">   345  </span>func provideRevoker(registry *stream.Registry) ctrlrealtime.Revoker { return registry }
+<span id="L346" class="ln">   346  </span>
+<span id="L347" class="ln">   347  </span><span class="comment">// provideRealtimeStreamDrainer は、HTTP shutdown より前に SSE 接続を閉じ切る [hook.Drainer] を返します。</span>
+<span id="L348" class="ln">   348  </span>func provideRealtimeStreamDrainer(registry *stream.Registry) hook.Drainer {
+<span id="L349" class="ln">   349  </span>	return hook.Drainer{Name: realtimeParticipantName + &#34;-stream&#34;, Drain: registry.Drain}
+<span id="L350" class="ln">   350  </span>}
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span><span class="comment">// provideReplayer は、接続が cursor より後ろを読むための Replayer を組み立てます。</span>
+<span id="L353" class="ln">   353  </span>func provideReplayer(log rt.EventLogStore, tf observability.TracerFactory) ucrealtime.Replayer {
+<span id="L354" class="ln">   354  </span>	return ucrealtime.NewReplayer(log, tf)
+<span id="L355" class="ln">   355  </span>}
+<span id="L356" class="ln">   356  </span>
+<span id="L357" class="ln">   357  </span>func provideCursorValidator(
+<span id="L358" class="ln">   358  </span>	log rt.EventLogStore,
+<span id="L359" class="ln">   359  </span>	clk clock.Clock,
+<span id="L360" class="ln">   360  </span>	tf observability.TracerFactory,
+<span id="L361" class="ln">   361  </span>) ucrealtime.CursorValidator {
+<span id="L362" class="ln">   362  </span>	return ucrealtime.NewCursorValidator(log, clk, tf)
+<span id="L363" class="ln">   363  </span>}
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>func provideTicketVerifier(
+<span id="L366" class="ln">   366  </span>	store rt.StreamTicketStore,
+<span id="L367" class="ln">   367  </span>	clk clock.Clock,
+<span id="L368" class="ln">   368  </span>	tf observability.TracerFactory,
+<span id="L369" class="ln">   369  </span>) ucrealtime.TicketVerifier {
+<span id="L370" class="ln">   370  </span>	return ucrealtime.NewTicketVerifier(store, clk, tf)
+<span id="L371" class="ln">   371  </span>}
+<span id="L372" class="ln">   372  </span>
+<span id="L373" class="ln">   373  </span><span class="comment">// provideStreamTicketScheme は、query の stream ticket を検証する認証器を oapi/auth の scheme group へ出します。</span>
+<span id="L374" class="ln">   374  </span>func provideStreamTicketScheme(verifier ucrealtime.TicketVerifier) oapiauth.SchemeAuthenticator {
+<span id="L375" class="ln">   375  </span>	return streamauth.New(verifier)
+<span id="L376" class="ln">   376  </span>}
+<span id="L377" class="ln">   377  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/di/module/realtime.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

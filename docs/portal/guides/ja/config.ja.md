@@ -296,7 +296,6 @@ func NewAWSConfig(cfg *Config) *AWSConfig {
 |`SetConsumerQueue`|`ConsumerQueueConfig`|
 |`SetAuthIssuer`|`AuthConfig`|
 |`SetAuthAudience`|`AuthConfig`|
-|`SetAuthJWKSURL`|`AuthConfig`|
 |`SetSameSite`|`SecureCookieConfig`|
 |`SetDomain`|`SecureCookieConfig`|
 
@@ -305,7 +304,8 @@ func NewAWSConfig(cfg *Config) *AWSConfig {
 本パッケージの大半（SubConfig の getter・`New()` のバインド・テストセッター）はユニットで
 ほぼ 100% 被覆を維持する想定です。以下は**意図的な例外**で、未被覆部分は読み込み /
 composition 境界のエラー分岐であり、失敗注入なしには通せません。実経路は boot-check CI
-（`app-di-startup-check` / `worker-boot-check` / `job-boot-check`。実バイナリを `SetUpConfig`
+（`app-di-startup-check` / `worker-boot-check` / `job-boot-check` /
+`outbox-relay-boot-check`。実バイナリを `SetUpConfig`
 経由で起動）で E2E 検証済みです。
 
 |ファイル|関数|ユニット非対象の理由|

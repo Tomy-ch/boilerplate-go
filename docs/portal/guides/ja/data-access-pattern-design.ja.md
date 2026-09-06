@@ -1,7 +1,5 @@
 # Data Access Pattern
 
-[English](data-access-pattern.md) | 日本語
-
 > このファイルは canonical な英語版 [data-access-pattern.md](data-access-pattern.md) の翻訳です。直接編集せず、更新は英語版から反映してください。
 
 ## 役割

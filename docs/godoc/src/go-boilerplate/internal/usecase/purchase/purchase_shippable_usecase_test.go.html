@@ -226,131 +226,134 @@
 <span id="L169" class="ln">   169  </span>					capturedAction = action
 <span id="L170" class="ln">   170  </span>					capturedResource = resource
 <span id="L171" class="ln">   171  </span>					return nil
-<span id="L172" class="ln">   172  </span>				})
-<span id="L173" class="ln">   173  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).Return(domainpurchase.Purchases{}, nil)
-<span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>			_, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
-<span id="L176" class="ln">   176  </span>			require.NoError(t, err)
-<span id="L177" class="ln">   177  </span>			assert.Equal(t, authz.ActionPurchaseListShippable, capturedAction)
-<span id="L178" class="ln">   178  </span>			require.NotNil(t, capturedResource)
-<span id="L179" class="ln">   179  </span>			assert.Equal(t, &#34;purchase&#34;, capturedResource.Kind())
-<span id="L180" class="ln">   180  </span>			assert.Nil(t, capturedResource.OwnerID())
-<span id="L181" class="ln">   181  </span>		})
-<span id="L182" class="ln">   182  </span>
-<span id="L183" class="ln">   183  </span>		t.Run(&#34;limit未指定の場合、既定件数がリポジトリへ渡る&#34;, func(t *testing.T) {
-<span id="L184" class="ln">   184  </span>			t.Parallel()
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span>			u, deps := newShippableTestUsecase(t)
-<span id="L187" class="ln">   187  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span>			var capturedLimit int32
-<span id="L190" class="ln">   190  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L191" class="ln">   191  </span>				func(_ context.Context, limit int32) (domainpurchase.Purchases, error) {
-<span id="L192" class="ln">   192  </span>					capturedLimit = limit
-<span id="L193" class="ln">   193  </span>					return domainpurchase.Purchases{}, nil
-<span id="L194" class="ln">   194  </span>				})
-<span id="L195" class="ln">   195  </span>
-<span id="L196" class="ln">   196  </span>			_, err := u.ListShippablePurchases(
-<span id="L197" class="ln">   197  </span>				context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{Limit: 0},
-<span id="L198" class="ln">   198  </span>			)
-<span id="L199" class="ln">   199  </span>			require.NoError(t, err)
-<span id="L200" class="ln">   200  </span>			assert.Equal(t, int32(shippableDefaultLimit), capturedLimit)
-<span id="L201" class="ln">   201  </span>		})
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span>		t.Run(&#34;limitが上限超過の場合、上限へクランプした件数がリポジトリへ渡る&#34;, func(t *testing.T) {
-<span id="L204" class="ln">   204  </span>			t.Parallel()
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>			u, deps := newShippableTestUsecase(t)
-<span id="L207" class="ln">   207  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>			var capturedLimit int32
-<span id="L210" class="ln">   210  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L211" class="ln">   211  </span>				func(_ context.Context, limit int32) (domainpurchase.Purchases, error) {
-<span id="L212" class="ln">   212  </span>					capturedLimit = limit
-<span id="L213" class="ln">   213  </span>					return domainpurchase.Purchases{}, nil
-<span id="L214" class="ln">   214  </span>				})
-<span id="L215" class="ln">   215  </span>
-<span id="L216" class="ln">   216  </span>			_, err := u.ListShippablePurchases(
-<span id="L217" class="ln">   217  </span>				context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{Limit: 1000},
-<span id="L218" class="ln">   218  </span>			)
-<span id="L219" class="ln">   219  </span>			require.NoError(t, err)
-<span id="L220" class="ln">   220  </span>			assert.Equal(t, int32(shippableMaxLimit), capturedLimit)
-<span id="L221" class="ln">   221  </span>		})
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>		t.Run(&#34;発送待ちの購入が無い場合、空の一覧を返す&#34;, func(t *testing.T) {
-<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L172" class="ln">   172  </span>				},
+<span id="L173" class="ln">   173  </span>			)
+<span id="L174" class="ln">   174  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).Return(domainpurchase.Purchases{}, nil)
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>			_, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
+<span id="L177" class="ln">   177  </span>			require.NoError(t, err)
+<span id="L178" class="ln">   178  </span>			assert.Equal(t, authz.ActionPurchaseListShippable, capturedAction)
+<span id="L179" class="ln">   179  </span>			require.NotNil(t, capturedResource)
+<span id="L180" class="ln">   180  </span>			assert.Equal(t, &#34;purchase&#34;, capturedResource.Kind())
+<span id="L181" class="ln">   181  </span>			assert.Nil(t, capturedResource.OwnerID())
+<span id="L182" class="ln">   182  </span>		})
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>		t.Run(&#34;limit未指定の場合、既定件数がリポジトリへ渡る&#34;, func(t *testing.T) {
+<span id="L185" class="ln">   185  </span>			t.Parallel()
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>			u, deps := newShippableTestUsecase(t)
+<span id="L188" class="ln">   188  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>			var capturedLimit int32
+<span id="L191" class="ln">   191  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L192" class="ln">   192  </span>				func(_ context.Context, limit int32) (domainpurchase.Purchases, error) {
+<span id="L193" class="ln">   193  </span>					capturedLimit = limit
+<span id="L194" class="ln">   194  </span>					return domainpurchase.Purchases{}, nil
+<span id="L195" class="ln">   195  </span>				},
+<span id="L196" class="ln">   196  </span>			)
+<span id="L197" class="ln">   197  </span>
+<span id="L198" class="ln">   198  </span>			_, err := u.ListShippablePurchases(
+<span id="L199" class="ln">   199  </span>				context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{Limit: 0},
+<span id="L200" class="ln">   200  </span>			)
+<span id="L201" class="ln">   201  </span>			require.NoError(t, err)
+<span id="L202" class="ln">   202  </span>			assert.Equal(t, int32(shippableDefaultLimit), capturedLimit)
+<span id="L203" class="ln">   203  </span>		})
+<span id="L204" class="ln">   204  </span>
+<span id="L205" class="ln">   205  </span>		t.Run(&#34;limitが上限超過の場合、上限へクランプした件数がリポジトリへ渡る&#34;, func(t *testing.T) {
+<span id="L206" class="ln">   206  </span>			t.Parallel()
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>			u, deps := newShippableTestUsecase(t)
+<span id="L209" class="ln">   209  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span>			var capturedLimit int32
+<span id="L212" class="ln">   212  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L213" class="ln">   213  </span>				func(_ context.Context, limit int32) (domainpurchase.Purchases, error) {
+<span id="L214" class="ln">   214  </span>					capturedLimit = limit
+<span id="L215" class="ln">   215  </span>					return domainpurchase.Purchases{}, nil
+<span id="L216" class="ln">   216  </span>				},
+<span id="L217" class="ln">   217  </span>			)
+<span id="L218" class="ln">   218  </span>
+<span id="L219" class="ln">   219  </span>			_, err := u.ListShippablePurchases(
+<span id="L220" class="ln">   220  </span>				context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{Limit: 1000},
+<span id="L221" class="ln">   221  </span>			)
+<span id="L222" class="ln">   222  </span>			require.NoError(t, err)
+<span id="L223" class="ln">   223  </span>			assert.Equal(t, int32(shippableMaxLimit), capturedLimit)
+<span id="L224" class="ln">   224  </span>		})
 <span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>			u, deps := newShippableTestUsecase(t)
-<span id="L227" class="ln">   227  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L228" class="ln">   228  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).Return(domainpurchase.Purchases{}, nil)
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			actual, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
-<span id="L231" class="ln">   231  </span>			require.NoError(t, err)
-<span id="L232" class="ln">   232  </span>			assert.Empty(t, actual.Groups)
-<span id="L233" class="ln">   233  </span>		})
-<span id="L234" class="ln">   234  </span>	})
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L237" class="ln">   237  </span>		t.Parallel()
+<span id="L226" class="ln">   226  </span>		t.Run(&#34;発送待ちの購入が無い場合、空の一覧を返す&#34;, func(t *testing.T) {
+<span id="L227" class="ln">   227  </span>			t.Parallel()
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>			u, deps := newShippableTestUsecase(t)
+<span id="L230" class="ln">   230  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L231" class="ln">   231  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).Return(domainpurchase.Purchases{}, nil)
+<span id="L232" class="ln">   232  </span>
+<span id="L233" class="ln">   233  </span>			actual, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
+<span id="L234" class="ln">   234  </span>			require.NoError(t, err)
+<span id="L235" class="ln">   235  </span>			assert.Empty(t, actual.Groups)
+<span id="L236" class="ln">   236  </span>		})
+<span id="L237" class="ln">   237  </span>	})
 <span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>		t.Run(&#34;認証情報がnilの場合、ErrUnauthenticatedを返し認可もリポジトリも呼ばない&#34;, func(t *testing.T) {
-<span id="L240" class="ln">   240  </span>			t.Parallel()
+<span id="L239" class="ln">   239  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L240" class="ln">   240  </span>		t.Parallel()
 <span id="L241" class="ln">   241  </span>
-<span id="L242" class="ln">   242  </span>			u, deps := newShippableTestUsecase(t)
-<span id="L243" class="ln">   243  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L244" class="ln">   244  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).Times(0)
-<span id="L245" class="ln">   245  </span>
-<span id="L246" class="ln">   246  </span>			actual, err := u.ListShippablePurchases(context.Background(), nil, ListShippablePurchasesParams{})
-<span id="L247" class="ln">   247  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
-<span id="L248" class="ln">   248  </span>			assert.Empty(t, actual.Groups)
-<span id="L249" class="ln">   249  </span>		})
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>		t.Run(&#34;認可が拒否された場合、ErrForbiddenを伝播しリポジトリを呼ばない&#34;, func(t *testing.T) {
-<span id="L252" class="ln">   252  </span>			t.Parallel()
+<span id="L242" class="ln">   242  </span>		t.Run(&#34;認証情報がnilの場合、ErrUnauthenticatedを返し認可もリポジトリも呼ばない&#34;, func(t *testing.T) {
+<span id="L243" class="ln">   243  </span>			t.Parallel()
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>			u, deps := newShippableTestUsecase(t)
+<span id="L246" class="ln">   246  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L247" class="ln">   247  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).Times(0)
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>			actual, err := u.ListShippablePurchases(context.Background(), nil, ListShippablePurchasesParams{})
+<span id="L250" class="ln">   250  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+<span id="L251" class="ln">   251  </span>			assert.Empty(t, actual.Groups)
+<span id="L252" class="ln">   252  </span>		})
 <span id="L253" class="ln">   253  </span>
-<span id="L254" class="ln">   254  </span>			u, deps := newShippableTestUsecase(t)
-<span id="L255" class="ln">   255  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L256" class="ln">   256  </span>				Return(authz.ErrForbidden)
-<span id="L257" class="ln">   257  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).Times(0)
-<span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>			actual, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
-<span id="L260" class="ln">   260  </span>			require.ErrorIs(t, err, authz.ErrForbidden)
-<span id="L261" class="ln">   261  </span>			assert.Empty(t, actual.Groups)
-<span id="L262" class="ln">   262  </span>		})
-<span id="L263" class="ln">   263  </span>
-<span id="L264" class="ln">   264  </span>		t.Run(&#34;リポジトリがエラーを返した場合、そのまま伝播する&#34;, func(t *testing.T) {
-<span id="L265" class="ln">   265  </span>			t.Parallel()
+<span id="L254" class="ln">   254  </span>		t.Run(&#34;認可が拒否された場合、ErrForbiddenを伝播しリポジトリを呼ばない&#34;, func(t *testing.T) {
+<span id="L255" class="ln">   255  </span>			t.Parallel()
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>			u, deps := newShippableTestUsecase(t)
+<span id="L258" class="ln">   258  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L259" class="ln">   259  </span>				Return(authz.ErrForbidden)
+<span id="L260" class="ln">   260  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).Times(0)
+<span id="L261" class="ln">   261  </span>
+<span id="L262" class="ln">   262  </span>			actual, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
+<span id="L263" class="ln">   263  </span>			require.ErrorIs(t, err, authz.ErrForbidden)
+<span id="L264" class="ln">   264  </span>			assert.Empty(t, actual.Groups)
+<span id="L265" class="ln">   265  </span>		})
 <span id="L266" class="ln">   266  </span>
-<span id="L267" class="ln">   267  </span>			u, deps := newShippableTestUsecase(t)
-<span id="L268" class="ln">   268  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L269" class="ln">   269  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).
-<span id="L270" class="ln">   270  </span>				Return(nil, apperror.ErrInternal)
-<span id="L271" class="ln">   271  </span>
-<span id="L272" class="ln">   272  </span>			actual, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
-<span id="L273" class="ln">   273  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
-<span id="L274" class="ln">   274  </span>			assert.Empty(t, actual.Groups)
-<span id="L275" class="ln">   275  </span>		})
-<span id="L276" class="ln">   276  </span>
-<span id="L277" class="ln">   277  </span>		t.Run(&#34;発送可能でない購入が混じっていた場合、SQLと述語の乖離としてエラーにする&#34;, func(t *testing.T) {
-<span id="L278" class="ln">   278  </span>			t.Parallel()
+<span id="L267" class="ln">   267  </span>		t.Run(&#34;リポジトリがエラーを返した場合、そのまま伝播する&#34;, func(t *testing.T) {
+<span id="L268" class="ln">   268  </span>			t.Parallel()
+<span id="L269" class="ln">   269  </span>
+<span id="L270" class="ln">   270  </span>			u, deps := newShippableTestUsecase(t)
+<span id="L271" class="ln">   271  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L272" class="ln">   272  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).
+<span id="L273" class="ln">   273  </span>				Return(nil, apperror.ErrInternal)
+<span id="L274" class="ln">   274  </span>
+<span id="L275" class="ln">   275  </span>			actual, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
+<span id="L276" class="ln">   276  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L277" class="ln">   277  </span>			assert.Empty(t, actual.Groups)
+<span id="L278" class="ln">   278  </span>		})
 <span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>			u, deps := newShippableTestUsecase(t)
-<span id="L281" class="ln">   281  </span>			alice := uuidtestkit.NewTestFromSalt(t, &#34;uc_mismatch_alice&#34;)
-<span id="L282" class="ln">   282  </span>			shipped := newPurchaseWithStatus(
-<span id="L283" class="ln">   283  </span>				t, &#34;uc_mismatch&#34;, alice, shippableBaseTime, domainpurchase.StatusShipped,
-<span id="L284" class="ln">   284  </span>			)
-<span id="L285" class="ln">   285  </span>
-<span id="L286" class="ln">   286  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-<span id="L287" class="ln">   287  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).
-<span id="L288" class="ln">   288  </span>				Return(domainpurchase.Purchases{shipped}, nil)
-<span id="L289" class="ln">   289  </span>
-<span id="L290" class="ln">   290  </span>			actual, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
-<span id="L291" class="ln">   291  </span>			require.ErrorIs(t, err, errNotShippableInShippableRead)
-<span id="L292" class="ln">   292  </span>			assert.Empty(t, actual.Groups)
-<span id="L293" class="ln">   293  </span>		})
-<span id="L294" class="ln">   294  </span>	})
-<span id="L295" class="ln">   295  </span>}
-<span id="L296" class="ln">   296  </span>
+<span id="L280" class="ln">   280  </span>		t.Run(&#34;発送可能でない購入が混じっていた場合、SQLと述語の乖離としてエラーにする&#34;, func(t *testing.T) {
+<span id="L281" class="ln">   281  </span>			t.Parallel()
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span>			u, deps := newShippableTestUsecase(t)
+<span id="L284" class="ln">   284  </span>			alice := uuidtestkit.NewTestFromSalt(t, &#34;uc_mismatch_alice&#34;)
+<span id="L285" class="ln">   285  </span>			shipped := newPurchaseWithStatus(
+<span id="L286" class="ln">   286  </span>				t, &#34;uc_mismatch&#34;, alice, shippableBaseTime, domainpurchase.StatusShipped,
+<span id="L287" class="ln">   287  </span>			)
+<span id="L288" class="ln">   288  </span>
+<span id="L289" class="ln">   289  </span>			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+<span id="L290" class="ln">   290  </span>			deps.repo.EXPECT().FindShippable(gomock.Any(), gomock.Any()).
+<span id="L291" class="ln">   291  </span>				Return(domainpurchase.Purchases{shipped}, nil)
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>			actual, err := u.ListShippablePurchases(context.Background(), &amp;auth.Authn{}, ListShippablePurchasesParams{})
+<span id="L294" class="ln">   294  </span>			require.ErrorIs(t, err, errNotShippableInShippableRead)
+<span id="L295" class="ln">   295  </span>			assert.Empty(t, actual.Groups)
+<span id="L296" class="ln">   296  </span>		})
+<span id="L297" class="ln">   297  </span>	})
+<span id="L298" class="ln">   298  </span>}
+<span id="L299" class="ln">   299  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/purchase/purchase_shippable_usecase_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

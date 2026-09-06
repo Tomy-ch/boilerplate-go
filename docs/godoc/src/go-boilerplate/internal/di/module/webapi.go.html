@@ -97,7 +97,7 @@
 <span id="L40" class="ln">    40  </span><span class="comment">// sample-api:begin</span>
 <span id="L41" class="ln">    41  </span>
 <span id="L42" class="ln">    42  </span><span class="comment">// provideCachedExchangeRateGateway は、素の為替レート gateway を TTL キャッシュ decorator で包み、</span>
-<span id="L43" class="ln">    43  </span><span class="comment">// usecase へ注入する boundary.Gateway を返します。ADR-0106 (no-generic-cache-abstraction) の decorator seam 原理を Gateway</span>
+<span id="L43" class="ln">    43  </span><span class="comment">// usecase へ注入する boundary.Gateway を返します。ADR-0110 (no-generic-cache-abstraction) の decorator seam 原理を Gateway</span>
 <span id="L44" class="ln">    44  </span><span class="comment">// boundary へ適用し、TTL の時刻依存を infra 層 decorator に閉じます。</span>
 <span id="L45" class="ln">    45  </span>func provideCachedExchangeRateGateway(
 <span id="L46" class="ln">    46  </span>	endpoint exchangerateext.Endpoint,

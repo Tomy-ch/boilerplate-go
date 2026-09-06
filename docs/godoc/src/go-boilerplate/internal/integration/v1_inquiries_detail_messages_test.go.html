@@ -1,0 +1,220 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>integration - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../src/go-boilerplate/internal/integration">integration</a>/<span class="text-muted">v1_inquiries_detail_messages_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/internal/integration">go-boilerplate/internal/integration</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package integration
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;encoding/json&#34;
+<span id="L6" class="ln">     6  </span>	&#34;fmt&#34;
+<span id="L7" class="ln">     7  </span>	&#34;net/http&#34;
+<span id="L8" class="ln">     8  </span>	&#34;testing&#34;
+<span id="L9" class="ln">     9  </span>	&#34;time&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L12" class="ln">    12  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L13" class="ln">    13  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go.uber.org/mock/gomock&#34;
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L17" class="ln">    17  </span>	detailmessages &#34;go-boilerplate/internal/controller/handler/v1/inquiries/detail/messages&#34;
+<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/internal/controller/handler/v1/inquiries/detail/messages/gen&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/usecase/idempotency&#34;
+<span id="L21" class="ln">    21  </span>	inquiryuc &#34;go-boilerplate/internal/usecase/inquiry&#34;
+<span id="L22" class="ln">    22  </span>	mock_inquiryuc &#34;go-boilerplate/internal/usecase/inquiry/mock&#34;
+<span id="L23" class="ln">    23  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
+<span id="L24" class="ln">    24  </span>)
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span><span class="comment">// inquiryDetailMessagesPath は、問い合わせ ID を埋めた回答・履歴のパスを返します。</span>
+<span id="L27" class="ln">    27  </span>func inquiryDetailMessagesPath(t *testing.T) string {
+<span id="L28" class="ln">    28  </span>	t.Helper()
+<span id="L29" class="ln">    29  </span>	return fmt.Sprintf(&#34;/v1/inquiries/%s/messages&#34;, uuidtestkit.NewTestFromSalt(t, &#34;int_inq&#34;))
+<span id="L30" class="ln">    30  </span>}
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span>func TestV1InquiriesDetailMessages_Integration(t *testing.T) {
+<span id="L33" class="ln">    33  </span>	t.Parallel()
+<span id="L34" class="ln">    34  </span>
+<span id="L35" class="ln">    35  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L36" class="ln">    36  </span>		t.Parallel()
+<span id="L37" class="ln">    37  </span>
+<span id="L38" class="ln">    38  </span>		t.Run(&#34;履歴の取得は200でstreamCursorを含めて返す&#34;, func(t *testing.T) {
+<span id="L39" class="ln">    39  </span>			t.Parallel()
+<span id="L40" class="ln">    40  </span>
+<span id="L41" class="ln">    41  </span>			e := echo.New()
+<span id="L42" class="ln">    42  </span>			ctrl := gomock.NewController(t)
+<span id="L43" class="ln">    43  </span>			inquiryID := uuidtestkit.NewTestFromSalt(t, &#34;int_inq&#34;)
+<span id="L44" class="ln">    44  </span>
+<span id="L45" class="ln">    45  </span>			var captured inquiryuc.OperatorHistoryParams
+<span id="L46" class="ln">    46  </span>			uc := mock_inquiryuc.NewMockUsecase(ctrl)
+<span id="L47" class="ln">    47  </span>			uc.EXPECT().GetInquiryHistory(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L48" class="ln">    48  </span>				func(_ context.Context, _ any, params inquiryuc.OperatorHistoryParams) (*inquiryuc.HistoryView, error) {
+<span id="L49" class="ln">    49  </span>					captured = params
+<span id="L50" class="ln">    50  </span>					return &amp;inquiryuc.HistoryView{
+<span id="L51" class="ln">    51  </span>						InquiryID:    inquiryID,
+<span id="L52" class="ln">    52  </span>						Messages:     []inquiryuc.MessageView{},
+<span id="L53" class="ln">    53  </span>						StreamCursor: 0,
+<span id="L54" class="ln">    54  </span>					}, nil
+<span id="L55" class="ln">    55  </span>				},
+<span id="L56" class="ln">    56  </span>			)
+<span id="L57" class="ln">    57  </span>
+<span id="L58" class="ln">    58  </span>			detailmessages.BindHandler(e, observability.NewNoopTracerFactory(t), uc, idempotency.Deps{})
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_admin&#34;))
+<span id="L61" class="ln">    61  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, inquiryDetailMessagesPath(t), nil, headers)
+<span id="L62" class="ln">    62  </span>
+<span id="L63" class="ln">    63  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
+<span id="L64" class="ln">    64  </span>			AssertJSONResponseType[gen.InquiryHistoryResponse](t, actual)
+<span id="L65" class="ln">    65  </span>			assert.Equal(t, inquiryID, captured.InquiryID)
+<span id="L66" class="ln">    66  </span>		})
+<span id="L67" class="ln">    67  </span>
+<span id="L68" class="ln">    68  </span>		t.Run(&#34;回答は201で追加したメッセージを返し送り手がoperatorになる&#34;, func(t *testing.T) {
+<span id="L69" class="ln">    69  </span>			t.Parallel()
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span>			e := echo.New()
+<span id="L72" class="ln">    72  </span>			ctrl := gomock.NewController(t)
+<span id="L73" class="ln">    73  </span>			inquiryID := uuidtestkit.NewTestFromSalt(t, &#34;int_inq&#34;)
+<span id="L74" class="ln">    74  </span>			operatorID := uuidtestkit.NewTestFromSalt(t, &#34;int_admin&#34;)
+<span id="L75" class="ln">    75  </span>
+<span id="L76" class="ln">    76  </span>			var captured inquiryuc.ReplyParams
+<span id="L77" class="ln">    77  </span>			uc := mock_inquiryuc.NewMockUsecase(ctrl)
+<span id="L78" class="ln">    78  </span>			uc.EXPECT().Reply(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L79" class="ln">    79  </span>				func(_ context.Context, _ any, params inquiryuc.ReplyParams) (inquiryuc.MessageView, error) {
+<span id="L80" class="ln">    80  </span>					captured = params
+<span id="L81" class="ln">    81  </span>					return inquiryuc.MessageView{
+<span id="L82" class="ln">    82  </span>						ID:         uuidtestkit.NewTestFromSalt(t, &#34;int_msg&#34;),
+<span id="L83" class="ln">    83  </span>						InquiryID:  params.InquiryID,
+<span id="L84" class="ln">    84  </span>						AuthorKind: &#34;operator&#34;,
+<span id="L85" class="ln">    85  </span>						Body:       params.Body,
+<span id="L86" class="ln">    86  </span>						Sequence:   2,
+<span id="L87" class="ln">    87  </span>						CreatedAt:  time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
+<span id="L88" class="ln">    88  </span>					}, nil
+<span id="L89" class="ln">    89  </span>				},
+<span id="L90" class="ln">    90  </span>			)
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>			detailmessages.BindHandler(e, observability.NewNoopTracerFactory(t), uc, idempotency.Deps{})
+<span id="L93" class="ln">    93  </span>
+<span id="L94" class="ln">    94  </span>			headers := MakeAvailableUserID(t, e, operatorID)
+<span id="L95" class="ln">    95  </span>			actual := StartServer(t, e).DoJSON(
+<span id="L96" class="ln">    96  </span>				http.MethodPost, inquiryDetailMessagesPath(t), map[string]string{&#34;body&#34;: &#34;確認します&#34;}, headers,
+<span id="L97" class="ln">    97  </span>			)
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span>			require.Equal(t, http.StatusCreated, actual.StatusCode)
+<span id="L100" class="ln">   100  </span>
+<span id="L101" class="ln">   101  </span>			var body gen.InquiryMessageResponse
+<span id="L102" class="ln">   102  </span>			require.NoError(t, json.NewDecoder(actual.Body).Decode(&amp;body))
+<span id="L103" class="ln">   103  </span>			assert.Equal(t, &#34;operator&#34;, string(body.Message.AuthorKind))
+<span id="L104" class="ln">   104  </span>			assert.Equal(t, inquiryID, captured.InquiryID)
+<span id="L105" class="ln">   105  </span>			assert.Equal(t, operatorID, captured.OperatorID)
+<span id="L106" class="ln">   106  </span>			assert.Equal(t, &#34;確認します&#34;, captured.Body)
+<span id="L107" class="ln">   107  </span>		})
+<span id="L108" class="ln">   108  </span>	})
+<span id="L109" class="ln">   109  </span>
+<span id="L110" class="ln">   110  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L111" class="ln">   111  </span>		t.Parallel()
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span>		t.Run(&#34;存在しない問い合わせへの回答は404を返す&#34;, func(t *testing.T) {
+<span id="L114" class="ln">   114  </span>			t.Parallel()
+<span id="L115" class="ln">   115  </span>
+<span id="L116" class="ln">   116  </span>			e := echo.New()
+<span id="L117" class="ln">   117  </span>			ctrl := gomock.NewController(t)
+<span id="L118" class="ln">   118  </span>
+<span id="L119" class="ln">   119  </span>			uc := mock_inquiryuc.NewMockUsecase(ctrl)
+<span id="L120" class="ln">   120  </span>			uc.EXPECT().Reply(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L121" class="ln">   121  </span>				Return(inquiryuc.MessageView{}, apperror.ErrNotFound)
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span>			detailmessages.BindHandler(e, observability.NewNoopTracerFactory(t), uc, idempotency.Deps{})
+<span id="L124" class="ln">   124  </span>			UseAppErrorHandler(t, e)
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_admin&#34;))
+<span id="L127" class="ln">   127  </span>			actual := StartServer(t, e).DoJSON(
+<span id="L128" class="ln">   128  </span>				http.MethodPost, inquiryDetailMessagesPath(t), map[string]string{&#34;body&#34;: &#34;確認します&#34;}, headers,
+<span id="L129" class="ln">   129  </span>			)
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span>			AssertErrorResponse(t, actual, http.StatusNotFound)
+<span id="L132" class="ln">   132  </span>		})
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>		t.Run(&#34;管理者以外の履歴取得は403を返す&#34;, func(t *testing.T) {
+<span id="L135" class="ln">   135  </span>			t.Parallel()
+<span id="L136" class="ln">   136  </span>
+<span id="L137" class="ln">   137  </span>			e := echo.New()
+<span id="L138" class="ln">   138  </span>			ctrl := gomock.NewController(t)
+<span id="L139" class="ln">   139  </span>
+<span id="L140" class="ln">   140  </span>			uc := mock_inquiryuc.NewMockUsecase(ctrl)
+<span id="L141" class="ln">   141  </span>			uc.EXPECT().GetInquiryHistory(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L142" class="ln">   142  </span>				Return(nil, apperror.ErrPermissionDenied)
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>			detailmessages.BindHandler(e, observability.NewNoopTracerFactory(t), uc, idempotency.Deps{})
+<span id="L145" class="ln">   145  </span>			UseAppErrorHandler(t, e)
+<span id="L146" class="ln">   146  </span>
+<span id="L147" class="ln">   147  </span>			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, &#34;int_user&#34;))
+<span id="L148" class="ln">   148  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, inquiryDetailMessagesPath(t), nil, headers)
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span>			AssertErrorResponse(t, actual, http.StatusForbidden)
+<span id="L151" class="ln">   151  </span>		})
+<span id="L152" class="ln">   152  </span>	})
+<span id="L153" class="ln">   153  </span>}
+<span id="L154" class="ln">   154  </span>
+</pre><p><a href="../../../../src/go-boilerplate/internal/integration/v1_inquiries_detail_messages_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

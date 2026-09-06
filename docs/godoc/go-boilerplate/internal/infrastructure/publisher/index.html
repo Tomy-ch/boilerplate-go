@@ -120,6 +120,9 @@ HTTP 実装を提供します。relay engine が claim した outbox メッセ�
 				
 				<dd><a href="#RequiredDownstream">func RequiredDownstream() httpclient.Downstream</a></dd>
 			
+				
+				<dd><a href="#VerifyChannel">func VerifyChannel(channel outboxbndry.Channel) error</a></dd>
+			
 			
 				
 				<dd><a href="#Endpoint">type Endpoint</a></dd>
@@ -139,6 +142,10 @@ HTTP 実装を提供します。relay engine が claim した outbox メッセ�
 			<h3>Package files</h3>
 			<p>
 			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/channel.go.html">channel.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/classify.go.html">classify.go</a>
 			
 				<a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/config.go.html">config.go</a>
 			
@@ -171,6 +178,10 @@ HTTP 実装を提供します。relay engine が claim した outbox メッセ�
 		
 		
 			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrChannelUnsupported は、起動した配送チャネルを配送できる publish 実装が無いことを示すエラーです。
+
+				</p><pre>var <span id="ErrChannelUnsupported">ErrChannelUnsupported</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>, &#34;unsupported outbox delivery channel&#34;)</pre>
 			
 				<p>ErrInvalidEndpoint は、outbox publish 先エンドポイントの設定が不正であることを示すエラーです。
 
@@ -212,7 +223,7 @@ sample-api:replace-begin
 		
 			
 			
-			</p><h2 id="NewDownstreamProfile">func <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?s=1229:1285#L20">NewDownstreamProfile</a>
+			</p><h2 id="NewDownstreamProfile">func <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?s=1185:1241#L20">NewDownstreamProfile</a>
 				<a class="permalink" href="#NewDownstreamProfile">¶</a>
 				
 				
@@ -228,7 +239,7 @@ README.md の Design Policy（D10）に理由があります。
 		
 			
 			
-			</p><h2 id="NewHTTP">func <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?s=1913:2027#L36">NewHTTP</a>
+			</p><h2 id="NewHTTP">func <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?s=1836:1950#L36">NewHTTP</a>
 				<a class="permalink" href="#NewHTTP">¶</a>
 				
 				
@@ -246,15 +257,32 @@ README.md の Design Policy（D10）に理由があります。
 		
 			
 			
-			</p><h2 id="RequiredDownstream">func <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?s=1773:1820#L31">RequiredDownstream</a>
+			</p><h2 id="RequiredDownstream">func <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?s=1696:1743#L31">RequiredDownstream</a>
 				<a class="permalink" href="#RequiredDownstream">¶</a>
 				
 				
 			</h2>
 			<pre>func RequiredDownstream() <a href="../../../../go-boilerplate/internal/infrastructure/httpclient/">httpclient</a>.<a href="../../../../go-boilerplate/internal/infrastructure/httpclient/#Downstream">Downstream</a></pre>
 			<p>RequiredDownstream は、本 publisher が使用する Downstream を返します。
-required_downstreams へ供給することで、対応 profile が未登録のまま起動した場合に
-silent な DefaultProfile fallback ではなく loud な起動失敗になることを保証します。
+required_downstreams へ供給し、profile 未登録時は fallback ではなく起動失敗にします
+（仕組みは httpclient の README の Design Policy を参照）。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="VerifyChannel">func <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/channel.go.html?s=821:874#L6">VerifyChannel</a>
+				<a class="permalink" href="#VerifyChannel">¶</a>
+				
+				
+			</h2>
+			<pre>func VerifyChannel(channel <a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/">outboxbndry</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>) <a href="../../../../builtin/#error">error</a></pre>
+			<p>VerifyChannel は、この package が提供する publish 実装が channel を配送できるかを検査します。
+配送できない channel は起動時に落とします（fail-closed の理由と channel ごとの担当は
+README の Design Policy を参照）。
+現在の実装（HTTP / SQS 互換ブローカー）はいずれも順序を持たない HTTP チャネルの配送先です。
 
 			
 			
@@ -263,12 +291,12 @@ silent な DefaultProfile fallback ではなく loud な起動失敗になるこ
 		
 			
 			
-			</p><h2 id="Endpoint">type <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?s=740:760#L8">Endpoint</a>
+			</p><h2 id="Endpoint">type <a href="../../../../src/go-boilerplate/internal/infrastructure/publisher/http_publisher.go.html?s=696:716#L8">Endpoint</a>
 				<a class="permalink" href="#Endpoint">¶</a>
 				
 				
 			</h2>
-			<p>Endpoint は、メッセージの送信先エンドポイント URL です（構築時に config から固定注入）。
+			<p>Endpoint は、メッセージの送信先エンドポイント URL です。
 
 			</p><pre>type Endpoint <a href="../../../../builtin/#string">string</a></pre>
 

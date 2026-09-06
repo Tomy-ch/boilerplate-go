@@ -1,7 +1,5 @@
 # コントローラー層のハンドラー（`internal/controller/handler`）ガイド
 
-[English](README.md) | 日本語
-
 ## Controller Layerとは
 
 このプロジェクトでは以下を **Controller Layer** と定義します。

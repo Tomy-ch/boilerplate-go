@@ -1,7 +1,5 @@
 # tools
 
-English | [日本語](README.ja.md)
-
 `internal/usecase/tools` contains **small reusable utilities for the Usecase layer**.
 
 ## Subdirectories

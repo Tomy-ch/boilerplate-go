@@ -1,7 +1,5 @@
 # Observability サブシステム設計リファレンス
 
-[Observability README（日本語）](../../internal/observability/README.ja.md) | English: [observability.md](observability.md)
-
 本書は observability サブシステムの **役割論・シグナルのライフサイクル・実装箇所・提供機能・integrator が書く箇所・用語** を、実装を精査して 1 枚にまとめた参照資料です。パッケージ API の概要は README、計装対象のサブシステムは [worker.ja.md](worker.ja.md) / [outbox.ja.md](outbox.ja.md) / [idempotency.ja.md](idempotency.ja.md) / [rest.ja.md](rest.ja.md) を参照。
 
 ---
@@ -153,7 +151,7 @@ flowchart TD
 
 | 経路 | Instruments | プロセスから出る方法 |
 | --- | --- | --- |
-| **OTLP push**（OTel meter） | `outbox` / `worker` / `idempotency` / `httpclient` + Go runtime + `otelpgx` DB metrics | `MeterProvider` の `PeriodicReader` → Collector。`MetricsEnabled()` のときのみ |
+| **OTLP push**（OTel meter） | `outbox` / `worker` / `idempotency` / `httpclient` / `realtime` + Go runtime + `otelpgx` DB metrics | `MeterProvider` の `PeriodicReader` → Collector。`MetricsEnabled()` のときのみ |
 | **Prometheus scrape** | `app_build_info`（buildinfo）, `worker_queue_*`（queue） | default registry に登録し `promhttp` で `/metrics` に公開。`OBS_*` から独立 |
 
 scrape 経路は本質的に *pull* な値（ビルド識別情報は結線時に一度解決、broker queue depth は scrape 毎に polling）のために存在し、OTLP exporter の有効化を必要としません。
@@ -168,10 +166,11 @@ substrate は以下の即利用可能な計装を同梱します。integrator �
 | --- | --- | --- |
 | **レイヤー別トレーシング** | `TracerFactory.Controller()/Usecase()/Infra()` → `LayerTracer.Start` | span 名 `layer.package.function`。開始/終了 + `trace_id`/`span_id` の構造化ログを自動出力 |
 | **アドホック span helper** | `RunWithSpan` / `StartSpanWithParent` / `StartWithSuffix` | layer tracer 無しに任意関数を span 化。suffix で同一関数内の複数 span を区別 |
+| **起点 trace への span link** | `LayerTracer.StartWithLink` | 親は呼び出し側の span のままで、carrier は link になる。起因となった trace とは別の時刻・別の場所で起きる処理のための形 |
 | **HTTP root span** | `echootel` middleware | リクエスト毎の root span（controller 層 span はこれとほぼ重複 — README 設計ポリシー 5 参照） |
 | **DB トレーシング + metrics** | `NewPgxTracer`（`otelpgx`） | 接続情報は属性から抑止 |
 | **外向き HTTP RED metrics** | `NewHTTPClientTransport` + `HTTPClientMetrics` | requests / errors / latency + retries / in-flight / breaker 状態 gauge |
-| **サブシステム metrics** | `OutboxMetrics` / `WorkerMetrics` / `IdempotencyMetrics` | lag & dead / engine RED + DLQ / 冪等性の結果 & GC。低カーディナリティラベルのみ |
+| **サブシステム metrics** | `OutboxMetrics` / `WorkerMetrics` / `IdempotencyMetrics` / `RealtimeMetrics` | lag & dead / engine RED + DLQ / 冪等性の結果 & GC / SSE の接続・replay・配送の lifecycle。低カーディナリティラベルのみ |
 | **ランタイム metrics** | `runtime.Start` | Go GC / mem / goroutine。`MetricsEnabled()` のときのみ |
 | **ビルド情報 gauge** | `metrics/buildinfo` → `app_build_info` | `/version` と同一 source of truth |
 | **queue depth gauge** | `metrics/queue` → `worker_queue_depth` | broker adapter から scrape 毎に pull（SQS では approximate） |

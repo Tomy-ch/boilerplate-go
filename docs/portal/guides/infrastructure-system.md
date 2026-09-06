@@ -1,7 +1,5 @@
 # system
 
-English | [日本語](README.ja.md)
-
 `internal/infrastructure/system` provides **Infrastructure implementations for system-dependent operations** such as time retrieval and context-aware waiting.
 
 It implements two interfaces from `internal/usecase/boundary/clock`:

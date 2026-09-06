@@ -1,7 +1,5 @@
 # sqlc.yaml Options Affecting Go Code Generation (sqlc / PostgreSQL — pinned version in `mise.toml`)
 
-English | [日本語](SQLC_README.ja.md)
-
 ## Overview
 
 This document is a cheat sheet for the `sqlc.yaml` (`version: "2"`) options that materially change the shape of generated Go code in this project. It exists alongside the official sqlc docs because we have specific opinions on which options to use (and avoid) — for example, why we deliberately do NOT emit `json` tags from sqlc, and why we wrap nullable types in pointers. Use this as the first stop before editing `sqlc.yaml`; cross-reference the official sqlc docs only for option details not covered here.

@@ -188,51 +188,69 @@
 <span id="L131" class="ln">   131  </span>func HoldSuiteSerialization(t *testing.T, db driver.DatabaseDriver) {
 <span id="L132" class="ln">   132  </span>	t.Helper()
 <span id="L133" class="ln">   133  </span>
-<span id="L134" class="ln">   134  </span>	txLock.Lock()
-<span id="L135" class="ln">   135  </span>	ctx := context.Background()
-<span id="L136" class="ln">   136  </span>
-<span id="L137" class="ln">   137  </span>	holder, err := db.Begin(ctx)
-<span id="L138" class="ln">   138  </span>	require.NoError(t, err)
-<span id="L139" class="ln">   139  </span>	t.Cleanup(func() {
-<span id="L140" class="ln">   140  </span>		_ = holder.Rollback(ctx)
-<span id="L141" class="ln">   141  </span>		txLock.Unlock()
-<span id="L142" class="ln">   142  </span>	})
-<span id="L143" class="ln">   143  </span>
-<span id="L144" class="ln">   144  </span>	require.NoError(t, lockSuiteSerialization(ctx, holder))
-<span id="L145" class="ln">   145  </span>}
+<span id="L134" class="ln">   134  </span>	release, err := holdSuiteSerialization(context.Background(), db)
+<span id="L135" class="ln">   135  </span>	require.NoError(t, err)
+<span id="L136" class="ln">   136  </span>	t.Cleanup(release)
+<span id="L137" class="ln">   137  </span>}
+<span id="L138" class="ln">   138  </span>
+<span id="L139" class="ln">   139  </span><span class="comment">// holdSuiteSerialization は、直列化を占有し、解放する関数を返します。</span>
+<span id="L140" class="ln">   140  </span><span class="comment">// 占有に失敗した場合は何も保持せずにエラーだけを返します。</span>
+<span id="L141" class="ln">   141  </span><span class="comment">//</span>
+<span id="L142" class="ln">   142  </span><span class="comment">// 取得と解放をここへ閉じてください。呼び出し側で占有と後始末の登録が別々の文に分かれると、</span>
+<span id="L143" class="ln">   143  </span><span class="comment">// その間で失敗したときに解放されない経路ができます。</span>
+<span id="L144" class="ln">   144  </span>func holdSuiteSerialization(ctx context.Context, db driver.DatabaseDriver) (func(), error) {
+<span id="L145" class="ln">   145  </span>	txLock.Lock()
 <span id="L146" class="ln">   146  </span>
-<span id="L147" class="ln">   147  </span><span class="comment">// lockSuiteSerialization は、q が属するトランザクションでスイート直列化用の advisory lock を取ります。</span>
-<span id="L148" class="ln">   148  </span>func lockSuiteSerialization(ctx context.Context, q driver.DBTX) error {
-<span id="L149" class="ln">   149  </span>	<span class="comment">// advisory lock 待ちは lock_timeout(10s) の対象で、高負荷で超過すると 55P03（非リトライ）で</span>
-<span id="L150" class="ln">   150  </span>	<span class="comment">// 落ちる。取得の間だけ無効化する（直列化ゆえテーブルロック競合は起きず待ち詰まりの懸念はない）。</span>
-<span id="L151" class="ln">   151  </span>	if _, err := q.Exec(ctx, &#34;SET LOCAL lock_timeout = 0&#34;); err != nil {
-<span id="L152" class="ln">   152  </span>		return err
-<span id="L153" class="ln">   153  </span>	}
-<span id="L154" class="ln">   154  </span>	if _, err := q.Exec(ctx, &#34;SELECT pg_advisory_xact_lock($1)&#34;, txAdvisoryLockKey); err != nil {
-<span id="L155" class="ln">   155  </span>		return err
-<span id="L156" class="ln">   156  </span>	}
-<span id="L157" class="ln">   157  </span>	return nil
-<span id="L158" class="ln">   158  </span>}
-<span id="L159" class="ln">   159  </span>
-<span id="L160" class="ln">   160  </span><span class="comment">// getTestDB は、テスト用の共有データベースドライバーを返します（初回呼び出し時のみ生成）。</span>
-<span id="L161" class="ln">   161  </span>func getTestDB(t *testing.T) driver.DatabaseDriver {
-<span id="L162" class="ln">   162  </span>	t.Helper()
-<span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span>	dbOnce.Do(func() {
-<span id="L165" class="ln">   165  </span>		cfg := config.MockConfigForTest(t)
-<span id="L166" class="ln">   166  </span>		dbCfg := config.NewDatabaseConfig(cfg)
-<span id="L167" class="ln">   167  </span>		osCfg := config.NewOperatingSystemConfig(cfg)
-<span id="L168" class="ln">   168  </span>		dbConnCfg := config.NewDBConnectionConfig(cfg)
-<span id="L169" class="ln">   169  </span>
-<span id="L170" class="ln">   170  </span>		testDB, errInit = driver.NewDB(dbCfg, osCfg, dbConnCfg)
-<span id="L171" class="ln">   171  </span>	})
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>	require.NoError(t, errInit)
-<span id="L174" class="ln">   174  </span>	require.NotNil(t, testDB)
-<span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span>	return testDB
-<span id="L177" class="ln">   177  </span>}
-<span id="L178" class="ln">   178  </span>
+<span id="L147" class="ln">   147  </span>	holder, err := db.Begin(ctx)
+<span id="L148" class="ln">   148  </span>	if err != nil {
+<span id="L149" class="ln">   149  </span>		txLock.Unlock()
+<span id="L150" class="ln">   150  </span>		return nil, err
+<span id="L151" class="ln">   151  </span>	}
+<span id="L152" class="ln">   152  </span>
+<span id="L153" class="ln">   153  </span>	if err := lockSuiteSerialization(ctx, holder); err != nil {
+<span id="L154" class="ln">   154  </span>		_ = holder.Rollback(ctx)
+<span id="L155" class="ln">   155  </span>		txLock.Unlock()
+<span id="L156" class="ln">   156  </span>		return nil, err
+<span id="L157" class="ln">   157  </span>	}
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>	return func() {
+<span id="L160" class="ln">   160  </span>		_ = holder.Rollback(ctx)
+<span id="L161" class="ln">   161  </span>		txLock.Unlock()
+<span id="L162" class="ln">   162  </span>	}, nil
+<span id="L163" class="ln">   163  </span>}
+<span id="L164" class="ln">   164  </span>
+<span id="L165" class="ln">   165  </span><span class="comment">// lockSuiteSerialization は、q が属するトランザクションでスイート直列化用の advisory lock を取ります。</span>
+<span id="L166" class="ln">   166  </span>func lockSuiteSerialization(ctx context.Context, q driver.DBTX) error {
+<span id="L167" class="ln">   167  </span>	<span class="comment">// advisory lock 待ちは lock_timeout(10s) の対象で、高負荷で超過すると 55P03（非リトライ）で</span>
+<span id="L168" class="ln">   168  </span>	<span class="comment">// 落ちる。取得の間だけ無効化する（直列化ゆえテーブルロック競合は起きず待ち詰まりの懸念はない）。</span>
+<span id="L169" class="ln">   169  </span>	if _, err := q.Exec(ctx, &#34;SET LOCAL lock_timeout = 0&#34;); err != nil {
+<span id="L170" class="ln">   170  </span>		return err
+<span id="L171" class="ln">   171  </span>	}
+<span id="L172" class="ln">   172  </span>	if _, err := q.Exec(ctx, &#34;SELECT pg_advisory_xact_lock($1)&#34;, txAdvisoryLockKey); err != nil {
+<span id="L173" class="ln">   173  </span>		return err
+<span id="L174" class="ln">   174  </span>	}
+<span id="L175" class="ln">   175  </span>	return nil
+<span id="L176" class="ln">   176  </span>}
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span><span class="comment">// getTestDB は、テスト用の共有データベースドライバーを返します（初回呼び出し時のみ生成）。</span>
+<span id="L179" class="ln">   179  </span>func getTestDB(t *testing.T) driver.DatabaseDriver {
+<span id="L180" class="ln">   180  </span>	t.Helper()
+<span id="L181" class="ln">   181  </span>
+<span id="L182" class="ln">   182  </span>	dbOnce.Do(func() {
+<span id="L183" class="ln">   183  </span>		cfg := config.MockConfigForTest(t)
+<span id="L184" class="ln">   184  </span>		dbCfg := config.NewDatabaseConfig(cfg)
+<span id="L185" class="ln">   185  </span>		osCfg := config.NewOperatingSystemConfig(cfg)
+<span id="L186" class="ln">   186  </span>		dbConnCfg := config.NewDBConnectionConfig(cfg)
+<span id="L187" class="ln">   187  </span>
+<span id="L188" class="ln">   188  </span>		testDB, errInit = driver.NewDB(dbCfg, osCfg, dbConnCfg)
+<span id="L189" class="ln">   189  </span>	})
+<span id="L190" class="ln">   190  </span>
+<span id="L191" class="ln">   191  </span>	require.NoError(t, errInit)
+<span id="L192" class="ln">   192  </span>	require.NotNil(t, testDB)
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span>	return testDB
+<span id="L195" class="ln">   195  </span>}
+<span id="L196" class="ln">   196  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/testkit/test_kit.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

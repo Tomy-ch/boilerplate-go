@@ -1,0 +1,116 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>inquiry - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/domain">domain</a>/<a href="../../../../../src/go-boilerplate/internal/domain/inquiry">inquiry</a>/<span class="text-muted">inquiry_repository.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/domain/inquiry">go-boilerplate/internal/domain/inquiry</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">//go:generate mockgen -source=$GOFILE -destination=mock/mock_$GOFILE.gen.go -package=mock_$GOPACKAGE</span>
+<span id="L2" class="ln">     2  </span>package inquiry
+<span id="L3" class="ln">     3  </span>
+<span id="L4" class="ln">     4  </span>import (
+<span id="L5" class="ln">     5  </span>	&#34;context&#34;
+<span id="L6" class="ln">     6  </span>
+<span id="L7" class="ln">     7  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L8" class="ln">     8  </span>)
+<span id="L9" class="ln">     9  </span>
+<span id="L10" class="ln">    10  </span><span class="comment">// HistoryParams は、問い合わせのメッセージ取得条件です。</span>
+<span id="L11" class="ln">    11  </span>type HistoryParams struct {
+<span id="L12" class="ln">    12  </span>	<span class="comment">// AfterSequence は、取得を開始する位置です。nil は先頭から取得します。</span>
+<span id="L13" class="ln">    13  </span>	AfterSequence *int64
+<span id="L14" class="ln">    14  </span>	<span class="comment">// UpToSequence は、取得する上限の位置です（snapshot と等価になる理由は</span>
+<span id="L15" class="ln">    15  </span>	<span class="comment">// docs/spec/usecase/inquiry.md の「streamCursor と snapshot」）。</span>
+<span id="L16" class="ln">    16  </span>	UpToSequence int64
+<span id="L17" class="ln">    17  </span>	<span class="comment">// Limit は、取得する最大件数です。</span>
+<span id="L18" class="ln">    18  </span>	Limit int
+<span id="L19" class="ln">    19  </span>}
+<span id="L20" class="ln">    20  </span>
+<span id="L21" class="ln">    21  </span><span class="comment">// Repository は、問い合わせ集約の永続化を抽象化します。</span>
+<span id="L22" class="ln">    22  </span><span class="comment">// メッセージは集約の内側にあるため、その読み書きもこの Repository が担います。</span>
+<span id="L23" class="ln">    23  </span>type Repository interface {
+<span id="L24" class="ln">    24  </span>	<span class="comment">// FindByID は、問い合わせを 1 件取得します。存在しない場合は NotFound を返します。</span>
+<span id="L25" class="ln">    25  </span>	FindByID(ctx context.Context, id uuid.UUID) (*Inquiry, error)
+<span id="L26" class="ln">    26  </span>
+<span id="L27" class="ln">    27  </span>	<span class="comment">// FindActiveByUserID は、利用者の active な問い合わせを取得します。</span>
+<span id="L28" class="ln">    28  </span>	<span class="comment">// 利用者 1 人につき高々 1 件です。存在しない場合は NotFound を返します。</span>
+<span id="L29" class="ln">    29  </span>	FindActiveByUserID(ctx context.Context, userID uuid.UUID) (*Inquiry, error)
+<span id="L30" class="ln">    30  </span>
+<span id="L31" class="ln">    31  </span>	<span class="comment">// CreateIfAbsent は、利用者の active な問い合わせが無ければ作り、既にある場合（並行した競合を</span>
+<span id="L32" class="ln">    32  </span>	<span class="comment">// 含む）はその問い合わせを衝突とせずに返します。</span>
+<span id="L33" class="ln">    33  </span>	CreateIfAbsent(ctx context.Context, inquiry *Inquiry) (*Inquiry, error)
+<span id="L34" class="ln">    34  </span>
+<span id="L35" class="ln">    35  </span>	<span class="comment">// Update は、問い合わせの更新日時を永続化します（AppendMessage が進めた値）。</span>
+<span id="L36" class="ln">    36  </span>	Update(ctx context.Context, inquiry *Inquiry) error
+<span id="L37" class="ln">    37  </span>
+<span id="L38" class="ln">    38  </span>	<span class="comment">// ListForOperator は、運営向けに問い合わせを更新日時が新しい順、同時刻は ID の降順で</span>
+<span id="L39" class="ln">    39  </span>	<span class="comment">// keyset ページネーションして取得します。読み取り専用です。</span>
+<span id="L40" class="ln">    40  </span>	ListForOperator(ctx context.Context, params ListParams) ([]*Inquiry, error)
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span>	<span class="comment">// CreateMessage は、問い合わせへメッセージを 1 件追加します。</span>
+<span id="L43" class="ln">    43  </span>	<span class="comment">// 問い合わせ内の位置が重複した場合は Conflict を返します。</span>
+<span id="L44" class="ln">    44  </span>	CreateMessage(ctx context.Context, inquiryID uuid.UUID, message *Message) error
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span>	<span class="comment">// ListMessages は、問い合わせのメッセージを位置の昇順で keyset ページネーションして取得します。</span>
+<span id="L47" class="ln">    47  </span>	<span class="comment">// History API の本体です。</span>
+<span id="L48" class="ln">    48  </span>	ListMessages(ctx context.Context, inquiryID uuid.UUID, params HistoryParams) ([]*Message, error)
+<span id="L49" class="ln">    49  </span>}
+<span id="L50" class="ln">    50  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/domain/inquiry/inquiry_repository.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

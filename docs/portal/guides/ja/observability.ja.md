@@ -1,7 +1,5 @@
 # internal/observability
 
-[English](README.md) | 日本語
-
 `internal/observability` は、本プロジェクトの **トレーシング（Tracing）および観測ログ連携**を提供するパッケージです。
 
 このパッケージは **OpenTelemetry をベースとしたトレーシング機構**と、  
@@ -77,6 +75,7 @@ LayerTracer --> ApplicationCode
 |`shutdown.go`|`ProviderShutdowner`（otel 非依存の後始末ハンドル）+ `NewProviderShutdowner`。di の shutdown hook が利用|
 |`ProvideTracerProvider` / `ProvideMeterProvider`|具象プロバイダを `trace.TracerProvider` / `metric.MeterProvider` IF として公開するアダプタ（`provider.go` 内）|
 |`NewPgxTracer`|接続情報を抑止した `otelpgx` トレーサ（DB span + metric、`pgx_tracer.go` 内）|
+|`LayerTracer.StartWithLink`|親は呼び出し側のまま、**link** だけを `map[string]string` の trace context へ張る span。起因となった trace より後・別の場所で起きる処理向け（SSE の配送・replay）|
 |`NewHTTPClientTransport` / `NewHTTPClientMetrics`|SSRF ガード付き・計装済み外向き HTTP トランスポート + その RED メトリクス（`http_client_transport.go` / `http_client_metrics.go` 内）|
 |`propagation.go`|サービス跨ぎ / キャリア跨ぎのトレース伝播（`ExtractFromCarrier` / `InjectTraceContextToCarrier`）|
 |`TracerFactory`|レイヤー別トレーサ生成|
@@ -353,6 +352,8 @@ lt := observability.NewMockUsecaseLayerTracer(t)
 |`NewMockInfraLayerTracer`|Infra用|
 |`NewNoopLayerTracer`|汎用|
 |`NewStubSpanContext`|有効な Span を持つ Context 生成|
+|`NewRecordingTracerProvider`|終了した span をすべて保持する `TracerProvider` と、それを返す関数。計装が span に何を載せたかを表明するために使う|
+|`InstallRecordingTracerProvider`|同じ provider をテストの間だけ otel の global に据える（終了時に復元）。HTTP の OTel ミドルウェアのように global から tracer を得る計装向け|
 
 ### StubSpanContext
 
@@ -474,10 +475,11 @@ OTLP 送出）と **Prometheus collector**（プロセスから scrape）の双�
 
 |Meter (`go-boilerplate/...`)|Instruments|所有|
 |---|---|---|
-|`/outbox`|`outbox.lag_seconds`（gauge）, `outbox.dead`（counter）|outbox relay|
+|`/outbox`|`outbox.lag_seconds`（gauge）, `outbox.dead`（counter）, `outbox.blocked_streams`（gauge）。いずれも `channel` ラベルを持つ|outbox relay|
 |`/worker`|`received` / `processed` / `failed` / `retried` / `dlq` / poll・extend errors（counter）, latency（histogram）, in-flight（up-down）|worker engine（broker 非依存）|
 |`/idempotency`|`requests` / `failures` / `expiredCleanup`（counter）。ラベルは `operation_id` / `result` / `phase` / `job` に限定|冪等性サブシステム|
 |`/httpclient`|RED（`requests` / `errors`, latency histogram）+ `retries`, in-flight, `breakerState` gauge|外向き HTTP client substrate|
+|`/realtime`|接続（active / accepted / reconnects / rejected / closed / duration）、replay と catch-up（executions / events / depth / failures / in-flight / admission timeouts / lag）、配送（latency、EventLog の appends と lag、wakeup publish failures、recovery）、cleanup（lease heartbeat failures / executions / instances）。label は `reason` / `trigger` / `result` / `outcome` に限る|Realtime Delivery（serve・relay・cleanup ジョブが meter を共有し、提供は各 process の DI module）|
 
 DB span / metric は `NewPgxTracer`（`otelpgx`）が追加で送出し、Go **ランタイムメトリクス**は
 `MetricsEnabled()` のとき収集されます。

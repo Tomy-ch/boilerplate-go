@@ -1,0 +1,540 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package realtime
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/controller/realtime&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package realtime は、serve instance の受信先に届く通知（wakeup / 失効）を受け取って接続側へ渡す consumer engine と、
+instance lease の heartbeat loop を提供します。engine 自体は loop と待機制御だけを担い、通知の意味
+（どの接続を起こすか・閉じるか）は sink の実装が持ちます。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+			
+			
+				
+				<dd><a href="#Engine">type Engine</a></dd>
+				
+					
+					<dd>    <a href="#NewEngine">func NewEngine(sub rt.InstanceSubscription, reprovision Reprovisioner, fanout FanoutObserver, wakeups Waker, revocations Revoker, sleeper clock.Sleeper, log logging.Logger, tf observability.TracerFactory, metrics *observability.RealtimeMetrics, set Settings) *Engine</a></dd>
+				
+				
+					
+					<dd>    <a href="#Engine.Run">func (e *Engine) Run(ctx context.Context) error</a></dd>
+				
+			
+				
+				<dd><a href="#FanoutObserver">type FanoutObserver</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Heartbeat">type Heartbeat</a></dd>
+				
+					
+					<dd>    <a href="#NewHeartbeat">func NewHeartbeat(keeper ucrealtime.LeaseKeeper, id rt.InstanceID, sleeper clock.Sleeper, log logging.Logger, tf observability.TracerFactory, metrics *observability.RealtimeMetrics) *Heartbeat</a></dd>
+				
+				
+					
+					<dd>    <a href="#Heartbeat.Run">func (h *Heartbeat) Run(ctx context.Context) error</a></dd>
+				
+			
+				
+				<dd><a href="#ReprovisionFunc">type ReprovisionFunc</a></dd>
+				
+				
+					
+					<dd>    <a href="#ReprovisionFunc.Reprovision">func (f ReprovisionFunc) Reprovision(ctx context.Context) error</a></dd>
+				
+			
+				
+				<dd><a href="#Reprovisioner">type Reprovisioner</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Revoker">type Revoker</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Settings">type Settings</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Waker">type Waker</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/realtime/engine.go.html">engine.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/realtime/heartbeat.go.html">heartbeat.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/controller/realtime/sink.go.html">sink.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				
+				<pre>const (
+
+    <span class="comment">// DefaultBatchSize は、1 回の受信で取り出す通知の上限です（受信先の上限 10 に揃える）。</span>
+    <span id="DefaultBatchSize">DefaultBatchSize</span> = 10
+    <span class="comment">// DefaultErrorBackoff は、受信に失敗した後に次の受信まで待つ時間です。</span>
+    <span id="DefaultErrorBackoff">DefaultErrorBackoff</span> = 5 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Second">Second</a>
+)</pre>
+			
+		
+		
+		
+		
+			
+			
+			<h2 id="Engine">type <a href="../../../../src/go-boilerplate/internal/controller/realtime/engine.go.html?s=1052:1366#L22">Engine</a>
+				<a class="permalink" href="#Engine">¶</a>
+				
+				
+			</h2>
+			<p>Engine は、instance の受信先から通知を取り出し、種別ごとに sink へ渡して削除する常駐 engine です。
+
+			</p><pre>type Engine struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewEngine">func <a href="../../../../src/go-boilerplate/internal/controller/realtime/engine.go.html?s=1425:1704#L36">NewEngine</a>
+					<a class="permalink" href="#NewEngine">¶</a>
+					
+					
+				</h3>
+				<pre>func NewEngine(
+    sub <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceSubscription">InstanceSubscription</a>,
+    reprovision <a href="#Reprovisioner">Reprovisioner</a>,
+    fanout <a href="#FanoutObserver">FanoutObserver</a>,
+    wakeups <a href="#Waker">Waker</a>,
+    revocations <a href="#Revoker">Revoker</a>,
+    sleeper <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Sleeper">Sleeper</a>,
+    log <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#Logger">Logger</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+    metrics *<a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#RealtimeMetrics">RealtimeMetrics</a>,
+    set <a href="#Settings">Settings</a>,
+) *<a href="#Engine">Engine</a></pre>
+				<p>NewEngine は、consumer engine を生成します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Engine.Run">func (*Engine) <a href="../../../../src/go-boilerplate/internal/controller/realtime/engine.go.html?s=2293:2340#L64">Run</a>
+					<a class="permalink" href="#Engine.Run">¶</a>
+					
+					
+				</h3>
+				<pre>func (e *<a href="#Engine">Engine</a>) Run(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a></pre>
+				<p>Run は、受信ループ本体です。ctx 完了まで常駐し、完了時に nil を返します。
+loop の意味論（受信失敗時の待機・削除順序・重複の扱い）は README の &#34;Loop semantics (Run)&#34; を参照。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="FanoutObserver">type <a href="../../../../src/go-boilerplate/internal/controller/realtime/sink.go.html?s=1531:1701#L19">FanoutObserver</a>
+				<a class="permalink" href="#FanoutObserver">¶</a>
+				
+				
+			</h2>
+			<p>FanoutObserver は、受信を試みた結果を受け取る受け口です（設計は README「Public API」）。
+
+			</p><pre>type FanoutObserver interface {
+    <span class="comment">// ObserveFanout は、1 回の受信の結果を伝えます。err が nil なら受け取れています。</span>
+    ObserveFanout(err <a href="../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Heartbeat">type <a href="../../../../src/go-boilerplate/internal/controller/realtime/heartbeat.go.html?s=505:707#L7">Heartbeat</a>
+				<a class="permalink" href="#Heartbeat">¶</a>
+				
+				
+			</h2>
+			<p>Heartbeat は、instance lease を LeaseHeartbeatInterval ごとに書き直す常駐 loop です。
+1 回の失敗では止まらず次の周期で書き直します。
+
+			</p><pre>type Heartbeat struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewHeartbeat">func <a href="../../../../src/go-boilerplate/internal/controller/realtime/heartbeat.go.html?s=788:989#L17">NewHeartbeat</a>
+					<a class="permalink" href="#NewHeartbeat">¶</a>
+					
+					
+				</h3>
+				<pre>func NewHeartbeat(
+    keeper <a href="../../../../go-boilerplate/internal/usecase/realtime/">ucrealtime</a>.<a href="../../../../go-boilerplate/internal/usecase/realtime/#LeaseKeeper">LeaseKeeper</a>,
+    id <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceID">InstanceID</a>,
+    sleeper <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Sleeper">Sleeper</a>,
+    log <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#Logger">Logger</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+    metrics *<a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#RealtimeMetrics">RealtimeMetrics</a>,
+) *<a href="#Heartbeat">Heartbeat</a></pre>
+				<p>NewHeartbeat は、id の instance の heartbeat loop を生成します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Heartbeat.Run">func (*Heartbeat) <a href="../../../../src/go-boilerplate/internal/controller/realtime/heartbeat.go.html?s=1265:1315#L31">Run</a>
+					<a class="permalink" href="#Heartbeat.Run">¶</a>
+					
+					
+				</h3>
+				<pre>func (h *<a href="#Heartbeat">Heartbeat</a>) Run(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a></pre>
+				<p>Run は、最初の 1 回を即座に書き、以後 LeaseHeartbeatInterval ごとに書き直します。ctx 完了で nil を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="ReprovisionFunc">type <a href="../../../../src/go-boilerplate/internal/controller/realtime/sink.go.html?s=2210:2262#L32">ReprovisionFunc</a>
+				<a class="permalink" href="#ReprovisionFunc">¶</a>
+				
+				
+			</h2>
+			<p>ReprovisionFunc は、関数を Reprovisioner として使うためのアダプタです。
+
+			</p><pre>type ReprovisionFunc func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="ReprovisionFunc.Reprovision">func (ReprovisionFunc) <a href="../../../../src/go-boilerplate/internal/controller/realtime/sink.go.html?s=2306:2369#L35">Reprovision</a>
+					<a class="permalink" href="#ReprovisionFunc.Reprovision">¶</a>
+					
+					
+				</h3>
+				<pre>func (f <a href="#ReprovisionFunc">ReprovisionFunc</a>) Reprovision(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a></pre>
+				<p>Reprovision は、f を呼びます。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="Reprovisioner">type <a href="../../../../src/go-boilerplate/internal/controller/realtime/sink.go.html?s=1904:2113#L26">Reprovisioner</a>
+				<a class="permalink" href="#Reprovisioner">¶</a>
+				
+				
+			</h2>
+			<p>Reprovisioner は、消えた受信先を作り直す受け口です。lease と受信先の順序は
+DI で両者を合成する側が与えます（docs/design/realtime-delivery.md §2.5）。
+
+			</p><pre>type Reprovisioner interface {
+    <span class="comment">// Reprovision は、lease を書き直してから受信先を作り直します。何度呼んでも同じ状態に収束します。</span>
+    Reprovision(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Revoker">type <a href="../../../../src/go-boilerplate/internal/controller/realtime/sink.go.html?s=1211:1409#L13">Revoker</a>
+				<a class="permalink" href="#Revoker">¶</a>
+				
+				
+			</h2>
+			<p>Revoker は、失効通知を接続側へ渡す受け口です。実装は subject の接続を STOP で閉じます。
+
+			</p><pre>type Revoker interface {
+    <span class="comment">// Revoke は、subject の destination への権利が取り下げられたことを伝えます。</span>
+    Revoke(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, subject <a href="../../../../builtin/#string">string</a>, destination <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Settings">type <a href="../../../../src/go-boilerplate/internal/controller/realtime/engine.go.html?s=701:914#L14">Settings</a>
+				<a class="permalink" href="#Settings">¶</a>
+				
+				
+			</h2>
+			<p>Settings は、consumer engine のチューニング値です。ゼロ値は既定値に寄せます。
+
+			</p><pre>type Settings struct {
+<span id="Settings.BatchSize"></span>    <span class="comment">// BatchSize は、1 回の受信で取り出す通知の上限です。</span>
+    BatchSize <a href="../../../../builtin/#int">int</a>
+<span id="Settings.ErrorBackoff"></span>    <span class="comment">// ErrorBackoff は、受信に失敗した後に待つ時間です。</span>
+    ErrorBackoff <a href="../../../../time/">time</a>.<a href="../../../../time/#Duration">Duration</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Waker">type <a href="../../../../src/go-boilerplate/internal/controller/realtime/sink.go.html?s=912:1086#L7">Waker</a>
+				<a class="permalink" href="#Waker">¶</a>
+				
+				
+			</h2>
+			<p>Waker は、届いた wakeup を接続側へ渡す受け口です。
+同じ stream の wakeup が重複して届くことは正常であり、実装は冪等でなければなりません（ADR-0073）。
+呼び出しは engine の loop を止めるので、実装は接続を起こすだけで、読み直し自体は待ちません。
+
+			</p><pre>type Waker interface {
+    <span class="comment">// Wake は、streamID の event が upTo まで増えたことを伝えます。</span>
+    Wake(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, streamID <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>, upTo <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

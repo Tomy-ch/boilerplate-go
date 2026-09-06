@@ -162,202 +162,205 @@
 <span id="L105" class="ln">   105  </span>					require.NotNil(t, params.Window.After())
 <span id="L106" class="ln">   106  </span>					assert.True(t, time.Date(2026, time.January, 21, 0, 0, 0, 0, time.UTC).Equal(*params.Window.After()))
 <span id="L107" class="ln">   107  </span>					return sampleView(t), nil
-<span id="L108" class="ln">   108  </span>				})
-<span id="L109" class="ln">   109  </span>
-<span id="L110" class="ln">   110  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
-<span id="L111" class="ln">   111  </span>
-<span id="L112" class="ln">   112  </span>			actual := StartServer(t, e).DoJSON(
-<span id="L113" class="ln">   113  </span>				http.MethodGet, &#34;/v1/products/ranking/quantity?orderedAfter=2026-01-21T00:00:00Z&amp;limit=3&#34;, nil, nil)
-<span id="L114" class="ln">   114  </span>			AssertJSONResponseType[gen.ProductQuantityRankingResponse](t, actual)
-<span id="L115" class="ln">   115  </span>		})
-<span id="L116" class="ln">   116  </span>
-<span id="L117" class="ln">   117  </span>		t.Run(&#34;廃止したperiodを送っても無視され全期間として扱われる&#34;, func(t *testing.T) {
-<span id="L118" class="ln">   118  </span>			t.Parallel()
-<span id="L119" class="ln">   119  </span>
-<span id="L120" class="ln">   120  </span>			e := echo.New()
-<span id="L121" class="ln">   121  </span>			ctrl := gomock.NewController(t)
-<span id="L122" class="ln">   122  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
-<span id="L125" class="ln">   125  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L126" class="ln">   126  </span>				func(_ context.Context, params rankinguc.GetRankingParams) (rankinguc.QuantityRankingView, error) {
-<span id="L127" class="ln">   127  </span>					assert.Nil(t, params.Window.After())
-<span id="L128" class="ln">   128  </span>					assert.Nil(t, params.Window.Before())
-<span id="L129" class="ln">   129  </span>					return sampleView(t), nil
-<span id="L130" class="ln">   130  </span>				})
-<span id="L131" class="ln">   131  </span>
-<span id="L132" class="ln">   132  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
-<span id="L133" class="ln">   133  </span>			useOpenAPIValidation(t, e)
+<span id="L108" class="ln">   108  </span>				},
+<span id="L109" class="ln">   109  </span>			)
+<span id="L110" class="ln">   110  </span>
+<span id="L111" class="ln">   111  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span>			actual := StartServer(t, e).DoJSON(
+<span id="L114" class="ln">   114  </span>				http.MethodGet, &#34;/v1/products/ranking/quantity?orderedAfter=2026-01-21T00:00:00Z&amp;limit=3&#34;, nil, nil,
+<span id="L115" class="ln">   115  </span>			)
+<span id="L116" class="ln">   116  </span>			AssertJSONResponseType[gen.ProductQuantityRankingResponse](t, actual)
+<span id="L117" class="ln">   117  </span>		})
+<span id="L118" class="ln">   118  </span>
+<span id="L119" class="ln">   119  </span>		t.Run(&#34;廃止したperiodを送っても無視され全期間として扱われる&#34;, func(t *testing.T) {
+<span id="L120" class="ln">   120  </span>			t.Parallel()
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>			e := echo.New()
+<span id="L123" class="ln">   123  </span>			ctrl := gomock.NewController(t)
+<span id="L124" class="ln">   124  </span>			tf := observability.NewNoopTracerFactory(t)
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
+<span id="L127" class="ln">   127  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L128" class="ln">   128  </span>				func(_ context.Context, params rankinguc.GetRankingParams) (rankinguc.QuantityRankingView, error) {
+<span id="L129" class="ln">   129  </span>					assert.Nil(t, params.Window.After())
+<span id="L130" class="ln">   130  </span>					assert.Nil(t, params.Window.Before())
+<span id="L131" class="ln">   131  </span>					return sampleView(t), nil
+<span id="L132" class="ln">   132  </span>				},
+<span id="L133" class="ln">   133  </span>			)
 <span id="L134" class="ln">   134  </span>
-<span id="L135" class="ln">   135  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/quantity?period=30d&#34;, nil, nil)
-<span id="L136" class="ln">   136  </span>			AssertJSONResponseType[gen.ProductQuantityRankingResponse](t, actual)
-<span id="L137" class="ln">   137  </span>		})
-<span id="L138" class="ln">   138  </span>	})
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L141" class="ln">   141  </span>		t.Parallel()
+<span id="L135" class="ln">   135  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
+<span id="L136" class="ln">   136  </span>			useOpenAPIValidation(t, e)
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/quantity?period=30d&#34;, nil, nil)
+<span id="L139" class="ln">   139  </span>			AssertJSONResponseType[gen.ProductQuantityRankingResponse](t, actual)
+<span id="L140" class="ln">   140  </span>		})
+<span id="L141" class="ln">   141  </span>	})
 <span id="L142" class="ln">   142  </span>
-<span id="L143" class="ln">   143  </span>		t.Run(&#34;GET /v1/products/ranking が数値でない limit で 400 を返す&#34;, func(t *testing.T) {
-<span id="L144" class="ln">   144  </span>			t.Parallel()
+<span id="L143" class="ln">   143  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L144" class="ln">   144  </span>		t.Parallel()
 <span id="L145" class="ln">   145  </span>
-<span id="L146" class="ln">   146  </span>			e := echo.New()
-<span id="L147" class="ln">   147  </span>			UseAppErrorHandler(t, e)
-<span id="L148" class="ln">   148  </span>			ctrl := gomock.NewController(t)
-<span id="L149" class="ln">   149  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L150" class="ln">   150  </span>
-<span id="L151" class="ln">   151  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
-<span id="L152" class="ln">   152  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Times(0)
+<span id="L146" class="ln">   146  </span>		t.Run(&#34;GET /v1/products/ranking が数値でない limit で 400 を返す&#34;, func(t *testing.T) {
+<span id="L147" class="ln">   147  </span>			t.Parallel()
+<span id="L148" class="ln">   148  </span>
+<span id="L149" class="ln">   149  </span>			e := echo.New()
+<span id="L150" class="ln">   150  </span>			UseAppErrorHandler(t, e)
+<span id="L151" class="ln">   151  </span>			ctrl := gomock.NewController(t)
+<span id="L152" class="ln">   152  </span>			tf := observability.NewNoopTracerFactory(t)
 <span id="L153" class="ln">   153  </span>
-<span id="L154" class="ln">   154  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
-<span id="L155" class="ln">   155  </span>
-<span id="L156" class="ln">   156  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/quantity?limit=abc&#34;, nil, nil)
-<span id="L157" class="ln">   157  </span>			AssertErrorResponse(t, actual, http.StatusBadRequest)
-<span id="L158" class="ln">   158  </span>		})
-<span id="L159" class="ln">   159  </span>
-<span id="L160" class="ln">   160  </span>		t.Run(&#34;OpenAPIバリデーションが範囲外・不正なパラメータを400で弾く&#34;, func(t *testing.T) {
-<span id="L161" class="ln">   161  </span>			t.Parallel()
+<span id="L154" class="ln">   154  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
+<span id="L155" class="ln">   155  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Times(0)
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/quantity?limit=abc&#34;, nil, nil)
+<span id="L160" class="ln">   160  </span>			AssertErrorResponse(t, actual, http.StatusBadRequest)
+<span id="L161" class="ln">   161  </span>		})
 <span id="L162" class="ln">   162  </span>
-<span id="L163" class="ln">   163  </span>			cases := map[string]string{
-<span id="L164" class="ln">   164  </span>				&#34;limitが下限未満(0)&#34;:         &#34;/v1/products/ranking/quantity?limit=0&#34;,
-<span id="L165" class="ln">   165  </span>				&#34;limitが上限超過(101)&#34;:       &#34;/v1/products/ranking/quantity?limit=101&#34;,
-<span id="L166" class="ln">   166  </span>				&#34;orderedAfterが日時形式でない&#34;:  &#34;/v1/products/ranking/quantity?orderedAfter=2026-01-21&#34;,
-<span id="L167" class="ln">   167  </span>				&#34;orderedBeforeが日時形式でない&#34;: &#34;/v1/products/ranking/quantity?orderedBefore=yesterday&#34;,
-<span id="L168" class="ln">   168  </span>			}
-<span id="L169" class="ln">   169  </span>			for name, path := range cases {
-<span id="L170" class="ln">   170  </span>				t.Run(name, func(t *testing.T) {
-<span id="L171" class="ln">   171  </span>					t.Parallel()
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>					e := echo.New()
-<span id="L174" class="ln">   174  </span>					UseAppErrorHandler(t, e)
-<span id="L175" class="ln">   175  </span>					ctrl := gomock.NewController(t)
-<span id="L176" class="ln">   176  </span>					tf := observability.NewNoopTracerFactory(t)
-<span id="L177" class="ln">   177  </span>
-<span id="L178" class="ln">   178  </span>					mockUC := mock_ranking.NewMockUsecase(ctrl)
-<span id="L179" class="ln">   179  </span>					mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Times(0)
+<span id="L163" class="ln">   163  </span>		t.Run(&#34;OpenAPIバリデーションが範囲外・不正なパラメータを400で弾く&#34;, func(t *testing.T) {
+<span id="L164" class="ln">   164  </span>			t.Parallel()
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>			cases := map[string]string{
+<span id="L167" class="ln">   167  </span>				&#34;limitが下限未満(0)&#34;:         &#34;/v1/products/ranking/quantity?limit=0&#34;,
+<span id="L168" class="ln">   168  </span>				&#34;limitが上限超過(101)&#34;:       &#34;/v1/products/ranking/quantity?limit=101&#34;,
+<span id="L169" class="ln">   169  </span>				&#34;orderedAfterが日時形式でない&#34;:  &#34;/v1/products/ranking/quantity?orderedAfter=2026-01-21&#34;,
+<span id="L170" class="ln">   170  </span>				&#34;orderedBeforeが日時形式でない&#34;: &#34;/v1/products/ranking/quantity?orderedBefore=yesterday&#34;,
+<span id="L171" class="ln">   171  </span>			}
+<span id="L172" class="ln">   172  </span>			for name, path := range cases {
+<span id="L173" class="ln">   173  </span>				t.Run(name, func(t *testing.T) {
+<span id="L174" class="ln">   174  </span>					t.Parallel()
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>					e := echo.New()
+<span id="L177" class="ln">   177  </span>					UseAppErrorHandler(t, e)
+<span id="L178" class="ln">   178  </span>					ctrl := gomock.NewController(t)
+<span id="L179" class="ln">   179  </span>					tf := observability.NewNoopTracerFactory(t)
 <span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>					productsrankinghandler.BindHandler(e, tf, mockUC)
-<span id="L182" class="ln">   182  </span>					useOpenAPIValidation(t, e)
+<span id="L181" class="ln">   181  </span>					mockUC := mock_ranking.NewMockUsecase(ctrl)
+<span id="L182" class="ln">   182  </span>					mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Times(0)
 <span id="L183" class="ln">   183  </span>
-<span id="L184" class="ln">   184  </span>					actual := StartServer(t, e).DoJSON(http.MethodGet, path, nil, nil)
-<span id="L185" class="ln">   185  </span>					AssertErrorResponse(t, actual, http.StatusBadRequest)
-<span id="L186" class="ln">   186  </span>				})
-<span id="L187" class="ln">   187  </span>			}
-<span id="L188" class="ln">   188  </span>		})
-<span id="L189" class="ln">   189  </span>
-<span id="L190" class="ln">   190  </span>		t.Run(&#34;GET /v1/products/ranking が ErrInternal で 500 を返す&#34;, func(t *testing.T) {
-<span id="L191" class="ln">   191  </span>			t.Parallel()
+<span id="L184" class="ln">   184  </span>					productsrankinghandler.BindHandler(e, tf, mockUC)
+<span id="L185" class="ln">   185  </span>					useOpenAPIValidation(t, e)
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>					actual := StartServer(t, e).DoJSON(http.MethodGet, path, nil, nil)
+<span id="L188" class="ln">   188  </span>					AssertErrorResponse(t, actual, http.StatusBadRequest)
+<span id="L189" class="ln">   189  </span>				})
+<span id="L190" class="ln">   190  </span>			}
+<span id="L191" class="ln">   191  </span>		})
 <span id="L192" class="ln">   192  </span>
-<span id="L193" class="ln">   193  </span>			e := echo.New()
-<span id="L194" class="ln">   194  </span>			UseAppErrorHandler(t, e)
-<span id="L195" class="ln">   195  </span>			ctrl := gomock.NewController(t)
-<span id="L196" class="ln">   196  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
-<span id="L199" class="ln">   199  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Return(rankinguc.QuantityRankingView{}, apperror.ErrInternal)
+<span id="L193" class="ln">   193  </span>		t.Run(&#34;GET /v1/products/ranking が ErrInternal で 500 を返す&#34;, func(t *testing.T) {
+<span id="L194" class="ln">   194  </span>			t.Parallel()
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>			e := echo.New()
+<span id="L197" class="ln">   197  </span>			UseAppErrorHandler(t, e)
+<span id="L198" class="ln">   198  </span>			ctrl := gomock.NewController(t)
+<span id="L199" class="ln">   199  </span>			tf := observability.NewNoopTracerFactory(t)
 <span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/quantity&#34;, nil, nil)
-<span id="L204" class="ln">   204  </span>			AssertErrorResponse(t, actual, http.StatusInternalServerError)
-<span id="L205" class="ln">   205  </span>		})
-<span id="L206" class="ln">   206  </span>	})
-<span id="L207" class="ln">   207  </span>}
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>func TestV1ProductsRankingAmount_Integration(t *testing.T) {
-<span id="L210" class="ln">   210  </span>	t.Parallel()
+<span id="L201" class="ln">   201  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
+<span id="L202" class="ln">   202  </span>			mockUC.EXPECT().GetQuantityRanking(gomock.Any(), gomock.Any()).Return(rankinguc.QuantityRankingView{}, apperror.ErrInternal)
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/quantity&#34;, nil, nil)
+<span id="L207" class="ln">   207  </span>			AssertErrorResponse(t, actual, http.StatusInternalServerError)
+<span id="L208" class="ln">   208  </span>		})
+<span id="L209" class="ln">   209  </span>	})
+<span id="L210" class="ln">   210  </span>}
 <span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span>	sampleView := func(t *testing.T) rankinguc.AmountRankingView {
-<span id="L213" class="ln">   213  </span>		t.Helper()
-<span id="L214" class="ln">   214  </span>		return rankinguc.AmountRankingView{
-<span id="L215" class="ln">   215  </span>			Rankings: []rankinguc.AmountRankingItemView{
-<span id="L216" class="ln">   216  </span>				{
-<span id="L217" class="ln">   217  </span>					ProductID:   uuidtestkit.NewTestFromSalt(t, &#34;integration_amount_product&#34;),
-<span id="L218" class="ln">   218  </span>					Name:        &#34;商品&#34;,
-<span id="L219" class="ln">   219  </span>					Price:       decimaltestkit.MustParse(t, &#34;19.995&#34;),
-<span id="L220" class="ln">   220  </span>					SalesAmount: decimaltestkit.MustParse(t, &#34;59.985&#34;),
-<span id="L221" class="ln">   221  </span>				},
-<span id="L222" class="ln">   222  </span>			},
-<span id="L223" class="ln">   223  </span>		}
-<span id="L224" class="ln">   224  </span>	}
-<span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L227" class="ln">   227  </span>		t.Parallel()
+<span id="L212" class="ln">   212  </span>func TestV1ProductsRankingAmount_Integration(t *testing.T) {
+<span id="L213" class="ln">   213  </span>	t.Parallel()
+<span id="L214" class="ln">   214  </span>
+<span id="L215" class="ln">   215  </span>	sampleView := func(t *testing.T) rankinguc.AmountRankingView {
+<span id="L216" class="ln">   216  </span>		t.Helper()
+<span id="L217" class="ln">   217  </span>		return rankinguc.AmountRankingView{
+<span id="L218" class="ln">   218  </span>			Rankings: []rankinguc.AmountRankingItemView{
+<span id="L219" class="ln">   219  </span>				{
+<span id="L220" class="ln">   220  </span>					ProductID:   uuidtestkit.NewTestFromSalt(t, &#34;integration_amount_product&#34;),
+<span id="L221" class="ln">   221  </span>					Name:        &#34;商品&#34;,
+<span id="L222" class="ln">   222  </span>					Price:       decimaltestkit.MustParse(t, &#34;19.995&#34;),
+<span id="L223" class="ln">   223  </span>					SalesAmount: decimaltestkit.MustParse(t, &#34;59.985&#34;),
+<span id="L224" class="ln">   224  </span>				},
+<span id="L225" class="ln">   225  </span>			},
+<span id="L226" class="ln">   226  </span>		}
+<span id="L227" class="ln">   227  </span>	}
 <span id="L228" class="ln">   228  </span>
-<span id="L229" class="ln">   229  </span>		t.Run(&#34;GET /v1/products/ranking/amount が金額ランキングを返す&#34;, func(t *testing.T) {
-<span id="L230" class="ln">   230  </span>			t.Parallel()
+<span id="L229" class="ln">   229  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L230" class="ln">   230  </span>		t.Parallel()
 <span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>			e := echo.New()
-<span id="L233" class="ln">   233  </span>			ctrl := gomock.NewController(t)
-<span id="L234" class="ln">   234  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
-<span id="L237" class="ln">   237  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Return(sampleView(t), nil)
+<span id="L232" class="ln">   232  </span>		t.Run(&#34;GET /v1/products/ranking/amount が金額ランキングを返す&#34;, func(t *testing.T) {
+<span id="L233" class="ln">   233  </span>			t.Parallel()
+<span id="L234" class="ln">   234  </span>
+<span id="L235" class="ln">   235  </span>			e := echo.New()
+<span id="L236" class="ln">   236  </span>			ctrl := gomock.NewController(t)
+<span id="L237" class="ln">   237  </span>			tf := observability.NewNoopTracerFactory(t)
 <span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
-<span id="L240" class="ln">   240  </span>
-<span id="L241" class="ln">   241  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/amount?limit=10&#34;, nil, nil)
-<span id="L242" class="ln">   242  </span>			AssertJSONResponseType[gen.ProductAmountRankingResponse](t, actual)
-<span id="L243" class="ln">   243  </span>		})
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>		t.Run(&#34;OpenAPIバリデーション経由でもサブセントの金額が丸められずに返る&#34;, func(t *testing.T) {
-<span id="L246" class="ln">   246  </span>			t.Parallel()
+<span id="L239" class="ln">   239  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
+<span id="L240" class="ln">   240  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Return(sampleView(t), nil)
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/amount?limit=10&#34;, nil, nil)
+<span id="L245" class="ln">   245  </span>			AssertJSONResponseType[gen.ProductAmountRankingResponse](t, actual)
+<span id="L246" class="ln">   246  </span>		})
 <span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>			e := echo.New()
-<span id="L249" class="ln">   249  </span>			ctrl := gomock.NewController(t)
-<span id="L250" class="ln">   250  </span>			tf := observability.NewNoopTracerFactory(t)
-<span id="L251" class="ln">   251  </span>
-<span id="L252" class="ln">   252  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
-<span id="L253" class="ln">   253  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Return(sampleView(t), nil)
+<span id="L248" class="ln">   248  </span>		t.Run(&#34;OpenAPIバリデーション経由でもサブセントの金額が丸められずに返る&#34;, func(t *testing.T) {
+<span id="L249" class="ln">   249  </span>			t.Parallel()
+<span id="L250" class="ln">   250  </span>
+<span id="L251" class="ln">   251  </span>			e := echo.New()
+<span id="L252" class="ln">   252  </span>			ctrl := gomock.NewController(t)
+<span id="L253" class="ln">   253  </span>			tf := observability.NewNoopTracerFactory(t)
 <span id="L254" class="ln">   254  </span>
-<span id="L255" class="ln">   255  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
-<span id="L256" class="ln">   256  </span>			useOpenAPIValidation(t, e)
+<span id="L255" class="ln">   255  </span>			mockUC := mock_ranking.NewMockUsecase(ctrl)
+<span id="L256" class="ln">   256  </span>			mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Return(sampleView(t), nil)
 <span id="L257" class="ln">   257  </span>
-<span id="L258" class="ln">   258  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/amount?limit=10&#34;, nil, nil)
-<span id="L259" class="ln">   259  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
+<span id="L258" class="ln">   258  </span>			productsrankinghandler.BindHandler(e, tf, mockUC)
+<span id="L259" class="ln">   259  </span>			useOpenAPIValidation(t, e)
 <span id="L260" class="ln">   260  </span>
-<span id="L261" class="ln">   261  </span>			raw, rerr := io.ReadAll(actual.Body)
-<span id="L262" class="ln">   262  </span>			require.NoError(t, rerr)
-<span id="L263" class="ln">   263  </span>			var body gen.ProductAmountRankingResponse
-<span id="L264" class="ln">   264  </span>			require.NoError(t, json.Unmarshal(raw, &amp;body))
-<span id="L265" class="ln">   265  </span>			require.Len(t, body.Rankings, 1)
-<span id="L266" class="ln">   266  </span>			<span class="comment">// 契約の pattern を通ったうえで、決済スケールへ丸められていないことを HTTP 経路で固定する。</span>
-<span id="L267" class="ln">   267  </span>			assert.Equal(t, &#34;59.985&#34;, body.Rankings[0].SalesAmount)
-<span id="L268" class="ln">   268  </span>		})
-<span id="L269" class="ln">   269  </span>	})
-<span id="L270" class="ln">   270  </span>
-<span id="L271" class="ln">   271  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L272" class="ln">   272  </span>		t.Parallel()
+<span id="L261" class="ln">   261  </span>			actual := StartServer(t, e).DoJSON(http.MethodGet, &#34;/v1/products/ranking/amount?limit=10&#34;, nil, nil)
+<span id="L262" class="ln">   262  </span>			require.Equal(t, http.StatusOK, actual.StatusCode)
+<span id="L263" class="ln">   263  </span>
+<span id="L264" class="ln">   264  </span>			raw, rerr := io.ReadAll(actual.Body)
+<span id="L265" class="ln">   265  </span>			require.NoError(t, rerr)
+<span id="L266" class="ln">   266  </span>			var body gen.ProductAmountRankingResponse
+<span id="L267" class="ln">   267  </span>			require.NoError(t, json.Unmarshal(raw, &amp;body))
+<span id="L268" class="ln">   268  </span>			require.Len(t, body.Rankings, 1)
+<span id="L269" class="ln">   269  </span>			<span class="comment">// 契約の pattern を通ったうえで、決済スケールへ丸められていないことを HTTP 経路で固定する。</span>
+<span id="L270" class="ln">   270  </span>			assert.Equal(t, &#34;59.985&#34;, body.Rankings[0].SalesAmount)
+<span id="L271" class="ln">   271  </span>		})
+<span id="L272" class="ln">   272  </span>	})
 <span id="L273" class="ln">   273  </span>
-<span id="L274" class="ln">   274  </span>		t.Run(&#34;OpenAPIバリデーションが範囲外・不正なパラメータを400で弾く&#34;, func(t *testing.T) {
-<span id="L275" class="ln">   275  </span>			t.Parallel()
+<span id="L274" class="ln">   274  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L275" class="ln">   275  </span>		t.Parallel()
 <span id="L276" class="ln">   276  </span>
-<span id="L277" class="ln">   277  </span>			cases := map[string]string{
-<span id="L278" class="ln">   278  </span>				&#34;limitが上限超過(101)&#34;:      &#34;/v1/products/ranking/amount?limit=101&#34;,
-<span id="L279" class="ln">   279  </span>				&#34;orderedAfterが日時形式でない&#34;: &#34;/v1/products/ranking/amount?orderedAfter=2026-01-21&#34;,
-<span id="L280" class="ln">   280  </span>			}
-<span id="L281" class="ln">   281  </span>			for name, path := range cases {
-<span id="L282" class="ln">   282  </span>				t.Run(name, func(t *testing.T) {
-<span id="L283" class="ln">   283  </span>					t.Parallel()
-<span id="L284" class="ln">   284  </span>
-<span id="L285" class="ln">   285  </span>					e := echo.New()
-<span id="L286" class="ln">   286  </span>					UseAppErrorHandler(t, e)
-<span id="L287" class="ln">   287  </span>					ctrl := gomock.NewController(t)
-<span id="L288" class="ln">   288  </span>					tf := observability.NewNoopTracerFactory(t)
-<span id="L289" class="ln">   289  </span>
-<span id="L290" class="ln">   290  </span>					mockUC := mock_ranking.NewMockUsecase(ctrl)
-<span id="L291" class="ln">   291  </span>					mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Times(0)
+<span id="L277" class="ln">   277  </span>		t.Run(&#34;OpenAPIバリデーションが範囲外・不正なパラメータを400で弾く&#34;, func(t *testing.T) {
+<span id="L278" class="ln">   278  </span>			t.Parallel()
+<span id="L279" class="ln">   279  </span>
+<span id="L280" class="ln">   280  </span>			cases := map[string]string{
+<span id="L281" class="ln">   281  </span>				&#34;limitが上限超過(101)&#34;:      &#34;/v1/products/ranking/amount?limit=101&#34;,
+<span id="L282" class="ln">   282  </span>				&#34;orderedAfterが日時形式でない&#34;: &#34;/v1/products/ranking/amount?orderedAfter=2026-01-21&#34;,
+<span id="L283" class="ln">   283  </span>			}
+<span id="L284" class="ln">   284  </span>			for name, path := range cases {
+<span id="L285" class="ln">   285  </span>				t.Run(name, func(t *testing.T) {
+<span id="L286" class="ln">   286  </span>					t.Parallel()
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>					e := echo.New()
+<span id="L289" class="ln">   289  </span>					UseAppErrorHandler(t, e)
+<span id="L290" class="ln">   290  </span>					ctrl := gomock.NewController(t)
+<span id="L291" class="ln">   291  </span>					tf := observability.NewNoopTracerFactory(t)
 <span id="L292" class="ln">   292  </span>
-<span id="L293" class="ln">   293  </span>					productsrankinghandler.BindHandler(e, tf, mockUC)
-<span id="L294" class="ln">   294  </span>					useOpenAPIValidation(t, e)
+<span id="L293" class="ln">   293  </span>					mockUC := mock_ranking.NewMockUsecase(ctrl)
+<span id="L294" class="ln">   294  </span>					mockUC.EXPECT().GetAmountRanking(gomock.Any(), gomock.Any()).Times(0)
 <span id="L295" class="ln">   295  </span>
-<span id="L296" class="ln">   296  </span>					actual := StartServer(t, e).DoJSON(http.MethodGet, path, nil, nil)
-<span id="L297" class="ln">   297  </span>					AssertErrorResponse(t, actual, http.StatusBadRequest)
-<span id="L298" class="ln">   298  </span>				})
-<span id="L299" class="ln">   299  </span>			}
-<span id="L300" class="ln">   300  </span>		})
-<span id="L301" class="ln">   301  </span>	})
-<span id="L302" class="ln">   302  </span>}
-<span id="L303" class="ln">   303  </span>
+<span id="L296" class="ln">   296  </span>					productsrankinghandler.BindHandler(e, tf, mockUC)
+<span id="L297" class="ln">   297  </span>					useOpenAPIValidation(t, e)
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>					actual := StartServer(t, e).DoJSON(http.MethodGet, path, nil, nil)
+<span id="L300" class="ln">   300  </span>					AssertErrorResponse(t, actual, http.StatusBadRequest)
+<span id="L301" class="ln">   301  </span>				})
+<span id="L302" class="ln">   302  </span>			}
+<span id="L303" class="ln">   303  </span>		})
+<span id="L304" class="ln">   304  </span>	})
+<span id="L305" class="ln">   305  </span>}
+<span id="L306" class="ln">   306  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/integration/v1_products_ranking_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

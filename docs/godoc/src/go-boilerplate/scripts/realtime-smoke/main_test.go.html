@@ -1,0 +1,360 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime-smoke - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/scripts">scripts</a>/<a href="../../../../src/go-boilerplate/scripts/realtime-smoke">realtime-smoke</a>/<span class="text-muted">main_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/scripts/realtime-smoke">go-boilerplate/scripts/realtime-smoke</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package main
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;bytes&#34;
+<span id="L5" class="ln">     5  </span>	&#34;context&#34;
+<span id="L6" class="ln">     6  </span>	&#34;crypto/rand&#34;
+<span id="L7" class="ln">     7  </span>	&#34;net&#34;
+<span id="L8" class="ln">     8  </span>	&#34;testing&#34;
+<span id="L9" class="ln">     9  </span>	&#34;time&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;github.com/aws/aws-sdk-go-v2/aws&#34;
+<span id="L12" class="ln">    12  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L13" class="ln">    13  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L14" class="ln">    14  </span>
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L16" class="ln">    16  </span>)
+<span id="L17" class="ln">    17  </span>
+<span id="L18" class="ln">    18  </span>var errDial = xerrors.New(&#34;dial refused&#34;)
+<span id="L19" class="ln">    19  </span>
+<span id="L20" class="ln">    20  </span>func refuse(context.Context, string, string) (net.Conn, error) { return nil, errDial }
+<span id="L21" class="ln">    21  </span>
+<span id="L22" class="ln">    22  </span>func realDial(ctx context.Context, network, addr string) (net.Conn, error) {
+<span id="L23" class="ln">    23  </span>	return (&amp;net.Dialer{}).DialContext(ctx, network, addr)
+<span id="L24" class="ln">    24  </span>}
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span>func Test_parseOptions(t *testing.T) {
+<span id="L27" class="ln">    27  </span>	t.Parallel()
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span>	t.Run(&#34;既定値&#34;, func(t *testing.T) {
+<span id="L30" class="ln">    30  </span>		t.Parallel()
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span>		opts, err := parseOptions(nil)
+<span id="L33" class="ln">    33  </span>		require.NoError(t, err)
+<span id="L34" class="ln">    34  </span>		assert.Equal(t, defaultDynamoDBEndpoint, opts.dynamoDBEndpoint)
+<span id="L35" class="ln">    35  </span>		assert.Equal(t, defaultGoAWSEndpoint, opts.goAWSEndpoint)
+<span id="L36" class="ln">    36  </span>		assert.Equal(t, defaultSubscribers, opts.subscribers)
+<span id="L37" class="ln">    37  </span>		assert.Equal(t, formatMarkdown, opts.format)
+<span id="L38" class="ln">    38  </span>		assert.False(t, opts.keep)
+<span id="L39" class="ln">    39  </span>		assert.False(t, opts.strict)
+<span id="L40" class="ln">    40  </span>	})
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span>	t.Run(&#34;subscribers は 1 以上&#34;, func(t *testing.T) {
+<span id="L43" class="ln">    43  </span>		t.Parallel()
+<span id="L44" class="ln">    44  </span>
+<span id="L45" class="ln">    45  </span>		_, err := parseOptions([]string{&#34;-subscribers&#34;, &#34;0&#34;})
+<span id="L46" class="ln">    46  </span>		require.ErrorIs(t, err, errSubscribers)
+<span id="L47" class="ln">    47  </span>
+<span id="L48" class="ln">    48  </span>		opts, err := parseOptions([]string{&#34;-subscribers&#34;, &#34;1&#34;})
+<span id="L49" class="ln">    49  </span>		require.NoError(t, err)
+<span id="L50" class="ln">    50  </span>		assert.Equal(t, 1, opts.subscribers)
+<span id="L51" class="ln">    51  </span>	})
+<span id="L52" class="ln">    52  </span>
+<span id="L53" class="ln">    53  </span>	t.Run(&#34;未知の format は拒否&#34;, func(t *testing.T) {
+<span id="L54" class="ln">    54  </span>		t.Parallel()
+<span id="L55" class="ln">    55  </span>
+<span id="L56" class="ln">    56  </span>		_, err := parseOptions([]string{&#34;-format&#34;, &#34;yaml&#34;})
+<span id="L57" class="ln">    57  </span>		require.ErrorIs(t, err, errFormat)
+<span id="L58" class="ln">    58  </span>	})
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>	t.Run(&#34;不明な flag は拒否&#34;, func(t *testing.T) {
+<span id="L61" class="ln">    61  </span>		t.Parallel()
+<span id="L62" class="ln">    62  </span>
+<span id="L63" class="ln">    63  </span>		_, err := parseOptions([]string{&#34;-bogus&#34;})
+<span id="L64" class="ln">    64  </span>		require.Error(t, err)
+<span id="L65" class="ln">    65  </span>	})
+<span id="L66" class="ln">    66  </span>}
+<span id="L67" class="ln">    67  </span>
+<span id="L68" class="ln">    68  </span>func Test_hostPort(t *testing.T) {
+<span id="L69" class="ln">    69  </span>	t.Parallel()
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span>	tests := map[string]struct {
+<span id="L72" class="ln">    72  </span>		endpoint string
+<span id="L73" class="ln">    73  </span>		want     string
+<span id="L74" class="ln">    74  </span>	}{
+<span id="L75" class="ln">    75  </span>		&#34;port 明示&#34;:     {endpoint: &#34;http://localhost:8000&#34;, want: &#34;localhost:8000&#34;},
+<span id="L76" class="ln">    76  </span>		&#34;http の既定&#34;:    {endpoint: &#34;http://goaws&#34;, want: &#34;goaws:80&#34;},
+<span id="L77" class="ln">    77  </span>		&#34;https の既定&#34;:   {endpoint: &#34;https://dynamodb.us-east-1.amazonaws.com&#34;, want: &#34;dynamodb.us-east-1.amazonaws.com:443&#34;},
+<span id="L78" class="ln">    78  </span>		&#34;IPv6 はブラケット&#34;: {endpoint: &#34;http://[::1]:4100&#34;, want: &#34;[::1]:4100&#34;},
+<span id="L79" class="ln">    79  </span>	}
+<span id="L80" class="ln">    80  </span>
+<span id="L81" class="ln">    81  </span>	for name, tt := range tests {
+<span id="L82" class="ln">    82  </span>		t.Run(name, func(t *testing.T) {
+<span id="L83" class="ln">    83  </span>			t.Parallel()
+<span id="L84" class="ln">    84  </span>
+<span id="L85" class="ln">    85  </span>			got, err := hostPort(tt.endpoint)
+<span id="L86" class="ln">    86  </span>			require.NoError(t, err)
+<span id="L87" class="ln">    87  </span>			assert.Equal(t, tt.want, got)
+<span id="L88" class="ln">    88  </span>		})
+<span id="L89" class="ln">    89  </span>	}
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>	t.Run(&#34;scheme 省略は :80 に化けず入力ミスとして止める&#34;, func(t *testing.T) {
+<span id="L92" class="ln">    92  </span>		t.Parallel()
+<span id="L93" class="ln">    93  </span>
+<span id="L94" class="ln">    94  </span>		_, err := hostPort(&#34;localhost:8000&#34;)
+<span id="L95" class="ln">    95  </span>		require.ErrorIs(t, err, errEndpoint)
+<span id="L96" class="ln">    96  </span>	})
+<span id="L97" class="ln">    97  </span>
+<span id="L98" class="ln">    98  </span>	t.Run(&#34;http / https 以外の scheme は拒否&#34;, func(t *testing.T) {
+<span id="L99" class="ln">    99  </span>		t.Parallel()
+<span id="L100" class="ln">   100  </span>
+<span id="L101" class="ln">   101  </span>		_, err := hostPort(&#34;ftp://localhost:8000&#34;)
+<span id="L102" class="ln">   102  </span>		require.ErrorIs(t, err, errEndpoint)
+<span id="L103" class="ln">   103  </span>	})
+<span id="L104" class="ln">   104  </span>}
+<span id="L105" class="ln">   105  </span>
+<span id="L106" class="ln">   106  </span>func Test_waitTCP(t *testing.T) {
+<span id="L107" class="ln">   107  </span>	t.Parallel()
+<span id="L108" class="ln">   108  </span>
+<span id="L109" class="ln">   109  </span>	t.Run(&#34;接続できるまで再試行する&#34;, func(t *testing.T) {
+<span id="L110" class="ln">   110  </span>		t.Parallel()
+<span id="L111" class="ln">   111  </span>
+<span id="L112" class="ln">   112  </span>		ln, err := (&amp;net.ListenConfig{}).Listen(t.Context(), &#34;tcp&#34;, &#34;127.0.0.1:0&#34;)
+<span id="L113" class="ln">   113  </span>		require.NoError(t, err)
+<span id="L114" class="ln">   114  </span>		t.Cleanup(func() { _ = ln.Close() })
+<span id="L115" class="ln">   115  </span>
+<span id="L116" class="ln">   116  </span>		attempts := 0
+<span id="L117" class="ln">   117  </span>		dial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+<span id="L118" class="ln">   118  </span>			attempts++
+<span id="L119" class="ln">   119  </span>			if attempts == 1 {
+<span id="L120" class="ln">   120  </span>				return nil, errDial
+<span id="L121" class="ln">   121  </span>			}
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span>			return realDial(ctx, network, addr)
+<span id="L124" class="ln">   124  </span>		}
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+<span id="L127" class="ln">   127  </span>		defer cancel()
+<span id="L128" class="ln">   128  </span>
+<span id="L129" class="ln">   129  </span>		require.NoError(t, waitTCP(ctx, dial, ln.Addr().String()))
+<span id="L130" class="ln">   130  </span>		assert.Equal(t, 2, attempts)
+<span id="L131" class="ln">   131  </span>	})
+<span id="L132" class="ln">   132  </span>
+<span id="L133" class="ln">   133  </span>	t.Run(&#34;期限までに繋がらなければ最後の dial エラーを返す&#34;, func(t *testing.T) {
+<span id="L134" class="ln">   134  </span>		t.Parallel()
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span>		ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+<span id="L137" class="ln">   137  </span>		defer cancel()
+<span id="L138" class="ln">   138  </span>
+<span id="L139" class="ln">   139  </span>		err := waitTCP(ctx, refuse, &#34;127.0.0.1:1&#34;)
+<span id="L140" class="ln">   140  </span>		require.ErrorIs(t, err, errDial)
+<span id="L141" class="ln">   141  </span>	})
+<span id="L142" class="ln">   142  </span>}
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>func Test_waitReady(t *testing.T) {
+<span id="L145" class="ln">   145  </span>	t.Parallel()
+<span id="L146" class="ln">   146  </span>
+<span id="L147" class="ln">   147  </span>	t.Run(&#34;繋がらない endpoint は errNotReady と dial エラーの両方を chain に持つ&#34;, func(t *testing.T) {
+<span id="L148" class="ln">   148  </span>		t.Parallel()
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span>		err := waitReady(t.Context(), refuse, 10*time.Millisecond, &#34;http://localhost:8000&#34;)
+<span id="L151" class="ln">   151  </span>		require.ErrorIs(t, err, errNotReady)
+<span id="L152" class="ln">   152  </span>		require.ErrorIs(t, err, errDial)
+<span id="L153" class="ln">   153  </span>	})
+<span id="L154" class="ln">   154  </span>
+<span id="L155" class="ln">   155  </span>	t.Run(&#34;不正な endpoint は dial せずに止める&#34;, func(t *testing.T) {
+<span id="L156" class="ln">   156  </span>		t.Parallel()
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>		dialed := false
+<span id="L159" class="ln">   159  </span>		dial := func(context.Context, string, string) (net.Conn, error) {
+<span id="L160" class="ln">   160  </span>			dialed = true
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>			return nil, errDial
+<span id="L163" class="ln">   163  </span>		}
+<span id="L164" class="ln">   164  </span>
+<span id="L165" class="ln">   165  </span>		err := waitReady(t.Context(), dial, 10*time.Millisecond, &#34;localhost:8000&#34;)
+<span id="L166" class="ln">   166  </span>		require.ErrorIs(t, err, errEndpoint)
+<span id="L167" class="ln">   167  </span>		assert.False(t, dialed)
+<span id="L168" class="ln">   168  </span>	})
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>	t.Run(&#34;全 endpoint に繋がれば nil&#34;, func(t *testing.T) {
+<span id="L171" class="ln">   171  </span>		t.Parallel()
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>		f := newAWSFake(t)
+<span id="L174" class="ln">   174  </span>		require.NoError(t, waitReady(t.Context(), realDial, time.Second, f.server.URL, f.server.URL))
+<span id="L175" class="ln">   175  </span>	})
+<span id="L176" class="ln">   176  </span>}
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>func Test_newClients(t *testing.T) {
+<span id="L179" class="ln">   179  </span>	t.Parallel()
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>	c, err := newClients(t.Context(), options{
+<span id="L182" class="ln">   182  </span>		dynamoDBEndpoint: &#34;http://localhost:8000&#34;,
+<span id="L183" class="ln">   183  </span>		goAWSEndpoint:    &#34;http://localhost:4100&#34;,
+<span id="L184" class="ln">   184  </span>		region:           &#34;ap-northeast-1&#34;,
+<span id="L185" class="ln">   185  </span>	})
+<span id="L186" class="ln">   186  </span>	require.NoError(t, err)
+<span id="L187" class="ln">   187  </span>
+<span id="L188" class="ln">   188  </span>	assert.Equal(t, &#34;http://localhost:8000&#34;, aws.ToString(c.dynamoDB.Options().BaseEndpoint))
+<span id="L189" class="ln">   189  </span>	assert.Equal(t, &#34;http://localhost:4100&#34;, aws.ToString(c.sns.Options().BaseEndpoint))
+<span id="L190" class="ln">   190  </span>	assert.Equal(t, &#34;http://localhost:4100&#34;, aws.ToString(c.sqs.Options().BaseEndpoint))
+<span id="L191" class="ln">   191  </span>	assert.Equal(t, &#34;ap-northeast-1&#34;, c.sqs.Options().Region)
+<span id="L192" class="ln">   192  </span>}
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span>func Test_write(t *testing.T) {
+<span id="L195" class="ln">   195  </span>	t.Parallel()
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>	results := []Result{{ID: &#34;D1&#34;, Subject: &#34;s&#34;, Check: &#34;c&#34;, Verdict: VerdictCompatible, Detail: &#34;d&#34;}}
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span>	var md, text bytes.Buffer
+<span id="L200" class="ln">   200  </span>	require.NoError(t, write(&amp;md, formatMarkdown, results))
+<span id="L201" class="ln">   201  </span>	require.NoError(t, write(&amp;text, formatText, results))
+<span id="L202" class="ln">   202  </span>
+<span id="L203" class="ln">   203  </span>	assert.Contains(t, md.String(), &#34;| D1 | s | c | **互換** | d |&#34;)
+<span id="L204" class="ln">   204  </span>	assert.NotContains(t, text.String(), &#34;| D1 |&#34;)
+<span id="L205" class="ln">   205  </span>	assert.Contains(t, text.String(), &#34;D1 &#34;)
+<span id="L206" class="ln">   206  </span>}
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>func Test_run(t *testing.T) {
+<span id="L209" class="ln">   209  </span>	t.Parallel()
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span>	t.Run(&#34;不正な flag は表を出さず 1&#34;, func(t *testing.T) {
+<span id="L212" class="ln">   212  </span>		t.Parallel()
+<span id="L213" class="ln">   213  </span>
+<span id="L214" class="ln">   214  </span>		var out bytes.Buffer
+<span id="L215" class="ln">   215  </span>		code, err := run(t.Context(), []string{&#34;-subscribers&#34;, &#34;0&#34;}, &amp;out, rand.Reader, refuse)
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span>		require.ErrorIs(t, err, errSubscribers)
+<span id="L218" class="ln">   218  </span>		assert.Equal(t, 1, code)
+<span id="L219" class="ln">   219  </span>		assert.Empty(t, out.String())
+<span id="L220" class="ln">   220  </span>	})
+<span id="L221" class="ln">   221  </span>
+<span id="L222" class="ln">   222  </span>	t.Run(&#34;-h は 0 で終わる&#34;, func(t *testing.T) {
+<span id="L223" class="ln">   223  </span>		t.Parallel()
+<span id="L224" class="ln">   224  </span>
+<span id="L225" class="ln">   225  </span>		var out bytes.Buffer
+<span id="L226" class="ln">   226  </span>		code, err := run(t.Context(), []string{&#34;-h&#34;}, &amp;out, rand.Reader, refuse)
+<span id="L227" class="ln">   227  </span>
+<span id="L228" class="ln">   228  </span>		require.NoError(t, err)
+<span id="L229" class="ln">   229  </span>		assert.Equal(t, 0, code)
+<span id="L230" class="ln">   230  </span>	})
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>	t.Run(&#34;endpoint が ready にならなければ検査を 1 件も実行せず 1&#34;, func(t *testing.T) {
+<span id="L233" class="ln">   233  </span>		t.Parallel()
+<span id="L234" class="ln">   234  </span>
+<span id="L235" class="ln">   235  </span>		var out bytes.Buffer
+<span id="L236" class="ln">   236  </span>		code, err := run(t.Context(), []string{&#34;-ready-timeout&#34;, &#34;10ms&#34;}, &amp;out, rand.Reader, refuse)
+<span id="L237" class="ln">   237  </span>
+<span id="L238" class="ln">   238  </span>		require.ErrorIs(t, err, errNotReady)
+<span id="L239" class="ln">   239  </span>		require.ErrorIs(t, err, errDial)
+<span id="L240" class="ln">   240  </span>		assert.Equal(t, 1, code)
+<span id="L241" class="ln">   241  </span>		assert.Empty(t, out.String(), &#34;検査を 1 件も実行していないので表を出さない&#34;)
+<span id="L242" class="ln">   242  </span>	})
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>	t.Run(&#34;乱数源の失敗は 1&#34;, func(t *testing.T) {
+<span id="L245" class="ln">   245  </span>		t.Parallel()
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>		f := newAWSFake(t)
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>		var out bytes.Buffer
+<span id="L250" class="ln">   250  </span>		code, err := run(t.Context(), []string{&#34;-dynamodb-endpoint&#34;, f.server.URL, &#34;-goaws-endpoint&#34;, f.server.URL},
+<span id="L251" class="ln">   251  </span>			&amp;out, failingReader{}, realDial)
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span>		require.ErrorIs(t, err, errRandom)
+<span id="L254" class="ln">   254  </span>		assert.Equal(t, 1, code)
+<span id="L255" class="ln">   255  </span>	})
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>	t.Run(&#34;全検査を通すと互換だけの表を出して 0&#34;, func(t *testing.T) {
+<span id="L258" class="ln">   258  </span>		t.Parallel()
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>		f := newAWSFake(t)
+<span id="L261" class="ln">   261  </span>		installDynamoDB(f)
+<span id="L262" class="ln">   262  </span>		installGoAWS(f)
+<span id="L263" class="ln">   263  </span>
+<span id="L264" class="ln">   264  </span>		var out bytes.Buffer
+<span id="L265" class="ln">   265  </span>		code, err := run(t.Context(), []string{
+<span id="L266" class="ln">   266  </span>			&#34;-dynamodb-endpoint&#34;, f.server.URL, &#34;-goaws-endpoint&#34;, f.server.URL, &#34;-subscribers&#34;, &#34;2&#34;, &#34;-strict&#34;,
+<span id="L267" class="ln">   267  </span>		}, &amp;out, rand.Reader, realDial)
+<span id="L268" class="ln">   268  </span>
+<span id="L269" class="ln">   269  </span>		require.NoError(t, err)
+<span id="L270" class="ln">   270  </span>		assert.Equal(t, 0, code)
+<span id="L271" class="ln">   271  </span>		assert.Contains(t, out.String(), &#34;| D1 | DynamoDB Local |&#34;)
+<span id="L272" class="ln">   272  </span>		assert.Contains(t, out.String(), &#34;| G9 | GoAWS SNS/SQS |&#34;)
+<span id="L273" class="ln">   273  </span>		assert.Contains(t, out.String(), &#34;非互換 0 / 未対応 0 / 検証不能 0&#34;)
+<span id="L274" class="ln">   274  </span>	})
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>	t.Run(&#34;Policy を拒否する emulator は -strict で 1&#34;, func(t *testing.T) {
+<span id="L277" class="ln">   277  </span>		t.Parallel()
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>		f := newAWSFake(t)
+<span id="L280" class="ln">   280  </span>		installDynamoDB(f)
+<span id="L281" class="ln">   281  </span>		installGoAWS(f).rejectPolicy = true
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span>		var out bytes.Buffer
+<span id="L284" class="ln">   284  </span>		code, err := run(t.Context(), []string{
+<span id="L285" class="ln">   285  </span>			&#34;-dynamodb-endpoint&#34;, f.server.URL, &#34;-goaws-endpoint&#34;, f.server.URL, &#34;-strict&#34;,
+<span id="L286" class="ln">   286  </span>		}, &amp;out, rand.Reader, realDial)
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>		require.NoError(t, err)
+<span id="L289" class="ln">   289  </span>		assert.Equal(t, 1, code)
+<span id="L290" class="ln">   290  </span>		assert.Contains(t, out.String(), &#34;- G4 &#34;)
+<span id="L291" class="ln">   291  </span>		assert.Contains(t, out.String(), &#34;- G4b &#34;)
+<span id="L292" class="ln">   292  </span>	})
+<span id="L293" class="ln">   293  </span>}
+<span id="L294" class="ln">   294  </span>
+</pre><p><a href="../../../../src/go-boilerplate/scripts/realtime-smoke/main_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

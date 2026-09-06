@@ -85,174 +85,185 @@
 <span id="L28" class="ln">    28  </span>	codePayloadTooLarge = &#34;PAYLOAD_TOO_LARGE&#34;
 <span id="L29" class="ln">    29  </span>	<span class="comment">// codeTooManyRequests は、リクエストが多すぎる場合に使用されるエラーコードです。</span>
 <span id="L30" class="ln">    30  </span>	codeTooManyRequests = &#34;TOO_MANY_REQUESTS&#34;
-<span id="L31" class="ln">    31  </span>	<span class="comment">// codeClientClosedRequest は、クライアントがリクエストをキャンセル/切断した場合に使用されるエラーコードです。</span>
-<span id="L32" class="ln">    32  </span>	codeClientClosedRequest = &#34;CLIENT_CLOSED_REQUEST&#34;
-<span id="L33" class="ln">    33  </span>	<span class="comment">// codeInternalError は、サーバー内部で予期しないエラーが発生した場合に使用されるエラーコードです。</span>
-<span id="L34" class="ln">    34  </span>	codeInternalError = &#34;INTERNAL_ERROR&#34;
-<span id="L35" class="ln">    35  </span>	<span class="comment">// codeNotImplemented は、機能が未実装の場合に使用されるエラーコードです。</span>
-<span id="L36" class="ln">    36  </span>	codeNotImplemented = &#34;NOT_IMPLEMENTED&#34;
-<span id="L37" class="ln">    37  </span>	<span class="comment">// codeServiceUnavailable は、サービスが一時的に利用不可な場合に使用されるエラーコードです。</span>
-<span id="L38" class="ln">    38  </span>	codeServiceUnavailable = &#34;SERVICE_UNAVAILABLE&#34;
-<span id="L39" class="ln">    39  </span>)
-<span id="L40" class="ln">    40  </span>
-<span id="L41" class="ln">    41  </span><span class="comment">// statusClientClosedRequest は、クライアント切断時の非標準ステータス(499, nginx 由来)です。net/http に定数が無いため定義します。</span>
-<span id="L42" class="ln">    42  </span>const statusClientClosedRequest = 499
-<span id="L43" class="ln">    43  </span>
-<span id="L44" class="ln">    44  </span>const (
-<span id="L45" class="ln">    45  </span>	<span class="comment">// errorMessageBadRequest は、リクエストの内容に誤りがあることを示すエラーメッセージです。</span>
-<span id="L46" class="ln">    46  </span>	errorMessageBadRequest = &#34;入力内容に誤りがあります。再度ご確認ください。&#34;
-<span id="L47" class="ln">    47  </span>	<span class="comment">// errorMessageUnauthorized は、認証が必要な操作に対して認証されていない場合に使用されるエラーメッセージです。</span>
-<span id="L48" class="ln">    48  </span>	errorMessageUnauthorized = &#34;ログインが必要です。ログインして再度お試しください。&#34;
-<span id="L49" class="ln">    49  </span>	<span class="comment">// errorMessageAccessDenied は、アクセス権限がない操作を試みた場合に使用されるエラーメッセージです。</span>
-<span id="L50" class="ln">    50  </span>	errorMessageAccessDenied = &#34;この操作を行う権限がありません。&#34;
-<span id="L51" class="ln">    51  </span>	<span class="comment">// errorMessageNotFound は、指定されたリソースが存在しない場合に使用されるエラーメッセージです。</span>
-<span id="L52" class="ln">    52  </span>	errorMessageNotFound = &#34;お探しの情報が見つかりませんでした。&#34;
-<span id="L53" class="ln">    53  </span>	<span class="comment">// errorMessageMethodNotAllowed は、パスに対して許可されていないHTTPメソッドが使われた場合のエラーメッセージです。</span>
-<span id="L54" class="ln">    54  </span>	errorMessageMethodNotAllowed = &#34;許可されていないリクエスト方法です。&#34;
-<span id="L55" class="ln">    55  </span>	<span class="comment">// errorMessageResourceConflict は、既に存在するリソースとの競合が発生した場合に使用されるエラーメッセージです。</span>
-<span id="L56" class="ln">    56  </span>	errorMessageResourceConflict = &#34;既に同じ情報が登録されています。&#34;
-<span id="L57" class="ln">    57  </span>	<span class="comment">// errorMessageValidationFailed は、入力値の検証に失敗した場合のエラーメッセージです。</span>
-<span id="L58" class="ln">    58  </span>	errorMessageValidationFailed = &#34;入力内容の検証に失敗しました。修正して再度お試しください。&#34;
-<span id="L59" class="ln">    59  </span>	<span class="comment">// errorMessageUnsupportedMediaType は、サポートされていないファイル形式・Content-Type の場合のエラーメッセージです。</span>
-<span id="L60" class="ln">    60  </span>	errorMessageUnsupportedMediaType = &#34;サポートされていないファイル形式です。形式をご確認のうえ再度お試しください。&#34;
-<span id="L61" class="ln">    61  </span>	<span class="comment">// errorMessagePayloadTooLarge は、リクエストペイロードが許容サイズを超える場合のエラーメッセージです。</span>
-<span id="L62" class="ln">    62  </span>	errorMessagePayloadTooLarge = &#34;ファイルサイズが大きすぎます。上限を超えないファイルで再度お試しください。&#34;
-<span id="L63" class="ln">    63  </span>	<span class="comment">// errorMessageTooManyRequests は、リクエストが多すぎる場合に使用されるエラーメッセージです。</span>
-<span id="L64" class="ln">    64  </span>	errorMessageTooManyRequests = &#34;リクエストが多すぎます。しばらくしてから再度お試しください。&#34;
-<span id="L65" class="ln">    65  </span>	<span class="comment">// errorMessageClientClosedRequest は、クライアントがリクエストをキャンセル/切断した場合に使用されるエラーメッセージです。</span>
-<span id="L66" class="ln">    66  </span>	errorMessageClientClosedRequest = &#34;リクエストがキャンセルされました。&#34;
-<span id="L67" class="ln">    67  </span>	<span class="comment">// errorMessageInternalError は、サーバー内部で予期しないエラーが発生した場合に使用されるエラーメッセージです。</span>
-<span id="L68" class="ln">    68  </span>	errorMessageInternalError = &#34;サーバーで予期しないエラーが発生しました。時間をおいて再度お試しください。&#34;
-<span id="L69" class="ln">    69  </span>	<span class="comment">// errorMessageNotImplemented は、機能が未実装の場合に使用されるエラーメッセージです。</span>
-<span id="L70" class="ln">    70  </span>	errorMessageNotImplemented = &#34;この機能は提供されていません。&#34;
-<span id="L71" class="ln">    71  </span>	<span class="comment">// errorMessageServiceUnavailable は、サービスが一時的に利用不可な場合に使用されるエラーメッセージです。</span>
-<span id="L72" class="ln">    72  </span>	errorMessageServiceUnavailable = &#34;現在この機能はご利用いただけません。しばらくしてから再度お試しください。&#34;
-<span id="L73" class="ln">    73  </span>)
-<span id="L74" class="ln">    74  </span>
-<span id="L75" class="ln">    75  </span>var errorMeta = map[int]httpErrorMeta{
-<span id="L76" class="ln">    76  </span>	http.StatusBadRequest: {
-<span id="L77" class="ln">    77  </span>		Status:  http.StatusBadRequest,
-<span id="L78" class="ln">    78  </span>		Code:    codeBadRequest,
-<span id="L79" class="ln">    79  </span>		Message: errorMessageBadRequest,
-<span id="L80" class="ln">    80  </span>	},
-<span id="L81" class="ln">    81  </span>	http.StatusUnauthorized: {
-<span id="L82" class="ln">    82  </span>		Status:  http.StatusUnauthorized,
-<span id="L83" class="ln">    83  </span>		Code:    codeUnauthorized,
-<span id="L84" class="ln">    84  </span>		Message: errorMessageUnauthorized,
-<span id="L85" class="ln">    85  </span>	},
-<span id="L86" class="ln">    86  </span>	http.StatusForbidden: {
-<span id="L87" class="ln">    87  </span>		Status:  http.StatusForbidden,
-<span id="L88" class="ln">    88  </span>		Code:    codeAccessDenied,
-<span id="L89" class="ln">    89  </span>		Message: errorMessageAccessDenied,
-<span id="L90" class="ln">    90  </span>	},
-<span id="L91" class="ln">    91  </span>	http.StatusNotFound: {
-<span id="L92" class="ln">    92  </span>		Status:  http.StatusNotFound,
-<span id="L93" class="ln">    93  </span>		Code:    codeNotFound,
-<span id="L94" class="ln">    94  </span>		Message: errorMessageNotFound,
-<span id="L95" class="ln">    95  </span>	},
-<span id="L96" class="ln">    96  </span>	<span class="comment">// 405 は apperror sentinel を持たず、ルーティングで解決される(echo.ErrMethodNotAllowed)。</span>
-<span id="L97" class="ln">    97  </span>	http.StatusMethodNotAllowed: {
-<span id="L98" class="ln">    98  </span>		Status:  http.StatusMethodNotAllowed,
-<span id="L99" class="ln">    99  </span>		Code:    codeMethodNotAllowed,
-<span id="L100" class="ln">   100  </span>		Message: errorMessageMethodNotAllowed,
-<span id="L101" class="ln">   101  </span>	},
-<span id="L102" class="ln">   102  </span>	http.StatusConflict: {
-<span id="L103" class="ln">   103  </span>		Status:  http.StatusConflict,
-<span id="L104" class="ln">   104  </span>		Code:    codeResourceConflict,
-<span id="L105" class="ln">   105  </span>		Message: errorMessageResourceConflict,
-<span id="L106" class="ln">   106  </span>	},
-<span id="L107" class="ln">   107  </span>	http.StatusUnprocessableEntity: {
-<span id="L108" class="ln">   108  </span>		Status:  http.StatusUnprocessableEntity,
-<span id="L109" class="ln">   109  </span>		Code:    codeValidationFailed,
-<span id="L110" class="ln">   110  </span>		Message: errorMessageValidationFailed,
-<span id="L111" class="ln">   111  </span>	},
-<span id="L112" class="ln">   112  </span>	http.StatusUnsupportedMediaType: {
-<span id="L113" class="ln">   113  </span>		Status:  http.StatusUnsupportedMediaType,
-<span id="L114" class="ln">   114  </span>		Code:    codeUnsupportedMediaType,
-<span id="L115" class="ln">   115  </span>		Message: errorMessageUnsupportedMediaType,
-<span id="L116" class="ln">   116  </span>	},
-<span id="L117" class="ln">   117  </span>	http.StatusRequestEntityTooLarge: {
-<span id="L118" class="ln">   118  </span>		Status:  http.StatusRequestEntityTooLarge,
-<span id="L119" class="ln">   119  </span>		Code:    codePayloadTooLarge,
-<span id="L120" class="ln">   120  </span>		Message: errorMessagePayloadTooLarge,
-<span id="L121" class="ln">   121  </span>	},
-<span id="L122" class="ln">   122  </span>	http.StatusTooManyRequests: {
-<span id="L123" class="ln">   123  </span>		Status:  http.StatusTooManyRequests,
-<span id="L124" class="ln">   124  </span>		Code:    codeTooManyRequests,
-<span id="L125" class="ln">   125  </span>		Message: errorMessageTooManyRequests,
-<span id="L126" class="ln">   126  </span>	},
-<span id="L127" class="ln">   127  </span>	statusClientClosedRequest: {
-<span id="L128" class="ln">   128  </span>		Status:  statusClientClosedRequest,
-<span id="L129" class="ln">   129  </span>		Code:    codeClientClosedRequest,
-<span id="L130" class="ln">   130  </span>		Message: errorMessageClientClosedRequest,
-<span id="L131" class="ln">   131  </span>	},
-<span id="L132" class="ln">   132  </span>	http.StatusInternalServerError: {
-<span id="L133" class="ln">   133  </span>		Status:  http.StatusInternalServerError,
-<span id="L134" class="ln">   134  </span>		Code:    codeInternalError,
-<span id="L135" class="ln">   135  </span>		Message: errorMessageInternalError,
-<span id="L136" class="ln">   136  </span>	},
-<span id="L137" class="ln">   137  </span>	http.StatusNotImplemented: {
-<span id="L138" class="ln">   138  </span>		Status:  http.StatusNotImplemented,
-<span id="L139" class="ln">   139  </span>		Code:    codeNotImplemented,
-<span id="L140" class="ln">   140  </span>		Message: errorMessageNotImplemented,
-<span id="L141" class="ln">   141  </span>	},
-<span id="L142" class="ln">   142  </span>	http.StatusServiceUnavailable: {
-<span id="L143" class="ln">   143  </span>		Status:  http.StatusServiceUnavailable,
-<span id="L144" class="ln">   144  </span>		Code:    codeServiceUnavailable,
-<span id="L145" class="ln">   145  </span>		Message: errorMessageServiceUnavailable,
-<span id="L146" class="ln">   146  </span>	},
-<span id="L147" class="ln">   147  </span>}
-<span id="L148" class="ln">   148  </span>
-<span id="L149" class="ln">   149  </span>type httpErrorMeta struct {
-<span id="L150" class="ln">   150  </span>	Status  int
-<span id="L151" class="ln">   151  </span>	Code    string
-<span id="L152" class="ln">   152  </span>	Message string
-<span id="L153" class="ln">   153  </span>}
-<span id="L154" class="ln">   154  </span>
-<span id="L155" class="ln">   155  </span><span class="comment">// lookupErrorMetaByHTTPStatus は、HTTPステータスコードに対応するエラーメタデータを取得します。</span>
-<span id="L156" class="ln">   156  </span><span class="comment">// 存在しない場合は、サーバーエラーのメタデータを返します。</span>
-<span id="L157" class="ln">   157  </span>func lookupErrorMetaByHTTPStatus(status int) httpErrorMeta {
-<span id="L158" class="ln">   158  </span>	if meta, ok := errorMeta[status]; ok {
-<span id="L159" class="ln">   159  </span>		return meta
-<span id="L160" class="ln">   160  </span>	}
-<span id="L161" class="ln">   161  </span>	return errorMeta[http.StatusInternalServerError]
+<span id="L31" class="ln">    31  </span>	<span class="comment">// codeGone は、対象が既に失われ取り直しが必要な場合に使用されるエラーコードです。</span>
+<span id="L32" class="ln">    32  </span>	codeGone = &#34;GONE&#34;
+<span id="L33" class="ln">    33  </span>	<span class="comment">// codeClientClosedRequest は、クライアントがリクエストをキャンセル/切断した場合に使用されるエラーコードです。</span>
+<span id="L34" class="ln">    34  </span>	codeClientClosedRequest = &#34;CLIENT_CLOSED_REQUEST&#34;
+<span id="L35" class="ln">    35  </span>	<span class="comment">// codeInternalError は、サーバー内部で予期しないエラーが発生した場合に使用されるエラーコードです。</span>
+<span id="L36" class="ln">    36  </span>	codeInternalError = &#34;INTERNAL_ERROR&#34;
+<span id="L37" class="ln">    37  </span>	<span class="comment">// codeNotImplemented は、機能が未実装の場合に使用されるエラーコードです。</span>
+<span id="L38" class="ln">    38  </span>	codeNotImplemented = &#34;NOT_IMPLEMENTED&#34;
+<span id="L39" class="ln">    39  </span>	<span class="comment">// codeServiceUnavailable は、サービスが一時的に利用不可な場合に使用されるエラーコードです。</span>
+<span id="L40" class="ln">    40  </span>	codeServiceUnavailable = &#34;SERVICE_UNAVAILABLE&#34;
+<span id="L41" class="ln">    41  </span>)
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span><span class="comment">// statusClientClosedRequest は、クライアント切断時の非標準ステータス(499, nginx 由来)です。net/http に定数が無いため定義します。</span>
+<span id="L44" class="ln">    44  </span>const statusClientClosedRequest = 499
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span>const (
+<span id="L47" class="ln">    47  </span>	<span class="comment">// errorMessageBadRequest は、リクエストの内容に誤りがあることを示すエラーメッセージです。</span>
+<span id="L48" class="ln">    48  </span>	errorMessageBadRequest = &#34;入力内容に誤りがあります。再度ご確認ください。&#34;
+<span id="L49" class="ln">    49  </span>	<span class="comment">// errorMessageUnauthorized は、認証が必要な操作に対して認証されていない場合に使用されるエラーメッセージです。</span>
+<span id="L50" class="ln">    50  </span>	errorMessageUnauthorized = &#34;ログインが必要です。ログインして再度お試しください。&#34;
+<span id="L51" class="ln">    51  </span>	<span class="comment">// errorMessageAccessDenied は、アクセス権限がない操作を試みた場合に使用されるエラーメッセージです。</span>
+<span id="L52" class="ln">    52  </span>	errorMessageAccessDenied = &#34;この操作を行う権限がありません。&#34;
+<span id="L53" class="ln">    53  </span>	<span class="comment">// errorMessageNotFound は、指定されたリソースが存在しない場合に使用されるエラーメッセージです。</span>
+<span id="L54" class="ln">    54  </span>	errorMessageNotFound = &#34;お探しの情報が見つかりませんでした。&#34;
+<span id="L55" class="ln">    55  </span>	<span class="comment">// errorMessageMethodNotAllowed は、パスに対して許可されていないHTTPメソッドが使われた場合のエラーメッセージです。</span>
+<span id="L56" class="ln">    56  </span>	errorMessageMethodNotAllowed = &#34;許可されていないリクエスト方法です。&#34;
+<span id="L57" class="ln">    57  </span>	<span class="comment">// errorMessageResourceConflict は、既に存在するリソースとの競合が発生した場合に使用されるエラーメッセージです。</span>
+<span id="L58" class="ln">    58  </span>	errorMessageResourceConflict = &#34;既に同じ情報が登録されています。&#34;
+<span id="L59" class="ln">    59  </span>	<span class="comment">// errorMessageValidationFailed は、入力値の検証に失敗した場合のエラーメッセージです。</span>
+<span id="L60" class="ln">    60  </span>	errorMessageValidationFailed = &#34;入力内容の検証に失敗しました。修正して再度お試しください。&#34;
+<span id="L61" class="ln">    61  </span>	<span class="comment">// errorMessageUnsupportedMediaType は、サポートされていないファイル形式・Content-Type の場合のエラーメッセージです。</span>
+<span id="L62" class="ln">    62  </span>	errorMessageUnsupportedMediaType = &#34;サポートされていないファイル形式です。形式をご確認のうえ再度お試しください。&#34;
+<span id="L63" class="ln">    63  </span>	<span class="comment">// errorMessagePayloadTooLarge は、リクエストペイロードが許容サイズを超える場合のエラーメッセージです。</span>
+<span id="L64" class="ln">    64  </span>	errorMessagePayloadTooLarge = &#34;ファイルサイズが大きすぎます。上限を超えないファイルで再度お試しください。&#34;
+<span id="L65" class="ln">    65  </span>	<span class="comment">// errorMessageTooManyRequests は、リクエストが多すぎる場合に使用されるエラーメッセージです。</span>
+<span id="L66" class="ln">    66  </span>	errorMessageTooManyRequests = &#34;リクエストが多すぎます。しばらくしてから再度お試しください。&#34;
+<span id="L67" class="ln">    67  </span>	<span class="comment">// errorMessageGone は、対象が既に失われ取り直しが必要な場合のエラーメッセージです。</span>
+<span id="L68" class="ln">    68  </span>	errorMessageGone = &#34;この情報は利用できなくなりました。最新の状態を取得し直してください。&#34;
+<span id="L69" class="ln">    69  </span>	<span class="comment">// errorMessageClientClosedRequest は、クライアントがリクエストをキャンセル/切断した場合に使用されるエラーメッセージです。</span>
+<span id="L70" class="ln">    70  </span>	errorMessageClientClosedRequest = &#34;リクエストがキャンセルされました。&#34;
+<span id="L71" class="ln">    71  </span>	<span class="comment">// errorMessageInternalError は、サーバー内部で予期しないエラーが発生した場合に使用されるエラーメッセージです。</span>
+<span id="L72" class="ln">    72  </span>	errorMessageInternalError = &#34;サーバーで予期しないエラーが発生しました。時間をおいて再度お試しください。&#34;
+<span id="L73" class="ln">    73  </span>	<span class="comment">// errorMessageNotImplemented は、機能が未実装の場合に使用されるエラーメッセージです。</span>
+<span id="L74" class="ln">    74  </span>	errorMessageNotImplemented = &#34;この機能は提供されていません。&#34;
+<span id="L75" class="ln">    75  </span>	<span class="comment">// errorMessageServiceUnavailable は、サービスが一時的に利用不可な場合に使用されるエラーメッセージです。</span>
+<span id="L76" class="ln">    76  </span>	errorMessageServiceUnavailable = &#34;現在この機能はご利用いただけません。しばらくしてから再度お試しください。&#34;
+<span id="L77" class="ln">    77  </span>)
+<span id="L78" class="ln">    78  </span>
+<span id="L79" class="ln">    79  </span>var errorMeta = map[int]httpErrorMeta{
+<span id="L80" class="ln">    80  </span>	http.StatusBadRequest: {
+<span id="L81" class="ln">    81  </span>		Status:  http.StatusBadRequest,
+<span id="L82" class="ln">    82  </span>		Code:    codeBadRequest,
+<span id="L83" class="ln">    83  </span>		Message: errorMessageBadRequest,
+<span id="L84" class="ln">    84  </span>	},
+<span id="L85" class="ln">    85  </span>	http.StatusUnauthorized: {
+<span id="L86" class="ln">    86  </span>		Status:  http.StatusUnauthorized,
+<span id="L87" class="ln">    87  </span>		Code:    codeUnauthorized,
+<span id="L88" class="ln">    88  </span>		Message: errorMessageUnauthorized,
+<span id="L89" class="ln">    89  </span>	},
+<span id="L90" class="ln">    90  </span>	http.StatusForbidden: {
+<span id="L91" class="ln">    91  </span>		Status:  http.StatusForbidden,
+<span id="L92" class="ln">    92  </span>		Code:    codeAccessDenied,
+<span id="L93" class="ln">    93  </span>		Message: errorMessageAccessDenied,
+<span id="L94" class="ln">    94  </span>	},
+<span id="L95" class="ln">    95  </span>	http.StatusNotFound: {
+<span id="L96" class="ln">    96  </span>		Status:  http.StatusNotFound,
+<span id="L97" class="ln">    97  </span>		Code:    codeNotFound,
+<span id="L98" class="ln">    98  </span>		Message: errorMessageNotFound,
+<span id="L99" class="ln">    99  </span>	},
+<span id="L100" class="ln">   100  </span>	<span class="comment">// 405 は apperror sentinel を持たず、ルーティングで解決される(echo.ErrMethodNotAllowed)。</span>
+<span id="L101" class="ln">   101  </span>	http.StatusMethodNotAllowed: {
+<span id="L102" class="ln">   102  </span>		Status:  http.StatusMethodNotAllowed,
+<span id="L103" class="ln">   103  </span>		Code:    codeMethodNotAllowed,
+<span id="L104" class="ln">   104  </span>		Message: errorMessageMethodNotAllowed,
+<span id="L105" class="ln">   105  </span>	},
+<span id="L106" class="ln">   106  </span>	http.StatusConflict: {
+<span id="L107" class="ln">   107  </span>		Status:  http.StatusConflict,
+<span id="L108" class="ln">   108  </span>		Code:    codeResourceConflict,
+<span id="L109" class="ln">   109  </span>		Message: errorMessageResourceConflict,
+<span id="L110" class="ln">   110  </span>	},
+<span id="L111" class="ln">   111  </span>	http.StatusGone: {
+<span id="L112" class="ln">   112  </span>		Status:  http.StatusGone,
+<span id="L113" class="ln">   113  </span>		Code:    codeGone,
+<span id="L114" class="ln">   114  </span>		Message: errorMessageGone,
+<span id="L115" class="ln">   115  </span>	},
+<span id="L116" class="ln">   116  </span>	http.StatusUnprocessableEntity: {
+<span id="L117" class="ln">   117  </span>		Status:  http.StatusUnprocessableEntity,
+<span id="L118" class="ln">   118  </span>		Code:    codeValidationFailed,
+<span id="L119" class="ln">   119  </span>		Message: errorMessageValidationFailed,
+<span id="L120" class="ln">   120  </span>	},
+<span id="L121" class="ln">   121  </span>	http.StatusUnsupportedMediaType: {
+<span id="L122" class="ln">   122  </span>		Status:  http.StatusUnsupportedMediaType,
+<span id="L123" class="ln">   123  </span>		Code:    codeUnsupportedMediaType,
+<span id="L124" class="ln">   124  </span>		Message: errorMessageUnsupportedMediaType,
+<span id="L125" class="ln">   125  </span>	},
+<span id="L126" class="ln">   126  </span>	http.StatusRequestEntityTooLarge: {
+<span id="L127" class="ln">   127  </span>		Status:  http.StatusRequestEntityTooLarge,
+<span id="L128" class="ln">   128  </span>		Code:    codePayloadTooLarge,
+<span id="L129" class="ln">   129  </span>		Message: errorMessagePayloadTooLarge,
+<span id="L130" class="ln">   130  </span>	},
+<span id="L131" class="ln">   131  </span>	http.StatusTooManyRequests: {
+<span id="L132" class="ln">   132  </span>		Status:  http.StatusTooManyRequests,
+<span id="L133" class="ln">   133  </span>		Code:    codeTooManyRequests,
+<span id="L134" class="ln">   134  </span>		Message: errorMessageTooManyRequests,
+<span id="L135" class="ln">   135  </span>	},
+<span id="L136" class="ln">   136  </span>	statusClientClosedRequest: {
+<span id="L137" class="ln">   137  </span>		Status:  statusClientClosedRequest,
+<span id="L138" class="ln">   138  </span>		Code:    codeClientClosedRequest,
+<span id="L139" class="ln">   139  </span>		Message: errorMessageClientClosedRequest,
+<span id="L140" class="ln">   140  </span>	},
+<span id="L141" class="ln">   141  </span>	http.StatusInternalServerError: {
+<span id="L142" class="ln">   142  </span>		Status:  http.StatusInternalServerError,
+<span id="L143" class="ln">   143  </span>		Code:    codeInternalError,
+<span id="L144" class="ln">   144  </span>		Message: errorMessageInternalError,
+<span id="L145" class="ln">   145  </span>	},
+<span id="L146" class="ln">   146  </span>	http.StatusNotImplemented: {
+<span id="L147" class="ln">   147  </span>		Status:  http.StatusNotImplemented,
+<span id="L148" class="ln">   148  </span>		Code:    codeNotImplemented,
+<span id="L149" class="ln">   149  </span>		Message: errorMessageNotImplemented,
+<span id="L150" class="ln">   150  </span>	},
+<span id="L151" class="ln">   151  </span>	http.StatusServiceUnavailable: {
+<span id="L152" class="ln">   152  </span>		Status:  http.StatusServiceUnavailable,
+<span id="L153" class="ln">   153  </span>		Code:    codeServiceUnavailable,
+<span id="L154" class="ln">   154  </span>		Message: errorMessageServiceUnavailable,
+<span id="L155" class="ln">   155  </span>	},
+<span id="L156" class="ln">   156  </span>}
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>type httpErrorMeta struct {
+<span id="L159" class="ln">   159  </span>	Status  int
+<span id="L160" class="ln">   160  </span>	Code    string
+<span id="L161" class="ln">   161  </span>	Message string
 <span id="L162" class="ln">   162  </span>}
 <span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span><span class="comment">// lookupErrorMetaByAppError は、アプリケーションエラーに対応するエラーメタデータを取得します。</span>
-<span id="L165" class="ln">   165  </span><span class="comment">// 既知のエラー型に一致しない場合は 500 Internal Server Error のメタを返します。</span>
-<span id="L166" class="ln">   166  </span>func lookupErrorMetaByAppError(err error) httpErrorMeta {
-<span id="L167" class="ln">   167  </span>	switch {
-<span id="L168" class="ln">   168  </span>	case xerrors.Is(err, apperror.ErrInvalidArgument): <span class="comment">// 400</span>
-<span id="L169" class="ln">   169  </span>		return lookupErrorMetaByHTTPStatus(http.StatusBadRequest)
-<span id="L170" class="ln">   170  </span>	case xerrors.Is(err, apperror.ErrValidation): <span class="comment">// 422</span>
-<span id="L171" class="ln">   171  </span>		return lookupErrorMetaByHTTPStatus(http.StatusUnprocessableEntity)
-<span id="L172" class="ln">   172  </span>	case xerrors.Is(err, apperror.ErrUnsupportedMediaType): <span class="comment">// 415</span>
-<span id="L173" class="ln">   173  </span>		return lookupErrorMetaByHTTPStatus(http.StatusUnsupportedMediaType)
-<span id="L174" class="ln">   174  </span>	case xerrors.Is(err, apperror.ErrPayloadTooLarge): <span class="comment">// 413</span>
-<span id="L175" class="ln">   175  </span>		return lookupErrorMetaByHTTPStatus(http.StatusRequestEntityTooLarge)
-<span id="L176" class="ln">   176  </span>	case xerrors.Is(err, apperror.ErrUnauthenticated): <span class="comment">// 401</span>
-<span id="L177" class="ln">   177  </span>		return lookupErrorMetaByHTTPStatus(http.StatusUnauthorized)
-<span id="L178" class="ln">   178  </span>	case xerrors.Is(err, apperror.ErrPermissionDenied): <span class="comment">// 403</span>
-<span id="L179" class="ln">   179  </span>		return lookupErrorMetaByHTTPStatus(http.StatusForbidden)
-<span id="L180" class="ln">   180  </span>	case xerrors.Is(err, apperror.ErrNotFound): <span class="comment">// 404</span>
-<span id="L181" class="ln">   181  </span>		return lookupErrorMetaByHTTPStatus(http.StatusNotFound)
-<span id="L182" class="ln">   182  </span>	case xerrors.Is(err, apperror.ErrConflict): <span class="comment">// 409</span>
-<span id="L183" class="ln">   183  </span>		return lookupErrorMetaByHTTPStatus(http.StatusConflict)
-<span id="L184" class="ln">   184  </span>	case xerrors.Is(err, apperror.ErrCanceled): <span class="comment">// 499</span>
-<span id="L185" class="ln">   185  </span>		return lookupErrorMetaByHTTPStatus(statusClientClosedRequest)
-<span id="L186" class="ln">   186  </span>	case xerrors.Is(err, apperror.ErrUnavailable): <span class="comment">// 503</span>
-<span id="L187" class="ln">   187  </span>		return lookupErrorMetaByHTTPStatus(http.StatusServiceUnavailable)
-<span id="L188" class="ln">   188  </span>	case xerrors.Is(err, apperror.ErrUnimplemented): <span class="comment">// 501</span>
-<span id="L189" class="ln">   189  </span>		return lookupErrorMetaByHTTPStatus(http.StatusNotImplemented)
-<span id="L190" class="ln">   190  </span>	case xerrors.Is(err, apperror.ErrTooManyRequests): <span class="comment">// 429</span>
-<span id="L191" class="ln">   191  </span>		return lookupErrorMetaByHTTPStatus(http.StatusTooManyRequests)
-<span id="L192" class="ln">   192  </span>	case xerrors.Is(err, apperror.ErrInternal): <span class="comment">// 500</span>
-<span id="L193" class="ln">   193  </span>		return lookupErrorMetaByHTTPStatus(http.StatusInternalServerError)
-<span id="L194" class="ln">   194  </span>	default:
-<span id="L195" class="ln">   195  </span>		return lookupErrorMetaByHTTPStatus(http.StatusInternalServerError)
-<span id="L196" class="ln">   196  </span>	}
-<span id="L197" class="ln">   197  </span>}
-<span id="L198" class="ln">   198  </span>
+<span id="L164" class="ln">   164  </span><span class="comment">// lookupErrorMetaByHTTPStatus は、HTTPステータスコードに対応するエラーメタデータを取得します。</span>
+<span id="L165" class="ln">   165  </span><span class="comment">// 存在しない場合は、サーバーエラーのメタデータを返します。</span>
+<span id="L166" class="ln">   166  </span>func lookupErrorMetaByHTTPStatus(status int) httpErrorMeta {
+<span id="L167" class="ln">   167  </span>	if meta, ok := errorMeta[status]; ok {
+<span id="L168" class="ln">   168  </span>		return meta
+<span id="L169" class="ln">   169  </span>	}
+<span id="L170" class="ln">   170  </span>	return errorMeta[http.StatusInternalServerError]
+<span id="L171" class="ln">   171  </span>}
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span><span class="comment">// lookupErrorMetaByAppError は、アプリケーションエラーに対応するエラーメタデータを取得します。</span>
+<span id="L174" class="ln">   174  </span><span class="comment">// 既知のエラー型に一致しない場合は 500 Internal Server Error のメタを返します。</span>
+<span id="L175" class="ln">   175  </span>func lookupErrorMetaByAppError(err error) httpErrorMeta {
+<span id="L176" class="ln">   176  </span>	switch {
+<span id="L177" class="ln">   177  </span>	case xerrors.Is(err, apperror.ErrInvalidArgument):
+<span id="L178" class="ln">   178  </span>		return lookupErrorMetaByHTTPStatus(http.StatusBadRequest)
+<span id="L179" class="ln">   179  </span>	case xerrors.Is(err, apperror.ErrValidation):
+<span id="L180" class="ln">   180  </span>		return lookupErrorMetaByHTTPStatus(http.StatusUnprocessableEntity)
+<span id="L181" class="ln">   181  </span>	case xerrors.Is(err, apperror.ErrUnsupportedMediaType):
+<span id="L182" class="ln">   182  </span>		return lookupErrorMetaByHTTPStatus(http.StatusUnsupportedMediaType)
+<span id="L183" class="ln">   183  </span>	case xerrors.Is(err, apperror.ErrPayloadTooLarge):
+<span id="L184" class="ln">   184  </span>		return lookupErrorMetaByHTTPStatus(http.StatusRequestEntityTooLarge)
+<span id="L185" class="ln">   185  </span>	case xerrors.Is(err, apperror.ErrUnauthenticated):
+<span id="L186" class="ln">   186  </span>		return lookupErrorMetaByHTTPStatus(http.StatusUnauthorized)
+<span id="L187" class="ln">   187  </span>	case xerrors.Is(err, apperror.ErrPermissionDenied):
+<span id="L188" class="ln">   188  </span>		return lookupErrorMetaByHTTPStatus(http.StatusForbidden)
+<span id="L189" class="ln">   189  </span>	case xerrors.Is(err, apperror.ErrNotFound):
+<span id="L190" class="ln">   190  </span>		return lookupErrorMetaByHTTPStatus(http.StatusNotFound)
+<span id="L191" class="ln">   191  </span>	case xerrors.Is(err, apperror.ErrConflict):
+<span id="L192" class="ln">   192  </span>		return lookupErrorMetaByHTTPStatus(http.StatusConflict)
+<span id="L193" class="ln">   193  </span>	case xerrors.Is(err, apperror.ErrGone):
+<span id="L194" class="ln">   194  </span>		return lookupErrorMetaByHTTPStatus(http.StatusGone)
+<span id="L195" class="ln">   195  </span>	case xerrors.Is(err, apperror.ErrCanceled):
+<span id="L196" class="ln">   196  </span>		return lookupErrorMetaByHTTPStatus(statusClientClosedRequest)
+<span id="L197" class="ln">   197  </span>	case xerrors.Is(err, apperror.ErrUnavailable):
+<span id="L198" class="ln">   198  </span>		return lookupErrorMetaByHTTPStatus(http.StatusServiceUnavailable)
+<span id="L199" class="ln">   199  </span>	case xerrors.Is(err, apperror.ErrUnimplemented):
+<span id="L200" class="ln">   200  </span>		return lookupErrorMetaByHTTPStatus(http.StatusNotImplemented)
+<span id="L201" class="ln">   201  </span>	case xerrors.Is(err, apperror.ErrTooManyRequests):
+<span id="L202" class="ln">   202  </span>		return lookupErrorMetaByHTTPStatus(http.StatusTooManyRequests)
+<span id="L203" class="ln">   203  </span>	case xerrors.Is(err, apperror.ErrInternal):
+<span id="L204" class="ln">   204  </span>		return lookupErrorMetaByHTTPStatus(http.StatusInternalServerError)
+<span id="L205" class="ln">   205  </span>	default:
+<span id="L206" class="ln">   206  </span>		return lookupErrorMetaByHTTPStatus(http.StatusInternalServerError)
+<span id="L207" class="ln">   207  </span>	}
+<span id="L208" class="ln">   208  </span>}
+<span id="L209" class="ln">   209  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/controller/error/response/http_error.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

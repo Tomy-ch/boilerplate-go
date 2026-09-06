@@ -1,7 +1,5 @@
 # Data Access Pattern
 
-English | [日本語](data-access-pattern.ja.md)
-
 ## Role
 
 This document is the single place the **placement criterion** for a data access lives: given an

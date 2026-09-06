@@ -1,0 +1,297 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtimeinit - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package realtimeinit
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/cli/realtimeinit&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package realtimeinit は、Realtime Delivery の 3 つの table（EventLog / StreamTicket / InstanceLease）と
+fan-out の topic を作る one-shot 初期化のコアロジックを提供します。application の起動時には呼ばれず、
+`realtime-init` コマンド（make realtime-init）から実行します。何度実行しても同じ状態に収束します。
+table の中身（キー定義）と topic の作り方は infrastructure 側が持ち、ここは名前の並びと「止める / 続ける」だけを決めます。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+				
+				<dd><a href="#Run">func Run(ctx context.Context, cfg *config.RealtimeConfig, ensure Ensurer, logger logging.Logger) error</a></dd>
+			
+				
+				<dd><a href="#RunTopic">func RunTopic(ctx context.Context, topicARN string, ensure TopicEnsurer, logger logging.Logger) error</a></dd>
+			
+				
+				<dd><a href="#TableNames">func TableNames(cfg *config.RealtimeConfig) []string</a></dd>
+			
+				
+				<dd><a href="#TopicName">func TopicName(arn string) (string, error)</a></dd>
+			
+			
+				
+				<dd><a href="#Ensurer">type Ensurer</a></dd>
+				
+				
+			
+				
+				<dd><a href="#TopicEnsurer">type TopicEnsurer</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/cli/realtimeinit/init.go.html">init.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrTopicARNInvalid は、設定の topic ARN から topic 名を導けないことを示すエラーです。
+
+				</p><pre>var <span id="ErrTopicARNInvalid">ErrTopicARNInvalid</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(
+    <a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>,
+    &#34;realtime-init: REALTIME_TOPIC is not a topic arn&#34;,
+)</pre>
+			
+				<p>ErrTopicARNMismatch は、作成した topic の ARN が設定の ARN と食い違うことを示すエラーです。
+食い違ったまま起動すると publish 先だけが別の topic を指し、配送が黙って途切れるため、ここで止めます。
+
+				</p><pre>var <span id="ErrTopicARNMismatch">ErrTopicARNMismatch</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(
+    <a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>,
+    &#34;realtime-init: created topic arn does not match REALTIME_TOPIC&#34;,
+)</pre>
+			
+		
+		
+			
+			
+			<h2 id="Run">func <a href="../../../../src/go-boilerplate/internal/cli/realtimeinit/init.go.html?s=3221:3323#L65">Run</a>
+				<a class="permalink" href="#Run">¶</a>
+				
+				
+			</h2>
+			<pre>func Run(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, cfg *<a href="../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../go-boilerplate/internal/config/#RealtimeConfig">RealtimeConfig</a>, ensure <a href="#Ensurer">Ensurer</a>, logger <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#Logger">Logger</a>) <a href="../../../../builtin/#error">error</a></pre>
+			<p>Run は、3 table を順に実在させます。1 つでも失敗したらその table 名を添えて止まります。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="RunTopic">func <a href="../../../../src/go-boilerplate/internal/cli/realtimeinit/init.go.html?s=2630:2731#L44">RunTopic</a>
+				<a class="permalink" href="#RunTopic">¶</a>
+				
+				
+			</h2>
+			<pre>func RunTopic(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, topicARN <a href="../../../../builtin/#string">string</a>, ensure <a href="#TopicEnsurer">TopicEnsurer</a>, logger <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#Logger">Logger</a>) <a href="../../../../builtin/#error">error</a></pre>
+			<p>RunTopic は、topicARN（config の REALTIME_TOPIC）が指す topic を実在させます。作成結果の ARN が食い違えば
+ErrTopicARNMismatch で止まります（emulator の account / region と config の ARN が合っていない誤設定をここで見つける）。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="TableNames">func <a href="../../../../src/go-boilerplate/internal/cli/realtimeinit/init.go.html?s=1814:1866#L27">TableNames</a>
+				<a class="permalink" href="#TableNames">¶</a>
+				
+				
+			</h2>
+			<pre>func TableNames(cfg *<a href="../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../go-boilerplate/internal/config/#RealtimeConfig">RealtimeConfig</a>) []<a href="../../../../builtin/#string">string</a></pre>
+			<p>TableNames は、config が指す 3 table の名前を作成順に返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="TopicName">func <a href="../../../../src/go-boilerplate/internal/cli/realtimeinit/init.go.html?s=2136:2178#L33">TopicName</a>
+				<a class="permalink" href="#TopicName">¶</a>
+				
+				
+			</h2>
+			<pre>func TopicName(arn <a href="../../../../builtin/#string">string</a>) (<a href="../../../../builtin/#string">string</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+			<p>TopicName は、topic ARN の末尾要素（= topic 名）を返します。ARN が空か、`:` で区切れないか、
+末尾が空なら ErrTopicARNInvalid です。
+
+			
+			
+
+		
+		
+			
+			
+			</p><h2 id="Ensurer">type <a href="../../../../src/go-boilerplate/internal/cli/realtimeinit/init.go.html?s=1480:1538#L21">Ensurer</a>
+				<a class="permalink" href="#Ensurer">¶</a>
+				
+				
+			</h2>
+			<p>Ensurer は、名前で指定した table を実在させる関数型です。
+
+			</p><pre>type Ensurer func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, table <a href="../../../../builtin/#string">string</a>) <a href="../../../../builtin/#error">error</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="TopicEnsurer">type <a href="../../../../src/go-boilerplate/internal/cli/realtimeinit/init.go.html?s=1647:1727#L24">TopicEnsurer</a>
+				<a class="permalink" href="#TopicEnsurer">¶</a>
+				
+				
+			</h2>
+			<p>TopicEnsurer は、名前で指定した topic を実在させ、その ARN を返す関数型です。
+
+			</p><pre>type TopicEnsurer func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, name <a href="../../../../builtin/#string">string</a>) (arn <a href="../../../../builtin/#string">string</a>, err <a href="../../../../builtin/#error">error</a>)</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

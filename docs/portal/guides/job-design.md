@@ -1,7 +1,5 @@
 # Job Subsystem Design Reference
 
-[Job README](../../internal/controller/job/README.md) | 日本語: [job.ja.md](job.ja.md)
-
 This document consolidates the job scaffold's **role theory, state transitions, implementation locations, what an integrator must implement, and glossary** into a single reference, derived from a close reading of the implementation. For the overview see the README; the worker is its async sibling — see [worker.md](worker.md).
 
 ---

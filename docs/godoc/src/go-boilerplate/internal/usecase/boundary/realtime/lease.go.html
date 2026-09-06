@@ -1,0 +1,136 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase">usecase</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase/boundary">boundary</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime">realtime</a>/<span class="text-muted">lease.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/usecase/boundary/realtime">go-boilerplate/internal/usecase/boundary/realtime</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">//go:generate mockgen -source=$GOFILE -destination=mock/mock_$GOFILE.gen.go -package=mock_$GOPACKAGE</span>
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>package realtime
+<span id="L4" class="ln">     4  </span>
+<span id="L5" class="ln">     5  </span>import (
+<span id="L6" class="ln">     6  </span>	&#34;context&#34;
+<span id="L7" class="ln">     7  </span>	&#34;time&#34;
+<span id="L8" class="ln">     8  </span>)
+<span id="L9" class="ln">     9  </span>
+<span id="L10" class="ln">    10  </span><span class="comment">// InstanceID は、serve instance の識別子です。</span>
+<span id="L11" class="ln">    11  </span>type InstanceID string
+<span id="L12" class="ln">    12  </span>
+<span id="L13" class="ln">    13  </span><span class="comment">// InstanceLease は、serve instance の生存記録です。lock でも leader election でもなく、</span>
+<span id="L14" class="ln">    14  </span><span class="comment">// crash した instance の配送 resource を後から回収するためだけに使います（ADR-0073）。</span>
+<span id="L15" class="ln">    15  </span>type InstanceLease struct {
+<span id="L16" class="ln">    16  </span>	<span class="comment">// InstanceID は、記録の主です。</span>
+<span id="L17" class="ln">    17  </span>	InstanceID InstanceID
+<span id="L18" class="ln">    18  </span>	<span class="comment">// HeartbeatAt は、最後に生存を報告した時刻です。</span>
+<span id="L19" class="ln">    19  </span>	HeartbeatAt time.Time
+<span id="L20" class="ln">    20  </span>	<span class="comment">// ExpiresAt は、この時刻を過ぎて更新が無ければ instance を死んだと見なす期限です。</span>
+<span id="L21" class="ln">    21  </span>	ExpiresAt time.Time
+<span id="L22" class="ln">    22  </span>	<span class="comment">// CleanupOwner は、回収を引き受けた主体の識別子です。未回収なら空です。</span>
+<span id="L23" class="ln">    23  </span>	CleanupOwner string
+<span id="L24" class="ln">    24  </span>	<span class="comment">// CleanupOwnerUntil は、回収の引き受けが有効な期限です。過ぎれば他の主体が引き受け直せます。</span>
+<span id="L25" class="ln">    25  </span>	CleanupOwnerUntil time.Time
+<span id="L26" class="ln">    26  </span>}
+<span id="L27" class="ln">    27  </span>
+<span id="L28" class="ln">    28  </span><span class="comment">// CleanupClaim は、死んだ instance の回収を引き受ける要求です。</span>
+<span id="L29" class="ln">    29  </span>type CleanupClaim struct {
+<span id="L30" class="ln">    30  </span>	<span class="comment">// InstanceID は、回収対象です。</span>
+<span id="L31" class="ln">    31  </span>	InstanceID InstanceID
+<span id="L32" class="ln">    32  </span>	<span class="comment">// Owner は、引き受ける主体の識別子です。</span>
+<span id="L33" class="ln">    33  </span>	Owner string
+<span id="L34" class="ln">    34  </span>	<span class="comment">// ExpiredBefore は、lease の ExpiresAt がこの時刻より前であるときだけ引き受けます</span>
+<span id="L35" class="ln">    35  </span>	<span class="comment">// （expiry に safety margin を足した値を呼び出し側が渡します）。</span>
+<span id="L36" class="ln">    36  </span>	ExpiredBefore time.Time
+<span id="L37" class="ln">    37  </span>	<span class="comment">// Now は、既存の引き受けが失効しているかの判定時刻です。</span>
+<span id="L38" class="ln">    38  </span>	Now time.Time
+<span id="L39" class="ln">    39  </span>	<span class="comment">// OwnerUntil は、引き受けの有効期限です。</span>
+<span id="L40" class="ln">    40  </span>	OwnerUntil time.Time
+<span id="L41" class="ln">    41  </span>}
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span><span class="comment">// CleanupRelease は、回収を終えた lease を閉じる要求です。</span>
+<span id="L44" class="ln">    44  </span>type CleanupRelease struct {
+<span id="L45" class="ln">    45  </span>	<span class="comment">// InstanceID は、閉じる対象です。</span>
+<span id="L46" class="ln">    46  </span>	InstanceID InstanceID
+<span id="L47" class="ln">    47  </span>	<span class="comment">// Owner は、回収を引き受けていた主体の識別子です。</span>
+<span id="L48" class="ln">    48  </span>	Owner string
+<span id="L49" class="ln">    49  </span>	<span class="comment">// ExpiredBefore は、lease の ExpiresAt がこの時刻より前であるときだけ閉じます。引き受けている間に</span>
+<span id="L50" class="ln">    50  </span>	<span class="comment">// instance が heartbeat を再開していれば、その lease はもう回収対象ではないので閉じません。</span>
+<span id="L51" class="ln">    51  </span>	ExpiredBefore time.Time
+<span id="L52" class="ln">    52  </span>}
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span><span class="comment">// InstanceLeaseStore は、instance lease の保存境界です。失敗は apperror sentinel で返します。</span>
+<span id="L55" class="ln">    55  </span>type InstanceLeaseStore interface {
+<span id="L56" class="ln">    56  </span>	<span class="comment">// Heartbeat は、lease を作成または更新します（HeartbeatAt / ExpiresAt を書き換える）。</span>
+<span id="L57" class="ln">    57  </span>	Heartbeat(ctx context.Context, lease InstanceLease) error
+<span id="L58" class="ln">    58  </span>	<span class="comment">// Delete は、lease を削除します。無くてもエラーになりません。</span>
+<span id="L59" class="ln">    59  </span>	Delete(ctx context.Context, id InstanceID) error
+<span id="L60" class="ln">    60  </span>	<span class="comment">// ListExpired は、asOf 時点で ExpiresAt を過ぎた lease を返します。</span>
+<span id="L61" class="ln">    61  </span>	ListExpired(ctx context.Context, asOf time.Time) ([]InstanceLease, error)
+<span id="L62" class="ln">    62  </span>	<span class="comment">// AcquireCleanup は、claim の条件（期限切れ、かつ未回収か引き受けが失効）を満たすときだけ</span>
+<span id="L63" class="ln">    63  </span>	<span class="comment">// 引き受けを記録して true を返します。他の主体が先に引き受けていれば false を返します。</span>
+<span id="L64" class="ln">    64  </span>	AcquireCleanup(ctx context.Context, claim CleanupClaim) (bool, error)
+<span id="L65" class="ln">    65  </span>	<span class="comment">// ReleaseCleanup は、release の条件（引き受けが owner のままで、かつ lease がまだ期限切れ）を</span>
+<span id="L66" class="ln">    66  </span>	<span class="comment">// 満たすときだけ lease を削除して true を返します。引き受けが他へ移った、instance が heartbeat を</span>
+<span id="L67" class="ln">    67  </span>	<span class="comment">// 再開した、lease が既に無い、のいずれでも false を返します。</span>
+<span id="L68" class="ln">    68  </span>	ReleaseCleanup(ctx context.Context, release CleanupRelease) (bool, error)
+<span id="L69" class="ln">    69  </span>}
+<span id="L70" class="ln">    70  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/realtime/lease.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

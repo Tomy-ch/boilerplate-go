@@ -1,0 +1,148 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>ctxhelper - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/controller">controller</a>/<a href="../../../../../src/go-boilerplate/internal/controller/ctxhelper">ctxhelper</a>/<span class="text-muted">stream_grant.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/controller/ctxhelper">go-boilerplate/internal/controller/ctxhelper</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package ctxhelper
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>
+<span id="L6" class="ln">     6  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L7" class="ln">     7  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L8" class="ln">     8  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L9" class="ln">     9  </span>)
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span><span class="comment">// ErrStreamGrantMissing は、検証済みの stream ticket が無い場合のエラーです。</span>
+<span id="L12" class="ln">    12  </span>var ErrStreamGrantMissing = xerrors.Wrap(apperror.ErrUnauthenticated, &#34;requires a verified stream ticket&#34;)
+<span id="L13" class="ln">    13  </span>
+<span id="L14" class="ln">    14  </span>type streamGrantSlotKey struct{}
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span><span class="comment">// streamGrantSlot は、認証前に仕込んで後段ハンドラと共有する、検証済み ticket の束縛（StreamGrant）の可変スロット。</span>
+<span id="L17" class="ln">    17  </span><span class="comment">// 成功のみを保持し、失敗は Authn スロットが運ぶ（README「Provided helpers」）。</span>
+<span id="L18" class="ln">    18  </span>type streamGrantSlot struct {
+<span id="L19" class="ln">    19  </span>	grant rt.StreamGrant
+<span id="L20" class="ln">    20  </span>	set   bool
+<span id="L21" class="ln">    21  </span>	<span class="comment">// revalidate は、同じ ticket をもう一度検証し直す口。資格情報の生値は認証器の中に閉じたままで、</span>
+<span id="L22" class="ln">    22  </span>	<span class="comment">// 後段へ渡るのはこの関数値だけ。</span>
+<span id="L23" class="ln">    23  </span>	revalidate func(ctx context.Context) error
+<span id="L24" class="ln">    24  </span>}
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span><span class="comment">// WithStreamGrant は、空の StreamGrant スロットを ctx に仕込む。</span>
+<span id="L27" class="ln">    27  </span>func WithStreamGrant(ctx context.Context) context.Context {
+<span id="L28" class="ln">    28  </span>	return context.WithValue(ctx, streamGrantSlotKey{}, &amp;streamGrantSlot{})
+<span id="L29" class="ln">    29  </span>}
+<span id="L30" class="ln">    30  </span>
+<span id="L31" class="ln">    31  </span><span class="comment">// SetStreamGrant は、ctx のスロットへ検証済み ticket を書き込む。スロットが無ければ false。</span>
+<span id="L32" class="ln">    32  </span>func SetStreamGrant(ctx context.Context, grant rt.StreamGrant) bool {
+<span id="L33" class="ln">    33  </span>	slot, ok := ctx.Value(streamGrantSlotKey{}).(*streamGrantSlot)
+<span id="L34" class="ln">    34  </span>	if !ok {
+<span id="L35" class="ln">    35  </span>		return false
+<span id="L36" class="ln">    36  </span>	}
+<span id="L37" class="ln">    37  </span>	slot.grant, slot.set = grant, true
+<span id="L38" class="ln">    38  </span>	return true
+<span id="L39" class="ln">    39  </span>}
+<span id="L40" class="ln">    40  </span>
+<span id="L41" class="ln">    41  </span><span class="comment">// GetStreamGrant は、ctx のスロットから検証済み ticket を読む。未設定なら ok=false。</span>
+<span id="L42" class="ln">    42  </span>func GetStreamGrant(ctx context.Context) (rt.StreamGrant, bool) {
+<span id="L43" class="ln">    43  </span>	slot, ok := ctx.Value(streamGrantSlotKey{}).(*streamGrantSlot)
+<span id="L44" class="ln">    44  </span>	if !ok || !slot.set {
+<span id="L45" class="ln">    45  </span>		return rt.StreamGrant{}, false
+<span id="L46" class="ln">    46  </span>	}
+<span id="L47" class="ln">    47  </span>	return slot.grant, true
+<span id="L48" class="ln">    48  </span>}
+<span id="L49" class="ln">    49  </span>
+<span id="L50" class="ln">    50  </span><span class="comment">// RequireStreamGrant は、ctx のスロットから検証済み ticket を読みます。未設定の場合は ErrStreamGrantMissing を返します。</span>
+<span id="L51" class="ln">    51  </span><span class="comment">// stream ticket による認証を前提とするハンドラは、GetStreamGrant を直接呼ばずこちらを使います。</span>
+<span id="L52" class="ln">    52  </span>func RequireStreamGrant(ctx context.Context) (rt.StreamGrant, error) {
+<span id="L53" class="ln">    53  </span>	grant, ok := GetStreamGrant(ctx)
+<span id="L54" class="ln">    54  </span>	if !ok {
+<span id="L55" class="ln">    55  </span>		return rt.StreamGrant{}, ErrStreamGrantMissing
+<span id="L56" class="ln">    56  </span>	}
+<span id="L57" class="ln">    57  </span>	return grant, nil
+<span id="L58" class="ln">    58  </span>}
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span><span class="comment">// SetStreamRevalidator は、ctx のスロットへ ticket の再検証手段を書き込む。スロットが無ければ false。</span>
+<span id="L61" class="ln">    61  </span><span class="comment">//</span>
+<span id="L62" class="ln">    62  </span><span class="comment">// 接続の確立は「ticket 検証 →（外部 I/O）→ 接続の索引へ登録」の 2 段階で、その間に届いた失効通知は</span>
+<span id="L63" class="ln">    63  </span><span class="comment">// まだ索引に無い接続を取りこぼす。登録の直後にもう一度検証できれば、検証が無効化より後なら拒否され、</span>
+<span id="L64" class="ln">    64  </span><span class="comment">// 前なら登録も無効化より前なので後続の失効通知が拾える（ADR-0074 の「in-service の失効は即時」）。</span>
+<span id="L65" class="ln">    65  </span>func SetStreamRevalidator(ctx context.Context, revalidate func(ctx context.Context) error) bool {
+<span id="L66" class="ln">    66  </span>	slot, ok := ctx.Value(streamGrantSlotKey{}).(*streamGrantSlot)
+<span id="L67" class="ln">    67  </span>	if !ok {
+<span id="L68" class="ln">    68  </span>		return false
+<span id="L69" class="ln">    69  </span>	}
+<span id="L70" class="ln">    70  </span>	slot.revalidate = revalidate
+<span id="L71" class="ln">    71  </span>	return true
+<span id="L72" class="ln">    72  </span>}
+<span id="L73" class="ln">    73  </span>
+<span id="L74" class="ln">    74  </span><span class="comment">// GetStreamRevalidator は、ctx のスロットから ticket の再検証手段を読む。未設定なら ok=false。</span>
+<span id="L75" class="ln">    75  </span>func GetStreamRevalidator(ctx context.Context) (func(ctx context.Context) error, bool) {
+<span id="L76" class="ln">    76  </span>	slot, ok := ctx.Value(streamGrantSlotKey{}).(*streamGrantSlot)
+<span id="L77" class="ln">    77  </span>	if !ok || slot.revalidate == nil {
+<span id="L78" class="ln">    78  </span>		return nil, false
+<span id="L79" class="ln">    79  </span>	}
+<span id="L80" class="ln">    80  </span>	return slot.revalidate, true
+<span id="L81" class="ln">    81  </span>}
+<span id="L82" class="ln">    82  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/controller/ctxhelper/stream_grant.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

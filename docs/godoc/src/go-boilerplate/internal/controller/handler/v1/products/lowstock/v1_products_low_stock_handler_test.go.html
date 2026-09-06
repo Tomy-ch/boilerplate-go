@@ -251,232 +251,234 @@
 <span id="L194" class="ln">   194  </span>					require.NoError(t, uerr)
 <span id="L195" class="ln">   195  </span>					assert.Equal(t, userID, uid)
 <span id="L196" class="ln">   196  </span>					return productuc.ProductLowStockListView{}, nil
-<span id="L197" class="ln">   197  </span>				})
-<span id="L198" class="ln">   198  </span>
-<span id="L199" class="ln">   199  </span>			_, err := s.GetProductsLowStock(
-<span id="L200" class="ln">   200  </span>				authnContext(t, userID),
-<span id="L201" class="ln">   201  </span>				gen.GetProductsLowStockRequestObject{Params: gen.GetProductsLowStockParams{Limit: ptr.To(7)}},
-<span id="L202" class="ln">   202  </span>			)
-<span id="L203" class="ln">   203  </span>			require.NoError(t, err)
-<span id="L204" class="ln">   204  </span>			assert.Equal(t, 7, captured.Limit)
-<span id="L205" class="ln">   205  </span>		})
-<span id="L206" class="ln">   206  </span>
-<span id="L207" class="ln">   207  </span>		t.Run(&#34;limit未指定の場合、既定件数を意味する0がユースケースへ渡る&#34;, func(t *testing.T) {
-<span id="L208" class="ln">   208  </span>			t.Parallel()
-<span id="L209" class="ln">   209  </span>
-<span id="L210" class="ln">   210  </span>			s, mockUC := newServer(t)
-<span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span>			var captured productuc.ListLowStockProductsParams
-<span id="L213" class="ln">   213  </span>			mockUC.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-<span id="L214" class="ln">   214  </span>				func(
-<span id="L215" class="ln">   215  </span>					_ context.Context, _ *auth.Authn, params productuc.ListLowStockProductsParams,
-<span id="L216" class="ln">   216  </span>				) (productuc.ProductLowStockListView, error) {
-<span id="L217" class="ln">   217  </span>					captured = params
-<span id="L218" class="ln">   218  </span>					return productuc.ProductLowStockListView{}, nil
-<span id="L219" class="ln">   219  </span>				})
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>			_, err := s.GetProductsLowStock(
-<span id="L222" class="ln">   222  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;lowstock_h_nolimit_user&#34;)),
-<span id="L223" class="ln">   223  </span>				gen.GetProductsLowStockRequestObject{Params: gen.GetProductsLowStockParams{}},
-<span id="L224" class="ln">   224  </span>			)
-<span id="L225" class="ln">   225  </span>			require.NoError(t, err)
-<span id="L226" class="ln">   226  </span>			assert.Equal(t, 0, captured.Limit)
-<span id="L227" class="ln">   227  </span>		})
-<span id="L228" class="ln">   228  </span>
-<span id="L229" class="ln">   229  </span>		t.Run(&#34;対象商品が無い場合、空配列のレスポンスが返る&#34;, func(t *testing.T) {
-<span id="L230" class="ln">   230  </span>			t.Parallel()
-<span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>			s, mockUC := newServer(t)
-<span id="L233" class="ln">   233  </span>			mockUC.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L234" class="ln">   234  </span>				Return(productuc.ProductLowStockListView{}, nil)
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>			resp, err := s.GetProductsLowStock(
-<span id="L237" class="ln">   237  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;lowstock_h_empty_user&#34;)),
-<span id="L238" class="ln">   238  </span>				gen.GetProductsLowStockRequestObject{},
-<span id="L239" class="ln">   239  </span>			)
-<span id="L240" class="ln">   240  </span>			require.NoError(t, err)
-<span id="L241" class="ln">   241  </span>
-<span id="L242" class="ln">   242  </span>			actual, ok := resp.(gen.GetProductsLowStock200JSONResponse)
-<span id="L243" class="ln">   243  </span>			require.True(t, ok)
-<span id="L244" class="ln">   244  </span>			assert.Empty(t, actual.Products)
-<span id="L245" class="ln">   245  </span>		})
-<span id="L246" class="ln">   246  </span>	})
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L249" class="ln">   249  </span>		t.Parallel()
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>		t.Run(&#34;認証情報が取得できない場合、ErrUnauthenticatedUserを返しユースケースを呼ばない&#34;, func(t *testing.T) {
-<span id="L252" class="ln">   252  </span>			t.Parallel()
-<span id="L253" class="ln">   253  </span>
-<span id="L254" class="ln">   254  </span>			s, mockUC := newServer(t)
-<span id="L255" class="ln">   255  </span>			mockUC.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-<span id="L256" class="ln">   256  </span>
-<span id="L257" class="ln">   257  </span>			resp, err := s.GetProductsLowStock(context.Background(), gen.GetProductsLowStockRequestObject{})
-<span id="L258" class="ln">   258  </span>			assert.Nil(t, resp)
-<span id="L259" class="ln">   259  </span>			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
-<span id="L260" class="ln">   260  </span>		})
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>		t.Run(&#34;ユースケースが権限エラーを返した場合、そのまま伝播する&#34;, func(t *testing.T) {
-<span id="L263" class="ln">   263  </span>			t.Parallel()
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>			s, mockUC := newServer(t)
-<span id="L266" class="ln">   266  </span>			mockUC.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
-<span id="L267" class="ln">   267  </span>				Return(productuc.ProductLowStockListView{}, apperror.ErrPermissionDenied)
-<span id="L268" class="ln">   268  </span>
-<span id="L269" class="ln">   269  </span>			resp, err := s.GetProductsLowStock(
-<span id="L270" class="ln">   270  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;lowstock_h_forbidden_user&#34;)),
-<span id="L271" class="ln">   271  </span>				gen.GetProductsLowStockRequestObject{},
-<span id="L272" class="ln">   272  </span>			)
-<span id="L273" class="ln">   273  </span>			assert.Nil(t, resp)
-<span id="L274" class="ln">   274  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
-<span id="L275" class="ln">   275  </span>		})
-<span id="L276" class="ln">   276  </span>	})
-<span id="L277" class="ln">   277  </span>}
-<span id="L278" class="ln">   278  </span>
-<span id="L279" class="ln">   279  </span>func Test_limitParam(t *testing.T) {
-<span id="L280" class="ln">   280  </span>	t.Parallel()
-<span id="L281" class="ln">   281  </span>
-<span id="L282" class="ln">   282  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L283" class="ln">   283  </span>		t.Parallel()
-<span id="L284" class="ln">   284  </span>
-<span id="L285" class="ln">   285  </span>		t.Run(&#34;nilの場合は既定件数を意味する0を返す&#34;, func(t *testing.T) {
-<span id="L286" class="ln">   286  </span>			t.Parallel()
-<span id="L287" class="ln">   287  </span>			assert.Equal(t, 0, limitParam(nil))
-<span id="L288" class="ln">   288  </span>		})
-<span id="L289" class="ln">   289  </span>
-<span id="L290" class="ln">   290  </span>		t.Run(&#34;非nilの場合は指定値をそのまま返す&#34;, func(t *testing.T) {
-<span id="L291" class="ln">   291  </span>			t.Parallel()
-<span id="L292" class="ln">   292  </span>			assert.Equal(t, 42, limitParam(ptr.To(42)))
-<span id="L293" class="ln">   293  </span>		})
-<span id="L294" class="ln">   294  </span>	})
-<span id="L295" class="ln">   295  </span>}
-<span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>func Test_toProductResponse(t *testing.T) {
-<span id="L298" class="ln">   298  </span>	t.Parallel()
-<span id="L299" class="ln">   299  </span>
-<span id="L300" class="ln">   300  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L301" class="ln">   301  </span>		t.Parallel()
-<span id="L302" class="ln">   302  </span>
-<span id="L303" class="ln">   303  </span>		t.Run(&#34;全項目が設定されたDTOをレスポンスへ写像する&#34;, func(t *testing.T) {
-<span id="L304" class="ln">   304  </span>			t.Parallel()
-<span id="L305" class="ln">   305  </span>			dto := newProductView(t, &#34;lowstock_conv_full&#34;)
-<span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>			actual, err := toProductResponse(dto)
-<span id="L308" class="ln">   308  </span>			require.NoError(t, err)
-<span id="L309" class="ln">   309  </span>			assert.Equal(t, wantProductResponse(dto), actual)
-<span id="L310" class="ln">   310  </span>		})
-<span id="L311" class="ln">   311  </span>
-<span id="L312" class="ln">   312  </span>		t.Run(&#34;任意項目がnilのDTOはレスポンスでもnilのまま写像する&#34;, func(t *testing.T) {
-<span id="L313" class="ln">   313  </span>			t.Parallel()
-<span id="L314" class="ln">   314  </span>			dto := newProductView(t, &#34;lowstock_conv_nil&#34;)
-<span id="L315" class="ln">   315  </span>			dto.Description = nil
-<span id="L316" class="ln">   316  </span>			dto.StockWarningThreshold = nil
-<span id="L317" class="ln">   317  </span>			dto.PublishedAt = nil
-<span id="L318" class="ln">   318  </span>			dto.Images = nil
-<span id="L319" class="ln">   319  </span>
-<span id="L320" class="ln">   320  </span>			actual, err := toProductResponse(dto)
-<span id="L321" class="ln">   321  </span>			require.NoError(t, err)
-<span id="L322" class="ln">   322  </span>			assert.Nil(t, actual.Description)
-<span id="L323" class="ln">   323  </span>			assert.Nil(t, actual.StockWarningThreshold)
-<span id="L324" class="ln">   324  </span>			assert.Nil(t, actual.PublishedAt)
-<span id="L325" class="ln">   325  </span>			assert.Empty(t, actual.Images)
-<span id="L326" class="ln">   326  </span>			assert.Equal(t, dto.ID.ToPrimitive(), actual.Id)
-<span id="L327" class="ln">   327  </span>		})
-<span id="L328" class="ln">   328  </span>
-<span id="L329" class="ln">   329  </span>		t.Run(&#34;int32の境界値も値を保ったまま写像する&#34;, func(t *testing.T) {
-<span id="L330" class="ln">   330  </span>			t.Parallel()
-<span id="L331" class="ln">   331  </span>			dto := newProductView(t, &#34;lowstock_conv_boundary&#34;)
-<span id="L332" class="ln">   332  </span>			dto.Quantity = math.MaxInt32
-<span id="L333" class="ln">   333  </span>			dto.Version = math.MaxInt32
-<span id="L334" class="ln">   334  </span>			dto.StockWarningThreshold = ptr.To(math.MaxInt32)
-<span id="L335" class="ln">   335  </span>
-<span id="L336" class="ln">   336  </span>			actual, err := toProductResponse(dto)
-<span id="L337" class="ln">   337  </span>			require.NoError(t, err)
-<span id="L338" class="ln">   338  </span>			assert.Equal(t, int32(math.MaxInt32), actual.Quantity)
-<span id="L339" class="ln">   339  </span>			assert.Equal(t, int32(math.MaxInt32), actual.Version)
-<span id="L340" class="ln">   340  </span>			require.NotNil(t, actual.StockWarningThreshold)
-<span id="L341" class="ln">   341  </span>			assert.Equal(t, int32(math.MaxInt32), *actual.StockWarningThreshold)
-<span id="L342" class="ln">   342  </span>		})
-<span id="L343" class="ln">   343  </span>	})
-<span id="L344" class="ln">   344  </span>
-<span id="L345" class="ln">   345  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L346" class="ln">   346  </span>		t.Parallel()
-<span id="L347" class="ln">   347  </span>
-<span id="L348" class="ln">   348  </span>		t.Run(&#34;在庫数がint32の範囲を超える場合、オーバーフローとして返す&#34;, func(t *testing.T) {
-<span id="L349" class="ln">   349  </span>			t.Parallel()
-<span id="L350" class="ln">   350  </span>			dto := newProductView(t, &#34;lowstock_conv_over_quantity&#34;)
-<span id="L351" class="ln">   351  </span>			dto.Quantity = math.MaxInt32 + 1
-<span id="L352" class="ln">   352  </span>
-<span id="L353" class="ln">   353  </span>			_, err := toProductResponse(dto)
-<span id="L354" class="ln">   354  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
-<span id="L355" class="ln">   355  </span>		})
-<span id="L356" class="ln">   356  </span>
-<span id="L357" class="ln">   357  </span>		t.Run(&#34;在庫警告閾値がint32の範囲を超える場合、オーバーフローとして返す&#34;, func(t *testing.T) {
-<span id="L358" class="ln">   358  </span>			t.Parallel()
-<span id="L359" class="ln">   359  </span>			dto := newProductView(t, &#34;lowstock_conv_over_threshold&#34;)
-<span id="L360" class="ln">   360  </span>			dto.StockWarningThreshold = ptr.To(math.MaxInt32 + 1)
-<span id="L361" class="ln">   361  </span>
-<span id="L362" class="ln">   362  </span>			_, err := toProductResponse(dto)
-<span id="L363" class="ln">   363  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
-<span id="L364" class="ln">   364  </span>		})
-<span id="L365" class="ln">   365  </span>
-<span id="L366" class="ln">   366  </span>		t.Run(&#34;バージョンがint32の範囲を超える場合、オーバーフローとして返す&#34;, func(t *testing.T) {
-<span id="L367" class="ln">   367  </span>			t.Parallel()
-<span id="L368" class="ln">   368  </span>			dto := newProductView(t, &#34;lowstock_conv_over_version&#34;)
-<span id="L369" class="ln">   369  </span>			dto.Version = math.MaxInt32 + 1
-<span id="L370" class="ln">   370  </span>
-<span id="L371" class="ln">   371  </span>			_, err := toProductResponse(dto)
-<span id="L372" class="ln">   372  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
-<span id="L373" class="ln">   373  </span>		})
-<span id="L374" class="ln">   374  </span>	})
-<span id="L375" class="ln">   375  </span>}
-<span id="L376" class="ln">   376  </span>
-<span id="L377" class="ln">   377  </span>func Test_toProductImageItems(t *testing.T) {
-<span id="L378" class="ln">   378  </span>	t.Parallel()
-<span id="L379" class="ln">   379  </span>
-<span id="L380" class="ln">   380  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L381" class="ln">   381  </span>		t.Parallel()
-<span id="L382" class="ln">   382  </span>
-<span id="L383" class="ln">   383  </span>		t.Run(&#34;DTOの並びのままレスポンスへ変換する&#34;, func(t *testing.T) {
-<span id="L384" class="ln">   384  </span>			t.Parallel()
-<span id="L385" class="ln">   385  </span>
-<span id="L386" class="ln">   386  </span>			actual, err := toProductImageItems([]productuc.ProductImageItemView{
-<span id="L387" class="ln">   387  </span>				{Path: &#34;products/a.png&#34;, DisplaySort: 1},
-<span id="L388" class="ln">   388  </span>				{Path: &#34;products/b.png&#34;, DisplaySort: 5},
-<span id="L389" class="ln">   389  </span>			})
-<span id="L390" class="ln">   390  </span>
-<span id="L391" class="ln">   391  </span>			require.NoError(t, err)
-<span id="L392" class="ln">   392  </span>			require.Len(t, actual, 2)
-<span id="L393" class="ln">   393  </span>			assert.Equal(t, gen.ProductImageItem{ImagePath: &#34;products/a.png&#34;, DisplaySort: 1}, actual[0])
-<span id="L394" class="ln">   394  </span>			assert.Equal(t, gen.ProductImageItem{ImagePath: &#34;products/b.png&#34;, DisplaySort: 5}, actual[1])
-<span id="L395" class="ln">   395  </span>		})
-<span id="L396" class="ln">   396  </span>
-<span id="L397" class="ln">   397  </span>		t.Run(&#34;画像が空の場合、空を返す&#34;, func(t *testing.T) {
-<span id="L398" class="ln">   398  </span>			t.Parallel()
-<span id="L399" class="ln">   399  </span>
-<span id="L400" class="ln">   400  </span>			actual, err := toProductImageItems(nil)
+<span id="L197" class="ln">   197  </span>				},
+<span id="L198" class="ln">   198  </span>			)
+<span id="L199" class="ln">   199  </span>
+<span id="L200" class="ln">   200  </span>			_, err := s.GetProductsLowStock(
+<span id="L201" class="ln">   201  </span>				authnContext(t, userID),
+<span id="L202" class="ln">   202  </span>				gen.GetProductsLowStockRequestObject{Params: gen.GetProductsLowStockParams{Limit: ptr.To(7)}},
+<span id="L203" class="ln">   203  </span>			)
+<span id="L204" class="ln">   204  </span>			require.NoError(t, err)
+<span id="L205" class="ln">   205  </span>			assert.Equal(t, 7, captured.Limit)
+<span id="L206" class="ln">   206  </span>		})
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>		t.Run(&#34;limit未指定の場合、既定件数を意味する0がユースケースへ渡る&#34;, func(t *testing.T) {
+<span id="L209" class="ln">   209  </span>			t.Parallel()
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span>			s, mockUC := newServer(t)
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>			var captured productuc.ListLowStockProductsParams
+<span id="L214" class="ln">   214  </span>			mockUC.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+<span id="L215" class="ln">   215  </span>				func(
+<span id="L216" class="ln">   216  </span>					_ context.Context, _ *auth.Authn, params productuc.ListLowStockProductsParams,
+<span id="L217" class="ln">   217  </span>				) (productuc.ProductLowStockListView, error) {
+<span id="L218" class="ln">   218  </span>					captured = params
+<span id="L219" class="ln">   219  </span>					return productuc.ProductLowStockListView{}, nil
+<span id="L220" class="ln">   220  </span>				},
+<span id="L221" class="ln">   221  </span>			)
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>			_, err := s.GetProductsLowStock(
+<span id="L224" class="ln">   224  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;lowstock_h_nolimit_user&#34;)),
+<span id="L225" class="ln">   225  </span>				gen.GetProductsLowStockRequestObject{Params: gen.GetProductsLowStockParams{}},
+<span id="L226" class="ln">   226  </span>			)
+<span id="L227" class="ln">   227  </span>			require.NoError(t, err)
+<span id="L228" class="ln">   228  </span>			assert.Equal(t, 0, captured.Limit)
+<span id="L229" class="ln">   229  </span>		})
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>		t.Run(&#34;対象商品が無い場合、空配列のレスポンスが返る&#34;, func(t *testing.T) {
+<span id="L232" class="ln">   232  </span>			t.Parallel()
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>			s, mockUC := newServer(t)
+<span id="L235" class="ln">   235  </span>			mockUC.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L236" class="ln">   236  </span>				Return(productuc.ProductLowStockListView{}, nil)
+<span id="L237" class="ln">   237  </span>
+<span id="L238" class="ln">   238  </span>			resp, err := s.GetProductsLowStock(
+<span id="L239" class="ln">   239  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;lowstock_h_empty_user&#34;)),
+<span id="L240" class="ln">   240  </span>				gen.GetProductsLowStockRequestObject{},
+<span id="L241" class="ln">   241  </span>			)
+<span id="L242" class="ln">   242  </span>			require.NoError(t, err)
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>			actual, ok := resp.(gen.GetProductsLowStock200JSONResponse)
+<span id="L245" class="ln">   245  </span>			require.True(t, ok)
+<span id="L246" class="ln">   246  </span>			assert.Empty(t, actual.Products)
+<span id="L247" class="ln">   247  </span>		})
+<span id="L248" class="ln">   248  </span>	})
+<span id="L249" class="ln">   249  </span>
+<span id="L250" class="ln">   250  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L251" class="ln">   251  </span>		t.Parallel()
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span>		t.Run(&#34;認証情報が取得できない場合、ErrUnauthenticatedUserを返しユースケースを呼ばない&#34;, func(t *testing.T) {
+<span id="L254" class="ln">   254  </span>			t.Parallel()
+<span id="L255" class="ln">   255  </span>
+<span id="L256" class="ln">   256  </span>			s, mockUC := newServer(t)
+<span id="L257" class="ln">   257  </span>			mockUC.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+<span id="L258" class="ln">   258  </span>
+<span id="L259" class="ln">   259  </span>			resp, err := s.GetProductsLowStock(context.Background(), gen.GetProductsLowStockRequestObject{})
+<span id="L260" class="ln">   260  </span>			assert.Nil(t, resp)
+<span id="L261" class="ln">   261  </span>			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
+<span id="L262" class="ln">   262  </span>		})
+<span id="L263" class="ln">   263  </span>
+<span id="L264" class="ln">   264  </span>		t.Run(&#34;ユースケースが権限エラーを返した場合、そのまま伝播する&#34;, func(t *testing.T) {
+<span id="L265" class="ln">   265  </span>			t.Parallel()
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>			s, mockUC := newServer(t)
+<span id="L268" class="ln">   268  </span>			mockUC.EXPECT().ListLowStockProducts(gomock.Any(), gomock.Any(), gomock.Any()).
+<span id="L269" class="ln">   269  </span>				Return(productuc.ProductLowStockListView{}, apperror.ErrPermissionDenied)
+<span id="L270" class="ln">   270  </span>
+<span id="L271" class="ln">   271  </span>			resp, err := s.GetProductsLowStock(
+<span id="L272" class="ln">   272  </span>				authnContext(t, uuidtestkit.NewTestFromSalt(t, &#34;lowstock_h_forbidden_user&#34;)),
+<span id="L273" class="ln">   273  </span>				gen.GetProductsLowStockRequestObject{},
+<span id="L274" class="ln">   274  </span>			)
+<span id="L275" class="ln">   275  </span>			assert.Nil(t, resp)
+<span id="L276" class="ln">   276  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
+<span id="L277" class="ln">   277  </span>		})
+<span id="L278" class="ln">   278  </span>	})
+<span id="L279" class="ln">   279  </span>}
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span>func Test_limitParam(t *testing.T) {
+<span id="L282" class="ln">   282  </span>	t.Parallel()
+<span id="L283" class="ln">   283  </span>
+<span id="L284" class="ln">   284  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L285" class="ln">   285  </span>		t.Parallel()
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>		t.Run(&#34;nilの場合は既定件数を意味する0を返す&#34;, func(t *testing.T) {
+<span id="L288" class="ln">   288  </span>			t.Parallel()
+<span id="L289" class="ln">   289  </span>			assert.Equal(t, 0, limitParam(nil))
+<span id="L290" class="ln">   290  </span>		})
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span>		t.Run(&#34;非nilの場合は指定値をそのまま返す&#34;, func(t *testing.T) {
+<span id="L293" class="ln">   293  </span>			t.Parallel()
+<span id="L294" class="ln">   294  </span>			assert.Equal(t, 42, limitParam(ptr.To(42)))
+<span id="L295" class="ln">   295  </span>		})
+<span id="L296" class="ln">   296  </span>	})
+<span id="L297" class="ln">   297  </span>}
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>func Test_toProductResponse(t *testing.T) {
+<span id="L300" class="ln">   300  </span>	t.Parallel()
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L303" class="ln">   303  </span>		t.Parallel()
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>		t.Run(&#34;全項目が設定されたDTOをレスポンスへ写像する&#34;, func(t *testing.T) {
+<span id="L306" class="ln">   306  </span>			t.Parallel()
+<span id="L307" class="ln">   307  </span>			dto := newProductView(t, &#34;lowstock_conv_full&#34;)
+<span id="L308" class="ln">   308  </span>
+<span id="L309" class="ln">   309  </span>			actual, err := toProductResponse(dto)
+<span id="L310" class="ln">   310  </span>			require.NoError(t, err)
+<span id="L311" class="ln">   311  </span>			assert.Equal(t, wantProductResponse(dto), actual)
+<span id="L312" class="ln">   312  </span>		})
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span>		t.Run(&#34;任意項目がnilのDTOはレスポンスでもnilのまま写像する&#34;, func(t *testing.T) {
+<span id="L315" class="ln">   315  </span>			t.Parallel()
+<span id="L316" class="ln">   316  </span>			dto := newProductView(t, &#34;lowstock_conv_nil&#34;)
+<span id="L317" class="ln">   317  </span>			dto.Description = nil
+<span id="L318" class="ln">   318  </span>			dto.StockWarningThreshold = nil
+<span id="L319" class="ln">   319  </span>			dto.PublishedAt = nil
+<span id="L320" class="ln">   320  </span>			dto.Images = nil
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>			actual, err := toProductResponse(dto)
+<span id="L323" class="ln">   323  </span>			require.NoError(t, err)
+<span id="L324" class="ln">   324  </span>			assert.Nil(t, actual.Description)
+<span id="L325" class="ln">   325  </span>			assert.Nil(t, actual.StockWarningThreshold)
+<span id="L326" class="ln">   326  </span>			assert.Nil(t, actual.PublishedAt)
+<span id="L327" class="ln">   327  </span>			assert.Empty(t, actual.Images)
+<span id="L328" class="ln">   328  </span>			assert.Equal(t, dto.ID.ToPrimitive(), actual.Id)
+<span id="L329" class="ln">   329  </span>		})
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>		t.Run(&#34;int32の境界値も値を保ったまま写像する&#34;, func(t *testing.T) {
+<span id="L332" class="ln">   332  </span>			t.Parallel()
+<span id="L333" class="ln">   333  </span>			dto := newProductView(t, &#34;lowstock_conv_boundary&#34;)
+<span id="L334" class="ln">   334  </span>			dto.Quantity = math.MaxInt32
+<span id="L335" class="ln">   335  </span>			dto.Version = math.MaxInt32
+<span id="L336" class="ln">   336  </span>			dto.StockWarningThreshold = ptr.To(math.MaxInt32)
+<span id="L337" class="ln">   337  </span>
+<span id="L338" class="ln">   338  </span>			actual, err := toProductResponse(dto)
+<span id="L339" class="ln">   339  </span>			require.NoError(t, err)
+<span id="L340" class="ln">   340  </span>			assert.Equal(t, int32(math.MaxInt32), actual.Quantity)
+<span id="L341" class="ln">   341  </span>			assert.Equal(t, int32(math.MaxInt32), actual.Version)
+<span id="L342" class="ln">   342  </span>			require.NotNil(t, actual.StockWarningThreshold)
+<span id="L343" class="ln">   343  </span>			assert.Equal(t, int32(math.MaxInt32), *actual.StockWarningThreshold)
+<span id="L344" class="ln">   344  </span>		})
+<span id="L345" class="ln">   345  </span>	})
+<span id="L346" class="ln">   346  </span>
+<span id="L347" class="ln">   347  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L348" class="ln">   348  </span>		t.Parallel()
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>		t.Run(&#34;在庫数がint32の範囲を超える場合、オーバーフローとして返す&#34;, func(t *testing.T) {
+<span id="L351" class="ln">   351  </span>			t.Parallel()
+<span id="L352" class="ln">   352  </span>			dto := newProductView(t, &#34;lowstock_conv_over_quantity&#34;)
+<span id="L353" class="ln">   353  </span>			dto.Quantity = math.MaxInt32 + 1
+<span id="L354" class="ln">   354  </span>
+<span id="L355" class="ln">   355  </span>			_, err := toProductResponse(dto)
+<span id="L356" class="ln">   356  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
+<span id="L357" class="ln">   357  </span>		})
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>		t.Run(&#34;在庫警告閾値がint32の範囲を超える場合、オーバーフローとして返す&#34;, func(t *testing.T) {
+<span id="L360" class="ln">   360  </span>			t.Parallel()
+<span id="L361" class="ln">   361  </span>			dto := newProductView(t, &#34;lowstock_conv_over_threshold&#34;)
+<span id="L362" class="ln">   362  </span>			dto.StockWarningThreshold = ptr.To(math.MaxInt32 + 1)
+<span id="L363" class="ln">   363  </span>
+<span id="L364" class="ln">   364  </span>			_, err := toProductResponse(dto)
+<span id="L365" class="ln">   365  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
+<span id="L366" class="ln">   366  </span>		})
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>		t.Run(&#34;バージョンがint32の範囲を超える場合、オーバーフローとして返す&#34;, func(t *testing.T) {
+<span id="L369" class="ln">   369  </span>			t.Parallel()
+<span id="L370" class="ln">   370  </span>			dto := newProductView(t, &#34;lowstock_conv_over_version&#34;)
+<span id="L371" class="ln">   371  </span>			dto.Version = math.MaxInt32 + 1
+<span id="L372" class="ln">   372  </span>
+<span id="L373" class="ln">   373  </span>			_, err := toProductResponse(dto)
+<span id="L374" class="ln">   374  </span>			require.ErrorIs(t, err, safecast.ErrOverflow)
+<span id="L375" class="ln">   375  </span>		})
+<span id="L376" class="ln">   376  </span>	})
+<span id="L377" class="ln">   377  </span>}
+<span id="L378" class="ln">   378  </span>
+<span id="L379" class="ln">   379  </span>func Test_toProductImageItems(t *testing.T) {
+<span id="L380" class="ln">   380  </span>	t.Parallel()
+<span id="L381" class="ln">   381  </span>
+<span id="L382" class="ln">   382  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L383" class="ln">   383  </span>		t.Parallel()
+<span id="L384" class="ln">   384  </span>
+<span id="L385" class="ln">   385  </span>		t.Run(&#34;DTOの並びのままレスポンスへ変換する&#34;, func(t *testing.T) {
+<span id="L386" class="ln">   386  </span>			t.Parallel()
+<span id="L387" class="ln">   387  </span>
+<span id="L388" class="ln">   388  </span>			actual, err := toProductImageItems([]productuc.ProductImageItemView{
+<span id="L389" class="ln">   389  </span>				{Path: &#34;products/a.png&#34;, DisplaySort: 1},
+<span id="L390" class="ln">   390  </span>				{Path: &#34;products/b.png&#34;, DisplaySort: 5},
+<span id="L391" class="ln">   391  </span>			})
+<span id="L392" class="ln">   392  </span>
+<span id="L393" class="ln">   393  </span>			require.NoError(t, err)
+<span id="L394" class="ln">   394  </span>			require.Len(t, actual, 2)
+<span id="L395" class="ln">   395  </span>			assert.Equal(t, gen.ProductImageItem{ImagePath: &#34;products/a.png&#34;, DisplaySort: 1}, actual[0])
+<span id="L396" class="ln">   396  </span>			assert.Equal(t, gen.ProductImageItem{ImagePath: &#34;products/b.png&#34;, DisplaySort: 5}, actual[1])
+<span id="L397" class="ln">   397  </span>		})
+<span id="L398" class="ln">   398  </span>
+<span id="L399" class="ln">   399  </span>		t.Run(&#34;画像が空の場合、空を返す&#34;, func(t *testing.T) {
+<span id="L400" class="ln">   400  </span>			t.Parallel()
 <span id="L401" class="ln">   401  </span>
-<span id="L402" class="ln">   402  </span>			require.NoError(t, err)
-<span id="L403" class="ln">   403  </span>			assert.Empty(t, actual)
-<span id="L404" class="ln">   404  </span>		})
-<span id="L405" class="ln">   405  </span>	})
-<span id="L406" class="ln">   406  </span>
-<span id="L407" class="ln">   407  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L408" class="ln">   408  </span>		t.Parallel()
-<span id="L409" class="ln">   409  </span>
-<span id="L410" class="ln">   410  </span>		t.Run(&#34;表示順がint32に収まらない場合、エラーを返す&#34;, func(t *testing.T) {
-<span id="L411" class="ln">   411  </span>			t.Parallel()
-<span id="L412" class="ln">   412  </span>
-<span id="L413" class="ln">   413  </span>			actual, err := toProductImageItems([]productuc.ProductImageItemView{
-<span id="L414" class="ln">   414  </span>				{Path: &#34;products/a.png&#34;, DisplaySort: math.MaxInt32 + 1},
-<span id="L415" class="ln">   415  </span>			})
-<span id="L416" class="ln">   416  </span>
-<span id="L417" class="ln">   417  </span>			require.Error(t, err)
-<span id="L418" class="ln">   418  </span>			assert.Nil(t, actual)
-<span id="L419" class="ln">   419  </span>		})
-<span id="L420" class="ln">   420  </span>	})
-<span id="L421" class="ln">   421  </span>}
-<span id="L422" class="ln">   422  </span>
+<span id="L402" class="ln">   402  </span>			actual, err := toProductImageItems(nil)
+<span id="L403" class="ln">   403  </span>
+<span id="L404" class="ln">   404  </span>			require.NoError(t, err)
+<span id="L405" class="ln">   405  </span>			assert.Empty(t, actual)
+<span id="L406" class="ln">   406  </span>		})
+<span id="L407" class="ln">   407  </span>	})
+<span id="L408" class="ln">   408  </span>
+<span id="L409" class="ln">   409  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L410" class="ln">   410  </span>		t.Parallel()
+<span id="L411" class="ln">   411  </span>
+<span id="L412" class="ln">   412  </span>		t.Run(&#34;表示順がint32に収まらない場合、エラーを返す&#34;, func(t *testing.T) {
+<span id="L413" class="ln">   413  </span>			t.Parallel()
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>			actual, err := toProductImageItems([]productuc.ProductImageItemView{
+<span id="L416" class="ln">   416  </span>				{Path: &#34;products/a.png&#34;, DisplaySort: math.MaxInt32 + 1},
+<span id="L417" class="ln">   417  </span>			})
+<span id="L418" class="ln">   418  </span>
+<span id="L419" class="ln">   419  </span>			require.Error(t, err)
+<span id="L420" class="ln">   420  </span>			assert.Nil(t, actual)
+<span id="L421" class="ln">   421  </span>		})
+<span id="L422" class="ln">   422  </span>	})
+<span id="L423" class="ln">   423  </span>}
+<span id="L424" class="ln">   424  </span>
 </pre><p><a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/lowstock/v1_products_low_stock_handler_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

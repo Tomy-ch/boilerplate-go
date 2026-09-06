@@ -1,0 +1,165 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>aws - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure">infrastructure</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime">realtime</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws">aws</a>/<span class="text-muted">attributes.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/infrastructure/realtime/aws">go-boilerplate/internal/infrastructure/realtime/aws</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">//go:generate mockgen -source=$GOFILE -destination=mock/mock_$GOFILE.gen.go -package=mock_$GOPACKAGE</span>
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>package aws
+<span id="L4" class="ln">     4  </span>
+<span id="L5" class="ln">     5  </span>import (
+<span id="L6" class="ln">     6  </span>	&#34;encoding/json&#34;
+<span id="L7" class="ln">     7  </span>	&#34;strconv&#34;
+<span id="L8" class="ln">     8  </span>
+<span id="L9" class="ln">     9  </span>	sqstypes &#34;github.com/aws/aws-sdk-go-v2/service/sqs/types&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L13" class="ln">    13  </span>)
+<span id="L14" class="ln">    14  </span>
+<span id="L15" class="ln">    15  </span><span class="comment">// instance queue に設定する固定値です（deployment 依存の値は RealtimeConfig 側）。</span>
+<span id="L16" class="ln">    16  </span>const (
+<span id="L17" class="ln">    17  </span>	<span class="comment">// visibilityTimeout は、受信した通知を他の受信から隠す秒数です。consumer は受信後すぐ削除するので短くて足ります。</span>
+<span id="L18" class="ln">    18  </span>	visibilityTimeout = 30
+<span id="L19" class="ln">    19  </span>	<span class="comment">// receiveWaitSeconds は、long polling の待ち秒数（SQS の上限）です。空 poll の往復を減らします。</span>
+<span id="L20" class="ln">    20  </span>	receiveWaitSeconds = 20
+<span id="L21" class="ln">    21  </span>	<span class="comment">// redriveMaxReceiveCount は、この回数受信しても削除されなかった通知を DLQ へ移す閾値です。</span>
+<span id="L22" class="ln">    22  </span>	redriveMaxReceiveCount = 5
+<span id="L23" class="ln">    23  </span>)
+<span id="L24" class="ln">    24  </span>
+<span id="L25" class="ln">    25  </span><span class="comment">// redrivePolicy は、SQS の RedrivePolicy 属性の JSON です。</span>
+<span id="L26" class="ln">    26  </span>type redrivePolicy struct {
+<span id="L27" class="ln">    27  </span>	DeadLetterTargetArn string `json:&#34;deadLetterTargetArn&#34;`
+<span id="L28" class="ln">    28  </span>	MaxReceiveCount     string `json:&#34;maxReceiveCount&#34;`
+<span id="L29" class="ln">    29  </span>}
+<span id="L30" class="ln">    30  </span>
+<span id="L31" class="ln">    31  </span><span class="comment">// AttributesBuilder は、instance queue に設定する属性の集合を組み立てる境界です。</span>
+<span id="L32" class="ln">    32  </span><span class="comment">// production は全属性（policy / redrive / 暗号化 / timings）を返し、間引きは emulator 向けの</span>
+<span id="L33" class="ln">    33  </span><span class="comment">// 実装側が行います（README の Emulator compatibility）。</span>
+<span id="L34" class="ln">    34  </span>type AttributesBuilder interface {
+<span id="L35" class="ln">    35  </span>	<span class="comment">// Build は、queueARN の queue に設定する属性を返します。空なら何も設定しません。</span>
+<span id="L36" class="ln">    36  </span>	Build(queueARN string) (map[string]string, error)
+<span id="L37" class="ln">    37  </span>}
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span><span class="comment">// QueueAttributesInput は、production の属性を組み立てるのに要る deployment 依存の識別子です。</span>
+<span id="L40" class="ln">    40  </span>type QueueAttributesInput struct {
+<span id="L41" class="ln">    41  </span>	<span class="comment">// TopicARN は、この queue への送信を許す唯一の topic です（access policy の aws:SourceArn 条件）。</span>
+<span id="L42" class="ln">    42  </span>	TopicARN string
+<span id="L43" class="ln">    43  </span>	<span class="comment">// DLQARN は、redrive 先です。空なら RedrivePolicy を付けません。</span>
+<span id="L44" class="ln">    44  </span>	DLQARN string
+<span id="L45" class="ln">    45  </span>}
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span><span class="comment">// queueAttributes は、production の全属性です。</span>
+<span id="L48" class="ln">    48  </span>type queueAttributes struct {
+<span id="L49" class="ln">    49  </span>	in QueueAttributesInput
+<span id="L50" class="ln">    50  </span>}
+<span id="L51" class="ln">    51  </span>
+<span id="L52" class="ln">    52  </span><span class="comment">// NewQueueAttributes は、in.TopicARN からの送信だけを許す policy、in.DLQARN への redrive（空なら付けない）、</span>
+<span id="L53" class="ln">    53  </span><span class="comment">// SQS 管理の暗号化、long polling と visibility timeout を設定する AttributesBuilder を返します。</span>
+<span id="L54" class="ln">    54  </span>func NewQueueAttributes(in QueueAttributesInput) AttributesBuilder {
+<span id="L55" class="ln">    55  </span>	return &amp;queueAttributes{in: in}
+<span id="L56" class="ln">    56  </span>}
+<span id="L57" class="ln">    57  </span>
+<span id="L58" class="ln">    58  </span>func (a *queueAttributes) Build(queueARN string) (map[string]string, error) {
+<span id="L59" class="ln">    59  </span>	attrs := TimingAttributes()
+<span id="L60" class="ln">    60  </span>
+<span id="L61" class="ln">    61  </span>	policy, err := queuePolicyDocument(queueARN, a.in.TopicARN)
+<span id="L62" class="ln">    62  </span>	if err != nil {
+<span id="L63" class="ln">    63  </span>		return nil, err
+<span id="L64" class="ln">    64  </span>	}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span>	attrs[string(sqstypes.QueueAttributeNamePolicy)] = policy
+<span id="L67" class="ln">    67  </span>	attrs[string(sqstypes.QueueAttributeNameSqsManagedSseEnabled)] = &#34;true&#34;
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span>	if a.in.DLQARN != &#34;&#34; {
+<span id="L70" class="ln">    70  </span>		redrive, err := redrivePolicyDocument(a.in.DLQARN)
+<span id="L71" class="ln">    71  </span>		if err != nil {
+<span id="L72" class="ln">    72  </span>			return nil, err
+<span id="L73" class="ln">    73  </span>		}
+<span id="L74" class="ln">    74  </span>
+<span id="L75" class="ln">    75  </span>		attrs[string(sqstypes.QueueAttributeNameRedrivePolicy)] = redrive
+<span id="L76" class="ln">    76  </span>	}
+<span id="L77" class="ln">    77  </span>
+<span id="L78" class="ln">    78  </span>	return attrs, nil
+<span id="L79" class="ln">    79  </span>}
+<span id="L80" class="ln">    80  </span>
+<span id="L81" class="ln">    81  </span><span class="comment">// TimingAttributes は、long polling と visibility timeout の属性を返します。</span>
+<span id="L82" class="ln">    82  </span>func TimingAttributes() map[string]string {
+<span id="L83" class="ln">    83  </span>	return map[string]string{
+<span id="L84" class="ln">    84  </span>		string(sqstypes.QueueAttributeNameVisibilityTimeout):             strconv.Itoa(visibilityTimeout),
+<span id="L85" class="ln">    85  </span>		string(sqstypes.QueueAttributeNameReceiveMessageWaitTimeSeconds): strconv.Itoa(receiveWaitSeconds),
+<span id="L86" class="ln">    86  </span>	}
+<span id="L87" class="ln">    87  </span>}
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span>func redrivePolicyDocument(dlqARN string) (string, error) {
+<span id="L90" class="ln">    90  </span>	doc, err := json.Marshal(
+<span id="L91" class="ln">    91  </span>		redrivePolicy{DeadLetterTargetArn: dlqARN, MaxReceiveCount: strconv.Itoa(redriveMaxReceiveCount)},
+<span id="L92" class="ln">    92  </span>	)
+<span id="L93" class="ln">    93  </span>	if err != nil {
+<span id="L94" class="ln">    94  </span>		return &#34;&#34;, xerrors.Wrap(apperror.ErrInternal, &#34;encode redrive policy: &#34;+err.Error())
+<span id="L95" class="ln">    95  </span>	}
+<span id="L96" class="ln">    96  </span>
+<span id="L97" class="ln">    97  </span>	return string(doc), nil
+<span id="L98" class="ln">    98  </span>}
+<span id="L99" class="ln">    99  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/aws/attributes.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>
