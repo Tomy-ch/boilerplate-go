@@ -1,7 +1,5 @@
 # Tools Container
 
-English | [日本語](README.ja.md)
-
 This Dockerfile provides **code generation and bundling tool containers** for the project. It uses multi-stage builds to offer Go, Node.js, and Python tool environments.
 
 ## Role
@@ -12,7 +10,7 @@ This Dockerfile provides **code generation and bundling tool containers** for th
 
 |Target|Base Image|Covers|
 |---|---|---|
-|`go_tools`|`golang:1.26.6-alpine`|Go code generation, linting, security scanning, documentation ([tools](#go_tools))|
+|`go_tools`|`golang:1.27.1-alpine`|Go code generation, linting, security scanning, documentation ([tools](#go_tools))|
 |`node_tools`|`node:24.19.0-alpine`|OpenAPI bundling, Markdown / commit linting, portal build and script tests ([tools](#node_tools))|
 |`python_tools`|`python:3.14.7-slim`|SQL linting, knowledge-graph build ([tools](#python_tools))|
 
@@ -62,7 +60,7 @@ Unlike the other two stages, the tools themselves do not come from `mise.toml`: 
 only `uv`, which then installs each of them from its own lockfile
 ([`python/sqlfluff.txt`](../../python/sqlfluff.txt) / [`python/graphify.txt`](../../python/graphify.txt))
 with `--require-hashes`, so the whole transitive tree is version- and hash-pinned
-(see [ADR-0080 (mise-ssot-drift-gate)](../../docs/adr/0080-mise-ssot-drift-gate.md)).
+(see [ADR-0084 (mise-ssot-drift-gate)](../../docs/adr/0084-mise-ssot-drift-gate.md)).
 
 graphify is here for reproducibility rather than speed. Its semantic extraction is driven by a
 prompt that ships with the tool, and the cache namespace is a fingerprint of that prompt

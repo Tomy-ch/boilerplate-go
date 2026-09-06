@@ -1,0 +1,106 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtimesecret - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/infrastructure">infrastructure</a>/<a href="../../../../../src/go-boilerplate/internal/infrastructure/realtimesecret">realtimesecret</a>/<span class="text-muted">generator.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/infrastructure/realtimesecret">go-boilerplate/internal/infrastructure/realtimesecret</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span><span class="comment">// Package realtimesecret は、Realtime Delivery の ticket 生値（realtime.SecretGenerator）を OS の暗号論的</span>
+<span id="L2" class="ln">     2  </span><span class="comment">// 乱数源から生成する実装を提供します。feature 側の token 境界とは独立に持つのは、sample feature を削除</span>
+<span id="L3" class="ln">     3  </span><span class="comment">// しても Realtime Delivery が成り立つためです。</span>
+<span id="L4" class="ln">     4  </span>package realtimesecret
+<span id="L5" class="ln">     5  </span>
+<span id="L6" class="ln">     6  </span>import (
+<span id="L7" class="ln">     7  </span>	&#34;crypto/rand&#34;
+<span id="L8" class="ln">     8  </span>	&#34;encoding/base64&#34;
+<span id="L9" class="ln">     9  </span>	&#34;io&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L13" class="ln">    13  </span>)
+<span id="L14" class="ln">    14  </span>
+<span id="L15" class="ln">    15  </span><span class="comment">// secretBytes は、1 ticket あたりの乱数バイト数です。256 bit は総当たりで言い当てることが</span>
+<span id="L16" class="ln">    16  </span><span class="comment">// 現実的でない水準で、設計正本（ADR-0074）が ticket に要求する幅です。</span>
+<span id="L17" class="ln">    17  </span>const secretBytes = 32
+<span id="L18" class="ln">    18  </span>
+<span id="L19" class="ln">    19  </span><span class="comment">// cryptoGenerator は、乱数源から読み出して生値を組み立てます。生成元は New が固定します。</span>
+<span id="L20" class="ln">    20  </span>type cryptoGenerator struct {
+<span id="L21" class="ln">    21  </span>	source io.Reader
+<span id="L22" class="ln">    22  </span>}
+<span id="L23" class="ln">    23  </span>
+<span id="L24" class="ln">    24  </span><span class="comment">// New は、realtime.SecretGenerator の実装を生成します。</span>
+<span id="L25" class="ln">    25  </span>func New() realtime.SecretGenerator {
+<span id="L26" class="ln">    26  </span>	return &amp;cryptoGenerator{source: rand.Reader}
+<span id="L27" class="ln">    27  </span>}
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span><span class="comment">// Generate は、暗号論的に安全な乱数から新しい生値を返します。base64url（パディング無し）なので</span>
+<span id="L30" class="ln">    30  </span><span class="comment">// query parameter にそのまま載せられます。必要な長さを読み出せなければエラーを返します —</span>
+<span id="L31" class="ln">    31  </span><span class="comment">// 短い値で妥協すると推測できないという保証だけが静かに失われるためです。</span>
+<span id="L32" class="ln">    32  </span>func (g *cryptoGenerator) Generate() (string, error) {
+<span id="L33" class="ln">    33  </span>	b := make([]byte, secretBytes)
+<span id="L34" class="ln">    34  </span>	if _, err := io.ReadFull(g.source, b); err != nil {
+<span id="L35" class="ln">    35  </span>		return &#34;&#34;, xerrors.Wrap(err, &#34;failed to read random bytes&#34;)
+<span id="L36" class="ln">    36  </span>	}
+<span id="L37" class="ln">    37  </span>
+<span id="L38" class="ln">    38  </span>	return base64.RawURLEncoding.EncodeToString(b), nil
+<span id="L39" class="ln">    39  </span>}
+<span id="L40" class="ln">    40  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/infrastructure/realtimesecret/generator.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

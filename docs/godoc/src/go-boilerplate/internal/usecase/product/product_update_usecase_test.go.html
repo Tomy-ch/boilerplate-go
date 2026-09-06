@@ -173,543 +173,544 @@
 <span id="L116" class="ln">   116  </span>			func(_ context.Context, p *domainproduct.Product) (int, error) {
 <span id="L117" class="ln">   117  </span>				*captured = p
 <span id="L118" class="ln">   118  </span>				return nextVersion, nil
-<span id="L119" class="ln">   119  </span>			})
-<span id="L120" class="ln">   120  </span>	}
-<span id="L121" class="ln">   121  </span>
-<span id="L122" class="ln">   122  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L123" class="ln">   123  </span>		t.Parallel()
-<span id="L124" class="ln">   124  </span>
-<span id="L125" class="ln">   125  </span>		t.Run(&#34;指定したフィールドのみ更新され、未指定フィールドは現在値が据え置かれる&#34;, func(t *testing.T) {
-<span id="L126" class="ln">   126  </span>			t.Parallel()
-<span id="L127" class="ln">   127  </span>
-<span id="L128" class="ln">   128  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L129" class="ln">   129  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L130" class="ln">   130  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L131" class="ln">   131  </span>
-<span id="L132" class="ln">   132  </span>			var captured *domainproduct.Product
-<span id="L133" class="ln">   133  </span>			captureUpdate(deps, &amp;captured)
-<span id="L134" class="ln">   134  </span>
-<span id="L135" class="ln">   135  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L136" class="ln">   136  </span>				Version:  currentVersion,
-<span id="L137" class="ln">   137  </span>				Name:     ptr.To(&#34;更新後商品名&#34;),
-<span id="L138" class="ln">   138  </span>				Quantity: ptr.To(9),
-<span id="L139" class="ln">   139  </span>			})
-<span id="L140" class="ln">   140  </span>			require.NoError(t, err)
-<span id="L141" class="ln">   141  </span>			require.NotNil(t, captured)
-<span id="L142" class="ln">   142  </span>
-<span id="L143" class="ln">   143  </span>			assert.Equal(t, &#34;更新後商品名&#34;, captured.Name())
-<span id="L144" class="ln">   144  </span>			assert.Equal(t, 9, captured.Quantity())
-<span id="L145" class="ln">   145  </span>			assert.Equal(t, &#34;10.5&#34;, captured.Price().String())
-<span id="L146" class="ln">   146  </span>			require.NotNil(t, captured.Description())
-<span id="L147" class="ln">   147  </span>			assert.Equal(t, &#34;現行説明&#34;, *captured.Description())
-<span id="L148" class="ln">   148  </span>			require.NotNil(t, captured.StockWarningThreshold())
-<span id="L149" class="ln">   149  </span>			assert.Equal(t, 2, *captured.StockWarningThreshold())
-<span id="L150" class="ln">   150  </span>			require.NotNil(t, captured.PublishedAt())
-<span id="L151" class="ln">   151  </span>			assert.Equal(t, updateBasePublishedAt, *captured.PublishedAt())
-<span id="L152" class="ln">   152  </span>			require.Len(t, captured.Images(), 1)
-<span id="L153" class="ln">   153  </span>			assert.Equal(t, &#34;products/current.png&#34;, captured.Images()[0].ImagePath())
-<span id="L154" class="ln">   154  </span>			assert.Equal(t, &#34;現行ステータス&#34;, captured.Status().Name())
-<span id="L155" class="ln">   155  </span>			assert.Equal(t, &#34;現行カテゴリ&#34;, captured.Category().Name())
-<span id="L156" class="ln">   156  </span>
-<span id="L157" class="ln">   157  </span>			assert.Equal(t, &#34;更新後商品名&#34;, actual.Name)
-<span id="L158" class="ln">   158  </span>			assert.Equal(t, 9, actual.Quantity)
-<span id="L159" class="ln">   159  </span>		})
-<span id="L160" class="ln">   160  </span>
-<span id="L161" class="ln">   161  </span>		t.Run(&#34;null指定されたフィールドがクリアされる&#34;, func(t *testing.T) {
-<span id="L162" class="ln">   162  </span>			t.Parallel()
-<span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L165" class="ln">   165  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L166" class="ln">   166  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L167" class="ln">   167  </span>
-<span id="L168" class="ln">   168  </span>			var captured *domainproduct.Product
-<span id="L169" class="ln">   169  </span>			captureUpdate(deps, &amp;captured)
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L172" class="ln">   172  </span>				Version:               currentVersion,
-<span id="L173" class="ln">   173  </span>				Description:           patch.Null[string](),
-<span id="L174" class="ln">   174  </span>				StockWarningThreshold: patch.Null[int](),
-<span id="L175" class="ln">   175  </span>				PublishedAt:           patch.Null[time.Time](),
-<span id="L176" class="ln">   176  </span>				Images:                patch.Null[[]ProductImageParams](),
-<span id="L177" class="ln">   177  </span>			})
-<span id="L178" class="ln">   178  </span>			require.NoError(t, err)
-<span id="L179" class="ln">   179  </span>			require.NotNil(t, captured)
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>			assert.Nil(t, captured.Description())
-<span id="L182" class="ln">   182  </span>			assert.Nil(t, captured.StockWarningThreshold())
-<span id="L183" class="ln">   183  </span>			assert.Nil(t, captured.PublishedAt())
-<span id="L184" class="ln">   184  </span>			assert.Empty(t, captured.Images())
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span>			assert.Nil(t, actual.Description)
-<span id="L187" class="ln">   187  </span>			assert.Nil(t, actual.PublishedAt)
-<span id="L188" class="ln">   188  </span>			assert.Empty(t, actual.Images)
-<span id="L189" class="ln">   189  </span>		})
-<span id="L190" class="ln">   190  </span>
-<span id="L191" class="ln">   191  </span>		t.Run(&#34;値指定されたフィールドがその値へ更新される&#34;, func(t *testing.T) {
-<span id="L192" class="ln">   192  </span>			t.Parallel()
-<span id="L193" class="ln">   193  </span>
-<span id="L194" class="ln">   194  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L195" class="ln">   195  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L196" class="ln">   196  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>			var captured *domainproduct.Product
-<span id="L199" class="ln">   199  </span>			captureUpdate(deps, &amp;captured)
-<span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>			publishedAt := updateBasePublishedAt.Add(24 * time.Hour)
-<span id="L202" class="ln">   202  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L203" class="ln">   203  </span>				Version:               currentVersion,
-<span id="L204" class="ln">   204  </span>				Price:                 ptr.To(&#34;29.95&#34;),
-<span id="L205" class="ln">   205  </span>				Description:           patch.Value(&#34;更新後説明&#34;),
-<span id="L206" class="ln">   206  </span>				StockWarningThreshold: patch.Value(7),
-<span id="L207" class="ln">   207  </span>				PublishedAt:           patch.Value(publishedAt),
-<span id="L208" class="ln">   208  </span>				Images: patch.Value([]ProductImageParams{
-<span id="L209" class="ln">   209  </span>					{ImagePath: &#34;products/updated.png&#34;, DisplaySort: 1},
-<span id="L210" class="ln">   210  </span>				}),
-<span id="L211" class="ln">   211  </span>			})
-<span id="L212" class="ln">   212  </span>			require.NoError(t, err)
-<span id="L213" class="ln">   213  </span>			require.NotNil(t, captured)
-<span id="L214" class="ln">   214  </span>
-<span id="L215" class="ln">   215  </span>			assert.Equal(t, &#34;29.95&#34;, captured.Price().String())
-<span id="L216" class="ln">   216  </span>			require.NotNil(t, captured.Description())
-<span id="L217" class="ln">   217  </span>			assert.Equal(t, &#34;更新後説明&#34;, *captured.Description())
-<span id="L218" class="ln">   218  </span>			require.NotNil(t, captured.StockWarningThreshold())
-<span id="L219" class="ln">   219  </span>			assert.Equal(t, 7, *captured.StockWarningThreshold())
-<span id="L220" class="ln">   220  </span>			require.NotNil(t, captured.PublishedAt())
-<span id="L221" class="ln">   221  </span>			assert.Equal(t, publishedAt, *captured.PublishedAt())
-<span id="L222" class="ln">   222  </span>			require.Len(t, captured.Images(), 1)
-<span id="L223" class="ln">   223  </span>			assert.Equal(t, &#34;products/updated.png&#34;, captured.Images()[0].ImagePath())
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>			assert.Equal(t, &#34;29.95&#34;, actual.Price.String())
-<span id="L226" class="ln">   226  </span>		})
-<span id="L227" class="ln">   227  </span>
-<span id="L228" class="ln">   228  </span>		t.Run(&#34;imagesが未指定の場合、現在の画像を保持したエンティティで更新する&#34;, func(t *testing.T) {
-<span id="L229" class="ln">   229  </span>			t.Parallel()
-<span id="L230" class="ln">   230  </span>
-<span id="L231" class="ln">   231  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L232" class="ln">   232  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L233" class="ln">   233  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L234" class="ln">   234  </span>
-<span id="L235" class="ln">   235  </span>			var captured *domainproduct.Product
-<span id="L236" class="ln">   236  </span>			captureUpdate(deps, &amp;captured)
-<span id="L237" class="ln">   237  </span>
-<span id="L238" class="ln">   238  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L239" class="ln">   239  </span>				Version: currentVersion,
-<span id="L240" class="ln">   240  </span>				Name:    ptr.To(&#34;更新後商品名&#34;),
-<span id="L241" class="ln">   241  </span>			})
-<span id="L242" class="ln">   242  </span>			require.NoError(t, err)
-<span id="L243" class="ln">   243  </span>			require.NotNil(t, captured)
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>			require.Len(t, captured.Images(), 1)
-<span id="L246" class="ln">   246  </span>			assert.Equal(t, &#34;products/current.png&#34;, captured.Images()[0].ImagePath())
-<span id="L247" class="ln">   247  </span>			require.Len(t, actual.Images, 1)
-<span id="L248" class="ln">   248  </span>			assert.Equal(t, &#34;products/current.png&#34;, actual.Images[0].Path)
-<span id="L249" class="ln">   249  </span>		})
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>		t.Run(&#34;statusIdが指定された場合、再解決した名称付き参照へ更新される&#34;, func(t *testing.T) {
-<span id="L252" class="ln">   252  </span>			t.Parallel()
-<span id="L253" class="ln">   253  </span>
-<span id="L254" class="ln">   254  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L255" class="ln">   255  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L256" class="ln">   256  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L257" class="ln">   257  </span>
-<span id="L258" class="ln">   258  </span>			newStatusID := uuidtestkit.NewTestFromSalt(t, &#34;update_new_status&#34;)
-<span id="L259" class="ln">   259  </span>			deps.statusRepo.EXPECT().FindByID(gomock.Any(), newStatusID).Return(mustStatus(t, newStatusID), nil)
-<span id="L260" class="ln">   260  </span>			deps.categoryRepo.EXPECT().
-<span id="L261" class="ln">   261  </span>				FindByID(gomock.Any(), entity.Category().ID()).
-<span id="L262" class="ln">   262  </span>				Return(mustCategory(t, entity.Category().ID()), nil)
-<span id="L263" class="ln">   263  </span>
-<span id="L264" class="ln">   264  </span>			var captured *domainproduct.Product
-<span id="L265" class="ln">   265  </span>			captureUpdate(deps, &amp;captured)
-<span id="L266" class="ln">   266  </span>
-<span id="L267" class="ln">   267  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L268" class="ln">   268  </span>				Version:  currentVersion,
-<span id="L269" class="ln">   269  </span>				StatusID: &amp;newStatusID,
-<span id="L270" class="ln">   270  </span>			})
-<span id="L271" class="ln">   271  </span>			require.NoError(t, err)
-<span id="L272" class="ln">   272  </span>			require.NotNil(t, captured)
-<span id="L273" class="ln">   273  </span>
-<span id="L274" class="ln">   274  </span>			assert.Equal(t, newStatusID, captured.Status().ID())
-<span id="L275" class="ln">   275  </span>			assert.Equal(t, &#34;在庫あり&#34;, captured.Status().Name())
-<span id="L276" class="ln">   276  </span>			assert.Equal(t, newStatusID, actual.StatusID)
-<span id="L277" class="ln">   277  </span>			assert.Equal(t, &#34;在庫あり&#34;, actual.StatusName)
-<span id="L278" class="ln">   278  </span>		})
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>		t.Run(&#34;返却Viewのバージョンは、エンティティ保持値ではなくrepo.Updateが採番した値になる&#34;, func(t *testing.T) {
-<span id="L281" class="ln">   281  </span>			t.Parallel()
-<span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L284" class="ln">   284  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L285" class="ln">   285  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L286" class="ln">   286  </span>
-<span id="L287" class="ln">   287  </span>			var captured *domainproduct.Product
-<span id="L288" class="ln">   288  </span>			captureUpdate(deps, &amp;captured)
-<span id="L289" class="ln">   289  </span>
-<span id="L290" class="ln">   290  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L291" class="ln">   291  </span>				Version: currentVersion,
-<span id="L292" class="ln">   292  </span>				Name:    ptr.To(&#34;採番確認商品&#34;),
-<span id="L293" class="ln">   293  </span>			})
-<span id="L294" class="ln">   294  </span>			require.NoError(t, err)
-<span id="L295" class="ln">   295  </span>			require.NotNil(t, captured)
-<span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>			assert.Equal(t, currentVersion, captured.Version())
-<span id="L298" class="ln">   298  </span>			assert.Equal(t, nextVersion, actual.Version)
-<span id="L299" class="ln">   299  </span>		})
-<span id="L300" class="ln">   300  </span>
-<span id="L301" class="ln">   301  </span>		t.Run(&#34;商品更新を所有者なしリソースとして認可する&#34;, func(t *testing.T) {
-<span id="L302" class="ln">   302  </span>			t.Parallel()
-<span id="L303" class="ln">   303  </span>
-<span id="L304" class="ln">   304  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L305" class="ln">   305  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>			deps.authorizer.EXPECT().
-<span id="L308" class="ln">   308  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, authz.NewResource(&#34;product&#34;, nil)).
-<span id="L309" class="ln">   309  </span>				Return(nil)
-<span id="L310" class="ln">   310  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runInTx)
-<span id="L311" class="ln">   311  </span>			deps.repo.EXPECT().FindByID(gomock.Any(), entity.ID()).Return(entity, nil)
-<span id="L312" class="ln">   312  </span>
-<span id="L313" class="ln">   313  </span>			var captured *domainproduct.Product
-<span id="L314" class="ln">   314  </span>			captureUpdate(deps, &amp;captured)
-<span id="L315" class="ln">   315  </span>
-<span id="L316" class="ln">   316  </span>			_, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L317" class="ln">   317  </span>				Version: currentVersion,
-<span id="L318" class="ln">   318  </span>				Name:    ptr.To(&#34;認可確認商品&#34;),
-<span id="L319" class="ln">   319  </span>			})
-<span id="L320" class="ln">   320  </span>			require.NoError(t, err)
-<span id="L321" class="ln">   321  </span>		})
-<span id="L322" class="ln">   322  </span>	})
-<span id="L323" class="ln">   323  </span>
-<span id="L324" class="ln">   324  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L325" class="ln">   325  </span>		t.Parallel()
-<span id="L326" class="ln">   326  </span>
-<span id="L327" class="ln">   327  </span>		t.Run(&#34;authnがnilの場合、ErrUnauthenticated(401)を返す&#34;, func(t *testing.T) {
-<span id="L328" class="ln">   328  </span>			t.Parallel()
-<span id="L329" class="ln">   329  </span>
-<span id="L330" class="ln">   330  </span>			u, _ := newUpdateTestUsecase(t)
-<span id="L331" class="ln">   331  </span>
-<span id="L332" class="ln">   332  </span>			actual, err := u.UpdateProduct(context.Background(), nil,
-<span id="L333" class="ln">   333  </span>				uuidtestkit.NewTestFromSalt(t, &#34;update_unauthenticated&#34;), UpdateProductParams{Version: currentVersion})
-<span id="L334" class="ln">   334  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
-<span id="L335" class="ln">   335  </span>			assert.Equal(t, ProductView{}, actual)
-<span id="L336" class="ln">   336  </span>		})
-<span id="L337" class="ln">   337  </span>
-<span id="L338" class="ln">   338  </span>		t.Run(&#34;認可が拒否された場合、権限エラー(403)を返す&#34;, func(t *testing.T) {
-<span id="L339" class="ln">   339  </span>			t.Parallel()
-<span id="L340" class="ln">   340  </span>
-<span id="L341" class="ln">   341  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L342" class="ln">   342  </span>			deps.authorizer.EXPECT().
-<span id="L343" class="ln">   343  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, gomock.Any()).
-<span id="L344" class="ln">   344  </span>				Return(apperror.ErrPermissionDenied)
-<span id="L345" class="ln">   345  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).Times(0)
-<span id="L346" class="ln">   346  </span>
-<span id="L347" class="ln">   347  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{},
-<span id="L348" class="ln">   348  </span>				uuidtestkit.NewTestFromSalt(t, &#34;update_forbidden&#34;), UpdateProductParams{Version: currentVersion})
-<span id="L349" class="ln">   349  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
-<span id="L350" class="ln">   350  </span>			assert.Equal(t, ProductView{}, actual)
-<span id="L351" class="ln">   351  </span>		})
-<span id="L352" class="ln">   352  </span>
-<span id="L353" class="ln">   353  </span>		t.Run(&#34;statusIdに対応するマスタが存在しない場合、整合性異常(500)を返し更新を実行しない&#34;, func(t *testing.T) {
-<span id="L354" class="ln">   354  </span>			t.Parallel()
-<span id="L355" class="ln">   355  </span>
-<span id="L356" class="ln">   356  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L357" class="ln">   357  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L358" class="ln">   358  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L359" class="ln">   359  </span>			newStatusID := uuidtestkit.NewTestFromSalt(t, &#34;update_missing_status&#34;)
-<span id="L360" class="ln">   360  </span>			deps.statusRepo.EXPECT().FindByID(gomock.Any(), newStatusID).Return(nil, apperror.ErrNotFound)
-<span id="L361" class="ln">   361  </span>			deps.repo.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
-<span id="L362" class="ln">   362  </span>
-<span id="L363" class="ln">   363  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(),
-<span id="L364" class="ln">   364  </span>				UpdateProductParams{Version: currentVersion, StatusID: &amp;newStatusID})
-<span id="L365" class="ln">   365  </span>			require.ErrorIs(t, err, errMissingStatus)
-<span id="L366" class="ln">   366  </span>			assert.Equal(t, ProductView{}, actual)
-<span id="L367" class="ln">   367  </span>		})
-<span id="L368" class="ln">   368  </span>
-<span id="L369" class="ln">   369  </span>		t.Run(&#34;価格が数値として解釈できない場合、トランザクションに入る前にErrInvalidArgument(400)を返す&#34;, func(t *testing.T) {
-<span id="L370" class="ln">   370  </span>			t.Parallel()
-<span id="L371" class="ln">   371  </span>
-<span id="L372" class="ln">   372  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L373" class="ln">   373  </span>			deps.authorizer.EXPECT().
-<span id="L374" class="ln">   374  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, gomock.Any()).
-<span id="L375" class="ln">   375  </span>				Return(nil)
-<span id="L376" class="ln">   376  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).Times(0)
-<span id="L377" class="ln">   377  </span>
-<span id="L378" class="ln">   378  </span>			_, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{},
-<span id="L379" class="ln">   379  </span>				uuidtestkit.NewTestFromSalt(t, &#34;update_invalid_price&#34;), UpdateProductParams{
-<span id="L380" class="ln">   380  </span>					Version: currentVersion,
-<span id="L381" class="ln">   381  </span>					Price:   ptr.To(&#34;not-a-number&#34;),
-<span id="L382" class="ln">   382  </span>				})
-<span id="L383" class="ln">   383  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
-<span id="L384" class="ln">   384  </span>		})
-<span id="L385" class="ln">   385  </span>
-<span id="L386" class="ln">   386  </span>		t.Run(&#34;価格が負の場合、トランザクションに入る前に検証エラー(422)を返す&#34;, func(t *testing.T) {
-<span id="L387" class="ln">   387  </span>			t.Parallel()
-<span id="L388" class="ln">   388  </span>
-<span id="L389" class="ln">   389  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L390" class="ln">   390  </span>			deps.authorizer.EXPECT().
-<span id="L391" class="ln">   391  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, gomock.Any()).
-<span id="L392" class="ln">   392  </span>				Return(nil)
-<span id="L393" class="ln">   393  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).Times(0)
-<span id="L394" class="ln">   394  </span>
-<span id="L395" class="ln">   395  </span>			_, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{},
-<span id="L396" class="ln">   396  </span>				uuidtestkit.NewTestFromSalt(t, &#34;update_negative_price&#34;), UpdateProductParams{
-<span id="L397" class="ln">   397  </span>					Version: currentVersion,
-<span id="L398" class="ln">   398  </span>					Price:   ptr.To(&#34;-1&#34;),
-<span id="L399" class="ln">   399  </span>				})
-<span id="L400" class="ln">   400  </span>			require.ErrorIs(t, err, money.ErrNegativePrice)
-<span id="L401" class="ln">   401  </span>		})
-<span id="L402" class="ln">   402  </span>
-<span id="L403" class="ln">   403  </span>		t.Run(&#34;対象が存在しない場合、NotFound(404)をそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L404" class="ln">   404  </span>			t.Parallel()
-<span id="L405" class="ln">   405  </span>
-<span id="L406" class="ln">   406  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L407" class="ln">   407  </span>			id := uuidtestkit.NewTestFromSalt(t, &#34;update_missing&#34;)
-<span id="L408" class="ln">   408  </span>			deps.authorizer.EXPECT().
-<span id="L409" class="ln">   409  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, gomock.Any()).
-<span id="L410" class="ln">   410  </span>				Return(nil)
-<span id="L411" class="ln">   411  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runInTx)
-<span id="L412" class="ln">   412  </span>			deps.repo.EXPECT().FindByID(gomock.Any(), id).Return(nil, apperror.ErrNotFound)
-<span id="L413" class="ln">   413  </span>
-<span id="L414" class="ln">   414  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, id,
-<span id="L415" class="ln">   415  </span>				UpdateProductParams{Version: currentVersion})
-<span id="L416" class="ln">   416  </span>			require.ErrorIs(t, err, apperror.ErrNotFound)
-<span id="L417" class="ln">   417  </span>			assert.Equal(t, ProductView{}, actual)
-<span id="L418" class="ln">   418  </span>		})
-<span id="L419" class="ln">   419  </span>
-<span id="L420" class="ln">   420  </span>		t.Run(&#34;要求バージョンが現在値と一致しない場合、更新を実行せずErrVersionConflict(409)を返す&#34;, func(t *testing.T) {
-<span id="L421" class="ln">   421  </span>			t.Parallel()
-<span id="L422" class="ln">   422  </span>
-<span id="L423" class="ln">   423  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L424" class="ln">   424  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L425" class="ln">   425  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L426" class="ln">   426  </span>			deps.repo.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
-<span id="L427" class="ln">   427  </span>
-<span id="L428" class="ln">   428  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L429" class="ln">   429  </span>				Version: currentVersion - 1,
-<span id="L430" class="ln">   430  </span>				Name:    ptr.To(&#34;競合商品名&#34;),
-<span id="L431" class="ln">   431  </span>			})
-<span id="L432" class="ln">   432  </span>			require.ErrorIs(t, err, domainproduct.ErrVersionConflict)
-<span id="L433" class="ln">   433  </span>			assert.Equal(t, ProductView{}, actual)
-<span id="L434" class="ln">   434  </span>			assert.Equal(t, &#34;現行商品名&#34;, entity.Name())
-<span id="L435" class="ln">   435  </span>		})
-<span id="L436" class="ln">   436  </span>
-<span id="L437" class="ln">   437  </span>		t.Run(&#34;更新後の値が不変条件に違反する場合、更新を実行せず検証エラー(422)を返す&#34;, func(t *testing.T) {
-<span id="L438" class="ln">   438  </span>			t.Parallel()
-<span id="L439" class="ln">   439  </span>
-<span id="L440" class="ln">   440  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L441" class="ln">   441  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L442" class="ln">   442  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L443" class="ln">   443  </span>			deps.repo.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
-<span id="L444" class="ln">   444  </span>
-<span id="L445" class="ln">   445  </span>			_, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L446" class="ln">   446  </span>				Version:  currentVersion,
-<span id="L447" class="ln">   447  </span>				Quantity: ptr.To(-1),
-<span id="L448" class="ln">   448  </span>			})
-<span id="L449" class="ln">   449  </span>			require.ErrorIs(t, err, domainproduct.ErrInvalidQuantity)
-<span id="L450" class="ln">   450  </span>		})
-<span id="L451" class="ln">   451  </span>
-<span id="L452" class="ln">   452  </span>		t.Run(&#34;永続化時に並行更新でバージョンが一致しない場合、ErrVersionConflict(409)をそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L453" class="ln">   453  </span>			t.Parallel()
-<span id="L454" class="ln">   454  </span>
-<span id="L455" class="ln">   455  </span>			u, deps := newUpdateTestUsecase(t)
-<span id="L456" class="ln">   456  </span>			entity := newUpdateTarget(t, currentVersion)
-<span id="L457" class="ln">   457  </span>			expectAuthorizedLoad(deps, entity)
-<span id="L458" class="ln">   458  </span>			deps.repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(0, domainproduct.ErrVersionConflict)
-<span id="L459" class="ln">   459  </span>
-<span id="L460" class="ln">   460  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
-<span id="L461" class="ln">   461  </span>				Version: currentVersion,
-<span id="L462" class="ln">   462  </span>				Name:    ptr.To(&#34;並行更新商品名&#34;),
-<span id="L463" class="ln">   463  </span>			})
-<span id="L464" class="ln">   464  </span>			require.ErrorIs(t, err, domainproduct.ErrVersionConflict)
-<span id="L465" class="ln">   465  </span>			assert.Equal(t, ProductView{}, actual)
-<span id="L466" class="ln">   466  </span>		})
-<span id="L467" class="ln">   467  </span>	})
-<span id="L468" class="ln">   468  </span>}
-<span id="L469" class="ln">   469  </span>
-<span id="L470" class="ln">   470  </span>func Test_usecase_resolveUpdatedRefs(t *testing.T) {
-<span id="L471" class="ln">   471  </span>	t.Parallel()
-<span id="L472" class="ln">   472  </span>
-<span id="L473" class="ln">   473  </span>	newRefRepos := func(t *testing.T) (*mock_status.MockRepository, *mock_category.MockRepository) {
-<span id="L474" class="ln">   474  </span>		t.Helper()
-<span id="L475" class="ln">   475  </span>		ctrl := gomock.NewController(t)
-<span id="L476" class="ln">   476  </span>		return mock_status.NewMockRepository(ctrl), mock_category.NewMockRepository(ctrl)
-<span id="L477" class="ln">   477  </span>	}
-<span id="L478" class="ln">   478  </span>
-<span id="L479" class="ln">   479  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L480" class="ln">   480  </span>		t.Parallel()
-<span id="L481" class="ln">   481  </span>
-<span id="L482" class="ln">   482  </span>		t.Run(&#34;statusId/categoryIdがいずれも未指定の場合、マスタを再解決せず現在の参照を返す&#34;, func(t *testing.T) {
-<span id="L483" class="ln">   483  </span>			t.Parallel()
-<span id="L484" class="ln">   484  </span>
-<span id="L485" class="ln">   485  </span>			entity := newUpdateTarget(t, 1)
-<span id="L486" class="ln">   486  </span>			statusRepo, categoryRepo := newRefRepos(t)
-<span id="L487" class="ln">   487  </span>			statusRepo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Times(0)
-<span id="L488" class="ln">   488  </span>			categoryRepo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Times(0)
-<span id="L489" class="ln">   489  </span>
-<span id="L490" class="ln">   490  </span>			u := &amp;usecase{statusRepo: statusRepo, categoryRepo: categoryRepo}
-<span id="L491" class="ln">   491  </span>			statusRef, categoryRef, err := u.resolveUpdatedRefs(context.Background(), entity, UpdateProductParams{})
-<span id="L492" class="ln">   492  </span>			require.NoError(t, err)
-<span id="L493" class="ln">   493  </span>			assert.Equal(t, entity.Status(), statusRef)
-<span id="L494" class="ln">   494  </span>			assert.Equal(t, entity.Category(), categoryRef)
-<span id="L495" class="ln">   495  </span>		})
-<span id="L496" class="ln">   496  </span>
-<span id="L497" class="ln">   497  </span>		t.Run(&#34;statusIdのみ指定の場合、categoryは現在のIDで再解決される&#34;, func(t *testing.T) {
-<span id="L498" class="ln">   498  </span>			t.Parallel()
-<span id="L499" class="ln">   499  </span>
-<span id="L500" class="ln">   500  </span>			entity := newUpdateTarget(t, 1)
-<span id="L501" class="ln">   501  </span>			newStatusID := uuidtestkit.NewTestFromSalt(t, &#34;resolve_updated_status&#34;)
-<span id="L502" class="ln">   502  </span>			statusRepo, categoryRepo := newRefRepos(t)
-<span id="L503" class="ln">   503  </span>			statusRepo.EXPECT().FindByID(gomock.Any(), newStatusID).Return(mustStatus(t, newStatusID), nil)
-<span id="L504" class="ln">   504  </span>			categoryRepo.EXPECT().
-<span id="L505" class="ln">   505  </span>				FindByID(gomock.Any(), entity.Category().ID()).
-<span id="L506" class="ln">   506  </span>				Return(mustCategory(t, entity.Category().ID()), nil)
-<span id="L507" class="ln">   507  </span>
-<span id="L508" class="ln">   508  </span>			u := &amp;usecase{statusRepo: statusRepo, categoryRepo: categoryRepo}
-<span id="L509" class="ln">   509  </span>			statusRef, categoryRef, err := u.resolveUpdatedRefs(context.Background(), entity,
-<span id="L510" class="ln">   510  </span>				UpdateProductParams{StatusID: &amp;newStatusID})
-<span id="L511" class="ln">   511  </span>			require.NoError(t, err)
-<span id="L512" class="ln">   512  </span>			assert.Equal(t, newStatusID, statusRef.ID())
-<span id="L513" class="ln">   513  </span>			assert.Equal(t, &#34;在庫あり&#34;, statusRef.Name())
-<span id="L514" class="ln">   514  </span>			assert.Equal(t, entity.Category().ID(), categoryRef.ID())
-<span id="L515" class="ln">   515  </span>			assert.Equal(t, &#34;電子機器&#34;, categoryRef.Name())
-<span id="L516" class="ln">   516  </span>		})
-<span id="L517" class="ln">   517  </span>
-<span id="L518" class="ln">   518  </span>		t.Run(&#34;categoryIdのみ指定の場合、statusは現在のIDで再解決される&#34;, func(t *testing.T) {
-<span id="L519" class="ln">   519  </span>			t.Parallel()
-<span id="L520" class="ln">   520  </span>
-<span id="L521" class="ln">   521  </span>			entity := newUpdateTarget(t, 1)
-<span id="L522" class="ln">   522  </span>			newCategoryID := uuidtestkit.NewTestFromSalt(t, &#34;resolve_updated_category&#34;)
-<span id="L523" class="ln">   523  </span>			statusRepo, categoryRepo := newRefRepos(t)
-<span id="L524" class="ln">   524  </span>			statusRepo.EXPECT().
-<span id="L525" class="ln">   525  </span>				FindByID(gomock.Any(), entity.Status().ID()).
-<span id="L526" class="ln">   526  </span>				Return(mustStatus(t, entity.Status().ID()), nil)
-<span id="L527" class="ln">   527  </span>			categoryRepo.EXPECT().FindByID(gomock.Any(), newCategoryID).Return(mustCategory(t, newCategoryID), nil)
-<span id="L528" class="ln">   528  </span>
-<span id="L529" class="ln">   529  </span>			u := &amp;usecase{statusRepo: statusRepo, categoryRepo: categoryRepo}
-<span id="L530" class="ln">   530  </span>			statusRef, categoryRef, err := u.resolveUpdatedRefs(context.Background(), entity,
-<span id="L531" class="ln">   531  </span>				UpdateProductParams{CategoryID: &amp;newCategoryID})
-<span id="L532" class="ln">   532  </span>			require.NoError(t, err)
-<span id="L533" class="ln">   533  </span>			assert.Equal(t, entity.Status().ID(), statusRef.ID())
-<span id="L534" class="ln">   534  </span>			assert.Equal(t, &#34;在庫あり&#34;, statusRef.Name())
-<span id="L535" class="ln">   535  </span>			assert.Equal(t, newCategoryID, categoryRef.ID())
-<span id="L536" class="ln">   536  </span>			assert.Equal(t, &#34;電子機器&#34;, categoryRef.Name())
-<span id="L537" class="ln">   537  </span>		})
-<span id="L538" class="ln">   538  </span>	})
-<span id="L539" class="ln">   539  </span>
-<span id="L540" class="ln">   540  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L541" class="ln">   541  </span>		t.Parallel()
-<span id="L542" class="ln">   542  </span>
-<span id="L543" class="ln">   543  </span>		t.Run(&#34;マスタの再解決に失敗した場合、ゼロ値の参照とエラーを返す&#34;, func(t *testing.T) {
-<span id="L544" class="ln">   544  </span>			t.Parallel()
-<span id="L545" class="ln">   545  </span>
-<span id="L546" class="ln">   546  </span>			entity := newUpdateTarget(t, 1)
-<span id="L547" class="ln">   547  </span>			newStatusID := uuidtestkit.NewTestFromSalt(t, &#34;resolve_updated_missing_status&#34;)
-<span id="L548" class="ln">   548  </span>			statusRepo, categoryRepo := newRefRepos(t)
-<span id="L549" class="ln">   549  </span>			statusRepo.EXPECT().FindByID(gomock.Any(), newStatusID).Return(nil, apperror.ErrNotFound)
-<span id="L550" class="ln">   550  </span>
-<span id="L551" class="ln">   551  </span>			u := &amp;usecase{statusRepo: statusRepo, categoryRepo: categoryRepo}
-<span id="L552" class="ln">   552  </span>			statusRef, categoryRef, err := u.resolveUpdatedRefs(context.Background(), entity,
-<span id="L553" class="ln">   553  </span>				UpdateProductParams{StatusID: &amp;newStatusID})
-<span id="L554" class="ln">   554  </span>			require.ErrorIs(t, err, errMissingStatus)
-<span id="L555" class="ln">   555  </span>			assert.Equal(t, domainproduct.StatusRef{}, statusRef)
-<span id="L556" class="ln">   556  </span>			assert.Equal(t, domainproduct.CategoryRef{}, categoryRef)
-<span id="L557" class="ln">   557  </span>		})
-<span id="L558" class="ln">   558  </span>	})
-<span id="L559" class="ln">   559  </span>}
-<span id="L560" class="ln">   560  </span>
-<span id="L561" class="ln">   561  </span>func Test_parseOptionalPrice(t *testing.T) {
-<span id="L562" class="ln">   562  </span>	t.Parallel()
-<span id="L563" class="ln">   563  </span>
-<span id="L564" class="ln">   564  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L565" class="ln">   565  </span>		t.Parallel()
-<span id="L566" class="ln">   566  </span>
-<span id="L567" class="ln">   567  </span>		t.Run(&#34;未指定(nil)の場合、価格なしとしてnilを返す&#34;, func(t *testing.T) {
-<span id="L568" class="ln">   568  </span>			t.Parallel()
-<span id="L569" class="ln">   569  </span>
-<span id="L570" class="ln">   570  </span>			actual, err := parseOptionalPrice(nil)
-<span id="L571" class="ln">   571  </span>			require.NoError(t, err)
-<span id="L572" class="ln">   572  </span>			assert.Nil(t, actual)
-<span id="L573" class="ln">   573  </span>		})
-<span id="L574" class="ln">   574  </span>
-<span id="L575" class="ln">   575  </span>		t.Run(&#34;十進文字列をサブセント精度の価格へ解釈する&#34;, func(t *testing.T) {
-<span id="L576" class="ln">   576  </span>			t.Parallel()
-<span id="L577" class="ln">   577  </span>
-<span id="L578" class="ln">   578  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;19.995&#34;))
-<span id="L579" class="ln">   579  </span>			require.NoError(t, err)
-<span id="L580" class="ln">   580  </span>			require.NotNil(t, actual)
-<span id="L581" class="ln">   581  </span>			assert.Equal(t, &#34;19.995&#34;, actual.String())
-<span id="L582" class="ln">   582  </span>		})
-<span id="L583" class="ln">   583  </span>
-<span id="L584" class="ln">   584  </span>		t.Run(&#34;ゼロを受理する&#34;, func(t *testing.T) {
-<span id="L585" class="ln">   585  </span>			t.Parallel()
-<span id="L586" class="ln">   586  </span>
-<span id="L587" class="ln">   587  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;0&#34;))
-<span id="L588" class="ln">   588  </span>			require.NoError(t, err)
-<span id="L589" class="ln">   589  </span>			require.NotNil(t, actual)
-<span id="L590" class="ln">   590  </span>			assert.Equal(t, &#34;0&#34;, actual.String())
-<span id="L591" class="ln">   591  </span>		})
-<span id="L592" class="ln">   592  </span>	})
-<span id="L593" class="ln">   593  </span>
-<span id="L594" class="ln">   594  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L595" class="ln">   595  </span>		t.Parallel()
-<span id="L596" class="ln">   596  </span>
-<span id="L597" class="ln">   597  </span>		t.Run(&#34;数値として解釈できない場合、ErrInvalidArgument(400)を返す&#34;, func(t *testing.T) {
-<span id="L598" class="ln">   598  </span>			t.Parallel()
-<span id="L599" class="ln">   599  </span>
-<span id="L600" class="ln">   600  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;not-a-number&#34;))
-<span id="L601" class="ln">   601  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
-<span id="L602" class="ln">   602  </span>			assert.Nil(t, actual)
-<span id="L603" class="ln">   603  </span>		})
-<span id="L604" class="ln">   604  </span>
-<span id="L605" class="ln">   605  </span>		t.Run(&#34;負値の場合、ErrNegativePrice(422)を返す&#34;, func(t *testing.T) {
-<span id="L606" class="ln">   606  </span>			t.Parallel()
-<span id="L607" class="ln">   607  </span>
-<span id="L608" class="ln">   608  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;-0.01&#34;))
-<span id="L609" class="ln">   609  </span>			require.ErrorIs(t, err, money.ErrNegativePrice)
-<span id="L610" class="ln">   610  </span>			assert.Nil(t, actual)
-<span id="L611" class="ln">   611  </span>		})
-<span id="L612" class="ln">   612  </span>	})
-<span id="L613" class="ln">   613  </span>}
-<span id="L614" class="ln">   614  </span>
-<span id="L615" class="ln">   615  </span>func Test_resolveUpdatedImages(t *testing.T) {
-<span id="L616" class="ln">   616  </span>	t.Parallel()
-<span id="L617" class="ln">   617  </span>
-<span id="L618" class="ln">   618  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L619" class="ln">   619  </span>		t.Parallel()
-<span id="L620" class="ln">   620  </span>
-<span id="L621" class="ln">   621  </span>		t.Run(&#34;未指定の場合、置き換えを行わないことを表すnilを返す&#34;, func(t *testing.T) {
-<span id="L622" class="ln">   622  </span>			t.Parallel()
-<span id="L623" class="ln">   623  </span>
-<span id="L624" class="ln">   624  </span>			actual, err := resolveUpdatedImages(patch.Unspecified[[]ProductImageParams]())
-<span id="L625" class="ln">   625  </span>
-<span id="L626" class="ln">   626  </span>			require.NoError(t, err)
-<span id="L627" class="ln">   627  </span>			assert.Nil(t, actual)
-<span id="L628" class="ln">   628  </span>		})
-<span id="L629" class="ln">   629  </span>
-<span id="L630" class="ln">   630  </span>		t.Run(&#34;null指定の場合、空の集合を返す&#34;, func(t *testing.T) {
-<span id="L631" class="ln">   631  </span>			t.Parallel()
-<span id="L632" class="ln">   632  </span>
-<span id="L633" class="ln">   633  </span>			actual, err := resolveUpdatedImages(patch.Null[[]ProductImageParams]())
-<span id="L634" class="ln">   634  </span>
-<span id="L635" class="ln">   635  </span>			require.NoError(t, err)
-<span id="L636" class="ln">   636  </span>			require.NotNil(t, actual)
-<span id="L637" class="ln">   637  </span>			assert.Empty(t, *actual)
-<span id="L638" class="ln">   638  </span>		})
-<span id="L639" class="ln">   639  </span>
-<span id="L640" class="ln">   640  </span>		t.Run(&#34;値指定の場合、その内容へ変換した集合を返す&#34;, func(t *testing.T) {
-<span id="L641" class="ln">   641  </span>			t.Parallel()
-<span id="L642" class="ln">   642  </span>
-<span id="L643" class="ln">   643  </span>			actual, err := resolveUpdatedImages(patch.Value([]ProductImageParams{
-<span id="L644" class="ln">   644  </span>				{ImagePath: &#34;products/a.png&#34;, DisplaySort: 3},
-<span id="L645" class="ln">   645  </span>			}))
-<span id="L646" class="ln">   646  </span>
-<span id="L647" class="ln">   647  </span>			require.NoError(t, err)
-<span id="L648" class="ln">   648  </span>			require.NotNil(t, actual)
-<span id="L649" class="ln">   649  </span>			require.Len(t, *actual, 1)
-<span id="L650" class="ln">   650  </span>			assert.Equal(t, &#34;products/a.png&#34;, (*actual)[0].ImagePath())
-<span id="L651" class="ln">   651  </span>			assert.Equal(t, 3, (*actual)[0].DisplaySort())
-<span id="L652" class="ln">   652  </span>		})
-<span id="L653" class="ln">   653  </span>	})
-<span id="L654" class="ln">   654  </span>}
-<span id="L655" class="ln">   655  </span>
+<span id="L119" class="ln">   119  </span>			},
+<span id="L120" class="ln">   120  </span>		)
+<span id="L121" class="ln">   121  </span>	}
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L124" class="ln">   124  </span>		t.Parallel()
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>		t.Run(&#34;指定したフィールドのみ更新され、未指定フィールドは現在値が据え置かれる&#34;, func(t *testing.T) {
+<span id="L127" class="ln">   127  </span>			t.Parallel()
+<span id="L128" class="ln">   128  </span>
+<span id="L129" class="ln">   129  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L130" class="ln">   130  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L131" class="ln">   131  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L132" class="ln">   132  </span>
+<span id="L133" class="ln">   133  </span>			var captured *domainproduct.Product
+<span id="L134" class="ln">   134  </span>			captureUpdate(deps, &amp;captured)
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L137" class="ln">   137  </span>				Version:  currentVersion,
+<span id="L138" class="ln">   138  </span>				Name:     ptr.To(&#34;更新後商品名&#34;),
+<span id="L139" class="ln">   139  </span>				Quantity: ptr.To(9),
+<span id="L140" class="ln">   140  </span>			})
+<span id="L141" class="ln">   141  </span>			require.NoError(t, err)
+<span id="L142" class="ln">   142  </span>			require.NotNil(t, captured)
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>			assert.Equal(t, &#34;更新後商品名&#34;, captured.Name())
+<span id="L145" class="ln">   145  </span>			assert.Equal(t, 9, captured.Quantity())
+<span id="L146" class="ln">   146  </span>			assert.Equal(t, &#34;10.5&#34;, captured.Price().String())
+<span id="L147" class="ln">   147  </span>			require.NotNil(t, captured.Description())
+<span id="L148" class="ln">   148  </span>			assert.Equal(t, &#34;現行説明&#34;, *captured.Description())
+<span id="L149" class="ln">   149  </span>			require.NotNil(t, captured.StockWarningThreshold())
+<span id="L150" class="ln">   150  </span>			assert.Equal(t, 2, *captured.StockWarningThreshold())
+<span id="L151" class="ln">   151  </span>			require.NotNil(t, captured.PublishedAt())
+<span id="L152" class="ln">   152  </span>			assert.Equal(t, updateBasePublishedAt, *captured.PublishedAt())
+<span id="L153" class="ln">   153  </span>			require.Len(t, captured.Images(), 1)
+<span id="L154" class="ln">   154  </span>			assert.Equal(t, &#34;products/current.png&#34;, captured.Images()[0].ImagePath())
+<span id="L155" class="ln">   155  </span>			assert.Equal(t, &#34;現行ステータス&#34;, captured.Status().Name())
+<span id="L156" class="ln">   156  </span>			assert.Equal(t, &#34;現行カテゴリ&#34;, captured.Category().Name())
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>			assert.Equal(t, &#34;更新後商品名&#34;, actual.Name)
+<span id="L159" class="ln">   159  </span>			assert.Equal(t, 9, actual.Quantity)
+<span id="L160" class="ln">   160  </span>		})
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>		t.Run(&#34;null指定されたフィールドがクリアされる&#34;, func(t *testing.T) {
+<span id="L163" class="ln">   163  </span>			t.Parallel()
+<span id="L164" class="ln">   164  </span>
+<span id="L165" class="ln">   165  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L166" class="ln">   166  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L167" class="ln">   167  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>			var captured *domainproduct.Product
+<span id="L170" class="ln">   170  </span>			captureUpdate(deps, &amp;captured)
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L173" class="ln">   173  </span>				Version:               currentVersion,
+<span id="L174" class="ln">   174  </span>				Description:           patch.Null[string](),
+<span id="L175" class="ln">   175  </span>				StockWarningThreshold: patch.Null[int](),
+<span id="L176" class="ln">   176  </span>				PublishedAt:           patch.Null[time.Time](),
+<span id="L177" class="ln">   177  </span>				Images:                patch.Null[[]ProductImageParams](),
+<span id="L178" class="ln">   178  </span>			})
+<span id="L179" class="ln">   179  </span>			require.NoError(t, err)
+<span id="L180" class="ln">   180  </span>			require.NotNil(t, captured)
+<span id="L181" class="ln">   181  </span>
+<span id="L182" class="ln">   182  </span>			assert.Nil(t, captured.Description())
+<span id="L183" class="ln">   183  </span>			assert.Nil(t, captured.StockWarningThreshold())
+<span id="L184" class="ln">   184  </span>			assert.Nil(t, captured.PublishedAt())
+<span id="L185" class="ln">   185  </span>			assert.Empty(t, captured.Images())
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>			assert.Nil(t, actual.Description)
+<span id="L188" class="ln">   188  </span>			assert.Nil(t, actual.PublishedAt)
+<span id="L189" class="ln">   189  </span>			assert.Empty(t, actual.Images)
+<span id="L190" class="ln">   190  </span>		})
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>		t.Run(&#34;値指定されたフィールドがその値へ更新される&#34;, func(t *testing.T) {
+<span id="L193" class="ln">   193  </span>			t.Parallel()
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L196" class="ln">   196  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L197" class="ln">   197  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span>			var captured *domainproduct.Product
+<span id="L200" class="ln">   200  </span>			captureUpdate(deps, &amp;captured)
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>			publishedAt := updateBasePublishedAt.Add(24 * time.Hour)
+<span id="L203" class="ln">   203  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L204" class="ln">   204  </span>				Version:               currentVersion,
+<span id="L205" class="ln">   205  </span>				Price:                 ptr.To(&#34;29.95&#34;),
+<span id="L206" class="ln">   206  </span>				Description:           patch.Value(&#34;更新後説明&#34;),
+<span id="L207" class="ln">   207  </span>				StockWarningThreshold: patch.Value(7),
+<span id="L208" class="ln">   208  </span>				PublishedAt:           patch.Value(publishedAt),
+<span id="L209" class="ln">   209  </span>				Images: patch.Value([]ProductImageParams{
+<span id="L210" class="ln">   210  </span>					{ImagePath: &#34;products/updated.png&#34;, DisplaySort: 1},
+<span id="L211" class="ln">   211  </span>				}),
+<span id="L212" class="ln">   212  </span>			})
+<span id="L213" class="ln">   213  </span>			require.NoError(t, err)
+<span id="L214" class="ln">   214  </span>			require.NotNil(t, captured)
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>			assert.Equal(t, &#34;29.95&#34;, captured.Price().String())
+<span id="L217" class="ln">   217  </span>			require.NotNil(t, captured.Description())
+<span id="L218" class="ln">   218  </span>			assert.Equal(t, &#34;更新後説明&#34;, *captured.Description())
+<span id="L219" class="ln">   219  </span>			require.NotNil(t, captured.StockWarningThreshold())
+<span id="L220" class="ln">   220  </span>			assert.Equal(t, 7, *captured.StockWarningThreshold())
+<span id="L221" class="ln">   221  </span>			require.NotNil(t, captured.PublishedAt())
+<span id="L222" class="ln">   222  </span>			assert.Equal(t, publishedAt, *captured.PublishedAt())
+<span id="L223" class="ln">   223  </span>			require.Len(t, captured.Images(), 1)
+<span id="L224" class="ln">   224  </span>			assert.Equal(t, &#34;products/updated.png&#34;, captured.Images()[0].ImagePath())
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>			assert.Equal(t, &#34;29.95&#34;, actual.Price.String())
+<span id="L227" class="ln">   227  </span>		})
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>		t.Run(&#34;imagesが未指定の場合、現在の画像を保持したエンティティで更新する&#34;, func(t *testing.T) {
+<span id="L230" class="ln">   230  </span>			t.Parallel()
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L233" class="ln">   233  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L234" class="ln">   234  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>			var captured *domainproduct.Product
+<span id="L237" class="ln">   237  </span>			captureUpdate(deps, &amp;captured)
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L240" class="ln">   240  </span>				Version: currentVersion,
+<span id="L241" class="ln">   241  </span>				Name:    ptr.To(&#34;更新後商品名&#34;),
+<span id="L242" class="ln">   242  </span>			})
+<span id="L243" class="ln">   243  </span>			require.NoError(t, err)
+<span id="L244" class="ln">   244  </span>			require.NotNil(t, captured)
+<span id="L245" class="ln">   245  </span>
+<span id="L246" class="ln">   246  </span>			require.Len(t, captured.Images(), 1)
+<span id="L247" class="ln">   247  </span>			assert.Equal(t, &#34;products/current.png&#34;, captured.Images()[0].ImagePath())
+<span id="L248" class="ln">   248  </span>			require.Len(t, actual.Images, 1)
+<span id="L249" class="ln">   249  </span>			assert.Equal(t, &#34;products/current.png&#34;, actual.Images[0].Path)
+<span id="L250" class="ln">   250  </span>		})
+<span id="L251" class="ln">   251  </span>
+<span id="L252" class="ln">   252  </span>		t.Run(&#34;statusIdが指定された場合、再解決した名称付き参照へ更新される&#34;, func(t *testing.T) {
+<span id="L253" class="ln">   253  </span>			t.Parallel()
+<span id="L254" class="ln">   254  </span>
+<span id="L255" class="ln">   255  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L256" class="ln">   256  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L257" class="ln">   257  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L258" class="ln">   258  </span>
+<span id="L259" class="ln">   259  </span>			newStatusID := uuidtestkit.NewTestFromSalt(t, &#34;update_new_status&#34;)
+<span id="L260" class="ln">   260  </span>			deps.statusRepo.EXPECT().FindByID(gomock.Any(), newStatusID).Return(mustStatus(t, newStatusID), nil)
+<span id="L261" class="ln">   261  </span>			deps.categoryRepo.EXPECT().
+<span id="L262" class="ln">   262  </span>				FindByID(gomock.Any(), entity.Category().ID()).
+<span id="L263" class="ln">   263  </span>				Return(mustCategory(t, entity.Category().ID()), nil)
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>			var captured *domainproduct.Product
+<span id="L266" class="ln">   266  </span>			captureUpdate(deps, &amp;captured)
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L269" class="ln">   269  </span>				Version:  currentVersion,
+<span id="L270" class="ln">   270  </span>				StatusID: &amp;newStatusID,
+<span id="L271" class="ln">   271  </span>			})
+<span id="L272" class="ln">   272  </span>			require.NoError(t, err)
+<span id="L273" class="ln">   273  </span>			require.NotNil(t, captured)
+<span id="L274" class="ln">   274  </span>
+<span id="L275" class="ln">   275  </span>			assert.Equal(t, newStatusID, captured.Status().ID())
+<span id="L276" class="ln">   276  </span>			assert.Equal(t, &#34;在庫あり&#34;, captured.Status().Name())
+<span id="L277" class="ln">   277  </span>			assert.Equal(t, newStatusID, actual.StatusID)
+<span id="L278" class="ln">   278  </span>			assert.Equal(t, &#34;在庫あり&#34;, actual.StatusName)
+<span id="L279" class="ln">   279  </span>		})
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span>		t.Run(&#34;返却Viewのバージョンは、エンティティ保持値ではなくrepo.Updateが採番した値になる&#34;, func(t *testing.T) {
+<span id="L282" class="ln">   282  </span>			t.Parallel()
+<span id="L283" class="ln">   283  </span>
+<span id="L284" class="ln">   284  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L285" class="ln">   285  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L286" class="ln">   286  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>			var captured *domainproduct.Product
+<span id="L289" class="ln">   289  </span>			captureUpdate(deps, &amp;captured)
+<span id="L290" class="ln">   290  </span>
+<span id="L291" class="ln">   291  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L292" class="ln">   292  </span>				Version: currentVersion,
+<span id="L293" class="ln">   293  </span>				Name:    ptr.To(&#34;採番確認商品&#34;),
+<span id="L294" class="ln">   294  </span>			})
+<span id="L295" class="ln">   295  </span>			require.NoError(t, err)
+<span id="L296" class="ln">   296  </span>			require.NotNil(t, captured)
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span>			assert.Equal(t, currentVersion, captured.Version())
+<span id="L299" class="ln">   299  </span>			assert.Equal(t, nextVersion, actual.Version)
+<span id="L300" class="ln">   300  </span>		})
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>		t.Run(&#34;商品更新を所有者なしリソースとして認可する&#34;, func(t *testing.T) {
+<span id="L303" class="ln">   303  </span>			t.Parallel()
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L306" class="ln">   306  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L307" class="ln">   307  </span>
+<span id="L308" class="ln">   308  </span>			deps.authorizer.EXPECT().
+<span id="L309" class="ln">   309  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, authz.NewResource(&#34;product&#34;, nil)).
+<span id="L310" class="ln">   310  </span>				Return(nil)
+<span id="L311" class="ln">   311  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runInTx)
+<span id="L312" class="ln">   312  </span>			deps.repo.EXPECT().FindByID(gomock.Any(), entity.ID()).Return(entity, nil)
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span>			var captured *domainproduct.Product
+<span id="L315" class="ln">   315  </span>			captureUpdate(deps, &amp;captured)
+<span id="L316" class="ln">   316  </span>
+<span id="L317" class="ln">   317  </span>			_, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L318" class="ln">   318  </span>				Version: currentVersion,
+<span id="L319" class="ln">   319  </span>				Name:    ptr.To(&#34;認可確認商品&#34;),
+<span id="L320" class="ln">   320  </span>			})
+<span id="L321" class="ln">   321  </span>			require.NoError(t, err)
+<span id="L322" class="ln">   322  </span>		})
+<span id="L323" class="ln">   323  </span>	})
+<span id="L324" class="ln">   324  </span>
+<span id="L325" class="ln">   325  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L326" class="ln">   326  </span>		t.Parallel()
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>		t.Run(&#34;authnがnilの場合、ErrUnauthenticated(401)を返す&#34;, func(t *testing.T) {
+<span id="L329" class="ln">   329  </span>			t.Parallel()
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>			u, _ := newUpdateTestUsecase(t)
+<span id="L332" class="ln">   332  </span>
+<span id="L333" class="ln">   333  </span>			actual, err := u.UpdateProduct(context.Background(), nil,
+<span id="L334" class="ln">   334  </span>				uuidtestkit.NewTestFromSalt(t, &#34;update_unauthenticated&#34;), UpdateProductParams{Version: currentVersion})
+<span id="L335" class="ln">   335  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+<span id="L336" class="ln">   336  </span>			assert.Equal(t, ProductView{}, actual)
+<span id="L337" class="ln">   337  </span>		})
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>		t.Run(&#34;認可が拒否された場合、権限エラー(403)を返す&#34;, func(t *testing.T) {
+<span id="L340" class="ln">   340  </span>			t.Parallel()
+<span id="L341" class="ln">   341  </span>
+<span id="L342" class="ln">   342  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L343" class="ln">   343  </span>			deps.authorizer.EXPECT().
+<span id="L344" class="ln">   344  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, gomock.Any()).
+<span id="L345" class="ln">   345  </span>				Return(apperror.ErrPermissionDenied)
+<span id="L346" class="ln">   346  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).Times(0)
+<span id="L347" class="ln">   347  </span>
+<span id="L348" class="ln">   348  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{},
+<span id="L349" class="ln">   349  </span>				uuidtestkit.NewTestFromSalt(t, &#34;update_forbidden&#34;), UpdateProductParams{Version: currentVersion})
+<span id="L350" class="ln">   350  </span>			require.ErrorIs(t, err, apperror.ErrPermissionDenied)
+<span id="L351" class="ln">   351  </span>			assert.Equal(t, ProductView{}, actual)
+<span id="L352" class="ln">   352  </span>		})
+<span id="L353" class="ln">   353  </span>
+<span id="L354" class="ln">   354  </span>		t.Run(&#34;statusIdに対応するマスタが存在しない場合、整合性異常(500)を返し更新を実行しない&#34;, func(t *testing.T) {
+<span id="L355" class="ln">   355  </span>			t.Parallel()
+<span id="L356" class="ln">   356  </span>
+<span id="L357" class="ln">   357  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L358" class="ln">   358  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L359" class="ln">   359  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L360" class="ln">   360  </span>			newStatusID := uuidtestkit.NewTestFromSalt(t, &#34;update_missing_status&#34;)
+<span id="L361" class="ln">   361  </span>			deps.statusRepo.EXPECT().FindByID(gomock.Any(), newStatusID).Return(nil, apperror.ErrNotFound)
+<span id="L362" class="ln">   362  </span>			deps.repo.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
+<span id="L363" class="ln">   363  </span>
+<span id="L364" class="ln">   364  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(),
+<span id="L365" class="ln">   365  </span>				UpdateProductParams{Version: currentVersion, StatusID: &amp;newStatusID})
+<span id="L366" class="ln">   366  </span>			require.ErrorIs(t, err, errMissingStatus)
+<span id="L367" class="ln">   367  </span>			assert.Equal(t, ProductView{}, actual)
+<span id="L368" class="ln">   368  </span>		})
+<span id="L369" class="ln">   369  </span>
+<span id="L370" class="ln">   370  </span>		t.Run(&#34;価格が数値として解釈できない場合、トランザクションに入る前にErrInvalidArgument(400)を返す&#34;, func(t *testing.T) {
+<span id="L371" class="ln">   371  </span>			t.Parallel()
+<span id="L372" class="ln">   372  </span>
+<span id="L373" class="ln">   373  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L374" class="ln">   374  </span>			deps.authorizer.EXPECT().
+<span id="L375" class="ln">   375  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, gomock.Any()).
+<span id="L376" class="ln">   376  </span>				Return(nil)
+<span id="L377" class="ln">   377  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).Times(0)
+<span id="L378" class="ln">   378  </span>
+<span id="L379" class="ln">   379  </span>			_, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{},
+<span id="L380" class="ln">   380  </span>				uuidtestkit.NewTestFromSalt(t, &#34;update_invalid_price&#34;), UpdateProductParams{
+<span id="L381" class="ln">   381  </span>					Version: currentVersion,
+<span id="L382" class="ln">   382  </span>					Price:   ptr.To(&#34;not-a-number&#34;),
+<span id="L383" class="ln">   383  </span>				})
+<span id="L384" class="ln">   384  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
+<span id="L385" class="ln">   385  </span>		})
+<span id="L386" class="ln">   386  </span>
+<span id="L387" class="ln">   387  </span>		t.Run(&#34;価格が負の場合、トランザクションに入る前に検証エラー(422)を返す&#34;, func(t *testing.T) {
+<span id="L388" class="ln">   388  </span>			t.Parallel()
+<span id="L389" class="ln">   389  </span>
+<span id="L390" class="ln">   390  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L391" class="ln">   391  </span>			deps.authorizer.EXPECT().
+<span id="L392" class="ln">   392  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, gomock.Any()).
+<span id="L393" class="ln">   393  </span>				Return(nil)
+<span id="L394" class="ln">   394  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).Times(0)
+<span id="L395" class="ln">   395  </span>
+<span id="L396" class="ln">   396  </span>			_, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{},
+<span id="L397" class="ln">   397  </span>				uuidtestkit.NewTestFromSalt(t, &#34;update_negative_price&#34;), UpdateProductParams{
+<span id="L398" class="ln">   398  </span>					Version: currentVersion,
+<span id="L399" class="ln">   399  </span>					Price:   ptr.To(&#34;-1&#34;),
+<span id="L400" class="ln">   400  </span>				})
+<span id="L401" class="ln">   401  </span>			require.ErrorIs(t, err, money.ErrNegativePrice)
+<span id="L402" class="ln">   402  </span>		})
+<span id="L403" class="ln">   403  </span>
+<span id="L404" class="ln">   404  </span>		t.Run(&#34;対象が存在しない場合、NotFound(404)をそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L405" class="ln">   405  </span>			t.Parallel()
+<span id="L406" class="ln">   406  </span>
+<span id="L407" class="ln">   407  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L408" class="ln">   408  </span>			id := uuidtestkit.NewTestFromSalt(t, &#34;update_missing&#34;)
+<span id="L409" class="ln">   409  </span>			deps.authorizer.EXPECT().
+<span id="L410" class="ln">   410  </span>				Authorize(gomock.Any(), gomock.Any(), authz.ActionProductUpdate, gomock.Any()).
+<span id="L411" class="ln">   411  </span>				Return(nil)
+<span id="L412" class="ln">   412  </span>			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runInTx)
+<span id="L413" class="ln">   413  </span>			deps.repo.EXPECT().FindByID(gomock.Any(), id).Return(nil, apperror.ErrNotFound)
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, id,
+<span id="L416" class="ln">   416  </span>				UpdateProductParams{Version: currentVersion})
+<span id="L417" class="ln">   417  </span>			require.ErrorIs(t, err, apperror.ErrNotFound)
+<span id="L418" class="ln">   418  </span>			assert.Equal(t, ProductView{}, actual)
+<span id="L419" class="ln">   419  </span>		})
+<span id="L420" class="ln">   420  </span>
+<span id="L421" class="ln">   421  </span>		t.Run(&#34;要求バージョンが現在値と一致しない場合、更新を実行せずErrVersionConflict(409)を返す&#34;, func(t *testing.T) {
+<span id="L422" class="ln">   422  </span>			t.Parallel()
+<span id="L423" class="ln">   423  </span>
+<span id="L424" class="ln">   424  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L425" class="ln">   425  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L426" class="ln">   426  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L427" class="ln">   427  </span>			deps.repo.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
+<span id="L428" class="ln">   428  </span>
+<span id="L429" class="ln">   429  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L430" class="ln">   430  </span>				Version: currentVersion - 1,
+<span id="L431" class="ln">   431  </span>				Name:    ptr.To(&#34;競合商品名&#34;),
+<span id="L432" class="ln">   432  </span>			})
+<span id="L433" class="ln">   433  </span>			require.ErrorIs(t, err, domainproduct.ErrVersionConflict)
+<span id="L434" class="ln">   434  </span>			assert.Equal(t, ProductView{}, actual)
+<span id="L435" class="ln">   435  </span>			assert.Equal(t, &#34;現行商品名&#34;, entity.Name())
+<span id="L436" class="ln">   436  </span>		})
+<span id="L437" class="ln">   437  </span>
+<span id="L438" class="ln">   438  </span>		t.Run(&#34;更新後の値が不変条件に違反する場合、更新を実行せず検証エラー(422)を返す&#34;, func(t *testing.T) {
+<span id="L439" class="ln">   439  </span>			t.Parallel()
+<span id="L440" class="ln">   440  </span>
+<span id="L441" class="ln">   441  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L442" class="ln">   442  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L443" class="ln">   443  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L444" class="ln">   444  </span>			deps.repo.EXPECT().Update(gomock.Any(), gomock.Any()).Times(0)
+<span id="L445" class="ln">   445  </span>
+<span id="L446" class="ln">   446  </span>			_, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L447" class="ln">   447  </span>				Version:  currentVersion,
+<span id="L448" class="ln">   448  </span>				Quantity: ptr.To(-1),
+<span id="L449" class="ln">   449  </span>			})
+<span id="L450" class="ln">   450  </span>			require.ErrorIs(t, err, domainproduct.ErrInvalidQuantity)
+<span id="L451" class="ln">   451  </span>		})
+<span id="L452" class="ln">   452  </span>
+<span id="L453" class="ln">   453  </span>		t.Run(&#34;永続化時に並行更新でバージョンが一致しない場合、ErrVersionConflict(409)をそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L454" class="ln">   454  </span>			t.Parallel()
+<span id="L455" class="ln">   455  </span>
+<span id="L456" class="ln">   456  </span>			u, deps := newUpdateTestUsecase(t)
+<span id="L457" class="ln">   457  </span>			entity := newUpdateTarget(t, currentVersion)
+<span id="L458" class="ln">   458  </span>			expectAuthorizedLoad(deps, entity)
+<span id="L459" class="ln">   459  </span>			deps.repo.EXPECT().Update(gomock.Any(), gomock.Any()).Return(0, domainproduct.ErrVersionConflict)
+<span id="L460" class="ln">   460  </span>
+<span id="L461" class="ln">   461  </span>			actual, err := u.UpdateProduct(context.Background(), &amp;auth.Authn{}, entity.ID(), UpdateProductParams{
+<span id="L462" class="ln">   462  </span>				Version: currentVersion,
+<span id="L463" class="ln">   463  </span>				Name:    ptr.To(&#34;並行更新商品名&#34;),
+<span id="L464" class="ln">   464  </span>			})
+<span id="L465" class="ln">   465  </span>			require.ErrorIs(t, err, domainproduct.ErrVersionConflict)
+<span id="L466" class="ln">   466  </span>			assert.Equal(t, ProductView{}, actual)
+<span id="L467" class="ln">   467  </span>		})
+<span id="L468" class="ln">   468  </span>	})
+<span id="L469" class="ln">   469  </span>}
+<span id="L470" class="ln">   470  </span>
+<span id="L471" class="ln">   471  </span>func Test_usecase_resolveUpdatedRefs(t *testing.T) {
+<span id="L472" class="ln">   472  </span>	t.Parallel()
+<span id="L473" class="ln">   473  </span>
+<span id="L474" class="ln">   474  </span>	newRefRepos := func(t *testing.T) (*mock_status.MockRepository, *mock_category.MockRepository) {
+<span id="L475" class="ln">   475  </span>		t.Helper()
+<span id="L476" class="ln">   476  </span>		ctrl := gomock.NewController(t)
+<span id="L477" class="ln">   477  </span>		return mock_status.NewMockRepository(ctrl), mock_category.NewMockRepository(ctrl)
+<span id="L478" class="ln">   478  </span>	}
+<span id="L479" class="ln">   479  </span>
+<span id="L480" class="ln">   480  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L481" class="ln">   481  </span>		t.Parallel()
+<span id="L482" class="ln">   482  </span>
+<span id="L483" class="ln">   483  </span>		t.Run(&#34;statusId/categoryIdがいずれも未指定の場合、マスタを再解決せず現在の参照を返す&#34;, func(t *testing.T) {
+<span id="L484" class="ln">   484  </span>			t.Parallel()
+<span id="L485" class="ln">   485  </span>
+<span id="L486" class="ln">   486  </span>			entity := newUpdateTarget(t, 1)
+<span id="L487" class="ln">   487  </span>			statusRepo, categoryRepo := newRefRepos(t)
+<span id="L488" class="ln">   488  </span>			statusRepo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Times(0)
+<span id="L489" class="ln">   489  </span>			categoryRepo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Times(0)
+<span id="L490" class="ln">   490  </span>
+<span id="L491" class="ln">   491  </span>			u := &amp;usecase{statusRepo: statusRepo, categoryRepo: categoryRepo}
+<span id="L492" class="ln">   492  </span>			statusRef, categoryRef, err := u.resolveUpdatedRefs(context.Background(), entity, UpdateProductParams{})
+<span id="L493" class="ln">   493  </span>			require.NoError(t, err)
+<span id="L494" class="ln">   494  </span>			assert.Equal(t, entity.Status(), statusRef)
+<span id="L495" class="ln">   495  </span>			assert.Equal(t, entity.Category(), categoryRef)
+<span id="L496" class="ln">   496  </span>		})
+<span id="L497" class="ln">   497  </span>
+<span id="L498" class="ln">   498  </span>		t.Run(&#34;statusIdのみ指定の場合、categoryは現在のIDで再解決される&#34;, func(t *testing.T) {
+<span id="L499" class="ln">   499  </span>			t.Parallel()
+<span id="L500" class="ln">   500  </span>
+<span id="L501" class="ln">   501  </span>			entity := newUpdateTarget(t, 1)
+<span id="L502" class="ln">   502  </span>			newStatusID := uuidtestkit.NewTestFromSalt(t, &#34;resolve_updated_status&#34;)
+<span id="L503" class="ln">   503  </span>			statusRepo, categoryRepo := newRefRepos(t)
+<span id="L504" class="ln">   504  </span>			statusRepo.EXPECT().FindByID(gomock.Any(), newStatusID).Return(mustStatus(t, newStatusID), nil)
+<span id="L505" class="ln">   505  </span>			categoryRepo.EXPECT().
+<span id="L506" class="ln">   506  </span>				FindByID(gomock.Any(), entity.Category().ID()).
+<span id="L507" class="ln">   507  </span>				Return(mustCategory(t, entity.Category().ID()), nil)
+<span id="L508" class="ln">   508  </span>
+<span id="L509" class="ln">   509  </span>			u := &amp;usecase{statusRepo: statusRepo, categoryRepo: categoryRepo}
+<span id="L510" class="ln">   510  </span>			statusRef, categoryRef, err := u.resolveUpdatedRefs(context.Background(), entity,
+<span id="L511" class="ln">   511  </span>				UpdateProductParams{StatusID: &amp;newStatusID})
+<span id="L512" class="ln">   512  </span>			require.NoError(t, err)
+<span id="L513" class="ln">   513  </span>			assert.Equal(t, newStatusID, statusRef.ID())
+<span id="L514" class="ln">   514  </span>			assert.Equal(t, &#34;在庫あり&#34;, statusRef.Name())
+<span id="L515" class="ln">   515  </span>			assert.Equal(t, entity.Category().ID(), categoryRef.ID())
+<span id="L516" class="ln">   516  </span>			assert.Equal(t, &#34;電子機器&#34;, categoryRef.Name())
+<span id="L517" class="ln">   517  </span>		})
+<span id="L518" class="ln">   518  </span>
+<span id="L519" class="ln">   519  </span>		t.Run(&#34;categoryIdのみ指定の場合、statusは現在のIDで再解決される&#34;, func(t *testing.T) {
+<span id="L520" class="ln">   520  </span>			t.Parallel()
+<span id="L521" class="ln">   521  </span>
+<span id="L522" class="ln">   522  </span>			entity := newUpdateTarget(t, 1)
+<span id="L523" class="ln">   523  </span>			newCategoryID := uuidtestkit.NewTestFromSalt(t, &#34;resolve_updated_category&#34;)
+<span id="L524" class="ln">   524  </span>			statusRepo, categoryRepo := newRefRepos(t)
+<span id="L525" class="ln">   525  </span>			statusRepo.EXPECT().
+<span id="L526" class="ln">   526  </span>				FindByID(gomock.Any(), entity.Status().ID()).
+<span id="L527" class="ln">   527  </span>				Return(mustStatus(t, entity.Status().ID()), nil)
+<span id="L528" class="ln">   528  </span>			categoryRepo.EXPECT().FindByID(gomock.Any(), newCategoryID).Return(mustCategory(t, newCategoryID), nil)
+<span id="L529" class="ln">   529  </span>
+<span id="L530" class="ln">   530  </span>			u := &amp;usecase{statusRepo: statusRepo, categoryRepo: categoryRepo}
+<span id="L531" class="ln">   531  </span>			statusRef, categoryRef, err := u.resolveUpdatedRefs(context.Background(), entity,
+<span id="L532" class="ln">   532  </span>				UpdateProductParams{CategoryID: &amp;newCategoryID})
+<span id="L533" class="ln">   533  </span>			require.NoError(t, err)
+<span id="L534" class="ln">   534  </span>			assert.Equal(t, entity.Status().ID(), statusRef.ID())
+<span id="L535" class="ln">   535  </span>			assert.Equal(t, &#34;在庫あり&#34;, statusRef.Name())
+<span id="L536" class="ln">   536  </span>			assert.Equal(t, newCategoryID, categoryRef.ID())
+<span id="L537" class="ln">   537  </span>			assert.Equal(t, &#34;電子機器&#34;, categoryRef.Name())
+<span id="L538" class="ln">   538  </span>		})
+<span id="L539" class="ln">   539  </span>	})
+<span id="L540" class="ln">   540  </span>
+<span id="L541" class="ln">   541  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L542" class="ln">   542  </span>		t.Parallel()
+<span id="L543" class="ln">   543  </span>
+<span id="L544" class="ln">   544  </span>		t.Run(&#34;マスタの再解決に失敗した場合、ゼロ値の参照とエラーを返す&#34;, func(t *testing.T) {
+<span id="L545" class="ln">   545  </span>			t.Parallel()
+<span id="L546" class="ln">   546  </span>
+<span id="L547" class="ln">   547  </span>			entity := newUpdateTarget(t, 1)
+<span id="L548" class="ln">   548  </span>			newStatusID := uuidtestkit.NewTestFromSalt(t, &#34;resolve_updated_missing_status&#34;)
+<span id="L549" class="ln">   549  </span>			statusRepo, categoryRepo := newRefRepos(t)
+<span id="L550" class="ln">   550  </span>			statusRepo.EXPECT().FindByID(gomock.Any(), newStatusID).Return(nil, apperror.ErrNotFound)
+<span id="L551" class="ln">   551  </span>
+<span id="L552" class="ln">   552  </span>			u := &amp;usecase{statusRepo: statusRepo, categoryRepo: categoryRepo}
+<span id="L553" class="ln">   553  </span>			statusRef, categoryRef, err := u.resolveUpdatedRefs(context.Background(), entity,
+<span id="L554" class="ln">   554  </span>				UpdateProductParams{StatusID: &amp;newStatusID})
+<span id="L555" class="ln">   555  </span>			require.ErrorIs(t, err, errMissingStatus)
+<span id="L556" class="ln">   556  </span>			assert.Equal(t, domainproduct.StatusRef{}, statusRef)
+<span id="L557" class="ln">   557  </span>			assert.Equal(t, domainproduct.CategoryRef{}, categoryRef)
+<span id="L558" class="ln">   558  </span>		})
+<span id="L559" class="ln">   559  </span>	})
+<span id="L560" class="ln">   560  </span>}
+<span id="L561" class="ln">   561  </span>
+<span id="L562" class="ln">   562  </span>func Test_parseOptionalPrice(t *testing.T) {
+<span id="L563" class="ln">   563  </span>	t.Parallel()
+<span id="L564" class="ln">   564  </span>
+<span id="L565" class="ln">   565  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L566" class="ln">   566  </span>		t.Parallel()
+<span id="L567" class="ln">   567  </span>
+<span id="L568" class="ln">   568  </span>		t.Run(&#34;未指定(nil)の場合、価格なしとしてnilを返す&#34;, func(t *testing.T) {
+<span id="L569" class="ln">   569  </span>			t.Parallel()
+<span id="L570" class="ln">   570  </span>
+<span id="L571" class="ln">   571  </span>			actual, err := parseOptionalPrice(nil)
+<span id="L572" class="ln">   572  </span>			require.NoError(t, err)
+<span id="L573" class="ln">   573  </span>			assert.Nil(t, actual)
+<span id="L574" class="ln">   574  </span>		})
+<span id="L575" class="ln">   575  </span>
+<span id="L576" class="ln">   576  </span>		t.Run(&#34;十進文字列をサブセント精度の価格へ解釈する&#34;, func(t *testing.T) {
+<span id="L577" class="ln">   577  </span>			t.Parallel()
+<span id="L578" class="ln">   578  </span>
+<span id="L579" class="ln">   579  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;19.995&#34;))
+<span id="L580" class="ln">   580  </span>			require.NoError(t, err)
+<span id="L581" class="ln">   581  </span>			require.NotNil(t, actual)
+<span id="L582" class="ln">   582  </span>			assert.Equal(t, &#34;19.995&#34;, actual.String())
+<span id="L583" class="ln">   583  </span>		})
+<span id="L584" class="ln">   584  </span>
+<span id="L585" class="ln">   585  </span>		t.Run(&#34;ゼロを受理する&#34;, func(t *testing.T) {
+<span id="L586" class="ln">   586  </span>			t.Parallel()
+<span id="L587" class="ln">   587  </span>
+<span id="L588" class="ln">   588  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;0&#34;))
+<span id="L589" class="ln">   589  </span>			require.NoError(t, err)
+<span id="L590" class="ln">   590  </span>			require.NotNil(t, actual)
+<span id="L591" class="ln">   591  </span>			assert.Equal(t, &#34;0&#34;, actual.String())
+<span id="L592" class="ln">   592  </span>		})
+<span id="L593" class="ln">   593  </span>	})
+<span id="L594" class="ln">   594  </span>
+<span id="L595" class="ln">   595  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L596" class="ln">   596  </span>		t.Parallel()
+<span id="L597" class="ln">   597  </span>
+<span id="L598" class="ln">   598  </span>		t.Run(&#34;数値として解釈できない場合、ErrInvalidArgument(400)を返す&#34;, func(t *testing.T) {
+<span id="L599" class="ln">   599  </span>			t.Parallel()
+<span id="L600" class="ln">   600  </span>
+<span id="L601" class="ln">   601  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;not-a-number&#34;))
+<span id="L602" class="ln">   602  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
+<span id="L603" class="ln">   603  </span>			assert.Nil(t, actual)
+<span id="L604" class="ln">   604  </span>		})
+<span id="L605" class="ln">   605  </span>
+<span id="L606" class="ln">   606  </span>		t.Run(&#34;負値の場合、ErrNegativePrice(422)を返す&#34;, func(t *testing.T) {
+<span id="L607" class="ln">   607  </span>			t.Parallel()
+<span id="L608" class="ln">   608  </span>
+<span id="L609" class="ln">   609  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;-0.01&#34;))
+<span id="L610" class="ln">   610  </span>			require.ErrorIs(t, err, money.ErrNegativePrice)
+<span id="L611" class="ln">   611  </span>			assert.Nil(t, actual)
+<span id="L612" class="ln">   612  </span>		})
+<span id="L613" class="ln">   613  </span>	})
+<span id="L614" class="ln">   614  </span>}
+<span id="L615" class="ln">   615  </span>
+<span id="L616" class="ln">   616  </span>func Test_resolveUpdatedImages(t *testing.T) {
+<span id="L617" class="ln">   617  </span>	t.Parallel()
+<span id="L618" class="ln">   618  </span>
+<span id="L619" class="ln">   619  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L620" class="ln">   620  </span>		t.Parallel()
+<span id="L621" class="ln">   621  </span>
+<span id="L622" class="ln">   622  </span>		t.Run(&#34;未指定の場合、置き換えを行わないことを表すnilを返す&#34;, func(t *testing.T) {
+<span id="L623" class="ln">   623  </span>			t.Parallel()
+<span id="L624" class="ln">   624  </span>
+<span id="L625" class="ln">   625  </span>			actual, err := resolveUpdatedImages(patch.Unspecified[[]ProductImageParams]())
+<span id="L626" class="ln">   626  </span>
+<span id="L627" class="ln">   627  </span>			require.NoError(t, err)
+<span id="L628" class="ln">   628  </span>			assert.Nil(t, actual)
+<span id="L629" class="ln">   629  </span>		})
+<span id="L630" class="ln">   630  </span>
+<span id="L631" class="ln">   631  </span>		t.Run(&#34;null指定の場合、空の集合を返す&#34;, func(t *testing.T) {
+<span id="L632" class="ln">   632  </span>			t.Parallel()
+<span id="L633" class="ln">   633  </span>
+<span id="L634" class="ln">   634  </span>			actual, err := resolveUpdatedImages(patch.Null[[]ProductImageParams]())
+<span id="L635" class="ln">   635  </span>
+<span id="L636" class="ln">   636  </span>			require.NoError(t, err)
+<span id="L637" class="ln">   637  </span>			require.NotNil(t, actual)
+<span id="L638" class="ln">   638  </span>			assert.Empty(t, *actual)
+<span id="L639" class="ln">   639  </span>		})
+<span id="L640" class="ln">   640  </span>
+<span id="L641" class="ln">   641  </span>		t.Run(&#34;値指定の場合、その内容へ変換した集合を返す&#34;, func(t *testing.T) {
+<span id="L642" class="ln">   642  </span>			t.Parallel()
+<span id="L643" class="ln">   643  </span>
+<span id="L644" class="ln">   644  </span>			actual, err := resolveUpdatedImages(patch.Value([]ProductImageParams{
+<span id="L645" class="ln">   645  </span>				{ImagePath: &#34;products/a.png&#34;, DisplaySort: 3},
+<span id="L646" class="ln">   646  </span>			}))
+<span id="L647" class="ln">   647  </span>
+<span id="L648" class="ln">   648  </span>			require.NoError(t, err)
+<span id="L649" class="ln">   649  </span>			require.NotNil(t, actual)
+<span id="L650" class="ln">   650  </span>			require.Len(t, *actual, 1)
+<span id="L651" class="ln">   651  </span>			assert.Equal(t, &#34;products/a.png&#34;, (*actual)[0].ImagePath())
+<span id="L652" class="ln">   652  </span>			assert.Equal(t, 3, (*actual)[0].DisplaySort())
+<span id="L653" class="ln">   653  </span>		})
+<span id="L654" class="ln">   654  </span>	})
+<span id="L655" class="ln">   655  </span>}
+<span id="L656" class="ln">   656  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/product/product_update_usecase_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

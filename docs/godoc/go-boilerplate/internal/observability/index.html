@@ -125,6 +125,9 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 				<dd><a href="#InjectTraceContextToCarrier">func InjectTraceContextToCarrier(ctx context.Context, attrs map[string]string)</a></dd>
 			
 				
+				<dd><a href="#InstallRecordingTracerProvider">func InstallRecordingTracerProvider(t *testing.T) func() []sdktrace.ReadOnlySpan</a></dd>
+			
+				
 				<dd><a href="#NewLogCore">func NewLogCore(obsCfg *config.ObservabilityConfig, appCfg *config.ApplicationConfig, lp *sdklog.LoggerProvider) logging.LogCore</a></dd>
 			
 				
@@ -135,6 +138,9 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 			
 				
 				<dd><a href="#NewPgxTracer">func NewPgxTracer(tp trace.TracerProvider, mp *sdkmetric.MeterProvider) *otelpgx.Tracer</a></dd>
+			
+				
+				<dd><a href="#NewRecordingTracerProvider">func NewRecordingTracerProvider(t *testing.T) (trace.TracerProvider, func() []sdktrace.ReadOnlySpan)</a></dd>
 			
 				
 				<dd><a href="#NewResource">func NewResource(appCfg *config.ApplicationConfig, bi system.BuildInfo) (*resource.Resource, error)</a></dd>
@@ -162,6 +168,12 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 			
 				
 				<dd><a href="#ShouldLogWithSpan">func ShouldLogWithSpan(ctx context.Context, obsCfg *config.ObservabilityConfig) bool</a></dd>
+			
+				
+				<dd><a href="#SpanAttributeValues">func SpanAttributeValues(spans []sdktrace.ReadOnlySpan, filterKey, filterValue string) []string</a></dd>
+			
+				
+				<dd><a href="#TraceContextFromCarrier">func TraceContextFromCarrier(attrs map[string]string) map[string]string</a></dd>
 			
 			
 				
@@ -262,6 +274,9 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 					<dd>    <a href="#LayerTracer.Start">func (lt LayerTracer) Start(ctx context.Context, opts ...trace.SpanStartOption) (context.Context, func())</a></dd>
 				
 					
+					<dd>    <a href="#LayerTracer.StartWithLink">func (lt LayerTracer) StartWithLink(ctx context.Context, carrier map[string]string, opts ...trace.SpanStartOption) (context.Context, func())</a></dd>
+				
+					
 					<dd>    <a href="#LayerTracer.StartWithSuffix">func (lt LayerTracer) StartWithSuffix(ctx context.Context, optionalName string, opts ...trace.SpanStartOption) (context.Context, func())</a></dd>
 				
 			
@@ -274,6 +289,20 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 				
 					
 					<dd>    <a href="#ObservedHTTPClientMetrics.LabelValues">func (o *ObservedHTTPClientMetrics) LabelValues(t *testing.T, metricName, labelKey string) []string</a></dd>
+				
+			
+				
+				<dd><a href="#ObservedRealtimeMetrics">type ObservedRealtimeMetrics</a></dd>
+				
+					
+					<dd>    <a href="#NewObservedRealtimeMetrics">func NewObservedRealtimeMetrics(t *testing.T) *ObservedRealtimeMetrics</a></dd>
+				
+				
+					
+					<dd>    <a href="#ObservedRealtimeMetrics.CounterValue">func (o *ObservedRealtimeMetrics) CounterValue(t *testing.T, metricName, labelKey, labelValue string) int64</a></dd>
+				
+					
+					<dd>    <a href="#ObservedRealtimeMetrics.HistogramCount">func (o *ObservedRealtimeMetrics) HistogramCount(t *testing.T, metricName string) uint64</a></dd>
 				
 			
 				
@@ -298,10 +327,13 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 				
 				
 					
-					<dd>    <a href="#OutboxMetrics.IncDead">func (m *OutboxMetrics) IncDead(ctx context.Context)</a></dd>
+					<dd>    <a href="#OutboxMetrics.IncDead">func (m *OutboxMetrics) IncDead(ctx context.Context, channel string)</a></dd>
 				
 					
-					<dd>    <a href="#OutboxMetrics.SetLagSeconds">func (m *OutboxMetrics) SetLagSeconds(ctx context.Context, seconds int64)</a></dd>
+					<dd>    <a href="#OutboxMetrics.SetBlockedStreams">func (m *OutboxMetrics) SetBlockedStreams(ctx context.Context, channel string, count int64)</a></dd>
+				
+					
+					<dd>    <a href="#OutboxMetrics.SetLagSeconds">func (m *OutboxMetrics) SetLagSeconds(ctx context.Context, channel string, seconds int64)</a></dd>
 				
 			
 				
@@ -310,6 +342,71 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 					
 					<dd>    <a href="#NewProviderShutdowner">func NewProviderShutdowner(tp *sdktrace.TracerProvider, mp *sdkmetric.MeterProvider, lp *sdklog.LoggerProvider) ProviderShutdowner</a></dd>
 				
+				
+			
+				
+				<dd><a href="#RealtimeMetrics">type RealtimeMetrics</a></dd>
+				
+					
+					<dd>    <a href="#NewNoopRealtimeMetrics">func NewNoopRealtimeMetrics(t *testing.T) *RealtimeMetrics</a></dd>
+				
+					
+					<dd>    <a href="#NewRealtimeMetrics">func NewRealtimeMetrics(mp metric.MeterProvider) (*RealtimeMetrics, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#RealtimeMetrics.CatchUpLag">func (m *RealtimeMetrics) CatchUpLag(ctx context.Context, lagMs float64)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.CleanupExecuted">func (m *RealtimeMetrics) CleanupExecuted(ctx context.Context, result string)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.CleanupInstances">func (m *RealtimeMetrics) CleanupInstances(ctx context.Context, outcome string, n int64)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ConnectionClosed">func (m *RealtimeMetrics) ConnectionClosed(ctx context.Context, reason string, durationMs float64)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ConnectionEstablished">func (m *RealtimeMetrics) ConnectionEstablished(ctx context.Context, resumed bool)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ConnectionRegistered">func (m *RealtimeMetrics) ConnectionRegistered(ctx context.Context)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ConnectionRejected">func (m *RealtimeMetrics) ConnectionRejected(ctx context.Context, reason string)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.DeliveryLatency">func (m *RealtimeMetrics) DeliveryLatency(ctx context.Context, latencyMs float64)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.EventLogAppended">func (m *RealtimeMetrics) EventLogAppended(ctx context.Context, result string)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.EventLogLag">func (m *RealtimeMetrics) EventLogLag(ctx context.Context, lagMs float64)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.LeaseHeartbeatFailed">func (m *RealtimeMetrics) LeaseHeartbeatFailed(ctx context.Context)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.RecoveryExecuted">func (m *RealtimeMetrics) RecoveryExecuted(ctx context.Context, result string)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ReplayAdmissionTimedOut">func (m *RealtimeMetrics) ReplayAdmissionTimedOut(ctx context.Context)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ReplayExecuted">func (m *RealtimeMetrics) ReplayExecuted(ctx context.Context, trigger string, events int64)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ReplayFailed">func (m *RealtimeMetrics) ReplayFailed(ctx context.Context)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ReplayFinished">func (m *RealtimeMetrics) ReplayFinished(ctx context.Context)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.ReplayStarted">func (m *RealtimeMetrics) ReplayStarted(ctx context.Context)</a></dd>
+				
+					
+					<dd>    <a href="#RealtimeMetrics.WakeupPublishFailed">func (m *RealtimeMetrics) WakeupPublishFailed(ctx context.Context)</a></dd>
 				
 			
 				
@@ -340,6 +437,9 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 				
 					
 					<dd>    <a href="#NewNoopTracerFactory">func NewNoopTracerFactory(t *testing.T) TracerFactory</a></dd>
+				
+					
+					<dd>    <a href="#NewRecordingTracerFactory">func NewRecordingTracerFactory(t *testing.T) (TracerFactory, func() []sdktrace.ReadOnlySpan)</a></dd>
 				
 					
 					<dd>    <a href="#NewTracerFactory">func NewTracerFactory(tp trace.TracerProvider) TracerFactory</a></dd>
@@ -421,6 +521,8 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 			
 				<a href="../../../src/go-boilerplate/internal/observability/provider.go.html">provider.go</a>
 			
+				<a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html">realtime_metrics.go</a>
+			
 				<a href="../../../src/go-boilerplate/internal/observability/shutdown.go.html">shutdown.go</a>
 			
 				<a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html">test_kit.go</a>
@@ -449,6 +551,17 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
     <span id="Usecase">Usecase</span> layerName = &#34;usecase&#34;
     <span class="comment">// Infra は、インフラ層を表すレイヤー名です。</span>
     <span id="Infra">Infra</span> layerName = &#34;infrastructure&#34;
+)</pre>
+			
+				<p>label に載せる値の語彙。3 つの process が同じ語で記録するよう、計装の側で定義します。
+
+				</p><pre>const (
+    <span class="comment">// RealtimeResultOK は、操作が成功したことを表します。</span>
+    <span id="RealtimeResultOK">RealtimeResultOK</span> = &#34;ok&#34;
+    <span class="comment">// RealtimeResultError は、操作が失敗したことを表します。</span>
+    <span id="RealtimeResultError">RealtimeResultError</span> = &#34;error&#34;
+    <span class="comment">// RealtimeResultConflict は、既に同じ位置が書かれていて追記しなかったことを表します。</span>
+    <span id="RealtimeResultConflict">RealtimeResultConflict</span> = &#34;conflict&#34;
 )</pre>
 			
 		
@@ -498,7 +611,7 @@ Worker / HTTPClient / Outbox 向けメトリクスセット、OTLP Provider の�
 		
 			
 			
-			</p><h2 id="ExtractFromCarrier">func <a href="../../../src/go-boilerplate/internal/observability/propagation.go.html?s=946:1031#L18">ExtractFromCarrier</a>
+			</p><h2 id="ExtractFromCarrier">func <a href="../../../src/go-boilerplate/internal/observability/propagation.go.html?s=1298:1383#L23">ExtractFromCarrier</a>
 				<a class="permalink" href="#ExtractFromCarrier">¶</a>
 				
 				
@@ -513,16 +626,31 @@ producer → consumer → handler を 1 trace に繋ぐための公開ヘルパ�
 		
 			
 			
-			</p><h2 id="InjectTraceContextToCarrier">func <a href="../../../src/go-boilerplate/internal/observability/propagation.go.html?s=1938:2016#L34">InjectTraceContextToCarrier</a>
+			</p><h2 id="InjectTraceContextToCarrier">func <a href="../../../src/go-boilerplate/internal/observability/propagation.go.html?s=2807:2885#L63">InjectTraceContextToCarrier</a>
 				<a class="permalink" href="#InjectTraceContextToCarrier">¶</a>
 				
 				
 			</h2>
 			<pre>func InjectTraceContextToCarrier(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, attrs map[<a href="../../../builtin/#string">string</a>]<a href="../../../builtin/#string">string</a>)</pre>
-			<p>InjectTraceContextToCarrier は、現在の ctx の trace context（traceparent 等）のみを attrs へ書き込みます。
-outbox emit 時に traceparent を headers へ載せ、後続の relay→受信側を起点 trace に繋ぐための公開ヘルパです。
-グローバル伝播器（Baggage を含みうる）ではなく TraceContext 限定で inject することで、インバウンド由来の
-任意 baggage が outbox 経由で外部エンドポイントへ転送される経路を断ちます。
+			<p>InjectTraceContextToCarrier は、現在の ctx の trace context（traceparent / tracestate）だけを attrs へ書き込みます。
+グローバル伝播器ではなく TraceContext 限定なのは意図したもので、インバウンド由来の baggage を
+外部へ運ばないためです（README「Trace Context Propagation」）。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="InstallRecordingTracerProvider">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=12052:12132#L337">InstallRecordingTracerProvider</a>
+				<a class="permalink" href="#InstallRecordingTracerProvider">¶</a>
+				
+				
+			</h2>
+			<pre>func InstallRecordingTracerProvider(t *<a href="../../../testing/">testing</a>.<a href="../../../testing/#T">T</a>) func() []<a href="../../../go.opentelemetry.io/otel/sdk/trace/">sdktrace</a>.<a href="../../../go.opentelemetry.io/otel/sdk/trace/#ReadOnlySpan">ReadOnlySpan</a></pre>
+			<p>InstallRecordingTracerProvider は、NewRecordingTracerProvider の provider をプロセス全体の既定（otel の global）に
+据え、テスト終了時に元へ戻します。global の provider から tracer を得る計装（HTTP の OTel ミドルウェアなど）が
+span に何を載せたかを、その計装自身を通して検証するために使います。
 
 			
 			
@@ -597,6 +725,21 @@ MetricsEnabled が真の場合は Go ランタイムメトリクスの収集 gor
 		
 			
 			
+			</p><h2 id="NewRecordingTracerProvider">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=10899:10999#L311">NewRecordingTracerProvider</a>
+				<a class="permalink" href="#NewRecordingTracerProvider">¶</a>
+				
+				
+			</h2>
+			<pre>func NewRecordingTracerProvider(t *<a href="../../../testing/">testing</a>.<a href="../../../testing/#T">T</a>) (<a href="../../../go.opentelemetry.io/otel/trace/">trace</a>.<a href="../../../go.opentelemetry.io/otel/trace/#TracerProvider">TracerProvider</a>, func() []<a href="../../../go.opentelemetry.io/otel/sdk/trace/">sdktrace</a>.<a href="../../../go.opentelemetry.io/otel/sdk/trace/#ReadOnlySpan">ReadOnlySpan</a>)</pre>
+			<p>NewRecordingTracerProvider は、終了した span を保持する TracerProvider と、保持した span を返す関数を返します。
+計装が span の属性に何を載せたかをテストで検証するためのもので、テスト終了時に provider を停止します。
+
+			
+			
+
+		
+			
+			
 			</p><h2 id="NewResource">func <a href="../../../src/go-boilerplate/internal/observability/provider.go.html?s=1971:2070#L46">NewResource</a>
 				<a class="permalink" href="#NewResource">¶</a>
 				
@@ -611,7 +754,7 @@ MetricsEnabled が真の場合は Go ランタイムメトリクスの収集 gor
 		
 			
 			
-			</p><h2 id="NewStubSpanContext">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=6344:6407#L161">NewStubSpanContext</a>
+			</p><h2 id="NewStubSpanContext">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=10083:10146#L286">NewStubSpanContext</a>
 				<a class="permalink" href="#NewStubSpanContext">¶</a>
 				
 				
@@ -701,7 +844,7 @@ TracesEnabled が偽でも span 自体は有効な TraceID / SpanID を持って
 		
 			
 			
-			</p><h2 id="RunWithSpan">func <a href="../../../src/go-boilerplate/internal/observability/layer_tracer.go.html?s=2548:2730#L63">RunWithSpan</a>
+			</p><h2 id="RunWithSpan">func <a href="../../../src/go-boilerplate/internal/observability/layer_tracer.go.html?s=3473:3655#L92">RunWithSpan</a>
 				<a class="permalink" href="#RunWithSpan">¶</a>
 				
 				
@@ -714,7 +857,6 @@ TracesEnabled が偽でも span 自体は有効な TraceID / SpanID を持って
     fn func(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>) (T, <a href="../../../builtin/#error">error</a>),
 ) (<a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, T, <a href="../../../builtin/#error">error</a>)</pre>
 			<p>RunWithSpan は、指定された関数 fn を新しい span 内で実行し、結果を返す。
-</p><p>呼び出し元は、関数 fn の実行結果とエラーを受け取ることができる。
 </p><p>典型的な呼び出し方:
 </p><pre>ctx, result, err := observability.RunWithSpan(ctx, lt, observability.Usecase, &#34;user&#34;, &#34;FullName&#34;, func(ctx context.Context) (T, error) {
     // 処理内容
@@ -734,6 +876,37 @@ TracesEnabled が偽でも span 自体は有効な TraceID / SpanID を持って
 			</h2>
 			<pre>func ShouldLogWithSpan(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, obsCfg *<a href="../../../go-boilerplate/internal/config/">config</a>.<a href="../../../go-boilerplate/internal/config/#ObservabilityConfig">ObservabilityConfig</a>) <a href="../../../builtin/#bool">bool</a></pre>
 			<p>ShouldLogWithSpan は、o11y モードが有効かつ ctx にアクティブな Span が存在するとき true を返す。span 付きログを出す前提条件チェックに使う。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="SpanAttributeValues">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=12627:12722#L350">SpanAttributeValues</a>
+				<a class="permalink" href="#SpanAttributeValues">¶</a>
+				
+				
+			</h2>
+			<pre>func SpanAttributeValues(spans []<a href="../../../go.opentelemetry.io/otel/sdk/trace/">sdktrace</a>.<a href="../../../go.opentelemetry.io/otel/sdk/trace/#ReadOnlySpan">ReadOnlySpan</a>, filterKey, filterValue <a href="../../../builtin/#string">string</a>) []<a href="../../../builtin/#string">string</a></pre>
+			<p>SpanAttributeValues は、属性 filterKey が filterValue に一致する span について、その全属性の値を文字列で返します。
+計装が span に載せた値の中に特定の文字列（資格情報など）が無いことを表明するために使います。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="TraceContextFromCarrier">func <a href="../../../src/go-boilerplate/internal/observability/propagation.go.html?s=2078:2149#L38">TraceContextFromCarrier</a>
+				<a class="permalink" href="#TraceContextFromCarrier">¶</a>
+				
+				
+			</h2>
+			<pre>func TraceContextFromCarrier(attrs map[<a href="../../../builtin/#string">string</a>]<a href="../../../builtin/#string">string</a>) map[<a href="../../../builtin/#string">string</a>]<a href="../../../builtin/#string">string</a></pre>
+			<p>TraceContextFromCarrier は、attrs から trace context の項目だけを取り出した carrier を返します。
+非同期のホップで起点 trace を持ち回るとき、運ぶ側が項目名を知らずに済むようにするためのものです。
+該当が無ければ nil を返します。
 
 			
 			
@@ -780,7 +953,7 @@ TracesEnabled が偽でも span 自体は有効な TraceID / SpanID を持って
 				
 			
 				
-				</p><h3 id="NewNoopHTTPClientMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=2490:2552#L70">NewNoopHTTPClientMetrics</a>
+				</p><h3 id="NewNoopHTTPClientMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=2823:2885#L86">NewNoopHTTPClientMetrics</a>
 					<a class="permalink" href="#NewNoopHTTPClientMetrics">¶</a>
 					
 					
@@ -896,7 +1069,7 @@ TracesEnabled が偽でも span 自体は有効な TraceID / SpanID を持って
 
 			
 				
-				<h3 id="NewGuardedHTTPClientTransport">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=6083:6152#L155">NewGuardedHTTPClientTransport</a>
+				<h3 id="NewGuardedHTTPClientTransport">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=9822:9891#L280">NewGuardedHTTPClientTransport</a>
 					<a class="permalink" href="#NewGuardedHTTPClientTransport">¶</a>
 					
 					
@@ -925,7 +1098,7 @@ ContextWithAllowPrivateNetwork のフラグで制御し、link-local（クラウ
 				
 			
 				
-				</p><h3 id="NewNoopHTTPClientTransport">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=5587:5653#L147">NewNoopHTTPClientTransport</a>
+				</p><h3 id="NewNoopHTTPClientTransport">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=9326:9392#L272">NewNoopHTTPClientTransport</a>
 					<a class="permalink" href="#NewNoopHTTPClientTransport">¶</a>
 					
 					
@@ -1125,7 +1298,7 @@ GC バッチ失敗はリクエスト由来の operationID を持たないため�
 
 			
 				
-				<h3 id="NewMockControllerLayerTracer">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=1161:1220#L29">NewMockControllerLayerTracer</a>
+				<h3 id="NewMockControllerLayerTracer">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=1494:1553#L45">NewMockControllerLayerTracer</a>
 					<a class="permalink" href="#NewMockControllerLayerTracer">¶</a>
 					
 					
@@ -1137,7 +1310,7 @@ GC バッチ失敗はリクエスト由来の operationID を持たないため�
 				
 			
 				
-				</p><h3 id="NewMockInfraLayerTracer">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=1645:1699#L43">NewMockInfraLayerTracer</a>
+				</p><h3 id="NewMockInfraLayerTracer">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=1978:2032#L59">NewMockInfraLayerTracer</a>
 					<a class="permalink" href="#NewMockInfraLayerTracer">¶</a>
 					
 					
@@ -1149,7 +1322,7 @@ GC バッチ失敗はリクエスト由来の operationID を持たないため�
 				
 			
 				
-				</p><h3 id="NewMockUsecaseLayerTracer">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=1410:1466#L36">NewMockUsecaseLayerTracer</a>
+				</p><h3 id="NewMockUsecaseLayerTracer">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=1743:1799#L52">NewMockUsecaseLayerTracer</a>
 					<a class="permalink" href="#NewMockUsecaseLayerTracer">¶</a>
 					
 					
@@ -1161,7 +1334,7 @@ GC バッチ失敗はリクエスト由来の operationID を持たないため�
 				
 			
 				
-				</p><h3 id="NewNoopLayerTracer">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=1857:1906#L50">NewNoopLayerTracer</a>
+				</p><h3 id="NewNoopLayerTracer">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=2190:2239#L66">NewNoopLayerTracer</a>
 					<a class="permalink" href="#NewNoopLayerTracer">¶</a>
 					
 					
@@ -1191,7 +1364,26 @@ GC バッチ失敗はリクエスト由来の operationID を持たないため�
 				
 			
 				
-				</p><h3 id="LayerTracer.StartWithSuffix">func (LayerTracer) <a href="../../../src/go-boilerplate/internal/observability/layer_tracer.go.html?s=1835:1977#L41">StartWithSuffix</a>
+				</p><h3 id="LayerTracer.StartWithLink">func (LayerTracer) <a href="../../../src/go-boilerplate/internal/observability/layer_tracer.go.html?s=2403:2549#L56">StartWithLink</a>
+					<a class="permalink" href="#LayerTracer.StartWithLink">¶</a>
+					
+					
+				</h3>
+				<pre>func (lt <a href="#LayerTracer">LayerTracer</a>) StartWithLink(
+    ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>,
+    carrier map[<a href="../../../builtin/#string">string</a>]<a href="../../../builtin/#string">string</a>,
+    opts ...<a href="../../../go.opentelemetry.io/otel/trace/">trace</a>.<a href="../../../go.opentelemetry.io/otel/trace/#SpanStartOption">SpanStartOption</a>,
+) (<a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, func())</pre>
+				<p>StartWithLink は、新しい span を開始し、carrier が指す trace への link を張ります。
+親は ctx の span のままで、carrier は link にしかなりません — 起点の trace とは時も場所も
+異なる作業を、その子にせず繋ぐためのものです。carrier が空か読めなければ link 無しの span になります。
+
+				
+				
+				
+			
+				
+				</p><h3 id="LayerTracer.StartWithSuffix">func (LayerTracer) <a href="../../../src/go-boilerplate/internal/observability/layer_tracer.go.html?s=1722:1864#L40">StartWithSuffix</a>
 					<a class="permalink" href="#LayerTracer.StartWithSuffix">¶</a>
 					
 					
@@ -1201,8 +1393,7 @@ GC バッチ失敗はリクエスト由来の operationID を持たないため�
     optionalName <a href="../../../builtin/#string">string</a>,
     opts ...<a href="../../../go.opentelemetry.io/otel/trace/">trace</a>.<a href="../../../go.opentelemetry.io/otel/trace/#SpanStartOption">SpanStartOption</a>,
 ) (<a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, func())</pre>
-				<p>StartWithSuffix は、新しい span を開始し、span を含む新しい Context と、span を終了するための endSpan 関数を返す。
-optionalName が空でない場合は span 名のサフィックスとして付与される。
+				<p>StartWithSuffix は、Start と同じく span を開始し、optionalName が空でなければ span 名の末尾に付与する。
 
 				
 				
@@ -1211,13 +1402,12 @@ optionalName が空でない場合は span 名のサフィックスとして付�
 		
 			
 			
-			</p><h2 id="ObservedHTTPClientMetrics">type <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=715:809#L14">ObservedHTTPClientMetrics</a>
+			</p><h2 id="ObservedHTTPClientMetrics">type <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=676:770#L17">ObservedHTTPClientMetrics</a>
 				<a class="permalink" href="#ObservedHTTPClientMetrics">¶</a>
 				
 				
 			</h2>
 			<p>ObservedHTTPClientMetrics は、計上内容を読み出せる HTTPClientMetrics です。
-HTTPClientMetrics をそのまま埋め込むため、被験側へは埋め込みフィールドを渡して通常どおり計上させます。
 
 			</p><pre>type ObservedHTTPClientMetrics struct {
     *<a href="#HTTPClientMetrics">HTTPClientMetrics</a>
@@ -1235,7 +1425,7 @@ HTTPClientMetrics をそのまま埋め込むため、被験側へは埋め込�
 
 			
 				
-				<h3 id="NewObservedHTTPClientMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=2921:2995#L81">NewObservedHTTPClientMetrics</a>
+				<h3 id="NewObservedHTTPClientMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=6313:6387#L196">NewObservedHTTPClientMetrics</a>
 					<a class="permalink" href="#NewObservedHTTPClientMetrics">¶</a>
 					
 					
@@ -1250,7 +1440,7 @@ HTTPClientMetrics をそのまま埋め込むため、被験側へは埋め込�
 
 			
 				
-				</p><h3 id="ObservedHTTPClientMetrics.LabelValues">func (*ObservedHTTPClientMetrics) <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=3806:3905#L97">LabelValues</a>
+				</p><h3 id="ObservedHTTPClientMetrics.LabelValues">func (*ObservedHTTPClientMetrics) <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=7198:7297#L212">LabelValues</a>
 					<a class="permalink" href="#ObservedHTTPClientMetrics.LabelValues">¶</a>
 					
 					
@@ -1260,6 +1450,73 @@ HTTPClientMetrics をそのまま埋め込むため、被験側へは埋め込�
 返るのは counter のデータポイント単位、すなわち計上された label 組であり、記録回数ではありません
 （同一 label 組へ何回記録しても cumulative counter の 1 データポイントに集約されます）。
 metricName が int64 counter でない場合は、テストキットの誤用としてテストを失敗させます。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="ObservedRealtimeMetrics">type <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=880:970#L24">ObservedRealtimeMetrics</a>
+				<a class="permalink" href="#ObservedRealtimeMetrics">¶</a>
+				
+				
+			</h2>
+			<p>ObservedRealtimeMetrics は、計上内容（label と値）を読み出せる RealtimeMetrics です。
+
+			</p><pre>type ObservedRealtimeMetrics struct {
+    *<a href="#RealtimeMetrics">RealtimeMetrics</a>
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewObservedRealtimeMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=3256:3326#L97">NewObservedRealtimeMetrics</a>
+					<a class="permalink" href="#NewObservedRealtimeMetrics">¶</a>
+					
+					
+				</h3>
+				<pre>func NewObservedRealtimeMetrics(t *<a href="../../../testing/">testing</a>.<a href="../../../testing/#T">T</a>) *<a href="#ObservedRealtimeMetrics">ObservedRealtimeMetrics</a></pre>
+				<p>NewObservedRealtimeMetrics は、計上内容を読み出せる RealtimeMetrics を返します。
+計上先の label と値を検証したい呼び出し元テストで使用します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="ObservedRealtimeMetrics.CounterValue">func (*ObservedRealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=3882:3989#L111">CounterValue</a>
+					<a class="permalink" href="#ObservedRealtimeMetrics.CounterValue">¶</a>
+					
+					
+				</h3>
+				<pre>func (o *<a href="#ObservedRealtimeMetrics">ObservedRealtimeMetrics</a>) CounterValue(t *<a href="../../../testing/">testing</a>.<a href="../../../testing/#T">T</a>, metricName, labelKey, labelValue <a href="../../../builtin/#string">string</a>) <a href="../../../builtin/#int64">int64</a></pre>
+				<p>CounterValue は、metricName の counter のうち labelKey=labelValue の点の値を返します。
+該当する点が無ければ -1 を返します（0 は「0 が計上された」であり、両者は区別すべき別の事実です）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="ObservedRealtimeMetrics.HistogramCount">func (*ObservedRealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=5239:5327#L159">HistogramCount</a>
+					<a class="permalink" href="#ObservedRealtimeMetrics.HistogramCount">¶</a>
+					
+					
+				</h3>
+				<pre>func (o *<a href="#ObservedRealtimeMetrics">ObservedRealtimeMetrics</a>) HistogramCount(t *<a href="../../../testing/">testing</a>.<a href="../../../testing/#T">T</a>, metricName <a href="../../../builtin/#string">string</a>) <a href="../../../builtin/#uint64">uint64</a></pre>
+				<p>HistogramCount は、metricName の histogram に記録された点の数を返します（未記録なら 0）。
 
 				
 				
@@ -1329,14 +1586,15 @@ budget は載せません。
 		
 			
 			
-			</p><h2 id="OutboxMetrics">type <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=458:549#L5">OutboxMetrics</a>
+			</p><h2 id="OutboxMetrics">type <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=629:762#L7">OutboxMetrics</a>
 				<a class="permalink" href="#OutboxMetrics">¶</a>
 				
 				
 			</h2>
 			<p>OutboxMetrics は、outbox relay 所有の outbox 固有計装です。
 publish 自体の count/latency/error は httpclient(downstream=outbox) の計装で賄うため、
-ここでは outbox 固有の SLI（lag）と dead 数のみを持ちます。
+ここでは outbox 固有の SLI（lag / blocked streams）と dead 数のみを持ちます。
+relay は配送チャネルごとに独立して動くため、いずれもチャネル属性を伴います。
 
 			</p><pre>type OutboxMetrics struct {
     <span class="comment">// contains filtered or unexported fields</span>
@@ -1353,7 +1611,7 @@ publish 自体の count/latency/error は httpclient(downstream=outbox) の計�
 
 			
 				
-				<h3 id="NewNoopOutboxMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=5144:5198#L136">NewNoopOutboxMetrics</a>
+				<h3 id="NewNoopOutboxMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=8536:8590#L251">NewNoopOutboxMetrics</a>
 					<a class="permalink" href="#NewNoopOutboxMetrics">¶</a>
 					
 					
@@ -1365,7 +1623,7 @@ publish 自体の count/latency/error は httpclient(downstream=outbox) の計�
 				
 			
 				
-				</p><h3 id="NewOutboxMetrics">func <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=664:734#L11">NewOutboxMetrics</a>
+				</p><h3 id="NewOutboxMetrics">func <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=877:947#L14">NewOutboxMetrics</a>
 					<a class="permalink" href="#NewOutboxMetrics">¶</a>
 					
 					
@@ -1379,26 +1637,39 @@ publish 自体の count/latency/error は httpclient(downstream=outbox) の計�
 
 			
 				
-				</p><h3 id="OutboxMetrics.IncDead">func (*OutboxMetrics) <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=1379:1431#L29">IncDead</a>
+				</p><h3 id="OutboxMetrics.IncDead">func (*OutboxMetrics) <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=1844:1912#L33">IncDead</a>
 					<a class="permalink" href="#OutboxMetrics.IncDead">¶</a>
 					
 					
 				</h3>
-				<pre>func (m *<a href="#OutboxMetrics">OutboxMetrics</a>) IncDead(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>)</pre>
-				<p>IncDead は、dead 化したメッセージ数を計上します。
+				<pre>func (m *<a href="#OutboxMetrics">OutboxMetrics</a>) IncDead(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, channel <a href="../../../builtin/#string">string</a>)</pre>
+				<p>IncDead は、dead 化したメッセージ数をチャネル別に計上します。
 
 				
 				
 				
 			
 				
-				</p><h3 id="OutboxMetrics.SetLagSeconds">func (*OutboxMetrics) <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=1194:1267#L24">SetLagSeconds</a>
+				</p><h3 id="OutboxMetrics.SetBlockedStreams">func (*OutboxMetrics) <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=2123:2214#L38">SetBlockedStreams</a>
+					<a class="permalink" href="#OutboxMetrics.SetBlockedStreams">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#OutboxMetrics">OutboxMetrics</a>) SetBlockedStreams(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, channel <a href="../../../builtin/#string">string</a>, count <a href="../../../builtin/#int64">int64</a>)</pre>
+				<p>SetBlockedStreams は、先頭行が dead で止まっているストリーム数をチャネル別に記録します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="OutboxMetrics.SetLagSeconds">func (*OutboxMetrics) <a href="../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?s=1564:1653#L28">SetLagSeconds</a>
 					<a class="permalink" href="#OutboxMetrics.SetLagSeconds">¶</a>
 					
 					
 				</h3>
-				<pre>func (m *<a href="#OutboxMetrics">OutboxMetrics</a>) SetLagSeconds(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, seconds <a href="../../../builtin/#int64">int64</a>)</pre>
-				<p>SetLagSeconds は、最古 pending 行の経過秒数（outbox lag）を記録します（pending 無しは 0）。
+				<pre>func (m *<a href="#OutboxMetrics">OutboxMetrics</a>) SetLagSeconds(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, channel <a href="../../../builtin/#string">string</a>, seconds <a href="../../../builtin/#int64">int64</a>)</pre>
+				<p>SetLagSeconds は、最古 pending 行の経過秒数（outbox lag）をチャネル別に記録します（pending 無しは 0）。
 
 				
 				
@@ -1443,6 +1714,295 @@ publish 自体の count/latency/error は httpclient(downstream=outbox) の計�
 				
 			
 
+			
+		
+			
+			
+			</p><h2 id="RealtimeMetrics">type <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=1593:2577#L28">RealtimeMetrics</a>
+				<a class="permalink" href="#RealtimeMetrics">¶</a>
+				
+				
+			</h2>
+			<p>RealtimeMetrics は、Realtime Delivery の lifecycle 計装一式です。
+serve（接続・replay・配送）・relay（EventLog への追記）・cleanup job（lease の回収）が同じ meter を共有します。
+
+			</p><pre>type RealtimeMetrics struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewNoopRealtimeMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=8875:8933#L261">NewNoopRealtimeMetrics</a>
+					<a class="permalink" href="#NewNoopRealtimeMetrics">¶</a>
+					
+					
+				</h3>
+				<pre>func NewNoopRealtimeMetrics(t *<a href="../../../testing/">testing</a>.<a href="../../../testing/#T">T</a>) *<a href="#RealtimeMetrics">RealtimeMetrics</a></pre>
+				<p>NewNoopRealtimeMetrics は、テスト用に no-op の MeterProvider から RealtimeMetrics を生成します。
+
+				
+				
+			
+				
+				</p><h3 id="NewRealtimeMetrics">func <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=2764:2838#L57">NewRealtimeMetrics</a>
+					<a class="permalink" href="#NewRealtimeMetrics">¶</a>
+					
+					
+				</h3>
+				<pre>func NewRealtimeMetrics(mp <a href="../../../go.opentelemetry.io/otel/metric/">metric</a>.<a href="../../../go.opentelemetry.io/otel/metric/#MeterProvider">MeterProvider</a>) (*<a href="#RealtimeMetrics">RealtimeMetrics</a>, <a href="../../../builtin/#error">error</a>)</pre>
+				<p>NewRealtimeMetrics は、注入された MeterProvider から Realtime Delivery の計装一式を生成します。
+いずれかの計装生成失敗で error を返します。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="RealtimeMetrics.CatchUpLag">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=8078:8150#L141">CatchUpLag</a>
+					<a class="permalink" href="#RealtimeMetrics.CatchUpLag">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) CatchUpLag(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, lagMs <a href="../../../builtin/#float64">float64</a>)</pre>
+				<p>CatchUpLag は、wakeup を受け取ってから読み終わるまでの時間を記録します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.CleanupExecuted">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=9743:9820#L177">CleanupExecuted</a>
+					<a class="permalink" href="#RealtimeMetrics.CleanupExecuted">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) CleanupExecuted(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, result <a href="../../../builtin/#string">string</a>)</pre>
+				<p>CleanupExecuted は、orphan cleanup ジョブ 1 回の実行を結果別に計上します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.CleanupInstances">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=10032:10120#L182">CleanupInstances</a>
+					<a class="permalink" href="#RealtimeMetrics.CleanupInstances">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) CleanupInstances(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, outcome <a href="../../../builtin/#string">string</a>, n <a href="../../../builtin/#int64">int64</a>)</pre>
+				<p>CleanupInstances は、orphan cleanup が扱った instance 数を処理のされ方別に計上します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ConnectionClosed">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=6535:6633#L112">ConnectionClosed</a>
+					<a class="permalink" href="#RealtimeMetrics.ConnectionClosed">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ConnectionClosed(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, reason <a href="../../../builtin/#string">string</a>, durationMs <a href="../../../builtin/#float64">float64</a>)</pre>
+				<p>ConnectionClosed は、索引から外れた接続を理由別に計上し、索引に居た時間を記録します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ConnectionEstablished">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=5955:6037#L99">ConnectionEstablished</a>
+					<a class="permalink" href="#RealtimeMetrics.ConnectionEstablished">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ConnectionEstablished(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, resumed <a href="../../../builtin/#bool">bool</a>)</pre>
+				<p>ConnectionEstablished は、レスポンスを確定して配信を始めたことを計上します。
+resumed は cursor を伴う張り直しです。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ConnectionRegistered">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=5689:5756#L93">ConnectionRegistered</a>
+					<a class="permalink" href="#RealtimeMetrics.ConnectionRegistered">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ConnectionRegistered(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>)</pre>
+				<p>ConnectionRegistered は、接続が索引に載ったことを計上します。
+確定はまだで、この後 503 で断ることがあります（対になるのは ConnectionClosed）。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ConnectionRejected">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=6230:6310#L107">ConnectionRejected</a>
+					<a class="permalink" href="#RealtimeMetrics.ConnectionRejected">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ConnectionRejected(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, reason <a href="../../../builtin/#string">string</a>)</pre>
+				<p>ConnectionRejected は、確定せず 503 で断ったことを理由別に計上します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.DeliveryLatency">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=8388:8469#L147">DeliveryLatency</a>
+					<a class="permalink" href="#RealtimeMetrics.DeliveryLatency">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) DeliveryLatency(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, latencyMs <a href="../../../builtin/#float64">float64</a>)</pre>
+				<p>DeliveryLatency は、event の発生から SSE へ書き終わるまでの時間を記録します。
+2 つの instance をまたぐ差分なので、時計のずれを含む近似です。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.EventLogAppended">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=8600:8678#L152">EventLogAppended</a>
+					<a class="permalink" href="#RealtimeMetrics.EventLogAppended">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) EventLogAppended(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, result <a href="../../../builtin/#string">string</a>)</pre>
+				<p>EventLogAppended は、EventLog への追記を結果別に計上します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.EventLogLag">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=8875:8948#L157">EventLogLag</a>
+					<a class="permalink" href="#RealtimeMetrics.EventLogLag">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) EventLogLag(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, lagMs <a href="../../../builtin/#float64">float64</a>)</pre>
+				<p>EventLogLag は、outbox 行の作成から EventLog 追記までの時間を記録します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.LeaseHeartbeatFailed">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=9534:9601#L172">LeaseHeartbeatFailed</a>
+					<a class="permalink" href="#RealtimeMetrics.LeaseHeartbeatFailed">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) LeaseHeartbeatFailed(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>)</pre>
+				<p>LeaseHeartbeatFailed は、instance lease の heartbeat 失敗を計上します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.RecoveryExecuted">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=9268:9346#L167">RecoveryExecuted</a>
+					<a class="permalink" href="#RealtimeMetrics.RecoveryExecuted">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) RecoveryExecuted(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, result <a href="../../../builtin/#string">string</a>)</pre>
+				<p>RecoveryExecuted は、消えた受信先の作り直しを結果別に計上します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ReplayAdmissionTimedOut">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=7860:7930#L136">ReplayAdmissionTimedOut</a>
+					<a class="permalink" href="#RealtimeMetrics.ReplayAdmissionTimedOut">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ReplayAdmissionTimedOut(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>)</pre>
+				<p>ReplayAdmissionTimedOut は、初回 replay の枠を待ち切れなかったことを計上します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ReplayExecuted">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=6933:7024#L119">ReplayExecuted</a>
+					<a class="permalink" href="#RealtimeMetrics.ReplayExecuted">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ReplayExecuted(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>, trigger <a href="../../../builtin/#string">string</a>, events <a href="../../../builtin/#int64">int64</a>)</pre>
+				<p>ReplayExecuted は、1 回の読み進めを契機別に計上し、送出できた event 数を記録します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ReplayFailed">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=7297:7356#L127">ReplayFailed</a>
+					<a class="permalink" href="#RealtimeMetrics.ReplayFailed">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ReplayFailed(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>)</pre>
+				<p>ReplayFailed は、EventLog の読み取り失敗を計上します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ReplayFinished">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=7655:7716#L133">ReplayFinished</a>
+					<a class="permalink" href="#RealtimeMetrics.ReplayFinished">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ReplayFinished(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>)</pre>
+				<p>ReplayFinished は、読み進めが 1 本終わったことを記録します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.ReplayStarted">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=7475:7535#L130">ReplayStarted</a>
+					<a class="permalink" href="#RealtimeMetrics.ReplayStarted">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) ReplayStarted(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>)</pre>
+				<p>ReplayStarted は、読み進めが 1 本始まったことを記録します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="RealtimeMetrics.WakeupPublishFailed">func (*RealtimeMetrics) <a href="../../../src/go-boilerplate/internal/observability/realtime_metrics.go.html?s=9066:9132#L162">WakeupPublishFailed</a>
+					<a class="permalink" href="#RealtimeMetrics.WakeupPublishFailed">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#RealtimeMetrics">RealtimeMetrics</a>) WakeupPublishFailed(ctx <a href="../../../context/">context</a>.<a href="../../../context/#Context">Context</a>)</pre>
+				<p>WakeupPublishFailed は、wakeup の publish 失敗を計上します。
+
+				
+				
+				
 			
 		
 			
@@ -1581,13 +2141,25 @@ DI グラフを組まない CLI が infra 実装を直接組み立てる場合�
 				
 			
 				
-				</p><h3 id="NewNoopTracerFactory">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=905:958#L21">NewNoopTracerFactory</a>
+				</p><h3 id="NewNoopTracerFactory">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=1238:1291#L37">NewNoopTracerFactory</a>
 					<a class="permalink" href="#NewNoopTracerFactory">¶</a>
 					
 					
 				</h3>
 				<pre>func NewNoopTracerFactory(t *<a href="../../../testing/">testing</a>.<a href="../../../testing/#T">T</a>) <a href="#TracerFactory">TracerFactory</a></pre>
 				<p>NewNoopTracerFactory は、テスト用に TracerFactory を無効化して返します。
+
+				
+				
+			
+				
+				</p><h3 id="NewRecordingTracerFactory">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=11466:11558#L326">NewRecordingTracerFactory</a>
+					<a class="permalink" href="#NewRecordingTracerFactory">¶</a>
+					
+					
+				</h3>
+				<pre>func NewRecordingTracerFactory(t *<a href="../../../testing/">testing</a>.<a href="../../../testing/#T">T</a>) (<a href="#TracerFactory">TracerFactory</a>, func() []<a href="../../../go.opentelemetry.io/otel/sdk/trace/">sdktrace</a>.<a href="../../../go.opentelemetry.io/otel/sdk/trace/#ReadOnlySpan">ReadOnlySpan</a>)</pre>
+				<p>NewRecordingTracerFactory は、記録した span を読み戻せる TracerFactory と、その span を返す関数を返します。
 
 				
 				
@@ -1631,7 +2203,7 @@ DI グラフを組まない CLI が infra 実装を直接組み立てる場合�
 
 			
 				
-				<h3 id="NewNoopWorkerMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=2147:2201#L60">NewNoopWorkerMetrics</a>
+				<h3 id="NewNoopWorkerMetrics">func <a href="../../../src/go-boilerplate/internal/observability/test_kit.go.html?s=2480:2534#L76">NewNoopWorkerMetrics</a>
 					<a class="permalink" href="#NewNoopWorkerMetrics">¶</a>
 					
 					

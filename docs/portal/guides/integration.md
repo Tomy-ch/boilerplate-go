@@ -1,7 +1,5 @@
 ## integration Directory
 
-English | [日本語](README.ja.md)
-
 This directory is a place to organize **integration tests**.
 
 It starts an Echo server and verifies through the **actual HTTP communication path**, which cannot be fully covered by unit tests.

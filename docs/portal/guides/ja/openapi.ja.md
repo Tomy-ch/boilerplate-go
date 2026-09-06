@@ -1,7 +1,5 @@
 # OpenAPI ガイド（`openapi/`）
 
-[English](README.md) | 日本語
-
 このディレクトリには、本プロジェクトで使用する **OpenAPI 定義**が格納されています。
 
 - Redocly による分割構成
@@ -135,6 +133,7 @@ URL パスバージョニング: `/v1/<リソース>`
 ### セキュリティ
 
 - 認証エンドポイントには JWT（BearerAuth）を使用
+- SSE endpoint だけは query の不透明な stream ticket（`StreamTicket`、`apiKey` / `in: query`）— ブラウザの `EventSource` はヘッダを設定できないため（ADR-0074 (query-ticket-stream-authentication)）。ticket は短命で 1 つの destination に束縛され、hash で保存され、`httpstack/redaction` がログから取り除く。Bearer で守れるものにこの scheme を流用しない
 - リソース所有権は Usecase / Middleware で `sub` クレームにより検証
 - UUID を公開識別子として使用 — セキュリティ評価は `secure-uuid.md` を参照
 - IDOR 対策必須

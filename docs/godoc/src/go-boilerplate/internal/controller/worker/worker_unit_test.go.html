@@ -1237,505 +1237,507 @@
 <span id="L1180" class="ln">  1180  </span>						&lt;-ctx.Done() <span class="comment">// 以降は intake を止め、ctx キャンセルで loop を終了させる</span>
 <span id="L1181" class="ln">  1181  </span>						return nil, ctx.Err()
 <span id="L1182" class="ln">  1182  </span>					}
-<span id="L1183" class="ln">  1183  </span>				})
-<span id="L1184" class="ln">  1184  </span>
-<span id="L1185" class="ln">  1185  </span>			acked := make(chan string, 1)
-<span id="L1186" class="ln">  1186  </span>			mc.EXPECT().Ack(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-<span id="L1187" class="ln">  1187  </span>				func(_ context.Context, m bw.Message) error {
-<span id="L1188" class="ln">  1188  </span>					select {
-<span id="L1189" class="ln">  1189  </span>					case acked &lt;- m.ID:
-<span id="L1190" class="ln">  1190  </span>					default:
-<span id="L1191" class="ln">  1191  </span>					}
-<span id="L1192" class="ln">  1192  </span>					return nil
-<span id="L1193" class="ln">  1193  </span>				})
-<span id="L1194" class="ln">  1194  </span>
-<span id="L1195" class="ln">  1195  </span>			set := baseSettings()
-<span id="L1196" class="ln">  1196  </span>			set.Concurrency = 1
-<span id="L1197" class="ln">  1197  </span>			set.MaxInFlight = 1
-<span id="L1198" class="ln">  1198  </span>			set.BatchSize = 1
-<span id="L1199" class="ln">  1199  </span>			set.CircuitHalfOpenProbe = 1
-<span id="L1200" class="ln">  1200  </span>			set.CircuitFailureThreshold = 1 <span class="comment">// 1 度の poll 失敗で Open へ</span>
-<span id="L1201" class="ln">  1201  </span>			set.CircuitOpenBackoffInitial = 10 * time.Millisecond
-<span id="L1202" class="ln">  1202  </span>			set.CircuitOpenBackoffMax = 10 * time.Millisecond
-<span id="L1203" class="ln">  1203  </span>			w := testWorker{name: &#34;w&#34;, cons: mc, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1204" class="ln">  1204  </span>			r := newRun(newTestEngine(t, set, w), w)
-<span id="L1205" class="ln">  1205  </span>
-<span id="L1206" class="ln">  1206  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1207" class="ln">  1207  </span>			loopDone := make(chan error, 1)
-<span id="L1208" class="ln">  1208  </span>			go func() { loopDone &lt;- r.loop(ctx) }()
-<span id="L1209" class="ln">  1209  </span>
-<span id="L1210" class="ln">  1210  </span>			select {
-<span id="L1211" class="ln">  1211  </span>			case id := &lt;-acked:
-<span id="L1212" class="ln">  1212  </span>				assert.Equal(t, &#34;a&#34;, id)
-<span id="L1213" class="ln">  1213  </span>			case &lt;-time.After(eventually):
-<span id="L1214" class="ln">  1214  </span>				t.Fatal(&#34;Half-open の再 probe が行われず成功メッセージが Ack されなかった（半開デッドロック）&#34;)
-<span id="L1215" class="ln">  1215  </span>			}
-<span id="L1216" class="ln">  1216  </span>
-<span id="L1217" class="ln">  1217  </span>			cancel()
-<span id="L1218" class="ln">  1218  </span>			select {
-<span id="L1219" class="ln">  1219  </span>			case &lt;-loopDone:
-<span id="L1220" class="ln">  1220  </span>			case &lt;-time.After(eventually):
-<span id="L1221" class="ln">  1221  </span>				t.Fatal(&#34;ctx キャンセルで loop が終了しなかった&#34;)
-<span id="L1222" class="ln">  1222  </span>			}
-<span id="L1223" class="ln">  1223  </span>		})
-<span id="L1224" class="ln">  1224  </span>	})
-<span id="L1225" class="ln">  1225  </span>}
-<span id="L1226" class="ln">  1226  </span>
-<span id="L1227" class="ln">  1227  </span>func Test_run_process(t *testing.T) {
-<span id="L1228" class="ln">  1228  </span>	t.Parallel()
-<span id="L1229" class="ln">  1229  </span>
-<span id="L1230" class="ln">  1230  </span>	<span class="comment">// process は poll loop が in-flight トークンを計上した後に呼ばれるため、同じ前提を作ってから呼ぶ。</span>
-<span id="L1231" class="ln">  1231  </span>	newDispatchedRun := func(t *testing.T, set Settings, f *testkit.Fake, h bw.Handler) *run {
-<span id="L1232" class="ln">  1232  </span>		t.Helper()
-<span id="L1233" class="ln">  1233  </span>		w := testWorker{name: &#34;w&#34;, cons: f, handler: h}
-<span id="L1234" class="ln">  1234  </span>		r := newRun(newTestEngine(t, set, w), w)
-<span id="L1235" class="ln">  1235  </span>		r.inflight &lt;- struct{}{}
-<span id="L1236" class="ln">  1236  </span>		r.wg.Add(1)
-<span id="L1237" class="ln">  1237  </span>		return r
-<span id="L1238" class="ln">  1238  </span>	}
-<span id="L1239" class="ln">  1239  </span>
-<span id="L1240" class="ln">  1240  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1241" class="ln">  1241  </span>		t.Parallel()
-<span id="L1242" class="ln">  1242  </span>
-<span id="L1243" class="ln">  1243  </span>		t.Run(&#34;Handle 成功時は Ack し in-flight と同時実行スロットを解放する&#34;, func(t *testing.T) {
-<span id="L1244" class="ln">  1244  </span>			t.Parallel()
-<span id="L1245" class="ln">  1245  </span>
-<span id="L1246" class="ln">  1246  </span>			f := testkit.NewFake()
-<span id="L1247" class="ln">  1247  </span>			r := newDispatchedRun(t, baseSettings(), f, handlerFunc(func(context.Context, bw.Message) error { return nil }))
-<span id="L1248" class="ln">  1248  </span>
-<span id="L1249" class="ln">  1249  </span>			r.process(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1183" class="ln">  1183  </span>				},
+<span id="L1184" class="ln">  1184  </span>			)
+<span id="L1185" class="ln">  1185  </span>
+<span id="L1186" class="ln">  1186  </span>			acked := make(chan string, 1)
+<span id="L1187" class="ln">  1187  </span>			mc.EXPECT().Ack(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+<span id="L1188" class="ln">  1188  </span>				func(_ context.Context, m bw.Message) error {
+<span id="L1189" class="ln">  1189  </span>					select {
+<span id="L1190" class="ln">  1190  </span>					case acked &lt;- m.ID:
+<span id="L1191" class="ln">  1191  </span>					default:
+<span id="L1192" class="ln">  1192  </span>					}
+<span id="L1193" class="ln">  1193  </span>					return nil
+<span id="L1194" class="ln">  1194  </span>				},
+<span id="L1195" class="ln">  1195  </span>			)
+<span id="L1196" class="ln">  1196  </span>
+<span id="L1197" class="ln">  1197  </span>			set := baseSettings()
+<span id="L1198" class="ln">  1198  </span>			set.Concurrency = 1
+<span id="L1199" class="ln">  1199  </span>			set.MaxInFlight = 1
+<span id="L1200" class="ln">  1200  </span>			set.BatchSize = 1
+<span id="L1201" class="ln">  1201  </span>			set.CircuitHalfOpenProbe = 1
+<span id="L1202" class="ln">  1202  </span>			set.CircuitFailureThreshold = 1 <span class="comment">// 1 度の poll 失敗で Open へ</span>
+<span id="L1203" class="ln">  1203  </span>			set.CircuitOpenBackoffInitial = 10 * time.Millisecond
+<span id="L1204" class="ln">  1204  </span>			set.CircuitOpenBackoffMax = 10 * time.Millisecond
+<span id="L1205" class="ln">  1205  </span>			w := testWorker{name: &#34;w&#34;, cons: mc, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1206" class="ln">  1206  </span>			r := newRun(newTestEngine(t, set, w), w)
+<span id="L1207" class="ln">  1207  </span>
+<span id="L1208" class="ln">  1208  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1209" class="ln">  1209  </span>			loopDone := make(chan error, 1)
+<span id="L1210" class="ln">  1210  </span>			go func() { loopDone &lt;- r.loop(ctx) }()
+<span id="L1211" class="ln">  1211  </span>
+<span id="L1212" class="ln">  1212  </span>			select {
+<span id="L1213" class="ln">  1213  </span>			case id := &lt;-acked:
+<span id="L1214" class="ln">  1214  </span>				assert.Equal(t, &#34;a&#34;, id)
+<span id="L1215" class="ln">  1215  </span>			case &lt;-time.After(eventually):
+<span id="L1216" class="ln">  1216  </span>				t.Fatal(&#34;Half-open の再 probe が行われず成功メッセージが Ack されなかった（半開デッドロック）&#34;)
+<span id="L1217" class="ln">  1217  </span>			}
+<span id="L1218" class="ln">  1218  </span>
+<span id="L1219" class="ln">  1219  </span>			cancel()
+<span id="L1220" class="ln">  1220  </span>			select {
+<span id="L1221" class="ln">  1221  </span>			case &lt;-loopDone:
+<span id="L1222" class="ln">  1222  </span>			case &lt;-time.After(eventually):
+<span id="L1223" class="ln">  1223  </span>				t.Fatal(&#34;ctx キャンセルで loop が終了しなかった&#34;)
+<span id="L1224" class="ln">  1224  </span>			}
+<span id="L1225" class="ln">  1225  </span>		})
+<span id="L1226" class="ln">  1226  </span>	})
+<span id="L1227" class="ln">  1227  </span>}
+<span id="L1228" class="ln">  1228  </span>
+<span id="L1229" class="ln">  1229  </span>func Test_run_process(t *testing.T) {
+<span id="L1230" class="ln">  1230  </span>	t.Parallel()
+<span id="L1231" class="ln">  1231  </span>
+<span id="L1232" class="ln">  1232  </span>	<span class="comment">// process は poll loop が in-flight トークンを計上した後に呼ばれるため、同じ前提を作ってから呼ぶ。</span>
+<span id="L1233" class="ln">  1233  </span>	newDispatchedRun := func(t *testing.T, set Settings, f *testkit.Fake, h bw.Handler) *run {
+<span id="L1234" class="ln">  1234  </span>		t.Helper()
+<span id="L1235" class="ln">  1235  </span>		w := testWorker{name: &#34;w&#34;, cons: f, handler: h}
+<span id="L1236" class="ln">  1236  </span>		r := newRun(newTestEngine(t, set, w), w)
+<span id="L1237" class="ln">  1237  </span>		r.inflight &lt;- struct{}{}
+<span id="L1238" class="ln">  1238  </span>		r.wg.Add(1)
+<span id="L1239" class="ln">  1239  </span>		return r
+<span id="L1240" class="ln">  1240  </span>	}
+<span id="L1241" class="ln">  1241  </span>
+<span id="L1242" class="ln">  1242  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1243" class="ln">  1243  </span>		t.Parallel()
+<span id="L1244" class="ln">  1244  </span>
+<span id="L1245" class="ln">  1245  </span>		t.Run(&#34;Handle 成功時は Ack し in-flight と同時実行スロットを解放する&#34;, func(t *testing.T) {
+<span id="L1246" class="ln">  1246  </span>			t.Parallel()
+<span id="L1247" class="ln">  1247  </span>
+<span id="L1248" class="ln">  1248  </span>			f := testkit.NewFake()
+<span id="L1249" class="ln">  1249  </span>			r := newDispatchedRun(t, baseSettings(), f, handlerFunc(func(context.Context, bw.Message) error { return nil }))
 <span id="L1250" class="ln">  1250  </span>
-<span id="L1251" class="ln">  1251  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.AckedIDs())
-<span id="L1252" class="ln">  1252  </span>			assert.Empty(t, r.inflight)
-<span id="L1253" class="ln">  1253  </span>			assert.Empty(t, r.conc)
-<span id="L1254" class="ln">  1254  </span>		})
-<span id="L1255" class="ln">  1255  </span>
-<span id="L1256" class="ln">  1256  </span>		t.Run(&#34;Handle が retryable を返した場合は Nack する&#34;, func(t *testing.T) {
-<span id="L1257" class="ln">  1257  </span>			t.Parallel()
-<span id="L1258" class="ln">  1258  </span>
-<span id="L1259" class="ln">  1259  </span>			f := testkit.NewFake()
-<span id="L1260" class="ln">  1260  </span>			r := newDispatchedRun(t, baseSettings(), f, handlerFunc(func(context.Context, bw.Message) error {
-<span id="L1261" class="ln">  1261  </span>				return xerrors.Wrap(apperror.ErrRetryable, &#34;temporary&#34;)
-<span id="L1262" class="ln">  1262  </span>			}))
-<span id="L1263" class="ln">  1263  </span>
-<span id="L1264" class="ln">  1264  </span>			r.process(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1251" class="ln">  1251  </span>			r.process(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1252" class="ln">  1252  </span>
+<span id="L1253" class="ln">  1253  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.AckedIDs())
+<span id="L1254" class="ln">  1254  </span>			assert.Empty(t, r.inflight)
+<span id="L1255" class="ln">  1255  </span>			assert.Empty(t, r.conc)
+<span id="L1256" class="ln">  1256  </span>		})
+<span id="L1257" class="ln">  1257  </span>
+<span id="L1258" class="ln">  1258  </span>		t.Run(&#34;Handle が retryable を返した場合は Nack する&#34;, func(t *testing.T) {
+<span id="L1259" class="ln">  1259  </span>			t.Parallel()
+<span id="L1260" class="ln">  1260  </span>
+<span id="L1261" class="ln">  1261  </span>			f := testkit.NewFake()
+<span id="L1262" class="ln">  1262  </span>			r := newDispatchedRun(t, baseSettings(), f, handlerFunc(func(context.Context, bw.Message) error {
+<span id="L1263" class="ln">  1263  </span>				return xerrors.Wrap(apperror.ErrRetryable, &#34;temporary&#34;)
+<span id="L1264" class="ln">  1264  </span>			}))
 <span id="L1265" class="ln">  1265  </span>
-<span id="L1266" class="ln">  1266  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.NackedIDs())
-<span id="L1267" class="ln">  1267  </span>			assert.Empty(t, f.AckedIDs())
-<span id="L1268" class="ln">  1268  </span>			assert.Empty(t, r.inflight)
-<span id="L1269" class="ln">  1269  </span>		})
-<span id="L1270" class="ln">  1270  </span>	})
-<span id="L1271" class="ln">  1271  </span>
-<span id="L1272" class="ln">  1272  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1273" class="ln">  1273  </span>		t.Parallel()
-<span id="L1274" class="ln">  1274  </span>
-<span id="L1275" class="ln">  1275  </span>		t.Run(&#34;同時実行が上限かつ ctx キャンセル済みの場合は Handle せず in-flight だけ解放する&#34;, func(t *testing.T) {
-<span id="L1276" class="ln">  1276  </span>			t.Parallel()
-<span id="L1277" class="ln">  1277  </span>
-<span id="L1278" class="ln">  1278  </span>			handled := false
-<span id="L1279" class="ln">  1279  </span>			f := testkit.NewFake()
-<span id="L1280" class="ln">  1280  </span>			set := baseSettings()
-<span id="L1281" class="ln">  1281  </span>			set.Concurrency = 1
-<span id="L1282" class="ln">  1282  </span>			r := newDispatchedRun(t, set, f, handlerFunc(func(context.Context, bw.Message) error {
-<span id="L1283" class="ln">  1283  </span>				handled = true
-<span id="L1284" class="ln">  1284  </span>				return nil
-<span id="L1285" class="ln">  1285  </span>			}))
-<span id="L1286" class="ln">  1286  </span>			r.conc &lt;- struct{}{} <span class="comment">// 同時実行上限を埋め、select の ready を ctx.Done() のみに固定する</span>
-<span id="L1287" class="ln">  1287  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1288" class="ln">  1288  </span>			cancel()
-<span id="L1289" class="ln">  1289  </span>
-<span id="L1290" class="ln">  1290  </span>			r.process(ctx, bw.Message{ID: &#34;a&#34;})
+<span id="L1266" class="ln">  1266  </span>			r.process(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1267" class="ln">  1267  </span>
+<span id="L1268" class="ln">  1268  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.NackedIDs())
+<span id="L1269" class="ln">  1269  </span>			assert.Empty(t, f.AckedIDs())
+<span id="L1270" class="ln">  1270  </span>			assert.Empty(t, r.inflight)
+<span id="L1271" class="ln">  1271  </span>		})
+<span id="L1272" class="ln">  1272  </span>	})
+<span id="L1273" class="ln">  1273  </span>
+<span id="L1274" class="ln">  1274  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1275" class="ln">  1275  </span>		t.Parallel()
+<span id="L1276" class="ln">  1276  </span>
+<span id="L1277" class="ln">  1277  </span>		t.Run(&#34;同時実行が上限かつ ctx キャンセル済みの場合は Handle せず in-flight だけ解放する&#34;, func(t *testing.T) {
+<span id="L1278" class="ln">  1278  </span>			t.Parallel()
+<span id="L1279" class="ln">  1279  </span>
+<span id="L1280" class="ln">  1280  </span>			handled := false
+<span id="L1281" class="ln">  1281  </span>			f := testkit.NewFake()
+<span id="L1282" class="ln">  1282  </span>			set := baseSettings()
+<span id="L1283" class="ln">  1283  </span>			set.Concurrency = 1
+<span id="L1284" class="ln">  1284  </span>			r := newDispatchedRun(t, set, f, handlerFunc(func(context.Context, bw.Message) error {
+<span id="L1285" class="ln">  1285  </span>				handled = true
+<span id="L1286" class="ln">  1286  </span>				return nil
+<span id="L1287" class="ln">  1287  </span>			}))
+<span id="L1288" class="ln">  1288  </span>			r.conc &lt;- struct{}{} <span class="comment">// 同時実行上限を埋め、select の ready を ctx.Done() のみに固定する</span>
+<span id="L1289" class="ln">  1289  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1290" class="ln">  1290  </span>			cancel()
 <span id="L1291" class="ln">  1291  </span>
-<span id="L1292" class="ln">  1292  </span>			assert.False(t, handled)
-<span id="L1293" class="ln">  1293  </span>			assert.Empty(t, f.AckedIDs())  <span class="comment">// 未処理なので Ack しない（再配送へ委ねる）</span>
-<span id="L1294" class="ln">  1294  </span>			assert.Empty(t, f.NackedIDs()) <span class="comment">// Nack もしない</span>
-<span id="L1295" class="ln">  1295  </span>			assert.Empty(t, r.inflight)
-<span id="L1296" class="ln">  1296  </span>		})
-<span id="L1297" class="ln">  1297  </span>	})
-<span id="L1298" class="ln">  1298  </span>}
-<span id="L1299" class="ln">  1299  </span>
-<span id="L1300" class="ln">  1300  </span>func Test_run_finishMessage(t *testing.T) {
-<span id="L1301" class="ln">  1301  </span>	t.Parallel()
-<span id="L1302" class="ln">  1302  </span>
-<span id="L1303" class="ln">  1303  </span>	newTestRun := func(t *testing.T) *run {
-<span id="L1304" class="ln">  1304  </span>		t.Helper()
-<span id="L1305" class="ln">  1305  </span>		f := testkit.NewFake()
-<span id="L1306" class="ln">  1306  </span>		w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1307" class="ln">  1307  </span>		r := newRun(newTestEngine(t, baseSettings(), w), w)
-<span id="L1308" class="ln">  1308  </span>		r.inflight &lt;- struct{}{}
-<span id="L1309" class="ln">  1309  </span>		r.wg.Add(1)
-<span id="L1310" class="ln">  1310  </span>		return r
-<span id="L1311" class="ln">  1311  </span>	}
-<span id="L1312" class="ln">  1312  </span>
-<span id="L1313" class="ln">  1313  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1314" class="ln">  1314  </span>		t.Parallel()
-<span id="L1315" class="ln">  1315  </span>
-<span id="L1316" class="ln">  1316  </span>		t.Run(&#34;in-flight を解放し poll loop へ空きを通知して drain 待ちを解く&#34;, func(t *testing.T) {
-<span id="L1317" class="ln">  1317  </span>			t.Parallel()
-<span id="L1318" class="ln">  1318  </span>
-<span id="L1319" class="ln">  1319  </span>			r := newTestRun(t)
+<span id="L1292" class="ln">  1292  </span>			r.process(ctx, bw.Message{ID: &#34;a&#34;})
+<span id="L1293" class="ln">  1293  </span>
+<span id="L1294" class="ln">  1294  </span>			assert.False(t, handled)
+<span id="L1295" class="ln">  1295  </span>			assert.Empty(t, f.AckedIDs())  <span class="comment">// 未処理なので Ack しない（再配送へ委ねる）</span>
+<span id="L1296" class="ln">  1296  </span>			assert.Empty(t, f.NackedIDs()) <span class="comment">// Nack もしない</span>
+<span id="L1297" class="ln">  1297  </span>			assert.Empty(t, r.inflight)
+<span id="L1298" class="ln">  1298  </span>		})
+<span id="L1299" class="ln">  1299  </span>	})
+<span id="L1300" class="ln">  1300  </span>}
+<span id="L1301" class="ln">  1301  </span>
+<span id="L1302" class="ln">  1302  </span>func Test_run_finishMessage(t *testing.T) {
+<span id="L1303" class="ln">  1303  </span>	t.Parallel()
+<span id="L1304" class="ln">  1304  </span>
+<span id="L1305" class="ln">  1305  </span>	newTestRun := func(t *testing.T) *run {
+<span id="L1306" class="ln">  1306  </span>		t.Helper()
+<span id="L1307" class="ln">  1307  </span>		f := testkit.NewFake()
+<span id="L1308" class="ln">  1308  </span>		w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1309" class="ln">  1309  </span>		r := newRun(newTestEngine(t, baseSettings(), w), w)
+<span id="L1310" class="ln">  1310  </span>		r.inflight &lt;- struct{}{}
+<span id="L1311" class="ln">  1311  </span>		r.wg.Add(1)
+<span id="L1312" class="ln">  1312  </span>		return r
+<span id="L1313" class="ln">  1313  </span>	}
+<span id="L1314" class="ln">  1314  </span>
+<span id="L1315" class="ln">  1315  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1316" class="ln">  1316  </span>		t.Parallel()
+<span id="L1317" class="ln">  1317  </span>
+<span id="L1318" class="ln">  1318  </span>		t.Run(&#34;in-flight を解放し poll loop へ空きを通知して drain 待ちを解く&#34;, func(t *testing.T) {
+<span id="L1319" class="ln">  1319  </span>			t.Parallel()
 <span id="L1320" class="ln">  1320  </span>
-<span id="L1321" class="ln">  1321  </span>			r.finishMessage(context.Background())
+<span id="L1321" class="ln">  1321  </span>			r := newTestRun(t)
 <span id="L1322" class="ln">  1322  </span>
-<span id="L1323" class="ln">  1323  </span>			assert.Empty(t, r.inflight)
-<span id="L1324" class="ln">  1324  </span>			assert.Len(t, r.slotFreed, 1)
-<span id="L1325" class="ln">  1325  </span>
-<span id="L1326" class="ln">  1326  </span>			waited := make(chan struct{})
-<span id="L1327" class="ln">  1327  </span>			go func() { r.wg.Wait(); close(waited) }()
-<span id="L1328" class="ln">  1328  </span>			select {
-<span id="L1329" class="ln">  1329  </span>			case &lt;-waited:
-<span id="L1330" class="ln">  1330  </span>			case &lt;-time.After(eventually):
-<span id="L1331" class="ln">  1331  </span>				t.Fatal(&#34;WaitGroup が解放されず drain が待ち続ける&#34;)
-<span id="L1332" class="ln">  1332  </span>			}
-<span id="L1333" class="ln">  1333  </span>		})
-<span id="L1334" class="ln">  1334  </span>
-<span id="L1335" class="ln">  1335  </span>		t.Run(&#34;通知が既に積まれている場合はブロックせず解放だけ行う&#34;, func(t *testing.T) {
-<span id="L1336" class="ln">  1336  </span>			t.Parallel()
-<span id="L1337" class="ln">  1337  </span>
-<span id="L1338" class="ln">  1338  </span>			r := newTestRun(t)
-<span id="L1339" class="ln">  1339  </span>			r.slotFreed &lt;- struct{}{} <span class="comment">// 容量 1 を先に埋め、通知を捨てる経路へ落とす</span>
-<span id="L1340" class="ln">  1340  </span>
-<span id="L1341" class="ln">  1341  </span>			r.finishMessage(context.Background())
+<span id="L1323" class="ln">  1323  </span>			r.finishMessage(context.Background())
+<span id="L1324" class="ln">  1324  </span>
+<span id="L1325" class="ln">  1325  </span>			assert.Empty(t, r.inflight)
+<span id="L1326" class="ln">  1326  </span>			assert.Len(t, r.slotFreed, 1)
+<span id="L1327" class="ln">  1327  </span>
+<span id="L1328" class="ln">  1328  </span>			waited := make(chan struct{})
+<span id="L1329" class="ln">  1329  </span>			go func() { r.wg.Wait(); close(waited) }()
+<span id="L1330" class="ln">  1330  </span>			select {
+<span id="L1331" class="ln">  1331  </span>			case &lt;-waited:
+<span id="L1332" class="ln">  1332  </span>			case &lt;-time.After(eventually):
+<span id="L1333" class="ln">  1333  </span>				t.Fatal(&#34;WaitGroup が解放されず drain が待ち続ける&#34;)
+<span id="L1334" class="ln">  1334  </span>			}
+<span id="L1335" class="ln">  1335  </span>		})
+<span id="L1336" class="ln">  1336  </span>
+<span id="L1337" class="ln">  1337  </span>		t.Run(&#34;通知が既に積まれている場合はブロックせず解放だけ行う&#34;, func(t *testing.T) {
+<span id="L1338" class="ln">  1338  </span>			t.Parallel()
+<span id="L1339" class="ln">  1339  </span>
+<span id="L1340" class="ln">  1340  </span>			r := newTestRun(t)
+<span id="L1341" class="ln">  1341  </span>			r.slotFreed &lt;- struct{}{} <span class="comment">// 容量 1 を先に埋め、通知を捨てる経路へ落とす</span>
 <span id="L1342" class="ln">  1342  </span>
-<span id="L1343" class="ln">  1343  </span>			assert.Empty(t, r.inflight)
-<span id="L1344" class="ln">  1344  </span>			assert.Len(t, r.slotFreed, 1)
-<span id="L1345" class="ln">  1345  </span>		})
-<span id="L1346" class="ln">  1346  </span>	})
-<span id="L1347" class="ln">  1347  </span>}
-<span id="L1348" class="ln">  1348  </span>
-<span id="L1349" class="ln">  1349  </span>func Test_run_safeHandle(t *testing.T) {
-<span id="L1350" class="ln">  1350  </span>	t.Parallel()
-<span id="L1351" class="ln">  1351  </span>
-<span id="L1352" class="ln">  1352  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1353" class="ln">  1353  </span>		t.Parallel()
-<span id="L1354" class="ln">  1354  </span>
-<span id="L1355" class="ln">  1355  </span>		t.Run(&#34;Handle が成功した場合は nil を返す&#34;, func(t *testing.T) {
-<span id="L1356" class="ln">  1356  </span>			t.Parallel()
-<span id="L1357" class="ln">  1357  </span>
-<span id="L1358" class="ln">  1358  </span>			f := testkit.NewFake()
-<span id="L1359" class="ln">  1359  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1360" class="ln">  1360  </span>			r := newRun(newTestEngine(t, baseSettings(), w), w)
-<span id="L1361" class="ln">  1361  </span>
-<span id="L1362" class="ln">  1362  </span>			require.NoError(t, r.safeHandle(context.Background(), bw.Message{ID: &#34;a&#34;}))
-<span id="L1363" class="ln">  1363  </span>		})
-<span id="L1364" class="ln">  1364  </span>
-<span id="L1365" class="ln">  1365  </span>		t.Run(&#34;Handle 実行中は ExtendInterval ごとに可視性を延長する&#34;, func(t *testing.T) {
-<span id="L1366" class="ln">  1366  </span>			t.Parallel()
-<span id="L1367" class="ln">  1367  </span>
-<span id="L1368" class="ln">  1368  </span>			f := testkit.NewFake()
-<span id="L1369" class="ln">  1369  </span>			set := baseSettings()
-<span id="L1370" class="ln">  1370  </span>			set.ExtendInterval = 10 * time.Millisecond
-<span id="L1371" class="ln">  1371  </span>			release := make(chan struct{})
-<span id="L1372" class="ln">  1372  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error {
-<span id="L1373" class="ln">  1373  </span>				&lt;-release <span class="comment">// 延長が複数回発火するまで処理中の状態を保つ</span>
-<span id="L1374" class="ln">  1374  </span>				return nil
-<span id="L1375" class="ln">  1375  </span>			})}
-<span id="L1376" class="ln">  1376  </span>			r := newRun(newTestEngine(t, set, w), w)
-<span id="L1377" class="ln">  1377  </span>
-<span id="L1378" class="ln">  1378  </span>			done := make(chan error, 1)
-<span id="L1379" class="ln">  1379  </span>			go func() { done &lt;- r.safeHandle(context.Background(), bw.Message{ID: &#34;a&#34;}) }()
-<span id="L1380" class="ln">  1380  </span>
-<span id="L1381" class="ln">  1381  </span>			require.Eventually(t, func() bool { return f.ExtendCount(&#34;a&#34;) &gt;= 2 }, eventually, tick)
-<span id="L1382" class="ln">  1382  </span>			close(release)
-<span id="L1383" class="ln">  1383  </span>			require.NoError(t, &lt;-done)
-<span id="L1384" class="ln">  1384  </span>		})
-<span id="L1385" class="ln">  1385  </span>	})
-<span id="L1386" class="ln">  1386  </span>
-<span id="L1387" class="ln">  1387  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1388" class="ln">  1388  </span>		t.Parallel()
-<span id="L1389" class="ln">  1389  </span>
-<span id="L1390" class="ln">  1390  </span>		t.Run(&#34;Handle のエラーはそのまま返す&#34;, func(t *testing.T) {
-<span id="L1391" class="ln">  1391  </span>			t.Parallel()
-<span id="L1392" class="ln">  1392  </span>
-<span id="L1393" class="ln">  1393  </span>			boom := xerrors.New(&#34;handler boom&#34;)
-<span id="L1394" class="ln">  1394  </span>			f := testkit.NewFake()
-<span id="L1395" class="ln">  1395  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return boom })}
-<span id="L1396" class="ln">  1396  </span>			r := newRun(newTestEngine(t, baseSettings(), w), w)
-<span id="L1397" class="ln">  1397  </span>
-<span id="L1398" class="ln">  1398  </span>			require.ErrorIs(t, r.safeHandle(context.Background(), bw.Message{ID: &#34;a&#34;}), boom)
-<span id="L1399" class="ln">  1399  </span>		})
-<span id="L1400" class="ln">  1400  </span>
-<span id="L1401" class="ln">  1401  </span>		t.Run(&#34;Handle が panic した場合は retryable へ変換し panic 値はログにのみ残す&#34;, func(t *testing.T) {
-<span id="L1402" class="ln">  1402  </span>			t.Parallel()
-<span id="L1403" class="ln">  1403  </span>
-<span id="L1404" class="ln">  1404  </span>			logger, observed := logging.NewObservedTestLogger(t)
-<span id="L1405" class="ln">  1405  </span>			f := testkit.NewFake()
-<span id="L1406" class="ln">  1406  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error {
-<span id="L1407" class="ln">  1407  </span>				panic(&#34;secret boom&#34;)
-<span id="L1408" class="ln">  1408  </span>			})}
-<span id="L1409" class="ln">  1409  </span>			eng, err := New([]bw.Worker{w}, baseSettings(), observability.NewNoopTracerFactory(t), observability.NewNoopWorkerMetrics(t), logger)
-<span id="L1410" class="ln">  1410  </span>			require.NoError(t, err)
-<span id="L1411" class="ln">  1411  </span>			r := newRun(eng, w)
-<span id="L1412" class="ln">  1412  </span>
-<span id="L1413" class="ln">  1413  </span>			gotErr := r.safeHandle(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1343" class="ln">  1343  </span>			r.finishMessage(context.Background())
+<span id="L1344" class="ln">  1344  </span>
+<span id="L1345" class="ln">  1345  </span>			assert.Empty(t, r.inflight)
+<span id="L1346" class="ln">  1346  </span>			assert.Len(t, r.slotFreed, 1)
+<span id="L1347" class="ln">  1347  </span>		})
+<span id="L1348" class="ln">  1348  </span>	})
+<span id="L1349" class="ln">  1349  </span>}
+<span id="L1350" class="ln">  1350  </span>
+<span id="L1351" class="ln">  1351  </span>func Test_run_safeHandle(t *testing.T) {
+<span id="L1352" class="ln">  1352  </span>	t.Parallel()
+<span id="L1353" class="ln">  1353  </span>
+<span id="L1354" class="ln">  1354  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1355" class="ln">  1355  </span>		t.Parallel()
+<span id="L1356" class="ln">  1356  </span>
+<span id="L1357" class="ln">  1357  </span>		t.Run(&#34;Handle が成功した場合は nil を返す&#34;, func(t *testing.T) {
+<span id="L1358" class="ln">  1358  </span>			t.Parallel()
+<span id="L1359" class="ln">  1359  </span>
+<span id="L1360" class="ln">  1360  </span>			f := testkit.NewFake()
+<span id="L1361" class="ln">  1361  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1362" class="ln">  1362  </span>			r := newRun(newTestEngine(t, baseSettings(), w), w)
+<span id="L1363" class="ln">  1363  </span>
+<span id="L1364" class="ln">  1364  </span>			require.NoError(t, r.safeHandle(context.Background(), bw.Message{ID: &#34;a&#34;}))
+<span id="L1365" class="ln">  1365  </span>		})
+<span id="L1366" class="ln">  1366  </span>
+<span id="L1367" class="ln">  1367  </span>		t.Run(&#34;Handle 実行中は ExtendInterval ごとに可視性を延長する&#34;, func(t *testing.T) {
+<span id="L1368" class="ln">  1368  </span>			t.Parallel()
+<span id="L1369" class="ln">  1369  </span>
+<span id="L1370" class="ln">  1370  </span>			f := testkit.NewFake()
+<span id="L1371" class="ln">  1371  </span>			set := baseSettings()
+<span id="L1372" class="ln">  1372  </span>			set.ExtendInterval = 10 * time.Millisecond
+<span id="L1373" class="ln">  1373  </span>			release := make(chan struct{})
+<span id="L1374" class="ln">  1374  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error {
+<span id="L1375" class="ln">  1375  </span>				&lt;-release <span class="comment">// 延長が複数回発火するまで処理中の状態を保つ</span>
+<span id="L1376" class="ln">  1376  </span>				return nil
+<span id="L1377" class="ln">  1377  </span>			})}
+<span id="L1378" class="ln">  1378  </span>			r := newRun(newTestEngine(t, set, w), w)
+<span id="L1379" class="ln">  1379  </span>
+<span id="L1380" class="ln">  1380  </span>			done := make(chan error, 1)
+<span id="L1381" class="ln">  1381  </span>			go func() { done &lt;- r.safeHandle(context.Background(), bw.Message{ID: &#34;a&#34;}) }()
+<span id="L1382" class="ln">  1382  </span>
+<span id="L1383" class="ln">  1383  </span>			require.Eventually(t, func() bool { return f.ExtendCount(&#34;a&#34;) &gt;= 2 }, eventually, tick)
+<span id="L1384" class="ln">  1384  </span>			close(release)
+<span id="L1385" class="ln">  1385  </span>			require.NoError(t, &lt;-done)
+<span id="L1386" class="ln">  1386  </span>		})
+<span id="L1387" class="ln">  1387  </span>	})
+<span id="L1388" class="ln">  1388  </span>
+<span id="L1389" class="ln">  1389  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1390" class="ln">  1390  </span>		t.Parallel()
+<span id="L1391" class="ln">  1391  </span>
+<span id="L1392" class="ln">  1392  </span>		t.Run(&#34;Handle のエラーはそのまま返す&#34;, func(t *testing.T) {
+<span id="L1393" class="ln">  1393  </span>			t.Parallel()
+<span id="L1394" class="ln">  1394  </span>
+<span id="L1395" class="ln">  1395  </span>			boom := xerrors.New(&#34;handler boom&#34;)
+<span id="L1396" class="ln">  1396  </span>			f := testkit.NewFake()
+<span id="L1397" class="ln">  1397  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return boom })}
+<span id="L1398" class="ln">  1398  </span>			r := newRun(newTestEngine(t, baseSettings(), w), w)
+<span id="L1399" class="ln">  1399  </span>
+<span id="L1400" class="ln">  1400  </span>			require.ErrorIs(t, r.safeHandle(context.Background(), bw.Message{ID: &#34;a&#34;}), boom)
+<span id="L1401" class="ln">  1401  </span>		})
+<span id="L1402" class="ln">  1402  </span>
+<span id="L1403" class="ln">  1403  </span>		t.Run(&#34;Handle が panic した場合は retryable へ変換し panic 値はログにのみ残す&#34;, func(t *testing.T) {
+<span id="L1404" class="ln">  1404  </span>			t.Parallel()
+<span id="L1405" class="ln">  1405  </span>
+<span id="L1406" class="ln">  1406  </span>			logger, observed := logging.NewObservedTestLogger(t)
+<span id="L1407" class="ln">  1407  </span>			f := testkit.NewFake()
+<span id="L1408" class="ln">  1408  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error {
+<span id="L1409" class="ln">  1409  </span>				panic(&#34;secret boom&#34;)
+<span id="L1410" class="ln">  1410  </span>			})}
+<span id="L1411" class="ln">  1411  </span>			eng, err := New([]bw.Worker{w}, baseSettings(), observability.NewNoopTracerFactory(t), observability.NewNoopWorkerMetrics(t), logger)
+<span id="L1412" class="ln">  1412  </span>			require.NoError(t, err)
+<span id="L1413" class="ln">  1413  </span>			r := newRun(eng, w)
 <span id="L1414" class="ln">  1414  </span>
-<span id="L1415" class="ln">  1415  </span>			require.ErrorIs(t, gotErr, apperror.ErrRetryable)
-<span id="L1416" class="ln">  1416  </span>			assert.NotContains(t, gotErr.Error(), &#34;secret boom&#34;) <span class="comment">// 秘密情報を伝播エラーに載せない</span>
-<span id="L1417" class="ln">  1417  </span>			assert.Equal(t, 1, observed.FilterMessage(&#34;panic recovered in handler&#34;).Len())
-<span id="L1418" class="ln">  1418  </span>		})
-<span id="L1419" class="ln">  1419  </span>	})
-<span id="L1420" class="ln">  1420  </span>}
-<span id="L1421" class="ln">  1421  </span>
-<span id="L1422" class="ln">  1422  </span>func Test_run_startHeartbeat(t *testing.T) {
-<span id="L1423" class="ln">  1423  </span>	t.Parallel()
-<span id="L1424" class="ln">  1424  </span>
-<span id="L1425" class="ln">  1425  </span>	<span class="comment">// ctx.Done() 停止経路は engine 経由だと done と競合し非決定になるため、ticker を実質無効化して</span>
-<span id="L1426" class="ln">  1426  </span>	<span class="comment">// 決定的に検証する（停止クロージャが goroutine 終了を待つ契約も併せて確認する）。</span>
-<span id="L1427" class="ln">  1427  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1428" class="ln">  1428  </span>		t.Parallel()
-<span id="L1429" class="ln">  1429  </span>
-<span id="L1430" class="ln">  1430  </span>		t.Run(&#34;ctxキャンセルでハートビートgoroutineが停止する&#34;, func(t *testing.T) {
-<span id="L1431" class="ln">  1431  </span>			t.Parallel()
-<span id="L1432" class="ln">  1432  </span>
-<span id="L1433" class="ln">  1433  </span>			f := testkit.NewFake()
-<span id="L1434" class="ln">  1434  </span>			set := baseSettings()
-<span id="L1435" class="ln">  1435  </span>			set.ExtendInterval = time.Hour <span class="comment">// ticker.C を発火させず、停止トリガを ctx.Done() のみに限定する</span>
-<span id="L1436" class="ln">  1436  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1437" class="ln">  1437  </span>			r := newRun(newTestEngine(t, set, w), w)
-<span id="L1438" class="ln">  1438  </span>
-<span id="L1439" class="ln">  1439  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L1440" class="ln">  1440  </span>			stop := r.startHeartbeat(ctx, bw.Message{ID: &#34;a&#34;})
-<span id="L1441" class="ln">  1441  </span>			cancel() <span class="comment">// ctx.Done() を唯一の ready case にして goroutine を停止させる</span>
-<span id="L1442" class="ln">  1442  </span>			stop()   <span class="comment">// goroutine の完全終了（stopped の close）を待つ</span>
-<span id="L1443" class="ln">  1443  </span>
-<span id="L1444" class="ln">  1444  </span>			assert.Equal(t, 0, f.ExtendCount(&#34;a&#34;)) <span class="comment">// ticker 未発火のため Extend は呼ばれない</span>
-<span id="L1445" class="ln">  1445  </span>		})
-<span id="L1446" class="ln">  1446  </span>
-<span id="L1447" class="ln">  1447  </span>		t.Run(&#34;ExtendIntervalが0以下の場合はハートビートを起動しない&#34;, func(t *testing.T) {
-<span id="L1448" class="ln">  1448  </span>			t.Parallel()
-<span id="L1449" class="ln">  1449  </span>
-<span id="L1450" class="ln">  1450  </span>			f := testkit.NewFake()
-<span id="L1451" class="ln">  1451  </span>			set := baseSettings()
-<span id="L1452" class="ln">  1452  </span>			set.ExtendInterval = 0
-<span id="L1453" class="ln">  1453  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1454" class="ln">  1454  </span>			r := newRun(newTestEngine(t, set, w), w)
-<span id="L1455" class="ln">  1455  </span>
-<span id="L1456" class="ln">  1456  </span>			stop := r.startHeartbeat(context.Background(), bw.Message{ID: &#34;a&#34;})
-<span id="L1457" class="ln">  1457  </span>			stop() <span class="comment">// no-op クロージャ（goroutine を起動していない）</span>
-<span id="L1458" class="ln">  1458  </span>
-<span id="L1459" class="ln">  1459  </span>			assert.Equal(t, 0, f.ExtendCount(&#34;a&#34;))
-<span id="L1460" class="ln">  1460  </span>		})
-<span id="L1461" class="ln">  1461  </span>	})
-<span id="L1462" class="ln">  1462  </span>}
-<span id="L1463" class="ln">  1463  </span>
-<span id="L1464" class="ln">  1464  </span>func Test_run_handleResult(t *testing.T) {
-<span id="L1465" class="ln">  1465  </span>	t.Parallel()
-<span id="L1466" class="ln">  1466  </span>
-<span id="L1467" class="ln">  1467  </span>	<span class="comment">// Fake は Fail エラーを注入できず circuit 状態も engine から観測しにくいため、</span>
-<span id="L1468" class="ln">  1468  </span>	<span class="comment">// 「Permanent の dead-letter 退避成否による circuit / Ack 分岐」に絞って mock で検証する。</span>
-<span id="L1469" class="ln">  1469  </span>	permErr := xerrors.Wrap(apperror.ErrPermanent, &#34;bad message&#34;)
-<span id="L1470" class="ln">  1470  </span>
-<span id="L1471" class="ln">  1471  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1472" class="ln">  1472  </span>		t.Parallel()
-<span id="L1473" class="ln">  1473  </span>
-<span id="L1474" class="ln">  1474  </span>		t.Run(&#34;Permanentは退避成功でAckしcircuitをOpenしない&#34;, func(t *testing.T) {
-<span id="L1475" class="ln">  1475  </span>			t.Parallel()
-<span id="L1476" class="ln">  1476  </span>
-<span id="L1477" class="ln">  1477  </span>			f := testkit.NewFake()
-<span id="L1478" class="ln">  1478  </span>			set := baseSettings()
-<span id="L1479" class="ln">  1479  </span>			set.CircuitFailureThreshold = 1
-<span id="L1480" class="ln">  1480  </span>			w := testWorker{name: &#34;w&#34;, cons: f, failure: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1481" class="ln">  1481  </span>			r := newRun(newTestEngine(t, set, w), w)
-<span id="L1482" class="ln">  1482  </span>
-<span id="L1483" class="ln">  1483  </span>			r.handleResult(context.Background(), bw.Message{ID: &#34;a&#34;}, permErr)
+<span id="L1415" class="ln">  1415  </span>			gotErr := r.safeHandle(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1416" class="ln">  1416  </span>
+<span id="L1417" class="ln">  1417  </span>			require.ErrorIs(t, gotErr, apperror.ErrRetryable)
+<span id="L1418" class="ln">  1418  </span>			assert.NotContains(t, gotErr.Error(), &#34;secret boom&#34;) <span class="comment">// 秘密情報を伝播エラーに載せない</span>
+<span id="L1419" class="ln">  1419  </span>			assert.Equal(t, 1, observed.FilterMessage(&#34;panic recovered in handler&#34;).Len())
+<span id="L1420" class="ln">  1420  </span>		})
+<span id="L1421" class="ln">  1421  </span>	})
+<span id="L1422" class="ln">  1422  </span>}
+<span id="L1423" class="ln">  1423  </span>
+<span id="L1424" class="ln">  1424  </span>func Test_run_startHeartbeat(t *testing.T) {
+<span id="L1425" class="ln">  1425  </span>	t.Parallel()
+<span id="L1426" class="ln">  1426  </span>
+<span id="L1427" class="ln">  1427  </span>	<span class="comment">// ctx.Done() 停止経路は engine 経由だと done と競合し非決定になるため、ticker を実質無効化して</span>
+<span id="L1428" class="ln">  1428  </span>	<span class="comment">// 決定的に検証する（停止クロージャが goroutine 終了を待つ契約も併せて確認する）。</span>
+<span id="L1429" class="ln">  1429  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1430" class="ln">  1430  </span>		t.Parallel()
+<span id="L1431" class="ln">  1431  </span>
+<span id="L1432" class="ln">  1432  </span>		t.Run(&#34;ctxキャンセルでハートビートgoroutineが停止する&#34;, func(t *testing.T) {
+<span id="L1433" class="ln">  1433  </span>			t.Parallel()
+<span id="L1434" class="ln">  1434  </span>
+<span id="L1435" class="ln">  1435  </span>			f := testkit.NewFake()
+<span id="L1436" class="ln">  1436  </span>			set := baseSettings()
+<span id="L1437" class="ln">  1437  </span>			set.ExtendInterval = time.Hour <span class="comment">// ticker.C を発火させず、停止トリガを ctx.Done() のみに限定する</span>
+<span id="L1438" class="ln">  1438  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1439" class="ln">  1439  </span>			r := newRun(newTestEngine(t, set, w), w)
+<span id="L1440" class="ln">  1440  </span>
+<span id="L1441" class="ln">  1441  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L1442" class="ln">  1442  </span>			stop := r.startHeartbeat(ctx, bw.Message{ID: &#34;a&#34;})
+<span id="L1443" class="ln">  1443  </span>			cancel() <span class="comment">// ctx.Done() を唯一の ready case にして goroutine を停止させる</span>
+<span id="L1444" class="ln">  1444  </span>			stop()   <span class="comment">// goroutine の完全終了（stopped の close）を待つ</span>
+<span id="L1445" class="ln">  1445  </span>
+<span id="L1446" class="ln">  1446  </span>			assert.Equal(t, 0, f.ExtendCount(&#34;a&#34;)) <span class="comment">// ticker 未発火のため Extend は呼ばれない</span>
+<span id="L1447" class="ln">  1447  </span>		})
+<span id="L1448" class="ln">  1448  </span>
+<span id="L1449" class="ln">  1449  </span>		t.Run(&#34;ExtendIntervalが0以下の場合はハートビートを起動しない&#34;, func(t *testing.T) {
+<span id="L1450" class="ln">  1450  </span>			t.Parallel()
+<span id="L1451" class="ln">  1451  </span>
+<span id="L1452" class="ln">  1452  </span>			f := testkit.NewFake()
+<span id="L1453" class="ln">  1453  </span>			set := baseSettings()
+<span id="L1454" class="ln">  1454  </span>			set.ExtendInterval = 0
+<span id="L1455" class="ln">  1455  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1456" class="ln">  1456  </span>			r := newRun(newTestEngine(t, set, w), w)
+<span id="L1457" class="ln">  1457  </span>
+<span id="L1458" class="ln">  1458  </span>			stop := r.startHeartbeat(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1459" class="ln">  1459  </span>			stop() <span class="comment">// no-op クロージャ（goroutine を起動していない）</span>
+<span id="L1460" class="ln">  1460  </span>
+<span id="L1461" class="ln">  1461  </span>			assert.Equal(t, 0, f.ExtendCount(&#34;a&#34;))
+<span id="L1462" class="ln">  1462  </span>		})
+<span id="L1463" class="ln">  1463  </span>	})
+<span id="L1464" class="ln">  1464  </span>}
+<span id="L1465" class="ln">  1465  </span>
+<span id="L1466" class="ln">  1466  </span>func Test_run_handleResult(t *testing.T) {
+<span id="L1467" class="ln">  1467  </span>	t.Parallel()
+<span id="L1468" class="ln">  1468  </span>
+<span id="L1469" class="ln">  1469  </span>	<span class="comment">// Fake は Fail エラーを注入できず circuit 状態も engine から観測しにくいため、</span>
+<span id="L1470" class="ln">  1470  </span>	<span class="comment">// 「Permanent の dead-letter 退避成否による circuit / Ack 分岐」に絞って mock で検証する。</span>
+<span id="L1471" class="ln">  1471  </span>	permErr := xerrors.Wrap(apperror.ErrPermanent, &#34;bad message&#34;)
+<span id="L1472" class="ln">  1472  </span>
+<span id="L1473" class="ln">  1473  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1474" class="ln">  1474  </span>		t.Parallel()
+<span id="L1475" class="ln">  1475  </span>
+<span id="L1476" class="ln">  1476  </span>		t.Run(&#34;Permanentは退避成功でAckしcircuitをOpenしない&#34;, func(t *testing.T) {
+<span id="L1477" class="ln">  1477  </span>			t.Parallel()
+<span id="L1478" class="ln">  1478  </span>
+<span id="L1479" class="ln">  1479  </span>			f := testkit.NewFake()
+<span id="L1480" class="ln">  1480  </span>			set := baseSettings()
+<span id="L1481" class="ln">  1481  </span>			set.CircuitFailureThreshold = 1
+<span id="L1482" class="ln">  1482  </span>			w := testWorker{name: &#34;w&#34;, cons: f, failure: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1483" class="ln">  1483  </span>			r := newRun(newTestEngine(t, set, w), w)
 <span id="L1484" class="ln">  1484  </span>
-<span id="L1485" class="ln">  1485  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.AckedIDs())
-<span id="L1486" class="ln">  1486  </span>			assert.Empty(t, f.NackedIDs())
-<span id="L1487" class="ln">  1487  </span>			assert.Equal(t, phaseClosed, r.cb.phaseNow())
-<span id="L1488" class="ln">  1488  </span>		})
-<span id="L1489" class="ln">  1489  </span>	})
-<span id="L1490" class="ln">  1490  </span>
-<span id="L1491" class="ln">  1491  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1492" class="ln">  1492  </span>		t.Parallel()
-<span id="L1493" class="ln">  1493  </span>
-<span id="L1494" class="ln">  1494  </span>		t.Run(&#34;Permanentは退避失敗でAckせずcircuitへ失敗計上する&#34;, func(t *testing.T) {
-<span id="L1495" class="ln">  1495  </span>			t.Parallel()
-<span id="L1496" class="ln">  1496  </span>
-<span id="L1497" class="ln">  1497  </span>			ctrl := gomock.NewController(t)
-<span id="L1498" class="ln">  1498  </span>			fh := mock_worker.NewMockFailureHandler(ctrl)
-<span id="L1499" class="ln">  1499  </span>			fh.EXPECT().Fail(gomock.Any(), gomock.Any(), gomock.Any()).Return(xerrors.New(&#34;dead-letter store down&#34;))
-<span id="L1500" class="ln">  1500  </span>
-<span id="L1501" class="ln">  1501  </span>			f := testkit.NewFake()
-<span id="L1502" class="ln">  1502  </span>			set := baseSettings()
-<span id="L1503" class="ln">  1503  </span>			set.CircuitFailureThreshold = 1 <span class="comment">// 1 度の退避失敗で Open へ遷移させる</span>
-<span id="L1504" class="ln">  1504  </span>			w := testWorker{name: &#34;w&#34;, cons: f, failure: fh, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1505" class="ln">  1505  </span>			r := newRun(newTestEngine(t, set, w), w)
-<span id="L1506" class="ln">  1506  </span>
-<span id="L1507" class="ln">  1507  </span>			r.handleResult(context.Background(), bw.Message{ID: &#34;a&#34;}, permErr)
+<span id="L1485" class="ln">  1485  </span>			r.handleResult(context.Background(), bw.Message{ID: &#34;a&#34;}, permErr)
+<span id="L1486" class="ln">  1486  </span>
+<span id="L1487" class="ln">  1487  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.AckedIDs())
+<span id="L1488" class="ln">  1488  </span>			assert.Empty(t, f.NackedIDs())
+<span id="L1489" class="ln">  1489  </span>			assert.Equal(t, phaseClosed, r.cb.phaseNow())
+<span id="L1490" class="ln">  1490  </span>		})
+<span id="L1491" class="ln">  1491  </span>	})
+<span id="L1492" class="ln">  1492  </span>
+<span id="L1493" class="ln">  1493  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1494" class="ln">  1494  </span>		t.Parallel()
+<span id="L1495" class="ln">  1495  </span>
+<span id="L1496" class="ln">  1496  </span>		t.Run(&#34;Permanentは退避失敗でAckせずcircuitへ失敗計上する&#34;, func(t *testing.T) {
+<span id="L1497" class="ln">  1497  </span>			t.Parallel()
+<span id="L1498" class="ln">  1498  </span>
+<span id="L1499" class="ln">  1499  </span>			ctrl := gomock.NewController(t)
+<span id="L1500" class="ln">  1500  </span>			fh := mock_worker.NewMockFailureHandler(ctrl)
+<span id="L1501" class="ln">  1501  </span>			fh.EXPECT().Fail(gomock.Any(), gomock.Any(), gomock.Any()).Return(xerrors.New(&#34;dead-letter store down&#34;))
+<span id="L1502" class="ln">  1502  </span>
+<span id="L1503" class="ln">  1503  </span>			f := testkit.NewFake()
+<span id="L1504" class="ln">  1504  </span>			set := baseSettings()
+<span id="L1505" class="ln">  1505  </span>			set.CircuitFailureThreshold = 1 <span class="comment">// 1 度の退避失敗で Open へ遷移させる</span>
+<span id="L1506" class="ln">  1506  </span>			w := testWorker{name: &#34;w&#34;, cons: f, failure: fh, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1507" class="ln">  1507  </span>			r := newRun(newTestEngine(t, set, w), w)
 <span id="L1508" class="ln">  1508  </span>
-<span id="L1509" class="ln">  1509  </span>			assert.Empty(t, f.AckedIDs())  <span class="comment">// 退避できていないので Ack しない</span>
-<span id="L1510" class="ln">  1510  </span>			assert.Empty(t, f.NackedIDs()) <span class="comment">// Nack もしない（暗黙の再配送へ委ねる）</span>
-<span id="L1511" class="ln">  1511  </span>			assert.Equal(t, phaseOpen, r.cb.phaseNow())
-<span id="L1512" class="ln">  1512  </span>		})
-<span id="L1513" class="ln">  1513  </span>	})
-<span id="L1514" class="ln">  1514  </span>}
-<span id="L1515" class="ln">  1515  </span>
-<span id="L1516" class="ln">  1516  </span>func Test_run_ack(t *testing.T) {
-<span id="L1517" class="ln">  1517  </span>	t.Parallel()
-<span id="L1518" class="ln">  1518  </span>
-<span id="L1519" class="ln">  1519  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1520" class="ln">  1520  </span>		t.Parallel()
-<span id="L1521" class="ln">  1521  </span>
-<span id="L1522" class="ln">  1522  </span>		t.Run(&#34;Ack が成功した場合はエラーログを出さない&#34;, func(t *testing.T) {
-<span id="L1523" class="ln">  1523  </span>			t.Parallel()
-<span id="L1524" class="ln">  1524  </span>
-<span id="L1525" class="ln">  1525  </span>			logger, observed := logging.NewObservedTestLogger(t)
-<span id="L1526" class="ln">  1526  </span>			f := testkit.NewFake()
-<span id="L1527" class="ln">  1527  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1528" class="ln">  1528  </span>			eng, err := New([]bw.Worker{w}, baseSettings(), observability.NewNoopTracerFactory(t), observability.NewNoopWorkerMetrics(t), logger)
-<span id="L1529" class="ln">  1529  </span>			require.NoError(t, err)
-<span id="L1530" class="ln">  1530  </span>			r := newRun(eng, w)
-<span id="L1531" class="ln">  1531  </span>
-<span id="L1532" class="ln">  1532  </span>			r.ack(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1509" class="ln">  1509  </span>			r.handleResult(context.Background(), bw.Message{ID: &#34;a&#34;}, permErr)
+<span id="L1510" class="ln">  1510  </span>
+<span id="L1511" class="ln">  1511  </span>			assert.Empty(t, f.AckedIDs())  <span class="comment">// 退避できていないので Ack しない</span>
+<span id="L1512" class="ln">  1512  </span>			assert.Empty(t, f.NackedIDs()) <span class="comment">// Nack もしない（暗黙の再配送へ委ねる）</span>
+<span id="L1513" class="ln">  1513  </span>			assert.Equal(t, phaseOpen, r.cb.phaseNow())
+<span id="L1514" class="ln">  1514  </span>		})
+<span id="L1515" class="ln">  1515  </span>	})
+<span id="L1516" class="ln">  1516  </span>}
+<span id="L1517" class="ln">  1517  </span>
+<span id="L1518" class="ln">  1518  </span>func Test_run_ack(t *testing.T) {
+<span id="L1519" class="ln">  1519  </span>	t.Parallel()
+<span id="L1520" class="ln">  1520  </span>
+<span id="L1521" class="ln">  1521  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1522" class="ln">  1522  </span>		t.Parallel()
+<span id="L1523" class="ln">  1523  </span>
+<span id="L1524" class="ln">  1524  </span>		t.Run(&#34;Ack が成功した場合はエラーログを出さない&#34;, func(t *testing.T) {
+<span id="L1525" class="ln">  1525  </span>			t.Parallel()
+<span id="L1526" class="ln">  1526  </span>
+<span id="L1527" class="ln">  1527  </span>			logger, observed := logging.NewObservedTestLogger(t)
+<span id="L1528" class="ln">  1528  </span>			f := testkit.NewFake()
+<span id="L1529" class="ln">  1529  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1530" class="ln">  1530  </span>			eng, err := New([]bw.Worker{w}, baseSettings(), observability.NewNoopTracerFactory(t), observability.NewNoopWorkerMetrics(t), logger)
+<span id="L1531" class="ln">  1531  </span>			require.NoError(t, err)
+<span id="L1532" class="ln">  1532  </span>			r := newRun(eng, w)
 <span id="L1533" class="ln">  1533  </span>
-<span id="L1534" class="ln">  1534  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.AckedIDs())
-<span id="L1535" class="ln">  1535  </span>			assert.Zero(t, observed.FilterMessage(&#34;ack error&#34;).Len())
-<span id="L1536" class="ln">  1536  </span>		})
-<span id="L1537" class="ln">  1537  </span>	})
-<span id="L1538" class="ln">  1538  </span>
-<span id="L1539" class="ln">  1539  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1540" class="ln">  1540  </span>		t.Parallel()
-<span id="L1541" class="ln">  1541  </span>
-<span id="L1542" class="ln">  1542  </span>		t.Run(&#34;Ack が失敗した場合はエラーログに残す&#34;, func(t *testing.T) {
-<span id="L1543" class="ln">  1543  </span>			t.Parallel()
-<span id="L1544" class="ln">  1544  </span>
-<span id="L1545" class="ln">  1545  </span>			ctrl := gomock.NewController(t)
-<span id="L1546" class="ln">  1546  </span>			mc := mock_worker.NewMockConsumer(ctrl)
-<span id="L1547" class="ln">  1547  </span>			mc.EXPECT().Ack(gomock.Any(), gomock.Any()).Return(xerrors.New(&#34;ack boom&#34;))
-<span id="L1548" class="ln">  1548  </span>
-<span id="L1549" class="ln">  1549  </span>			logger, observed := logging.NewObservedTestLogger(t)
-<span id="L1550" class="ln">  1550  </span>			w := testWorker{name: &#34;w&#34;, cons: mc, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1551" class="ln">  1551  </span>			eng, err := New([]bw.Worker{w}, baseSettings(), observability.NewNoopTracerFactory(t), observability.NewNoopWorkerMetrics(t), logger)
-<span id="L1552" class="ln">  1552  </span>			require.NoError(t, err)
-<span id="L1553" class="ln">  1553  </span>			r := newRun(eng, w)
-<span id="L1554" class="ln">  1554  </span>
-<span id="L1555" class="ln">  1555  </span>			r.ack(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1534" class="ln">  1534  </span>			r.ack(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1535" class="ln">  1535  </span>
+<span id="L1536" class="ln">  1536  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.AckedIDs())
+<span id="L1537" class="ln">  1537  </span>			assert.Zero(t, observed.FilterMessage(&#34;ack error&#34;).Len())
+<span id="L1538" class="ln">  1538  </span>		})
+<span id="L1539" class="ln">  1539  </span>	})
+<span id="L1540" class="ln">  1540  </span>
+<span id="L1541" class="ln">  1541  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1542" class="ln">  1542  </span>		t.Parallel()
+<span id="L1543" class="ln">  1543  </span>
+<span id="L1544" class="ln">  1544  </span>		t.Run(&#34;Ack が失敗した場合はエラーログに残す&#34;, func(t *testing.T) {
+<span id="L1545" class="ln">  1545  </span>			t.Parallel()
+<span id="L1546" class="ln">  1546  </span>
+<span id="L1547" class="ln">  1547  </span>			ctrl := gomock.NewController(t)
+<span id="L1548" class="ln">  1548  </span>			mc := mock_worker.NewMockConsumer(ctrl)
+<span id="L1549" class="ln">  1549  </span>			mc.EXPECT().Ack(gomock.Any(), gomock.Any()).Return(xerrors.New(&#34;ack boom&#34;))
+<span id="L1550" class="ln">  1550  </span>
+<span id="L1551" class="ln">  1551  </span>			logger, observed := logging.NewObservedTestLogger(t)
+<span id="L1552" class="ln">  1552  </span>			w := testWorker{name: &#34;w&#34;, cons: mc, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1553" class="ln">  1553  </span>			eng, err := New([]bw.Worker{w}, baseSettings(), observability.NewNoopTracerFactory(t), observability.NewNoopWorkerMetrics(t), logger)
+<span id="L1554" class="ln">  1554  </span>			require.NoError(t, err)
+<span id="L1555" class="ln">  1555  </span>			r := newRun(eng, w)
 <span id="L1556" class="ln">  1556  </span>
-<span id="L1557" class="ln">  1557  </span>			assert.Equal(t, 1, observed.FilterMessage(&#34;ack error&#34;).Len())
-<span id="L1558" class="ln">  1558  </span>		})
-<span id="L1559" class="ln">  1559  </span>	})
-<span id="L1560" class="ln">  1560  </span>}
-<span id="L1561" class="ln">  1561  </span>
-<span id="L1562" class="ln">  1562  </span>func Test_run_nack(t *testing.T) {
-<span id="L1563" class="ln">  1563  </span>	t.Parallel()
-<span id="L1564" class="ln">  1564  </span>
-<span id="L1565" class="ln">  1565  </span>	<span class="comment">// 再配送遅延は full jitter で散らされるため、値そのものではなく上限（指数 backoff の算出値）で判定する。</span>
-<span id="L1566" class="ln">  1566  </span>	backoffSettings := func() Settings {
-<span id="L1567" class="ln">  1567  </span>		set := baseSettings()
-<span id="L1568" class="ln">  1568  </span>		set.NackBackoffInitial = 10 * time.Millisecond
-<span id="L1569" class="ln">  1569  </span>		set.NackBackoffMax = time.Second
-<span id="L1570" class="ln">  1570  </span>		return set
-<span id="L1571" class="ln">  1571  </span>	}
-<span id="L1572" class="ln">  1572  </span>
-<span id="L1573" class="ln">  1573  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1574" class="ln">  1574  </span>		t.Parallel()
-<span id="L1575" class="ln">  1575  </span>
-<span id="L1576" class="ln">  1576  </span>		t.Run(&#34;初回配送は初期 backoff を上限とする遅延つきで再配送する&#34;, func(t *testing.T) {
-<span id="L1577" class="ln">  1577  </span>			t.Parallel()
-<span id="L1578" class="ln">  1578  </span>
-<span id="L1579" class="ln">  1579  </span>			f := testkit.NewFake()
-<span id="L1580" class="ln">  1580  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1581" class="ln">  1581  </span>			r := newRun(newTestEngine(t, backoffSettings(), w), w)
-<span id="L1582" class="ln">  1582  </span>
-<span id="L1583" class="ln">  1583  </span>			r.nack(context.Background(), bw.Message{ID: &#34;a&#34;, ReceiveCount: 1})
+<span id="L1557" class="ln">  1557  </span>			r.ack(context.Background(), bw.Message{ID: &#34;a&#34;})
+<span id="L1558" class="ln">  1558  </span>
+<span id="L1559" class="ln">  1559  </span>			assert.Equal(t, 1, observed.FilterMessage(&#34;ack error&#34;).Len())
+<span id="L1560" class="ln">  1560  </span>		})
+<span id="L1561" class="ln">  1561  </span>	})
+<span id="L1562" class="ln">  1562  </span>}
+<span id="L1563" class="ln">  1563  </span>
+<span id="L1564" class="ln">  1564  </span>func Test_run_nack(t *testing.T) {
+<span id="L1565" class="ln">  1565  </span>	t.Parallel()
+<span id="L1566" class="ln">  1566  </span>
+<span id="L1567" class="ln">  1567  </span>	<span class="comment">// 再配送遅延は full jitter で散らされるため、値そのものではなく上限（指数 backoff の算出値）で判定する。</span>
+<span id="L1568" class="ln">  1568  </span>	backoffSettings := func() Settings {
+<span id="L1569" class="ln">  1569  </span>		set := baseSettings()
+<span id="L1570" class="ln">  1570  </span>		set.NackBackoffInitial = 10 * time.Millisecond
+<span id="L1571" class="ln">  1571  </span>		set.NackBackoffMax = time.Second
+<span id="L1572" class="ln">  1572  </span>		return set
+<span id="L1573" class="ln">  1573  </span>	}
+<span id="L1574" class="ln">  1574  </span>
+<span id="L1575" class="ln">  1575  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1576" class="ln">  1576  </span>		t.Parallel()
+<span id="L1577" class="ln">  1577  </span>
+<span id="L1578" class="ln">  1578  </span>		t.Run(&#34;初回配送は初期 backoff を上限とする遅延つきで再配送する&#34;, func(t *testing.T) {
+<span id="L1579" class="ln">  1579  </span>			t.Parallel()
+<span id="L1580" class="ln">  1580  </span>
+<span id="L1581" class="ln">  1581  </span>			f := testkit.NewFake()
+<span id="L1582" class="ln">  1582  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1583" class="ln">  1583  </span>			r := newRun(newTestEngine(t, backoffSettings(), w), w)
 <span id="L1584" class="ln">  1584  </span>
-<span id="L1585" class="ln">  1585  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.NackedIDs())
-<span id="L1586" class="ln">  1586  </span>			require.True(t, f.NackBackoffApplied(&#34;a&#34;))
-<span id="L1587" class="ln">  1587  </span>			assert.LessOrEqual(t, f.NackBackoffOf(&#34;a&#34;), 10*time.Millisecond)
-<span id="L1588" class="ln">  1588  </span>		})
-<span id="L1589" class="ln">  1589  </span>
-<span id="L1590" class="ln">  1590  </span>		t.Run(&#34;再配送回数に応じて遅延の上限が指数的に伸びる&#34;, func(t *testing.T) {
-<span id="L1591" class="ln">  1591  </span>			t.Parallel()
-<span id="L1592" class="ln">  1592  </span>
-<span id="L1593" class="ln">  1593  </span>			f := testkit.NewFake()
-<span id="L1594" class="ln">  1594  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1595" class="ln">  1595  </span>			r := newRun(newTestEngine(t, backoffSettings(), w), w)
-<span id="L1596" class="ln">  1596  </span>
-<span id="L1597" class="ln">  1597  </span>			r.nack(context.Background(), bw.Message{ID: &#34;a&#34;, ReceiveCount: 3}) <span class="comment">// attempt=2 -&gt; 10ms * 2^2</span>
+<span id="L1585" class="ln">  1585  </span>			r.nack(context.Background(), bw.Message{ID: &#34;a&#34;, ReceiveCount: 1})
+<span id="L1586" class="ln">  1586  </span>
+<span id="L1587" class="ln">  1587  </span>			assert.Equal(t, []string{&#34;a&#34;}, f.NackedIDs())
+<span id="L1588" class="ln">  1588  </span>			require.True(t, f.NackBackoffApplied(&#34;a&#34;))
+<span id="L1589" class="ln">  1589  </span>			assert.LessOrEqual(t, f.NackBackoffOf(&#34;a&#34;), 10*time.Millisecond)
+<span id="L1590" class="ln">  1590  </span>		})
+<span id="L1591" class="ln">  1591  </span>
+<span id="L1592" class="ln">  1592  </span>		t.Run(&#34;再配送回数に応じて遅延の上限が指数的に伸びる&#34;, func(t *testing.T) {
+<span id="L1593" class="ln">  1593  </span>			t.Parallel()
+<span id="L1594" class="ln">  1594  </span>
+<span id="L1595" class="ln">  1595  </span>			f := testkit.NewFake()
+<span id="L1596" class="ln">  1596  </span>			w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1597" class="ln">  1597  </span>			r := newRun(newTestEngine(t, backoffSettings(), w), w)
 <span id="L1598" class="ln">  1598  </span>
-<span id="L1599" class="ln">  1599  </span>			require.True(t, f.NackBackoffApplied(&#34;a&#34;))
-<span id="L1600" class="ln">  1600  </span>			assert.LessOrEqual(t, f.NackBackoffOf(&#34;a&#34;), 40*time.Millisecond)
-<span id="L1601" class="ln">  1601  </span>		})
-<span id="L1602" class="ln">  1602  </span>	})
-<span id="L1603" class="ln">  1603  </span>
-<span id="L1604" class="ln">  1604  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1605" class="ln">  1605  </span>		t.Parallel()
-<span id="L1606" class="ln">  1606  </span>
-<span id="L1607" class="ln">  1607  </span>		t.Run(&#34;再配送が失敗した場合はエラーログに残す&#34;, func(t *testing.T) {
-<span id="L1608" class="ln">  1608  </span>			t.Parallel()
-<span id="L1609" class="ln">  1609  </span>
-<span id="L1610" class="ln">  1610  </span>			ctrl := gomock.NewController(t)
-<span id="L1611" class="ln">  1611  </span>			mc := mock_worker.NewMockConsumer(ctrl)
-<span id="L1612" class="ln">  1612  </span>			mc.EXPECT().NackWithBackoff(gomock.Any(), gomock.Any(), gomock.Any()).Return(xerrors.New(&#34;nack boom&#34;))
-<span id="L1613" class="ln">  1613  </span>
-<span id="L1614" class="ln">  1614  </span>			logger, observed := logging.NewObservedTestLogger(t)
-<span id="L1615" class="ln">  1615  </span>			w := testWorker{name: &#34;w&#34;, cons: mc, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1616" class="ln">  1616  </span>			eng, err := New([]bw.Worker{w}, backoffSettings(), observability.NewNoopTracerFactory(t), observability.NewNoopWorkerMetrics(t), logger)
-<span id="L1617" class="ln">  1617  </span>			require.NoError(t, err)
-<span id="L1618" class="ln">  1618  </span>			r := newRun(eng, w)
-<span id="L1619" class="ln">  1619  </span>
-<span id="L1620" class="ln">  1620  </span>			r.nack(context.Background(), bw.Message{ID: &#34;a&#34;, ReceiveCount: 1})
+<span id="L1599" class="ln">  1599  </span>			r.nack(context.Background(), bw.Message{ID: &#34;a&#34;, ReceiveCount: 3}) <span class="comment">// attempt=2 -&gt; 10ms * 2^2</span>
+<span id="L1600" class="ln">  1600  </span>
+<span id="L1601" class="ln">  1601  </span>			require.True(t, f.NackBackoffApplied(&#34;a&#34;))
+<span id="L1602" class="ln">  1602  </span>			assert.LessOrEqual(t, f.NackBackoffOf(&#34;a&#34;), 40*time.Millisecond)
+<span id="L1603" class="ln">  1603  </span>		})
+<span id="L1604" class="ln">  1604  </span>	})
+<span id="L1605" class="ln">  1605  </span>
+<span id="L1606" class="ln">  1606  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1607" class="ln">  1607  </span>		t.Parallel()
+<span id="L1608" class="ln">  1608  </span>
+<span id="L1609" class="ln">  1609  </span>		t.Run(&#34;再配送が失敗した場合はエラーログに残す&#34;, func(t *testing.T) {
+<span id="L1610" class="ln">  1610  </span>			t.Parallel()
+<span id="L1611" class="ln">  1611  </span>
+<span id="L1612" class="ln">  1612  </span>			ctrl := gomock.NewController(t)
+<span id="L1613" class="ln">  1613  </span>			mc := mock_worker.NewMockConsumer(ctrl)
+<span id="L1614" class="ln">  1614  </span>			mc.EXPECT().NackWithBackoff(gomock.Any(), gomock.Any(), gomock.Any()).Return(xerrors.New(&#34;nack boom&#34;))
+<span id="L1615" class="ln">  1615  </span>
+<span id="L1616" class="ln">  1616  </span>			logger, observed := logging.NewObservedTestLogger(t)
+<span id="L1617" class="ln">  1617  </span>			w := testWorker{name: &#34;w&#34;, cons: mc, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1618" class="ln">  1618  </span>			eng, err := New([]bw.Worker{w}, backoffSettings(), observability.NewNoopTracerFactory(t), observability.NewNoopWorkerMetrics(t), logger)
+<span id="L1619" class="ln">  1619  </span>			require.NoError(t, err)
+<span id="L1620" class="ln">  1620  </span>			r := newRun(eng, w)
 <span id="L1621" class="ln">  1621  </span>
-<span id="L1622" class="ln">  1622  </span>			assert.Equal(t, 1, observed.FilterMessage(&#34;nack error&#34;).Len())
-<span id="L1623" class="ln">  1623  </span>		})
-<span id="L1624" class="ln">  1624  </span>	})
-<span id="L1625" class="ln">  1625  </span>}
-<span id="L1626" class="ln">  1626  </span>
-<span id="L1627" class="ln">  1627  </span>func Test_run_drain(t *testing.T) {
-<span id="L1628" class="ln">  1628  </span>	t.Parallel()
-<span id="L1629" class="ln">  1629  </span>
-<span id="L1630" class="ln">  1630  </span>	newTestRun := func(t *testing.T, drainTimeout time.Duration) *run {
-<span id="L1631" class="ln">  1631  </span>		t.Helper()
-<span id="L1632" class="ln">  1632  </span>		f := testkit.NewFake()
-<span id="L1633" class="ln">  1633  </span>		w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
-<span id="L1634" class="ln">  1634  </span>		set := baseSettings()
-<span id="L1635" class="ln">  1635  </span>		set.DrainTimeout = drainTimeout
-<span id="L1636" class="ln">  1636  </span>		return newRun(newTestEngine(t, set, w), w)
-<span id="L1637" class="ln">  1637  </span>	}
-<span id="L1638" class="ln">  1638  </span>
-<span id="L1639" class="ln">  1639  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1640" class="ln">  1640  </span>		t.Parallel()
-<span id="L1641" class="ln">  1641  </span>
-<span id="L1642" class="ln">  1642  </span>		t.Run(&#34;in-flight の完了で DrainTimeout を待たずに返る&#34;, func(t *testing.T) {
-<span id="L1643" class="ln">  1643  </span>			t.Parallel()
-<span id="L1644" class="ln">  1644  </span>
-<span id="L1645" class="ln">  1645  </span>			r := newTestRun(t, time.Hour) <span class="comment">// タイムアウト経路で抜けたなら時間切れとして失敗する長さ</span>
-<span id="L1646" class="ln">  1646  </span>			r.wg.Add(1)
-<span id="L1647" class="ln">  1647  </span>
-<span id="L1648" class="ln">  1648  </span>			done := make(chan struct{})
-<span id="L1649" class="ln">  1649  </span>			go func() { r.drain(); close(done) }()
-<span id="L1650" class="ln">  1650  </span>			r.wg.Done()
-<span id="L1651" class="ln">  1651  </span>
-<span id="L1652" class="ln">  1652  </span>			select {
-<span id="L1653" class="ln">  1653  </span>			case &lt;-done:
-<span id="L1654" class="ln">  1654  </span>			case &lt;-time.After(eventually):
-<span id="L1655" class="ln">  1655  </span>				t.Fatal(&#34;in-flight 完了後も drain が返らなかった&#34;)
-<span id="L1656" class="ln">  1656  </span>			}
-<span id="L1657" class="ln">  1657  </span>		})
-<span id="L1658" class="ln">  1658  </span>	})
-<span id="L1659" class="ln">  1659  </span>
-<span id="L1660" class="ln">  1660  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1661" class="ln">  1661  </span>		t.Parallel()
-<span id="L1662" class="ln">  1662  </span>
-<span id="L1663" class="ln">  1663  </span>		t.Run(&#34;in-flight が完了しない場合は DrainTimeout で打ち切る&#34;, func(t *testing.T) {
-<span id="L1664" class="ln">  1664  </span>			t.Parallel()
-<span id="L1665" class="ln">  1665  </span>
-<span id="L1666" class="ln">  1666  </span>			r := newTestRun(t, 20*time.Millisecond)
-<span id="L1667" class="ln">  1667  </span>			r.wg.Add(1) <span class="comment">// 完了しない in-flight を模す</span>
-<span id="L1668" class="ln">  1668  </span>
-<span id="L1669" class="ln">  1669  </span>			done := make(chan struct{})
-<span id="L1670" class="ln">  1670  </span>			go func() { r.drain(); close(done) }()
-<span id="L1671" class="ln">  1671  </span>
-<span id="L1672" class="ln">  1672  </span>			select {
-<span id="L1673" class="ln">  1673  </span>			case &lt;-done:
-<span id="L1674" class="ln">  1674  </span>			case &lt;-time.After(eventually):
-<span id="L1675" class="ln">  1675  </span>				t.Fatal(&#34;DrainTimeout を過ぎても drain が返らなかった&#34;)
-<span id="L1676" class="ln">  1676  </span>			}
-<span id="L1677" class="ln">  1677  </span>			r.wg.Done() <span class="comment">// drain 内の待機 goroutine を残さない</span>
-<span id="L1678" class="ln">  1678  </span>		})
-<span id="L1679" class="ln">  1679  </span>	})
-<span id="L1680" class="ln">  1680  </span>}
-<span id="L1681" class="ln">  1681  </span>
+<span id="L1622" class="ln">  1622  </span>			r.nack(context.Background(), bw.Message{ID: &#34;a&#34;, ReceiveCount: 1})
+<span id="L1623" class="ln">  1623  </span>
+<span id="L1624" class="ln">  1624  </span>			assert.Equal(t, 1, observed.FilterMessage(&#34;nack error&#34;).Len())
+<span id="L1625" class="ln">  1625  </span>		})
+<span id="L1626" class="ln">  1626  </span>	})
+<span id="L1627" class="ln">  1627  </span>}
+<span id="L1628" class="ln">  1628  </span>
+<span id="L1629" class="ln">  1629  </span>func Test_run_drain(t *testing.T) {
+<span id="L1630" class="ln">  1630  </span>	t.Parallel()
+<span id="L1631" class="ln">  1631  </span>
+<span id="L1632" class="ln">  1632  </span>	newTestRun := func(t *testing.T, drainTimeout time.Duration) *run {
+<span id="L1633" class="ln">  1633  </span>		t.Helper()
+<span id="L1634" class="ln">  1634  </span>		f := testkit.NewFake()
+<span id="L1635" class="ln">  1635  </span>		w := testWorker{name: &#34;w&#34;, cons: f, handler: handlerFunc(func(context.Context, bw.Message) error { return nil })}
+<span id="L1636" class="ln">  1636  </span>		set := baseSettings()
+<span id="L1637" class="ln">  1637  </span>		set.DrainTimeout = drainTimeout
+<span id="L1638" class="ln">  1638  </span>		return newRun(newTestEngine(t, set, w), w)
+<span id="L1639" class="ln">  1639  </span>	}
+<span id="L1640" class="ln">  1640  </span>
+<span id="L1641" class="ln">  1641  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1642" class="ln">  1642  </span>		t.Parallel()
+<span id="L1643" class="ln">  1643  </span>
+<span id="L1644" class="ln">  1644  </span>		t.Run(&#34;in-flight の完了で DrainTimeout を待たずに返る&#34;, func(t *testing.T) {
+<span id="L1645" class="ln">  1645  </span>			t.Parallel()
+<span id="L1646" class="ln">  1646  </span>
+<span id="L1647" class="ln">  1647  </span>			r := newTestRun(t, time.Hour) <span class="comment">// タイムアウト経路で抜けたなら時間切れとして失敗する長さ</span>
+<span id="L1648" class="ln">  1648  </span>			r.wg.Add(1)
+<span id="L1649" class="ln">  1649  </span>
+<span id="L1650" class="ln">  1650  </span>			done := make(chan struct{})
+<span id="L1651" class="ln">  1651  </span>			go func() { r.drain(); close(done) }()
+<span id="L1652" class="ln">  1652  </span>			r.wg.Done()
+<span id="L1653" class="ln">  1653  </span>
+<span id="L1654" class="ln">  1654  </span>			select {
+<span id="L1655" class="ln">  1655  </span>			case &lt;-done:
+<span id="L1656" class="ln">  1656  </span>			case &lt;-time.After(eventually):
+<span id="L1657" class="ln">  1657  </span>				t.Fatal(&#34;in-flight 完了後も drain が返らなかった&#34;)
+<span id="L1658" class="ln">  1658  </span>			}
+<span id="L1659" class="ln">  1659  </span>		})
+<span id="L1660" class="ln">  1660  </span>	})
+<span id="L1661" class="ln">  1661  </span>
+<span id="L1662" class="ln">  1662  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1663" class="ln">  1663  </span>		t.Parallel()
+<span id="L1664" class="ln">  1664  </span>
+<span id="L1665" class="ln">  1665  </span>		t.Run(&#34;in-flight が完了しない場合は DrainTimeout で打ち切る&#34;, func(t *testing.T) {
+<span id="L1666" class="ln">  1666  </span>			t.Parallel()
+<span id="L1667" class="ln">  1667  </span>
+<span id="L1668" class="ln">  1668  </span>			r := newTestRun(t, 20*time.Millisecond)
+<span id="L1669" class="ln">  1669  </span>			r.wg.Add(1) <span class="comment">// 完了しない in-flight を模す</span>
+<span id="L1670" class="ln">  1670  </span>
+<span id="L1671" class="ln">  1671  </span>			done := make(chan struct{})
+<span id="L1672" class="ln">  1672  </span>			go func() { r.drain(); close(done) }()
+<span id="L1673" class="ln">  1673  </span>
+<span id="L1674" class="ln">  1674  </span>			select {
+<span id="L1675" class="ln">  1675  </span>			case &lt;-done:
+<span id="L1676" class="ln">  1676  </span>			case &lt;-time.After(eventually):
+<span id="L1677" class="ln">  1677  </span>				t.Fatal(&#34;DrainTimeout を過ぎても drain が返らなかった&#34;)
+<span id="L1678" class="ln">  1678  </span>			}
+<span id="L1679" class="ln">  1679  </span>			r.wg.Done() <span class="comment">// drain 内の待機 goroutine を残さない</span>
+<span id="L1680" class="ln">  1680  </span>		})
+<span id="L1681" class="ln">  1681  </span>	})
+<span id="L1682" class="ln">  1682  </span>}
+<span id="L1683" class="ln">  1683  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/controller/worker/worker_unit_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

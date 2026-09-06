@@ -85,45 +85,47 @@
 <span id="L28" class="ln">    28  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
 <span id="L29" class="ln">    29  </span>		t.Parallel()
 <span id="L30" class="ln">    30  </span>
-<span id="L31" class="ln">    31  </span>		t.Run(&#34;ctx有効時はRecordLagを呼ぶ&#34;, func(t *testing.T) {
+<span id="L31" class="ln">    31  </span>		t.Run(&#34;ctx有効時はRecordLagとRecordBlockedStreamsを呼ぶ&#34;, func(t *testing.T) {
 <span id="L32" class="ln">    32  </span>			t.Parallel()
 <span id="L33" class="ln">    33  </span>			ctrl := gomock.NewController(t)
 <span id="L34" class="ln">    34  </span>			uc := mock_relay.NewMockRelayUsecase(ctrl)
 <span id="L35" class="ln">    35  </span>			uc.EXPECT().RecordLag(gomock.Any()).Return(nil).Times(1)
-<span id="L36" class="ln">    36  </span>
-<span id="L37" class="ln">    37  </span>			e := newObserveLagEngine(t, uc)
-<span id="L38" class="ln">    38  </span>			e.observeLag(context.Background(), logging.NewTestLogger(t))
-<span id="L39" class="ln">    39  </span>		})
-<span id="L40" class="ln">    40  </span>
-<span id="L41" class="ln">    41  </span>		t.Run(&#34;RecordLagが失敗してもpanicせずログのみで戻る&#34;, func(t *testing.T) {
-<span id="L42" class="ln">    42  </span>			t.Parallel()
-<span id="L43" class="ln">    43  </span>			ctrl := gomock.NewController(t)
-<span id="L44" class="ln">    44  </span>			uc := mock_relay.NewMockRelayUsecase(ctrl)
-<span id="L45" class="ln">    45  </span>			uc.EXPECT().RecordLag(gomock.Any()).Return(xerrors.New(&#34;lag failed&#34;)).Times(1)
-<span id="L46" class="ln">    46  </span>
-<span id="L47" class="ln">    47  </span>			e := newObserveLagEngine(t, uc)
-<span id="L48" class="ln">    48  </span>			e.observeLag(context.Background(), logging.NewTestLogger(t))
-<span id="L49" class="ln">    49  </span>		})
-<span id="L50" class="ln">    50  </span>	})
-<span id="L51" class="ln">    51  </span>
-<span id="L52" class="ln">    52  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L53" class="ln">    53  </span>		t.Parallel()
-<span id="L54" class="ln">    54  </span>
-<span id="L55" class="ln">    55  </span>		t.Run(&#34;ctx完了時はRecordLagを呼ばずスキップする&#34;, func(t *testing.T) {
-<span id="L56" class="ln">    56  </span>			t.Parallel()
-<span id="L57" class="ln">    57  </span>			ctrl := gomock.NewController(t)
-<span id="L58" class="ln">    58  </span>			uc := mock_relay.NewMockRelayUsecase(ctrl)
-<span id="L59" class="ln">    59  </span>			<span class="comment">// RecordLag を EXPECT しない: 呼ばれれば未期待呼び出しで失敗する。</span>
-<span id="L60" class="ln">    60  </span>
-<span id="L61" class="ln">    61  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L62" class="ln">    62  </span>			cancel()
-<span id="L63" class="ln">    63  </span>
-<span id="L64" class="ln">    64  </span>			e := newObserveLagEngine(t, uc)
-<span id="L65" class="ln">    65  </span>			e.observeLag(ctx, logging.NewTestLogger(t))
-<span id="L66" class="ln">    66  </span>		})
-<span id="L67" class="ln">    67  </span>	})
-<span id="L68" class="ln">    68  </span>}
-<span id="L69" class="ln">    69  </span>
+<span id="L36" class="ln">    36  </span>			uc.EXPECT().RecordBlockedStreams(gomock.Any()).Return(nil).Times(1)
+<span id="L37" class="ln">    37  </span>
+<span id="L38" class="ln">    38  </span>			e := newObserveLagEngine(t, uc)
+<span id="L39" class="ln">    39  </span>			e.observeLag(context.Background(), logging.NewTestLogger(t))
+<span id="L40" class="ln">    40  </span>		})
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span>		t.Run(&#34;記録が失敗してもpanicせずログのみで戻る&#34;, func(t *testing.T) {
+<span id="L43" class="ln">    43  </span>			t.Parallel()
+<span id="L44" class="ln">    44  </span>			ctrl := gomock.NewController(t)
+<span id="L45" class="ln">    45  </span>			uc := mock_relay.NewMockRelayUsecase(ctrl)
+<span id="L46" class="ln">    46  </span>			uc.EXPECT().RecordLag(gomock.Any()).Return(xerrors.New(&#34;lag failed&#34;)).Times(1)
+<span id="L47" class="ln">    47  </span>			uc.EXPECT().RecordBlockedStreams(gomock.Any()).Return(xerrors.New(&#34;count failed&#34;)).Times(1)
+<span id="L48" class="ln">    48  </span>
+<span id="L49" class="ln">    49  </span>			e := newObserveLagEngine(t, uc)
+<span id="L50" class="ln">    50  </span>			e.observeLag(context.Background(), logging.NewTestLogger(t))
+<span id="L51" class="ln">    51  </span>		})
+<span id="L52" class="ln">    52  </span>	})
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L55" class="ln">    55  </span>		t.Parallel()
+<span id="L56" class="ln">    56  </span>
+<span id="L57" class="ln">    57  </span>		t.Run(&#34;ctx完了時はいずれの記録も呼ばずスキップする&#34;, func(t *testing.T) {
+<span id="L58" class="ln">    58  </span>			t.Parallel()
+<span id="L59" class="ln">    59  </span>			ctrl := gomock.NewController(t)
+<span id="L60" class="ln">    60  </span>			uc := mock_relay.NewMockRelayUsecase(ctrl)
+<span id="L61" class="ln">    61  </span>			<span class="comment">// RecordLag / RecordBlockedStreams を EXPECT しない: 呼ばれれば未期待呼び出しで失敗する。</span>
+<span id="L62" class="ln">    62  </span>
+<span id="L63" class="ln">    63  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L64" class="ln">    64  </span>			cancel()
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span>			e := newObserveLagEngine(t, uc)
+<span id="L67" class="ln">    67  </span>			e.observeLag(ctx, logging.NewTestLogger(t))
+<span id="L68" class="ln">    68  </span>		})
+<span id="L69" class="ln">    69  </span>	})
+<span id="L70" class="ln">    70  </span>}
+<span id="L71" class="ln">    71  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/controller/outbox/relay_observe_lag_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

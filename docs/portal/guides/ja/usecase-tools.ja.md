@@ -1,7 +1,5 @@
 # tools
 
-[English](README.md) | 日本語
-
 `internal/usecase/tools` は、**Usecase 層で再利用される小さなユーティリティ群**を格納するディレクトリです。
 
 ## サブディレクトリ

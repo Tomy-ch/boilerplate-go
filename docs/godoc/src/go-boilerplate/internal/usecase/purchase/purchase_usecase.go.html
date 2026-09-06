@@ -66,715 +66,932 @@
 <span id="L9" class="ln">     9  </span>	&#34;time&#34;
 <span id="L10" class="ln">    10  </span>
 <span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/apperror&#34;
-<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/domain/product&#34;
-<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/domain/purchase&#34;
-<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/internal/domain/service/membership&#34;
-<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/domain/user&#34;
-<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/observability&#34;
-<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/usecase/boundary/auth&#34;
-<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/internal/usecase/boundary/authz&#34;
-<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/internal/usecase/boundary/clock&#34;
-<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/usecase/boundary/tx&#34;
-<span id="L21" class="ln">    21  </span>	&#34;go-boilerplate/internal/usecase/outbox&#34;
-<span id="L22" class="ln">    22  </span>	&#34;go-boilerplate/internal/usecase/purchase/command&#34;
-<span id="L23" class="ln">    23  </span>	&#34;go-boilerplate/internal/usecase/purchase/event&#34;
-<span id="L24" class="ln">    24  </span>	&#34;go-boilerplate/internal/usecase/purchase/query&#34;
-<span id="L25" class="ln">    25  </span>	&#34;go-boilerplate/pkg/decimal&#34;
-<span id="L26" class="ln">    26  </span>	&#34;go-boilerplate/pkg/uuid&#34;
-<span id="L27" class="ln">    27  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
-<span id="L28" class="ln">    28  </span>)
-<span id="L29" class="ln">    29  </span>
-<span id="L30" class="ln">    30  </span>const (
-<span id="L31" class="ln">    31  </span>	<span class="comment">// aggregateType は、outbox の集約種別です。</span>
-<span id="L32" class="ln">    32  </span>	aggregateType = &#34;purchase&#34;
-<span id="L33" class="ln">    33  </span>)
-<span id="L34" class="ln">    34  </span>
-<span id="L35" class="ln">    35  </span><span class="comment">// DetailParam は、購入明細の入力（商品 ID と数量）です。</span>
-<span id="L36" class="ln">    36  </span>type DetailParam struct {
-<span id="L37" class="ln">    37  </span>	ProductID uuid.UUID
-<span id="L38" class="ln">    38  </span>	Quantity  int
-<span id="L39" class="ln">    39  </span>}
-<span id="L40" class="ln">    40  </span>
-<span id="L41" class="ln">    41  </span><span class="comment">// CreatePurchaseParams は、購入作成の入力パラメータです。</span>
-<span id="L42" class="ln">    42  </span>type CreatePurchaseParams struct {
-<span id="L43" class="ln">    43  </span>	<span class="comment">// UserID は、購入者（認証済みの内部ユーザー ID）です。</span>
-<span id="L44" class="ln">    44  </span>	UserID uuid.UUID
-<span id="L45" class="ln">    45  </span>	<span class="comment">// Details は、購入明細の配列です。</span>
-<span id="L46" class="ln">    46  </span>	Details []DetailParam
-<span id="L47" class="ln">    47  </span>}
-<span id="L48" class="ln">    48  </span>
-<span id="L49" class="ln">    49  </span><span class="comment">// PurchaseDetailView は、購入明細のユースケース出力 DTO です。UnitPrice は価格スケール（ドル decimal）です。</span>
-<span id="L50" class="ln">    50  </span>type PurchaseDetailView struct {
-<span id="L51" class="ln">    51  </span>	ProductID uuid.UUID
-<span id="L52" class="ln">    52  </span>	Quantity  int
-<span id="L53" class="ln">    53  </span>	UnitPrice decimal.Decimal
-<span id="L54" class="ln">    54  </span>}
-<span id="L55" class="ln">    55  </span>
-<span id="L56" class="ln">    56  </span><span class="comment">// PurchaseView は、購入 1 件分のユースケース出力 DTO です。金額はすべて USD セント単位の整数です。</span>
-<span id="L57" class="ln">    57  </span>type PurchaseView struct {
-<span id="L58" class="ln">    58  </span>	Code           string
-<span id="L59" class="ln">    59  </span>	UserID         uuid.UUID
-<span id="L60" class="ln">    60  </span>	StatusID       uuid.UUID
-<span id="L61" class="ln">    61  </span>	SubtotalAmount int
-<span id="L62" class="ln">    62  </span>	TaxAmount      int
-<span id="L63" class="ln">    63  </span>	ShippingFee    int
-<span id="L64" class="ln">    64  </span>	TotalAmount    int
-<span id="L65" class="ln">    65  </span>	Details        []PurchaseDetailView
-<span id="L66" class="ln">    66  </span>	OrderedAt      time.Time
-<span id="L67" class="ln">    67  </span>}
-<span id="L68" class="ln">    68  </span>
-<span id="L69" class="ln">    69  </span><span class="comment">// CancelPurchaseParams は、購入キャンセルの入力パラメータです。</span>
-<span id="L70" class="ln">    70  </span>type CancelPurchaseParams struct {
-<span id="L71" class="ln">    71  </span>	<span class="comment">// PurchaseCode は、キャンセル対象の購入コードです。</span>
-<span id="L72" class="ln">    72  </span>	PurchaseCode string
-<span id="L73" class="ln">    73  </span>	<span class="comment">// UserID は、キャンセルを要求した認証済みの内部ユーザー ID です。所有権の検証に用います。</span>
-<span id="L74" class="ln">    74  </span>	UserID uuid.UUID
-<span id="L75" class="ln">    75  </span>}
-<span id="L76" class="ln">    76  </span>
-<span id="L77" class="ln">    77  </span><span class="comment">// CancelPurchaseView は、キャンセル後の購入 1 件分のユースケース出力 DTO です。ステータスは購入ステータス</span>
-<span id="L78" class="ln">    78  </span><span class="comment">// マスタで解決済みの ID と名称、CanceledAt はキャンセル日時です。金額はすべて USD セント単位の整数です。</span>
-<span id="L79" class="ln">    79  </span>type CancelPurchaseView struct {
-<span id="L80" class="ln">    80  </span>	Code           string
-<span id="L81" class="ln">    81  </span>	UserID         uuid.UUID
-<span id="L82" class="ln">    82  </span>	StatusID       uuid.UUID
-<span id="L83" class="ln">    83  </span>	StatusCode     int
-<span id="L84" class="ln">    84  </span>	StatusName     string
-<span id="L85" class="ln">    85  </span>	SubtotalAmount int
-<span id="L86" class="ln">    86  </span>	TaxAmount      int
-<span id="L87" class="ln">    87  </span>	ShippingFee    int
-<span id="L88" class="ln">    88  </span>	TotalAmount    int
-<span id="L89" class="ln">    89  </span>	Details        []PurchaseDetailView
-<span id="L90" class="ln">    90  </span>	OrderedAt      time.Time
-<span id="L91" class="ln">    91  </span>	CanceledAt     *time.Time
-<span id="L92" class="ln">    92  </span>}
-<span id="L93" class="ln">    93  </span>
-<span id="L94" class="ln">    94  </span><span class="comment">// PayPurchaseParams は、購入支払いの入力パラメータです。</span>
-<span id="L95" class="ln">    95  </span>type PayPurchaseParams struct {
-<span id="L96" class="ln">    96  </span>	<span class="comment">// PurchaseCode は、支払い対象の購入コードです。</span>
-<span id="L97" class="ln">    97  </span>	PurchaseCode string
-<span id="L98" class="ln">    98  </span>	<span class="comment">// UserID は、支払いを要求した認証済みの内部ユーザー ID です。所有権の検証に用います。</span>
-<span id="L99" class="ln">    99  </span>	UserID uuid.UUID
-<span id="L100" class="ln">   100  </span>}
-<span id="L101" class="ln">   101  </span>
-<span id="L102" class="ln">   102  </span><span class="comment">// PayPurchaseView は、支払い後の購入 1 件分のユースケース出力 DTO です。PaidAt は支払い日時です。</span>
-<span id="L103" class="ln">   103  </span><span class="comment">// ステータス・金額の表現は CancelPurchaseView を参照。</span>
-<span id="L104" class="ln">   104  </span>type PayPurchaseView struct {
-<span id="L105" class="ln">   105  </span>	Code           string
-<span id="L106" class="ln">   106  </span>	UserID         uuid.UUID
-<span id="L107" class="ln">   107  </span>	StatusID       uuid.UUID
-<span id="L108" class="ln">   108  </span>	StatusCode     int
-<span id="L109" class="ln">   109  </span>	StatusName     string
-<span id="L110" class="ln">   110  </span>	SubtotalAmount int
-<span id="L111" class="ln">   111  </span>	TaxAmount      int
-<span id="L112" class="ln">   112  </span>	ShippingFee    int
-<span id="L113" class="ln">   113  </span>	TotalAmount    int
-<span id="L114" class="ln">   114  </span>	Details        []PurchaseDetailView
-<span id="L115" class="ln">   115  </span>	OrderedAt      time.Time
-<span id="L116" class="ln">   116  </span>	PaidAt         *time.Time
-<span id="L117" class="ln">   117  </span>}
-<span id="L118" class="ln">   118  </span>
-<span id="L119" class="ln">   119  </span><span class="comment">// ShipPurchaseView は、発送後の購入 1 件分のユースケース出力 DTO です。ShippedAt は発送日時です。</span>
-<span id="L120" class="ln">   120  </span><span class="comment">// ステータス・金額の表現は CancelPurchaseView を参照。</span>
-<span id="L121" class="ln">   121  </span>type ShipPurchaseView struct {
-<span id="L122" class="ln">   122  </span>	Code           string
-<span id="L123" class="ln">   123  </span>	UserID         uuid.UUID
-<span id="L124" class="ln">   124  </span>	StatusID       uuid.UUID
-<span id="L125" class="ln">   125  </span>	StatusCode     int
-<span id="L126" class="ln">   126  </span>	StatusName     string
-<span id="L127" class="ln">   127  </span>	SubtotalAmount int
-<span id="L128" class="ln">   128  </span>	TaxAmount      int
-<span id="L129" class="ln">   129  </span>	ShippingFee    int
-<span id="L130" class="ln">   130  </span>	TotalAmount    int
-<span id="L131" class="ln">   131  </span>	Details        []PurchaseDetailView
-<span id="L132" class="ln">   132  </span>	OrderedAt      time.Time
-<span id="L133" class="ln">   133  </span>	ShippedAt      *time.Time
-<span id="L134" class="ln">   134  </span>}
-<span id="L135" class="ln">   135  </span>
-<span id="L136" class="ln">   136  </span><span class="comment">// DeliverPurchaseView は、配達完了後の購入 1 件分のユースケース出力 DTO です。DeliveredAt は配達日時です。</span>
-<span id="L137" class="ln">   137  </span><span class="comment">// ステータス・金額の表現は CancelPurchaseView を参照。</span>
-<span id="L138" class="ln">   138  </span>type DeliverPurchaseView struct {
-<span id="L139" class="ln">   139  </span>	Code           string
-<span id="L140" class="ln">   140  </span>	UserID         uuid.UUID
-<span id="L141" class="ln">   141  </span>	StatusID       uuid.UUID
-<span id="L142" class="ln">   142  </span>	StatusCode     int
-<span id="L143" class="ln">   143  </span>	StatusName     string
-<span id="L144" class="ln">   144  </span>	SubtotalAmount int
-<span id="L145" class="ln">   145  </span>	TaxAmount      int
-<span id="L146" class="ln">   146  </span>	ShippingFee    int
-<span id="L147" class="ln">   147  </span>	TotalAmount    int
-<span id="L148" class="ln">   148  </span>	Details        []PurchaseDetailView
-<span id="L149" class="ln">   149  </span>	OrderedAt      time.Time
-<span id="L150" class="ln">   150  </span>	DeliveredAt    *time.Time
-<span id="L151" class="ln">   151  </span>}
-<span id="L152" class="ln">   152  </span>
-<span id="L153" class="ln">   153  </span><span class="comment">// Usecase は、購入の作成・参照・状態遷移のユースケースを定義します。</span>
-<span id="L154" class="ln">   154  </span>type Usecase interface {
-<span id="L155" class="ln">   155  </span>	<span class="comment">// CreatePurchase は、明細から購入を作成します。在庫の引当・購入の成立・イベント発行は単一 tx で</span>
-<span id="L156" class="ln">   156  </span>	<span class="comment">// 原子的に成立し、売り越しは 409 で成立させません。</span>
-<span id="L157" class="ln">   157  </span>	CreatePurchase(ctx context.Context, params CreatePurchaseParams) (PurchaseView, error)
-<span id="L158" class="ln">   158  </span>	<span class="comment">// GetPurchases は、購入履歴を注文日時降順（cursor ページネーション）で取得します。</span>
-<span id="L159" class="ln">   159  </span>	<span class="comment">// 一覧は概要（code / totalAmount / status / orderedAt）のみを返します。</span>
-<span id="L160" class="ln">   160  </span>	<span class="comment">// 既定の母集団は認証主体の購入のみで、params.IncludeOtherUsers が true のときだけ他ユーザーの購入も</span>
-<span id="L161" class="ln">   161  </span>	<span class="comment">// 含みます。その指定は管理者のみが通り、管理者でない場合は 403 を返します。</span>
-<span id="L162" class="ln">   162  </span>	<span class="comment">// params.Window で注文日時の対象期間を、params.StatusCodes でステータスを絞り込めます</span>
-<span id="L163" class="ln">   163  </span>	<span class="comment">// （いずれもゼロ値は絞り込みなし）。</span>
-<span id="L164" class="ln">   164  </span>	GetPurchases(ctx context.Context, authn *auth.Authn, params ListPurchasesParams) (*PurchaseListView, error)
-<span id="L165" class="ln">   165  </span>	<span class="comment">// CancelPurchase は、本人の購入をキャンセルし、明細分の在庫を復元します。キャンセル・在庫復元・</span>
-<span id="L166" class="ln">   166  </span>	<span class="comment">// イベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも存在秘匿のため</span>
-<span id="L167" class="ln">   167  </span>	<span class="comment">// NotFound（404）、不正遷移は 409 を返します。</span>
-<span id="L168" class="ln">   168  </span>	CancelPurchase(ctx context.Context, params CancelPurchaseParams) (CancelPurchaseView, error)
-<span id="L169" class="ln">   169  </span>	<span class="comment">// PayPurchase は、本人の購入を支払い済みへ遷移させます。決済 SDK / PSP 連携は行わない擬似決済です。</span>
-<span id="L170" class="ln">   170  </span>	<span class="comment">// 状態遷移とイベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも</span>
-<span id="L171" class="ln">   171  </span>	<span class="comment">// NotFound（404）、二重支払い・不正遷移は 409 を返します（存在秘匿の理由は CancelPurchase を参照）。</span>
-<span id="L172" class="ln">   172  </span>	PayPurchase(ctx context.Context, params PayPurchaseParams) (PayPurchaseView, error)
-<span id="L173" class="ln">   173  </span>	<span class="comment">// ShipPurchase は、購入を発送済みへ遷移させます。実行できるのは管理者のみで、購入の所有者であるかは問いません。</span>
-<span id="L174" class="ln">   174  </span>	<span class="comment">// 状態遷移とイベント発行は単一 tx で原子的に成立します。管理者でない場合は 403、不存在は 404、</span>
-<span id="L175" class="ln">   175  </span>	<span class="comment">// 二重発送・不正遷移は 409 を返します。</span>
-<span id="L176" class="ln">   176  </span>	ShipPurchase(ctx context.Context, authn *auth.Authn, purchaseCode string) (ShipPurchaseView, error)
-<span id="L177" class="ln">   177  </span>	<span class="comment">// DeliverPurchase は、購入を配達済みへ遷移させます。管理者専用・所有者不問の扱いは ShipPurchase を参照。</span>
-<span id="L178" class="ln">   178  </span>	<span class="comment">// 状態遷移とイベント発行は単一 tx で原子的に成立します。管理者でない場合は 403、不存在は 404、</span>
-<span id="L179" class="ln">   179  </span>	<span class="comment">// 二重配達・不正遷移は 409 を返します。</span>
-<span id="L180" class="ln">   180  </span>	DeliverPurchase(ctx context.Context, authn *auth.Authn, purchaseCode string) (DeliverPurchaseView, error)
-<span id="L181" class="ln">   181  </span>	<span class="comment">// GetPurchaseDetail は、本人の購入 1 件を明細（商品名込み）とともに取得します。</span>
-<span id="L182" class="ln">   182  </span>	<span class="comment">// 他ユーザーの購入・不存在はいずれも NotFound（404）です（存在秘匿の理由は CancelPurchase を参照）。</span>
-<span id="L183" class="ln">   183  </span>	GetPurchaseDetail(ctx context.Context, authn *auth.Authn, purchaseCode string) (PurchaseGetDetailView, error)
-<span id="L184" class="ln">   184  </span>	<span class="comment">// ListShippablePurchases は、発送可能な購入を、まとめて発送してよい組に分けて取得します。</span>
-<span id="L185" class="ln">   185  </span>	<span class="comment">// 実行できるのは管理者のみで、管理者でない場合は 403 を返します。</span>
-<span id="L186" class="ln">   186  </span>	ListShippablePurchases(
-<span id="L187" class="ln">   187  </span>		ctx context.Context, authn *auth.Authn, params ListShippablePurchasesParams,
-<span id="L188" class="ln">   188  </span>	) (PurchaseShippableListView, error)
-<span id="L189" class="ln">   189  </span>}
-<span id="L190" class="ln">   190  </span>
-<span id="L191" class="ln">   191  </span>type usecase struct {
-<span id="L192" class="ln">   192  </span>	tracer      observability.LayerTracer
-<span id="L193" class="ln">   193  </span>	txm         tx.Manager
-<span id="L194" class="ln">   194  </span>	cmd         command.CommandService
-<span id="L195" class="ln">   195  </span>	repo        purchase.Repository
-<span id="L196" class="ln">   196  </span>	productRepo product.Repository
-<span id="L197" class="ln">   197  </span>	userLock    user.LockRepository
-<span id="L198" class="ln">   198  </span>	detailQS    query.PurchaseDetailQueryService
-<span id="L199" class="ln">   199  </span>	feedQS      query.PurchaseFeedQueryService
-<span id="L200" class="ln">   200  </span>	emit        outbox.EmitUsecase
-<span id="L201" class="ln">   201  </span>	clock       clock.Clock
-<span id="L202" class="ln">   202  </span>	authorizer  authz.Authorizer
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/domain/coupon&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/domain/product&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/internal/domain/purchase&#34;
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/domain/service/membership&#34;
+<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/domain/user&#34;
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/internal/usecase/boundary/auth&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/internal/usecase/boundary/authz&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/usecase/boundary/clock&#34;
+<span id="L21" class="ln">    21  </span>	outboxbndry &#34;go-boilerplate/internal/usecase/boundary/outbox&#34;
+<span id="L22" class="ln">    22  </span>	&#34;go-boilerplate/internal/usecase/boundary/tx&#34;
+<span id="L23" class="ln">    23  </span>	&#34;go-boilerplate/internal/usecase/outbox&#34;
+<span id="L24" class="ln">    24  </span>	&#34;go-boilerplate/internal/usecase/purchase/event&#34;
+<span id="L25" class="ln">    25  </span>	&#34;go-boilerplate/internal/usecase/purchase/query&#34;
+<span id="L26" class="ln">    26  </span>	&#34;go-boilerplate/pkg/decimal&#34;
+<span id="L27" class="ln">    27  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L28" class="ln">    28  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L29" class="ln">    29  </span>)
+<span id="L30" class="ln">    30  </span>
+<span id="L31" class="ln">    31  </span>const (
+<span id="L32" class="ln">    32  </span>	<span class="comment">// aggregateType は、outbox の集約種別です。</span>
+<span id="L33" class="ln">    33  </span>	aggregateType = &#34;purchase&#34;
+<span id="L34" class="ln">    34  </span>)
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span><span class="comment">// DetailParam は、購入明細の入力（商品 ID と数量）です。</span>
+<span id="L37" class="ln">    37  </span>type DetailParam struct {
+<span id="L38" class="ln">    38  </span>	ProductID uuid.UUID
+<span id="L39" class="ln">    39  </span>	Quantity  int
+<span id="L40" class="ln">    40  </span>}
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// CreatePurchaseParams は、購入作成の入力パラメータです。</span>
+<span id="L43" class="ln">    43  </span>type CreatePurchaseParams struct {
+<span id="L44" class="ln">    44  </span>	<span class="comment">// UserID は、購入者（認証済みの内部ユーザー ID）です。</span>
+<span id="L45" class="ln">    45  </span>	UserID uuid.UUID
+<span id="L46" class="ln">    46  </span>	<span class="comment">// Details は、購入明細の配列です。</span>
+<span id="L47" class="ln">    47  </span>	Details []DetailParam
+<span id="L48" class="ln">    48  </span>	<span class="comment">// CouponID は、適用するクーポンの ID です。nil の場合は値引きを行いません。</span>
+<span id="L49" class="ln">    49  </span>	CouponID *uuid.UUID
+<span id="L50" class="ln">    50  </span>}
+<span id="L51" class="ln">    51  </span>
+<span id="L52" class="ln">    52  </span><span class="comment">// PurchaseDetailView は、購入明細のユースケース出力 DTO です。UnitPrice は価格スケール（ドル decimal）です。</span>
+<span id="L53" class="ln">    53  </span>type PurchaseDetailView struct {
+<span id="L54" class="ln">    54  </span>	ProductID uuid.UUID
+<span id="L55" class="ln">    55  </span>	Quantity  int
+<span id="L56" class="ln">    56  </span>	UnitPrice decimal.Decimal
+<span id="L57" class="ln">    57  </span>}
+<span id="L58" class="ln">    58  </span>
+<span id="L59" class="ln">    59  </span><span class="comment">// PurchaseView は、購入 1 件分のユースケース出力 DTO です。金額はすべて USD セント単位の整数です。</span>
+<span id="L60" class="ln">    60  </span>type PurchaseView struct {
+<span id="L61" class="ln">    61  </span>	Code           string
+<span id="L62" class="ln">    62  </span>	UserID         uuid.UUID
+<span id="L63" class="ln">    63  </span>	StatusID       uuid.UUID
+<span id="L64" class="ln">    64  </span>	SubtotalAmount int
+<span id="L65" class="ln">    65  </span>	DiscountAmount int
+<span id="L66" class="ln">    66  </span>	AppliedCoupon  *AppliedCouponView
+<span id="L67" class="ln">    67  </span>	TaxAmount      int
+<span id="L68" class="ln">    68  </span>	ShippingFee    int
+<span id="L69" class="ln">    69  </span>	TotalAmount    int
+<span id="L70" class="ln">    70  </span>	Details        []PurchaseDetailView
+<span id="L71" class="ln">    71  </span>	OrderedAt      time.Time
+<span id="L72" class="ln">    72  </span>}
+<span id="L73" class="ln">    73  </span>
+<span id="L74" class="ln">    74  </span><span class="comment">// AppliedCouponView は、購入に適用したクーポンのユースケース出力 DTO です。</span>
+<span id="L75" class="ln">    75  </span>type AppliedCouponView struct {
+<span id="L76" class="ln">    76  </span>	ID            uuid.UUID
+<span id="L77" class="ln">    77  </span>	DiscountKind  string
+<span id="L78" class="ln">    78  </span>	DiscountValue decimal.Decimal
+<span id="L79" class="ln">    79  </span>	ScopeKind     string
+<span id="L80" class="ln">    80  </span>	ScopeTargetID *uuid.UUID
+<span id="L81" class="ln">    81  </span>}
+<span id="L82" class="ln">    82  </span>
+<span id="L83" class="ln">    83  </span><span class="comment">// CancelPurchaseParams は、購入キャンセルの入力パラメータです。</span>
+<span id="L84" class="ln">    84  </span>type CancelPurchaseParams struct {
+<span id="L85" class="ln">    85  </span>	<span class="comment">// PurchaseCode は、キャンセル対象の購入コードです。</span>
+<span id="L86" class="ln">    86  </span>	PurchaseCode string
+<span id="L87" class="ln">    87  </span>	<span class="comment">// UserID は、キャンセルを要求した認証済みの内部ユーザー ID です。所有権の検証に用います。</span>
+<span id="L88" class="ln">    88  </span>	UserID uuid.UUID
+<span id="L89" class="ln">    89  </span>}
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span><span class="comment">// CancelPurchaseView は、キャンセル後の購入 1 件分のユースケース出力 DTO です。ステータスは購入ステータス</span>
+<span id="L92" class="ln">    92  </span><span class="comment">// マスタで解決済みの ID と名称、CanceledAt はキャンセル日時です。金額はすべて USD セント単位の整数です。</span>
+<span id="L93" class="ln">    93  </span>type CancelPurchaseView struct {
+<span id="L94" class="ln">    94  </span>	Code           string
+<span id="L95" class="ln">    95  </span>	UserID         uuid.UUID
+<span id="L96" class="ln">    96  </span>	StatusID       uuid.UUID
+<span id="L97" class="ln">    97  </span>	StatusCode     int
+<span id="L98" class="ln">    98  </span>	StatusName     string
+<span id="L99" class="ln">    99  </span>	SubtotalAmount int
+<span id="L100" class="ln">   100  </span>	TaxAmount      int
+<span id="L101" class="ln">   101  </span>	ShippingFee    int
+<span id="L102" class="ln">   102  </span>	TotalAmount    int
+<span id="L103" class="ln">   103  </span>	Details        []PurchaseDetailView
+<span id="L104" class="ln">   104  </span>	OrderedAt      time.Time
+<span id="L105" class="ln">   105  </span>	CanceledAt     *time.Time
+<span id="L106" class="ln">   106  </span>}
+<span id="L107" class="ln">   107  </span>
+<span id="L108" class="ln">   108  </span><span class="comment">// PayPurchaseParams は、購入支払いの入力パラメータです。</span>
+<span id="L109" class="ln">   109  </span>type PayPurchaseParams struct {
+<span id="L110" class="ln">   110  </span>	<span class="comment">// PurchaseCode は、支払い対象の購入コードです。</span>
+<span id="L111" class="ln">   111  </span>	PurchaseCode string
+<span id="L112" class="ln">   112  </span>	<span class="comment">// UserID は、支払いを要求した認証済みの内部ユーザー ID です。所有権の検証に用います。</span>
+<span id="L113" class="ln">   113  </span>	UserID uuid.UUID
+<span id="L114" class="ln">   114  </span>}
+<span id="L115" class="ln">   115  </span>
+<span id="L116" class="ln">   116  </span><span class="comment">// PayPurchaseView は、支払い後の購入 1 件分のユースケース出力 DTO です。PaidAt は支払い日時です。</span>
+<span id="L117" class="ln">   117  </span><span class="comment">// ステータス・金額の表現は CancelPurchaseView を参照。</span>
+<span id="L118" class="ln">   118  </span>type PayPurchaseView struct {
+<span id="L119" class="ln">   119  </span>	Code           string
+<span id="L120" class="ln">   120  </span>	UserID         uuid.UUID
+<span id="L121" class="ln">   121  </span>	StatusID       uuid.UUID
+<span id="L122" class="ln">   122  </span>	StatusCode     int
+<span id="L123" class="ln">   123  </span>	StatusName     string
+<span id="L124" class="ln">   124  </span>	SubtotalAmount int
+<span id="L125" class="ln">   125  </span>	TaxAmount      int
+<span id="L126" class="ln">   126  </span>	ShippingFee    int
+<span id="L127" class="ln">   127  </span>	TotalAmount    int
+<span id="L128" class="ln">   128  </span>	Details        []PurchaseDetailView
+<span id="L129" class="ln">   129  </span>	OrderedAt      time.Time
+<span id="L130" class="ln">   130  </span>	PaidAt         *time.Time
+<span id="L131" class="ln">   131  </span>}
+<span id="L132" class="ln">   132  </span>
+<span id="L133" class="ln">   133  </span><span class="comment">// ShipPurchaseView は、発送後の購入 1 件分のユースケース出力 DTO です。ShippedAt は発送日時です。</span>
+<span id="L134" class="ln">   134  </span><span class="comment">// ステータス・金額の表現は CancelPurchaseView を参照。</span>
+<span id="L135" class="ln">   135  </span>type ShipPurchaseView struct {
+<span id="L136" class="ln">   136  </span>	Code           string
+<span id="L137" class="ln">   137  </span>	UserID         uuid.UUID
+<span id="L138" class="ln">   138  </span>	StatusID       uuid.UUID
+<span id="L139" class="ln">   139  </span>	StatusCode     int
+<span id="L140" class="ln">   140  </span>	StatusName     string
+<span id="L141" class="ln">   141  </span>	SubtotalAmount int
+<span id="L142" class="ln">   142  </span>	TaxAmount      int
+<span id="L143" class="ln">   143  </span>	ShippingFee    int
+<span id="L144" class="ln">   144  </span>	TotalAmount    int
+<span id="L145" class="ln">   145  </span>	Details        []PurchaseDetailView
+<span id="L146" class="ln">   146  </span>	OrderedAt      time.Time
+<span id="L147" class="ln">   147  </span>	ShippedAt      *time.Time
+<span id="L148" class="ln">   148  </span>}
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span><span class="comment">// DeliverPurchaseView は、配達完了後の購入 1 件分のユースケース出力 DTO です。DeliveredAt は配達日時です。</span>
+<span id="L151" class="ln">   151  </span><span class="comment">// ステータス・金額の表現は CancelPurchaseView を参照。</span>
+<span id="L152" class="ln">   152  </span>type DeliverPurchaseView struct {
+<span id="L153" class="ln">   153  </span>	Code           string
+<span id="L154" class="ln">   154  </span>	UserID         uuid.UUID
+<span id="L155" class="ln">   155  </span>	StatusID       uuid.UUID
+<span id="L156" class="ln">   156  </span>	StatusCode     int
+<span id="L157" class="ln">   157  </span>	StatusName     string
+<span id="L158" class="ln">   158  </span>	SubtotalAmount int
+<span id="L159" class="ln">   159  </span>	TaxAmount      int
+<span id="L160" class="ln">   160  </span>	ShippingFee    int
+<span id="L161" class="ln">   161  </span>	TotalAmount    int
+<span id="L162" class="ln">   162  </span>	Details        []PurchaseDetailView
+<span id="L163" class="ln">   163  </span>	OrderedAt      time.Time
+<span id="L164" class="ln">   164  </span>	DeliveredAt    *time.Time
+<span id="L165" class="ln">   165  </span>}
+<span id="L166" class="ln">   166  </span>
+<span id="L167" class="ln">   167  </span><span class="comment">// Usecase は、購入の作成・参照・状態遷移のユースケースを定義します。</span>
+<span id="L168" class="ln">   168  </span>type Usecase interface {
+<span id="L169" class="ln">   169  </span>	<span class="comment">// CreatePurchase は、明細から購入を作成します。在庫の引当・購入の成立・イベント発行は単一 tx で</span>
+<span id="L170" class="ln">   170  </span>	<span class="comment">// 原子的に成立し、売り越しは 409 で成立させません。</span>
+<span id="L171" class="ln">   171  </span>	CreatePurchase(ctx context.Context, params CreatePurchaseParams) (PurchaseView, error)
+<span id="L172" class="ln">   172  </span>	<span class="comment">// GetPurchases は、購入履歴を注文日時降順（cursor ページネーション）で取得します。</span>
+<span id="L173" class="ln">   173  </span>	<span class="comment">// 一覧は概要（code / totalAmount / status / orderedAt）のみを返します。</span>
+<span id="L174" class="ln">   174  </span>	<span class="comment">// 既定の母集団は認証主体の購入のみで、params.IncludeOtherUsers が true のときだけ他ユーザーの購入も</span>
+<span id="L175" class="ln">   175  </span>	<span class="comment">// 含みます。その指定は管理者のみが通り、管理者でない場合は 403 を返します。</span>
+<span id="L176" class="ln">   176  </span>	<span class="comment">// params.Window で注文日時の対象期間を、params.StatusCodes でステータスを絞り込めます</span>
+<span id="L177" class="ln">   177  </span>	<span class="comment">// （いずれもゼロ値は絞り込みなし）。</span>
+<span id="L178" class="ln">   178  </span>	GetPurchases(ctx context.Context, authn *auth.Authn, params ListPurchasesParams) (*PurchaseListView, error)
+<span id="L179" class="ln">   179  </span>	<span class="comment">// CancelPurchase は、本人の購入をキャンセルし、明細分の在庫を復元します。キャンセル・在庫復元・</span>
+<span id="L180" class="ln">   180  </span>	<span class="comment">// イベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも存在秘匿のため</span>
+<span id="L181" class="ln">   181  </span>	<span class="comment">// NotFound（404）、不正遷移は 409 を返します。</span>
+<span id="L182" class="ln">   182  </span>	CancelPurchase(ctx context.Context, params CancelPurchaseParams) (CancelPurchaseView, error)
+<span id="L183" class="ln">   183  </span>	<span class="comment">// PayPurchase は、本人の購入を支払い済みへ遷移させます。決済 SDK / PSP 連携は行わない擬似決済です。</span>
+<span id="L184" class="ln">   184  </span>	<span class="comment">// 状態遷移とイベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも</span>
+<span id="L185" class="ln">   185  </span>	<span class="comment">// NotFound（404）、二重支払い・不正遷移は 409 を返します（存在秘匿の理由は CancelPurchase を参照）。</span>
+<span id="L186" class="ln">   186  </span>	PayPurchase(ctx context.Context, params PayPurchaseParams) (PayPurchaseView, error)
+<span id="L187" class="ln">   187  </span>	<span class="comment">// ShipPurchase は、購入を発送済みへ遷移させます。実行できるのは管理者のみで、購入の所有者であるかは問いません。</span>
+<span id="L188" class="ln">   188  </span>	<span class="comment">// 状態遷移とイベント発行は単一 tx で原子的に成立します。管理者でない場合は 403、不存在は 404、</span>
+<span id="L189" class="ln">   189  </span>	<span class="comment">// 二重発送・不正遷移は 409 を返します。</span>
+<span id="L190" class="ln">   190  </span>	ShipPurchase(ctx context.Context, authn *auth.Authn, purchaseCode string) (ShipPurchaseView, error)
+<span id="L191" class="ln">   191  </span>	<span class="comment">// DeliverPurchase は、購入を配達済みへ遷移させます。管理者専用・所有者不問の扱いは ShipPurchase を参照。</span>
+<span id="L192" class="ln">   192  </span>	<span class="comment">// 状態遷移とイベント発行は単一 tx で原子的に成立します。管理者でない場合は 403、不存在は 404、</span>
+<span id="L193" class="ln">   193  </span>	<span class="comment">// 二重配達・不正遷移は 409 を返します。</span>
+<span id="L194" class="ln">   194  </span>	DeliverPurchase(ctx context.Context, authn *auth.Authn, purchaseCode string) (DeliverPurchaseView, error)
+<span id="L195" class="ln">   195  </span>	<span class="comment">// GetPurchaseDetail は、本人の購入 1 件を明細（商品名込み）とともに取得します。</span>
+<span id="L196" class="ln">   196  </span>	<span class="comment">// 他ユーザーの購入・不存在はいずれも NotFound（404）です（存在秘匿の理由は CancelPurchase を参照）。</span>
+<span id="L197" class="ln">   197  </span>	GetPurchaseDetail(ctx context.Context, authn *auth.Authn, purchaseCode string) (PurchaseGetDetailView, error)
+<span id="L198" class="ln">   198  </span>	<span class="comment">// ListShippablePurchases は、発送可能な購入を、まとめて発送してよい組に分けて取得します。</span>
+<span id="L199" class="ln">   199  </span>	<span class="comment">// 実行できるのは管理者のみで、管理者でない場合は 403 を返します。</span>
+<span id="L200" class="ln">   200  </span>	ListShippablePurchases(
+<span id="L201" class="ln">   201  </span>		ctx context.Context, authn *auth.Authn, params ListShippablePurchasesParams,
+<span id="L202" class="ln">   202  </span>	) (PurchaseShippableListView, error)
 <span id="L203" class="ln">   203  </span>}
 <span id="L204" class="ln">   204  </span>
-<span id="L205" class="ln">   205  </span><span class="comment">// purchaseDraft は、購入作成のトランザクションへ持ち込む採番済みの入力です。</span>
-<span id="L206" class="ln">   206  </span>type purchaseDraft struct {
-<span id="L207" class="ln">   207  </span>	purchaseID uuid.UUID
-<span id="L208" class="ln">   208  </span>	code       string
-<span id="L209" class="ln">   209  </span>	inputs     []purchase.DetailInput
-<span id="L210" class="ln">   210  </span>	productIDs []uuid.UUID
-<span id="L211" class="ln">   211  </span>}
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span><span class="comment">// New は、購入ユースケースを生成します。</span>
-<span id="L214" class="ln">   214  </span>func New(
-<span id="L215" class="ln">   215  </span>	txm tx.Manager,
-<span id="L216" class="ln">   216  </span>	cmd command.CommandService,
-<span id="L217" class="ln">   217  </span>	repo purchase.Repository,
-<span id="L218" class="ln">   218  </span>	productRepo product.Repository,
-<span id="L219" class="ln">   219  </span>	userLock user.LockRepository,
-<span id="L220" class="ln">   220  </span>	detailQS query.PurchaseDetailQueryService,
-<span id="L221" class="ln">   221  </span>	feedQS query.PurchaseFeedQueryService,
-<span id="L222" class="ln">   222  </span>	emit outbox.EmitUsecase,
-<span id="L223" class="ln">   223  </span>	clock clock.Clock,
-<span id="L224" class="ln">   224  </span>	authorizer authz.Authorizer,
-<span id="L225" class="ln">   225  </span>	tf observability.TracerFactory,
-<span id="L226" class="ln">   226  </span>) Usecase {
-<span id="L227" class="ln">   227  </span>	return &amp;usecase{
-<span id="L228" class="ln">   228  </span>		tracer:      tf.Usecase(),
-<span id="L229" class="ln">   229  </span>		txm:         txm,
-<span id="L230" class="ln">   230  </span>		cmd:         cmd,
-<span id="L231" class="ln">   231  </span>		repo:        repo,
-<span id="L232" class="ln">   232  </span>		productRepo: productRepo,
-<span id="L233" class="ln">   233  </span>		userLock:    userLock,
-<span id="L234" class="ln">   234  </span>		detailQS:    detailQS,
-<span id="L235" class="ln">   235  </span>		feedQS:      feedQS,
-<span id="L236" class="ln">   236  </span>		emit:        emit,
-<span id="L237" class="ln">   237  </span>		clock:       clock,
-<span id="L238" class="ln">   238  </span>		authorizer:  authorizer,
-<span id="L239" class="ln">   239  </span>	}
-<span id="L240" class="ln">   240  </span>}
-<span id="L241" class="ln">   241  </span>
-<span id="L242" class="ln">   242  </span><span class="comment">// newPurchaseDraft は、購入・購入コード・各明細の ID を採番し、ドメイン入力と商品 ID 列を組み立てます。</span>
-<span id="L243" class="ln">   243  </span><span class="comment">// 採番はトランザクションの外で行うため、リトライされても同じ ID が再利用されることはありません。</span>
-<span id="L244" class="ln">   244  </span>func newPurchaseDraft(details []DetailParam) (*purchaseDraft, error) {
-<span id="L245" class="ln">   245  </span>	purchaseID, err := uuid.New()
-<span id="L246" class="ln">   246  </span>	if err != nil {
-<span id="L247" class="ln">   247  </span>		return nil, xerrors.Wrap(err, &#34;failed to generate purchase id&#34;)
-<span id="L248" class="ln">   248  </span>	}
-<span id="L249" class="ln">   249  </span>	codeUUID, err := uuid.New()
-<span id="L250" class="ln">   250  </span>	if err != nil {
-<span id="L251" class="ln">   251  </span>		return nil, xerrors.Wrap(err, &#34;failed to generate purchase code&#34;)
-<span id="L252" class="ln">   252  </span>	}
-<span id="L253" class="ln">   253  </span>
-<span id="L254" class="ln">   254  </span>	draft := &amp;purchaseDraft{
-<span id="L255" class="ln">   255  </span>		purchaseID: purchaseID,
-<span id="L256" class="ln">   256  </span>		code:       codeUUID.String(),
-<span id="L257" class="ln">   257  </span>		inputs:     make([]purchase.DetailInput, len(details)),
-<span id="L258" class="ln">   258  </span>		productIDs: make([]uuid.UUID, len(details)),
-<span id="L259" class="ln">   259  </span>	}
-<span id="L260" class="ln">   260  </span>	for i, d := range details {
-<span id="L261" class="ln">   261  </span>		detailID, derr := uuid.New()
-<span id="L262" class="ln">   262  </span>		if derr != nil {
-<span id="L263" class="ln">   263  </span>			return nil, xerrors.Wrap(derr, &#34;failed to generate purchase detail id&#34;)
-<span id="L264" class="ln">   264  </span>		}
-<span id="L265" class="ln">   265  </span>		draft.inputs[i] = purchase.DetailInput{ID: detailID, ProductID: d.ProductID, Quantity: d.Quantity}
-<span id="L266" class="ln">   266  </span>		draft.productIDs[i] = d.ProductID
-<span id="L267" class="ln">   267  </span>	}
-<span id="L268" class="ln">   268  </span>	return draft, nil
+<span id="L205" class="ln">   205  </span>type usecase struct {
+<span id="L206" class="ln">   206  </span>	tracer      observability.LayerTracer
+<span id="L207" class="ln">   207  </span>	txm         tx.Manager
+<span id="L208" class="ln">   208  </span>	repo        purchase.Repository
+<span id="L209" class="ln">   209  </span>	productRepo product.Repository
+<span id="L210" class="ln">   210  </span>	couponRepo  coupon.Repository
+<span id="L211" class="ln">   211  </span>	userLock    user.LockRepository
+<span id="L212" class="ln">   212  </span>	detailQS    query.PurchaseDetailQueryService
+<span id="L213" class="ln">   213  </span>	feedQS      query.PurchaseFeedQueryService
+<span id="L214" class="ln">   214  </span>	emit        outbox.EmitUsecase
+<span id="L215" class="ln">   215  </span>	clock       clock.Clock
+<span id="L216" class="ln">   216  </span>	authorizer  authz.Authorizer
+<span id="L217" class="ln">   217  </span>}
+<span id="L218" class="ln">   218  </span>
+<span id="L219" class="ln">   219  </span><span class="comment">// purchaseDraft は、購入作成のトランザクションへ持ち込む採番済みの入力です。</span>
+<span id="L220" class="ln">   220  </span>type purchaseDraft struct {
+<span id="L221" class="ln">   221  </span>	purchaseID uuid.UUID
+<span id="L222" class="ln">   222  </span>	code       string
+<span id="L223" class="ln">   223  </span>	inputs     []purchase.DetailInput
+<span id="L224" class="ln">   224  </span>	productIDs []uuid.UUID
+<span id="L225" class="ln">   225  </span>}
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span><span class="comment">// New は、購入ユースケースを生成します。</span>
+<span id="L228" class="ln">   228  </span>func New(
+<span id="L229" class="ln">   229  </span>	txm tx.Manager,
+<span id="L230" class="ln">   230  </span>	repo purchase.Repository,
+<span id="L231" class="ln">   231  </span>	productRepo product.Repository,
+<span id="L232" class="ln">   232  </span>	couponRepo coupon.Repository,
+<span id="L233" class="ln">   233  </span>	userLock user.LockRepository,
+<span id="L234" class="ln">   234  </span>	detailQS query.PurchaseDetailQueryService,
+<span id="L235" class="ln">   235  </span>	feedQS query.PurchaseFeedQueryService,
+<span id="L236" class="ln">   236  </span>	emit outbox.EmitUsecase,
+<span id="L237" class="ln">   237  </span>	clock clock.Clock,
+<span id="L238" class="ln">   238  </span>	authorizer authz.Authorizer,
+<span id="L239" class="ln">   239  </span>	tf observability.TracerFactory,
+<span id="L240" class="ln">   240  </span>) Usecase {
+<span id="L241" class="ln">   241  </span>	return &amp;usecase{
+<span id="L242" class="ln">   242  </span>		tracer:      tf.Usecase(),
+<span id="L243" class="ln">   243  </span>		txm:         txm,
+<span id="L244" class="ln">   244  </span>		repo:        repo,
+<span id="L245" class="ln">   245  </span>		productRepo: productRepo,
+<span id="L246" class="ln">   246  </span>		couponRepo:  couponRepo,
+<span id="L247" class="ln">   247  </span>		userLock:    userLock,
+<span id="L248" class="ln">   248  </span>		detailQS:    detailQS,
+<span id="L249" class="ln">   249  </span>		feedQS:      feedQS,
+<span id="L250" class="ln">   250  </span>		emit:        emit,
+<span id="L251" class="ln">   251  </span>		clock:       clock,
+<span id="L252" class="ln">   252  </span>		authorizer:  authorizer,
+<span id="L253" class="ln">   253  </span>	}
+<span id="L254" class="ln">   254  </span>}
+<span id="L255" class="ln">   255  </span>
+<span id="L256" class="ln">   256  </span><span class="comment">// detailProductIDs は、明細が参照する商品 ID を重複なく返します。</span>
+<span id="L257" class="ln">   257  </span>func detailProductIDs(details []purchase.PurchaseDetail) []uuid.UUID {
+<span id="L258" class="ln">   258  </span>	seen := make(map[uuid.UUID]struct{}, len(details))
+<span id="L259" class="ln">   259  </span>	ids := make([]uuid.UUID, 0, len(details))
+<span id="L260" class="ln">   260  </span>	for _, d := range details {
+<span id="L261" class="ln">   261  </span>		if _, ok := seen[d.ProductID()]; ok {
+<span id="L262" class="ln">   262  </span>			continue
+<span id="L263" class="ln">   263  </span>		}
+<span id="L264" class="ln">   264  </span>		seen[d.ProductID()] = struct{}{}
+<span id="L265" class="ln">   265  </span>		ids = append(ids, d.ProductID())
+<span id="L266" class="ln">   266  </span>	}
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>	return ids
 <span id="L269" class="ln">   269  </span>}
 <span id="L270" class="ln">   270  </span>
-<span id="L271" class="ln">   271  </span>func (u *usecase) CreatePurchase(ctx context.Context, params CreatePurchaseParams) (PurchaseView, error) {
-<span id="L272" class="ln">   272  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L273" class="ln">   273  </span>	defer endSpan()
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>	draft, err := newPurchaseDraft(params.Details)
-<span id="L276" class="ln">   276  </span>	if err != nil {
-<span id="L277" class="ln">   277  </span>		return PurchaseView{}, err
-<span id="L278" class="ln">   278  </span>	}
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>	var created *purchase.Purchase
-<span id="L281" class="ln">   281  </span>	<span class="comment">// nested で最外 tx に乗る（tx 所有については docs/spec/purchase/usecase.md 冒頭を参照）。</span>
-<span id="L282" class="ln">   282  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L283" class="ln">   283  </span>		<span class="comment">// ロック順序（ユーザー行 → 商品行、id 昇順）は docs/spec/purchase/usecase.md の Workflow を参照。</span>
-<span id="L284" class="ln">   284  </span>		if uerr := u.ensurePurchaserActive(ctx, params.UserID); uerr != nil {
-<span id="L285" class="ln">   285  </span>			return uerr
-<span id="L286" class="ln">   286  </span>		}
-<span id="L287" class="ln">   287  </span>
-<span id="L288" class="ln">   288  </span>		<span class="comment">// 在庫ロックは商品集約の読み取りなので、購入の書き込みポートではなく商品 Repository を通す。</span>
-<span id="L289" class="ln">   289  </span>		products, lerr := u.productRepo.LockByIDs(ctx, draft.productIDs)
-<span id="L290" class="ln">   290  </span>		if lerr != nil {
-<span id="L291" class="ln">   291  </span>			return lerr
-<span id="L292" class="ln">   292  </span>		}
-<span id="L293" class="ln">   293  </span>		locked := make([]purchase.LockedProduct, len(products))
-<span id="L294" class="ln">   294  </span>		for i, p := range products {
-<span id="L295" class="ln">   295  </span>			locked[i] = purchase.NewLockedProduct(p.ID(), p.Price(), p.Quantity())
-<span id="L296" class="ln">   296  </span>		}
-<span id="L297" class="ln">   297  </span>
-<span id="L298" class="ln">   298  </span>		entity, nerr := purchase.New(draft.purchaseID, draft.code, params.UserID, draft.inputs, locked)
-<span id="L299" class="ln">   299  </span>		if nerr != nil {
-<span id="L300" class="ln">   300  </span>			return nerr
-<span id="L301" class="ln">   301  </span>		}
-<span id="L302" class="ln">   302  </span>
-<span id="L303" class="ln">   303  </span>		if cerr := u.cmd.CreatePurchase(ctx, entity); cerr != nil {
-<span id="L304" class="ln">   304  </span>			return cerr
-<span id="L305" class="ln">   305  </span>		}
-<span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>		payload, perr := event.BuildCreated(entity)
-<span id="L308" class="ln">   308  </span>		if perr != nil {
-<span id="L309" class="ln">   309  </span>			return perr
-<span id="L310" class="ln">   310  </span>		}
-<span id="L311" class="ln">   311  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
-<span id="L312" class="ln">   312  </span>			AggregateType: aggregateType,
-<span id="L313" class="ln">   313  </span>			AggregateID:   draft.purchaseID.String(),
-<span id="L314" class="ln">   314  </span>			EventType:     event.TypeCreated,
-<span id="L315" class="ln">   315  </span>			Payload:       payload,
-<span id="L316" class="ln">   316  </span>		}); eerr != nil {
-<span id="L317" class="ln">   317  </span>			return eerr
-<span id="L318" class="ln">   318  </span>		}
-<span id="L319" class="ln">   319  </span>
-<span id="L320" class="ln">   320  </span>		<span class="comment">// 書き込み後、Repository 経由で再検証する（README の Verifying infrastructure against the domain）。</span>
-<span id="L321" class="ln">   321  </span>		reread, rerr := u.repo.FindByID(ctx, draft.purchaseID)
-<span id="L322" class="ln">   322  </span>		if rerr != nil {
-<span id="L323" class="ln">   323  </span>			return rerr
-<span id="L324" class="ln">   324  </span>		}
-<span id="L325" class="ln">   325  </span>		created = reread
-<span id="L326" class="ln">   326  </span>		return nil
-<span id="L327" class="ln">   327  </span>	}); txErr != nil {
-<span id="L328" class="ln">   328  </span>		return PurchaseView{}, txErr
-<span id="L329" class="ln">   329  </span>	}
+<span id="L271" class="ln">   271  </span><span class="comment">// newPurchaseDraft は、購入・購入コード・各明細の ID を採番し、ドメイン入力と商品 ID 列を組み立てます。</span>
+<span id="L272" class="ln">   272  </span><span class="comment">// 採番はトランザクションの外で行うため、リトライされても同じ ID が再利用されることはありません。</span>
+<span id="L273" class="ln">   273  </span>func newPurchaseDraft(details []DetailParam) (*purchaseDraft, error) {
+<span id="L274" class="ln">   274  </span>	purchaseID, err := uuid.New()
+<span id="L275" class="ln">   275  </span>	if err != nil {
+<span id="L276" class="ln">   276  </span>		return nil, xerrors.Wrap(err, &#34;failed to generate purchase id&#34;)
+<span id="L277" class="ln">   277  </span>	}
+<span id="L278" class="ln">   278  </span>	codeUUID, err := uuid.New()
+<span id="L279" class="ln">   279  </span>	if err != nil {
+<span id="L280" class="ln">   280  </span>		return nil, xerrors.Wrap(err, &#34;failed to generate purchase code&#34;)
+<span id="L281" class="ln">   281  </span>	}
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span>	draft := &amp;purchaseDraft{
+<span id="L284" class="ln">   284  </span>		purchaseID: purchaseID,
+<span id="L285" class="ln">   285  </span>		code:       codeUUID.String(),
+<span id="L286" class="ln">   286  </span>		inputs:     make([]purchase.DetailInput, len(details)),
+<span id="L287" class="ln">   287  </span>		productIDs: make([]uuid.UUID, len(details)),
+<span id="L288" class="ln">   288  </span>	}
+<span id="L289" class="ln">   289  </span>	for i, d := range details {
+<span id="L290" class="ln">   290  </span>		detailID, derr := uuid.New()
+<span id="L291" class="ln">   291  </span>		if derr != nil {
+<span id="L292" class="ln">   292  </span>			return nil, xerrors.Wrap(derr, &#34;failed to generate purchase detail id&#34;)
+<span id="L293" class="ln">   293  </span>		}
+<span id="L294" class="ln">   294  </span>		draft.inputs[i] = purchase.DetailInput{ID: detailID, ProductID: d.ProductID, Quantity: d.Quantity}
+<span id="L295" class="ln">   295  </span>		draft.productIDs[i] = d.ProductID
+<span id="L296" class="ln">   296  </span>	}
+<span id="L297" class="ln">   297  </span>	return draft, nil
+<span id="L298" class="ln">   298  </span>}
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>func (u *usecase) CreatePurchase(ctx context.Context, params CreatePurchaseParams) (PurchaseView, error) {
+<span id="L301" class="ln">   301  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L302" class="ln">   302  </span>	defer endSpan()
+<span id="L303" class="ln">   303  </span>
+<span id="L304" class="ln">   304  </span>	draft, err := newPurchaseDraft(params.Details)
+<span id="L305" class="ln">   305  </span>	if err != nil {
+<span id="L306" class="ln">   306  </span>		return PurchaseView{}, err
+<span id="L307" class="ln">   307  </span>	}
+<span id="L308" class="ln">   308  </span>
+<span id="L309" class="ln">   309  </span>	now := u.clock.Now()
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>	var (
+<span id="L312" class="ln">   312  </span>		created       *purchase.Purchase
+<span id="L313" class="ln">   313  </span>		appliedCoupon *coupon.Coupon
+<span id="L314" class="ln">   314  </span>	)
+<span id="L315" class="ln">   315  </span>	<span class="comment">// nested で最外 tx に乗る（tx 所有については docs/spec/usecase/purchase.md 冒頭を参照）。</span>
+<span id="L316" class="ln">   316  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L317" class="ln">   317  </span>		entity, redeemed, cerr := u.createPurchaseInTx(ctx, params, draft, now)
+<span id="L318" class="ln">   318  </span>		if cerr != nil {
+<span id="L319" class="ln">   319  </span>			return cerr
+<span id="L320" class="ln">   320  </span>		}
+<span id="L321" class="ln">   321  </span>		created, appliedCoupon = entity, redeemed
+<span id="L322" class="ln">   322  </span>
+<span id="L323" class="ln">   323  </span>		return nil
+<span id="L324" class="ln">   324  </span>	}); txErr != nil {
+<span id="L325" class="ln">   325  </span>		return PurchaseView{}, txErr
+<span id="L326" class="ln">   326  </span>	}
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>	return toPurchaseView(created, appliedCoupon), nil
+<span id="L329" class="ln">   329  </span>}
 <span id="L330" class="ln">   330  </span>
-<span id="L331" class="ln">   331  </span>	return toPurchaseView(created), nil
-<span id="L332" class="ln">   332  </span>}
-<span id="L333" class="ln">   333  </span>
-<span id="L334" class="ln">   334  </span>func (u *usecase) CancelPurchase(ctx context.Context, params CancelPurchaseParams) (CancelPurchaseView, error) {
-<span id="L335" class="ln">   335  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L336" class="ln">   336  </span>	defer endSpan()
+<span id="L331" class="ln">   331  </span><span class="comment">// applyRedeemedCoupon は、引き換えたクーポンの値引きを購入へ適用します。</span>
+<span id="L332" class="ln">   332  </span><span class="comment">// 対象明細の組み立てと拒否の条件は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照。</span>
+<span id="L333" class="ln">   333  </span>func applyRedeemedCoupon(entity *purchase.Purchase, redeemed *coupon.Coupon, products product.Products) error {
+<span id="L334" class="ln">   334  </span>	if redeemed == nil {
+<span id="L335" class="ln">   335  </span>		return nil
+<span id="L336" class="ln">   336  </span>	}
 <span id="L337" class="ln">   337  </span>
-<span id="L338" class="ln">   338  </span>	now := u.clock.Now()
-<span id="L339" class="ln">   339  </span>
-<span id="L340" class="ln">   340  </span>	var detail *purchase.Detail
-<span id="L341" class="ln">   341  </span>	<span class="comment">// tx 境界は PayPurchase のコメントを参照。CommandService（cmd）を使う理由・二重キャンセル対策は</span>
-<span id="L342" class="ln">   342  </span>	<span class="comment">// docs/spec/purchase/usecase.md § PATCH キャンセル を参照。</span>
-<span id="L343" class="ln">   343  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L344" class="ln">   344  </span>		locked, lerr := u.cmd.LockPurchase(ctx, params.PurchaseCode)
-<span id="L345" class="ln">   345  </span>		if lerr != nil {
-<span id="L346" class="ln">   346  </span>			return lerr
-<span id="L347" class="ln">   347  </span>		}
-<span id="L348" class="ln">   348  </span>
-<span id="L349" class="ln">   349  </span>		<span class="comment">// 存在秘匿のため NotFound へ畳む理由は CancelPurchase の doc コメントを参照。</span>
-<span id="L350" class="ln">   350  </span>		if locked.UserID() != params.UserID {
-<span id="L351" class="ln">   351  </span>			return xerrors.Wrap(apperror.ErrNotFound, &#34;purchase not found&#34;)
-<span id="L352" class="ln">   352  </span>		}
-<span id="L353" class="ln">   353  </span>
-<span id="L354" class="ln">   354  </span>		domainEvent, cerr := locked.Cancel(now)
-<span id="L355" class="ln">   355  </span>		if cerr != nil {
-<span id="L356" class="ln">   356  </span>			return cerr
-<span id="L357" class="ln">   357  </span>		}
-<span id="L358" class="ln">   358  </span>
-<span id="L359" class="ln">   359  </span>		if perr := u.cmd.CancelPurchase(ctx, locked); perr != nil {
-<span id="L360" class="ln">   360  </span>			return perr
-<span id="L361" class="ln">   361  </span>		}
-<span id="L362" class="ln">   362  </span>
-<span id="L363" class="ln">   363  </span>		payload, berr := event.BuildCanceled(locked)
-<span id="L364" class="ln">   364  </span>		if berr != nil {
-<span id="L365" class="ln">   365  </span>			return berr
-<span id="L366" class="ln">   366  </span>		}
-<span id="L367" class="ln">   367  </span>		eventType, terr := event.WireType(domainEvent.Type())
-<span id="L368" class="ln">   368  </span>		if terr != nil {
-<span id="L369" class="ln">   369  </span>			return terr
-<span id="L370" class="ln">   370  </span>		}
-<span id="L371" class="ln">   371  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
-<span id="L372" class="ln">   372  </span>			AggregateType: aggregateType,
-<span id="L373" class="ln">   373  </span>			AggregateID:   locked.ID().String(),
-<span id="L374" class="ln">   374  </span>			EventType:     eventType,
-<span id="L375" class="ln">   375  </span>			Payload:       payload,
-<span id="L376" class="ln">   376  </span>		}); eerr != nil {
-<span id="L377" class="ln">   377  </span>			return eerr
-<span id="L378" class="ln">   378  </span>		}
-<span id="L379" class="ln">   379  </span>
-<span id="L380" class="ln">   380  </span>		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
-<span id="L381" class="ln">   381  </span>		if rerr != nil {
-<span id="L382" class="ln">   382  </span>			return rerr
-<span id="L383" class="ln">   383  </span>		}
-<span id="L384" class="ln">   384  </span>		detail = reread
-<span id="L385" class="ln">   385  </span>		return nil
-<span id="L386" class="ln">   386  </span>	}); txErr != nil {
-<span id="L387" class="ln">   387  </span>		return CancelPurchaseView{}, txErr
-<span id="L388" class="ln">   388  </span>	}
+<span id="L338" class="ln">   338  </span>	categories := make(map[uuid.UUID]uuid.UUID, len(products))
+<span id="L339" class="ln">   339  </span>	for _, p := range products {
+<span id="L340" class="ln">   340  </span>		categories[p.ID()] = p.Category().ID()
+<span id="L341" class="ln">   341  </span>	}
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span>	details := entity.Details()
+<span id="L344" class="ln">   344  </span>	lines := make([]coupon.Line, len(details))
+<span id="L345" class="ln">   345  </span>	for i, d := range details {
+<span id="L346" class="ln">   346  </span>		lines[i] = coupon.NewLine(coupon.LineAttributes{
+<span id="L347" class="ln">   347  </span>			ProductID:  d.ProductID(),
+<span id="L348" class="ln">   348  </span>			CategoryID: categories[d.ProductID()],
+<span id="L349" class="ln">   349  </span>			Subtotal:   d.LineTotal(),
+<span id="L350" class="ln">   350  </span>		})
+<span id="L351" class="ln">   351  </span>	}
+<span id="L352" class="ln">   352  </span>
+<span id="L353" class="ln">   353  </span>	amount, err := redeemed.DiscountFor(lines)
+<span id="L354" class="ln">   354  </span>	if err != nil {
+<span id="L355" class="ln">   355  </span>		return err
+<span id="L356" class="ln">   356  </span>	}
+<span id="L357" class="ln">   357  </span>
+<span id="L358" class="ln">   358  </span>	return entity.ApplyCoupon(redeemed.ID(), amount)
+<span id="L359" class="ln">   359  </span>}
+<span id="L360" class="ln">   360  </span>
+<span id="L361" class="ln">   361  </span>func (u *usecase) CancelPurchase(ctx context.Context, params CancelPurchaseParams) (CancelPurchaseView, error) {
+<span id="L362" class="ln">   362  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L363" class="ln">   363  </span>	defer endSpan()
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>	now := u.clock.Now()
+<span id="L366" class="ln">   366  </span>
+<span id="L367" class="ln">   367  </span>	var detail *purchase.Detail
+<span id="L368" class="ln">   368  </span>	<span class="comment">// tx 境界は PayPurchase のコメントを参照。二重キャンセル対策は</span>
+<span id="L369" class="ln">   369  </span>	<span class="comment">// docs/spec/usecase/purchase.md § PATCH キャンセル を参照。</span>
+<span id="L370" class="ln">   370  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L371" class="ln">   371  </span>		locked, lerr := u.repo.LockByCode(ctx, params.PurchaseCode)
+<span id="L372" class="ln">   372  </span>		if lerr != nil {
+<span id="L373" class="ln">   373  </span>			return lerr
+<span id="L374" class="ln">   374  </span>		}
+<span id="L375" class="ln">   375  </span>
+<span id="L376" class="ln">   376  </span>		<span class="comment">// 存在秘匿のため NotFound へ畳む理由は CancelPurchase の doc コメントを参照。</span>
+<span id="L377" class="ln">   377  </span>		if locked.UserID() != params.UserID {
+<span id="L378" class="ln">   378  </span>			return xerrors.Wrap(apperror.ErrNotFound, &#34;purchase not found&#34;)
+<span id="L379" class="ln">   379  </span>		}
+<span id="L380" class="ln">   380  </span>
+<span id="L381" class="ln">   381  </span>		domainEvent, cerr := locked.Cancel(now)
+<span id="L382" class="ln">   382  </span>		if cerr != nil {
+<span id="L383" class="ln">   383  </span>			return cerr
+<span id="L384" class="ln">   384  </span>		}
+<span id="L385" class="ln">   385  </span>
+<span id="L386" class="ln">   386  </span>		if serr := u.restoreStock(ctx, locked.Details()); serr != nil {
+<span id="L387" class="ln">   387  </span>			return serr
+<span id="L388" class="ln">   388  </span>		}
 <span id="L389" class="ln">   389  </span>
-<span id="L390" class="ln">   390  </span>	return toCancelPurchaseView(detail), nil
-<span id="L391" class="ln">   391  </span>}
-<span id="L392" class="ln">   392  </span>
-<span id="L393" class="ln">   393  </span>func (u *usecase) PayPurchase(ctx context.Context, params PayPurchaseParams) (PayPurchaseView, error) {
-<span id="L394" class="ln">   394  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L395" class="ln">   395  </span>	defer endSpan()
-<span id="L396" class="ln">   396  </span>
-<span id="L397" class="ln">   397  </span>	now := u.clock.Now()
-<span id="L398" class="ln">   398  </span>
-<span id="L399" class="ln">   399  </span>	var detail *purchase.Detail
-<span id="L400" class="ln">   400  </span>	<span class="comment">// この Do が最外 tx（本経路は Idempotency-Key を配線しない）。CommandService を使わない理由・</span>
-<span id="L401" class="ln">   401  </span>	<span class="comment">// 二重支払い対策は docs/spec/purchase/usecase.md § PATCH 支払い を参照。</span>
-<span id="L402" class="ln">   402  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L403" class="ln">   403  </span>		locked, lerr := u.repo.LockByCode(ctx, params.PurchaseCode)
-<span id="L404" class="ln">   404  </span>		if lerr != nil {
-<span id="L405" class="ln">   405  </span>			return lerr
-<span id="L406" class="ln">   406  </span>		}
-<span id="L407" class="ln">   407  </span>
-<span id="L408" class="ln">   408  </span>		<span class="comment">// 存在秘匿のため NotFound へ畳む理由は CancelPurchase の doc コメントを参照。</span>
-<span id="L409" class="ln">   409  </span>		if locked.UserID() != params.UserID {
-<span id="L410" class="ln">   410  </span>			return xerrors.Wrap(apperror.ErrNotFound, &#34;purchase not found&#34;)
-<span id="L411" class="ln">   411  </span>		}
-<span id="L412" class="ln">   412  </span>
-<span id="L413" class="ln">   413  </span>		domainEvent, perr := locked.Pay(now)
-<span id="L414" class="ln">   414  </span>		if perr != nil {
-<span id="L415" class="ln">   415  </span>			return perr
-<span id="L416" class="ln">   416  </span>		}
-<span id="L417" class="ln">   417  </span>
-<span id="L418" class="ln">   418  </span>		if perr := u.repo.UpdatePaid(ctx, locked); perr != nil {
-<span id="L419" class="ln">   419  </span>			return perr
-<span id="L420" class="ln">   420  </span>		}
+<span id="L390" class="ln">   390  </span>		if perr := u.repo.UpdateCancelled(ctx, locked); perr != nil {
+<span id="L391" class="ln">   391  </span>			return perr
+<span id="L392" class="ln">   392  </span>		}
+<span id="L393" class="ln">   393  </span>
+<span id="L394" class="ln">   394  </span>		payload, berr := event.BuildCanceled(locked)
+<span id="L395" class="ln">   395  </span>		if berr != nil {
+<span id="L396" class="ln">   396  </span>			return berr
+<span id="L397" class="ln">   397  </span>		}
+<span id="L398" class="ln">   398  </span>		eventType, terr := event.WireType(domainEvent.Type())
+<span id="L399" class="ln">   399  </span>		if terr != nil {
+<span id="L400" class="ln">   400  </span>			return terr
+<span id="L401" class="ln">   401  </span>		}
+<span id="L402" class="ln">   402  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
+<span id="L403" class="ln">   403  </span>			AggregateType: aggregateType,
+<span id="L404" class="ln">   404  </span>			AggregateID:   locked.ID().String(),
+<span id="L405" class="ln">   405  </span>			EventType:     eventType,
+<span id="L406" class="ln">   406  </span>			Payload:       payload,
+<span id="L407" class="ln">   407  </span>			Channel:       outboxbndry.ChannelHTTP,
+<span id="L408" class="ln">   408  </span>		}); eerr != nil {
+<span id="L409" class="ln">   409  </span>			return eerr
+<span id="L410" class="ln">   410  </span>		}
+<span id="L411" class="ln">   411  </span>
+<span id="L412" class="ln">   412  </span>		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
+<span id="L413" class="ln">   413  </span>		if rerr != nil {
+<span id="L414" class="ln">   414  </span>			return rerr
+<span id="L415" class="ln">   415  </span>		}
+<span id="L416" class="ln">   416  </span>		detail = reread
+<span id="L417" class="ln">   417  </span>		return nil
+<span id="L418" class="ln">   418  </span>	}); txErr != nil {
+<span id="L419" class="ln">   419  </span>		return CancelPurchaseView{}, txErr
+<span id="L420" class="ln">   420  </span>	}
 <span id="L421" class="ln">   421  </span>
-<span id="L422" class="ln">   422  </span>		payload, berr := event.BuildPaid(locked)
-<span id="L423" class="ln">   423  </span>		if berr != nil {
-<span id="L424" class="ln">   424  </span>			return berr
-<span id="L425" class="ln">   425  </span>		}
-<span id="L426" class="ln">   426  </span>		eventType, terr := event.WireType(domainEvent.Type())
-<span id="L427" class="ln">   427  </span>		if terr != nil {
-<span id="L428" class="ln">   428  </span>			return terr
-<span id="L429" class="ln">   429  </span>		}
-<span id="L430" class="ln">   430  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
-<span id="L431" class="ln">   431  </span>			AggregateType: aggregateType,
-<span id="L432" class="ln">   432  </span>			AggregateID:   locked.ID().String(),
-<span id="L433" class="ln">   433  </span>			EventType:     eventType,
-<span id="L434" class="ln">   434  </span>			Payload:       payload,
-<span id="L435" class="ln">   435  </span>		}); eerr != nil {
-<span id="L436" class="ln">   436  </span>			return eerr
-<span id="L437" class="ln">   437  </span>		}
-<span id="L438" class="ln">   438  </span>
-<span id="L439" class="ln">   439  </span>		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
-<span id="L440" class="ln">   440  </span>		if rerr != nil {
-<span id="L441" class="ln">   441  </span>			return rerr
-<span id="L442" class="ln">   442  </span>		}
-<span id="L443" class="ln">   443  </span>		detail = reread
-<span id="L444" class="ln">   444  </span>		return nil
-<span id="L445" class="ln">   445  </span>	}); txErr != nil {
-<span id="L446" class="ln">   446  </span>		return PayPurchaseView{}, txErr
-<span id="L447" class="ln">   447  </span>	}
-<span id="L448" class="ln">   448  </span>
-<span id="L449" class="ln">   449  </span>	return toPayPurchaseView(detail), nil
-<span id="L450" class="ln">   450  </span>}
-<span id="L451" class="ln">   451  </span>
-<span id="L452" class="ln">   452  </span>func (u *usecase) ShipPurchase(
-<span id="L453" class="ln">   453  </span>	ctx context.Context, authn *auth.Authn, purchaseCode string,
-<span id="L454" class="ln">   454  </span>) (ShipPurchaseView, error) {
-<span id="L455" class="ln">   455  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L456" class="ln">   456  </span>	defer endSpan()
-<span id="L457" class="ln">   457  </span>
-<span id="L458" class="ln">   458  </span>	if authn == nil {
-<span id="L459" class="ln">   459  </span>		return ShipPurchaseView{}, apperror.ErrUnauthenticated
-<span id="L460" class="ln">   460  </span>	}
-<span id="L461" class="ln">   461  </span>	<span class="comment">// 管理者専用・所有者不問の根拠は ShipPurchase の doc コメントを参照。</span>
-<span id="L462" class="ln">   462  </span>	if err := u.authorizer.Authorize(
-<span id="L463" class="ln">   463  </span>		ctx, authn, authz.ActionPurchaseShip, authz.NewResource(&#34;purchase&#34;, nil),
-<span id="L464" class="ln">   464  </span>	); err != nil {
-<span id="L465" class="ln">   465  </span>		return ShipPurchaseView{}, err
-<span id="L466" class="ln">   466  </span>	}
-<span id="L467" class="ln">   467  </span>
-<span id="L468" class="ln">   468  </span>	now := u.clock.Now()
-<span id="L469" class="ln">   469  </span>
-<span id="L470" class="ln">   470  </span>	var detail *purchase.Detail
-<span id="L471" class="ln">   471  </span>	<span class="comment">// tx 境界・ADR-0034 の根拠は PayPurchase のコメントを参照。二重発送対策は</span>
-<span id="L472" class="ln">   472  </span>	<span class="comment">// docs/spec/purchase/usecase.md § PATCH 発送 を参照。</span>
-<span id="L473" class="ln">   473  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L474" class="ln">   474  </span>		locked, lerr := u.repo.LockByCode(ctx, purchaseCode)
-<span id="L475" class="ln">   475  </span>		if lerr != nil {
-<span id="L476" class="ln">   476  </span>			return lerr
-<span id="L477" class="ln">   477  </span>		}
-<span id="L478" class="ln">   478  </span>
-<span id="L479" class="ln">   479  </span>		domainEvent, serr := locked.Ship(now)
-<span id="L480" class="ln">   480  </span>		if serr != nil {
-<span id="L481" class="ln">   481  </span>			return serr
-<span id="L482" class="ln">   482  </span>		}
-<span id="L483" class="ln">   483  </span>
-<span id="L484" class="ln">   484  </span>		if uerr := u.repo.UpdateShipped(ctx, locked); uerr != nil {
-<span id="L485" class="ln">   485  </span>			return uerr
-<span id="L486" class="ln">   486  </span>		}
-<span id="L487" class="ln">   487  </span>
-<span id="L488" class="ln">   488  </span>		payload, berr := event.BuildShipped(locked)
-<span id="L489" class="ln">   489  </span>		if berr != nil {
-<span id="L490" class="ln">   490  </span>			return berr
-<span id="L491" class="ln">   491  </span>		}
-<span id="L492" class="ln">   492  </span>		eventType, terr := event.WireType(domainEvent.Type())
-<span id="L493" class="ln">   493  </span>		if terr != nil {
-<span id="L494" class="ln">   494  </span>			return terr
-<span id="L495" class="ln">   495  </span>		}
-<span id="L496" class="ln">   496  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
-<span id="L497" class="ln">   497  </span>			AggregateType: aggregateType,
-<span id="L498" class="ln">   498  </span>			AggregateID:   locked.ID().String(),
-<span id="L499" class="ln">   499  </span>			EventType:     eventType,
-<span id="L500" class="ln">   500  </span>			Payload:       payload,
-<span id="L501" class="ln">   501  </span>		}); eerr != nil {
-<span id="L502" class="ln">   502  </span>			return eerr
-<span id="L503" class="ln">   503  </span>		}
-<span id="L504" class="ln">   504  </span>
-<span id="L505" class="ln">   505  </span>		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
-<span id="L506" class="ln">   506  </span>		if rerr != nil {
-<span id="L507" class="ln">   507  </span>			return rerr
-<span id="L508" class="ln">   508  </span>		}
-<span id="L509" class="ln">   509  </span>		detail = reread
-<span id="L510" class="ln">   510  </span>		return nil
-<span id="L511" class="ln">   511  </span>	}); txErr != nil {
-<span id="L512" class="ln">   512  </span>		return ShipPurchaseView{}, txErr
-<span id="L513" class="ln">   513  </span>	}
-<span id="L514" class="ln">   514  </span>
-<span id="L515" class="ln">   515  </span>	return toShipPurchaseView(detail), nil
-<span id="L516" class="ln">   516  </span>}
-<span id="L517" class="ln">   517  </span>
-<span id="L518" class="ln">   518  </span>func (u *usecase) DeliverPurchase(
-<span id="L519" class="ln">   519  </span>	ctx context.Context, authn *auth.Authn, purchaseCode string,
-<span id="L520" class="ln">   520  </span>) (DeliverPurchaseView, error) {
-<span id="L521" class="ln">   521  </span>	ctx, endSpan := u.tracer.Start(ctx)
-<span id="L522" class="ln">   522  </span>	defer endSpan()
-<span id="L523" class="ln">   523  </span>
-<span id="L524" class="ln">   524  </span>	if authn == nil {
-<span id="L525" class="ln">   525  </span>		return DeliverPurchaseView{}, apperror.ErrUnauthenticated
-<span id="L526" class="ln">   526  </span>	}
-<span id="L527" class="ln">   527  </span>	<span class="comment">// 管理者専用・所有者不問の根拠は ShipPurchase の doc コメントを参照。</span>
-<span id="L528" class="ln">   528  </span>	if err := u.authorizer.Authorize(
-<span id="L529" class="ln">   529  </span>		ctx, authn, authz.ActionPurchaseDeliver, authz.NewResource(&#34;purchase&#34;, nil),
-<span id="L530" class="ln">   530  </span>	); err != nil {
-<span id="L531" class="ln">   531  </span>		return DeliverPurchaseView{}, err
-<span id="L532" class="ln">   532  </span>	}
-<span id="L533" class="ln">   533  </span>
-<span id="L534" class="ln">   534  </span>	now := u.clock.Now()
-<span id="L535" class="ln">   535  </span>
-<span id="L536" class="ln">   536  </span>	var detail *purchase.Detail
-<span id="L537" class="ln">   537  </span>	<span class="comment">// tx 境界・ADR-0034 の根拠は PayPurchase のコメントを参照。二重配達対策は</span>
-<span id="L538" class="ln">   538  </span>	<span class="comment">// docs/spec/purchase/usecase.md § PATCH 配達完了 を参照。</span>
-<span id="L539" class="ln">   539  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
-<span id="L540" class="ln">   540  </span>		locked, lerr := u.repo.LockByCode(ctx, purchaseCode)
-<span id="L541" class="ln">   541  </span>		if lerr != nil {
-<span id="L542" class="ln">   542  </span>			return lerr
-<span id="L543" class="ln">   543  </span>		}
-<span id="L544" class="ln">   544  </span>
-<span id="L545" class="ln">   545  </span>		domainEvent, derr := locked.Deliver(now)
-<span id="L546" class="ln">   546  </span>		if derr != nil {
-<span id="L547" class="ln">   547  </span>			return derr
-<span id="L548" class="ln">   548  </span>		}
-<span id="L549" class="ln">   549  </span>
-<span id="L550" class="ln">   550  </span>		if uerr := u.repo.UpdateDelivered(ctx, locked); uerr != nil {
-<span id="L551" class="ln">   551  </span>			return uerr
-<span id="L552" class="ln">   552  </span>		}
-<span id="L553" class="ln">   553  </span>
-<span id="L554" class="ln">   554  </span>		payload, berr := event.BuildDelivered(locked)
-<span id="L555" class="ln">   555  </span>		if berr != nil {
-<span id="L556" class="ln">   556  </span>			return berr
-<span id="L557" class="ln">   557  </span>		}
-<span id="L558" class="ln">   558  </span>		eventType, terr := event.WireType(domainEvent.Type())
-<span id="L559" class="ln">   559  </span>		if terr != nil {
-<span id="L560" class="ln">   560  </span>			return terr
-<span id="L561" class="ln">   561  </span>		}
-<span id="L562" class="ln">   562  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
-<span id="L563" class="ln">   563  </span>			AggregateType: aggregateType,
-<span id="L564" class="ln">   564  </span>			AggregateID:   locked.ID().String(),
-<span id="L565" class="ln">   565  </span>			EventType:     eventType,
-<span id="L566" class="ln">   566  </span>			Payload:       payload,
-<span id="L567" class="ln">   567  </span>		}); eerr != nil {
-<span id="L568" class="ln">   568  </span>			return eerr
-<span id="L569" class="ln">   569  </span>		}
-<span id="L570" class="ln">   570  </span>
-<span id="L571" class="ln">   571  </span>		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
-<span id="L572" class="ln">   572  </span>		if rerr != nil {
-<span id="L573" class="ln">   573  </span>			return rerr
-<span id="L574" class="ln">   574  </span>		}
-<span id="L575" class="ln">   575  </span>		detail = reread
-<span id="L576" class="ln">   576  </span>		return nil
-<span id="L577" class="ln">   577  </span>	}); txErr != nil {
-<span id="L578" class="ln">   578  </span>		return DeliverPurchaseView{}, txErr
-<span id="L579" class="ln">   579  </span>	}
-<span id="L580" class="ln">   580  </span>
-<span id="L581" class="ln">   581  </span>	return toDeliverPurchaseView(detail), nil
-<span id="L582" class="ln">   582  </span>}
+<span id="L422" class="ln">   422  </span>	return toCancelPurchaseView(detail), nil
+<span id="L423" class="ln">   423  </span>}
+<span id="L424" class="ln">   424  </span>
+<span id="L425" class="ln">   425  </span>func (u *usecase) PayPurchase(ctx context.Context, params PayPurchaseParams) (PayPurchaseView, error) {
+<span id="L426" class="ln">   426  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L427" class="ln">   427  </span>	defer endSpan()
+<span id="L428" class="ln">   428  </span>
+<span id="L429" class="ln">   429  </span>	now := u.clock.Now()
+<span id="L430" class="ln">   430  </span>
+<span id="L431" class="ln">   431  </span>	var detail *purchase.Detail
+<span id="L432" class="ln">   432  </span>	<span class="comment">// この Do が最外 tx（本経路は Idempotency-Key を配線しない）。</span>
+<span id="L433" class="ln">   433  </span>	<span class="comment">// 二重支払い対策は docs/spec/usecase/purchase.md § PATCH 支払い を参照。</span>
+<span id="L434" class="ln">   434  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L435" class="ln">   435  </span>		locked, lerr := u.repo.LockByCode(ctx, params.PurchaseCode)
+<span id="L436" class="ln">   436  </span>		if lerr != nil {
+<span id="L437" class="ln">   437  </span>			return lerr
+<span id="L438" class="ln">   438  </span>		}
+<span id="L439" class="ln">   439  </span>
+<span id="L440" class="ln">   440  </span>		<span class="comment">// 存在秘匿のため NotFound へ畳む理由は CancelPurchase の doc コメントを参照。</span>
+<span id="L441" class="ln">   441  </span>		if locked.UserID() != params.UserID {
+<span id="L442" class="ln">   442  </span>			return xerrors.Wrap(apperror.ErrNotFound, &#34;purchase not found&#34;)
+<span id="L443" class="ln">   443  </span>		}
+<span id="L444" class="ln">   444  </span>
+<span id="L445" class="ln">   445  </span>		domainEvent, perr := locked.Pay(now)
+<span id="L446" class="ln">   446  </span>		if perr != nil {
+<span id="L447" class="ln">   447  </span>			return perr
+<span id="L448" class="ln">   448  </span>		}
+<span id="L449" class="ln">   449  </span>
+<span id="L450" class="ln">   450  </span>		if perr := u.repo.UpdatePaid(ctx, locked); perr != nil {
+<span id="L451" class="ln">   451  </span>			return perr
+<span id="L452" class="ln">   452  </span>		}
+<span id="L453" class="ln">   453  </span>
+<span id="L454" class="ln">   454  </span>		payload, berr := event.BuildPaid(locked)
+<span id="L455" class="ln">   455  </span>		if berr != nil {
+<span id="L456" class="ln">   456  </span>			return berr
+<span id="L457" class="ln">   457  </span>		}
+<span id="L458" class="ln">   458  </span>		eventType, terr := event.WireType(domainEvent.Type())
+<span id="L459" class="ln">   459  </span>		if terr != nil {
+<span id="L460" class="ln">   460  </span>			return terr
+<span id="L461" class="ln">   461  </span>		}
+<span id="L462" class="ln">   462  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
+<span id="L463" class="ln">   463  </span>			AggregateType: aggregateType,
+<span id="L464" class="ln">   464  </span>			AggregateID:   locked.ID().String(),
+<span id="L465" class="ln">   465  </span>			EventType:     eventType,
+<span id="L466" class="ln">   466  </span>			Payload:       payload,
+<span id="L467" class="ln">   467  </span>			Channel:       outboxbndry.ChannelHTTP,
+<span id="L468" class="ln">   468  </span>		}); eerr != nil {
+<span id="L469" class="ln">   469  </span>			return eerr
+<span id="L470" class="ln">   470  </span>		}
+<span id="L471" class="ln">   471  </span>
+<span id="L472" class="ln">   472  </span>		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
+<span id="L473" class="ln">   473  </span>		if rerr != nil {
+<span id="L474" class="ln">   474  </span>			return rerr
+<span id="L475" class="ln">   475  </span>		}
+<span id="L476" class="ln">   476  </span>		detail = reread
+<span id="L477" class="ln">   477  </span>		return nil
+<span id="L478" class="ln">   478  </span>	}); txErr != nil {
+<span id="L479" class="ln">   479  </span>		return PayPurchaseView{}, txErr
+<span id="L480" class="ln">   480  </span>	}
+<span id="L481" class="ln">   481  </span>
+<span id="L482" class="ln">   482  </span>	return toPayPurchaseView(detail), nil
+<span id="L483" class="ln">   483  </span>}
+<span id="L484" class="ln">   484  </span>
+<span id="L485" class="ln">   485  </span>func (u *usecase) ShipPurchase(
+<span id="L486" class="ln">   486  </span>	ctx context.Context, authn *auth.Authn, purchaseCode string,
+<span id="L487" class="ln">   487  </span>) (ShipPurchaseView, error) {
+<span id="L488" class="ln">   488  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L489" class="ln">   489  </span>	defer endSpan()
+<span id="L490" class="ln">   490  </span>
+<span id="L491" class="ln">   491  </span>	if authn == nil {
+<span id="L492" class="ln">   492  </span>		return ShipPurchaseView{}, apperror.ErrUnauthenticated
+<span id="L493" class="ln">   493  </span>	}
+<span id="L494" class="ln">   494  </span>	<span class="comment">// 管理者専用・所有者不問の根拠は ShipPurchase の doc コメントを参照。</span>
+<span id="L495" class="ln">   495  </span>	if err := u.authorizer.Authorize(
+<span id="L496" class="ln">   496  </span>		ctx, authn, authz.ActionPurchaseShip, authz.NewResource(&#34;purchase&#34;, nil),
+<span id="L497" class="ln">   497  </span>	); err != nil {
+<span id="L498" class="ln">   498  </span>		return ShipPurchaseView{}, err
+<span id="L499" class="ln">   499  </span>	}
+<span id="L500" class="ln">   500  </span>
+<span id="L501" class="ln">   501  </span>	now := u.clock.Now()
+<span id="L502" class="ln">   502  </span>
+<span id="L503" class="ln">   503  </span>	var detail *purchase.Detail
+<span id="L504" class="ln">   504  </span>	<span class="comment">// tx 境界は PayPurchase のコメントを参照。二重発送対策は</span>
+<span id="L505" class="ln">   505  </span>	<span class="comment">// docs/spec/usecase/purchase.md § PATCH 発送 を参照。</span>
+<span id="L506" class="ln">   506  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L507" class="ln">   507  </span>		locked, lerr := u.repo.LockByCode(ctx, purchaseCode)
+<span id="L508" class="ln">   508  </span>		if lerr != nil {
+<span id="L509" class="ln">   509  </span>			return lerr
+<span id="L510" class="ln">   510  </span>		}
+<span id="L511" class="ln">   511  </span>
+<span id="L512" class="ln">   512  </span>		domainEvent, serr := locked.Ship(now)
+<span id="L513" class="ln">   513  </span>		if serr != nil {
+<span id="L514" class="ln">   514  </span>			return serr
+<span id="L515" class="ln">   515  </span>		}
+<span id="L516" class="ln">   516  </span>
+<span id="L517" class="ln">   517  </span>		if uerr := u.repo.UpdateShipped(ctx, locked); uerr != nil {
+<span id="L518" class="ln">   518  </span>			return uerr
+<span id="L519" class="ln">   519  </span>		}
+<span id="L520" class="ln">   520  </span>
+<span id="L521" class="ln">   521  </span>		payload, berr := event.BuildShipped(locked)
+<span id="L522" class="ln">   522  </span>		if berr != nil {
+<span id="L523" class="ln">   523  </span>			return berr
+<span id="L524" class="ln">   524  </span>		}
+<span id="L525" class="ln">   525  </span>		eventType, terr := event.WireType(domainEvent.Type())
+<span id="L526" class="ln">   526  </span>		if terr != nil {
+<span id="L527" class="ln">   527  </span>			return terr
+<span id="L528" class="ln">   528  </span>		}
+<span id="L529" class="ln">   529  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
+<span id="L530" class="ln">   530  </span>			AggregateType: aggregateType,
+<span id="L531" class="ln">   531  </span>			AggregateID:   locked.ID().String(),
+<span id="L532" class="ln">   532  </span>			EventType:     eventType,
+<span id="L533" class="ln">   533  </span>			Payload:       payload,
+<span id="L534" class="ln">   534  </span>			Channel:       outboxbndry.ChannelHTTP,
+<span id="L535" class="ln">   535  </span>		}); eerr != nil {
+<span id="L536" class="ln">   536  </span>			return eerr
+<span id="L537" class="ln">   537  </span>		}
+<span id="L538" class="ln">   538  </span>
+<span id="L539" class="ln">   539  </span>		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
+<span id="L540" class="ln">   540  </span>		if rerr != nil {
+<span id="L541" class="ln">   541  </span>			return rerr
+<span id="L542" class="ln">   542  </span>		}
+<span id="L543" class="ln">   543  </span>		detail = reread
+<span id="L544" class="ln">   544  </span>		return nil
+<span id="L545" class="ln">   545  </span>	}); txErr != nil {
+<span id="L546" class="ln">   546  </span>		return ShipPurchaseView{}, txErr
+<span id="L547" class="ln">   547  </span>	}
+<span id="L548" class="ln">   548  </span>
+<span id="L549" class="ln">   549  </span>	return toShipPurchaseView(detail), nil
+<span id="L550" class="ln">   550  </span>}
+<span id="L551" class="ln">   551  </span>
+<span id="L552" class="ln">   552  </span>func (u *usecase) DeliverPurchase(
+<span id="L553" class="ln">   553  </span>	ctx context.Context, authn *auth.Authn, purchaseCode string,
+<span id="L554" class="ln">   554  </span>) (DeliverPurchaseView, error) {
+<span id="L555" class="ln">   555  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L556" class="ln">   556  </span>	defer endSpan()
+<span id="L557" class="ln">   557  </span>
+<span id="L558" class="ln">   558  </span>	if authn == nil {
+<span id="L559" class="ln">   559  </span>		return DeliverPurchaseView{}, apperror.ErrUnauthenticated
+<span id="L560" class="ln">   560  </span>	}
+<span id="L561" class="ln">   561  </span>	<span class="comment">// 管理者専用・所有者不問の根拠は ShipPurchase の doc コメントを参照。</span>
+<span id="L562" class="ln">   562  </span>	if err := u.authorizer.Authorize(
+<span id="L563" class="ln">   563  </span>		ctx, authn, authz.ActionPurchaseDeliver, authz.NewResource(&#34;purchase&#34;, nil),
+<span id="L564" class="ln">   564  </span>	); err != nil {
+<span id="L565" class="ln">   565  </span>		return DeliverPurchaseView{}, err
+<span id="L566" class="ln">   566  </span>	}
+<span id="L567" class="ln">   567  </span>
+<span id="L568" class="ln">   568  </span>	now := u.clock.Now()
+<span id="L569" class="ln">   569  </span>
+<span id="L570" class="ln">   570  </span>	var detail *purchase.Detail
+<span id="L571" class="ln">   571  </span>	<span class="comment">// tx 境界は PayPurchase のコメントを参照。二重配達対策は</span>
+<span id="L572" class="ln">   572  </span>	<span class="comment">// docs/spec/usecase/purchase.md § PATCH 配達完了 を参照。</span>
+<span id="L573" class="ln">   573  </span>	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L574" class="ln">   574  </span>		locked, lerr := u.repo.LockByCode(ctx, purchaseCode)
+<span id="L575" class="ln">   575  </span>		if lerr != nil {
+<span id="L576" class="ln">   576  </span>			return lerr
+<span id="L577" class="ln">   577  </span>		}
+<span id="L578" class="ln">   578  </span>
+<span id="L579" class="ln">   579  </span>		domainEvent, derr := locked.Deliver(now)
+<span id="L580" class="ln">   580  </span>		if derr != nil {
+<span id="L581" class="ln">   581  </span>			return derr
+<span id="L582" class="ln">   582  </span>		}
 <span id="L583" class="ln">   583  </span>
-<span id="L584" class="ln">   584  </span><span class="comment">// ensurePurchaserActive は、購入者を共有ロック付きで読み出し、購入してよい状態かの判定を</span>
-<span id="L585" class="ln">   585  </span><span class="comment">// ドメインサービスへ委ねます。退会（排他ロック）と直列化されるため、確認を通った購入者は</span>
-<span id="L586" class="ln">   586  </span><span class="comment">// tx の終了まで退会できません。エラー方針は docs/spec/purchase/usecase.md の Workflow を参照。</span>
-<span id="L587" class="ln">   587  </span>func (u *usecase) ensurePurchaserActive(ctx context.Context, userID uuid.UUID) error {
-<span id="L588" class="ln">   588  </span>	purchaser, err := u.userLock.LockShareByID(ctx, userID)
-<span id="L589" class="ln">   589  </span>	if err != nil {
-<span id="L590" class="ln">   590  </span>		if xerrors.Is(err, apperror.ErrNotFound) {
-<span id="L591" class="ln">   591  </span>			return membership.ErrPurchaserWithdrawn
-<span id="L592" class="ln">   592  </span>		}
-<span id="L593" class="ln">   593  </span>		return err
-<span id="L594" class="ln">   594  </span>	}
-<span id="L595" class="ln">   595  </span>	return membership.EnsurePurchasable(purchaser)
-<span id="L596" class="ln">   596  </span>}
-<span id="L597" class="ln">   597  </span>
-<span id="L598" class="ln">   598  </span>func toPurchaseView(p *purchase.Purchase) PurchaseView {
-<span id="L599" class="ln">   599  </span>	details := p.Details()
-<span id="L600" class="ln">   600  </span>	views := make([]PurchaseDetailView, len(details))
-<span id="L601" class="ln">   601  </span>	for i, d := range details {
-<span id="L602" class="ln">   602  </span>		views[i] = PurchaseDetailView{
-<span id="L603" class="ln">   603  </span>			ProductID: d.ProductID(),
-<span id="L604" class="ln">   604  </span>			Quantity:  d.Quantity(),
-<span id="L605" class="ln">   605  </span>			UnitPrice: d.UnitPrice().Decimal(),
-<span id="L606" class="ln">   606  </span>		}
-<span id="L607" class="ln">   607  </span>	}
-<span id="L608" class="ln">   608  </span>	return PurchaseView{
-<span id="L609" class="ln">   609  </span>		Code:           p.Code(),
-<span id="L610" class="ln">   610  </span>		UserID:         p.UserID(),
-<span id="L611" class="ln">   611  </span>		StatusID:       p.StatusID(),
-<span id="L612" class="ln">   612  </span>		SubtotalAmount: p.SubtotalAmount(),
-<span id="L613" class="ln">   613  </span>		TaxAmount:      p.TaxAmount(),
-<span id="L614" class="ln">   614  </span>		ShippingFee:    p.ShippingFee(),
-<span id="L615" class="ln">   615  </span>		TotalAmount:    p.TotalAmount(),
-<span id="L616" class="ln">   616  </span>		Details:        views,
-<span id="L617" class="ln">   617  </span>		OrderedAt:      p.OrderedAt(),
-<span id="L618" class="ln">   618  </span>	}
-<span id="L619" class="ln">   619  </span>}
-<span id="L620" class="ln">   620  </span>
-<span id="L621" class="ln">   621  </span>func toCancelPurchaseView(d *purchase.Detail) CancelPurchaseView {
-<span id="L622" class="ln">   622  </span>	views := make([]PurchaseDetailView, len(d.Details))
-<span id="L623" class="ln">   623  </span>	for i, detail := range d.Details {
-<span id="L624" class="ln">   624  </span>		views[i] = PurchaseDetailView{
-<span id="L625" class="ln">   625  </span>			ProductID: detail.ProductID(),
-<span id="L626" class="ln">   626  </span>			Quantity:  detail.Quantity(),
-<span id="L627" class="ln">   627  </span>			UnitPrice: detail.UnitPrice().Decimal(),
-<span id="L628" class="ln">   628  </span>		}
+<span id="L584" class="ln">   584  </span>		if uerr := u.repo.UpdateDelivered(ctx, locked); uerr != nil {
+<span id="L585" class="ln">   585  </span>			return uerr
+<span id="L586" class="ln">   586  </span>		}
+<span id="L587" class="ln">   587  </span>
+<span id="L588" class="ln">   588  </span>		payload, berr := event.BuildDelivered(locked)
+<span id="L589" class="ln">   589  </span>		if berr != nil {
+<span id="L590" class="ln">   590  </span>			return berr
+<span id="L591" class="ln">   591  </span>		}
+<span id="L592" class="ln">   592  </span>		eventType, terr := event.WireType(domainEvent.Type())
+<span id="L593" class="ln">   593  </span>		if terr != nil {
+<span id="L594" class="ln">   594  </span>			return terr
+<span id="L595" class="ln">   595  </span>		}
+<span id="L596" class="ln">   596  </span>		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
+<span id="L597" class="ln">   597  </span>			AggregateType: aggregateType,
+<span id="L598" class="ln">   598  </span>			AggregateID:   locked.ID().String(),
+<span id="L599" class="ln">   599  </span>			EventType:     eventType,
+<span id="L600" class="ln">   600  </span>			Payload:       payload,
+<span id="L601" class="ln">   601  </span>			Channel:       outboxbndry.ChannelHTTP,
+<span id="L602" class="ln">   602  </span>		}); eerr != nil {
+<span id="L603" class="ln">   603  </span>			return eerr
+<span id="L604" class="ln">   604  </span>		}
+<span id="L605" class="ln">   605  </span>
+<span id="L606" class="ln">   606  </span>		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
+<span id="L607" class="ln">   607  </span>		if rerr != nil {
+<span id="L608" class="ln">   608  </span>			return rerr
+<span id="L609" class="ln">   609  </span>		}
+<span id="L610" class="ln">   610  </span>		detail = reread
+<span id="L611" class="ln">   611  </span>		return nil
+<span id="L612" class="ln">   612  </span>	}); txErr != nil {
+<span id="L613" class="ln">   613  </span>		return DeliverPurchaseView{}, txErr
+<span id="L614" class="ln">   614  </span>	}
+<span id="L615" class="ln">   615  </span>
+<span id="L616" class="ln">   616  </span>	return toDeliverPurchaseView(detail), nil
+<span id="L617" class="ln">   617  </span>}
+<span id="L618" class="ln">   618  </span>
+<span id="L619" class="ln">   619  </span><span class="comment">// ensurePurchaserActive は、購入者を共有ロック付きで読み出し、購入してよい状態かの判定を</span>
+<span id="L620" class="ln">   620  </span><span class="comment">// ドメインサービスへ委ねます。退会（排他ロック）と直列化されるため、確認を通った購入者は</span>
+<span id="L621" class="ln">   621  </span><span class="comment">// tx の終了まで退会できません。エラー方針は docs/spec/usecase/purchase.md の Workflow を参照。</span>
+<span id="L622" class="ln">   622  </span>func (u *usecase) ensurePurchaserActive(ctx context.Context, userID uuid.UUID) error {
+<span id="L623" class="ln">   623  </span>	purchaser, err := u.userLock.LockShareByID(ctx, userID)
+<span id="L624" class="ln">   624  </span>	if err != nil {
+<span id="L625" class="ln">   625  </span>		if xerrors.Is(err, apperror.ErrNotFound) {
+<span id="L626" class="ln">   626  </span>			return membership.ErrPurchaserWithdrawn
+<span id="L627" class="ln">   627  </span>		}
+<span id="L628" class="ln">   628  </span>		return err
 <span id="L629" class="ln">   629  </span>	}
-<span id="L630" class="ln">   630  </span>	return CancelPurchaseView{
-<span id="L631" class="ln">   631  </span>		Code:           d.Code,
-<span id="L632" class="ln">   632  </span>		UserID:         d.UserID,
-<span id="L633" class="ln">   633  </span>		StatusID:       d.StatusID,
-<span id="L634" class="ln">   634  </span>		StatusCode:     d.StatusCode,
-<span id="L635" class="ln">   635  </span>		StatusName:     d.StatusName,
-<span id="L636" class="ln">   636  </span>		SubtotalAmount: d.SubtotalAmount,
-<span id="L637" class="ln">   637  </span>		TaxAmount:      d.TaxAmount,
-<span id="L638" class="ln">   638  </span>		ShippingFee:    d.ShippingFee,
-<span id="L639" class="ln">   639  </span>		TotalAmount:    d.TotalAmount,
-<span id="L640" class="ln">   640  </span>		Details:        views,
-<span id="L641" class="ln">   641  </span>		OrderedAt:      d.OrderedAt,
-<span id="L642" class="ln">   642  </span>		CanceledAt:     d.CanceledAt,
-<span id="L643" class="ln">   643  </span>	}
-<span id="L644" class="ln">   644  </span>}
-<span id="L645" class="ln">   645  </span>
-<span id="L646" class="ln">   646  </span>func toShipPurchaseView(d *purchase.Detail) ShipPurchaseView {
-<span id="L647" class="ln">   647  </span>	views := make([]PurchaseDetailView, len(d.Details))
-<span id="L648" class="ln">   648  </span>	for i, detail := range d.Details {
-<span id="L649" class="ln">   649  </span>		views[i] = PurchaseDetailView{
-<span id="L650" class="ln">   650  </span>			ProductID: detail.ProductID(),
-<span id="L651" class="ln">   651  </span>			Quantity:  detail.Quantity(),
-<span id="L652" class="ln">   652  </span>			UnitPrice: detail.UnitPrice().Decimal(),
-<span id="L653" class="ln">   653  </span>		}
-<span id="L654" class="ln">   654  </span>	}
-<span id="L655" class="ln">   655  </span>	return ShipPurchaseView{
-<span id="L656" class="ln">   656  </span>		Code:           d.Code,
-<span id="L657" class="ln">   657  </span>		UserID:         d.UserID,
-<span id="L658" class="ln">   658  </span>		StatusID:       d.StatusID,
-<span id="L659" class="ln">   659  </span>		StatusCode:     d.StatusCode,
-<span id="L660" class="ln">   660  </span>		StatusName:     d.StatusName,
-<span id="L661" class="ln">   661  </span>		SubtotalAmount: d.SubtotalAmount,
-<span id="L662" class="ln">   662  </span>		TaxAmount:      d.TaxAmount,
-<span id="L663" class="ln">   663  </span>		ShippingFee:    d.ShippingFee,
-<span id="L664" class="ln">   664  </span>		TotalAmount:    d.TotalAmount,
-<span id="L665" class="ln">   665  </span>		Details:        views,
-<span id="L666" class="ln">   666  </span>		OrderedAt:      d.OrderedAt,
-<span id="L667" class="ln">   667  </span>		ShippedAt:      d.ShippedAt,
-<span id="L668" class="ln">   668  </span>	}
-<span id="L669" class="ln">   669  </span>}
-<span id="L670" class="ln">   670  </span>
-<span id="L671" class="ln">   671  </span>func toDeliverPurchaseView(d *purchase.Detail) DeliverPurchaseView {
-<span id="L672" class="ln">   672  </span>	views := make([]PurchaseDetailView, len(d.Details))
-<span id="L673" class="ln">   673  </span>	for i, detail := range d.Details {
-<span id="L674" class="ln">   674  </span>		views[i] = PurchaseDetailView{
-<span id="L675" class="ln">   675  </span>			ProductID: detail.ProductID(),
-<span id="L676" class="ln">   676  </span>			Quantity:  detail.Quantity(),
-<span id="L677" class="ln">   677  </span>			UnitPrice: detail.UnitPrice().Decimal(),
-<span id="L678" class="ln">   678  </span>		}
-<span id="L679" class="ln">   679  </span>	}
-<span id="L680" class="ln">   680  </span>	return DeliverPurchaseView{
-<span id="L681" class="ln">   681  </span>		Code:           d.Code,
-<span id="L682" class="ln">   682  </span>		UserID:         d.UserID,
-<span id="L683" class="ln">   683  </span>		StatusID:       d.StatusID,
-<span id="L684" class="ln">   684  </span>		StatusCode:     d.StatusCode,
-<span id="L685" class="ln">   685  </span>		StatusName:     d.StatusName,
-<span id="L686" class="ln">   686  </span>		SubtotalAmount: d.SubtotalAmount,
-<span id="L687" class="ln">   687  </span>		TaxAmount:      d.TaxAmount,
-<span id="L688" class="ln">   688  </span>		ShippingFee:    d.ShippingFee,
-<span id="L689" class="ln">   689  </span>		TotalAmount:    d.TotalAmount,
-<span id="L690" class="ln">   690  </span>		Details:        views,
-<span id="L691" class="ln">   691  </span>		OrderedAt:      d.OrderedAt,
-<span id="L692" class="ln">   692  </span>		DeliveredAt:    d.DeliveredAt,
-<span id="L693" class="ln">   693  </span>	}
-<span id="L694" class="ln">   694  </span>}
-<span id="L695" class="ln">   695  </span>
-<span id="L696" class="ln">   696  </span>func toPayPurchaseView(d *purchase.Detail) PayPurchaseView {
-<span id="L697" class="ln">   697  </span>	views := make([]PurchaseDetailView, len(d.Details))
-<span id="L698" class="ln">   698  </span>	for i, detail := range d.Details {
-<span id="L699" class="ln">   699  </span>		views[i] = PurchaseDetailView{
-<span id="L700" class="ln">   700  </span>			ProductID: detail.ProductID(),
-<span id="L701" class="ln">   701  </span>			Quantity:  detail.Quantity(),
-<span id="L702" class="ln">   702  </span>			UnitPrice: detail.UnitPrice().Decimal(),
-<span id="L703" class="ln">   703  </span>		}
-<span id="L704" class="ln">   704  </span>	}
-<span id="L705" class="ln">   705  </span>	return PayPurchaseView{
-<span id="L706" class="ln">   706  </span>		Code:           d.Code,
-<span id="L707" class="ln">   707  </span>		UserID:         d.UserID,
-<span id="L708" class="ln">   708  </span>		StatusID:       d.StatusID,
-<span id="L709" class="ln">   709  </span>		StatusCode:     d.StatusCode,
-<span id="L710" class="ln">   710  </span>		StatusName:     d.StatusName,
-<span id="L711" class="ln">   711  </span>		SubtotalAmount: d.SubtotalAmount,
-<span id="L712" class="ln">   712  </span>		TaxAmount:      d.TaxAmount,
-<span id="L713" class="ln">   713  </span>		ShippingFee:    d.ShippingFee,
-<span id="L714" class="ln">   714  </span>		TotalAmount:    d.TotalAmount,
-<span id="L715" class="ln">   715  </span>		Details:        views,
-<span id="L716" class="ln">   716  </span>		OrderedAt:      d.OrderedAt,
-<span id="L717" class="ln">   717  </span>		PaidAt:         d.PaidAt,
-<span id="L718" class="ln">   718  </span>	}
-<span id="L719" class="ln">   719  </span>}
-<span id="L720" class="ln">   720  </span>
+<span id="L630" class="ln">   630  </span>	return membership.EnsurePurchasable(purchaser)
+<span id="L631" class="ln">   631  </span>}
+<span id="L632" class="ln">   632  </span>
+<span id="L633" class="ln">   633  </span><span class="comment">// toAppliedCouponView は、適用したクーポンを出力 DTO の語彙へ写します。未適用の場合は nil です。</span>
+<span id="L634" class="ln">   634  </span>func toAppliedCouponView(c *coupon.Coupon) *AppliedCouponView {
+<span id="L635" class="ln">   635  </span>	if c == nil {
+<span id="L636" class="ln">   636  </span>		return nil
+<span id="L637" class="ln">   637  </span>	}
+<span id="L638" class="ln">   638  </span>
+<span id="L639" class="ln">   639  </span>	return &amp;AppliedCouponView{
+<span id="L640" class="ln">   640  </span>		ID:            c.ID(),
+<span id="L641" class="ln">   641  </span>		DiscountKind:  c.Discount().Kind().Name(),
+<span id="L642" class="ln">   642  </span>		DiscountValue: c.Discount().Value(),
+<span id="L643" class="ln">   643  </span>		ScopeKind:     c.Scope().Kind().Name(),
+<span id="L644" class="ln">   644  </span>		ScopeTargetID: c.Scope().TargetID(),
+<span id="L645" class="ln">   645  </span>	}
+<span id="L646" class="ln">   646  </span>}
+<span id="L647" class="ln">   647  </span>
+<span id="L648" class="ln">   648  </span>func toPurchaseView(p *purchase.Purchase, applied *coupon.Coupon) PurchaseView {
+<span id="L649" class="ln">   649  </span>	details := p.Details()
+<span id="L650" class="ln">   650  </span>	views := make([]PurchaseDetailView, len(details))
+<span id="L651" class="ln">   651  </span>	for i, d := range details {
+<span id="L652" class="ln">   652  </span>		views[i] = PurchaseDetailView{
+<span id="L653" class="ln">   653  </span>			ProductID: d.ProductID(),
+<span id="L654" class="ln">   654  </span>			Quantity:  d.Quantity(),
+<span id="L655" class="ln">   655  </span>			UnitPrice: d.UnitPrice().Decimal(),
+<span id="L656" class="ln">   656  </span>		}
+<span id="L657" class="ln">   657  </span>	}
+<span id="L658" class="ln">   658  </span>	return PurchaseView{
+<span id="L659" class="ln">   659  </span>		Code:           p.Code(),
+<span id="L660" class="ln">   660  </span>		UserID:         p.UserID(),
+<span id="L661" class="ln">   661  </span>		StatusID:       p.StatusID(),
+<span id="L662" class="ln">   662  </span>		SubtotalAmount: p.SubtotalAmount(),
+<span id="L663" class="ln">   663  </span>		DiscountAmount: p.DiscountAmount(),
+<span id="L664" class="ln">   664  </span>		AppliedCoupon:  toAppliedCouponView(applied),
+<span id="L665" class="ln">   665  </span>		TaxAmount:      p.TaxAmount(),
+<span id="L666" class="ln">   666  </span>		ShippingFee:    p.ShippingFee(),
+<span id="L667" class="ln">   667  </span>		TotalAmount:    p.TotalAmount(),
+<span id="L668" class="ln">   668  </span>		Details:        views,
+<span id="L669" class="ln">   669  </span>		OrderedAt:      p.OrderedAt(),
+<span id="L670" class="ln">   670  </span>	}
+<span id="L671" class="ln">   671  </span>}
+<span id="L672" class="ln">   672  </span>
+<span id="L673" class="ln">   673  </span>func toCancelPurchaseView(d *purchase.Detail) CancelPurchaseView {
+<span id="L674" class="ln">   674  </span>	views := make([]PurchaseDetailView, len(d.Details))
+<span id="L675" class="ln">   675  </span>	for i, detail := range d.Details {
+<span id="L676" class="ln">   676  </span>		views[i] = PurchaseDetailView{
+<span id="L677" class="ln">   677  </span>			ProductID: detail.ProductID(),
+<span id="L678" class="ln">   678  </span>			Quantity:  detail.Quantity(),
+<span id="L679" class="ln">   679  </span>			UnitPrice: detail.UnitPrice().Decimal(),
+<span id="L680" class="ln">   680  </span>		}
+<span id="L681" class="ln">   681  </span>	}
+<span id="L682" class="ln">   682  </span>	return CancelPurchaseView{
+<span id="L683" class="ln">   683  </span>		Code:           d.Code,
+<span id="L684" class="ln">   684  </span>		UserID:         d.UserID,
+<span id="L685" class="ln">   685  </span>		StatusID:       d.StatusID,
+<span id="L686" class="ln">   686  </span>		StatusCode:     d.StatusCode,
+<span id="L687" class="ln">   687  </span>		StatusName:     d.StatusName,
+<span id="L688" class="ln">   688  </span>		SubtotalAmount: d.SubtotalAmount,
+<span id="L689" class="ln">   689  </span>		TaxAmount:      d.TaxAmount,
+<span id="L690" class="ln">   690  </span>		ShippingFee:    d.ShippingFee,
+<span id="L691" class="ln">   691  </span>		TotalAmount:    d.TotalAmount,
+<span id="L692" class="ln">   692  </span>		Details:        views,
+<span id="L693" class="ln">   693  </span>		OrderedAt:      d.OrderedAt,
+<span id="L694" class="ln">   694  </span>		CanceledAt:     d.CanceledAt,
+<span id="L695" class="ln">   695  </span>	}
+<span id="L696" class="ln">   696  </span>}
+<span id="L697" class="ln">   697  </span>
+<span id="L698" class="ln">   698  </span>func toShipPurchaseView(d *purchase.Detail) ShipPurchaseView {
+<span id="L699" class="ln">   699  </span>	views := make([]PurchaseDetailView, len(d.Details))
+<span id="L700" class="ln">   700  </span>	for i, detail := range d.Details {
+<span id="L701" class="ln">   701  </span>		views[i] = PurchaseDetailView{
+<span id="L702" class="ln">   702  </span>			ProductID: detail.ProductID(),
+<span id="L703" class="ln">   703  </span>			Quantity:  detail.Quantity(),
+<span id="L704" class="ln">   704  </span>			UnitPrice: detail.UnitPrice().Decimal(),
+<span id="L705" class="ln">   705  </span>		}
+<span id="L706" class="ln">   706  </span>	}
+<span id="L707" class="ln">   707  </span>	return ShipPurchaseView{
+<span id="L708" class="ln">   708  </span>		Code:           d.Code,
+<span id="L709" class="ln">   709  </span>		UserID:         d.UserID,
+<span id="L710" class="ln">   710  </span>		StatusID:       d.StatusID,
+<span id="L711" class="ln">   711  </span>		StatusCode:     d.StatusCode,
+<span id="L712" class="ln">   712  </span>		StatusName:     d.StatusName,
+<span id="L713" class="ln">   713  </span>		SubtotalAmount: d.SubtotalAmount,
+<span id="L714" class="ln">   714  </span>		TaxAmount:      d.TaxAmount,
+<span id="L715" class="ln">   715  </span>		ShippingFee:    d.ShippingFee,
+<span id="L716" class="ln">   716  </span>		TotalAmount:    d.TotalAmount,
+<span id="L717" class="ln">   717  </span>		Details:        views,
+<span id="L718" class="ln">   718  </span>		OrderedAt:      d.OrderedAt,
+<span id="L719" class="ln">   719  </span>		ShippedAt:      d.ShippedAt,
+<span id="L720" class="ln">   720  </span>	}
+<span id="L721" class="ln">   721  </span>}
+<span id="L722" class="ln">   722  </span>
+<span id="L723" class="ln">   723  </span>func toDeliverPurchaseView(d *purchase.Detail) DeliverPurchaseView {
+<span id="L724" class="ln">   724  </span>	views := make([]PurchaseDetailView, len(d.Details))
+<span id="L725" class="ln">   725  </span>	for i, detail := range d.Details {
+<span id="L726" class="ln">   726  </span>		views[i] = PurchaseDetailView{
+<span id="L727" class="ln">   727  </span>			ProductID: detail.ProductID(),
+<span id="L728" class="ln">   728  </span>			Quantity:  detail.Quantity(),
+<span id="L729" class="ln">   729  </span>			UnitPrice: detail.UnitPrice().Decimal(),
+<span id="L730" class="ln">   730  </span>		}
+<span id="L731" class="ln">   731  </span>	}
+<span id="L732" class="ln">   732  </span>	return DeliverPurchaseView{
+<span id="L733" class="ln">   733  </span>		Code:           d.Code,
+<span id="L734" class="ln">   734  </span>		UserID:         d.UserID,
+<span id="L735" class="ln">   735  </span>		StatusID:       d.StatusID,
+<span id="L736" class="ln">   736  </span>		StatusCode:     d.StatusCode,
+<span id="L737" class="ln">   737  </span>		StatusName:     d.StatusName,
+<span id="L738" class="ln">   738  </span>		SubtotalAmount: d.SubtotalAmount,
+<span id="L739" class="ln">   739  </span>		TaxAmount:      d.TaxAmount,
+<span id="L740" class="ln">   740  </span>		ShippingFee:    d.ShippingFee,
+<span id="L741" class="ln">   741  </span>		TotalAmount:    d.TotalAmount,
+<span id="L742" class="ln">   742  </span>		Details:        views,
+<span id="L743" class="ln">   743  </span>		OrderedAt:      d.OrderedAt,
+<span id="L744" class="ln">   744  </span>		DeliveredAt:    d.DeliveredAt,
+<span id="L745" class="ln">   745  </span>	}
+<span id="L746" class="ln">   746  </span>}
+<span id="L747" class="ln">   747  </span>
+<span id="L748" class="ln">   748  </span>func toPayPurchaseView(d *purchase.Detail) PayPurchaseView {
+<span id="L749" class="ln">   749  </span>	views := make([]PurchaseDetailView, len(d.Details))
+<span id="L750" class="ln">   750  </span>	for i, detail := range d.Details {
+<span id="L751" class="ln">   751  </span>		views[i] = PurchaseDetailView{
+<span id="L752" class="ln">   752  </span>			ProductID: detail.ProductID(),
+<span id="L753" class="ln">   753  </span>			Quantity:  detail.Quantity(),
+<span id="L754" class="ln">   754  </span>			UnitPrice: detail.UnitPrice().Decimal(),
+<span id="L755" class="ln">   755  </span>		}
+<span id="L756" class="ln">   756  </span>	}
+<span id="L757" class="ln">   757  </span>	return PayPurchaseView{
+<span id="L758" class="ln">   758  </span>		Code:           d.Code,
+<span id="L759" class="ln">   759  </span>		UserID:         d.UserID,
+<span id="L760" class="ln">   760  </span>		StatusID:       d.StatusID,
+<span id="L761" class="ln">   761  </span>		StatusCode:     d.StatusCode,
+<span id="L762" class="ln">   762  </span>		StatusName:     d.StatusName,
+<span id="L763" class="ln">   763  </span>		SubtotalAmount: d.SubtotalAmount,
+<span id="L764" class="ln">   764  </span>		TaxAmount:      d.TaxAmount,
+<span id="L765" class="ln">   765  </span>		ShippingFee:    d.ShippingFee,
+<span id="L766" class="ln">   766  </span>		TotalAmount:    d.TotalAmount,
+<span id="L767" class="ln">   767  </span>		Details:        views,
+<span id="L768" class="ln">   768  </span>		OrderedAt:      d.OrderedAt,
+<span id="L769" class="ln">   769  </span>		PaidAt:         d.PaidAt,
+<span id="L770" class="ln">   770  </span>	}
+<span id="L771" class="ln">   771  </span>}
+<span id="L772" class="ln">   772  </span>
+<span id="L773" class="ln">   773  </span><span class="comment">// restoreStock は、キャンセルした明細ぶんの在庫を対象商品へ戻します。</span>
+<span id="L774" class="ln">   774  </span><span class="comment">// 対象商品をロックしてからドメインで適用します。順序（id 昇順）は LockByIDs が担保します</span>
+<span id="L775" class="ln">   775  </span><span class="comment">// （ADR-0036 (ordered-pessimistic-row-locks)）。</span>
+<span id="L776" class="ln">   776  </span>func (u *usecase) restoreStock(ctx context.Context, details []purchase.PurchaseDetail) error {
+<span id="L777" class="ln">   777  </span>	products, err := u.productRepo.LockByIDs(ctx, detailProductIDs(details))
+<span id="L778" class="ln">   778  </span>	if err != nil {
+<span id="L779" class="ln">   779  </span>		return err
+<span id="L780" class="ln">   780  </span>	}
+<span id="L781" class="ln">   781  </span>
+<span id="L782" class="ln">   782  </span>	return u.applyStockDelta(ctx, products, details, 1)
+<span id="L783" class="ln">   783  </span>}
+<span id="L784" class="ln">   784  </span>
+<span id="L785" class="ln">   785  </span><span class="comment">// createPurchaseInTx は、購入作成のトランザクション本体です。</span>
+<span id="L786" class="ln">   786  </span><span class="comment">//</span>
+<span id="L787" class="ln">   787  </span><span class="comment">// ロック順序（ユーザー行 → クーポン行 → 商品行、id 昇順）は docs/spec/usecase/purchase.md の</span>
+<span id="L788" class="ln">   788  </span><span class="comment">// § クーポンの適用（CreatePurchase）を参照。書き込み後は Repository 経由で再検証します</span>
+<span id="L789" class="ln">   789  </span><span class="comment">// （internal/usecase/README.md の Verifying infrastructure against the domain）。</span>
+<span id="L790" class="ln">   790  </span>func (u *usecase) createPurchaseInTx(
+<span id="L791" class="ln">   791  </span>	ctx context.Context, params CreatePurchaseParams, draft *purchaseDraft, now time.Time,
+<span id="L792" class="ln">   792  </span>) (*purchase.Purchase, *coupon.Coupon, error) {
+<span id="L793" class="ln">   793  </span>	if uerr := u.ensurePurchaserActive(ctx, params.UserID); uerr != nil {
+<span id="L794" class="ln">   794  </span>		return nil, nil, uerr
+<span id="L795" class="ln">   795  </span>	}
+<span id="L796" class="ln">   796  </span>
+<span id="L797" class="ln">   797  </span>	redeemed, rerr := u.redeemRequestedCoupon(ctx, params, now)
+<span id="L798" class="ln">   798  </span>	if rerr != nil {
+<span id="L799" class="ln">   799  </span>		return nil, nil, rerr
+<span id="L800" class="ln">   800  </span>	}
+<span id="L801" class="ln">   801  </span>
+<span id="L802" class="ln">   802  </span>	products, lerr := u.productRepo.LockByIDs(ctx, draft.productIDs)
+<span id="L803" class="ln">   803  </span>	if lerr != nil {
+<span id="L804" class="ln">   804  </span>		return nil, nil, lerr
+<span id="L805" class="ln">   805  </span>	}
+<span id="L806" class="ln">   806  </span>	locked := make([]purchase.LockedProduct, len(products))
+<span id="L807" class="ln">   807  </span>	for i, p := range products {
+<span id="L808" class="ln">   808  </span>		locked[i] = purchase.NewLockedProduct(p.ID(), p.Price(), p.Quantity())
+<span id="L809" class="ln">   809  </span>	}
+<span id="L810" class="ln">   810  </span>
+<span id="L811" class="ln">   811  </span>	entity, nerr := purchase.New(draft.purchaseID, draft.code, params.UserID, draft.inputs, locked)
+<span id="L812" class="ln">   812  </span>	if nerr != nil {
+<span id="L813" class="ln">   813  </span>		return nil, nil, nerr
+<span id="L814" class="ln">   814  </span>	}
+<span id="L815" class="ln">   815  </span>	if aerr := applyRedeemedCoupon(entity, redeemed, products); aerr != nil {
+<span id="L816" class="ln">   816  </span>		return nil, nil, aerr
+<span id="L817" class="ln">   817  </span>	}
+<span id="L818" class="ln">   818  </span>
+<span id="L819" class="ln">   819  </span>	<span class="comment">// 充足（在庫超過が無いこと）は直前の purchase.New が locked と突き合わせて検証済み。</span>
+<span id="L820" class="ln">   820  </span>	if serr := u.applyStockDelta(ctx, products, entity.Details(), -1); serr != nil {
+<span id="L821" class="ln">   821  </span>		return nil, nil, serr
+<span id="L822" class="ln">   822  </span>	}
+<span id="L823" class="ln">   823  </span>	if cerr := u.repo.Create(ctx, entity); cerr != nil {
+<span id="L824" class="ln">   824  </span>		return nil, nil, cerr
+<span id="L825" class="ln">   825  </span>	}
+<span id="L826" class="ln">   826  </span>	if uerr := u.markCouponUsed(ctx, redeemed, now); uerr != nil {
+<span id="L827" class="ln">   827  </span>		return nil, nil, uerr
+<span id="L828" class="ln">   828  </span>	}
+<span id="L829" class="ln">   829  </span>
+<span id="L830" class="ln">   830  </span>	if eerr := u.emitCreated(ctx, entity, draft.purchaseID); eerr != nil {
+<span id="L831" class="ln">   831  </span>		return nil, nil, eerr
+<span id="L832" class="ln">   832  </span>	}
+<span id="L833" class="ln">   833  </span>
+<span id="L834" class="ln">   834  </span>	reread, frerr := u.repo.FindByID(ctx, draft.purchaseID)
+<span id="L835" class="ln">   835  </span>	if frerr != nil {
+<span id="L836" class="ln">   836  </span>		return nil, nil, frerr
+<span id="L837" class="ln">   837  </span>	}
+<span id="L838" class="ln">   838  </span>
+<span id="L839" class="ln">   839  </span>	return reread, redeemed, nil
+<span id="L840" class="ln">   840  </span>}
+<span id="L841" class="ln">   841  </span>
+<span id="L842" class="ln">   842  </span><span class="comment">// emitCreated は、購入作成のイベントを outbox へ積みます。</span>
+<span id="L843" class="ln">   843  </span>func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase, purchaseID uuid.UUID) error {
+<span id="L844" class="ln">   844  </span>	payload, err := event.BuildCreated(entity)
+<span id="L845" class="ln">   845  </span>	if err != nil {
+<span id="L846" class="ln">   846  </span>		return err
+<span id="L847" class="ln">   847  </span>	}
+<span id="L848" class="ln">   848  </span>
+<span id="L849" class="ln">   849  </span>	if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
+<span id="L850" class="ln">   850  </span>		AggregateType: aggregateType,
+<span id="L851" class="ln">   851  </span>		AggregateID:   purchaseID.String(),
+<span id="L852" class="ln">   852  </span>		EventType:     event.TypeCreated,
+<span id="L853" class="ln">   853  </span>		Payload:       payload,
+<span id="L854" class="ln">   854  </span>		Channel:       outboxbndry.ChannelHTTP,
+<span id="L855" class="ln">   855  </span>	}); eerr != nil {
+<span id="L856" class="ln">   856  </span>		return eerr
+<span id="L857" class="ln">   857  </span>	}
+<span id="L858" class="ln">   858  </span>
+<span id="L859" class="ln">   859  </span>	return nil
+<span id="L860" class="ln">   860  </span>}
+<span id="L861" class="ln">   861  </span>
+<span id="L862" class="ln">   862  </span><span class="comment">// redeemRequestedCoupon は、要求にクーポンの指定があればそれを引き換えます。指定が無ければ nil を返します。</span>
+<span id="L863" class="ln">   863  </span>func (u *usecase) redeemRequestedCoupon(
+<span id="L864" class="ln">   864  </span>	ctx context.Context, params CreatePurchaseParams, now time.Time,
+<span id="L865" class="ln">   865  </span>) (*coupon.Coupon, error) {
+<span id="L866" class="ln">   866  </span>	if params.CouponID == nil {
+<span id="L867" class="ln">   867  </span>		return nil, nil <span class="comment">//nolint:nilnil // 「クーポンの指定が無い」を表す正当な状態で、エラーではない</span>
+<span id="L868" class="ln">   868  </span>	}
+<span id="L869" class="ln">   869  </span>
+<span id="L870" class="ln">   870  </span>	return u.redeemCoupon(ctx, *params.CouponID, params.UserID, now)
+<span id="L871" class="ln">   871  </span>}
+<span id="L872" class="ln">   872  </span>
+<span id="L873" class="ln">   873  </span><span class="comment">// markCouponUsed は、引き換えたクーポンを使用済みとして確定させます。購入行を書いたあとに呼びます</span>
+<span id="L874" class="ln">   874  </span><span class="comment">// （順序の理由は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照）。</span>
+<span id="L875" class="ln">   875  </span>func (u *usecase) markCouponUsed(ctx context.Context, redeemed *coupon.Coupon, now time.Time) error {
+<span id="L876" class="ln">   876  </span>	if redeemed == nil {
+<span id="L877" class="ln">   877  </span>		return nil
+<span id="L878" class="ln">   878  </span>	}
+<span id="L879" class="ln">   879  </span>
+<span id="L880" class="ln">   880  </span>	return u.couponRepo.UpdateUsed(ctx, redeemed.ID(), now)
+<span id="L881" class="ln">   881  </span>}
+<span id="L882" class="ln">   882  </span>
+<span id="L883" class="ln">   883  </span><span class="comment">// redeemCoupon は、指定されたクーポンを行ロックのもとで検証し、使用済みへ遷移させます。</span>
+<span id="L884" class="ln">   884  </span><span class="comment">// エラーの畳み方は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照。</span>
+<span id="L885" class="ln">   885  </span>func (u *usecase) redeemCoupon(
+<span id="L886" class="ln">   886  </span>	ctx context.Context, couponID, userID uuid.UUID, now time.Time,
+<span id="L887" class="ln">   887  </span>) (*coupon.Coupon, error) {
+<span id="L888" class="ln">   888  </span>	c, err := u.couponRepo.LockByID(ctx, couponID)
+<span id="L889" class="ln">   889  </span>	if err != nil {
+<span id="L890" class="ln">   890  </span>		if xerrors.Is(err, apperror.ErrNotFound) {
+<span id="L891" class="ln">   891  </span>			return nil, notHeldError()
+<span id="L892" class="ln">   892  </span>		}
+<span id="L893" class="ln">   893  </span>		return nil, err
+<span id="L894" class="ln">   894  </span>	}
+<span id="L895" class="ln">   895  </span>	if !c.IsHeldBy(userID) {
+<span id="L896" class="ln">   896  </span>		return nil, notHeldError()
+<span id="L897" class="ln">   897  </span>	}
+<span id="L898" class="ln">   898  </span>
+<span id="L899" class="ln">   899  </span>	if rerr := c.Redeem(now); rerr != nil {
+<span id="L900" class="ln">   900  </span>		return nil, apperror.WithDetails(rerr, coupon.FieldCouponID)
+<span id="L901" class="ln">   901  </span>	}
+<span id="L902" class="ln">   902  </span>
+<span id="L903" class="ln">   903  </span>	return c, nil
+<span id="L904" class="ln">   904  </span>}
+<span id="L905" class="ln">   905  </span>
+<span id="L906" class="ln">   906  </span><span class="comment">// notHeldError は、保有していないクーポンを指した場合のエラーを組み立てます。</span>
+<span id="L907" class="ln">   907  </span>func notHeldError() error {
+<span id="L908" class="ln">   908  </span>	return apperror.WithDetails(coupon.ErrNotHeld, coupon.FieldCouponID)
+<span id="L909" class="ln">   909  </span>}
+<span id="L910" class="ln">   910  </span>
+<span id="L911" class="ln">   911  </span><span class="comment">// applyStockDelta は、明細の数量 × sign を対象商品の在庫へ適用して永続化します。</span>
+<span id="L912" class="ln">   912  </span><span class="comment">// sign は購入時に -1、キャンセルによる復元時に 1 を取ります。products はロック済みである必要があり、</span>
+<span id="L913" class="ln">   913  </span><span class="comment">// 在庫の範囲判定は商品集約の AdjustStock が行います。</span>
+<span id="L914" class="ln">   914  </span>func (u *usecase) applyStockDelta(
+<span id="L915" class="ln">   915  </span>	ctx context.Context, products product.Products, details []purchase.PurchaseDetail, sign int,
+<span id="L916" class="ln">   916  </span>) error {
+<span id="L917" class="ln">   917  </span>	byID := make(map[uuid.UUID]*product.Product, len(products))
+<span id="L918" class="ln">   918  </span>	for _, p := range products {
+<span id="L919" class="ln">   919  </span>		byID[p.ID()] = p
+<span id="L920" class="ln">   920  </span>	}
+<span id="L921" class="ln">   921  </span>
+<span id="L922" class="ln">   922  </span>	for _, d := range details {
+<span id="L923" class="ln">   923  </span>		p, ok := byID[d.ProductID()]
+<span id="L924" class="ln">   924  </span>		if !ok {
+<span id="L925" class="ln">   925  </span>			return xerrors.Wrap(apperror.ErrNotFound, &#34;product not found for purchase detail&#34;)
+<span id="L926" class="ln">   926  </span>		}
+<span id="L927" class="ln">   927  </span>		if aerr := p.AdjustStock(sign * d.Quantity()); aerr != nil {
+<span id="L928" class="ln">   928  </span>			return aerr
+<span id="L929" class="ln">   929  </span>		}
+<span id="L930" class="ln">   930  </span>		if _, uerr := u.productRepo.UpdateStock(ctx, p); uerr != nil {
+<span id="L931" class="ln">   931  </span>			return uerr
+<span id="L932" class="ln">   932  </span>		}
+<span id="L933" class="ln">   933  </span>	}
+<span id="L934" class="ln">   934  </span>
+<span id="L935" class="ln">   935  </span>	return nil
+<span id="L936" class="ln">   936  </span>}
+<span id="L937" class="ln">   937  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

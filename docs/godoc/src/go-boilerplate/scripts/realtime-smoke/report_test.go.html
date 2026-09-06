@@ -1,0 +1,412 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime-smoke - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/scripts">scripts</a>/<a href="../../../../src/go-boilerplate/scripts/realtime-smoke">realtime-smoke</a>/<span class="text-muted">report_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/scripts/realtime-smoke">go-boilerplate/scripts/realtime-smoke</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package main
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;bytes&#34;
+<span id="L5" class="ln">     5  </span>	&#34;context&#34;
+<span id="L6" class="ln">     6  </span>	&#34;net&#34;
+<span id="L7" class="ln">     7  </span>	&#34;strings&#34;
+<span id="L8" class="ln">     8  </span>	&#34;testing&#34;
+<span id="L9" class="ln">     9  </span>	&#34;time&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L12" class="ln">    12  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L13" class="ln">    13  </span>
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L15" class="ln">    15  </span>)
+<span id="L16" class="ln">    16  </span>
+<span id="L17" class="ln">    17  </span><span class="comment">// fakeAPIError は、SDK のサービスエラーと同じ形（ErrorCode / ErrorMessage）を持つテスト用エラーです。</span>
+<span id="L18" class="ln">    18  </span>type fakeAPIError struct {
+<span id="L19" class="ln">    19  </span>	code string
+<span id="L20" class="ln">    20  </span>	msg  string
+<span id="L21" class="ln">    21  </span>}
+<span id="L22" class="ln">    22  </span>
+<span id="L23" class="ln">    23  </span><span class="comment">// fakeNetError は、応答前に失敗した transport エラーです。</span>
+<span id="L24" class="ln">    24  </span>type fakeNetError struct{}
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span>func (e *fakeAPIError) Error() string        { return e.code + &#34;: &#34; + e.msg }
+<span id="L27" class="ln">    27  </span>func (e *fakeAPIError) ErrorCode() string    { return e.code }
+<span id="L28" class="ln">    28  </span>func (e *fakeAPIError) ErrorMessage() string { return e.msg }
+<span id="L29" class="ln">    29  </span>
+<span id="L30" class="ln">    30  </span>func (fakeNetError) Error() string   { return &#34;dial tcp: connection refused&#34; }
+<span id="L31" class="ln">    31  </span>func (fakeNetError) Timeout() bool   { return false }
+<span id="L32" class="ln">    32  </span>func (fakeNetError) Temporary() bool { return false }
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span>func Test_classify(t *testing.T) {
+<span id="L35" class="ln">    35  </span>	t.Parallel()
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span>	var _ net.Error = fakeNetError{}
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span>	tests := map[string]struct {
+<span id="L40" class="ln">    40  </span>		err  error
+<span id="L41" class="ln">    41  </span>		want Verdict
+<span id="L42" class="ln">    42  </span>	}{
+<span id="L43" class="ln">    43  </span>		&#34;nil は互換&#34;:                            {err: nil, want: VerdictCompatible},
+<span id="L44" class="ln">    44  </span>		&#34;事後条件の不成立は非互換&#34;:                       {err: incompatible(&#34;envelope が届いた&#34;), want: VerdictIncompatible},
+<span id="L45" class="ln">    45  </span>		&#34;context の期限切れは検証不能&#34;:                 {err: xerrors.Wrap(context.DeadlineExceeded, &#34;receive&#34;), want: VerdictUnverifiable},
+<span id="L46" class="ln">    46  </span>		&#34;net.Error は検証不能&#34;:                    {err: xerrors.Wrap(fakeNetError{}, &#34;dial&#34;), want: VerdictUnverifiable},
+<span id="L47" class="ln">    47  </span>		&#34;InvalidAction は未対応&#34;:                 {err: &amp;fakeAPIError{code: &#34;InvalidAction&#34;, msg: &#34;no&#34;}, want: VerdictUnsupported},
+<span id="L48" class="ln">    48  </span>		&#34;NotImplemented は未対応&#34;:                {err: &amp;fakeAPIError{code: &#34;NotImplemented&#34;, msg: &#34;no&#34;}, want: VerdictUnsupported},
+<span id="L49" class="ln">    49  </span>		&#34;deserialization failed（XML 応答）は未対応&#34;: {err: xerrors.New(&#34;operation error SQS: ListQueues, deserialization failed&#34;), want: VerdictUnsupported},
+<span id="L50" class="ln">    50  </span>		&#34;404 は未対応&#34;:                           {err: xerrors.New(&#34;https response error StatusCode: 404, RequestID: x&#34;), want: VerdictUnsupported},
+<span id="L51" class="ln">    51  </span>		&#34;ConditionalCheckFailedException は非互換（受理された拒否）&#34;: {
+<span id="L52" class="ln">    52  </span>			err:  &amp;fakeAPIError{code: &#34;ConditionalCheckFailedException&#34;, msg: &#34;x&#34;},
+<span id="L53" class="ln">    53  </span>			want: VerdictIncompatible,
+<span id="L54" class="ln">    54  </span>		},
+<span id="L55" class="ln">    55  </span>		&#34;分類できない応答は非互換&#34;: {err: xerrors.New(&#34;something else&#34;), want: VerdictIncompatible},
+<span id="L56" class="ln">    56  </span>	}
+<span id="L57" class="ln">    57  </span>
+<span id="L58" class="ln">    58  </span>	for name, tt := range tests {
+<span id="L59" class="ln">    59  </span>		t.Run(name, func(t *testing.T) {
+<span id="L60" class="ln">    60  </span>			t.Parallel()
+<span id="L61" class="ln">    61  </span>
+<span id="L62" class="ln">    62  </span>			assert.Equal(t, tt.want, classify(tt.err))
+<span id="L63" class="ln">    63  </span>		})
+<span id="L64" class="ln">    64  </span>	}
+<span id="L65" class="ln">    65  </span>}
+<span id="L66" class="ln">    66  </span>
+<span id="L67" class="ln">    67  </span>func Test_isTransportFailure(t *testing.T) {
+<span id="L68" class="ln">    68  </span>	t.Parallel()
+<span id="L69" class="ln">    69  </span>
+<span id="L70" class="ln">    70  </span>	assert.True(t, isTransportFailure(context.DeadlineExceeded))
+<span id="L71" class="ln">    71  </span>	assert.True(t, isTransportFailure(xerrors.Wrap(context.Canceled, &#34;x&#34;)))
+<span id="L72" class="ln">    72  </span>	assert.True(t, isTransportFailure(fakeNetError{}))
+<span id="L73" class="ln">    73  </span>	assert.False(t, isTransportFailure(&amp;fakeAPIError{code: &#34;InvalidAction&#34;, msg: &#34;x&#34;}))
+<span id="L74" class="ln">    74  </span>	assert.False(t, isTransportFailure(xerrors.New(&#34;plain&#34;)))
+<span id="L75" class="ln">    75  </span>}
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>func Test_hasUnsupportedMarker(t *testing.T) {
+<span id="L78" class="ln">    78  </span>	t.Parallel()
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span>	assert.True(t, hasUnsupportedMarker(&#34;Operation Not Implemented&#34;), &#34;大文字小文字を無視する&#34;)
+<span id="L81" class="ln">    81  </span>	assert.True(t, hasUnsupportedMarker(&#34;https response error StatusCode: 501&#34;))
+<span id="L82" class="ln">    82  </span>	assert.False(t, hasUnsupportedMarker(&#34;StatusCode: 400, InvalidParameterValue&#34;))
+<span id="L83" class="ln">    83  </span>	assert.False(t, hasUnsupportedMarker(&#34;&#34;))
+<span id="L84" class="ln">    84  </span>}
+<span id="L85" class="ln">    85  </span>
+<span id="L86" class="ln">    86  </span>func Test_describe(t *testing.T) {
+<span id="L87" class="ln">    87  </span>	t.Parallel()
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span>	t.Run(&#34;API エラーはコードとメッセージに要約する&#34;, func(t *testing.T) {
+<span id="L90" class="ln">    90  </span>		t.Parallel()
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>		got := describe(xerrors.Wrap(&amp;fakeAPIError{code: &#34;InvalidAction&#34;, msg: &#34;not\nsupported&#34;}, &#34;call&#34;))
+<span id="L93" class="ln">    93  </span>		assert.Equal(t, &#34;InvalidAction: not supported&#34;, got)
+<span id="L94" class="ln">    94  </span>	})
+<span id="L95" class="ln">    95  </span>
+<span id="L96" class="ln">    96  </span>	t.Run(&#34;上限を超える本文は切り詰める&#34;, func(t *testing.T) {
+<span id="L97" class="ln">    97  </span>		t.Parallel()
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span>		got := describe(xerrors.New(strings.Repeat(&#34;x&#34;, maxDetailLen+10)))
+<span id="L100" class="ln">   100  </span>		assert.Len(t, got, maxDetailLen+len(&#34;…&#34;))
+<span id="L101" class="ln">   101  </span>		assert.True(t, strings.HasSuffix(got, &#34;…&#34;))
+<span id="L102" class="ln">   102  </span>	})
+<span id="L103" class="ln">   103  </span>
+<span id="L104" class="ln">   104  </span>	t.Run(&#34;上限ちょうどは切り詰めない&#34;, func(t *testing.T) {
+<span id="L105" class="ln">   105  </span>		t.Parallel()
+<span id="L106" class="ln">   106  </span>
+<span id="L107" class="ln">   107  </span>		got := describe(xerrors.New(strings.Repeat(&#34;x&#34;, maxDetailLen)))
+<span id="L108" class="ln">   108  </span>		assert.Len(t, got, maxDetailLen)
+<span id="L109" class="ln">   109  </span>	})
+<span id="L110" class="ln">   110  </span>}
+<span id="L111" class="ln">   111  </span>
+<span id="L112" class="ln">   112  </span>func Test_incompatible(t *testing.T) {
+<span id="L113" class="ln">   113  </span>	t.Parallel()
+<span id="L114" class="ln">   114  </span>
+<span id="L115" class="ln">   115  </span>	err := incompatible(&#34;detail&#34;)
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>	var inc *incompatibleError
+<span id="L118" class="ln">   118  </span>	require.ErrorAs(t, err, &amp;inc)
+<span id="L119" class="ln">   119  </span>	assert.Equal(t, VerdictIncompatible, classify(err))
+<span id="L120" class="ln">   120  </span>}
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>func Test_incompatibleError_Error(t *testing.T) {
+<span id="L123" class="ln">   123  </span>	t.Parallel()
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>	assert.Equal(t, &#34;body が違う&#34;, (&amp;incompatibleError{detail: &#34;body が違う&#34;}).Error())
+<span id="L126" class="ln">   126  </span>}
+<span id="L127" class="ln">   127  </span>
+<span id="L128" class="ln">   128  </span>func Test_recorder_add(t *testing.T) {
+<span id="L129" class="ln">   129  </span>	t.Parallel()
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span>	rec := &amp;recorder{}
+<span id="L132" class="ln">   132  </span>	rec.add(&#34;D1&#34;, &#34;s&#34;, &#34;c&#34;, VerdictCompatible, &#34;d&#34;)
+<span id="L133" class="ln">   133  </span>	rec.add(&#34;D2&#34;, &#34;s&#34;, &#34;c2&#34;, VerdictUnsupported, &#34;d2&#34;)
+<span id="L134" class="ln">   134  </span>
+<span id="L135" class="ln">   135  </span>	require.Len(t, rec.results, 2)
+<span id="L136" class="ln">   136  </span>	assert.Equal(t, Result{ID: &#34;D2&#34;, Subject: &#34;s&#34;, Check: &#34;c2&#34;, Verdict: VerdictUnsupported, Detail: &#34;d2&#34;}, rec.results[1])
+<span id="L137" class="ln">   137  </span>}
+<span id="L138" class="ln">   138  </span>
+<span id="L139" class="ln">   139  </span>func Test_recorder_record(t *testing.T) {
+<span id="L140" class="ln">   140  </span>	t.Parallel()
+<span id="L141" class="ln">   141  </span>
+<span id="L142" class="ln">   142  </span>	t.Run(&#34;成功は渡された detail をそのまま載せる&#34;, func(t *testing.T) {
+<span id="L143" class="ln">   143  </span>		t.Parallel()
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span>		rec := &amp;recorder{}
+<span id="L146" class="ln">   146  </span>		got := rec.record(&#34;D1&#34;, &#34;s&#34;, &#34;c&#34;, &#34;ok detail&#34;, nil)
+<span id="L147" class="ln">   147  </span>		assert.Equal(t, VerdictCompatible, got)
+<span id="L148" class="ln">   148  </span>		assert.Equal(t, &#34;ok detail&#34;, rec.results[0].Detail)
+<span id="L149" class="ln">   149  </span>	})
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>	t.Run(&#34;失敗はエラーの要約で detail を置き換える&#34;, func(t *testing.T) {
+<span id="L152" class="ln">   152  </span>		t.Parallel()
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span>		rec := &amp;recorder{}
+<span id="L155" class="ln">   155  </span>		got := rec.record(&#34;D1&#34;, &#34;s&#34;, &#34;c&#34;, &#34;ignored&#34;, &amp;fakeAPIError{code: &#34;InvalidAction&#34;, msg: &#34;no&#34;})
+<span id="L156" class="ln">   156  </span>		assert.Equal(t, VerdictUnsupported, got)
+<span id="L157" class="ln">   157  </span>		assert.Equal(t, &#34;InvalidAction: no&#34;, rec.results[0].Detail)
+<span id="L158" class="ln">   158  </span>	})
+<span id="L159" class="ln">   159  </span>}
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span>func Test_recorder_skip(t *testing.T) {
+<span id="L162" class="ln">   162  </span>	t.Parallel()
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>	rec := &amp;recorder{}
+<span id="L165" class="ln">   165  </span>	rec.skip(&#34;G9&#34;, &#34;s&#34;, &#34;c&#34;, &#34;先行検査 G1 により実行不能&#34;)
+<span id="L166" class="ln">   166  </span>
+<span id="L167" class="ln">   167  </span>	require.Len(t, rec.results, 1)
+<span id="L168" class="ln">   168  </span>	assert.Equal(t, VerdictUnverifiable, rec.results[0].Verdict)
+<span id="L169" class="ln">   169  </span>	assert.Equal(t, &#34;先行検査 G1 により実行不能&#34;, rec.results[0].Detail)
+<span id="L170" class="ln">   170  </span>}
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>func Test_runChain(t *testing.T) {
+<span id="L173" class="ln">   173  </span>	t.Parallel()
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>	pass := func(context.Context) (string, error) { return &#34;ok&#34;, nil }
+<span id="L176" class="ln">   176  </span>	fail := func(context.Context) (string, error) { return &#34;&#34;, &amp;fakeAPIError{code: &#34;InvalidAction&#34;, msg: &#34;no&#34;} }
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>	t.Run(&#34;halt な検査の失敗は後続を検証不能として残す&#34;, func(t *testing.T) {
+<span id="L179" class="ln">   179  </span>		t.Parallel()
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>		rec := &amp;recorder{}
+<span id="L182" class="ln">   182  </span>		first := runChain(t.Context(), &#34;s&#34;, []step{
+<span id="L183" class="ln">   183  </span>			{id: &#34;1&#34;, check: &#34;a&#34;, halt: true, fn: fail},
+<span id="L184" class="ln">   184  </span>			{id: &#34;2&#34;, check: &#34;b&#34;, fn: pass},
+<span id="L185" class="ln">   185  </span>			{id: &#34;3&#34;, check: &#34;c&#34;, fn: pass},
+<span id="L186" class="ln">   186  </span>		}, rec)
+<span id="L187" class="ln">   187  </span>
+<span id="L188" class="ln">   188  </span>		require.Len(t, rec.results, 3)
+<span id="L189" class="ln">   189  </span>		assert.False(t, first)
+<span id="L190" class="ln">   190  </span>		assert.Equal(t, VerdictUnsupported, rec.results[0].Verdict)
+<span id="L191" class="ln">   191  </span>		assert.Equal(t, VerdictUnverifiable, rec.results[1].Verdict)
+<span id="L192" class="ln">   192  </span>		assert.Equal(t, VerdictUnverifiable, rec.results[2].Verdict)
+<span id="L193" class="ln">   193  </span>		assert.Contains(t, rec.results[2].Detail, &#34;先行検査 1&#34;)
+<span id="L194" class="ln">   194  </span>	})
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>	t.Run(&#34;halt でない検査の失敗は後続を止めない&#34;, func(t *testing.T) {
+<span id="L197" class="ln">   197  </span>		t.Parallel()
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span>		rec := &amp;recorder{}
+<span id="L200" class="ln">   200  </span>		first := runChain(t.Context(), &#34;s&#34;, []step{
+<span id="L201" class="ln">   201  </span>			{id: &#34;1&#34;, check: &#34;a&#34;, fn: pass},
+<span id="L202" class="ln">   202  </span>			{id: &#34;2&#34;, check: &#34;b&#34;, fn: fail},
+<span id="L203" class="ln">   203  </span>			{id: &#34;3&#34;, check: &#34;c&#34;, fn: pass},
+<span id="L204" class="ln">   204  </span>		}, rec)
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>		require.Len(t, rec.results, 3)
+<span id="L207" class="ln">   207  </span>		assert.True(t, first)
+<span id="L208" class="ln">   208  </span>		assert.Equal(t, VerdictCompatible, rec.results[2].Verdict)
+<span id="L209" class="ln">   209  </span>		assert.Equal(t, &#34;ok&#34;, rec.results[2].Detail)
+<span id="L210" class="ln">   210  </span>	})
+<span id="L211" class="ln">   211  </span>
+<span id="L212" class="ln">   212  </span>	t.Run(&#34;先頭が非 halt で失敗しても後続は走り、戻り値は false&#34;, func(t *testing.T) {
+<span id="L213" class="ln">   213  </span>		t.Parallel()
+<span id="L214" class="ln">   214  </span>
+<span id="L215" class="ln">   215  </span>		rec := &amp;recorder{}
+<span id="L216" class="ln">   216  </span>		first := runChain(t.Context(), &#34;s&#34;, []step{{id: &#34;1&#34;, check: &#34;a&#34;, fn: fail}, {id: &#34;2&#34;, check: &#34;b&#34;, fn: pass}}, rec)
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>		assert.False(t, first)
+<span id="L219" class="ln">   219  </span>		assert.Equal(t, VerdictCompatible, rec.results[1].Verdict)
+<span id="L220" class="ln">   220  </span>	})
+<span id="L221" class="ln">   221  </span>}
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>func Test_cleanupContext(t *testing.T) {
+<span id="L224" class="ln">   224  </span>	t.Parallel()
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>	parent, cancel := context.WithCancel(t.Context())
+<span id="L227" class="ln">   227  </span>	cancel()
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>	ctx, cleanup := cleanupContext(parent)
+<span id="L230" class="ln">   230  </span>	defer cleanup()
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>	require.NoError(t, ctx.Err(), &#34;親の cancel を引き継がない&#34;)
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>	deadline, ok := ctx.Deadline()
+<span id="L235" class="ln">   235  </span>	require.True(t, ok)
+<span id="L236" class="ln">   236  </span>	assert.WithinDuration(t, time.Now().Add(cleanupTimeout), deadline, time.Second)
+<span id="L237" class="ln">   237  </span>}
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>func Test_count(t *testing.T) {
+<span id="L240" class="ln">   240  </span>	t.Parallel()
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>	c := count([]Result{{Verdict: VerdictCompatible}, {Verdict: VerdictCompatible}, {Verdict: VerdictUnsupported}})
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>	assert.Equal(t, 2, c[VerdictCompatible])
+<span id="L245" class="ln">   245  </span>	assert.Equal(t, 1, c[VerdictUnsupported])
+<span id="L246" class="ln">   246  </span>	assert.Equal(t, 0, c[VerdictIncompatible])
+<span id="L247" class="ln">   247  </span>}
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>func Test_exitCode(t *testing.T) {
+<span id="L250" class="ln">   250  </span>	t.Parallel()
+<span id="L251" class="ln">   251  </span>
+<span id="L252" class="ln">   252  </span>	compatible := Result{ID: &#34;1&#34;, Verdict: VerdictCompatible}
+<span id="L253" class="ln">   253  </span>	incompatibleResult := Result{ID: &#34;2&#34;, Verdict: VerdictIncompatible}
+<span id="L254" class="ln">   254  </span>	unsupported := Result{ID: &#34;3&#34;, Verdict: VerdictUnsupported}
+<span id="L255" class="ln">   255  </span>	unverifiable := Result{ID: &#34;4&#34;, Verdict: VerdictUnverifiable}
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>	t.Run(&#34;結果が 0 件なら失敗（検査していないことをクリーンにしない）&#34;, func(t *testing.T) {
+<span id="L258" class="ln">   258  </span>		t.Parallel()
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>		code, err := exitCode(nil, false)
+<span id="L261" class="ln">   261  </span>		require.ErrorIs(t, err, errNoResults)
+<span id="L262" class="ln">   262  </span>		assert.Equal(t, 1, code)
+<span id="L263" class="ln">   263  </span>	})
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>	tests := map[string]struct {
+<span id="L266" class="ln">   266  </span>		results []Result
+<span id="L267" class="ln">   267  </span>		strict  bool
+<span id="L268" class="ln">   268  </span>		want    int
+<span id="L269" class="ln">   269  </span>	}{
+<span id="L270" class="ln">   270  </span>		&#34;全て互換なら 0&#34;:             {results: []Result{compatible}, want: 0},
+<span id="L271" class="ln">   271  </span>		&#34;検証不能が 1 件でもあれば 1&#34;:     {results: []Result{compatible, unverifiable}, want: 1},
+<span id="L272" class="ln">   272  </span>		&#34;非互換は strict でなければ 0&#34;:  {results: []Result{compatible, incompatibleResult}, want: 0},
+<span id="L273" class="ln">   273  </span>		&#34;非互換は strict なら 1&#34;:     {results: []Result{compatible, incompatibleResult}, strict: true, want: 1},
+<span id="L274" class="ln">   274  </span>		&#34;未対応は strict なら 1&#34;:     {results: []Result{unsupported}, strict: true, want: 1},
+<span id="L275" class="ln">   275  </span>		&#34;未対応は strict でなければ 0&#34;:  {results: []Result{unsupported}, want: 0},
+<span id="L276" class="ln">   276  </span>		&#34;strict でも検証不能は変わらず 1&#34;: {results: []Result{unverifiable}, strict: true, want: 1},
+<span id="L277" class="ln">   277  </span>	}
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>	for name, tt := range tests {
+<span id="L280" class="ln">   280  </span>		t.Run(name, func(t *testing.T) {
+<span id="L281" class="ln">   281  </span>			t.Parallel()
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span>			code, err := exitCode(tt.results, tt.strict)
+<span id="L284" class="ln">   284  </span>			require.NoError(t, err)
+<span id="L285" class="ln">   285  </span>			assert.Equal(t, tt.want, code)
+<span id="L286" class="ln">   286  </span>		})
+<span id="L287" class="ln">   287  </span>	}
+<span id="L288" class="ln">   288  </span>}
+<span id="L289" class="ln">   289  </span>
+<span id="L290" class="ln">   290  </span>func Test_writeMarkdown(t *testing.T) {
+<span id="L291" class="ln">   291  </span>	t.Parallel()
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>	results := []Result{
+<span id="L294" class="ln">   294  </span>		{ID: &#34;D1&#34;, Subject: &#34;DynamoDB Local&#34;, Check: &#34;CreateTable&#34;, Verdict: VerdictCompatible, Detail: &#34;table a|b&#34;},
+<span id="L295" class="ln">   295  </span>		{ID: &#34;G4&#34;, Subject: &#34;GoAWS SNS/SQS&#34;, Check: &#34;Policy&#34;, Verdict: VerdictIncompatible, Detail: &#34;silent drop&#34;},
+<span id="L296" class="ln">   296  </span>		{ID: &#34;G9&#34;, Subject: &#34;GoAWS SNS/SQS&#34;, Check: &#34;cleanup&#34;, Verdict: VerdictUnverifiable, Detail: &#34;skipped&#34;},
+<span id="L297" class="ln">   297  </span>	}
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>	var buf bytes.Buffer
+<span id="L300" class="ln">   300  </span>	require.NoError(t, writeMarkdown(&amp;buf, results))
+<span id="L301" class="ln">   301  </span>	out := buf.String()
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span>	assert.Contains(t, out, &#34;| # | Subject | Check | Verdict | Detail |&#34;)
+<span id="L304" class="ln">   304  </span>	assert.Contains(t, out, &#34;| D1 | DynamoDB Local | CreateTable | **互換** | table a\\|b |&#34;)
+<span id="L305" class="ln">   305  </span>	assert.Contains(t, out, &#34;互換 1 / 非互換 1 / 未対応 0 / 検証不能 1&#34;)
+<span id="L306" class="ln">   306  </span>	assert.Contains(t, out, &#34;- G4 Policy: 非互換 — silent drop&#34;)
+<span id="L307" class="ln">   307  </span>	assert.NotContains(t, out, &#34;- G9&#34;, &#34;検証不能は compatibility implementation 候補に載せない&#34;)
+<span id="L308" class="ln">   308  </span>}
+<span id="L309" class="ln">   309  </span>
+<span id="L310" class="ln">   310  </span>func Test_writeSummary(t *testing.T) {
+<span id="L311" class="ln">   311  </span>	t.Parallel()
+<span id="L312" class="ln">   312  </span>
+<span id="L313" class="ln">   313  </span>	t.Run(&#34;候補が無ければ「なし」&#34;, func(t *testing.T) {
+<span id="L314" class="ln">   314  </span>		t.Parallel()
+<span id="L315" class="ln">   315  </span>
+<span id="L316" class="ln">   316  </span>		var buf bytes.Buffer
+<span id="L317" class="ln">   317  </span>		require.NoError(t, writeSummary(&amp;buf, []Result{{ID: &#34;D1&#34;, Verdict: VerdictCompatible}}))
+<span id="L318" class="ln">   318  </span>		assert.Contains(t, buf.String(), &#34;- なし&#34;)
+<span id="L319" class="ln">   319  </span>	})
+<span id="L320" class="ln">   320  </span>
+<span id="L321" class="ln">   321  </span>	t.Run(&#34;未対応も候補に載る&#34;, func(t *testing.T) {
+<span id="L322" class="ln">   322  </span>		t.Parallel()
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span>		var buf bytes.Buffer
+<span id="L325" class="ln">   325  </span>		require.NoError(t, writeSummary(&amp;buf, []Result{{ID: &#34;G0&#34;, Check: &#34;probe&#34;, Verdict: VerdictUnsupported, Detail: &#34;404&#34;}}))
+<span id="L326" class="ln">   326  </span>		assert.Contains(t, buf.String(), &#34;- G0 probe: 未対応 — 404&#34;)
+<span id="L327" class="ln">   327  </span>	})
+<span id="L328" class="ln">   328  </span>}
+<span id="L329" class="ln">   329  </span>
+<span id="L330" class="ln">   330  </span>func Test_writeText(t *testing.T) {
+<span id="L331" class="ln">   331  </span>	t.Parallel()
+<span id="L332" class="ln">   332  </span>
+<span id="L333" class="ln">   333  </span>	var buf bytes.Buffer
+<span id="L334" class="ln">   334  </span>	require.NoError(t, writeText(&amp;buf, []Result{{ID: &#34;D1&#34;, Subject: &#34;s&#34;, Check: &#34;c&#34;, Verdict: VerdictCompatible, Detail: &#34;d&#34;}}))
+<span id="L335" class="ln">   335  </span>
+<span id="L336" class="ln">   336  </span>	assert.True(t, strings.HasPrefix(buf.String(), &#34;D1 &#34;))
+<span id="L337" class="ln">   337  </span>	assert.Contains(t, buf.String(), &#34;互換 1 / 非互換 0 / 未対応 0 / 検証不能 0&#34;)
+<span id="L338" class="ln">   338  </span>}
+<span id="L339" class="ln">   339  </span>
+<span id="L340" class="ln">   340  </span>func Test_escapeCell(t *testing.T) {
+<span id="L341" class="ln">   341  </span>	t.Parallel()
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span>	assert.Equal(t, &#34;a\\|b c&#34;, escapeCell(&#34;a|b\nc&#34;))
+<span id="L344" class="ln">   344  </span>	assert.Equal(t, &#34;plain&#34;, escapeCell(&#34;plain&#34;))
+<span id="L345" class="ln">   345  </span>}
+<span id="L346" class="ln">   346  </span>
+</pre><p><a href="../../../../src/go-boilerplate/scripts/realtime-smoke/report_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

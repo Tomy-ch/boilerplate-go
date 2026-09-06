@@ -68,7 +68,7 @@
 <span id="L11" class="ln">    11  </span>)
 <span id="L12" class="ln">    12  </span>
 <span id="L13" class="ln">    13  </span><span class="comment">// PurchaseFeedQueryService は、購入履歴一覧の集約跨ぎ read 投影を提供する QueryService です</span>
-<span id="L14" class="ln">    14  </span><span class="comment">// （配置根拠: docs/spec/purchase/usecase.md § GET 一覧）。</span>
+<span id="L14" class="ln">    14  </span><span class="comment">// （配置根拠: docs/spec/usecase/purchase.md § GET 一覧）。</span>
 <span id="L15" class="ln">    15  </span>type PurchaseFeedQueryService interface {
 <span id="L16" class="ln">    16  </span>	<span class="comment">// FindFeedByUserID は、指定ユーザーの購入履歴を注文日時の降順（同時刻は ID 降順）の安定順で</span>
 <span id="L17" class="ln">    17  </span>	<span class="comment">// keyset ページネーション取得します。ステータスは購入ステータスマスタ、明細の要約は商品との</span>
@@ -96,31 +96,33 @@
 <span id="L39" class="ln">    39  </span>	<span class="comment">// StatusCodes は、購入ステータスの業務キーによる絞り込みです。いずれかに一致する購入を対象とし、</span>
 <span id="L40" class="ln">    40  </span>	<span class="comment">// 空の場合は全ステータスを対象とします。既知でないコードは 0 件として扱います。</span>
 <span id="L41" class="ln">    41  </span>	StatusCodes []int16
-<span id="L42" class="ln">    42  </span>}
-<span id="L43" class="ln">    43  </span>
-<span id="L44" class="ln">    44  </span><span class="comment">// PurchaseFeedReadModel は、購入履歴一覧の 1 件分の読み取りモデルです。</span>
-<span id="L45" class="ln">    45  </span><span class="comment">// 一覧は概要のみを返し明細は含みませんが、行を見分けるための要約 2 項目を持ちます。</span>
-<span id="L46" class="ln">    46  </span>type PurchaseFeedReadModel struct {
-<span id="L47" class="ln">    47  </span>	<span class="comment">// Code は、購入コード（利用者へ注文番号として見せる一意の識別子）です。</span>
-<span id="L48" class="ln">    48  </span>	Code string
-<span id="L49" class="ln">    49  </span>	<span class="comment">// TotalAmount は、合計金額（小計 + 税額 + 送料）です。USD セント単位の整数です。</span>
-<span id="L50" class="ln">    50  </span>	TotalAmount int
-<span id="L51" class="ln">    51  </span>	<span class="comment">// StatusID は、購入ステータス ID（購入ステータスマスタで解決済み）です。</span>
-<span id="L52" class="ln">    52  </span>	StatusID uuid.UUID
-<span id="L53" class="ln">    53  </span>	<span class="comment">// StatusCode は、購入ステータスの業務キー（Status.Code）です。到達順序を意味しません。</span>
-<span id="L54" class="ln">    54  </span>	StatusCode int
-<span id="L55" class="ln">    55  </span>	<span class="comment">// StatusName は、購入ステータスの名称（購入ステータスマスタで解決済み）です。</span>
-<span id="L56" class="ln">    56  </span>	StatusName string
-<span id="L57" class="ln">    57  </span>	<span class="comment">// FirstItemName は、明細の先頭 1 件（明細 ID 昇順）の商品名です。先頭の選び方に業務的な意味はありません。</span>
-<span id="L58" class="ln">    58  </span>	FirstItemName string
-<span id="L59" class="ln">    59  </span>	<span class="comment">// ItemCount は、明細の行数です（先頭商品を含む）。数量の合計ではありません。</span>
-<span id="L60" class="ln">    60  </span>	ItemCount int
-<span id="L61" class="ln">    61  </span>	<span class="comment">// OrderedAt は、注文日時です。keyset の主ソートキーです。</span>
-<span id="L62" class="ln">    62  </span>	OrderedAt time.Time
-<span id="L63" class="ln">    63  </span>	<span class="comment">// ID は、購入 ID です。keyset のタイブレークキーであり、応答へは出しません。</span>
-<span id="L64" class="ln">    64  </span>	ID uuid.UUID
-<span id="L65" class="ln">    65  </span>}
-<span id="L66" class="ln">    66  </span>
+<span id="L42" class="ln">    42  </span>	<span class="comment">// ProductID は、指定商品を含む購入だけに絞る条件です。nil の場合は絞り込みません。</span>
+<span id="L43" class="ln">    43  </span>	ProductID *uuid.UUID
+<span id="L44" class="ln">    44  </span>}
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span><span class="comment">// PurchaseFeedReadModel は、購入履歴一覧の 1 件分の読み取りモデルです。</span>
+<span id="L47" class="ln">    47  </span><span class="comment">// 一覧は概要のみを返し明細は含みませんが、行を見分けるための要約 2 項目を持ちます。</span>
+<span id="L48" class="ln">    48  </span>type PurchaseFeedReadModel struct {
+<span id="L49" class="ln">    49  </span>	<span class="comment">// Code は、購入コード（利用者へ注文番号として見せる一意の識別子）です。</span>
+<span id="L50" class="ln">    50  </span>	Code string
+<span id="L51" class="ln">    51  </span>	<span class="comment">// TotalAmount は、合計金額（小計 + 税額 + 送料）です。USD セント単位の整数です。</span>
+<span id="L52" class="ln">    52  </span>	TotalAmount int
+<span id="L53" class="ln">    53  </span>	<span class="comment">// StatusID は、購入ステータス ID（購入ステータスマスタで解決済み）です。</span>
+<span id="L54" class="ln">    54  </span>	StatusID uuid.UUID
+<span id="L55" class="ln">    55  </span>	<span class="comment">// StatusCode は、購入ステータスの業務キー（Status.Code）です。到達順序を意味しません。</span>
+<span id="L56" class="ln">    56  </span>	StatusCode int
+<span id="L57" class="ln">    57  </span>	<span class="comment">// StatusName は、購入ステータスの名称（購入ステータスマスタで解決済み）です。</span>
+<span id="L58" class="ln">    58  </span>	StatusName string
+<span id="L59" class="ln">    59  </span>	<span class="comment">// FirstItemName は、明細の先頭 1 件（明細 ID 昇順）の商品名です。先頭の選び方に業務的な意味はありません。</span>
+<span id="L60" class="ln">    60  </span>	FirstItemName string
+<span id="L61" class="ln">    61  </span>	<span class="comment">// ItemCount は、明細の行数です（先頭商品を含む）。数量の合計ではありません。</span>
+<span id="L62" class="ln">    62  </span>	ItemCount int
+<span id="L63" class="ln">    63  </span>	<span class="comment">// OrderedAt は、注文日時です。keyset の主ソートキーです。</span>
+<span id="L64" class="ln">    64  </span>	OrderedAt time.Time
+<span id="L65" class="ln">    65  </span>	<span class="comment">// ID は、購入 ID です。keyset のタイブレークキーであり、応答へは出しません。</span>
+<span id="L66" class="ln">    66  </span>	ID uuid.UUID
+<span id="L67" class="ln">    67  </span>}
+<span id="L68" class="ln">    68  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_feed_query_service.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

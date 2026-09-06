@@ -1,7 +1,5 @@
 # Make コマンド一覧
 
-[English](README.md) | 日本語
-
 ## 役割
 
 `.makefiles/` はプロジェクトで使用するすべての `make` ターゲットの中央レジストリです。各 `.mk` ファイルは関連ターゲットを領域別（application / database / sql / go / openapi / docs / github / tools）にグルーピング。トップレベルの `makefile` はそれらを `include` するだけなので、新規ターゲット追加は該当グループファイルへの追記だけで完結し、トップレベル編集は不要です。
@@ -25,7 +23,7 @@ Make ターゲットは主に以下の単位で整理されています。
 
 - ターゲット名はハイフン区切りの小文字（`make new-migrate-<name>`、`make gen-api`）
 - ターゲットは 2 種類:
-  - **通常ターゲット**: 開発者がローカルで呼ぶ。再現性のため Docker コンテナ経由で実行。ただし一部はホスト上のツールを解決する（`lint` / `fix` の `golangci-lint`、`actions-zizmor` の `zizmor`、`go-cooldown-gate` / `go-cooldown-audit`、`tool-cooldown-gate` / `tool-cooldown-audit`）。tool-runner が Alpine であり、上流が musl ビルドを配布していないためである。これは規約の例外ではなく [ツールチェイン実行ルール](../docs/rules.ja.md#ツールチェイン実行ルール) が定める最終手段であり、供給は `make install-tools` が担い、イメージが担うはずだった再現性は `mise.toml` のピンが引き受ける
+  - **通常ターゲット**: 開発者がローカルで呼ぶ。再現性のため Docker コンテナ経由で実行。ただし一部はホスト上のツールを解決する（`lint` / `fix` の `golangci-lint`、`actions-zizmor` の `zizmor`、`go-cooldown-gate` / `go-cooldown-audit`、`tool-cooldown-gate` / `tool-cooldown-audit`、`pnpm-cooldown-check`）。tool-runner が Alpine であり、上流が musl ビルドを配布していないためである。これは規約の例外ではなく [ツールチェイン実行ルール](../docs/rules.ja.md#ツールチェイン実行ルール) が定める最終手段であり、供給は `make install-tools` が担い、イメージが担うはずだった再現性は `mise.toml` のピンが引き受ける
   - **`-ci` ターゲット**: CI ランナー、またはツールをローカルインストール済みの開発者向け低レベルコマンド
 - すべて `.PHONY` 指定し、末尾 `##` コメントで `make help` 出力に載せること
 
@@ -40,7 +38,7 @@ Make ターゲットは主に以下の単位で整理されています。
 アプリケーションの開発環境起動や Job 実行に関するターゲット群です。
 
 compose のサービスは 2 層に分かれます（後述の `.makefiles/docker` 系を参照）。共有の **infra 層**
-（`database` / `observability` / `garage`）は固定プロジェクト `gobp-shared` に 1 インスタンスだけ置き、
+（`database` / `observability` / `garage` / `elasticmq` / `dynamodb_local` / `goaws`）は固定プロジェクト `gobp-shared` に 1 インスタンスだけ置き、
 checkout 毎の **app 層**（`api_server` / `mock_auth_server`）は自 checkout の `APP_PROJECT` で起動します。
 
 ### アプリケーション起動関連
@@ -95,10 +93,11 @@ make worker NAME=sampleworker
 #### `make outbox-relay ARGS="<引数>"`
 
 outbox relay を起動します（outbox テーブルを周期 poll して未 publish メッセージを送出）。
-`ARGS` は任意で、`replay` サブコマンドにも渡ります。
+relay はちょうど 1 つの配送チャネルを担当し既定のチャネルを持たないため、`ARGS` は必須です。
+`replay` サブコマンドにも渡ります。
 
 ```sh
-make outbox-relay
+make outbox-relay ARGS="--channel=http"
 make outbox-relay ARGS="replay --message-id=<id>"
 ```
 
@@ -112,6 +111,13 @@ make outbox-relay ARGS="replay --message-id=<id>"
 | --- | --- | --- |
 | `make materialize-env` | `env/.env.$(APP_ENV)` を `env/.env` へコピーします（既定は `APP_ENV=ci`）。 | CI / ビルドで `go build` / `go run` 前に埋め込み対象を材料化する |
 | `make restore-env` | `git restore` で `env/.env` を git 管理の内容へ戻します。 | 生成物ドリフト / コミット判定の前に材料化を取り消す |
+
+### Realtime Delivery smoke 関連
+
+| コマンド | 説明 | 主な用途 |
+| --- | --- | --- |
+| `make realtime-init` | 共有インフラを起動し、app コンテナ内から Realtime Delivery の table（EventLog / StreamTicket / InstanceLease）を DynamoDB Local に、fan-out の topic を GoAWS に作ります（`go run ./cmd/ realtime-init`）。冪等 — 何度実行しても同じ状態に収束します。 | app を起動せずに資源だけ用意したいとき。`make serve` は同じ one-shot（`realtime-provision`）を自分で走らせるので、通常の経路では個別に呼ぶ必要はありません |
+| `make realtime-smoke` | 共有インフラを起動し、`scripts/realtime-smoke` を AWS SDK Go v2 で DynamoDB Local / GoAWS に対して実行して、呼び出しごとの判定（互換 / 非互換 / 未対応 / 検証不能）を表にします。resource は実行ごとの乱数名で作り終了時に削除します。`ARGS` で flag を渡します（`-format markdown` / `-subscribers N` / `-keep` / `-strict`）。 | Realtime Delivery が行う呼び出しをエミュレータが今も受け付けるかの確認（image を上げたときなど） |
 
 ## `.makefiles/database` 系
 
@@ -275,6 +281,7 @@ CI のセキュリティ指摘をローカルで再現するためのスキャ�
 | `make go-cooldown-audit` | `go.mod` のうち窓の内側で公開されたものを報告し、期限切れ・3 ヶ月超・対象不在のバイパスエントリがあれば失敗します。 | ホスト上で実行。窓そのものではここで落ちません（既存依存は grandfather）が、失効したバイパスでは落ちます。期限は `go.mod` が変わらなくても訪れるためです。 |
 | `make tool-cooldown-gate BASE=<ref>` | `BASE` との宣言差分（`mise.toml` と `python/*.in`）が、backend の窓（GitHub リリース 14 日 / パッケージレジストリ 7 日）の内側で公開されたツール版を pin している場合に失敗します。`python/*.in` の宣言と `python/*.txt` の lockfile が別の版を指している場合にも失敗します。 | ホスト上で実行。短縮名の backend 解決に `mise` を、未認証では 1 回の実行を賄えない GitHub API のために `GITHUB_TOKEN` を使います。言語ランタイムは受容したリスクとして対象外です。 |
 | `make tool-cooldown-audit` | 宣言しているツールのうち窓の内側で公開されたものを報告し、期限切れ・3 ヶ月超・対象不在のバイパスエントリがあれば失敗します。 | ホスト上で実行。grandfather と失効バイパスでの失敗は Go 版と同じです。 |
+| `make pnpm-cooldown-check` | `minimumReleaseAgeExclude` のうち `.github/pnpm-cooldown-bypass.toml` に期限が無いもの、期限が切れているか 3 ヶ月より先を指すもの、どの例外にも対応しないバイパスエントリ、対になる `pnpm-lock.yaml` がもう解決していない版を名指ししている例外があれば失敗します。 | ホスト上で実行。`gate` の相方が無いのは、窓そのものは pnpm の解決器が install のたびに強制しているためです。ここが見るのは免除のほうで、その期限はどちらのファイルが変わらなくても訪れます。 |
 | `make actions-zizmor` | ワークフロー / composite action の定義を zizmor で監査し、`high` の指摘で失敗します。 | ホスト上で実行。`--offline` なので pre-commit フックはネットワークも `GH_TOKEN` も不要で、オンライン監査は CI に委ねます。例外設定は `.github/zizmor.yml`。 |
 | `make actions-zizmor-sarif-ci` | zizmor の全指摘を SARIF として標準出力へ書き出します。 | CI 用ターゲット。severity で絞らないため code scanning には全体像が残ります。`make -s` で呼ぶこと。 |
 | `make actions-zizmor-gate-ci` | zizmor の `high` の指摘で失敗します。 | CI 用ターゲット。ゲート条件は `actions-zizmor` と同じで、`GH_TOKEN` を要するオンライン監査が加わります。 |
@@ -295,7 +302,7 @@ hadolint により Dockerfile を lint し、`FROM` の base image を不変の 
 | --- | --- | --- |
 | `INFRA_PROJECT` | `gobp-shared` | 共有インフラの唯一のインスタンスを置く固定 compose プロジェクト。 |
 | `APP_PROJECT` | `gobp-app-$(notdir $(CURDIR))` | app 層の checkout 毎 compose プロジェクト。DB スロット保持時は `SERVE_PROJECT`（`gobp-wt-N`）になります。 |
-| `INFRA_SERVICES` | `database observability garage elasticmq` | 固定ポートでしか動けないため共有するサービス。 |
+| `INFRA_SERVICES` | `database observability garage elasticmq dynamodb_local goaws` | 固定ポートでしか動けないため共有するサービス。 |
 | `APP_SERVICES` | `api_server mock_auth_server` | checkout 毎に起動するサービス。 |
 | `COMPOSE_INFRA` | `docker compose -p $(INFRA_PROJECT)` | infra 層向けの compose 呼び出し。 |
 | `INFRA_NO_RECREATE` | worktree では `--no-recreate`、それ以外は空 | 他の checkout が使っている共有インフラのコンテナを作り直さずそのまま使います。単一 checkout では空で、compose は従来どおり定義変更へ再収束します。独立した clone を複数持つなど worktree 判定で拾えない構成では明示的に指定してください。解決は make のパース時ではなく、レシピ内の `db-slot env` が行います。 |
@@ -310,9 +317,9 @@ hadolint により Dockerfile を lint し、`FROM` の base image を不変の 
 | --- | --- | --- |
 | `make docker-lint` | `docker/*/Dockerfile` を hadolint で lint します。 | `go_tool_runner` コンテナ内で `make docker-lint-ci` を呼び出します。 |
 | `make docker-lint-ci` | `hadolint docker/*/Dockerfile` を直接実行します。 | CI 用ターゲット。無効化ルールは `.hadolint.yaml`。 |
-| `make pin-images-resolve` | `docker/*/Dockerfile` の `FROM` と `docker-compose*.yaml` の `image:` の `image:tag` を現在の digest へ解決し `docker/images-pin.toml` lockfile を更新します。 | `PIN_IMAGES_MIN_AGE_DAYS`（既定 14；0 で無効）日未満の digest は quarantine。registry アクセス（`docker`）が必要。 |
-| `make pin-images-apply` | lockfile を元に `FROM` / compose `image:` を `image:tag@sha256:...` へ固定します（quarantine 中の image は tag のまま）。 | なし |
-| `make pin-images-check` | `FROM` / compose `image:` が lockfile 通り固定済みか検証します（書き換えなし）。 | CI / pre-commit gate。 |
+| `make pin-images-resolve` | registry を指す参照すべて——`FROM`、`docker-compose*.yaml` の `image:`、workflow の `uses: docker://` と `services.*.image`——を現在の digest へ解決し `docker/images-pin.toml` lockfile を更新します。 | `PIN_IMAGES_MIN_AGE_DAYS`（既定 14、0 で無効）より新しい digest は quarantine します。registry への到達（`docker`）が要ります。 |
+| `make pin-images-apply` | 同じ 4 種の参照を lockfile を元に `image:tag@sha256:...` へ固定します（quarantine 中の image は tag のまま）。 | なし |
+| `make pin-images-check` | 同じ 4 種の参照が lockfile 通り固定済みか検証します（書き換えなし）。`${{ }}` で組み立てた `image:` は固定できる参照ではないので対象外です。 | CI / pre-commit gate。 |
 
 ## `.makefiles/openapi` 系
 
@@ -327,6 +334,8 @@ hadolint により Dockerfile を lint し、`FROM` の base image を不変の 
 | `make stamp-openapi-version` | リリースブランチ名から `info.version` を書き換えます。 | `node_tool_runner` コンテナ内で `make stamp-openapi-version-ci` を実行します。`REF=release/vX.Y.Z` を取り、未指定なら `GITHUB_REF_NAME` を使います。それ以外の ref は何もしません。 |
 | `make stamp-openapi-version-ci` | `scripts/stamp-openapi-version/index.ts` を直接実行します。 | CI 用ターゲットです。 |
 | `make lint-oapi-security-ci` | Spectral + OWASP API Security ルールセットで検証します。 | CI 用ターゲット。spec だけを見る検査のためにツールランナーのイメージを起こさないので、コンテナを介さず実行します。事前に `pnpm install --dir scripts --frozen-lockfile` が必要です。 |
+| `make openapi-client-check` | frontend generator（orval）が bundle 済み spec から SSE の契約型（`DeliveryEvent` / `ControlEvent` / `StreamCursor`）を生成できることを確認します。 | `node_tool_runner` コンテナ内で `make openapi-client-check-ci` を呼び出します。生成物は `tmp/openapi-client/` に出し、コミットしません。 |
+| `make openapi-client-check-ci` | `tsx scripts/openapi-client-check` を直接実行します。 | CI 用ターゲット。事前準備は `lint-oapi-security-ci` と同じです。 |
 
 ## `.makefiles/load` 系
 
@@ -428,7 +437,7 @@ Trivy スキャン）は放置します。ループで回すものではない�
 
 ## `.makefiles/python` 系
 
-このリポジトリが PyPI から入れる CLI ツールは `python/*.in` で宣言し、パッケージごとの sha256 付きで `python/*.txt` に固定します（[ADR-0080 (mise-ssot-drift-gate)](../docs/adr/0080-mise-ssot-drift-gate.md)）。ここのターゲットはその lockfile を再生成するものです。`.in` から直接 install する経路はありません。
+このリポジトリが PyPI から入れる CLI ツールは `python/*.in` で宣言し、パッケージごとの sha256 付きで `python/*.txt` に固定します（[ADR-0084 (mise-ssot-drift-gate)](../docs/adr/0084-mise-ssot-drift-gate.md)）。ここのターゲットはその lockfile を再生成するものです。`.in` から直接 install する経路はありません。
 
 | コマンド | 説明 | 補足 |
 | --- | --- | --- |
@@ -539,6 +548,7 @@ Trivy スキャン）は放置します。ループで回すものではない�
 | `make setup-verify` | 初期化が当たったことを検証し、通れば初期化ツールを撤去します。 | `node_tool_runner` で `scripts/setup/verify-setup` を実行します。Phase 5 の値を環境変数で渡します。  <!-- setup-localize:line --> |
 | `make setup-remove-boilerplate-identity` | ボイラープレートである間だけ成り立つ記述を削除します。 | `node_tool_runner` でリポジトリを走査して `boilerplate-only` マーカーをすべて解決し、ボイラープレート限定の規約ドキュメントを削除したうえで、ツール自身も撤去します。`DRY_RUN=1` でプレビューできます。 <!-- boilerplate-only:line --> |
 | `make setup-remove-sample-api` | サンプルAPI(`user`/`product`/`order`)を一括削除します。 | `node_tool_runner` で削除後、`db-local-reinit` / `db-test-reinit` → `gen-api` → `gen-query` → `tidy-lib` → `fix` → `lint` を実行します。DB 再構築により削除済みテーブルが生成モデルに残らず、`tidy-lib` によりサンプルAPIだけが使っていた直接依存が go.mod から落ちます。**DB コンテナ(`database`)の起動が必要**（`gen-query` がライブスキーマをダンプ）。`DRY_RUN=1` で変更せずプレビューできます（`0` を含む空でない値はすべてプレビュー扱いになるため、実行時は変数自体を付けません）。 <!-- sample-api:line --> |
+| `make setup-remove-doc-language` | ドキュメント / スキルの対訳ペアを `LANG_CHOICE` で解決します。`en` / `ja` はその 1 言語へ畳み、`both` は対訳を残してマーカーだけを解決します。 | ツールランナーを経由せずホストで実行します（撤去を 1 コミットに畳むためホストの git が要る）。他のすべての撤去より**先**に実行してください。各撤去ツールは正本と対訳の対で宣言を持ち、畳みが解決した時点で自分の対の宣言を刈ります。逆に Phase 12 はこのツールが文字列を宣言している workflow を削除するため、その後に畳もうとすると中止します。`DRY_RUN=1` でプレビューできます（作業ツリーが汚れていても動作し、実行時はクリーンが必要）。 <!-- lang-choice:line --> |
 
 ### ベースブランチ解決関連
 

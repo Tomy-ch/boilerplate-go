@@ -105,7 +105,20 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
 			<dl>
 			
 			
+				<dd><a href="#pkg-variables">Variables</a></dd>
 			
+			
+			
+				
+				<dd><a href="#Channel">type Channel</a></dd>
+				
+					
+					<dd>    <a href="#ParseChannel">func ParseChannel(s string) (Channel, error)</a></dd>
+				
+				
+					
+					<dd>    <a href="#Channel.String">func (c Channel) String() string</a></dd>
+				
 			
 				
 				<dd><a href="#EmitParams">type EmitParams</a></dd>
@@ -133,6 +146,8 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
 			<p>
 			<span style="font-size:90%">
 			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/channel.go.html">channel.go</a>
+			
 				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/store.go.html">store.go</a>
 			
 			</span>
@@ -145,11 +160,76 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
 
 		
 		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrUnknownChannel は、既知でない配送チャネルが指定されたことを示すエラーです。
+
+				</p><pre>var <span id="ErrUnknownChannel">ErrUnknownChannel</span> = <a href="../../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>, &#34;unknown outbox delivery channel&#34;)</pre>
+			
+		
 		
 		
 			
 			
-			<h2 id="EmitParams">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/store.go.html?s=474:1055#L5">EmitParams</a>
+			<h2 id="Channel">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/channel.go.html?s=745:764#L10">Channel</a>
+				<a class="permalink" href="#Channel">¶</a>
+				
+				
+			</h2>
+			<p>Channel は、outbox 行の配送レーンです
+（レーン分離の帰結は internal/usecase/boundary/outbox/README.md を参照）。
+
+			</p><pre>type Channel <a href="../../../../../builtin/#string">string</a></pre>
+
+			
+				
+				<pre>const (
+    <span class="comment">// ChannelHTTP は、受信エンドポイントへ HTTP で配送するレーンです。</span>
+    <span id="ChannelHTTP">ChannelHTTP</span> <a href="#Channel">Channel</a> = &#34;http&#34;
+    <span class="comment">// ChannelRealtime は、Realtime Delivery の EventLog へ配送するレーンです。順序保証を持ちます。</span>
+    <span id="ChannelRealtime">ChannelRealtime</span> <a href="#Channel">Channel</a> = &#34;realtime&#34;
+)</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="ParseChannel">func <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/channel.go.html?s=1028:1072#L14">ParseChannel</a>
+					<a class="permalink" href="#ParseChannel">¶</a>
+					
+					
+				</h3>
+				<pre>func ParseChannel(s <a href="../../../../../builtin/#string">string</a>) (<a href="#Channel">Channel</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>ParseChannel は、文字列を Channel へ変換します。既知でない値は ErrUnknownChannel を返します。
+未知のチャネルの行はどの relay も claim しないため、値の検証は emit と relay 起動の両方で行います。
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="Channel.String">func (Channel) <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/channel.go.html?s=1329:1361#L24">String</a>
+					<a class="permalink" href="#Channel.String">¶</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="#Channel">Channel</a>) String() <a href="../../../../../builtin/#string">string</a></pre>
+				<p>String は、Channel の文字列表現を返します。
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="EmitParams">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/store.go.html?s=474:1436#L5">EmitParams</a>
 				<a class="permalink" href="#EmitParams">¶</a>
 				
 				
@@ -167,6 +247,12 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
     Payload []<a href="../../../../../builtin/#byte">byte</a>
 <span id="EmitParams.Headers"></span>    <span class="comment">// Headers は publish 時に伝搬するヘッダの JSON（traceparent 等）です。空なら &#39;{}&#39; 相当。</span>
     Headers []<a href="../../../../../builtin/#byte">byte</a>
+<span id="EmitParams.Channel"></span>    <span class="comment">// Channel は配送レーンです。既定値を持たないため、必ず指定します。</span>
+    Channel <a href="#Channel">Channel</a>
+<span id="EmitParams.OrderingKey"></span>    <span class="comment">// OrderingKey は順序保証の単位（ストリーム）です。順序を持たない配送では空にします。</span>
+    OrderingKey <a href="../../../../../builtin/#string">string</a>
+<span id="EmitParams.OrderingSequence"></span>    <span class="comment">// OrderingSequence は OrderingKey 内の位置です。OrderingKey が空なら 0 にします。</span>
+    OrderingSequence <a href="../../../../../builtin/#int64">int64</a>
 }
 </pre>
 
@@ -184,7 +270,7 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
 		
 			
 			
-			<h2 id="PendingMessage">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/store.go.html?s=1185:1683#L19">PendingMessage</a>
+			<h2 id="PendingMessage">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/store.go.html?s=1566:2305#L25">PendingMessage</a>
 				<a class="permalink" href="#PendingMessage">¶</a>
 				
 				
@@ -202,8 +288,10 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
     Payload []<a href="../../../../../builtin/#byte">byte</a>
 <span id="PendingMessage.Headers"></span>    <span class="comment">// Headers は伝搬ヘッダの JSON です。</span>
     Headers []<a href="../../../../../builtin/#byte">byte</a>
-<span id="PendingMessage.Attempts"></span>    <span class="comment">// Attempts は現時点の publish 試行回数です。</span>
+<span id="PendingMessage.Attempts"></span>    <span class="comment">// Attempts は現時点の publish 試行回数です（診断とバックオフ幅の算出に使い、dead 判定には使いません）。</span>
     Attempts <a href="../../../../../builtin/#int32">int32</a>
+<span id="PendingMessage.CreatedAt"></span>    <span class="comment">// CreatedAt は、業務 tx が outbox へ記録した時刻です。publish 先に届くまでの遅れの起点になります。</span>
+    CreatedAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
 }
 </pre>
 
@@ -221,7 +309,7 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
 		
 			
 			
-			<h2 id="Store">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/store.go.html?s=1735:3557#L35">Store</a>
+			<h2 id="Store">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/store.go.html?s=2357:4816#L43">Store</a>
 				<a class="permalink" href="#Store">¶</a>
 				
 				
@@ -231,14 +319,16 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
 			</p><pre>type Store interface {
     <span class="comment">// Insert は、業務 tx 内で outbox へちょうど 1 件記録し、採番された message_id を返します。</span>
     Insert(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, p <a href="#EmitParams">EmitParams</a>) (<a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, <a href="../../../../../builtin/#error">error</a>)
-    <span class="comment">// ClaimPending は、pending のエントリを最大 limit 件まで排他取得します。</span>
+    <span class="comment">// ClaimPending は、指定チャネルの再試行時刻に達した pending エントリを最大 limit 件まで排他取得します。</span>
     <span class="comment">// 複数インスタンスが同時に呼び出しても同一のエントリを二重取得しません。</span>
-    ClaimPending(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, limit <a href="../../../../../builtin/#int32">int32</a>) ([]<a href="#PendingMessage">PendingMessage</a>, <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// 同一 OrderingKey に未 publish の先行エントリがあるエントリは取得しません（stream 内の順序保証）。</span>
+    ClaimPending(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, channel <a href="#Channel">Channel</a>, limit <a href="../../../../../builtin/#int32">int32</a>) ([]<a href="#PendingMessage">PendingMessage</a>, <a href="../../../../../builtin/#error">error</a>)
     <span class="comment">// MarkPublished は、publish に成功したエントリを published へ遷移します。</span>
     <span class="comment">// pending でなければ何もしません（no-op）。</span>
     MarkPublished(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, id <a href="../../../../../builtin/#int64">int64</a>) <a href="../../../../../builtin/#error">error</a>
-    <span class="comment">// MarkFailed は、試行回数を加算し直近の失敗理由を記録し、加算後の試行回数を返します。</span>
-    MarkFailed(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, id <a href="../../../../../builtin/#int64">int64</a>, lastErr <a href="../../../../../builtin/#string">string</a>) (attempts <a href="../../../../../builtin/#int32">int32</a>, err <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// MarkFailed は、直近の失敗理由を記録し、次に claim してよい時刻を nextAttemptAt へ進めます。</span>
+    <span class="comment">// エントリは pending のまま残り、その時刻まで claim されません。</span>
+    MarkFailed(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, id <a href="../../../../../builtin/#int64">int64</a>, lastErr <a href="../../../../../builtin/#string">string</a>, nextAttemptAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>) <a href="../../../../../builtin/#error">error</a>
     <span class="comment">// MarkDead は、エントリを dead へ遷移します。</span>
     <span class="comment">// pending でなければ何もしません（no-op）。</span>
     MarkDead(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, id <a href="../../../../../builtin/#int64">int64</a>) <a href="../../../../../builtin/#error">error</a>
@@ -246,9 +336,12 @@ emit（usecase 層）と relay engine（controller 層）の双方がこの境�
     ReplayDead(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, messageID *<a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="../../../../../builtin/#int64">int64</a>, <a href="../../../../../builtin/#error">error</a>)
     <span class="comment">// DeletePublished は、publish 完了時刻が cutoff より古いエントリを limit 件まで削除し、削除件数を返します（GC）。</span>
     DeletePublished(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, cutoff <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>, limit <a href="../../../../../builtin/#int32">int32</a>) (<a href="../../../../../builtin/#int64">int64</a>, <a href="../../../../../builtin/#error">error</a>)
-    <span class="comment">// OldestPendingCreatedAt は、最古の pending エントリの作成時刻を返します（SLI=outbox lag 用）。</span>
+    <span class="comment">// OldestPendingCreatedAt は、指定チャネルの最古 pending エントリの作成時刻を返します（SLI=outbox lag 用）。</span>
     <span class="comment">// pending のエントリが無ければ ok=false を返します。</span>
-    OldestPendingCreatedAt(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) (createdAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>, ok <a href="../../../../../builtin/#bool">bool</a>, err <a href="../../../../../builtin/#error">error</a>)
+    OldestPendingCreatedAt(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, channel <a href="#Channel">Channel</a>) (createdAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>, ok <a href="../../../../../builtin/#bool">bool</a>, err <a href="../../../../../builtin/#error">error</a>)
+    <span class="comment">// CountBlockedStreams は、先頭エントリが dead であるストリームの数を返します。</span>
+    <span class="comment">// 先頭が dead のストリームは順序保証により後続が claim されないため、復旧が要る対象です。</span>
+    CountBlockedStreams(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, channel <a href="#Channel">Channel</a>) (<a href="../../../../../builtin/#int64">int64</a>, <a href="../../../../../builtin/#error">error</a>)
 }</pre>
 
 			

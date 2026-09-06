@@ -1,7 +1,5 @@
 # Job サブシステム設計リファレンス
 
-[Job README（日本語）](../../internal/controller/job/README.ja.md) | English: [job.md](job.md)
-
 本書は job scaffold の **役割論・状態遷移・実装箇所・integrator が書く箇所・用語** を、実装を精査して 1 枚にまとめた参照資料です。概要は README、非同期の兄弟である worker は [worker.ja.md](worker.ja.md) を参照。
 
 ---

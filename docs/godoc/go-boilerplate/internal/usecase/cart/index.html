@@ -196,7 +196,7 @@
 			
 				<p>ErrUnavailableProduct は、カートへ入れられない商品を指定した場合のエラーです（422）。
 不存在の商品と非公開の商品のどちらもこれになります（区別しない理由と、明細に立つ issue との
-違いは docs/spec/cart/usecase.md の SetItem）。
+違いは docs/spec/usecase/cart.md の SetItem）。
 
 				</p><pre>var <span id="ErrUnavailableProduct">ErrUnavailableProduct</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrValidation">ErrValidation</a>, &#34;product is unavailable for the cart&#34;)</pre>
 			
@@ -205,7 +205,7 @@
 		
 			
 			
-			<h2 id="CartItemView">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=4433:5329#L88">CartItemView</a>
+			<h2 id="CartItemView">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=4646:5542#L92">CartItemView</a>
 				<a class="permalink" href="#CartItemView">¶</a>
 				
 				
@@ -244,7 +244,7 @@
 		
 			
 			
-			<h2 id="CartView">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=5382:5969#L106">CartView</a>
+			<h2 id="CartView">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=5595:6182#L110">CartView</a>
 				<a class="permalink" href="#CartView">¶</a>
 				
 				
@@ -277,12 +277,14 @@
 		
 			
 			
-			<h2 id="ItemIssue">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=2568:2589#L41">ItemIssue</a>
+			<h2 id="ItemIssue">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=2781:2802#L45">ItemIssue</a>
 				<a class="permalink" href="#ItemIssue">¶</a>
 				
 				
 			</h2>
 			<p>ItemIssue は、明細ごとの再評価結果です。値は外部向けの安定コードで、表示ではなく分岐に用います。
+各値の意味は対応する cart.Issue が定義し、ここでは再定義しません
+（docs/spec/domain/cart.md の Issue）。
 
 			</p><pre>type ItemIssue <a href="../../../../builtin/#string">string</a></pre>
 
@@ -290,17 +292,19 @@
 				
 				<pre>const (
 
-    <span class="comment">// ItemIssueNotFound は、商品を引けなかったことを表します。</span>
+    <span class="comment">// ItemIssueNotFound は、cart.IssueNotFound に対応します。</span>
     <span id="ItemIssueNotFound">ItemIssueNotFound</span> <a href="#ItemIssue">ItemIssue</a> = &#34;notFound&#34;
-    <span class="comment">// ItemIssueUnpublished は、商品が非公開であることを表します。</span>
+    <span class="comment">// ItemIssueUnpublished は、cart.IssueUnpublished に対応します。</span>
     <span id="ItemIssueUnpublished">ItemIssueUnpublished</span> <a href="#ItemIssue">ItemIssue</a> = &#34;unpublished&#34;
-    <span class="comment">// ItemIssueOutOfStock は、在庫が無いことを表します。</span>
+    <span class="comment">// ItemIssueDiscontinued は、cart.IssueDiscontinued に対応します。</span>
+    <span id="ItemIssueDiscontinued">ItemIssueDiscontinued</span> <a href="#ItemIssue">ItemIssue</a> = &#34;discontinued&#34;
+    <span class="comment">// ItemIssueOutOfStock は、cart.IssueOutOfStock に対応します。</span>
     <span id="ItemIssueOutOfStock">ItemIssueOutOfStock</span> <a href="#ItemIssue">ItemIssue</a> = &#34;outOfStock&#34;
-    <span class="comment">// ItemIssueInsufficientStock は、在庫が要求数量に満たないことを表します。</span>
+    <span class="comment">// ItemIssueInsufficientStock は、cart.IssueInsufficientStock に対応します。</span>
     <span id="ItemIssueInsufficientStock">ItemIssueInsufficientStock</span> <a href="#ItemIssue">ItemIssue</a> = &#34;insufficientStock&#34;
-    <span class="comment">// ItemIssuePriceIncreased は、前回提示した価格より高いことを表します。</span>
+    <span class="comment">// ItemIssuePriceIncreased は、cart.IssuePriceIncreased に対応します。</span>
     <span id="ItemIssuePriceIncreased">ItemIssuePriceIncreased</span> <a href="#ItemIssue">ItemIssue</a> = &#34;priceIncreased&#34;
-    <span class="comment">// ItemIssuePriceDecreased は、前回提示した価格より安いことを表します。</span>
+    <span class="comment">// ItemIssuePriceDecreased は、cart.IssuePriceDecreased に対応します。</span>
     <span id="ItemIssuePriceDecreased">ItemIssuePriceDecreased</span> <a href="#ItemIssue">ItemIssue</a> = &#34;priceDecreased&#34;
 )</pre>
 			
@@ -317,7 +321,7 @@
 		
 			
 			
-			<h2 id="MergeCartResult">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=4100:4373#L80">MergeCartResult</a>
+			<h2 id="MergeCartResult">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=4313:4586#L84">MergeCartResult</a>
 				<a class="permalink" href="#MergeCartResult">¶</a>
 				
 				
@@ -347,7 +351,7 @@
 		
 			
 			
-			<h2 id="MergeOnLoginParams">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=3690:3916#L71">MergeOnLoginParams</a>
+			<h2 id="MergeOnLoginParams">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=3903:4129#L75">MergeOnLoginParams</a>
 				<a class="permalink" href="#MergeOnLoginParams">¶</a>
 				
 				
@@ -376,7 +380,7 @@
 		
 			
 			
-			<h2 id="RemoveItemParams">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=3418:3597#L63">RemoveItemParams</a>
+			<h2 id="RemoveItemParams">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=3631:3810#L67">RemoveItemParams</a>
 				<a class="permalink" href="#RemoveItemParams">¶</a>
 				
 				
@@ -405,7 +409,7 @@
 		
 			
 			
-			<h2 id="SetItemParams">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=3081:3351#L53">SetItemParams</a>
+			<h2 id="SetItemParams">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=3294:3564#L57">SetItemParams</a>
 				<a class="permalink" href="#SetItemParams">¶</a>
 				
 				
@@ -436,7 +440,7 @@
 		
 			
 			
-			<h2 id="Subject">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=2817:3011#L45">Subject</a>
+			<h2 id="Subject">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=3030:3224#L49">Subject</a>
 				<a class="permalink" href="#Subject">¶</a>
 				
 				
@@ -466,7 +470,7 @@
 		
 			
 			
-			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=6040:8512#L118">Usecase</a>
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=6253:8725#L122">Usecase</a>
 				<a class="permalink" href="#Usecase">¶</a>
 				
 				
@@ -500,7 +504,7 @@
     <span class="comment">// 引き継ぎ元を引けない場合（引き継ぎ済み・期限切れ・未知のトークン）も成功し、失われた分は空になります。</span>
     <span class="comment">// 形式が不正なトークンはエラーを返しますが、それ以外の理由で引き継ぎが失敗することはありません。</span>
     <span class="comment">// 数量や明細数が上限を超える分は調整され、失われた分は戻り値で報告します</span>
-    <span class="comment">// （切り捨ての優先順位は docs/spec/cart/domain.md の Merge）。</span>
+    <span class="comment">// （切り捨ての優先順位は docs/spec/domain/cart.md の Merge）。</span>
     MergeOnLogin(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, params <a href="#MergeOnLoginParams">MergeOnLoginParams</a>) (<a href="#MergeCartResult">MergeCartResult</a>, <a href="../../../../builtin/#error">error</a>)
 }</pre>
 
@@ -514,7 +518,7 @@
 
 			
 				
-				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=8782:8956#L159">New</a>
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/cart/cart_usecase.go.html?s=8995:9169#L163">New</a>
 					<a class="permalink" href="#New">¶</a>
 					
 					

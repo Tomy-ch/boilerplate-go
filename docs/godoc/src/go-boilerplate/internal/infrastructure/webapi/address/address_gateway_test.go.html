@@ -117,120 +117,121 @@
 <span id="L60" class="ln">    60  </span>							`{&#34;address1&#34;:&#34;東京都&#34;,&#34;address2&#34;:&#34;千代田区&#34;,&#34;address3&#34;:&#34;千代田&#34;},` +
 <span id="L61" class="ln">    61  </span>							`{&#34;address1&#34;:&#34;東京都&#34;,&#34;address2&#34;:&#34;千代田区&#34;,&#34;address3&#34;:&#34;大手町&#34;}]}`,
 <span id="L62" class="ln">    62  </span>					)}, nil
-<span id="L63" class="ln">    63  </span>				})
-<span id="L64" class="ln">    64  </span>
-<span id="L65" class="ln">    65  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
-<span id="L66" class="ln">    66  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
-<span id="L67" class="ln">    67  </span>
-<span id="L68" class="ln">    68  </span>			require.NoError(t, err)
-<span id="L69" class="ln">    69  </span>			require.Len(t, candidates, 2)
-<span id="L70" class="ln">    70  </span>			assert.Equal(t, &#34;東京都&#34;, candidates[0].PrefectureName)
-<span id="L71" class="ln">    71  </span>			assert.Equal(t, &#34;千代田区&#34;, candidates[0].City)
-<span id="L72" class="ln">    72  </span>			assert.Equal(t, &#34;千代田&#34;, candidates[0].Town)
-<span id="L73" class="ln">    73  </span>			assert.Equal(t, &#34;大手町&#34;, candidates[1].Town)
-<span id="L74" class="ln">    74  </span>		})
-<span id="L75" class="ln">    75  </span>
-<span id="L76" class="ln">    76  </span>		t.Run(&#34;該当なし_results_nullは空スライスとnilエラーを返す&#34;, func(t *testing.T) {
-<span id="L77" class="ln">    77  </span>			t.Parallel()
-<span id="L78" class="ln">    78  </span>
-<span id="L79" class="ln">    79  </span>			ctrl := gomock.NewController(t)
-<span id="L80" class="ln">    80  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L81" class="ln">    81  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L82" class="ln">    82  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(`{&#34;status&#34;:200,&#34;message&#34;:null,&#34;results&#34;:null}`)}, nil)
-<span id="L83" class="ln">    83  </span>
-<span id="L84" class="ln">    84  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
-<span id="L85" class="ln">    85  </span>			candidates, err := gw.Lookup(context.Background(), &#34;0000000&#34;)
-<span id="L86" class="ln">    86  </span>
-<span id="L87" class="ln">    87  </span>			require.NoError(t, err)
-<span id="L88" class="ln">    88  </span>			assert.Empty(t, candidates)
-<span id="L89" class="ln">    89  </span>		})
-<span id="L90" class="ln">    90  </span>
-<span id="L91" class="ln">    91  </span>		t.Run(&#34;候補が上限を超える応答は上限件数へ切り詰める&#34;, func(t *testing.T) {
-<span id="L92" class="ln">    92  </span>			t.Parallel()
-<span id="L93" class="ln">    93  </span>
-<span id="L94" class="ln">    94  </span>			<span class="comment">// 上限（50）+1 件を返し、防御的に 50 件へ切り詰められることを検証する。</span>
-<span id="L95" class="ln">    95  </span>			one := `{&#34;address1&#34;:&#34;東京都&#34;,&#34;address2&#34;:&#34;千代田区&#34;,&#34;address3&#34;:&#34;千代田&#34;}`
-<span id="L96" class="ln">    96  </span>			body := `{&#34;status&#34;:200,&#34;results&#34;:[` + strings.Repeat(one+&#34;,&#34;, 50) + one + `]}`
-<span id="L97" class="ln">    97  </span>
-<span id="L98" class="ln">    98  </span>			ctrl := gomock.NewController(t)
-<span id="L99" class="ln">    99  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L100" class="ln">   100  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L101" class="ln">   101  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(body)}, nil)
-<span id="L102" class="ln">   102  </span>
-<span id="L103" class="ln">   103  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
-<span id="L104" class="ln">   104  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
-<span id="L105" class="ln">   105  </span>
-<span id="L106" class="ln">   106  </span>			require.NoError(t, err)
-<span id="L107" class="ln">   107  </span>			assert.Len(t, candidates, 50)
-<span id="L108" class="ln">   108  </span>		})
-<span id="L109" class="ln">   109  </span>	})
-<span id="L110" class="ln">   110  </span>
-<span id="L111" class="ln">   111  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L112" class="ln">   112  </span>		t.Parallel()
-<span id="L113" class="ln">   113  </span>
-<span id="L114" class="ln">   114  </span>		t.Run(&#34;substrateが返すapperrorをそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L115" class="ln">   115  </span>			t.Parallel()
-<span id="L116" class="ln">   116  </span>
-<span id="L117" class="ln">   117  </span>			ctrl := gomock.NewController(t)
-<span id="L118" class="ln">   118  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L119" class="ln">   119  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L120" class="ln">   120  </span>				Return(nil, xerrors.Wrap(apperror.ErrUnavailable, &#34;downstream unavailable&#34;))
-<span id="L121" class="ln">   121  </span>
-<span id="L122" class="ln">   122  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
-<span id="L123" class="ln">   123  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
-<span id="L124" class="ln">   124  </span>
-<span id="L125" class="ln">   125  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L126" class="ln">   126  </span>			assert.Nil(t, candidates)
-<span id="L127" class="ln">   127  </span>		})
-<span id="L128" class="ln">   128  </span>
-<span id="L129" class="ln">   129  </span>		t.Run(&#34;不正なJSONレスポンスはErrUnavailableを返す&#34;, func(t *testing.T) {
-<span id="L130" class="ln">   130  </span>			t.Parallel()
-<span id="L131" class="ln">   131  </span>
-<span id="L132" class="ln">   132  </span>			ctrl := gomock.NewController(t)
-<span id="L133" class="ln">   133  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L134" class="ln">   134  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L135" class="ln">   135  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(`not-json`)}, nil)
-<span id="L136" class="ln">   136  </span>
-<span id="L137" class="ln">   137  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
-<span id="L138" class="ln">   138  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L141" class="ln">   141  </span>			assert.Nil(t, candidates)
-<span id="L142" class="ln">   142  </span>		})
-<span id="L143" class="ln">   143  </span>
-<span id="L144" class="ln">   144  </span>		t.Run(&#34;body_statusが200以外のレスポンスはErrUnavailableを返す&#34;, func(t *testing.T) {
-<span id="L145" class="ln">   145  </span>			t.Parallel()
-<span id="L146" class="ln">   146  </span>
-<span id="L147" class="ln">   147  </span>			ctrl := gomock.NewController(t)
-<span id="L148" class="ln">   148  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L149" class="ln">   149  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L150" class="ln">   150  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(`{&#34;status&#34;:400,&#34;message&#34;:&#34;パラメータが不正です。&#34;,&#34;results&#34;:null}`)}, nil)
-<span id="L151" class="ln">   151  </span>
-<span id="L152" class="ln">   152  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
-<span id="L153" class="ln">   153  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
-<span id="L154" class="ln">   154  </span>
-<span id="L155" class="ln">   155  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L156" class="ln">   156  </span>			assert.Nil(t, candidates)
-<span id="L157" class="ln">   157  </span>		})
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>		t.Run(&#34;body_statusが200以外でmessageがnullでもErrUnavailableを返す&#34;, func(t *testing.T) {
-<span id="L160" class="ln">   160  </span>			t.Parallel()
-<span id="L161" class="ln">   161  </span>
-<span id="L162" class="ln">   162  </span>			<span class="comment">// message 欠落（null）でもエラーメッセージ組み立てで panic せず ErrUnavailable へ写像すること。</span>
-<span id="L163" class="ln">   163  </span>			ctrl := gomock.NewController(t)
-<span id="L164" class="ln">   164  </span>			client := mock_httpclient.NewMockClient(ctrl)
-<span id="L165" class="ln">   165  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
-<span id="L166" class="ln">   166  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(`{&#34;status&#34;:500,&#34;results&#34;:null}`)}, nil)
-<span id="L167" class="ln">   167  </span>
-<span id="L168" class="ln">   168  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
-<span id="L169" class="ln">   169  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
-<span id="L172" class="ln">   172  </span>			assert.Nil(t, candidates)
-<span id="L173" class="ln">   173  </span>		})
-<span id="L174" class="ln">   174  </span>	})
-<span id="L175" class="ln">   175  </span>}
-<span id="L176" class="ln">   176  </span>
+<span id="L63" class="ln">    63  </span>				},
+<span id="L64" class="ln">    64  </span>			)
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
+<span id="L67" class="ln">    67  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span>			require.NoError(t, err)
+<span id="L70" class="ln">    70  </span>			require.Len(t, candidates, 2)
+<span id="L71" class="ln">    71  </span>			assert.Equal(t, &#34;東京都&#34;, candidates[0].PrefectureName)
+<span id="L72" class="ln">    72  </span>			assert.Equal(t, &#34;千代田区&#34;, candidates[0].City)
+<span id="L73" class="ln">    73  </span>			assert.Equal(t, &#34;千代田&#34;, candidates[0].Town)
+<span id="L74" class="ln">    74  </span>			assert.Equal(t, &#34;大手町&#34;, candidates[1].Town)
+<span id="L75" class="ln">    75  </span>		})
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>		t.Run(&#34;該当なし_results_nullは空スライスとnilエラーを返す&#34;, func(t *testing.T) {
+<span id="L78" class="ln">    78  </span>			t.Parallel()
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span>			ctrl := gomock.NewController(t)
+<span id="L81" class="ln">    81  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L82" class="ln">    82  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L83" class="ln">    83  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(`{&#34;status&#34;:200,&#34;message&#34;:null,&#34;results&#34;:null}`)}, nil)
+<span id="L84" class="ln">    84  </span>
+<span id="L85" class="ln">    85  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
+<span id="L86" class="ln">    86  </span>			candidates, err := gw.Lookup(context.Background(), &#34;0000000&#34;)
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span>			require.NoError(t, err)
+<span id="L89" class="ln">    89  </span>			assert.Empty(t, candidates)
+<span id="L90" class="ln">    90  </span>		})
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>		t.Run(&#34;候補が上限を超える応答は上限件数へ切り詰める&#34;, func(t *testing.T) {
+<span id="L93" class="ln">    93  </span>			t.Parallel()
+<span id="L94" class="ln">    94  </span>
+<span id="L95" class="ln">    95  </span>			<span class="comment">// 上限（50）+1 件を返し、防御的に 50 件へ切り詰められることを検証する。</span>
+<span id="L96" class="ln">    96  </span>			one := `{&#34;address1&#34;:&#34;東京都&#34;,&#34;address2&#34;:&#34;千代田区&#34;,&#34;address3&#34;:&#34;千代田&#34;}`
+<span id="L97" class="ln">    97  </span>			body := `{&#34;status&#34;:200,&#34;results&#34;:[` + strings.Repeat(one+&#34;,&#34;, 50) + one + `]}`
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span>			ctrl := gomock.NewController(t)
+<span id="L100" class="ln">   100  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L101" class="ln">   101  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L102" class="ln">   102  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(body)}, nil)
+<span id="L103" class="ln">   103  </span>
+<span id="L104" class="ln">   104  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
+<span id="L105" class="ln">   105  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
+<span id="L106" class="ln">   106  </span>
+<span id="L107" class="ln">   107  </span>			require.NoError(t, err)
+<span id="L108" class="ln">   108  </span>			assert.Len(t, candidates, 50)
+<span id="L109" class="ln">   109  </span>		})
+<span id="L110" class="ln">   110  </span>	})
+<span id="L111" class="ln">   111  </span>
+<span id="L112" class="ln">   112  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L113" class="ln">   113  </span>		t.Parallel()
+<span id="L114" class="ln">   114  </span>
+<span id="L115" class="ln">   115  </span>		t.Run(&#34;substrateが返すapperrorをそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L116" class="ln">   116  </span>			t.Parallel()
+<span id="L117" class="ln">   117  </span>
+<span id="L118" class="ln">   118  </span>			ctrl := gomock.NewController(t)
+<span id="L119" class="ln">   119  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L120" class="ln">   120  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L121" class="ln">   121  </span>				Return(nil, xerrors.Wrap(apperror.ErrUnavailable, &#34;downstream unavailable&#34;))
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
+<span id="L124" class="ln">   124  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L127" class="ln">   127  </span>			assert.Nil(t, candidates)
+<span id="L128" class="ln">   128  </span>		})
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>		t.Run(&#34;不正なJSONレスポンスはErrUnavailableを返す&#34;, func(t *testing.T) {
+<span id="L131" class="ln">   131  </span>			t.Parallel()
+<span id="L132" class="ln">   132  </span>
+<span id="L133" class="ln">   133  </span>			ctrl := gomock.NewController(t)
+<span id="L134" class="ln">   134  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L135" class="ln">   135  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L136" class="ln">   136  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(`not-json`)}, nil)
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
+<span id="L139" class="ln">   139  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L142" class="ln">   142  </span>			assert.Nil(t, candidates)
+<span id="L143" class="ln">   143  </span>		})
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span>		t.Run(&#34;body_statusが200以外のレスポンスはErrUnavailableを返す&#34;, func(t *testing.T) {
+<span id="L146" class="ln">   146  </span>			t.Parallel()
+<span id="L147" class="ln">   147  </span>
+<span id="L148" class="ln">   148  </span>			ctrl := gomock.NewController(t)
+<span id="L149" class="ln">   149  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L150" class="ln">   150  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L151" class="ln">   151  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(`{&#34;status&#34;:400,&#34;message&#34;:&#34;パラメータが不正です。&#34;,&#34;results&#34;:null}`)}, nil)
+<span id="L152" class="ln">   152  </span>
+<span id="L153" class="ln">   153  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
+<span id="L154" class="ln">   154  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
+<span id="L155" class="ln">   155  </span>
+<span id="L156" class="ln">   156  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L157" class="ln">   157  </span>			assert.Nil(t, candidates)
+<span id="L158" class="ln">   158  </span>		})
+<span id="L159" class="ln">   159  </span>
+<span id="L160" class="ln">   160  </span>		t.Run(&#34;body_statusが200以外でmessageがnullでもErrUnavailableを返す&#34;, func(t *testing.T) {
+<span id="L161" class="ln">   161  </span>			t.Parallel()
+<span id="L162" class="ln">   162  </span>
+<span id="L163" class="ln">   163  </span>			<span class="comment">// message 欠落（null）でもエラーメッセージ組み立てで panic せず ErrUnavailable へ写像すること。</span>
+<span id="L164" class="ln">   164  </span>			ctrl := gomock.NewController(t)
+<span id="L165" class="ln">   165  </span>			client := mock_httpclient.NewMockClient(ctrl)
+<span id="L166" class="ln">   166  </span>			client.EXPECT().Do(gomock.Any(), gomock.Any()).
+<span id="L167" class="ln">   167  </span>				Return(&amp;httpclient.Response{StatusCode: 200, Body: []byte(`{&#34;status&#34;:500,&#34;results&#34;:null}`)}, nil)
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>			gw := address.New(testEndpoint, client, observability.NewNoopTracerFactory(t))
+<span id="L170" class="ln">   170  </span>			candidates, err := gw.Lookup(context.Background(), &#34;1000001&#34;)
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L173" class="ln">   173  </span>			assert.Nil(t, candidates)
+<span id="L174" class="ln">   174  </span>		})
+<span id="L175" class="ln">   175  </span>	})
+<span id="L176" class="ln">   176  </span>}
+<span id="L177" class="ln">   177  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/webapi/address/address_gateway_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

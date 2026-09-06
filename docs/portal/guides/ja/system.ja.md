@@ -1,7 +1,5 @@
 # internal/system
 
-[English](README.md) | 日本語
-
 `internal/system` は **アプリケーションのランタイムメタ情報（ビルド情報）** を提供するパッケージです。
 
 このパッケージはビジネスロジックやインフラとは独立した **プロセス情報 (process metadata)** を扱います。  

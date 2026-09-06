@@ -513,106 +513,108 @@
 <span id="L456" class="ln">   456  </span>			c, obs := newRecordingClient(t)
 <span id="L457" class="ln">   457  </span>
 <span id="L458" class="ln">   458  </span>			c.recordOutcome(
-<span id="L459" class="ln">   459  </span>				context.Background(), &#34;acct&#34;, &amp;Response{StatusCode: http.StatusServiceUnavailable}, apperror.ErrUnavailable)
-<span id="L460" class="ln">   460  </span>
-<span id="L461" class="ln">   461  </span>			assert.Equal(t, []string{&#34;http_5xx&#34;}, obs.LabelValues(t, &#34;httpclient.errors&#34;, &#34;reason&#34;))
-<span id="L462" class="ln">   462  </span>		})
-<span id="L463" class="ln">   463  </span>
-<span id="L464" class="ln">   464  </span>		t.Run(&#34;サーキット開放は circuit_open を reason に計上する&#34;, func(t *testing.T) {
-<span id="L465" class="ln">   465  </span>			t.Parallel()
-<span id="L466" class="ln">   466  </span>
-<span id="L467" class="ln">   467  </span>			c, obs := newRecordingClient(t)
-<span id="L468" class="ln">   468  </span>
-<span id="L469" class="ln">   469  </span>			c.recordOutcome(context.Background(), &#34;acct&#34;, nil, errCircuitOpen)
-<span id="L470" class="ln">   470  </span>
-<span id="L471" class="ln">   471  </span>			assert.Equal(t, []string{&#34;circuit_open&#34;}, obs.LabelValues(t, &#34;httpclient.errors&#34;, &#34;reason&#34;))
-<span id="L472" class="ln">   472  </span>			<span class="comment">// 応答が無いので requests は計上しない。</span>
-<span id="L473" class="ln">   473  </span>			assert.Empty(t, obs.LabelValues(t, &#34;httpclient.requests&#34;, &#34;status_class&#34;))
-<span id="L474" class="ln">   474  </span>		})
-<span id="L475" class="ln">   475  </span>
-<span id="L476" class="ln">   476  </span>		t.Run(&#34;キャンセルは canceled を reason に計上する&#34;, func(t *testing.T) {
-<span id="L477" class="ln">   477  </span>			t.Parallel()
-<span id="L478" class="ln">   478  </span>
-<span id="L479" class="ln">   479  </span>			c, obs := newRecordingClient(t)
-<span id="L480" class="ln">   480  </span>
-<span id="L481" class="ln">   481  </span>			c.recordOutcome(context.Background(), &#34;acct&#34;, nil, apperror.ErrCanceled)
-<span id="L482" class="ln">   482  </span>
-<span id="L483" class="ln">   483  </span>			assert.Equal(t, []string{&#34;canceled&#34;}, obs.LabelValues(t, &#34;httpclient.errors&#34;, &#34;reason&#34;))
-<span id="L484" class="ln">   484  </span>		})
-<span id="L485" class="ln">   485  </span>
-<span id="L486" class="ln">   486  </span>		t.Run(&#34;分類できないエラーは transport を reason に計上する&#34;, func(t *testing.T) {
-<span id="L487" class="ln">   487  </span>			t.Parallel()
-<span id="L488" class="ln">   488  </span>
-<span id="L489" class="ln">   489  </span>			c, obs := newRecordingClient(t)
-<span id="L490" class="ln">   490  </span>
-<span id="L491" class="ln">   491  </span>			c.recordOutcome(context.Background(), &#34;acct&#34;, nil, xerrors.New(&#34;dial failed&#34;))
-<span id="L492" class="ln">   492  </span>
-<span id="L493" class="ln">   493  </span>			assert.Equal(t, []string{&#34;transport&#34;}, obs.LabelValues(t, &#34;httpclient.errors&#34;, &#34;reason&#34;))
-<span id="L494" class="ln">   494  </span>		})
-<span id="L495" class="ln">   495  </span>	})
-<span id="L496" class="ln">   496  </span>}
-<span id="L497" class="ln">   497  </span>
-<span id="L498" class="ln">   498  </span>func Test_client_canRetryWithin(t *testing.T) {
-<span id="L499" class="ln">   499  </span>	t.Parallel()
-<span id="L500" class="ln">   500  </span>
-<span id="L501" class="ln">   501  </span>	base := time.Unix(1000, 0)
-<span id="L502" class="ln">   502  </span>
-<span id="L503" class="ln">   503  </span>	<span class="comment">// newFixedClockClient は、時刻が進まない clock を持つ client を返す。</span>
-<span id="L504" class="ln">   504  </span>	newFixedClockClient := func() *client {
-<span id="L505" class="ln">   505  </span>		return &amp;client{clk: clocktestkit.NewStepClock(base, 0)}
-<span id="L506" class="ln">   506  </span>	}
-<span id="L507" class="ln">   507  </span>
-<span id="L508" class="ln">   508  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L509" class="ln">   509  </span>		t.Parallel()
-<span id="L510" class="ln">   510  </span>
-<span id="L511" class="ln">   511  </span>		t.Run(&#34;backoff待機後も期限より前なら次の試行を許可する&#34;, func(t *testing.T) {
-<span id="L512" class="ln">   512  </span>			t.Parallel()
-<span id="L513" class="ln">   513  </span>
-<span id="L514" class="ln">   514  </span>			assert.True(t, newFixedClockClient().canRetryWithin(base.Add(time.Second), 999*time.Millisecond))
-<span id="L515" class="ln">   515  </span>		})
-<span id="L516" class="ln">   516  </span>	})
-<span id="L517" class="ln">   517  </span>
-<span id="L518" class="ln">   518  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L519" class="ln">   519  </span>		t.Parallel()
-<span id="L520" class="ln">   520  </span>
-<span id="L521" class="ln">   521  </span>		t.Run(&#34;backoff待機後が期限ちょうどなら次の試行を許可しない&#34;, func(t *testing.T) {
-<span id="L522" class="ln">   522  </span>			t.Parallel()
-<span id="L523" class="ln">   523  </span>
-<span id="L524" class="ln">   524  </span>			assert.False(t, newFixedClockClient().canRetryWithin(base.Add(time.Second), time.Second))
-<span id="L525" class="ln">   525  </span>		})
-<span id="L526" class="ln">   526  </span>
-<span id="L527" class="ln">   527  </span>		t.Run(&#34;backoff待機後が期限を超えるなら次の試行を許可しない&#34;, func(t *testing.T) {
-<span id="L528" class="ln">   528  </span>			t.Parallel()
-<span id="L529" class="ln">   529  </span>
-<span id="L530" class="ln">   530  </span>			assert.False(t, newFixedClockClient().canRetryWithin(base.Add(time.Second), 2*time.Second))
-<span id="L531" class="ln">   531  </span>		})
-<span id="L532" class="ln">   532  </span>
-<span id="L533" class="ln">   533  </span>		t.Run(&#34;既に期限を過ぎている場合は待機なしでも次の試行を許可しない&#34;, func(t *testing.T) {
-<span id="L534" class="ln">   534  </span>			t.Parallel()
-<span id="L535" class="ln">   535  </span>
-<span id="L536" class="ln">   536  </span>			assert.False(t, newFixedClockClient().canRetryWithin(base.Add(-time.Second), 0))
-<span id="L537" class="ln">   537  </span>		})
-<span id="L538" class="ln">   538  </span>	})
-<span id="L539" class="ln">   539  </span>}
-<span id="L540" class="ln">   540  </span>
-<span id="L541" class="ln">   541  </span>func Test_noFollowRedirect(t *testing.T) {
-<span id="L542" class="ln">   542  </span>	t.Parallel()
-<span id="L543" class="ln">   543  </span>
-<span id="L544" class="ln">   544  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L545" class="ln">   545  </span>		t.Parallel()
-<span id="L546" class="ln">   546  </span>
-<span id="L547" class="ln">   547  </span>		t.Run(&#34;リダイレクトを追従せず最終レスポンスを返す指示を返す&#34;, func(t *testing.T) {
-<span id="L548" class="ln">   548  </span>			t.Parallel()
-<span id="L549" class="ln">   549  </span>
-<span id="L550" class="ln">   550  </span>			req, err := http.NewRequestWithContext(
-<span id="L551" class="ln">   551  </span>				context.Background(), http.MethodGet, &#34;https://example.com/redirected&#34;, nil)
-<span id="L552" class="ln">   552  </span>			require.NoError(t, err)
-<span id="L553" class="ln">   553  </span>
-<span id="L554" class="ln">   554  </span>			require.ErrorIs(t, noFollowRedirect(req, []*http.Request{req}), http.ErrUseLastResponse)
-<span id="L555" class="ln">   555  </span>		})
-<span id="L556" class="ln">   556  </span>	})
-<span id="L557" class="ln">   557  </span>}
-<span id="L558" class="ln">   558  </span>
+<span id="L459" class="ln">   459  </span>				context.Background(), &#34;acct&#34;, &amp;Response{StatusCode: http.StatusServiceUnavailable}, apperror.ErrUnavailable,
+<span id="L460" class="ln">   460  </span>			)
+<span id="L461" class="ln">   461  </span>
+<span id="L462" class="ln">   462  </span>			assert.Equal(t, []string{&#34;http_5xx&#34;}, obs.LabelValues(t, &#34;httpclient.errors&#34;, &#34;reason&#34;))
+<span id="L463" class="ln">   463  </span>		})
+<span id="L464" class="ln">   464  </span>
+<span id="L465" class="ln">   465  </span>		t.Run(&#34;サーキット開放は circuit_open を reason に計上する&#34;, func(t *testing.T) {
+<span id="L466" class="ln">   466  </span>			t.Parallel()
+<span id="L467" class="ln">   467  </span>
+<span id="L468" class="ln">   468  </span>			c, obs := newRecordingClient(t)
+<span id="L469" class="ln">   469  </span>
+<span id="L470" class="ln">   470  </span>			c.recordOutcome(context.Background(), &#34;acct&#34;, nil, errCircuitOpen)
+<span id="L471" class="ln">   471  </span>
+<span id="L472" class="ln">   472  </span>			assert.Equal(t, []string{&#34;circuit_open&#34;}, obs.LabelValues(t, &#34;httpclient.errors&#34;, &#34;reason&#34;))
+<span id="L473" class="ln">   473  </span>			<span class="comment">// 応答が無いので requests は計上しない。</span>
+<span id="L474" class="ln">   474  </span>			assert.Empty(t, obs.LabelValues(t, &#34;httpclient.requests&#34;, &#34;status_class&#34;))
+<span id="L475" class="ln">   475  </span>		})
+<span id="L476" class="ln">   476  </span>
+<span id="L477" class="ln">   477  </span>		t.Run(&#34;キャンセルは canceled を reason に計上する&#34;, func(t *testing.T) {
+<span id="L478" class="ln">   478  </span>			t.Parallel()
+<span id="L479" class="ln">   479  </span>
+<span id="L480" class="ln">   480  </span>			c, obs := newRecordingClient(t)
+<span id="L481" class="ln">   481  </span>
+<span id="L482" class="ln">   482  </span>			c.recordOutcome(context.Background(), &#34;acct&#34;, nil, apperror.ErrCanceled)
+<span id="L483" class="ln">   483  </span>
+<span id="L484" class="ln">   484  </span>			assert.Equal(t, []string{&#34;canceled&#34;}, obs.LabelValues(t, &#34;httpclient.errors&#34;, &#34;reason&#34;))
+<span id="L485" class="ln">   485  </span>		})
+<span id="L486" class="ln">   486  </span>
+<span id="L487" class="ln">   487  </span>		t.Run(&#34;分類できないエラーは transport を reason に計上する&#34;, func(t *testing.T) {
+<span id="L488" class="ln">   488  </span>			t.Parallel()
+<span id="L489" class="ln">   489  </span>
+<span id="L490" class="ln">   490  </span>			c, obs := newRecordingClient(t)
+<span id="L491" class="ln">   491  </span>
+<span id="L492" class="ln">   492  </span>			c.recordOutcome(context.Background(), &#34;acct&#34;, nil, xerrors.New(&#34;dial failed&#34;))
+<span id="L493" class="ln">   493  </span>
+<span id="L494" class="ln">   494  </span>			assert.Equal(t, []string{&#34;transport&#34;}, obs.LabelValues(t, &#34;httpclient.errors&#34;, &#34;reason&#34;))
+<span id="L495" class="ln">   495  </span>		})
+<span id="L496" class="ln">   496  </span>	})
+<span id="L497" class="ln">   497  </span>}
+<span id="L498" class="ln">   498  </span>
+<span id="L499" class="ln">   499  </span>func Test_client_canRetryWithin(t *testing.T) {
+<span id="L500" class="ln">   500  </span>	t.Parallel()
+<span id="L501" class="ln">   501  </span>
+<span id="L502" class="ln">   502  </span>	base := time.Unix(1000, 0)
+<span id="L503" class="ln">   503  </span>
+<span id="L504" class="ln">   504  </span>	<span class="comment">// newFixedClockClient は、時刻が進まない clock を持つ client を返す。</span>
+<span id="L505" class="ln">   505  </span>	newFixedClockClient := func() *client {
+<span id="L506" class="ln">   506  </span>		return &amp;client{clk: clocktestkit.NewStepClock(base, 0)}
+<span id="L507" class="ln">   507  </span>	}
+<span id="L508" class="ln">   508  </span>
+<span id="L509" class="ln">   509  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L510" class="ln">   510  </span>		t.Parallel()
+<span id="L511" class="ln">   511  </span>
+<span id="L512" class="ln">   512  </span>		t.Run(&#34;backoff待機後も期限より前なら次の試行を許可する&#34;, func(t *testing.T) {
+<span id="L513" class="ln">   513  </span>			t.Parallel()
+<span id="L514" class="ln">   514  </span>
+<span id="L515" class="ln">   515  </span>			assert.True(t, newFixedClockClient().canRetryWithin(base.Add(time.Second), 999*time.Millisecond))
+<span id="L516" class="ln">   516  </span>		})
+<span id="L517" class="ln">   517  </span>	})
+<span id="L518" class="ln">   518  </span>
+<span id="L519" class="ln">   519  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L520" class="ln">   520  </span>		t.Parallel()
+<span id="L521" class="ln">   521  </span>
+<span id="L522" class="ln">   522  </span>		t.Run(&#34;backoff待機後が期限ちょうどなら次の試行を許可しない&#34;, func(t *testing.T) {
+<span id="L523" class="ln">   523  </span>			t.Parallel()
+<span id="L524" class="ln">   524  </span>
+<span id="L525" class="ln">   525  </span>			assert.False(t, newFixedClockClient().canRetryWithin(base.Add(time.Second), time.Second))
+<span id="L526" class="ln">   526  </span>		})
+<span id="L527" class="ln">   527  </span>
+<span id="L528" class="ln">   528  </span>		t.Run(&#34;backoff待機後が期限を超えるなら次の試行を許可しない&#34;, func(t *testing.T) {
+<span id="L529" class="ln">   529  </span>			t.Parallel()
+<span id="L530" class="ln">   530  </span>
+<span id="L531" class="ln">   531  </span>			assert.False(t, newFixedClockClient().canRetryWithin(base.Add(time.Second), 2*time.Second))
+<span id="L532" class="ln">   532  </span>		})
+<span id="L533" class="ln">   533  </span>
+<span id="L534" class="ln">   534  </span>		t.Run(&#34;既に期限を過ぎている場合は待機なしでも次の試行を許可しない&#34;, func(t *testing.T) {
+<span id="L535" class="ln">   535  </span>			t.Parallel()
+<span id="L536" class="ln">   536  </span>
+<span id="L537" class="ln">   537  </span>			assert.False(t, newFixedClockClient().canRetryWithin(base.Add(-time.Second), 0))
+<span id="L538" class="ln">   538  </span>		})
+<span id="L539" class="ln">   539  </span>	})
+<span id="L540" class="ln">   540  </span>}
+<span id="L541" class="ln">   541  </span>
+<span id="L542" class="ln">   542  </span>func Test_noFollowRedirect(t *testing.T) {
+<span id="L543" class="ln">   543  </span>	t.Parallel()
+<span id="L544" class="ln">   544  </span>
+<span id="L545" class="ln">   545  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L546" class="ln">   546  </span>		t.Parallel()
+<span id="L547" class="ln">   547  </span>
+<span id="L548" class="ln">   548  </span>		t.Run(&#34;リダイレクトを追従せず最終レスポンスを返す指示を返す&#34;, func(t *testing.T) {
+<span id="L549" class="ln">   549  </span>			t.Parallel()
+<span id="L550" class="ln">   550  </span>
+<span id="L551" class="ln">   551  </span>			req, err := http.NewRequestWithContext(
+<span id="L552" class="ln">   552  </span>				context.Background(), http.MethodGet, &#34;https://example.com/redirected&#34;, nil,
+<span id="L553" class="ln">   553  </span>			)
+<span id="L554" class="ln">   554  </span>			require.NoError(t, err)
+<span id="L555" class="ln">   555  </span>
+<span id="L556" class="ln">   556  </span>			require.ErrorIs(t, noFollowRedirect(req, []*http.Request{req}), http.ErrUseLastResponse)
+<span id="L557" class="ln">   557  </span>		})
+<span id="L558" class="ln">   558  </span>	})
+<span id="L559" class="ln">   559  </span>}
+<span id="L560" class="ln">   560  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/infrastructure/httpclient/client_internal_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

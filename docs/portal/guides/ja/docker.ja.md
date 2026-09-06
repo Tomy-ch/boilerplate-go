@@ -1,7 +1,5 @@
 # docker
 
-[English](README.md) | 日本語
-
 `docker/` は、開発・ビルド・運用に必要な **Docker 関連の設定ファイル**を格納するディレクトリです。
 
 ## ディレクトリ構成
@@ -15,7 +13,7 @@ compose のサービスは 2 層に分かれており、主 checkout と任意�
 
 |層|compose プロジェクト|サービス|
 |---|---|---|
-|**infra**|`gobp-shared`（固定名）— **全 checkout で 1 インスタンス**|`database` / `observability` / `garage`（+ `garage_init`）/ `elasticmq`。補助サービスとツールランナーも `COMPOSE_PROJECT_NAME` の既定により同じプロジェクトで動く|
+|**infra**|`gobp-shared`（固定名）— **全 checkout で 1 インスタンス**|`database` / `observability` / `garage`（+ `garage_init`）/ `elasticmq` / `dynamodb_local`（+ `dynamodb_init`）/ `goaws`。補助サービスとツールランナーも `COMPOSE_PROJECT_NAME` の既定により同じプロジェクトで動く|
 |**app**|`APP_PROJECT` — checkout 毎（`gobp-app-<ディレクトリ名>`、DB スロット保持時は `gobp-wt-N`）|`api_server` / `mock_auth_server`|
 
 infra 層には固定ポートでしか動けないサービスだけが属し、そのためホスト上に 1 つだけ存在します。
@@ -48,6 +46,9 @@ docker-compose.yaml で定義されるサービスと、対応する Dockerfile 
 |`garage`|infra|`dxflrs/garage`|3900, 3902|S3 互換オブジェクトストレージ（S3 API / Web API）|
 |`garage_init`|infra|`docker/garage/Dockerfile`|-|garage のレイアウト / バケット / アクセスキー / 公開配信の許可を one-shot でプロビジョニング（冪等）|
 |`elasticmq`|infra|`softwaremill/elasticmq-native`|9324|SQS 互換のメッセージブローカー（ローカル開発用。テストは in-process の fake を使う）|
+|`dynamodb_init`|infra|`amazon/dynamodb-local`|-|`dynamodb_data` volume の所有者を合わせ `dynamodb_local` を非 root のまま動かすための one-shot（冪等。`depends_on` で順序付け）|
+|`dynamodb_local`|infra|`amazon/dynamodb-local`|8000|Realtime Delivery（EventLog / StreamTicket / InstanceLease）向けの DynamoDB 互換ストア（ローカル開発用。`-sharedDb`、`dynamodb_data` volume に永続化）|
+|`goaws`|infra|`admiralpiett/goaws`（設定: `docker/goaws/goaws.yaml`）|4100|Realtime Delivery の instance fan-out 専用の SNS / SQS エミュレータ。Worker 側の outbox queue は `elasticmq` のまま|
 
 DB スロットでずれるのは app 層のホスト公開ポート（`8080+N` / `2010+N` / `2345+N` / `6060+N`）だけで、コンテナ内部のポートは常に固定です。
 
@@ -108,6 +109,10 @@ Web API（`3902`、Garage の `[s3_web]`）はバケットのオブジェクト�
 ## elasticmq
 
 ローカル開発用の SQS 互換ブローカーです（テストは in-process の fake を使います）。ここにあるのは `elasticmq.conf` だけで、キューと DLQ の redrive 設定は起動時にそこから読まれるため、初期化用の one-shot コンテナは持ちません。ElasticMQ は環境変数を展開しないためキュー名は設定ファイルに直書きで、どの `*_QUEUE_URL` と対になるかは [`env/README.ja.md`](../env/README.ja.md) に記載しています。
+
+## goaws
+
+ローカル開発用の SNS / SQS エミュレータで、Realtime Delivery の instance fan-out（[`docs/design/realtime-delivery.ja.md`](../docs/design/realtime-delivery.ja.md)）だけが使います。Worker 側の outbox queue は `elasticmq` のままです。ここにあるのは `goaws.yaml` だけで、port・region・account id を固定します。account id は ElasticMQ の queue URL と同じ `000000000000` にし、ローカルの ARN が 1 つの account を名乗るようにしています。topic / queue は事前宣言しません。application が実行時に作り、その実行時作成が通ること自体を `make realtime-smoke` が確かめます。pin した GoAWS が何を受け付けるかの正本は `make realtime-smoke` で、image を上げたら再実行します。pin している版で拒否される唯一の呼び出しは queue 属性の `Policy`（`SetQueueAttributes` でも `CreateQueue` でも `InvalidParameterValue`）なので、production が設定する queue policy は local adapter 側で飛ばす必要があります。
 
 ## mock-auth-server
 

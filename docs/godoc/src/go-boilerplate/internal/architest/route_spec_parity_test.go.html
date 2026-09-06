@@ -97,558 +97,562 @@
 <span id="L40" class="ln">    40  </span>	<span class="comment">// あるため、第 1 引数が HTTP メソッドか echo.Route リテラルであることを要求して区別します。</span>
 <span id="L41" class="ln">    41  </span>	opaqueAddCallRe = regexp.MustCompile(
 <span id="L42" class="ln">    42  </span>		`\.Add\(\s*(?:&#34;(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE|QUERY)&#34;` +
-<span id="L43" class="ln">    43  </span>			`|http\.Method\w+|(?:echo\.)?Route\{)`)
-<span id="L44" class="ln">    44  </span>	<span class="comment">// specParamRe は、OpenAPI のパスパラメータ表記 {name} を捕捉します。</span>
-<span id="L45" class="ln">    45  </span>	specParamRe = regexp.MustCompile(`\{(\w+)\}`)
-<span id="L46" class="ln">    46  </span>)
-<span id="L47" class="ln">    47  </span>
-<span id="L48" class="ln">    48  </span><span class="comment">// routeRegistration は、ルートの同一性を決めるメソッドとパステンプレートの組です。</span>
-<span id="L49" class="ln">    49  </span><span class="comment">// パスは Echo の表記（:name）に正規化されます。</span>
-<span id="L50" class="ln">    50  </span>type routeRegistration struct {
-<span id="L51" class="ln">    51  </span>	method string
-<span id="L52" class="ln">    52  </span>	path   string
-<span id="L53" class="ln">    53  </span>}
-<span id="L54" class="ln">    54  </span>
-<span id="L55" class="ln">    55  </span><span class="comment">// echoRouteScan は、1 ファイルから読み取ったルート登録と、静的に確定できない登録形の記述です。</span>
-<span id="L56" class="ln">    56  </span>type echoRouteScan struct {
-<span id="L57" class="ln">    57  </span>	routes []routeRegistration
-<span id="L58" class="ln">    58  </span>	opaque []string
-<span id="L59" class="ln">    59  </span>}
-<span id="L60" class="ln">    60  </span>
-<span id="L61" class="ln">    61  </span><span class="comment">// routeIndex は、走査したファイル群から集めたルート登録の索引です。</span>
-<span id="L62" class="ln">    62  </span><span class="comment">// registered はルート → 宣言元ファイル、opaque は静的に確定できない登録形、</span>
-<span id="L63" class="ln">    63  </span><span class="comment">// scanned は Echo に依存していたファイル数です。</span>
-<span id="L64" class="ln">    64  </span>type routeIndex struct {
-<span id="L65" class="ln">    65  </span>	registered map[routeRegistration]string
-<span id="L66" class="ln">    66  </span>	opaque     []string
-<span id="L67" class="ln">    67  </span>	scanned    int
-<span id="L68" class="ln">    68  </span>}
-<span id="L69" class="ln">    69  </span>
-<span id="L70" class="ln">    70  </span><span class="comment">// TestRouteSpecParity は、Echo に登録されるルートと OpenAPI spec の operation が 1:1 で対応することを</span>
-<span id="L71" class="ln">    71  </span><span class="comment">// 機械検証する。この契約と許可リストを持たない理由は docs/rules.md の OpenAPI-first Rules が定める。</span>
-<span id="L72" class="ln">    72  </span><span class="comment">//</span>
-<span id="L73" class="ln">    73  </span><span class="comment">// ルートの列挙は実 DI グラフではなくソースの静的走査で行う。ソースを見る以上、</span>
-<span id="L74" class="ln">    74  </span><span class="comment">// di へ BindHandler を登録し忘れて実行時にルートが生えない配線漏れは本テストでは見えない。</span>
-<span id="L75" class="ln">    75  </span><span class="comment">// その配線漏れは TestBindHandlerDIParity が「BindHandler の宣言 = fx.Invoke の列挙」および</span>
-<span id="L76" class="ln">    76  </span><span class="comment">// 「RegisterHandlers を持つ生成物あり ⇒ BindHandler の実装あり」として補完する。</span>
-<span id="L77" class="ln">    77  </span><span class="comment">//</span>
-<span id="L78" class="ln">    78  </span><span class="comment">// spec 側も手書き正本を読むため、サンプル API を削除すると両者は同時に縮み、この契約は保たれる。</span>
-<span id="L79" class="ln">    79  </span>func TestRouteSpecParity(t *testing.T) {
-<span id="L80" class="ln">    80  </span>	t.Parallel()
-<span id="L81" class="ln">    81  </span>
-<span id="L82" class="ln">    82  </span>	index := scanRepositoryRoutes(t)
-<span id="L83" class="ln">    83  </span>	require.NotEmpty(t, index.scanned, &#34;Echo を import するファイルが 1 件も見つからない（走査ルートの誤りを疑う）&#34;)
-<span id="L84" class="ln">    84  </span>	t.Logf(&#34;走査した Echo 依存ファイル: %d 件 / 検出したルート登録: %d 件&#34;, index.scanned, len(index.registered))
-<span id="L85" class="ln">    85  </span>
-<span id="L86" class="ln">    86  </span>	assert.Empty(t, index.opaque,
-<span id="L87" class="ln">    87  </span>		&#34;メソッドとパスを静的に確定できない登録形がある。spec との 1:1 を検証できないため、&#34;+
-<span id="L88" class="ln">    88  </span>			&#34;生成された RegisterHandlers 経由の登録に置き換えること&#34;)
-<span id="L89" class="ln">    89  </span>
-<span id="L90" class="ln">    90  </span>	spec := specRouteSet(t)
-<span id="L91" class="ln">    91  </span>
-<span id="L92" class="ln">    92  </span>	assert.Empty(t, index.routesMissingFrom(spec),
-<span id="L93" class="ln">    93  </span>		&#34;spec に無いルートが Echo に登録されている。OpenAPI リクエストバリデーションと &#34;+
-<span id="L94" class="ln">    94  </span>			&#34;details の opt-in ゲートはいずれも spec 上の operation を前提とするため、&#34;+
-<span id="L95" class="ln">    95  </span>			&#34;まず OpenAPI に operation を定義すること&#34;)
-<span id="L96" class="ln">    96  </span>	assert.Empty(t, index.unregisteredIn(spec),
-<span id="L97" class="ln">    97  </span>		&#34;spec の operation に対応するルート登録がソース上に無い。ハンドラパッケージの生成漏れを疑うこと&#34;)
-<span id="L98" class="ln">    98  </span>}
-<span id="L99" class="ln">    99  </span>
-<span id="L100" class="ln">   100  </span><span class="comment">// Test_scanEchoRouteRegistrations は、TestRouteSpecParity の走査精度に直結する読み取り漏れを防ぐため、</span>
-<span id="L101" class="ln">   101  </span><span class="comment">// リポジトリの現状に依存しない合成ソースで各登録形の判定を固定する。</span>
-<span id="L102" class="ln">   102  </span>func Test_scanEchoRouteRegistrations(t *testing.T) {
-<span id="L103" class="ln">   103  </span>	t.Parallel()
-<span id="L104" class="ln">   104  </span>
-<span id="L105" class="ln">   105  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L106" class="ln">   106  </span>		t.Parallel()
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span>		t.Run(&#34;Echo を import しないファイルは走査対象外になる&#34;, func(t *testing.T) {
-<span id="L109" class="ln">   109  </span>			t.Parallel()
-<span id="L110" class="ln">   110  </span>
-<span id="L111" class="ln">   111  </span>			scan, found := scanEchoRouteRegistrations(&#34;package sample\n\nfunc f(e any) { e.GET(\&#34;/metrics\&#34;, nil) }\n&#34;)
-<span id="L112" class="ln">   112  </span>
-<span id="L113" class="ln">   113  </span>			assert.False(t, found)
-<span id="L114" class="ln">   114  </span>			assert.Empty(t, scan.routes)
-<span id="L115" class="ln">   115  </span>			assert.Empty(t, scan.opaque)
-<span id="L116" class="ln">   116  </span>		})
-<span id="L117" class="ln">   117  </span>
-<span id="L118" class="ln">   118  </span>		t.Run(&#34;手書きのルート登録を読み取る&#34;, func(t *testing.T) {
-<span id="L119" class="ln">   119  </span>			t.Parallel()
-<span id="L120" class="ln">   120  </span>
-<span id="L121" class="ln">   121  </span>			scan, found := scanEchoRouteRegistrations(echoFuncSource(&#34;\te.GET(\&#34;/metrics\&#34;, nil)&#34;))
-<span id="L122" class="ln">   122  </span>
-<span id="L123" class="ln">   123  </span>			assert.True(t, found)
-<span id="L124" class="ln">   124  </span>			assert.Equal(t, []routeRegistration{{method: &#34;GET&#34;, path: &#34;/metrics&#34;}}, scan.routes)
-<span id="L125" class="ln">   125  </span>			assert.Empty(t, scan.opaque)
-<span id="L126" class="ln">   126  </span>		})
-<span id="L127" class="ln">   127  </span>
-<span id="L128" class="ln">   128  </span>		t.Run(&#34;生成コードの BaseURL 前置を剥がして読み取る&#34;, func(t *testing.T) {
-<span id="L129" class="ln">   129  </span>			t.Parallel()
-<span id="L130" class="ln">   130  </span>
-<span id="L131" class="ln">   131  </span>			scan, found := scanEchoRouteRegistrations(
-<span id="L132" class="ln">   132  </span>				echoFuncSource(&#34;\trouter.PATCH(options.BaseURL+\&#34;/v1/users/:userId\&#34;, wrapper.PatchUsersDetail)&#34;))
-<span id="L133" class="ln">   133  </span>
-<span id="L134" class="ln">   134  </span>			assert.True(t, found)
-<span id="L135" class="ln">   135  </span>			assert.Equal(t, []routeRegistration{{method: &#34;PATCH&#34;, path: &#34;/v1/users/:userId&#34;}}, scan.routes)
-<span id="L136" class="ln">   136  </span>			assert.Empty(t, scan.opaque)
-<span id="L137" class="ln">   137  </span>		})
-<span id="L138" class="ln">   138  </span>
-<span id="L139" class="ln">   139  </span>		t.Run(&#34;同一行に複数のルート登録があればすべて読み取る&#34;, func(t *testing.T) {
-<span id="L140" class="ln">   140  </span>			t.Parallel()
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>			scan, found := scanEchoRouteRegistrations(echoFuncSource(&#34;\te.GET(\&#34;/a\&#34;, nil); e.POST(\&#34;/b\&#34;, nil)&#34;))
+<span id="L43" class="ln">    43  </span>			`|http\.Method\w+|(?:echo\.)?Route\{)`,
+<span id="L44" class="ln">    44  </span>	)
+<span id="L45" class="ln">    45  </span>	<span class="comment">// specParamRe は、OpenAPI のパスパラメータ表記 {name} を捕捉します。</span>
+<span id="L46" class="ln">    46  </span>	specParamRe = regexp.MustCompile(`\{(\w+)\}`)
+<span id="L47" class="ln">    47  </span>)
+<span id="L48" class="ln">    48  </span>
+<span id="L49" class="ln">    49  </span><span class="comment">// routeRegistration は、ルートの同一性を決めるメソッドとパステンプレートの組です。</span>
+<span id="L50" class="ln">    50  </span><span class="comment">// パスは Echo の表記（:name）に正規化されます。</span>
+<span id="L51" class="ln">    51  </span>type routeRegistration struct {
+<span id="L52" class="ln">    52  </span>	method string
+<span id="L53" class="ln">    53  </span>	path   string
+<span id="L54" class="ln">    54  </span>}
+<span id="L55" class="ln">    55  </span>
+<span id="L56" class="ln">    56  </span><span class="comment">// echoRouteScan は、1 ファイルから読み取ったルート登録と、静的に確定できない登録形の記述です。</span>
+<span id="L57" class="ln">    57  </span>type echoRouteScan struct {
+<span id="L58" class="ln">    58  </span>	routes []routeRegistration
+<span id="L59" class="ln">    59  </span>	opaque []string
+<span id="L60" class="ln">    60  </span>}
+<span id="L61" class="ln">    61  </span>
+<span id="L62" class="ln">    62  </span><span class="comment">// routeIndex は、走査したファイル群から集めたルート登録の索引です。</span>
+<span id="L63" class="ln">    63  </span><span class="comment">// registered はルート → 宣言元ファイル、opaque は静的に確定できない登録形、</span>
+<span id="L64" class="ln">    64  </span><span class="comment">// scanned は Echo に依存していたファイル数です。</span>
+<span id="L65" class="ln">    65  </span>type routeIndex struct {
+<span id="L66" class="ln">    66  </span>	registered map[routeRegistration]string
+<span id="L67" class="ln">    67  </span>	opaque     []string
+<span id="L68" class="ln">    68  </span>	scanned    int
+<span id="L69" class="ln">    69  </span>}
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span><span class="comment">// TestRouteSpecParity は、Echo に登録されるルートと OpenAPI spec の operation が 1:1 で対応することを</span>
+<span id="L72" class="ln">    72  </span><span class="comment">// 機械検証する。この契約と許可リストを持たない理由は docs/rules.md の OpenAPI-first Rules が定める。</span>
+<span id="L73" class="ln">    73  </span><span class="comment">//</span>
+<span id="L74" class="ln">    74  </span><span class="comment">// ルートの列挙は実 DI グラフではなくソースの静的走査で行う。ソースを見る以上、</span>
+<span id="L75" class="ln">    75  </span><span class="comment">// di へ BindHandler を登録し忘れて実行時にルートが生えない配線漏れは本テストでは見えない。</span>
+<span id="L76" class="ln">    76  </span><span class="comment">// その配線漏れは TestBindHandlerDIParity が「BindHandler の宣言 = fx.Invoke の列挙」および</span>
+<span id="L77" class="ln">    77  </span><span class="comment">// 「RegisterHandlers を持つ生成物あり ⇒ BindHandler の実装あり」として補完する。</span>
+<span id="L78" class="ln">    78  </span><span class="comment">//</span>
+<span id="L79" class="ln">    79  </span><span class="comment">// spec 側も手書き正本を読むため、サンプル API を削除すると両者は同時に縮み、この契約は保たれる。</span>
+<span id="L80" class="ln">    80  </span>func TestRouteSpecParity(t *testing.T) {
+<span id="L81" class="ln">    81  </span>	t.Parallel()
+<span id="L82" class="ln">    82  </span>
+<span id="L83" class="ln">    83  </span>	index := scanRepositoryRoutes(t)
+<span id="L84" class="ln">    84  </span>	require.NotEmpty(t, index.scanned, &#34;Echo を import するファイルが 1 件も見つからない（走査ルートの誤りを疑う）&#34;)
+<span id="L85" class="ln">    85  </span>	t.Logf(&#34;走査した Echo 依存ファイル: %d 件 / 検出したルート登録: %d 件&#34;, index.scanned, len(index.registered))
+<span id="L86" class="ln">    86  </span>
+<span id="L87" class="ln">    87  </span>	assert.Empty(t, index.opaque,
+<span id="L88" class="ln">    88  </span>		&#34;メソッドとパスを静的に確定できない登録形がある。spec との 1:1 を検証できないため、&#34;+
+<span id="L89" class="ln">    89  </span>			&#34;生成された RegisterHandlers 経由の登録に置き換えること&#34;)
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>	spec := specRouteSet(t)
+<span id="L92" class="ln">    92  </span>
+<span id="L93" class="ln">    93  </span>	assert.Empty(t, index.routesMissingFrom(spec),
+<span id="L94" class="ln">    94  </span>		&#34;spec に無いルートが Echo に登録されている。OpenAPI リクエストバリデーションと &#34;+
+<span id="L95" class="ln">    95  </span>			&#34;details の opt-in ゲートはいずれも spec 上の operation を前提とするため、&#34;+
+<span id="L96" class="ln">    96  </span>			&#34;まず OpenAPI に operation を定義すること&#34;)
+<span id="L97" class="ln">    97  </span>	assert.Empty(t, index.unregisteredIn(spec),
+<span id="L98" class="ln">    98  </span>		&#34;spec の operation に対応するルート登録がソース上に無い。ハンドラパッケージの生成漏れを疑うこと&#34;)
+<span id="L99" class="ln">    99  </span>}
+<span id="L100" class="ln">   100  </span>
+<span id="L101" class="ln">   101  </span><span class="comment">// Test_scanEchoRouteRegistrations は、TestRouteSpecParity の走査精度に直結する読み取り漏れを防ぐため、</span>
+<span id="L102" class="ln">   102  </span><span class="comment">// リポジトリの現状に依存しない合成ソースで各登録形の判定を固定する。</span>
+<span id="L103" class="ln">   103  </span>func Test_scanEchoRouteRegistrations(t *testing.T) {
+<span id="L104" class="ln">   104  </span>	t.Parallel()
+<span id="L105" class="ln">   105  </span>
+<span id="L106" class="ln">   106  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L107" class="ln">   107  </span>		t.Parallel()
+<span id="L108" class="ln">   108  </span>
+<span id="L109" class="ln">   109  </span>		t.Run(&#34;Echo を import しないファイルは走査対象外になる&#34;, func(t *testing.T) {
+<span id="L110" class="ln">   110  </span>			t.Parallel()
+<span id="L111" class="ln">   111  </span>
+<span id="L112" class="ln">   112  </span>			scan, found := scanEchoRouteRegistrations(&#34;package sample\n\nfunc f(e any) { e.GET(\&#34;/metrics\&#34;, nil) }\n&#34;)
+<span id="L113" class="ln">   113  </span>
+<span id="L114" class="ln">   114  </span>			assert.False(t, found)
+<span id="L115" class="ln">   115  </span>			assert.Empty(t, scan.routes)
+<span id="L116" class="ln">   116  </span>			assert.Empty(t, scan.opaque)
+<span id="L117" class="ln">   117  </span>		})
+<span id="L118" class="ln">   118  </span>
+<span id="L119" class="ln">   119  </span>		t.Run(&#34;手書きのルート登録を読み取る&#34;, func(t *testing.T) {
+<span id="L120" class="ln">   120  </span>			t.Parallel()
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>			scan, found := scanEchoRouteRegistrations(echoFuncSource(&#34;\te.GET(\&#34;/metrics\&#34;, nil)&#34;))
+<span id="L123" class="ln">   123  </span>
+<span id="L124" class="ln">   124  </span>			assert.True(t, found)
+<span id="L125" class="ln">   125  </span>			assert.Equal(t, []routeRegistration{{method: &#34;GET&#34;, path: &#34;/metrics&#34;}}, scan.routes)
+<span id="L126" class="ln">   126  </span>			assert.Empty(t, scan.opaque)
+<span id="L127" class="ln">   127  </span>		})
+<span id="L128" class="ln">   128  </span>
+<span id="L129" class="ln">   129  </span>		t.Run(&#34;生成コードの BaseURL 前置を剥がして読み取る&#34;, func(t *testing.T) {
+<span id="L130" class="ln">   130  </span>			t.Parallel()
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span>			scan, found := scanEchoRouteRegistrations(
+<span id="L133" class="ln">   133  </span>				echoFuncSource(&#34;\trouter.PATCH(options.BaseURL+\&#34;/v1/users/:userId\&#34;, wrapper.PatchUsersDetail)&#34;),
+<span id="L134" class="ln">   134  </span>			)
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span>			assert.True(t, found)
+<span id="L137" class="ln">   137  </span>			assert.Equal(t, []routeRegistration{{method: &#34;PATCH&#34;, path: &#34;/v1/users/:userId&#34;}}, scan.routes)
+<span id="L138" class="ln">   138  </span>			assert.Empty(t, scan.opaque)
+<span id="L139" class="ln">   139  </span>		})
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span>		t.Run(&#34;同一行に複数のルート登録があればすべて読み取る&#34;, func(t *testing.T) {
+<span id="L142" class="ln">   142  </span>			t.Parallel()
 <span id="L143" class="ln">   143  </span>
-<span id="L144" class="ln">   144  </span>			assert.True(t, found)
-<span id="L145" class="ln">   145  </span>			assert.Equal(t, []routeRegistration{
-<span id="L146" class="ln">   146  </span>				{method: &#34;GET&#34;, path: &#34;/a&#34;},
-<span id="L147" class="ln">   147  </span>				{method: &#34;POST&#34;, path: &#34;/b&#34;},
-<span id="L148" class="ln">   148  </span>			}, scan.routes)
-<span id="L149" class="ln">   149  </span>			assert.Empty(t, scan.opaque)
-<span id="L150" class="ln">   150  </span>		})
-<span id="L151" class="ln">   151  </span>
-<span id="L152" class="ln">   152  </span>		t.Run(&#34;ドットを伴わないメソッド様の記述はルート登録として扱わない&#34;, func(t *testing.T) {
-<span id="L153" class="ln">   153  </span>			t.Parallel()
-<span id="L154" class="ln">   154  </span>
-<span id="L155" class="ln">   155  </span>			<span class="comment">// 生成コードの EchoRouter インターフェース宣言がこの形に当たる。</span>
-<span id="L156" class="ln">   156  </span>			scan, found := scanEchoRouteRegistrations(
-<span id="L157" class="ln">   157  </span>				echoSource(&#34;type EchoRouter interface {\n\tGET(path string, h echo.HandlerFunc) echo.RouteInfo\n}&#34;))
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>			assert.True(t, found)
-<span id="L160" class="ln">   160  </span>			assert.Empty(t, scan.routes)
-<span id="L161" class="ln">   161  </span>			assert.Empty(t, scan.opaque)
-<span id="L162" class="ln">   162  </span>		})
-<span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span>		t.Run(&#34;Echo 以外の同名メソッド呼び出しはルート登録として扱わない&#34;, func(t *testing.T) {
-<span id="L165" class="ln">   165  </span>			t.Parallel()
+<span id="L144" class="ln">   144  </span>			scan, found := scanEchoRouteRegistrations(echoFuncSource(&#34;\te.GET(\&#34;/a\&#34;, nil); e.POST(\&#34;/b\&#34;, nil)&#34;))
+<span id="L145" class="ln">   145  </span>
+<span id="L146" class="ln">   146  </span>			assert.True(t, found)
+<span id="L147" class="ln">   147  </span>			assert.Equal(t, []routeRegistration{
+<span id="L148" class="ln">   148  </span>				{method: &#34;GET&#34;, path: &#34;/a&#34;},
+<span id="L149" class="ln">   149  </span>				{method: &#34;POST&#34;, path: &#34;/b&#34;},
+<span id="L150" class="ln">   150  </span>			}, scan.routes)
+<span id="L151" class="ln">   151  </span>			assert.Empty(t, scan.opaque)
+<span id="L152" class="ln">   152  </span>		})
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span>		t.Run(&#34;ドットを伴わないメソッド様の記述はルート登録として扱わない&#34;, func(t *testing.T) {
+<span id="L155" class="ln">   155  </span>			t.Parallel()
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>			<span class="comment">// 生成コードの EchoRouter インターフェース宣言がこの形に当たる。</span>
+<span id="L158" class="ln">   158  </span>			scan, found := scanEchoRouteRegistrations(
+<span id="L159" class="ln">   159  </span>				echoSource(&#34;type EchoRouter interface {\n\tGET(path string, h echo.HandlerFunc) echo.RouteInfo\n}&#34;),
+<span id="L160" class="ln">   160  </span>			)
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>			assert.True(t, found)
+<span id="L163" class="ln">   163  </span>			assert.Empty(t, scan.routes)
+<span id="L164" class="ln">   164  </span>			assert.Empty(t, scan.opaque)
+<span id="L165" class="ln">   165  </span>		})
 <span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>			scan, found := scanEchoRouteRegistrations(
-<span id="L168" class="ln">   168  </span>				echoFuncSource(&#34;\treq.Header.Add(k, v)\n\tq.Add(p.Name, p.Value)&#34;))
+<span id="L167" class="ln">   167  </span>		t.Run(&#34;Echo 以外の同名メソッド呼び出しはルート登録として扱わない&#34;, func(t *testing.T) {
+<span id="L168" class="ln">   168  </span>			t.Parallel()
 <span id="L169" class="ln">   169  </span>
-<span id="L170" class="ln">   170  </span>			assert.True(t, found)
-<span id="L171" class="ln">   171  </span>			assert.Empty(t, scan.routes)
-<span id="L172" class="ln">   172  </span>			assert.Empty(t, scan.opaque)
-<span id="L173" class="ln">   173  </span>		})
-<span id="L174" class="ln">   174  </span>	})
-<span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L177" class="ln">   177  </span>		t.Parallel()
-<span id="L178" class="ln">   178  </span>
-<span id="L179" class="ln">   179  </span>		t.Run(&#34;パスをリテラルとして読み取れない登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L180" class="ln">   180  </span>			t.Parallel()
-<span id="L181" class="ln">   181  </span>
-<span id="L182" class="ln">   182  </span>			assertOpaque(t, &#34;\te.GET(routePath, nil)&#34;, &#34;GET の登録パスをリテラルとして読み取れない&#34;)
-<span id="L183" class="ln">   183  </span>		})
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>		t.Run(&#34;Any による全メソッド登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L186" class="ln">   186  </span>			t.Parallel()
-<span id="L187" class="ln">   187  </span>
-<span id="L188" class="ln">   188  </span>			assertOpaque(t, &#34;\te.Any(\&#34;/proxy\&#34;, nil)&#34;, &#34;Any による登録&#34;)
-<span id="L189" class="ln">   189  </span>		})
-<span id="L190" class="ln">   190  </span>
-<span id="L191" class="ln">   191  </span>		t.Run(&#34;Match による複数メソッド登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L192" class="ln">   192  </span>			t.Parallel()
-<span id="L193" class="ln">   193  </span>
-<span id="L194" class="ln">   194  </span>			assertOpaque(t, &#34;\te.Match(methods, \&#34;/proxy\&#34;, nil)&#34;, &#34;Match による登録&#34;)
-<span id="L195" class="ln">   195  </span>		})
-<span id="L196" class="ln">   196  </span>
-<span id="L197" class="ln">   197  </span>		t.Run(&#34;Group による相対パス登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L198" class="ln">   198  </span>			t.Parallel()
-<span id="L199" class="ln">   199  </span>
-<span id="L200" class="ln">   200  </span>			assertOpaque(t, &#34;\tg := e.Group(prefix)&#34;, &#34;Group による登録&#34;)
-<span id="L201" class="ln">   201  </span>		})
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span>		t.Run(&#34;Static によるファイル配信登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L204" class="ln">   204  </span>			t.Parallel()
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>			assertOpaque(t, &#34;\te.Static(\&#34;/assets\&#34;, \&#34;public\&#34;)&#34;, &#34;Static による登録&#34;)
-<span id="L207" class="ln">   207  </span>		})
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>		t.Run(&#34;AddRoute による構造体渡しの登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L210" class="ln">   210  </span>			t.Parallel()
-<span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span>			assertOpaque(t, &#34;\te.AddRoute(echo.Route{Method: \&#34;GET\&#34;, Path: \&#34;/proxy\&#34;})&#34;, &#34;AddRoute による登録&#34;)
-<span id="L213" class="ln">   213  </span>		})
-<span id="L214" class="ln">   214  </span>
-<span id="L215" class="ln">   215  </span>		t.Run(&#34;Router 経由の Add による登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L216" class="ln">   216  </span>			t.Parallel()
-<span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span>			assertOpaque(t, &#34;\te.Router().Add(echo.Route{Method: \&#34;GET\&#34;, Path: \&#34;/proxy\&#34;})&#34;, &#34;Add による登録&#34;)
-<span id="L219" class="ln">   219  </span>		})
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>		t.Run(&#34;メソッドを実行時に決める Add による登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L222" class="ln">   222  </span>			t.Parallel()
-<span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span>			assertOpaque(t, &#34;\te.Add(http.MethodGet, \&#34;/proxy\&#34;, nil)&#34;, &#34;Add による登録&#34;)
-<span id="L225" class="ln">   225  </span>		})
-<span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span>		t.Run(&#34;メソッド名リテラルを渡す Add による登録を違反として報告する&#34;, func(t *testing.T) {
-<span id="L228" class="ln">   228  </span>			t.Parallel()
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			assertOpaque(t, &#34;\te.Add(\&#34;GET\&#34;, \&#34;/proxy\&#34;, nil)&#34;, &#34;Add による登録&#34;)
-<span id="L231" class="ln">   231  </span>		})
-<span id="L232" class="ln">   232  </span>	})
-<span id="L233" class="ln">   233  </span>}
-<span id="L234" class="ln">   234  </span>
-<span id="L235" class="ln">   235  </span><span class="comment">// Test_echoPath は、spec と Echo でパスパラメータの表記が異なることによる取りこぼしを防ぐため、</span>
-<span id="L236" class="ln">   236  </span><span class="comment">// 正規化がパラメータの個数に依らず働くことを固定する。</span>
-<span id="L237" class="ln">   237  </span>func Test_echoPath(t *testing.T) {
-<span id="L238" class="ln">   238  </span>	t.Parallel()
-<span id="L239" class="ln">   239  </span>
-<span id="L240" class="ln">   240  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L241" class="ln">   241  </span>		t.Parallel()
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>		t.Run(&#34;パラメータを含まないパスはそのまま返す&#34;, func(t *testing.T) {
-<span id="L244" class="ln">   244  </span>			t.Parallel()
-<span id="L245" class="ln">   245  </span>
-<span id="L246" class="ln">   246  </span>			assert.Equal(t, &#34;/v1/products&#34;, echoPath(&#34;/v1/products&#34;))
-<span id="L247" class="ln">   247  </span>		})
-<span id="L248" class="ln">   248  </span>
-<span id="L249" class="ln">   249  </span>		t.Run(&#34;パスパラメータを Echo の表記へ変換する&#34;, func(t *testing.T) {
-<span id="L250" class="ln">   250  </span>			t.Parallel()
-<span id="L251" class="ln">   251  </span>
-<span id="L252" class="ln">   252  </span>			assert.Equal(t, &#34;/v1/users/:userId&#34;, echoPath(&#34;/v1/users/{userId}&#34;))
-<span id="L253" class="ln">   253  </span>		})
-<span id="L254" class="ln">   254  </span>
-<span id="L255" class="ln">   255  </span>		t.Run(&#34;複数のパスパラメータをすべて変換する&#34;, func(t *testing.T) {
-<span id="L256" class="ln">   256  </span>			t.Parallel()
-<span id="L257" class="ln">   257  </span>
-<span id="L258" class="ln">   258  </span>			assert.Equal(t,
-<span id="L259" class="ln">   259  </span>				&#34;/v1/users/:userId/purchases/:purchaseId&#34;,
-<span id="L260" class="ln">   260  </span>				echoPath(&#34;/v1/users/{userId}/purchases/{purchaseId}&#34;))
-<span id="L261" class="ln">   261  </span>		})
-<span id="L262" class="ln">   262  </span>	})
-<span id="L263" class="ln">   263  </span>}
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span><span class="comment">// Test_routeIndex_routesMissingFrom は、spec 外ルートの報告が宣言元を伴い安定した順序で返ることを固定する。</span>
-<span id="L266" class="ln">   266  </span>func Test_routeIndex_routesMissingFrom(t *testing.T) {
-<span id="L267" class="ln">   267  </span>	t.Parallel()
+<span id="L170" class="ln">   170  </span>			scan, found := scanEchoRouteRegistrations(
+<span id="L171" class="ln">   171  </span>				echoFuncSource(&#34;\treq.Header.Add(k, v)\n\tq.Add(p.Name, p.Value)&#34;),
+<span id="L172" class="ln">   172  </span>			)
+<span id="L173" class="ln">   173  </span>
+<span id="L174" class="ln">   174  </span>			assert.True(t, found)
+<span id="L175" class="ln">   175  </span>			assert.Empty(t, scan.routes)
+<span id="L176" class="ln">   176  </span>			assert.Empty(t, scan.opaque)
+<span id="L177" class="ln">   177  </span>		})
+<span id="L178" class="ln">   178  </span>	})
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L181" class="ln">   181  </span>		t.Parallel()
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>		t.Run(&#34;パスをリテラルとして読み取れない登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L184" class="ln">   184  </span>			t.Parallel()
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span>			assertOpaque(t, &#34;\te.GET(routePath, nil)&#34;, &#34;GET の登録パスをリテラルとして読み取れない&#34;)
+<span id="L187" class="ln">   187  </span>		})
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>		t.Run(&#34;Any による全メソッド登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L190" class="ln">   190  </span>			t.Parallel()
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>			assertOpaque(t, &#34;\te.Any(\&#34;/proxy\&#34;, nil)&#34;, &#34;Any による登録&#34;)
+<span id="L193" class="ln">   193  </span>		})
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>		t.Run(&#34;Match による複数メソッド登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L196" class="ln">   196  </span>			t.Parallel()
+<span id="L197" class="ln">   197  </span>
+<span id="L198" class="ln">   198  </span>			assertOpaque(t, &#34;\te.Match(methods, \&#34;/proxy\&#34;, nil)&#34;, &#34;Match による登録&#34;)
+<span id="L199" class="ln">   199  </span>		})
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>		t.Run(&#34;Group による相対パス登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L202" class="ln">   202  </span>			t.Parallel()
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>			assertOpaque(t, &#34;\tg := e.Group(prefix)&#34;, &#34;Group による登録&#34;)
+<span id="L205" class="ln">   205  </span>		})
+<span id="L206" class="ln">   206  </span>
+<span id="L207" class="ln">   207  </span>		t.Run(&#34;Static によるファイル配信登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L208" class="ln">   208  </span>			t.Parallel()
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>			assertOpaque(t, &#34;\te.Static(\&#34;/assets\&#34;, \&#34;public\&#34;)&#34;, &#34;Static による登録&#34;)
+<span id="L211" class="ln">   211  </span>		})
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>		t.Run(&#34;AddRoute による構造体渡しの登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L214" class="ln">   214  </span>			t.Parallel()
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>			assertOpaque(t, &#34;\te.AddRoute(echo.Route{Method: \&#34;GET\&#34;, Path: \&#34;/proxy\&#34;})&#34;, &#34;AddRoute による登録&#34;)
+<span id="L217" class="ln">   217  </span>		})
+<span id="L218" class="ln">   218  </span>
+<span id="L219" class="ln">   219  </span>		t.Run(&#34;Router 経由の Add による登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L220" class="ln">   220  </span>			t.Parallel()
+<span id="L221" class="ln">   221  </span>
+<span id="L222" class="ln">   222  </span>			assertOpaque(t, &#34;\te.Router().Add(echo.Route{Method: \&#34;GET\&#34;, Path: \&#34;/proxy\&#34;})&#34;, &#34;Add による登録&#34;)
+<span id="L223" class="ln">   223  </span>		})
+<span id="L224" class="ln">   224  </span>
+<span id="L225" class="ln">   225  </span>		t.Run(&#34;メソッドを実行時に決める Add による登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L226" class="ln">   226  </span>			t.Parallel()
+<span id="L227" class="ln">   227  </span>
+<span id="L228" class="ln">   228  </span>			assertOpaque(t, &#34;\te.Add(http.MethodGet, \&#34;/proxy\&#34;, nil)&#34;, &#34;Add による登録&#34;)
+<span id="L229" class="ln">   229  </span>		})
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>		t.Run(&#34;メソッド名リテラルを渡す Add による登録を違反として報告する&#34;, func(t *testing.T) {
+<span id="L232" class="ln">   232  </span>			t.Parallel()
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>			assertOpaque(t, &#34;\te.Add(\&#34;GET\&#34;, \&#34;/proxy\&#34;, nil)&#34;, &#34;Add による登録&#34;)
+<span id="L235" class="ln">   235  </span>		})
+<span id="L236" class="ln">   236  </span>	})
+<span id="L237" class="ln">   237  </span>}
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span><span class="comment">// Test_echoPath は、spec と Echo でパスパラメータの表記が異なることによる取りこぼしを防ぐため、</span>
+<span id="L240" class="ln">   240  </span><span class="comment">// 正規化がパラメータの個数に依らず働くことを固定する。</span>
+<span id="L241" class="ln">   241  </span>func Test_echoPath(t *testing.T) {
+<span id="L242" class="ln">   242  </span>	t.Parallel()
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L245" class="ln">   245  </span>		t.Parallel()
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>		t.Run(&#34;パラメータを含まないパスはそのまま返す&#34;, func(t *testing.T) {
+<span id="L248" class="ln">   248  </span>			t.Parallel()
+<span id="L249" class="ln">   249  </span>
+<span id="L250" class="ln">   250  </span>			assert.Equal(t, &#34;/v1/products&#34;, echoPath(&#34;/v1/products&#34;))
+<span id="L251" class="ln">   251  </span>		})
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span>		t.Run(&#34;パスパラメータを Echo の表記へ変換する&#34;, func(t *testing.T) {
+<span id="L254" class="ln">   254  </span>			t.Parallel()
+<span id="L255" class="ln">   255  </span>
+<span id="L256" class="ln">   256  </span>			assert.Equal(t, &#34;/v1/users/:userId&#34;, echoPath(&#34;/v1/users/{userId}&#34;))
+<span id="L257" class="ln">   257  </span>		})
+<span id="L258" class="ln">   258  </span>
+<span id="L259" class="ln">   259  </span>		t.Run(&#34;複数のパスパラメータをすべて変換する&#34;, func(t *testing.T) {
+<span id="L260" class="ln">   260  </span>			t.Parallel()
+<span id="L261" class="ln">   261  </span>
+<span id="L262" class="ln">   262  </span>			assert.Equal(t,
+<span id="L263" class="ln">   263  </span>				&#34;/v1/users/:userId/purchases/:purchaseId&#34;,
+<span id="L264" class="ln">   264  </span>				echoPath(&#34;/v1/users/{userId}/purchases/{purchaseId}&#34;))
+<span id="L265" class="ln">   265  </span>		})
+<span id="L266" class="ln">   266  </span>	})
+<span id="L267" class="ln">   267  </span>}
 <span id="L268" class="ln">   268  </span>
-<span id="L269" class="ln">   269  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L270" class="ln">   270  </span>		t.Parallel()
-<span id="L271" class="ln">   271  </span>
-<span id="L272" class="ln">   272  </span>		t.Run(&#34;すべてのルートが spec にあれば空を返す&#34;, func(t *testing.T) {
-<span id="L273" class="ln">   273  </span>			t.Parallel()
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>			index := routeIndex{registered: map[routeRegistration]string{
-<span id="L276" class="ln">   276  </span>				{method: &#34;GET&#34;, path: &#34;/metrics&#34;}: &#34;internal/controller/handler/metrics/metrics_handler.go&#34;,
-<span id="L277" class="ln">   277  </span>			}}
+<span id="L269" class="ln">   269  </span><span class="comment">// Test_routeIndex_routesMissingFrom は、spec 外ルートの報告が宣言元を伴い安定した順序で返ることを固定する。</span>
+<span id="L270" class="ln">   270  </span>func Test_routeIndex_routesMissingFrom(t *testing.T) {
+<span id="L271" class="ln">   271  </span>	t.Parallel()
+<span id="L272" class="ln">   272  </span>
+<span id="L273" class="ln">   273  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L274" class="ln">   274  </span>		t.Parallel()
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>		t.Run(&#34;すべてのルートが spec にあれば空を返す&#34;, func(t *testing.T) {
+<span id="L277" class="ln">   277  </span>			t.Parallel()
 <span id="L278" class="ln">   278  </span>
-<span id="L279" class="ln">   279  </span>			assert.Empty(t, index.routesMissingFrom(specSetOf(routeRegistration{method: &#34;GET&#34;, path: &#34;/metrics&#34;})))
-<span id="L280" class="ln">   280  </span>		})
-<span id="L281" class="ln">   281  </span>	})
+<span id="L279" class="ln">   279  </span>			index := routeIndex{registered: map[routeRegistration]string{
+<span id="L280" class="ln">   280  </span>				{method: &#34;GET&#34;, path: &#34;/metrics&#34;}: &#34;internal/controller/handler/metrics/metrics_handler.go&#34;,
+<span id="L281" class="ln">   281  </span>			}}
 <span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L284" class="ln">   284  </span>		t.Parallel()
-<span id="L285" class="ln">   285  </span>
-<span id="L286" class="ln">   286  </span>		t.Run(&#34;spec に無いルートを宣言元付きで昇順に返す&#34;, func(t *testing.T) {
-<span id="L287" class="ln">   287  </span>			t.Parallel()
-<span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>			index := routeIndex{registered: map[routeRegistration]string{
-<span id="L290" class="ln">   290  </span>				{method: &#34;GET&#34;, path: &#34;/debug&#34;}:  &#34;internal/controller/handler/debug/debug_handler.go&#34;,
-<span id="L291" class="ln">   291  </span>				{method: &#34;POST&#34;, path: &#34;/admin&#34;}: &#34;internal/controller/handler/admin/admin_handler.go&#34;,
-<span id="L292" class="ln">   292  </span>				{method: &#34;GET&#34;, path: &#34;/health&#34;}: &#34;internal/controller/handler/health/gen/server.gen.go&#34;,
-<span id="L293" class="ln">   293  </span>			}}
-<span id="L294" class="ln">   294  </span>
-<span id="L295" class="ln">   295  </span>			assert.Equal(t, []string{
-<span id="L296" class="ln">   296  </span>				&#34;GET /debug (internal/controller/handler/debug/debug_handler.go)&#34;,
-<span id="L297" class="ln">   297  </span>				&#34;POST /admin (internal/controller/handler/admin/admin_handler.go)&#34;,
-<span id="L298" class="ln">   298  </span>			}, index.routesMissingFrom(specSetOf(routeRegistration{method: &#34;GET&#34;, path: &#34;/health&#34;})))
-<span id="L299" class="ln">   299  </span>		})
-<span id="L300" class="ln">   300  </span>	})
-<span id="L301" class="ln">   301  </span>}
-<span id="L302" class="ln">   302  </span>
-<span id="L303" class="ln">   303  </span><span class="comment">// Test_routeIndex_unregisteredIn は、登録の無い operation の報告が安定した順序で返ることを固定する。</span>
-<span id="L304" class="ln">   304  </span>func Test_routeIndex_unregisteredIn(t *testing.T) {
-<span id="L305" class="ln">   305  </span>	t.Parallel()
+<span id="L283" class="ln">   283  </span>			assert.Empty(t, index.routesMissingFrom(specSetOf(routeRegistration{method: &#34;GET&#34;, path: &#34;/metrics&#34;})))
+<span id="L284" class="ln">   284  </span>		})
+<span id="L285" class="ln">   285  </span>	})
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L288" class="ln">   288  </span>		t.Parallel()
+<span id="L289" class="ln">   289  </span>
+<span id="L290" class="ln">   290  </span>		t.Run(&#34;spec に無いルートを宣言元付きで昇順に返す&#34;, func(t *testing.T) {
+<span id="L291" class="ln">   291  </span>			t.Parallel()
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>			index := routeIndex{registered: map[routeRegistration]string{
+<span id="L294" class="ln">   294  </span>				{method: &#34;GET&#34;, path: &#34;/debug&#34;}:  &#34;internal/controller/handler/debug/debug_handler.go&#34;,
+<span id="L295" class="ln">   295  </span>				{method: &#34;POST&#34;, path: &#34;/admin&#34;}: &#34;internal/controller/handler/admin/admin_handler.go&#34;,
+<span id="L296" class="ln">   296  </span>				{method: &#34;GET&#34;, path: &#34;/health&#34;}: &#34;internal/controller/handler/health/gen/server.gen.go&#34;,
+<span id="L297" class="ln">   297  </span>			}}
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>			assert.Equal(t, []string{
+<span id="L300" class="ln">   300  </span>				&#34;GET /debug (internal/controller/handler/debug/debug_handler.go)&#34;,
+<span id="L301" class="ln">   301  </span>				&#34;POST /admin (internal/controller/handler/admin/admin_handler.go)&#34;,
+<span id="L302" class="ln">   302  </span>			}, index.routesMissingFrom(specSetOf(routeRegistration{method: &#34;GET&#34;, path: &#34;/health&#34;})))
+<span id="L303" class="ln">   303  </span>		})
+<span id="L304" class="ln">   304  </span>	})
+<span id="L305" class="ln">   305  </span>}
 <span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L308" class="ln">   308  </span>		t.Parallel()
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>		t.Run(&#34;すべての operation が登録済みなら空を返す&#34;, func(t *testing.T) {
-<span id="L311" class="ln">   311  </span>			t.Parallel()
-<span id="L312" class="ln">   312  </span>
-<span id="L313" class="ln">   313  </span>			index := routeIndex{registered: map[routeRegistration]string{
-<span id="L314" class="ln">   314  </span>				{method: &#34;GET&#34;, path: &#34;/health&#34;}: &#34;internal/controller/handler/health/gen/server.gen.go&#34;,
-<span id="L315" class="ln">   315  </span>			}}
+<span id="L307" class="ln">   307  </span><span class="comment">// Test_routeIndex_unregisteredIn は、登録の無い operation の報告が安定した順序で返ることを固定する。</span>
+<span id="L308" class="ln">   308  </span>func Test_routeIndex_unregisteredIn(t *testing.T) {
+<span id="L309" class="ln">   309  </span>	t.Parallel()
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L312" class="ln">   312  </span>		t.Parallel()
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span>		t.Run(&#34;すべての operation が登録済みなら空を返す&#34;, func(t *testing.T) {
+<span id="L315" class="ln">   315  </span>			t.Parallel()
 <span id="L316" class="ln">   316  </span>
-<span id="L317" class="ln">   317  </span>			assert.Empty(t, index.unregisteredIn(specSetOf(routeRegistration{method: &#34;GET&#34;, path: &#34;/health&#34;})))
-<span id="L318" class="ln">   318  </span>		})
-<span id="L319" class="ln">   319  </span>	})
+<span id="L317" class="ln">   317  </span>			index := routeIndex{registered: map[routeRegistration]string{
+<span id="L318" class="ln">   318  </span>				{method: &#34;GET&#34;, path: &#34;/health&#34;}: &#34;internal/controller/handler/health/gen/server.gen.go&#34;,
+<span id="L319" class="ln">   319  </span>			}}
 <span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L322" class="ln">   322  </span>		t.Parallel()
-<span id="L323" class="ln">   323  </span>
-<span id="L324" class="ln">   324  </span>		t.Run(&#34;登録の無い operation を昇順に返す&#34;, func(t *testing.T) {
-<span id="L325" class="ln">   325  </span>			t.Parallel()
-<span id="L326" class="ln">   326  </span>
-<span id="L327" class="ln">   327  </span>			index := routeIndex{registered: map[routeRegistration]string{
-<span id="L328" class="ln">   328  </span>				{method: &#34;GET&#34;, path: &#34;/health&#34;}: &#34;internal/controller/handler/health/gen/server.gen.go&#34;,
-<span id="L329" class="ln">   329  </span>			}}
-<span id="L330" class="ln">   330  </span>			spec := specSetOf(
-<span id="L331" class="ln">   331  </span>				routeRegistration{method: &#34;GET&#34;, path: &#34;/health&#34;},
-<span id="L332" class="ln">   332  </span>				routeRegistration{method: &#34;GET&#34;, path: &#34;/version&#34;},
-<span id="L333" class="ln">   333  </span>				routeRegistration{method: &#34;DELETE&#34;, path: &#34;/v1/users/:userId&#34;},
-<span id="L334" class="ln">   334  </span>			)
-<span id="L335" class="ln">   335  </span>
-<span id="L336" class="ln">   336  </span>			assert.Equal(t, []string{&#34;DELETE /v1/users/:userId&#34;, &#34;GET /version&#34;}, index.unregisteredIn(spec))
-<span id="L337" class="ln">   337  </span>		})
-<span id="L338" class="ln">   338  </span>	})
-<span id="L339" class="ln">   339  </span>}
-<span id="L340" class="ln">   340  </span>
-<span id="L341" class="ln">   341  </span><span class="comment">// Test_isScannableGoFile は、走査対象の絞り込みを固定する。テストファイルを除外し損なうと、</span>
-<span id="L342" class="ln">   342  </span><span class="comment">// このファイル自身に埋め込んだ合成フィクスチャが実在のルート登録として索引に混入する。</span>
-<span id="L343" class="ln">   343  </span>func Test_isScannableGoFile(t *testing.T) {
-<span id="L344" class="ln">   344  </span>	t.Parallel()
-<span id="L345" class="ln">   345  </span>
-<span id="L346" class="ln">   346  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L347" class="ln">   347  </span>		t.Parallel()
-<span id="L348" class="ln">   348  </span>
-<span id="L349" class="ln">   349  </span>		t.Run(&#34;production code の Go ソースは走査対象になる&#34;, func(t *testing.T) {
-<span id="L350" class="ln">   350  </span>			t.Parallel()
-<span id="L351" class="ln">   351  </span>
-<span id="L352" class="ln">   352  </span>			assert.True(t, isScannableGoFile(&#34;internal/controller/handler/metrics/metrics_handler.go&#34;))
-<span id="L353" class="ln">   353  </span>		})
-<span id="L354" class="ln">   354  </span>	})
+<span id="L321" class="ln">   321  </span>			assert.Empty(t, index.unregisteredIn(specSetOf(routeRegistration{method: &#34;GET&#34;, path: &#34;/health&#34;})))
+<span id="L322" class="ln">   322  </span>		})
+<span id="L323" class="ln">   323  </span>	})
+<span id="L324" class="ln">   324  </span>
+<span id="L325" class="ln">   325  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L326" class="ln">   326  </span>		t.Parallel()
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>		t.Run(&#34;登録の無い operation を昇順に返す&#34;, func(t *testing.T) {
+<span id="L329" class="ln">   329  </span>			t.Parallel()
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>			index := routeIndex{registered: map[routeRegistration]string{
+<span id="L332" class="ln">   332  </span>				{method: &#34;GET&#34;, path: &#34;/health&#34;}: &#34;internal/controller/handler/health/gen/server.gen.go&#34;,
+<span id="L333" class="ln">   333  </span>			}}
+<span id="L334" class="ln">   334  </span>			spec := specSetOf(
+<span id="L335" class="ln">   335  </span>				routeRegistration{method: &#34;GET&#34;, path: &#34;/health&#34;},
+<span id="L336" class="ln">   336  </span>				routeRegistration{method: &#34;GET&#34;, path: &#34;/version&#34;},
+<span id="L337" class="ln">   337  </span>				routeRegistration{method: &#34;DELETE&#34;, path: &#34;/v1/users/:userId&#34;},
+<span id="L338" class="ln">   338  </span>			)
+<span id="L339" class="ln">   339  </span>
+<span id="L340" class="ln">   340  </span>			assert.Equal(t, []string{&#34;DELETE /v1/users/:userId&#34;, &#34;GET /version&#34;}, index.unregisteredIn(spec))
+<span id="L341" class="ln">   341  </span>		})
+<span id="L342" class="ln">   342  </span>	})
+<span id="L343" class="ln">   343  </span>}
+<span id="L344" class="ln">   344  </span>
+<span id="L345" class="ln">   345  </span><span class="comment">// Test_isScannableGoFile は、走査対象の絞り込みを固定する。テストファイルを除外し損なうと、</span>
+<span id="L346" class="ln">   346  </span><span class="comment">// このファイル自身に埋め込んだ合成フィクスチャが実在のルート登録として索引に混入する。</span>
+<span id="L347" class="ln">   347  </span>func Test_isScannableGoFile(t *testing.T) {
+<span id="L348" class="ln">   348  </span>	t.Parallel()
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L351" class="ln">   351  </span>		t.Parallel()
+<span id="L352" class="ln">   352  </span>
+<span id="L353" class="ln">   353  </span>		t.Run(&#34;production code の Go ソースは走査対象になる&#34;, func(t *testing.T) {
+<span id="L354" class="ln">   354  </span>			t.Parallel()
 <span id="L355" class="ln">   355  </span>
-<span id="L356" class="ln">   356  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L357" class="ln">   357  </span>		t.Parallel()
-<span id="L358" class="ln">   358  </span>
-<span id="L359" class="ln">   359  </span>		t.Run(&#34;テストファイルは走査対象外になる&#34;, func(t *testing.T) {
-<span id="L360" class="ln">   360  </span>			t.Parallel()
-<span id="L361" class="ln">   361  </span>
-<span id="L362" class="ln">   362  </span>			assert.False(t, isScannableGoFile(&#34;internal/architest/route_spec_parity_test.go&#34;))
-<span id="L363" class="ln">   363  </span>		})
-<span id="L364" class="ln">   364  </span>
-<span id="L365" class="ln">   365  </span>		t.Run(&#34;Go ソース以外は走査対象外になる&#34;, func(t *testing.T) {
-<span id="L366" class="ln">   366  </span>			t.Parallel()
-<span id="L367" class="ln">   367  </span>
-<span id="L368" class="ln">   368  </span>			assert.False(t, isScannableGoFile(&#34;internal/controller/handler/README.md&#34;))
-<span id="L369" class="ln">   369  </span>		})
-<span id="L370" class="ln">   370  </span>	})
-<span id="L371" class="ln">   371  </span>}
-<span id="L372" class="ln">   372  </span>
-<span id="L373" class="ln">   373  </span><span class="comment">// Test_repoRelative は、違反報告に絶対パスが漏れないことを固定する。</span>
-<span id="L374" class="ln">   374  </span>func Test_repoRelative(t *testing.T) {
-<span id="L375" class="ln">   375  </span>	t.Parallel()
+<span id="L356" class="ln">   356  </span>			assert.True(t, isScannableGoFile(&#34;internal/controller/handler/metrics/metrics_handler.go&#34;))
+<span id="L357" class="ln">   357  </span>		})
+<span id="L358" class="ln">   358  </span>	})
+<span id="L359" class="ln">   359  </span>
+<span id="L360" class="ln">   360  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L361" class="ln">   361  </span>		t.Parallel()
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span>		t.Run(&#34;テストファイルは走査対象外になる&#34;, func(t *testing.T) {
+<span id="L364" class="ln">   364  </span>			t.Parallel()
+<span id="L365" class="ln">   365  </span>
+<span id="L366" class="ln">   366  </span>			assert.False(t, isScannableGoFile(&#34;internal/architest/route_spec_parity_test.go&#34;))
+<span id="L367" class="ln">   367  </span>		})
+<span id="L368" class="ln">   368  </span>
+<span id="L369" class="ln">   369  </span>		t.Run(&#34;Go ソース以外は走査対象外になる&#34;, func(t *testing.T) {
+<span id="L370" class="ln">   370  </span>			t.Parallel()
+<span id="L371" class="ln">   371  </span>
+<span id="L372" class="ln">   372  </span>			assert.False(t, isScannableGoFile(&#34;internal/controller/handler/README.md&#34;))
+<span id="L373" class="ln">   373  </span>		})
+<span id="L374" class="ln">   374  </span>	})
+<span id="L375" class="ln">   375  </span>}
 <span id="L376" class="ln">   376  </span>
-<span id="L377" class="ln">   377  </span>	root := filepath.Join(string(filepath.Separator)+&#34;tmp&#34;, &#34;repo&#34;)
-<span id="L378" class="ln">   378  </span>
-<span id="L379" class="ln">   379  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L380" class="ln">   380  </span>		t.Parallel()
-<span id="L381" class="ln">   381  </span>
-<span id="L382" class="ln">   382  </span>		t.Run(&#34;ルート配下のパスをスラッシュ区切りの相対パスにする&#34;, func(t *testing.T) {
-<span id="L383" class="ln">   383  </span>			t.Parallel()
-<span id="L384" class="ln">   384  </span>
-<span id="L385" class="ln">   385  </span>			assert.Equal(t,
-<span id="L386" class="ln">   386  </span>				&#34;internal/architest/route_spec_parity_test.go&#34;,
-<span id="L387" class="ln">   387  </span>				repoRelative(root, filepath.Join(root, &#34;internal&#34;, &#34;architest&#34;, &#34;route_spec_parity_test.go&#34;)))
-<span id="L388" class="ln">   388  </span>		})
-<span id="L389" class="ln">   389  </span>	})
-<span id="L390" class="ln">   390  </span>
-<span id="L391" class="ln">   391  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L392" class="ln">   392  </span>		t.Parallel()
-<span id="L393" class="ln">   393  </span>
-<span id="L394" class="ln">   394  </span>		t.Run(&#34;ルート配下でないパスはそのまま返す&#34;, func(t *testing.T) {
-<span id="L395" class="ln">   395  </span>			t.Parallel()
-<span id="L396" class="ln">   396  </span>
-<span id="L397" class="ln">   397  </span>			outside := filepath.Join(string(filepath.Separator)+&#34;other&#34;, &#34;x.go&#34;)
-<span id="L398" class="ln">   398  </span>
-<span id="L399" class="ln">   399  </span>			assert.Equal(t, filepath.ToSlash(outside), repoRelative(root, outside))
-<span id="L400" class="ln">   400  </span>		})
-<span id="L401" class="ln">   401  </span>	})
-<span id="L402" class="ln">   402  </span>}
-<span id="L403" class="ln">   403  </span>
-<span id="L404" class="ln">   404  </span><span class="comment">// String は、&#34;GET /v1/users/:userId&#34; 形式の報告用表記を返します。</span>
-<span id="L405" class="ln">   405  </span>func (r routeRegistration) String() string { return r.method + &#34; &#34; + r.path }
-<span id="L406" class="ln">   406  </span>
-<span id="L407" class="ln">   407  </span><span class="comment">// readRouteCalls は、HTTP メソッド名によるルート登録を 1 行から読み取ります。</span>
-<span id="L408" class="ln">   408  </span><span class="comment">// パスが文字列リテラルでない登録は spec と突き合わせられないため、opaque として記録します。</span>
-<span id="L409" class="ln">   409  </span>func (s *echoRouteScan) readRouteCalls(line string) {
-<span id="L410" class="ln">   410  </span>	for _, loc := range routeCallRe.FindAllStringSubmatchIndex(line, -1) {
-<span id="L411" class="ln">   411  </span>		method := line[loc[2]:loc[3]]
-<span id="L412" class="ln">   412  </span>
-<span id="L413" class="ln">   413  </span>		m := literalPathRe.FindStringSubmatch(line[loc[1]:])
-<span id="L414" class="ln">   414  </span>		if m == nil {
-<span id="L415" class="ln">   415  </span>			s.opaque = append(s.opaque, method+&#34; の登録パスをリテラルとして読み取れない: &#34;+strings.TrimSpace(line))
-<span id="L416" class="ln">   416  </span>			continue
-<span id="L417" class="ln">   417  </span>		}
-<span id="L418" class="ln">   418  </span>		s.routes = append(s.routes, routeRegistration{method: method, path: m[1]})
-<span id="L419" class="ln">   419  </span>	}
-<span id="L420" class="ln">   420  </span>}
-<span id="L421" class="ln">   421  </span>
-<span id="L422" class="ln">   422  </span><span class="comment">// readOpaqueCalls は、メソッドとパスの組を静的に確定できない登録形を 1 行から読み取ります。</span>
-<span id="L423" class="ln">   423  </span>func (s *echoRouteScan) readOpaqueCalls(line string) {
-<span id="L424" class="ln">   424  </span>	if m := opaqueCallRe.FindStringSubmatch(line); m != nil {
-<span id="L425" class="ln">   425  </span>		s.opaque = append(s.opaque, m[1]+&#34; による登録: &#34;+strings.TrimSpace(line))
-<span id="L426" class="ln">   426  </span>	}
-<span id="L427" class="ln">   427  </span>	if opaqueAddCallRe.MatchString(line) {
-<span id="L428" class="ln">   428  </span>		s.opaque = append(s.opaque, &#34;Add による登録: &#34;+strings.TrimSpace(line))
-<span id="L429" class="ln">   429  </span>	}
-<span id="L430" class="ln">   430  </span>}
-<span id="L431" class="ln">   431  </span>
-<span id="L432" class="ln">   432  </span><span class="comment">// addFile は、1 ファイル分の走査結果を索引へ取り込みます。Echo に依存しないファイルは無視します。</span>
-<span id="L433" class="ln">   433  </span>func (idx *routeIndex) addFile(file, src string) {
-<span id="L434" class="ln">   434  </span>	scan, found := scanEchoRouteRegistrations(src)
-<span id="L435" class="ln">   435  </span>	if !found {
-<span id="L436" class="ln">   436  </span>		return
-<span id="L437" class="ln">   437  </span>	}
-<span id="L438" class="ln">   438  </span>	idx.scanned++
-<span id="L439" class="ln">   439  </span>
-<span id="L440" class="ln">   440  </span>	for _, r := range scan.routes {
-<span id="L441" class="ln">   441  </span>		idx.registered[r] = file
-<span id="L442" class="ln">   442  </span>	}
-<span id="L443" class="ln">   443  </span>	for _, o := range scan.opaque {
-<span id="L444" class="ln">   444  </span>		idx.opaque = append(idx.opaque, file+&#34;: &#34;+o)
-<span id="L445" class="ln">   445  </span>	}
-<span id="L446" class="ln">   446  </span>}
-<span id="L447" class="ln">   447  </span>
-<span id="L448" class="ln">   448  </span><span class="comment">// routesMissingFrom は、登録されているが spec に無いルートを &#34;METHOD /path (宣言元)&#34; 形式で返します。</span>
-<span id="L449" class="ln">   449  </span>func (idx *routeIndex) routesMissingFrom(spec map[routeRegistration]struct{}) []string {
-<span id="L450" class="ln">   450  </span>	out := make([]string, 0, len(idx.registered))
-<span id="L451" class="ln">   451  </span>	for route, file := range idx.registered {
-<span id="L452" class="ln">   452  </span>		if _, ok := spec[route]; !ok {
-<span id="L453" class="ln">   453  </span>			out = append(out, route.String()+&#34; (&#34;+file+&#34;)&#34;)
-<span id="L454" class="ln">   454  </span>		}
-<span id="L455" class="ln">   455  </span>	}
-<span id="L456" class="ln">   456  </span>	sort.Strings(out)
-<span id="L457" class="ln">   457  </span>	return out
-<span id="L458" class="ln">   458  </span>}
-<span id="L459" class="ln">   459  </span>
-<span id="L460" class="ln">   460  </span><span class="comment">// unregisteredIn は、spec にあるがどこにも登録されていない operation を &#34;METHOD /path&#34; 形式で返します。</span>
-<span id="L461" class="ln">   461  </span>func (idx *routeIndex) unregisteredIn(spec map[routeRegistration]struct{}) []string {
-<span id="L462" class="ln">   462  </span>	out := make([]string, 0, len(spec))
-<span id="L463" class="ln">   463  </span>	for route := range spec {
-<span id="L464" class="ln">   464  </span>		if _, ok := idx.registered[route]; !ok {
-<span id="L465" class="ln">   465  </span>			out = append(out, route.String())
-<span id="L466" class="ln">   466  </span>		}
-<span id="L467" class="ln">   467  </span>	}
-<span id="L468" class="ln">   468  </span>	sort.Strings(out)
-<span id="L469" class="ln">   469  </span>	return out
-<span id="L470" class="ln">   470  </span>}
-<span id="L471" class="ln">   471  </span>
-<span id="L472" class="ln">   472  </span><span class="comment">// specRouteSet は、spec が公開する operation を Echo 表記のルート集合として返します。</span>
-<span id="L473" class="ln">   473  </span><span class="comment">//</span>
-<span id="L474" class="ln">   474  </span><span class="comment">// 読み出すのは生成物（openapi.gen.yaml / 埋め込み spec）ではなく手書き正本の openapi.yaml です。</span>
-<span id="L475" class="ln">   475  </span><span class="comment">// 生成物と正本の同期は生成物ドリフト検査が別途担保しており、正本を読めば「定義を削ったが再生成前」の</span>
-<span id="L476" class="ln">   476  </span><span class="comment">// 状態（サンプル API 削除の直後）でも実装側と歩調が合うためです。</span>
+<span id="L377" class="ln">   377  </span><span class="comment">// Test_repoRelative は、違反報告に絶対パスが漏れないことを固定する。</span>
+<span id="L378" class="ln">   378  </span>func Test_repoRelative(t *testing.T) {
+<span id="L379" class="ln">   379  </span>	t.Parallel()
+<span id="L380" class="ln">   380  </span>
+<span id="L381" class="ln">   381  </span>	root := filepath.Join(string(filepath.Separator)+&#34;tmp&#34;, &#34;repo&#34;)
+<span id="L382" class="ln">   382  </span>
+<span id="L383" class="ln">   383  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L384" class="ln">   384  </span>		t.Parallel()
+<span id="L385" class="ln">   385  </span>
+<span id="L386" class="ln">   386  </span>		t.Run(&#34;ルート配下のパスをスラッシュ区切りの相対パスにする&#34;, func(t *testing.T) {
+<span id="L387" class="ln">   387  </span>			t.Parallel()
+<span id="L388" class="ln">   388  </span>
+<span id="L389" class="ln">   389  </span>			assert.Equal(t,
+<span id="L390" class="ln">   390  </span>				&#34;internal/architest/route_spec_parity_test.go&#34;,
+<span id="L391" class="ln">   391  </span>				repoRelative(root, filepath.Join(root, &#34;internal&#34;, &#34;architest&#34;, &#34;route_spec_parity_test.go&#34;)))
+<span id="L392" class="ln">   392  </span>		})
+<span id="L393" class="ln">   393  </span>	})
+<span id="L394" class="ln">   394  </span>
+<span id="L395" class="ln">   395  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L396" class="ln">   396  </span>		t.Parallel()
+<span id="L397" class="ln">   397  </span>
+<span id="L398" class="ln">   398  </span>		t.Run(&#34;ルート配下でないパスはそのまま返す&#34;, func(t *testing.T) {
+<span id="L399" class="ln">   399  </span>			t.Parallel()
+<span id="L400" class="ln">   400  </span>
+<span id="L401" class="ln">   401  </span>			outside := filepath.Join(string(filepath.Separator)+&#34;other&#34;, &#34;x.go&#34;)
+<span id="L402" class="ln">   402  </span>
+<span id="L403" class="ln">   403  </span>			assert.Equal(t, filepath.ToSlash(outside), repoRelative(root, outside))
+<span id="L404" class="ln">   404  </span>		})
+<span id="L405" class="ln">   405  </span>	})
+<span id="L406" class="ln">   406  </span>}
+<span id="L407" class="ln">   407  </span>
+<span id="L408" class="ln">   408  </span><span class="comment">// String は、&#34;GET /v1/users/:userId&#34; 形式の報告用表記を返します。</span>
+<span id="L409" class="ln">   409  </span>func (r routeRegistration) String() string { return r.method + &#34; &#34; + r.path }
+<span id="L410" class="ln">   410  </span>
+<span id="L411" class="ln">   411  </span><span class="comment">// readRouteCalls は、HTTP メソッド名によるルート登録を 1 行から読み取ります。</span>
+<span id="L412" class="ln">   412  </span><span class="comment">// パスが文字列リテラルでない登録は spec と突き合わせられないため、opaque として記録します。</span>
+<span id="L413" class="ln">   413  </span>func (s *echoRouteScan) readRouteCalls(line string) {
+<span id="L414" class="ln">   414  </span>	for _, loc := range routeCallRe.FindAllStringSubmatchIndex(line, -1) {
+<span id="L415" class="ln">   415  </span>		method := line[loc[2]:loc[3]]
+<span id="L416" class="ln">   416  </span>
+<span id="L417" class="ln">   417  </span>		m := literalPathRe.FindStringSubmatch(line[loc[1]:])
+<span id="L418" class="ln">   418  </span>		if m == nil {
+<span id="L419" class="ln">   419  </span>			s.opaque = append(s.opaque, method+&#34; の登録パスをリテラルとして読み取れない: &#34;+strings.TrimSpace(line))
+<span id="L420" class="ln">   420  </span>			continue
+<span id="L421" class="ln">   421  </span>		}
+<span id="L422" class="ln">   422  </span>		s.routes = append(s.routes, routeRegistration{method: method, path: m[1]})
+<span id="L423" class="ln">   423  </span>	}
+<span id="L424" class="ln">   424  </span>}
+<span id="L425" class="ln">   425  </span>
+<span id="L426" class="ln">   426  </span><span class="comment">// readOpaqueCalls は、メソッドとパスの組を静的に確定できない登録形を 1 行から読み取ります。</span>
+<span id="L427" class="ln">   427  </span>func (s *echoRouteScan) readOpaqueCalls(line string) {
+<span id="L428" class="ln">   428  </span>	if m := opaqueCallRe.FindStringSubmatch(line); m != nil {
+<span id="L429" class="ln">   429  </span>		s.opaque = append(s.opaque, m[1]+&#34; による登録: &#34;+strings.TrimSpace(line))
+<span id="L430" class="ln">   430  </span>	}
+<span id="L431" class="ln">   431  </span>	if opaqueAddCallRe.MatchString(line) {
+<span id="L432" class="ln">   432  </span>		s.opaque = append(s.opaque, &#34;Add による登録: &#34;+strings.TrimSpace(line))
+<span id="L433" class="ln">   433  </span>	}
+<span id="L434" class="ln">   434  </span>}
+<span id="L435" class="ln">   435  </span>
+<span id="L436" class="ln">   436  </span><span class="comment">// addFile は、1 ファイル分の走査結果を索引へ取り込みます。Echo に依存しないファイルは無視します。</span>
+<span id="L437" class="ln">   437  </span>func (idx *routeIndex) addFile(file, src string) {
+<span id="L438" class="ln">   438  </span>	scan, found := scanEchoRouteRegistrations(src)
+<span id="L439" class="ln">   439  </span>	if !found {
+<span id="L440" class="ln">   440  </span>		return
+<span id="L441" class="ln">   441  </span>	}
+<span id="L442" class="ln">   442  </span>	idx.scanned++
+<span id="L443" class="ln">   443  </span>
+<span id="L444" class="ln">   444  </span>	for _, r := range scan.routes {
+<span id="L445" class="ln">   445  </span>		idx.registered[r] = file
+<span id="L446" class="ln">   446  </span>	}
+<span id="L447" class="ln">   447  </span>	for _, o := range scan.opaque {
+<span id="L448" class="ln">   448  </span>		idx.opaque = append(idx.opaque, file+&#34;: &#34;+o)
+<span id="L449" class="ln">   449  </span>	}
+<span id="L450" class="ln">   450  </span>}
+<span id="L451" class="ln">   451  </span>
+<span id="L452" class="ln">   452  </span><span class="comment">// routesMissingFrom は、登録されているが spec に無いルートを &#34;METHOD /path (宣言元)&#34; 形式で返します。</span>
+<span id="L453" class="ln">   453  </span>func (idx *routeIndex) routesMissingFrom(spec map[routeRegistration]struct{}) []string {
+<span id="L454" class="ln">   454  </span>	out := make([]string, 0, len(idx.registered))
+<span id="L455" class="ln">   455  </span>	for route, file := range idx.registered {
+<span id="L456" class="ln">   456  </span>		if _, ok := spec[route]; !ok {
+<span id="L457" class="ln">   457  </span>			out = append(out, route.String()+&#34; (&#34;+file+&#34;)&#34;)
+<span id="L458" class="ln">   458  </span>		}
+<span id="L459" class="ln">   459  </span>	}
+<span id="L460" class="ln">   460  </span>	sort.Strings(out)
+<span id="L461" class="ln">   461  </span>	return out
+<span id="L462" class="ln">   462  </span>}
+<span id="L463" class="ln">   463  </span>
+<span id="L464" class="ln">   464  </span><span class="comment">// unregisteredIn は、spec にあるがどこにも登録されていない operation を &#34;METHOD /path&#34; 形式で返します。</span>
+<span id="L465" class="ln">   465  </span>func (idx *routeIndex) unregisteredIn(spec map[routeRegistration]struct{}) []string {
+<span id="L466" class="ln">   466  </span>	out := make([]string, 0, len(spec))
+<span id="L467" class="ln">   467  </span>	for route := range spec {
+<span id="L468" class="ln">   468  </span>		if _, ok := idx.registered[route]; !ok {
+<span id="L469" class="ln">   469  </span>			out = append(out, route.String())
+<span id="L470" class="ln">   470  </span>		}
+<span id="L471" class="ln">   471  </span>	}
+<span id="L472" class="ln">   472  </span>	sort.Strings(out)
+<span id="L473" class="ln">   473  </span>	return out
+<span id="L474" class="ln">   474  </span>}
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span><span class="comment">// specRouteSet は、spec が公開する operation を Echo 表記のルート集合として返します。</span>
 <span id="L477" class="ln">   477  </span><span class="comment">//</span>
-<span id="L478" class="ln">   478  </span><span class="comment">// 除外するのは /_internal/ 配下の operation だけで、これは spec 自身が「コード生成のためだけに存在し、</span>
-<span id="L479" class="ln">   479  </span><span class="comment">// 実際には実装・公開されない」と宣言しているアンカーです。除外は spec 上の宣言から導出するため、</span>
-<span id="L480" class="ln">   480  </span><span class="comment">// 手で維持する許可リストにはなりません（登録されていれば spec 外のルートとして失敗します）。</span>
-<span id="L481" class="ln">   481  </span>func specRouteSet(t *testing.T) map[routeRegistration]struct{} {
-<span id="L482" class="ln">   482  </span>	t.Helper()
-<span id="L483" class="ln">   483  </span>
-<span id="L484" class="ln">   484  </span>	loader := &amp;openapi3.Loader{IsExternalRefsAllowed: true}
-<span id="L485" class="ln">   485  </span>	spec, err := loader.LoadFromFile(filepath.Join(moduleRoot(t), filepath.FromSlash(specSourceFile)))
-<span id="L486" class="ln">   486  </span>	require.NoError(t, err)
-<span id="L487" class="ln">   487  </span>	require.NotNil(t, spec.Paths)
-<span id="L488" class="ln">   488  </span>
-<span id="L489" class="ln">   489  </span>	out := make(map[routeRegistration]struct{}, spec.Paths.Len())
-<span id="L490" class="ln">   490  </span>	for path, item := range spec.Paths.Map() {
-<span id="L491" class="ln">   491  </span>		if strings.HasPrefix(path, internalPathPrefix) {
-<span id="L492" class="ln">   492  </span>			continue
-<span id="L493" class="ln">   493  </span>		}
-<span id="L494" class="ln">   494  </span>		for method := range item.Operations() {
-<span id="L495" class="ln">   495  </span>			out[routeRegistration{method: method, path: echoPath(path)}] = struct{}{}
-<span id="L496" class="ln">   496  </span>		}
-<span id="L497" class="ln">   497  </span>	}
-<span id="L498" class="ln">   498  </span>	require.NotEmpty(t, out, &#34;spec から operation を 1 件も読み出せない&#34;)
-<span id="L499" class="ln">   499  </span>	return out
-<span id="L500" class="ln">   500  </span>}
-<span id="L501" class="ln">   501  </span>
-<span id="L502" class="ln">   502  </span><span class="comment">// echoPath は、OpenAPI のパスパラメータ表記 {name} を Echo の :name へ正規化します。</span>
-<span id="L503" class="ln">   503  </span>func echoPath(specPath string) string { return specParamRe.ReplaceAllString(specPath, &#34;:$1&#34;) }
-<span id="L504" class="ln">   504  </span>
-<span id="L505" class="ln">   505  </span><span class="comment">// scanRepositoryRoutes は、モジュール内の非テスト Go ソースを走査してルート登録の索引を返します。</span>
-<span id="L506" class="ln">   506  </span>func scanRepositoryRoutes(t *testing.T) routeIndex {
-<span id="L507" class="ln">   507  </span>	t.Helper()
+<span id="L478" class="ln">   478  </span><span class="comment">// 読み出すのは生成物（openapi.gen.yaml / 埋め込み spec）ではなく手書き正本の openapi.yaml です。</span>
+<span id="L479" class="ln">   479  </span><span class="comment">// 生成物と正本の同期は生成物ドリフト検査が別途担保しており、正本を読めば「定義を削ったが再生成前」の</span>
+<span id="L480" class="ln">   480  </span><span class="comment">// 状態（サンプル API 削除の直後）でも実装側と歩調が合うためです。</span>
+<span id="L481" class="ln">   481  </span><span class="comment">//</span>
+<span id="L482" class="ln">   482  </span><span class="comment">// 除外するのは /_internal/ 配下の operation だけで、これは spec 自身が「コード生成のためだけに存在し、</span>
+<span id="L483" class="ln">   483  </span><span class="comment">// 実際には実装・公開されない」と宣言しているアンカーです。除外は spec 上の宣言から導出するため、</span>
+<span id="L484" class="ln">   484  </span><span class="comment">// 手で維持する許可リストにはなりません（登録されていれば spec 外のルートとして失敗します）。</span>
+<span id="L485" class="ln">   485  </span>func specRouteSet(t *testing.T) map[routeRegistration]struct{} {
+<span id="L486" class="ln">   486  </span>	t.Helper()
+<span id="L487" class="ln">   487  </span>
+<span id="L488" class="ln">   488  </span>	loader := &amp;openapi3.Loader{IsExternalRefsAllowed: true}
+<span id="L489" class="ln">   489  </span>	spec, err := loader.LoadFromFile(filepath.Join(moduleRoot(t), filepath.FromSlash(specSourceFile)))
+<span id="L490" class="ln">   490  </span>	require.NoError(t, err)
+<span id="L491" class="ln">   491  </span>	require.NotNil(t, spec.Paths)
+<span id="L492" class="ln">   492  </span>
+<span id="L493" class="ln">   493  </span>	out := make(map[routeRegistration]struct{}, spec.Paths.Len())
+<span id="L494" class="ln">   494  </span>	for path, item := range spec.Paths.Map() {
+<span id="L495" class="ln">   495  </span>		if strings.HasPrefix(path, internalPathPrefix) {
+<span id="L496" class="ln">   496  </span>			continue
+<span id="L497" class="ln">   497  </span>		}
+<span id="L498" class="ln">   498  </span>		for method := range item.Operations() {
+<span id="L499" class="ln">   499  </span>			out[routeRegistration{method: method, path: echoPath(path)}] = struct{}{}
+<span id="L500" class="ln">   500  </span>		}
+<span id="L501" class="ln">   501  </span>	}
+<span id="L502" class="ln">   502  </span>	require.NotEmpty(t, out, &#34;spec から operation を 1 件も読み出せない&#34;)
+<span id="L503" class="ln">   503  </span>	return out
+<span id="L504" class="ln">   504  </span>}
+<span id="L505" class="ln">   505  </span>
+<span id="L506" class="ln">   506  </span><span class="comment">// echoPath は、OpenAPI のパスパラメータ表記 {name} を Echo の :name へ正規化します。</span>
+<span id="L507" class="ln">   507  </span>func echoPath(specPath string) string { return specParamRe.ReplaceAllString(specPath, &#34;:$1&#34;) }
 <span id="L508" class="ln">   508  </span>
-<span id="L509" class="ln">   509  </span>	root := moduleRoot(t)
-<span id="L510" class="ln">   510  </span>	index := routeIndex{registered: map[routeRegistration]string{}}
-<span id="L511" class="ln">   511  </span>
-<span id="L512" class="ln">   512  </span>	for _, dir := range moduleSubdirs(t, &#34;internal&#34;, &#34;pkg&#34;, &#34;cmd&#34;) {
-<span id="L513" class="ln">   513  </span>		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, walkErr error) error {
-<span id="L514" class="ln">   514  </span>			if walkErr != nil || d.IsDir() || !isScannableGoFile(path) {
-<span id="L515" class="ln">   515  </span>				return walkErr
-<span id="L516" class="ln">   516  </span>			}
-<span id="L517" class="ln">   517  </span>			src, readErr := pkgfs.OS{}.ReadFile(path)
-<span id="L518" class="ln">   518  </span>			if readErr != nil {
-<span id="L519" class="ln">   519  </span>				return readErr
+<span id="L509" class="ln">   509  </span><span class="comment">// scanRepositoryRoutes は、モジュール内の非テスト Go ソースを走査してルート登録の索引を返します。</span>
+<span id="L510" class="ln">   510  </span>func scanRepositoryRoutes(t *testing.T) routeIndex {
+<span id="L511" class="ln">   511  </span>	t.Helper()
+<span id="L512" class="ln">   512  </span>
+<span id="L513" class="ln">   513  </span>	root := moduleRoot(t)
+<span id="L514" class="ln">   514  </span>	index := routeIndex{registered: map[routeRegistration]string{}}
+<span id="L515" class="ln">   515  </span>
+<span id="L516" class="ln">   516  </span>	for _, dir := range moduleSubdirs(t, &#34;internal&#34;, &#34;pkg&#34;, &#34;cmd&#34;) {
+<span id="L517" class="ln">   517  </span>		err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, walkErr error) error {
+<span id="L518" class="ln">   518  </span>			if walkErr != nil || d.IsDir() || !isScannableGoFile(path) {
+<span id="L519" class="ln">   519  </span>				return walkErr
 <span id="L520" class="ln">   520  </span>			}
-<span id="L521" class="ln">   521  </span>			index.addFile(repoRelative(root, path), string(src))
-<span id="L522" class="ln">   522  </span>			return nil
-<span id="L523" class="ln">   523  </span>		})
-<span id="L524" class="ln">   524  </span>		require.NoError(t, err)
-<span id="L525" class="ln">   525  </span>	}
-<span id="L526" class="ln">   526  </span>	sort.Strings(index.opaque)
-<span id="L527" class="ln">   527  </span>
-<span id="L528" class="ln">   528  </span>	return index
-<span id="L529" class="ln">   529  </span>}
-<span id="L530" class="ln">   530  </span>
-<span id="L531" class="ln">   531  </span><span class="comment">// isScannableGoFile は、ルート登録の走査対象となる Go ソース（非テスト）かを判定します。</span>
-<span id="L532" class="ln">   532  </span>func isScannableGoFile(path string) bool {
-<span id="L533" class="ln">   533  </span>	return strings.HasSuffix(path, &#34;.go&#34;) &amp;&amp; !strings.HasSuffix(path, &#34;_test.go&#34;)
-<span id="L534" class="ln">   534  </span>}
-<span id="L535" class="ln">   535  </span>
-<span id="L536" class="ln">   536  </span><span class="comment">// repoRelative は、報告用にモジュールルートからの相対パスをスラッシュ区切りで返します。</span>
-<span id="L537" class="ln">   537  </span>func repoRelative(root, path string) string {
-<span id="L538" class="ln">   538  </span>	return filepath.ToSlash(strings.TrimPrefix(path, root+string(filepath.Separator)))
-<span id="L539" class="ln">   539  </span>}
-<span id="L540" class="ln">   540  </span>
-<span id="L541" class="ln">   541  </span><span class="comment">// scanEchoRouteRegistrations は、Go ソース 1 ファイル分のテキストからルート登録を読み取ります。</span>
-<span id="L542" class="ln">   542  </span><span class="comment">// 第 2 戻り値は、そのファイルが Echo v5 を import しているか（= 走査対象だったか）です。</span>
-<span id="L543" class="ln">   543  </span>func scanEchoRouteRegistrations(src string) (echoRouteScan, bool) {
-<span id="L544" class="ln">   544  </span>	if !echoImportRe.MatchString(src) {
-<span id="L545" class="ln">   545  </span>		return echoRouteScan{}, false
-<span id="L546" class="ln">   546  </span>	}
-<span id="L547" class="ln">   547  </span>
-<span id="L548" class="ln">   548  </span>	var scan echoRouteScan
-<span id="L549" class="ln">   549  </span>	for line := range strings.SplitSeq(src, &#34;\n&#34;) {
-<span id="L550" class="ln">   550  </span>		scan.readRouteCalls(line)
-<span id="L551" class="ln">   551  </span>		scan.readOpaqueCalls(line)
-<span id="L552" class="ln">   552  </span>	}
-<span id="L553" class="ln">   553  </span>	return scan, true
-<span id="L554" class="ln">   554  </span>}
-<span id="L555" class="ln">   555  </span>
-<span id="L556" class="ln">   556  </span><span class="comment">// echoSource は、Echo v5 を import するファイルの体裁に宣言 body を埋め込んだ走査用ソースを返します。</span>
-<span id="L557" class="ln">   557  </span>func echoSource(body string) string {
-<span id="L558" class="ln">   558  </span>	return strings.Join([]string{
-<span id="L559" class="ln">   559  </span>		&#34;package sample&#34;,
-<span id="L560" class="ln">   560  </span>		&#34;&#34;,
-<span id="L561" class="ln">   561  </span>		&#34;import (&#34;,
-<span id="L562" class="ln">   562  </span>		&#34;\t\&#34;github.com/labstack/echo/v5\&#34;&#34;,
-<span id="L563" class="ln">   563  </span>		&#34;)&#34;,
+<span id="L521" class="ln">   521  </span>			src, readErr := pkgfs.OS{}.ReadFile(path)
+<span id="L522" class="ln">   522  </span>			if readErr != nil {
+<span id="L523" class="ln">   523  </span>				return readErr
+<span id="L524" class="ln">   524  </span>			}
+<span id="L525" class="ln">   525  </span>			index.addFile(repoRelative(root, path), string(src))
+<span id="L526" class="ln">   526  </span>			return nil
+<span id="L527" class="ln">   527  </span>		})
+<span id="L528" class="ln">   528  </span>		require.NoError(t, err)
+<span id="L529" class="ln">   529  </span>	}
+<span id="L530" class="ln">   530  </span>	sort.Strings(index.opaque)
+<span id="L531" class="ln">   531  </span>
+<span id="L532" class="ln">   532  </span>	return index
+<span id="L533" class="ln">   533  </span>}
+<span id="L534" class="ln">   534  </span>
+<span id="L535" class="ln">   535  </span><span class="comment">// isScannableGoFile は、ルート登録の走査対象となる Go ソース（非テスト）かを判定します。</span>
+<span id="L536" class="ln">   536  </span>func isScannableGoFile(path string) bool {
+<span id="L537" class="ln">   537  </span>	return strings.HasSuffix(path, &#34;.go&#34;) &amp;&amp; !strings.HasSuffix(path, &#34;_test.go&#34;)
+<span id="L538" class="ln">   538  </span>}
+<span id="L539" class="ln">   539  </span>
+<span id="L540" class="ln">   540  </span><span class="comment">// repoRelative は、報告用にモジュールルートからの相対パスをスラッシュ区切りで返します。</span>
+<span id="L541" class="ln">   541  </span>func repoRelative(root, path string) string {
+<span id="L542" class="ln">   542  </span>	return filepath.ToSlash(strings.TrimPrefix(path, root+string(filepath.Separator)))
+<span id="L543" class="ln">   543  </span>}
+<span id="L544" class="ln">   544  </span>
+<span id="L545" class="ln">   545  </span><span class="comment">// scanEchoRouteRegistrations は、Go ソース 1 ファイル分のテキストからルート登録を読み取ります。</span>
+<span id="L546" class="ln">   546  </span><span class="comment">// 第 2 戻り値は、そのファイルが Echo v5 を import しているか（= 走査対象だったか）です。</span>
+<span id="L547" class="ln">   547  </span>func scanEchoRouteRegistrations(src string) (echoRouteScan, bool) {
+<span id="L548" class="ln">   548  </span>	if !echoImportRe.MatchString(src) {
+<span id="L549" class="ln">   549  </span>		return echoRouteScan{}, false
+<span id="L550" class="ln">   550  </span>	}
+<span id="L551" class="ln">   551  </span>
+<span id="L552" class="ln">   552  </span>	var scan echoRouteScan
+<span id="L553" class="ln">   553  </span>	for line := range strings.SplitSeq(src, &#34;\n&#34;) {
+<span id="L554" class="ln">   554  </span>		scan.readRouteCalls(line)
+<span id="L555" class="ln">   555  </span>		scan.readOpaqueCalls(line)
+<span id="L556" class="ln">   556  </span>	}
+<span id="L557" class="ln">   557  </span>	return scan, true
+<span id="L558" class="ln">   558  </span>}
+<span id="L559" class="ln">   559  </span>
+<span id="L560" class="ln">   560  </span><span class="comment">// echoSource は、Echo v5 を import するファイルの体裁に宣言 body を埋め込んだ走査用ソースを返します。</span>
+<span id="L561" class="ln">   561  </span>func echoSource(body string) string {
+<span id="L562" class="ln">   562  </span>	return strings.Join([]string{
+<span id="L563" class="ln">   563  </span>		&#34;package sample&#34;,
 <span id="L564" class="ln">   564  </span>		&#34;&#34;,
-<span id="L565" class="ln">   565  </span>		body,
-<span id="L566" class="ln">   566  </span>	}, &#34;\n&#34;)
-<span id="L567" class="ln">   567  </span>}
-<span id="L568" class="ln">   568  </span>
-<span id="L569" class="ln">   569  </span><span class="comment">// echoFuncSource は、Echo を受け取る関数の本体に stmts を置いた走査用ソースを返します。</span>
-<span id="L570" class="ln">   570  </span>func echoFuncSource(stmts string) string {
-<span id="L571" class="ln">   571  </span>	return echoSource(&#34;func f(e *echo.Echo) {\n&#34; + stmts + &#34;\n}&#34;)
-<span id="L572" class="ln">   572  </span>}
-<span id="L573" class="ln">   573  </span>
-<span id="L574" class="ln">   574  </span><span class="comment">// assertOpaque は、stmts が spec と突き合わせられない登録形として 1 件だけ報告されることを検証します。</span>
-<span id="L575" class="ln">   575  </span>func assertOpaque(t *testing.T, stmts, wantReason string) {
-<span id="L576" class="ln">   576  </span>	t.Helper()
+<span id="L565" class="ln">   565  </span>		&#34;import (&#34;,
+<span id="L566" class="ln">   566  </span>		&#34;\t\&#34;github.com/labstack/echo/v5\&#34;&#34;,
+<span id="L567" class="ln">   567  </span>		&#34;)&#34;,
+<span id="L568" class="ln">   568  </span>		&#34;&#34;,
+<span id="L569" class="ln">   569  </span>		body,
+<span id="L570" class="ln">   570  </span>	}, &#34;\n&#34;)
+<span id="L571" class="ln">   571  </span>}
+<span id="L572" class="ln">   572  </span>
+<span id="L573" class="ln">   573  </span><span class="comment">// echoFuncSource は、Echo を受け取る関数の本体に stmts を置いた走査用ソースを返します。</span>
+<span id="L574" class="ln">   574  </span>func echoFuncSource(stmts string) string {
+<span id="L575" class="ln">   575  </span>	return echoSource(&#34;func f(e *echo.Echo) {\n&#34; + stmts + &#34;\n}&#34;)
+<span id="L576" class="ln">   576  </span>}
 <span id="L577" class="ln">   577  </span>
-<span id="L578" class="ln">   578  </span>	scan, found := scanEchoRouteRegistrations(echoFuncSource(stmts))
-<span id="L579" class="ln">   579  </span>
-<span id="L580" class="ln">   580  </span>	assert.True(t, found)
-<span id="L581" class="ln">   581  </span>	assert.Empty(t, scan.routes)
-<span id="L582" class="ln">   582  </span>	require.Len(t, scan.opaque, 1)
-<span id="L583" class="ln">   583  </span>	assert.Contains(t, scan.opaque[0], wantReason)
-<span id="L584" class="ln">   584  </span>}
-<span id="L585" class="ln">   585  </span>
-<span id="L586" class="ln">   586  </span><span class="comment">// specSetOf は、指定したルートだけを含む spec 側のルート集合を組み立てます。</span>
-<span id="L587" class="ln">   587  </span>func specSetOf(routes ...routeRegistration) map[routeRegistration]struct{} {
-<span id="L588" class="ln">   588  </span>	out := make(map[routeRegistration]struct{}, len(routes))
-<span id="L589" class="ln">   589  </span>	for _, r := range routes {
-<span id="L590" class="ln">   590  </span>		out[r] = struct{}{}
-<span id="L591" class="ln">   591  </span>	}
-<span id="L592" class="ln">   592  </span>	return out
-<span id="L593" class="ln">   593  </span>}
-<span id="L594" class="ln">   594  </span>
+<span id="L578" class="ln">   578  </span><span class="comment">// assertOpaque は、stmts が spec と突き合わせられない登録形として 1 件だけ報告されることを検証します。</span>
+<span id="L579" class="ln">   579  </span>func assertOpaque(t *testing.T, stmts, wantReason string) {
+<span id="L580" class="ln">   580  </span>	t.Helper()
+<span id="L581" class="ln">   581  </span>
+<span id="L582" class="ln">   582  </span>	scan, found := scanEchoRouteRegistrations(echoFuncSource(stmts))
+<span id="L583" class="ln">   583  </span>
+<span id="L584" class="ln">   584  </span>	assert.True(t, found)
+<span id="L585" class="ln">   585  </span>	assert.Empty(t, scan.routes)
+<span id="L586" class="ln">   586  </span>	require.Len(t, scan.opaque, 1)
+<span id="L587" class="ln">   587  </span>	assert.Contains(t, scan.opaque[0], wantReason)
+<span id="L588" class="ln">   588  </span>}
+<span id="L589" class="ln">   589  </span>
+<span id="L590" class="ln">   590  </span><span class="comment">// specSetOf は、指定したルートだけを含む spec 側のルート集合を組み立てます。</span>
+<span id="L591" class="ln">   591  </span>func specSetOf(routes ...routeRegistration) map[routeRegistration]struct{} {
+<span id="L592" class="ln">   592  </span>	out := make(map[routeRegistration]struct{}, len(routes))
+<span id="L593" class="ln">   593  </span>	for _, r := range routes {
+<span id="L594" class="ln">   594  </span>		out[r] = struct{}{}
+<span id="L595" class="ln">   595  </span>	}
+<span id="L596" class="ln">   596  </span>	return out
+<span id="L597" class="ln">   597  </span>}
+<span id="L598" class="ln">   598  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/architest/route_spec_parity_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

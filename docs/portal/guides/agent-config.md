@@ -4,8 +4,6 @@ This directory holds the Claude Code configuration that ships **with the repo**:
 subagents, the spec templates the scaffolding reads, helper scripts, and project-scoped permissions /
 plugin declarations. Anyone who clones and trusts the repo inherits the same agent behavior.
 
-For a Japanese reference translation, see [`README.ja.md`](README.ja.md).
-
 ## Relationship to `AGENTS.md`
 
 `AGENTS.md` (repo root) is the human-maintained **operational contract** — what an agent may touch and
@@ -41,17 +39,19 @@ bash .claude/scripts/bootstrap-plugins.sh
 
 Newly enabled plugins load on the **next** Claude Code session.
 
-## First-time setup: recommended external skills
+## First-time setup: standard external skills
 
 An **external skill** is a third-party skill that is not a marketplace plugin, so the plugin
-bootstrap cannot install it. This repo officially recommends one:
+bootstrap cannot install it. This repo ships one as **standard equipment** — not an opt-in extra:
+its commands and the discipline for using them are in `AGENTS.md`, which every agent loads on every
+turn.
 
 - `graphify` (`/graphify`) — parses the repo with tree-sitter into a queryable knowledge graph
   under `graphify-out/`, then answers structural questions (`query` / `affected` / `god-nodes`)
   from the graph instead of from repeated greps.
 
 Install it for every assistant this repo supports (Claude Code + Codex CLI) with the idempotent
-bootstrap:
+bootstrap. This is part of setup, not a decision to weigh:
 
 ```bash
 bash .claude/scripts/bootstrap-external-skills.sh
@@ -63,7 +63,8 @@ Three properties differ from the plugins above and are worth knowing before runn
   `.codex/skills/graphify/` inside the checkout and is gitignored, the way `vendor/` and
   `node_modules/` hold a dependency's own files: built from a pin, re-made per machine, never
   reviewed. A trusted clone does *not* carry it — every machine runs the bootstrap once. The pin is
-  `python/graphify.in`, and the script reads it rather than choosing a version.
+  `python/graphify.in`, and the script reads it rather than choosing a version. Standard equipment
+  and untracked are not in tension here: the same is true of `vendor/`.
 - **`skill-lint` does not check it.** The repository's skill conventions — frontmatter, the
   `SKILL.ja.md` pair, references that resolve — assume a skill this repository writes. This one is
   written upstream and refers to artifacts that only exist after a run, so it is declared in
@@ -88,8 +89,14 @@ inference, `--wiki`, and community *naming* call an LLM API and send content off
 keep those opt-in.
 
 ```bash
-mise exec "pipx:graphifyy[sql]" -- graphify update . --no-cluster
+make graphify-update
 ```
+
+**Run the pinned build, not `mise exec "pipx:graphifyy[sql]"`.** That form resolves whatever pipx
+hands back rather than going through `python/graphify.txt`, so it drifts from the lock. The two
+pinned installs are the `python_tool_runner` image (what the make target above uses) and the
+bootstrap's venv at `${XDG_CACHE_HOME:-$HOME/.cache}/go-boilerplate/graphify/bin/graphify`, which is
+what `graph-affected.ts` invokes. `AGENTS.md` carries the commands and the rest of the discipline.
 
 What the graph excludes (committed generated artifacts, Japanese mirrors, vendored code) is
 declared in `.graphifyignore`. Changing it requires a full re-extraction — an incremental `update`

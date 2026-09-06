@@ -295,7 +295,6 @@ Methods defined in `config_testing_setter.go` allow temporarily modifying SubCon
 |`SetConsumerQueue`|`ConsumerQueueConfig`|
 |`SetAuthIssuer`|`AuthConfig`|
 |`SetAuthAudience`|`AuthConfig`|
-|`SetAuthJWKSURL`|`AuthConfig`|
 |`SetSameSite`|`SecureCookieConfig`|
 |`SetDomain`|`SecureCookieConfig`|
 
@@ -305,8 +304,8 @@ Most of this package (SubConfig getters, `New()` binding, the test setters) is e
 stay near 100% unit coverage. The following are the **intentional exceptions**: their
 uncovered parts are error branches on the loading / composition boundary that cannot be
 exercised without failure injection, and the real path is already verified end-to-end by
-the boot-check CI (`app-di-startup-check` / `worker-boot-check` / `job-boot-check`, which
-run the actual binary through `SetUpConfig`).
+the boot-check CI (`app-di-startup-check` / `worker-boot-check` / `job-boot-check` /
+`outbox-relay-boot-check`, which run the actual binary through `SetUpConfig`).
 
 |File|Function|Why not unit-tested|
 |---|---|---|

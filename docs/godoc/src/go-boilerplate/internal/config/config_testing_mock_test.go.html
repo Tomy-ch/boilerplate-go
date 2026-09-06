@@ -201,197 +201,223 @@
 <span id="L144" class="ln">   144  </span>					usePathStyle:    expectedObjectStorageUsePathStyle,
 <span id="L145" class="ln">   145  </span>					maxUploadBytes:  expectedObjectStorageMaxUploadBytes,
 <span id="L146" class="ln">   146  </span>				},
-<span id="L147" class="ln">   147  </span>				endpoint: EndpointConfig{
-<span id="L148" class="ln">   148  </span>					otlp:          expectedEndpointOTLP,
-<span id="L149" class="ln">   149  </span>					jwks:          expectedEndpointJWKS,
-<span id="L150" class="ln">   150  </span>					objectStorage: expectedEndpointObjectStorage,
-<span id="L151" class="ln">   151  </span>					outbox:        expectedEndpointOutbox,
-<span id="L152" class="ln">   152  </span>					outboxQueue:   expectedEndpointOutboxQueue,
-<span id="L153" class="ln">   153  </span>					consumerQueue: expectedEndpointConsumerQueue,
-<span id="L154" class="ln">   154  </span>					<span class="comment">// sample-api:begin</span>
-<span id="L155" class="ln">   155  </span>					exchangeRate: expectedEndpointExchangeRate,
-<span id="L156" class="ln">   156  </span>					<span class="comment">// sample-api:end</span>
+<span id="L147" class="ln">   147  </span>				realtime: RealtimeConfig{
+<span id="L148" class="ln">   148  </span>					region:            expectedRealtimeRegion,
+<span id="L149" class="ln">   149  </span>					tableSuffix:       expectedRealtimeTableSuffix,
+<span id="L150" class="ln">   150  </span>					topic:             expectedRealtimeTopic,
+<span id="L151" class="ln">   151  </span>					queuePrefix:       expectedRealtimeQueuePrefix,
+<span id="L152" class="ln">   152  </span>					dlq:               expectedRealtimeDLQ,
+<span id="L153" class="ln">   153  </span>					accessKeyID:       expectedRealtimeAccessKeyID,
+<span id="L154" class="ln">   154  </span>					secretAccessKey:   expectedRealtimeSecretAccessKey,
+<span id="L155" class="ln">   155  </span>					maxConnections:    expectedRealtimeMaxConnections,
+<span id="L156" class="ln">   156  </span>					replayConcurrency: expectedRealtimeReplayConcurrency,
 <span id="L157" class="ln">   157  </span>				},
-<span id="L158" class="ln">   158  </span>			}
-<span id="L159" class="ln">   159  </span>
-<span id="L160" class="ln">   160  </span>			actual := MockConfigForTest(t)
-<span id="L161" class="ln">   161  </span>
-<span id="L162" class="ln">   162  </span>			assert.Equal(t, expected, actual)
-<span id="L163" class="ln">   163  </span>		})
-<span id="L164" class="ln">   164  </span>
-<span id="L165" class="ln">   165  </span>		t.Run(&#34;コネクションプールの最小接続数は 0 で、生成直後の一斉確立が起きない&#34;, func(t *testing.T) {
-<span id="L166" class="ln">   166  </span>			t.Parallel()
-<span id="L167" class="ln">   167  </span>
-<span id="L168" class="ln">   168  </span>			assert.Zero(t, NewDBConnectionConfig(MockConfigForTest(t)).MinConns())
-<span id="L169" class="ln">   169  </span>		})
-<span id="L170" class="ln">   170  </span>	})
-<span id="L171" class="ln">   171  </span>}
+<span id="L158" class="ln">   158  </span>				endpoint: EndpointConfig{
+<span id="L159" class="ln">   159  </span>					otlp:           expectedEndpointOTLP,
+<span id="L160" class="ln">   160  </span>					jwks:           expectedEndpointJWKS,
+<span id="L161" class="ln">   161  </span>					objectStorage:  expectedEndpointObjectStorage,
+<span id="L162" class="ln">   162  </span>					realtime:       expectedEndpointRealtime,
+<span id="L163" class="ln">   163  </span>					realtimePubSub: expectedEndpointRealtimePubSub,
+<span id="L164" class="ln">   164  </span>					outbox:         expectedEndpointOutbox,
+<span id="L165" class="ln">   165  </span>					outboxQueue:    expectedEndpointOutboxQueue,
+<span id="L166" class="ln">   166  </span>					consumerQueue:  expectedEndpointConsumerQueue,
+<span id="L167" class="ln">   167  </span>					<span class="comment">// sample-api:begin</span>
+<span id="L168" class="ln">   168  </span>					exchangeRate: expectedEndpointExchangeRate,
+<span id="L169" class="ln">   169  </span>					<span class="comment">// sample-api:end</span>
+<span id="L170" class="ln">   170  </span>				},
+<span id="L171" class="ln">   171  </span>			}
 <span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>func Test_mockLoader(t *testing.T) {
-<span id="L174" class="ln">   174  </span>	t.Parallel()
-<span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L177" class="ln">   177  </span>		t.Parallel()
-<span id="L178" class="ln">   178  </span>
-<span id="L179" class="ln">   179  </span>		t.Run(&#34;mockLoader は、テスト用の Loader を返す&#34;, func(t *testing.T) {
-<span id="L180" class="ln">   180  </span>			t.Parallel()
-<span id="L181" class="ln">   181  </span>			expected := Loader{
-<span id="L182" class="ln">   182  </span>				OS: OperatingSystem{
-<span id="L183" class="ln">   183  </span>					Timezone: expectedOSTimeZone,
-<span id="L184" class="ln">   184  </span>				},
-<span id="L185" class="ln">   185  </span>				App: Application{
-<span id="L186" class="ln">   186  </span>					Env:             expectedApplicationEnv,
-<span id="L187" class="ln">   187  </span>					Name:            expectedApplicationName,
-<span id="L188" class="ln">   188  </span>					Mode:            expectedApplicationMode,
-<span id="L189" class="ln">   189  </span>					LogLevel:        expectedApplicationLogLevel,
-<span id="L190" class="ln">   190  </span>					ShutdownTimeout: expectedAppShutdownTimeout,
-<span id="L191" class="ln">   191  </span>				},
-<span id="L192" class="ln">   192  </span>				Server: Server{
-<span id="L193" class="ln">   193  </span>					Host:              expectedServerHost,
-<span id="L194" class="ln">   194  </span>					Port:              expectedServerPort,
-<span id="L195" class="ln">   195  </span>					ReadHeaderTimeout: expectedServerReadHeaderTimeout,
-<span id="L196" class="ln">   196  </span>					ReadTimeout:       expectedServerReadTimeout,
-<span id="L197" class="ln">   197  </span>					WriteTimeout:      expectedServerWriteTimeout,
-<span id="L198" class="ln">   198  </span>					IdleTimeout:       expectedServerIdleTimeout,
-<span id="L199" class="ln">   199  </span>					BodyLimitMB:       expectedServerBodyLimitMB,
-<span id="L200" class="ln">   200  </span>					RequestTimeout:    expectedServerRequestTimeout,
-<span id="L201" class="ln">   201  </span>				},
-<span id="L202" class="ln">   202  </span>				Metrics: Metrics{
-<span id="L203" class="ln">   203  </span>					Host:     expectedMetricsHost,
-<span id="L204" class="ln">   204  </span>					Port:     expectedMetricsPort,
-<span id="L205" class="ln">   205  </span>					UserName: expectedMetricsUserName,
-<span id="L206" class="ln">   206  </span>					Password: expectedMetricsPassword,
-<span id="L207" class="ln">   207  </span>				},
-<span id="L208" class="ln">   208  </span>				Observability: Observability{
-<span id="L209" class="ln">   209  </span>					TracesExporter:    expectedObservabilityTracesExporter,
-<span id="L210" class="ln">   210  </span>					MetricsExporter:   expectedObservabilityMetricsExporter,
-<span id="L211" class="ln">   211  </span>					LogsExporter:      expectedObservabilityLogsExporter,
-<span id="L212" class="ln">   212  </span>					OTLPProtocol:      expectedObservabilityOTLPProtocol,
-<span id="L213" class="ln">   213  </span>					MaskedDBQueryArgs: expectedObservabilityMaskedDBQueryArgs,
-<span id="L214" class="ln">   214  </span>					TargetStatusCodes: expectedObservabilityTargetStatusCodes,
-<span id="L215" class="ln">   215  </span>				},
-<span id="L216" class="ln">   216  </span>				Endpoint: Endpoint{
-<span id="L217" class="ln">   217  </span>					OTLP:          expectedEndpointOTLP,
-<span id="L218" class="ln">   218  </span>					JWKS:          expectedEndpointJWKS,
-<span id="L219" class="ln">   219  </span>					ObjectStorage: expectedEndpointObjectStorage,
-<span id="L220" class="ln">   220  </span>					Outbox:        expectedEndpointOutbox,
-<span id="L221" class="ln">   221  </span>					OutboxQueue:   expectedEndpointOutboxQueue,
-<span id="L222" class="ln">   222  </span>					ConsumerQueue: expectedEndpointConsumerQueue,
-<span id="L223" class="ln">   223  </span>					<span class="comment">// sample-api:begin</span>
-<span id="L224" class="ln">   224  </span>					ExchangeRate: expectedEndpointExchangeRate,
-<span id="L225" class="ln">   225  </span>					<span class="comment">// sample-api:end</span>
-<span id="L226" class="ln">   226  </span>				},
-<span id="L227" class="ln">   227  </span>				Database: Database{
-<span id="L228" class="ln">   228  </span>					Host:                   expectedDBHost,
-<span id="L229" class="ln">   229  </span>					Port:                   expectedDBPort,
-<span id="L230" class="ln">   230  </span>					User:                   expectedDBUser,
-<span id="L231" class="ln">   231  </span>					Password:               expectedDBPassword,
-<span id="L232" class="ln">   232  </span>					Name:                   expectedDBName,
-<span id="L233" class="ln">   233  </span>					SSLMode:                expectedDBSSLMode,
-<span id="L234" class="ln">   234  </span>					PingTimeout:            expectedDBPingTimeout,
-<span id="L235" class="ln">   235  </span>					SlowQueryWarnThreshold: expectedDBSlowQueryWarnThreshold,
-<span id="L236" class="ln">   236  </span>					StatementTimeout:       expectedDBStatementTimeout,
-<span id="L237" class="ln">   237  </span>					LockTimeout:            expectedDBLockTimeout,
-<span id="L238" class="ln">   238  </span>					TxMaxRetries:           expectedDBTxMaxRetries,
-<span id="L239" class="ln">   239  </span>					TxRetryBaseBackoff:     expectedDBTxRetryBaseBackoff,
-<span id="L240" class="ln">   240  </span>					TxRetryMaxBackoff:      expectedDBTxRetryMaxBackoff,
-<span id="L241" class="ln">   241  </span>				},
-<span id="L242" class="ln">   242  </span>				DBConnection: DBConnection{
-<span id="L243" class="ln">   243  </span>					MaxConns:    expectedDBMaxConnsInt32,
-<span id="L244" class="ln">   244  </span>					MinConns:    expectedDBMinConnsInt32,
-<span id="L245" class="ln">   245  </span>					MaxLifetime: expectedDBMaxLifetime,
-<span id="L246" class="ln">   246  </span>					MaxIdleTime: expectedDBMaxIdleTime,
-<span id="L247" class="ln">   247  </span>				},
-<span id="L248" class="ln">   248  </span>				Security: Security{
-<span id="L249" class="ln">   249  </span>					AllowedOrigins:            strings.Split(expectedAllowedOrigins, &#34;,&#34;),
-<span id="L250" class="ln">   250  </span>					CIDR:                      expectedCIDRStr,
-<span id="L251" class="ln">   251  </span>					ContentTypeNosniff:        expectedContentTypeNosniff,
-<span id="L252" class="ln">   252  </span>					XFrameOptions:             expectedXFrameOptions,
-<span id="L253" class="ln">   253  </span>					HSTSMaxAge:                expectedHSTSMaxAge,
-<span id="L254" class="ln">   254  </span>					HSTSExcludeSubdomains:     expectedHSTSExcludeSubdomains,
-<span id="L255" class="ln">   255  </span>					HSTSPreloadEnabled:        expectedHSTSPreloadEnabled,
-<span id="L256" class="ln">   256  </span>					ReferrerPolicy:            expectedReferrerPolicy,
-<span id="L257" class="ln">   257  </span>					CrossOriginResourcePolicy: expectedCrossOriginResourcePolicy,
-<span id="L258" class="ln">   258  </span>				},
-<span id="L259" class="ln">   259  </span>				SecureCookie: SecureCookie{
-<span id="L260" class="ln">   260  </span>					Secure:   expectedSecureCookieSecure,
-<span id="L261" class="ln">   261  </span>					SameSite: expectedSecureCookieSameSite,
-<span id="L262" class="ln">   262  </span>					Domain:   expectedSecureCookieDomain,
-<span id="L263" class="ln">   263  </span>				},
-<span id="L264" class="ln">   264  </span>			}
-<span id="L265" class="ln">   265  </span>
-<span id="L266" class="ln">   266  </span>			actual := mockLoader(t)
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>			assert.Equal(t, expected, actual)
-<span id="L269" class="ln">   269  </span>		})
-<span id="L270" class="ln">   270  </span>	})
-<span id="L271" class="ln">   271  </span>}
-<span id="L272" class="ln">   272  </span>
-<span id="L273" class="ln">   273  </span>func Test_setEnv(t *testing.T) { <span class="comment">//nolint:paralleltest // t.Setenv/t.Chdir使用のため並列化不可</span>
-<span id="L274" class="ln">   274  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) { <span class="comment">//nolint:paralleltest // t.Setenv/t.Chdir使用のため並列化不可</span>
-<span id="L275" class="ln">   275  </span>		t.Run(&#34;setEnvVarsForTesting の環境変数設定は、テスト内で正しく反映される&#34;, func(t *testing.T) { <span class="comment">//nolint:paralleltest // t.Setenv/t.Chdir使用のため並列化不可</span>
-<span id="L276" class="ln">   276  </span>			setEnvVarsForTesting(t)
-<span id="L277" class="ln">   277  </span>			<span class="comment">// OS</span>
-<span id="L278" class="ln">   278  </span>			assert.Equal(t, expectedOSTimeZone, os.Getenv(&#34;OS_TZ&#34;))
-<span id="L279" class="ln">   279  </span>			<span class="comment">// Application</span>
-<span id="L280" class="ln">   280  </span>			assert.Equal(t, expectedApplicationEnv, os.Getenv(&#34;APP_ENV&#34;))
-<span id="L281" class="ln">   281  </span>			assert.Equal(t, expectedApplicationName, os.Getenv(&#34;APP_NAME&#34;))
-<span id="L282" class="ln">   282  </span>			assert.Equal(t, expectedApplicationMode, os.Getenv(&#34;APP_MODE&#34;))
-<span id="L283" class="ln">   283  </span>			assert.Equal(t, expectedApplicationLogLevel, os.Getenv(&#34;APP_LOG_LEVEL&#34;))
-<span id="L284" class="ln">   284  </span>			assert.Equal(t, expectedAppShutdownTimeoutStr, os.Getenv(&#34;APP_SHUTDOWN_TIMEOUT&#34;))
-<span id="L285" class="ln">   285  </span>			<span class="comment">// Server</span>
-<span id="L286" class="ln">   286  </span>			assert.Equal(t, expectedServerHost, os.Getenv(&#34;SERVER_HOST&#34;))
-<span id="L287" class="ln">   287  </span>			assert.Equal(t, strconv.Itoa(expectedServerPort), os.Getenv(&#34;SERVER_PORT&#34;))
-<span id="L288" class="ln">   288  </span>			assert.Equal(t, expectedServerReadHeaderTimeoutStr, os.Getenv(&#34;SERVER_READ_HEADER_TIMEOUT&#34;))
-<span id="L289" class="ln">   289  </span>			assert.Equal(t, expectedServerReadTimeoutStr, os.Getenv(&#34;SERVER_READ_TIMEOUT&#34;))
-<span id="L290" class="ln">   290  </span>			assert.Equal(t, expectedServerWriteTimeoutStr, os.Getenv(&#34;SERVER_WRITE_TIMEOUT&#34;))
-<span id="L291" class="ln">   291  </span>			assert.Equal(t, expectedServerIdleTimeoutStr, os.Getenv(&#34;SERVER_IDLE_TIMEOUT&#34;))
-<span id="L292" class="ln">   292  </span>			<span class="comment">// Metrics</span>
-<span id="L293" class="ln">   293  </span>			assert.Equal(t, expectedMetricsHost, os.Getenv(&#34;METRICS_HOST&#34;))
-<span id="L294" class="ln">   294  </span>			assert.Equal(t, strconv.Itoa(expectedMetricsPort), os.Getenv(&#34;METRICS_PORT&#34;))
-<span id="L295" class="ln">   295  </span>			assert.Equal(t, expectedMetricsUserName, os.Getenv(&#34;METRICS_USERNAME&#34;))
-<span id="L296" class="ln">   296  </span>			assert.Equal(t, expectedMetricsPassword, os.Getenv(&#34;METRICS_PASSWORD&#34;))
-<span id="L297" class="ln">   297  </span>			<span class="comment">// Observability</span>
-<span id="L298" class="ln">   298  </span>			assert.Equal(t, expectedObservabilityTracesExporter, os.Getenv(&#34;OBS_TRACES_EXPORTER&#34;))
-<span id="L299" class="ln">   299  </span>			assert.Equal(t, expectedObservabilityMetricsExporter, os.Getenv(&#34;OBS_METRICS_EXPORTER&#34;))
-<span id="L300" class="ln">   300  </span>			assert.Equal(t, expectedObservabilityLogsExporter, os.Getenv(&#34;OBS_LOGS_EXPORTER&#34;))
-<span id="L301" class="ln">   301  </span>			assert.Equal(t, expectedEndpointOTLP, os.Getenv(&#34;ENDPOINT_OTLP&#34;))
-<span id="L302" class="ln">   302  </span>			assert.Equal(t, expectedObservabilityOTLPProtocol, os.Getenv(&#34;OBS_OTLP_PROTOCOL&#34;))
-<span id="L303" class="ln">   303  </span>			assert.Equal(t, strconv.FormatBool(expectedObservabilityMaskedDBQueryArgs), os.Getenv(&#34;OBS_MASKED_DB_QUERY_ARGS&#34;))
-<span id="L304" class="ln">   304  </span>			assert.Equal(t, expectedObservabilityTargetStatusCodesStr, os.Getenv(&#34;OBS_TARGET_STATUS_CODES&#34;))
-<span id="L305" class="ln">   305  </span>			<span class="comment">// Database</span>
-<span id="L306" class="ln">   306  </span>			assert.Equal(t, expectedDBDriver, os.Getenv(&#34;DB_DRIVER&#34;))
-<span id="L307" class="ln">   307  </span>			assert.Equal(t, expectedDBHost, os.Getenv(&#34;DB_HOST&#34;))
-<span id="L308" class="ln">   308  </span>			assert.Equal(t, strconv.Itoa(expectedDBPort), os.Getenv(&#34;DB_PORT&#34;))
-<span id="L309" class="ln">   309  </span>			assert.Equal(t, expectedDBUser, os.Getenv(&#34;DB_USER&#34;))
-<span id="L310" class="ln">   310  </span>			assert.Equal(t, expectedDBPassword, os.Getenv(&#34;DB_PASSWORD&#34;))
-<span id="L311" class="ln">   311  </span>			assert.Equal(t, expectedDBName, os.Getenv(&#34;DB_NAME&#34;))
-<span id="L312" class="ln">   312  </span>			assert.Equal(t, expectedDBSSLMode, os.Getenv(&#34;DB_SSL_MODE&#34;))
-<span id="L313" class="ln">   313  </span>			assert.Equal(t, expectedDBPingTimeoutStr, os.Getenv(&#34;DB_PING_TIMEOUT&#34;))
-<span id="L314" class="ln">   314  </span>			assert.Equal(t, expectedDBSlowQueryWarnThresholdStr, os.Getenv(&#34;DB_SLOW_QUERY_WARN_THRESHOLD&#34;))
-<span id="L315" class="ln">   315  </span>			<span class="comment">// DBConnection</span>
-<span id="L316" class="ln">   316  </span>			assert.Equal(t, strconv.FormatInt(int64(expectedDBMaxConnsInt32), 10), os.Getenv(&#34;DBCONN_MAX_CONNS&#34;))
-<span id="L317" class="ln">   317  </span>			assert.Equal(t, strconv.FormatInt(int64(expectedDBMinConnsInt32), 10), os.Getenv(&#34;DBCONN_MIN_CONNS&#34;))
-<span id="L318" class="ln">   318  </span>			assert.Equal(t, expectedDBMaxLifetimeStr, os.Getenv(&#34;DBCONN_MAX_LIFETIME&#34;))
-<span id="L319" class="ln">   319  </span>			assert.Equal(t, expectedDBMaxIdleTimeStr, os.Getenv(&#34;DBCONN_MAX_IDLE_TIME&#34;))
-<span id="L320" class="ln">   320  </span>			<span class="comment">// Security</span>
-<span id="L321" class="ln">   321  </span>			assert.Equal(t, expectedCIDRStr, os.Getenv(&#34;SECURITY_CIDR&#34;))
-<span id="L322" class="ln">   322  </span>			assert.Equal(t, expectedAllowedOrigins, os.Getenv(&#34;SECURITY_ALLOWED_ORIGINS&#34;))
-<span id="L323" class="ln">   323  </span>			assert.Equal(t, expectedContentTypeNosniff, os.Getenv(&#34;SECURITY_CONTENT_TYPE_NOSNIFF&#34;))
-<span id="L324" class="ln">   324  </span>			assert.Equal(t, expectedXFrameOptions, os.Getenv(&#34;SECURITY_X_FRAME_OPTIONS&#34;))
-<span id="L325" class="ln">   325  </span>			assert.Equal(t, expectedHSTSMaxAgeStr, os.Getenv(&#34;SECURITY_HSTS_MAX_AGE&#34;))
-<span id="L326" class="ln">   326  </span>			assert.Equal(t, strconv.FormatBool(expectedHSTSExcludeSubdomains), os.Getenv(&#34;SECURITY_HSTS_EXCLUDE_SUBDOMAINS&#34;))
-<span id="L327" class="ln">   327  </span>			assert.Equal(t, strconv.FormatBool(expectedHSTSPreloadEnabled), os.Getenv(&#34;SECURITY_HSTS_PRELOAD_ENABLED&#34;))
-<span id="L328" class="ln">   328  </span>			assert.Equal(t, expectedReferrerPolicy, os.Getenv(&#34;SECURITY_REFERRER_POLICY&#34;))
-<span id="L329" class="ln">   329  </span>			assert.Equal(t, expectedCrossOriginResourcePolicy, os.Getenv(&#34;SECURITY_CROSS_ORIGIN_RESOURCE_POLICY&#34;))
-<span id="L330" class="ln">   330  </span>			<span class="comment">// Secure Cookie</span>
-<span id="L331" class="ln">   331  </span>			assert.Equal(t, strconv.FormatBool(*expectedSecureCookieSecure), os.Getenv(&#34;SECURE_COOKIE_SECURE&#34;))
-<span id="L332" class="ln">   332  </span>			assert.Equal(t, expectedSecureCookieSameSite, os.Getenv(&#34;SECURE_COOKIE_SAME_SITE&#34;))
-<span id="L333" class="ln">   333  </span>			assert.Equal(t, expectedSecureCookieDomain, os.Getenv(&#34;SECURE_COOKIE_DOMAIN&#34;))
-<span id="L334" class="ln">   334  </span>		})
-<span id="L335" class="ln">   335  </span>	})
-<span id="L336" class="ln">   336  </span>}
-<span id="L337" class="ln">   337  </span>
+<span id="L173" class="ln">   173  </span>			actual := MockConfigForTest(t)
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>			assert.Equal(t, expected, actual)
+<span id="L176" class="ln">   176  </span>		})
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>		t.Run(&#34;コネクションプールの最小接続数は 0 で、生成直後の一斉確立が起きない&#34;, func(t *testing.T) {
+<span id="L179" class="ln">   179  </span>			t.Parallel()
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>			assert.Zero(t, NewDBConnectionConfig(MockConfigForTest(t)).MinConns())
+<span id="L182" class="ln">   182  </span>		})
+<span id="L183" class="ln">   183  </span>	})
+<span id="L184" class="ln">   184  </span>}
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span>func Test_mockLoader(t *testing.T) {
+<span id="L187" class="ln">   187  </span>	t.Parallel()
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L190" class="ln">   190  </span>		t.Parallel()
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>		t.Run(&#34;mockLoader は、テスト用の Loader を返す&#34;, func(t *testing.T) {
+<span id="L193" class="ln">   193  </span>			t.Parallel()
+<span id="L194" class="ln">   194  </span>			expected := Loader{
+<span id="L195" class="ln">   195  </span>				OS: OperatingSystem{
+<span id="L196" class="ln">   196  </span>					Timezone: expectedOSTimeZone,
+<span id="L197" class="ln">   197  </span>				},
+<span id="L198" class="ln">   198  </span>				App: Application{
+<span id="L199" class="ln">   199  </span>					Env:             expectedApplicationEnv,
+<span id="L200" class="ln">   200  </span>					Name:            expectedApplicationName,
+<span id="L201" class="ln">   201  </span>					Mode:            expectedApplicationMode,
+<span id="L202" class="ln">   202  </span>					LogLevel:        expectedApplicationLogLevel,
+<span id="L203" class="ln">   203  </span>					ShutdownTimeout: expectedAppShutdownTimeout,
+<span id="L204" class="ln">   204  </span>				},
+<span id="L205" class="ln">   205  </span>				Server: Server{
+<span id="L206" class="ln">   206  </span>					Host:              expectedServerHost,
+<span id="L207" class="ln">   207  </span>					Port:              expectedServerPort,
+<span id="L208" class="ln">   208  </span>					ReadHeaderTimeout: expectedServerReadHeaderTimeout,
+<span id="L209" class="ln">   209  </span>					ReadTimeout:       expectedServerReadTimeout,
+<span id="L210" class="ln">   210  </span>					WriteTimeout:      expectedServerWriteTimeout,
+<span id="L211" class="ln">   211  </span>					IdleTimeout:       expectedServerIdleTimeout,
+<span id="L212" class="ln">   212  </span>					BodyLimitMB:       expectedServerBodyLimitMB,
+<span id="L213" class="ln">   213  </span>					RequestTimeout:    expectedServerRequestTimeout,
+<span id="L214" class="ln">   214  </span>				},
+<span id="L215" class="ln">   215  </span>				Metrics: Metrics{
+<span id="L216" class="ln">   216  </span>					Host:     expectedMetricsHost,
+<span id="L217" class="ln">   217  </span>					Port:     expectedMetricsPort,
+<span id="L218" class="ln">   218  </span>					UserName: expectedMetricsUserName,
+<span id="L219" class="ln">   219  </span>					Password: expectedMetricsPassword,
+<span id="L220" class="ln">   220  </span>				},
+<span id="L221" class="ln">   221  </span>				Observability: Observability{
+<span id="L222" class="ln">   222  </span>					TracesExporter:    expectedObservabilityTracesExporter,
+<span id="L223" class="ln">   223  </span>					MetricsExporter:   expectedObservabilityMetricsExporter,
+<span id="L224" class="ln">   224  </span>					LogsExporter:      expectedObservabilityLogsExporter,
+<span id="L225" class="ln">   225  </span>					OTLPProtocol:      expectedObservabilityOTLPProtocol,
+<span id="L226" class="ln">   226  </span>					MaskedDBQueryArgs: expectedObservabilityMaskedDBQueryArgs,
+<span id="L227" class="ln">   227  </span>					TargetStatusCodes: expectedObservabilityTargetStatusCodes,
+<span id="L228" class="ln">   228  </span>				},
+<span id="L229" class="ln">   229  </span>				Realtime: Realtime{
+<span id="L230" class="ln">   230  </span>					Region:            expectedRealtimeRegion,
+<span id="L231" class="ln">   231  </span>					TableSuffix:       expectedRealtimeTableSuffix,
+<span id="L232" class="ln">   232  </span>					Topic:             expectedRealtimeTopic,
+<span id="L233" class="ln">   233  </span>					QueuePrefix:       expectedRealtimeQueuePrefix,
+<span id="L234" class="ln">   234  </span>					DLQ:               expectedRealtimeDLQ,
+<span id="L235" class="ln">   235  </span>					AccessKeyID:       expectedRealtimeAccessKeyID,
+<span id="L236" class="ln">   236  </span>					SecretAccessKey:   expectedRealtimeSecretAccessKey,
+<span id="L237" class="ln">   237  </span>					MaxConnections:    expectedRealtimeMaxConnections,
+<span id="L238" class="ln">   238  </span>					ReplayConcurrency: expectedRealtimeReplayConcurrency,
+<span id="L239" class="ln">   239  </span>				},
+<span id="L240" class="ln">   240  </span>				Endpoint: Endpoint{
+<span id="L241" class="ln">   241  </span>					OTLP:           expectedEndpointOTLP,
+<span id="L242" class="ln">   242  </span>					JWKS:           expectedEndpointJWKS,
+<span id="L243" class="ln">   243  </span>					ObjectStorage:  expectedEndpointObjectStorage,
+<span id="L244" class="ln">   244  </span>					Realtime:       expectedEndpointRealtime,
+<span id="L245" class="ln">   245  </span>					RealtimePubSub: expectedEndpointRealtimePubSub,
+<span id="L246" class="ln">   246  </span>					Outbox:         expectedEndpointOutbox,
+<span id="L247" class="ln">   247  </span>					OutboxQueue:    expectedEndpointOutboxQueue,
+<span id="L248" class="ln">   248  </span>					ConsumerQueue:  expectedEndpointConsumerQueue,
+<span id="L249" class="ln">   249  </span>					<span class="comment">// sample-api:begin</span>
+<span id="L250" class="ln">   250  </span>					ExchangeRate: expectedEndpointExchangeRate,
+<span id="L251" class="ln">   251  </span>					<span class="comment">// sample-api:end</span>
+<span id="L252" class="ln">   252  </span>				},
+<span id="L253" class="ln">   253  </span>				Database: Database{
+<span id="L254" class="ln">   254  </span>					Host:                   expectedDBHost,
+<span id="L255" class="ln">   255  </span>					Port:                   expectedDBPort,
+<span id="L256" class="ln">   256  </span>					User:                   expectedDBUser,
+<span id="L257" class="ln">   257  </span>					Password:               expectedDBPassword,
+<span id="L258" class="ln">   258  </span>					Name:                   expectedDBName,
+<span id="L259" class="ln">   259  </span>					SSLMode:                expectedDBSSLMode,
+<span id="L260" class="ln">   260  </span>					PingTimeout:            expectedDBPingTimeout,
+<span id="L261" class="ln">   261  </span>					SlowQueryWarnThreshold: expectedDBSlowQueryWarnThreshold,
+<span id="L262" class="ln">   262  </span>					StatementTimeout:       expectedDBStatementTimeout,
+<span id="L263" class="ln">   263  </span>					LockTimeout:            expectedDBLockTimeout,
+<span id="L264" class="ln">   264  </span>					TxMaxRetries:           expectedDBTxMaxRetries,
+<span id="L265" class="ln">   265  </span>					TxRetryBaseBackoff:     expectedDBTxRetryBaseBackoff,
+<span id="L266" class="ln">   266  </span>					TxRetryMaxBackoff:      expectedDBTxRetryMaxBackoff,
+<span id="L267" class="ln">   267  </span>				},
+<span id="L268" class="ln">   268  </span>				DBConnection: DBConnection{
+<span id="L269" class="ln">   269  </span>					MaxConns:    expectedDBMaxConnsInt32,
+<span id="L270" class="ln">   270  </span>					MinConns:    expectedDBMinConnsInt32,
+<span id="L271" class="ln">   271  </span>					MaxLifetime: expectedDBMaxLifetime,
+<span id="L272" class="ln">   272  </span>					MaxIdleTime: expectedDBMaxIdleTime,
+<span id="L273" class="ln">   273  </span>				},
+<span id="L274" class="ln">   274  </span>				Security: Security{
+<span id="L275" class="ln">   275  </span>					AllowedOrigins:            strings.Split(expectedAllowedOrigins, &#34;,&#34;),
+<span id="L276" class="ln">   276  </span>					CIDR:                      expectedCIDRStr,
+<span id="L277" class="ln">   277  </span>					ContentTypeNosniff:        expectedContentTypeNosniff,
+<span id="L278" class="ln">   278  </span>					XFrameOptions:             expectedXFrameOptions,
+<span id="L279" class="ln">   279  </span>					HSTSMaxAge:                expectedHSTSMaxAge,
+<span id="L280" class="ln">   280  </span>					HSTSExcludeSubdomains:     expectedHSTSExcludeSubdomains,
+<span id="L281" class="ln">   281  </span>					HSTSPreloadEnabled:        expectedHSTSPreloadEnabled,
+<span id="L282" class="ln">   282  </span>					ReferrerPolicy:            expectedReferrerPolicy,
+<span id="L283" class="ln">   283  </span>					CrossOriginResourcePolicy: expectedCrossOriginResourcePolicy,
+<span id="L284" class="ln">   284  </span>				},
+<span id="L285" class="ln">   285  </span>				SecureCookie: SecureCookie{
+<span id="L286" class="ln">   286  </span>					Secure:   expectedSecureCookieSecure,
+<span id="L287" class="ln">   287  </span>					SameSite: expectedSecureCookieSameSite,
+<span id="L288" class="ln">   288  </span>					Domain:   expectedSecureCookieDomain,
+<span id="L289" class="ln">   289  </span>				},
+<span id="L290" class="ln">   290  </span>			}
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span>			actual := mockLoader(t)
+<span id="L293" class="ln">   293  </span>
+<span id="L294" class="ln">   294  </span>			assert.Equal(t, expected, actual)
+<span id="L295" class="ln">   295  </span>		})
+<span id="L296" class="ln">   296  </span>	})
+<span id="L297" class="ln">   297  </span>}
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>func Test_setEnvVarsForTesting(t *testing.T) { <span class="comment">//nolint:paralleltest // t.Setenv/t.Chdir使用のため並列化不可</span>
+<span id="L300" class="ln">   300  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) { <span class="comment">//nolint:paralleltest // t.Setenv/t.Chdir使用のため並列化不可</span>
+<span id="L301" class="ln">   301  </span>		t.Run(&#34;setEnvVarsForTesting の環境変数設定は、テスト内で正しく反映される&#34;, func(t *testing.T) { <span class="comment">//nolint:paralleltest // t.Setenv/t.Chdir使用のため並列化不可</span>
+<span id="L302" class="ln">   302  </span>			setEnvVarsForTesting(t)
+<span id="L303" class="ln">   303  </span>			<span class="comment">// OS</span>
+<span id="L304" class="ln">   304  </span>			assert.Equal(t, expectedOSTimeZone, os.Getenv(&#34;OS_TZ&#34;))
+<span id="L305" class="ln">   305  </span>			<span class="comment">// Application</span>
+<span id="L306" class="ln">   306  </span>			assert.Equal(t, expectedApplicationEnv, os.Getenv(&#34;APP_ENV&#34;))
+<span id="L307" class="ln">   307  </span>			assert.Equal(t, expectedApplicationName, os.Getenv(&#34;APP_NAME&#34;))
+<span id="L308" class="ln">   308  </span>			assert.Equal(t, expectedApplicationMode, os.Getenv(&#34;APP_MODE&#34;))
+<span id="L309" class="ln">   309  </span>			assert.Equal(t, expectedApplicationLogLevel, os.Getenv(&#34;APP_LOG_LEVEL&#34;))
+<span id="L310" class="ln">   310  </span>			assert.Equal(t, expectedAppShutdownTimeoutStr, os.Getenv(&#34;APP_SHUTDOWN_TIMEOUT&#34;))
+<span id="L311" class="ln">   311  </span>			<span class="comment">// Server</span>
+<span id="L312" class="ln">   312  </span>			assert.Equal(t, expectedServerHost, os.Getenv(&#34;SERVER_HOST&#34;))
+<span id="L313" class="ln">   313  </span>			assert.Equal(t, strconv.Itoa(expectedServerPort), os.Getenv(&#34;SERVER_PORT&#34;))
+<span id="L314" class="ln">   314  </span>			assert.Equal(t, expectedServerReadHeaderTimeoutStr, os.Getenv(&#34;SERVER_READ_HEADER_TIMEOUT&#34;))
+<span id="L315" class="ln">   315  </span>			assert.Equal(t, expectedServerReadTimeoutStr, os.Getenv(&#34;SERVER_READ_TIMEOUT&#34;))
+<span id="L316" class="ln">   316  </span>			assert.Equal(t, expectedServerWriteTimeoutStr, os.Getenv(&#34;SERVER_WRITE_TIMEOUT&#34;))
+<span id="L317" class="ln">   317  </span>			assert.Equal(t, expectedServerIdleTimeoutStr, os.Getenv(&#34;SERVER_IDLE_TIMEOUT&#34;))
+<span id="L318" class="ln">   318  </span>			<span class="comment">// Metrics</span>
+<span id="L319" class="ln">   319  </span>			assert.Equal(t, expectedMetricsHost, os.Getenv(&#34;METRICS_HOST&#34;))
+<span id="L320" class="ln">   320  </span>			assert.Equal(t, strconv.Itoa(expectedMetricsPort), os.Getenv(&#34;METRICS_PORT&#34;))
+<span id="L321" class="ln">   321  </span>			assert.Equal(t, expectedMetricsUserName, os.Getenv(&#34;METRICS_USERNAME&#34;))
+<span id="L322" class="ln">   322  </span>			assert.Equal(t, expectedMetricsPassword, os.Getenv(&#34;METRICS_PASSWORD&#34;))
+<span id="L323" class="ln">   323  </span>			<span class="comment">// Observability</span>
+<span id="L324" class="ln">   324  </span>			assert.Equal(t, expectedObservabilityTracesExporter, os.Getenv(&#34;OBS_TRACES_EXPORTER&#34;))
+<span id="L325" class="ln">   325  </span>			assert.Equal(t, expectedObservabilityMetricsExporter, os.Getenv(&#34;OBS_METRICS_EXPORTER&#34;))
+<span id="L326" class="ln">   326  </span>			assert.Equal(t, expectedObservabilityLogsExporter, os.Getenv(&#34;OBS_LOGS_EXPORTER&#34;))
+<span id="L327" class="ln">   327  </span>			assert.Equal(t, expectedEndpointOTLP, os.Getenv(&#34;ENDPOINT_OTLP&#34;))
+<span id="L328" class="ln">   328  </span>			assert.Equal(t, expectedObservabilityOTLPProtocol, os.Getenv(&#34;OBS_OTLP_PROTOCOL&#34;))
+<span id="L329" class="ln">   329  </span>			assert.Equal(t, strconv.FormatBool(expectedObservabilityMaskedDBQueryArgs), os.Getenv(&#34;OBS_MASKED_DB_QUERY_ARGS&#34;))
+<span id="L330" class="ln">   330  </span>			assert.Equal(t, expectedObservabilityTargetStatusCodesStr, os.Getenv(&#34;OBS_TARGET_STATUS_CODES&#34;))
+<span id="L331" class="ln">   331  </span>			<span class="comment">// Database</span>
+<span id="L332" class="ln">   332  </span>			assert.Equal(t, expectedDBDriver, os.Getenv(&#34;DB_DRIVER&#34;))
+<span id="L333" class="ln">   333  </span>			assert.Equal(t, expectedDBHost, os.Getenv(&#34;DB_HOST&#34;))
+<span id="L334" class="ln">   334  </span>			assert.Equal(t, strconv.Itoa(expectedDBPort), os.Getenv(&#34;DB_PORT&#34;))
+<span id="L335" class="ln">   335  </span>			assert.Equal(t, expectedDBUser, os.Getenv(&#34;DB_USER&#34;))
+<span id="L336" class="ln">   336  </span>			assert.Equal(t, expectedDBPassword, os.Getenv(&#34;DB_PASSWORD&#34;))
+<span id="L337" class="ln">   337  </span>			assert.Equal(t, expectedDBName, os.Getenv(&#34;DB_NAME&#34;))
+<span id="L338" class="ln">   338  </span>			assert.Equal(t, expectedDBSSLMode, os.Getenv(&#34;DB_SSL_MODE&#34;))
+<span id="L339" class="ln">   339  </span>			assert.Equal(t, expectedDBPingTimeoutStr, os.Getenv(&#34;DB_PING_TIMEOUT&#34;))
+<span id="L340" class="ln">   340  </span>			assert.Equal(t, expectedDBSlowQueryWarnThresholdStr, os.Getenv(&#34;DB_SLOW_QUERY_WARN_THRESHOLD&#34;))
+<span id="L341" class="ln">   341  </span>			<span class="comment">// DBConnection</span>
+<span id="L342" class="ln">   342  </span>			assert.Equal(t, strconv.FormatInt(int64(expectedDBMaxConnsInt32), 10), os.Getenv(&#34;DBCONN_MAX_CONNS&#34;))
+<span id="L343" class="ln">   343  </span>			assert.Equal(t, strconv.FormatInt(int64(expectedDBMinConnsInt32), 10), os.Getenv(&#34;DBCONN_MIN_CONNS&#34;))
+<span id="L344" class="ln">   344  </span>			assert.Equal(t, expectedDBMaxLifetimeStr, os.Getenv(&#34;DBCONN_MAX_LIFETIME&#34;))
+<span id="L345" class="ln">   345  </span>			assert.Equal(t, expectedDBMaxIdleTimeStr, os.Getenv(&#34;DBCONN_MAX_IDLE_TIME&#34;))
+<span id="L346" class="ln">   346  </span>			<span class="comment">// Security</span>
+<span id="L347" class="ln">   347  </span>			assert.Equal(t, expectedCIDRStr, os.Getenv(&#34;SECURITY_CIDR&#34;))
+<span id="L348" class="ln">   348  </span>			assert.Equal(t, expectedAllowedOrigins, os.Getenv(&#34;SECURITY_ALLOWED_ORIGINS&#34;))
+<span id="L349" class="ln">   349  </span>			assert.Equal(t, expectedContentTypeNosniff, os.Getenv(&#34;SECURITY_CONTENT_TYPE_NOSNIFF&#34;))
+<span id="L350" class="ln">   350  </span>			assert.Equal(t, expectedXFrameOptions, os.Getenv(&#34;SECURITY_X_FRAME_OPTIONS&#34;))
+<span id="L351" class="ln">   351  </span>			assert.Equal(t, expectedHSTSMaxAgeStr, os.Getenv(&#34;SECURITY_HSTS_MAX_AGE&#34;))
+<span id="L352" class="ln">   352  </span>			assert.Equal(t, strconv.FormatBool(expectedHSTSExcludeSubdomains), os.Getenv(&#34;SECURITY_HSTS_EXCLUDE_SUBDOMAINS&#34;))
+<span id="L353" class="ln">   353  </span>			assert.Equal(t, strconv.FormatBool(expectedHSTSPreloadEnabled), os.Getenv(&#34;SECURITY_HSTS_PRELOAD_ENABLED&#34;))
+<span id="L354" class="ln">   354  </span>			assert.Equal(t, expectedReferrerPolicy, os.Getenv(&#34;SECURITY_REFERRER_POLICY&#34;))
+<span id="L355" class="ln">   355  </span>			assert.Equal(t, expectedCrossOriginResourcePolicy, os.Getenv(&#34;SECURITY_CROSS_ORIGIN_RESOURCE_POLICY&#34;))
+<span id="L356" class="ln">   356  </span>			<span class="comment">// Secure Cookie</span>
+<span id="L357" class="ln">   357  </span>			assert.Equal(t, strconv.FormatBool(*expectedSecureCookieSecure), os.Getenv(&#34;SECURE_COOKIE_SECURE&#34;))
+<span id="L358" class="ln">   358  </span>			assert.Equal(t, expectedSecureCookieSameSite, os.Getenv(&#34;SECURE_COOKIE_SAME_SITE&#34;))
+<span id="L359" class="ln">   359  </span>			assert.Equal(t, expectedSecureCookieDomain, os.Getenv(&#34;SECURE_COOKIE_DOMAIN&#34;))
+<span id="L360" class="ln">   360  </span>		})
+<span id="L361" class="ln">   361  </span>	})
+<span id="L362" class="ln">   362  </span>}
+<span id="L363" class="ln">   363  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/config/config_testing_mock_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

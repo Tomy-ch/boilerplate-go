@@ -1,0 +1,149 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>event - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase">usecase</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase/inquiry">inquiry</a>/<a href="../../../../../../src/go-boilerplate/internal/usecase/inquiry/event">event</a>/<span class="text-muted">message_created_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/usecase/inquiry/event">go-boilerplate/internal/usecase/inquiry/event</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package event_test
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;encoding/json&#34;
+<span id="L5" class="ln">     5  </span>	&#34;testing&#34;
+<span id="L6" class="ln">     6  </span>	&#34;time&#34;
+<span id="L7" class="ln">     7  </span>
+<span id="L8" class="ln">     8  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L9" class="ln">     9  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/domain/inquiry&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/usecase/inquiry/event&#34;
+<span id="L13" class="ln">    13  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
+<span id="L14" class="ln">    14  </span>)
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span><span class="comment">// newTestInquiry は、payload の組み立て元となる問い合わせを作ります。</span>
+<span id="L17" class="ln">    17  </span>func newTestInquiry(t *testing.T) *inquiry.Inquiry {
+<span id="L18" class="ln">    18  </span>	t.Helper()
+<span id="L19" class="ln">    19  </span>	i, err := inquiry.Reconstruct(uuidtestkit.NewTestFromSalt(t, &#34;inquiry&#34;), inquiry.Attributes{
+<span id="L20" class="ln">    20  </span>		UserID: uuidtestkit.NewTestFromSalt(t, &#34;user&#34;),
+<span id="L21" class="ln">    21  </span>	})
+<span id="L22" class="ln">    22  </span>	require.NoError(t, err)
+<span id="L23" class="ln">    23  </span>	return i
+<span id="L24" class="ln">    24  </span>}
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span><span class="comment">// newTestMessage は、payload の組み立て元となるメッセージを作ります。</span>
+<span id="L27" class="ln">    27  </span>func newTestMessage(t *testing.T, kind inquiry.AuthorKind) *inquiry.Message {
+<span id="L28" class="ln">    28  </span>	t.Helper()
+<span id="L29" class="ln">    29  </span>	author, err := inquiry.NewAuthor(kind, uuidtestkit.NewTestFromSalt(t, &#34;subject&#34;))
+<span id="L30" class="ln">    30  </span>	require.NoError(t, err)
+<span id="L31" class="ln">    31  </span>	m, err := inquiry.ReconstructMessage(
+<span id="L32" class="ln">    32  </span>		uuidtestkit.NewTestFromSalt(t, &#34;message&#34;),
+<span id="L33" class="ln">    33  </span>		inquiry.MessageAttributes{
+<span id="L34" class="ln">    34  </span>			Author:    author,
+<span id="L35" class="ln">    35  </span>			Body:      &#34;本文&#34;,
+<span id="L36" class="ln">    36  </span>			Sequence:  3,
+<span id="L37" class="ln">    37  </span>			CreatedAt: time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
+<span id="L38" class="ln">    38  </span>		},
+<span id="L39" class="ln">    39  </span>	)
+<span id="L40" class="ln">    40  </span>	require.NoError(t, err)
+<span id="L41" class="ln">    41  </span>	return m
+<span id="L42" class="ln">    42  </span>}
+<span id="L43" class="ln">    43  </span>
+<span id="L44" class="ln">    44  </span>func TestBuildMessageCreated(t *testing.T) {
+<span id="L45" class="ln">    45  </span>	t.Parallel()
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L48" class="ln">    48  </span>		t.Parallel()
+<span id="L49" class="ln">    49  </span>
+<span id="L50" class="ln">    50  </span>		t.Run(&#34;集約から自己完結のpayloadを組み立てる&#34;, func(t *testing.T) {
+<span id="L51" class="ln">    51  </span>			t.Parallel()
+<span id="L52" class="ln">    52  </span>			i, m := newTestInquiry(t), newTestMessage(t, inquiry.AuthorKindUser)
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span>			payload, err := event.BuildMessageCreated(i, m)
+<span id="L55" class="ln">    55  </span>			require.NoError(t, err)
+<span id="L56" class="ln">    56  </span>
+<span id="L57" class="ln">    57  </span>			var got map[string]any
+<span id="L58" class="ln">    58  </span>			require.NoError(t, json.Unmarshal(payload, &amp;got))
+<span id="L59" class="ln">    59  </span>			assert.Equal(t, m.ID().String(), got[&#34;messageId&#34;])
+<span id="L60" class="ln">    60  </span>			assert.Equal(t, i.ID().String(), got[&#34;inquiryId&#34;])
+<span id="L61" class="ln">    61  </span>			assert.Equal(t, &#34;本文&#34;, got[&#34;body&#34;])
+<span id="L62" class="ln">    62  </span>			assert.InDelta(t, float64(3), got[&#34;sequence&#34;], 0)
+<span id="L63" class="ln">    63  </span>			assert.Equal(t, &#34;2026-09-01T10:00:00Z&#34;, got[&#34;createdAt&#34;])
+<span id="L64" class="ln">    64  </span>		})
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span>		t.Run(&#34;送り手は種別だけを載せ主体IDを出さない&#34;, func(t *testing.T) {
+<span id="L67" class="ln">    67  </span>			t.Parallel()
+<span id="L68" class="ln">    68  </span>			m := newTestMessage(t, inquiry.AuthorKindOperator)
+<span id="L69" class="ln">    69  </span>
+<span id="L70" class="ln">    70  </span>			payload, err := event.BuildMessageCreated(newTestInquiry(t), m)
+<span id="L71" class="ln">    71  </span>			require.NoError(t, err)
+<span id="L72" class="ln">    72  </span>
+<span id="L73" class="ln">    73  </span>			var got struct {
+<span id="L74" class="ln">    74  </span>				Author map[string]any `json:&#34;author&#34;`
+<span id="L75" class="ln">    75  </span>			}
+<span id="L76" class="ln">    76  </span>			require.NoError(t, json.Unmarshal(payload, &amp;got))
+<span id="L77" class="ln">    77  </span>			assert.Equal(t, &#34;operator&#34;, got.Author[&#34;kind&#34;])
+<span id="L78" class="ln">    78  </span>			assert.NotContains(t, got.Author, &#34;subjectId&#34;)
+<span id="L79" class="ln">    79  </span>			assert.NotContains(t, string(payload), m.Author().SubjectID().String())
+<span id="L80" class="ln">    80  </span>		})
+<span id="L81" class="ln">    81  </span>	})
+<span id="L82" class="ln">    82  </span>}
+<span id="L83" class="ln">    83  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/inquiry/event/message_created_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

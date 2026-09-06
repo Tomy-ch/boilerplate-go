@@ -79,54 +79,57 @@
 <span id="L22" class="ln">    22  </span>	ErrPayloadTooLarge = xerrors.New(&#34;payload too large&#34;)
 <span id="L23" class="ln">    23  </span>	<span class="comment">// ErrTooManyRequests はリクエストが多すぎる場合に使用します。</span>
 <span id="L24" class="ln">    24  </span>	ErrTooManyRequests = xerrors.New(&#34;too many requests&#34;)
-<span id="L25" class="ln">    25  </span>	<span class="comment">// ErrCanceled はクライアントがリクエストをキャンセル/切断した場合に使用します。</span>
-<span id="L26" class="ln">    26  </span>	ErrCanceled = xerrors.New(&#34;request canceled&#34;)
-<span id="L27" class="ln">    27  </span>	<span class="comment">// ErrInternal はサーバ内部で予期しないエラーが発生した場合に使用します。</span>
-<span id="L28" class="ln">    28  </span>	ErrInternal = xerrors.New(&#34;internal error&#34;)
-<span id="L29" class="ln">    29  </span>	<span class="comment">// ErrUnimplemented は実装されていない操作が呼び出された場合に使用します。</span>
-<span id="L30" class="ln">    30  </span>	ErrUnimplemented = xerrors.New(&#34;unimplemented&#34;)
-<span id="L31" class="ln">    31  </span>	<span class="comment">// ErrUnavailable は一時的に利用できない状態を示します（リトライで解消される可能性がある場合）。</span>
-<span id="L32" class="ln">    32  </span>	ErrUnavailable = xerrors.New(&#34;service unavailable&#34;)
-<span id="L33" class="ln">    33  </span>)
-<span id="L34" class="ln">    34  </span>
-<span id="L35" class="ln">    35  </span><span class="comment">// worker のメッセージ処理分類センチネル。</span>
-<span id="L36" class="ln">    36  </span><span class="comment">// HTTP エラー taxonomy ではないため、appErrors（IsAppError 判定対象）には含めません。</span>
-<span id="L37" class="ln">    37  </span>var (
-<span id="L38" class="ln">    38  </span>	<span class="comment">// ErrRetryable は一時障害を示します。engine は Nack で再配送します。</span>
-<span id="L39" class="ln">    39  </span>	ErrRetryable = xerrors.New(&#34;retryable&#34;)
-<span id="L40" class="ln">    40  </span>	<span class="comment">// ErrPermanent は永久失敗を示します。engine は FailureHandler へ退避してから Ack します。</span>
-<span id="L41" class="ln">    41  </span>	ErrPermanent = xerrors.New(&#34;permanent&#34;)
-<span id="L42" class="ln">    42  </span>	<span class="comment">// ErrFatal はプロセス継続不能を示します。engine は drain して停止します。</span>
-<span id="L43" class="ln">    43  </span>	ErrFatal = xerrors.New(&#34;fatal&#34;)
-<span id="L44" class="ln">    44  </span>)
-<span id="L45" class="ln">    45  </span>
-<span id="L46" class="ln">    46  </span><span class="comment">// appErrors は、定義済みの全 apperror センチネルです。</span>
-<span id="L47" class="ln">    47  </span>var appErrors = []error{
-<span id="L48" class="ln">    48  </span>	ErrInvalidArgument,
-<span id="L49" class="ln">    49  </span>	ErrUnauthenticated,
-<span id="L50" class="ln">    50  </span>	ErrPermissionDenied,
-<span id="L51" class="ln">    51  </span>	ErrNotFound,
-<span id="L52" class="ln">    52  </span>	ErrConflict,
-<span id="L53" class="ln">    53  </span>	ErrValidation,
-<span id="L54" class="ln">    54  </span>	ErrUnsupportedMediaType,
-<span id="L55" class="ln">    55  </span>	ErrPayloadTooLarge,
-<span id="L56" class="ln">    56  </span>	ErrTooManyRequests,
-<span id="L57" class="ln">    57  </span>	ErrCanceled,
-<span id="L58" class="ln">    58  </span>	ErrInternal,
-<span id="L59" class="ln">    59  </span>	ErrUnimplemented,
-<span id="L60" class="ln">    60  </span>	ErrUnavailable,
-<span id="L61" class="ln">    61  </span>}
-<span id="L62" class="ln">    62  </span>
-<span id="L63" class="ln">    63  </span><span class="comment">// IsAppError は、err がいずれかの apperror センチネルに該当するかを返します。</span>
-<span id="L64" class="ln">    64  </span>func IsAppError(err error) bool {
-<span id="L65" class="ln">    65  </span>	for _, sentinel := range appErrors {
-<span id="L66" class="ln">    66  </span>		if xerrors.Is(err, sentinel) {
-<span id="L67" class="ln">    67  </span>			return true
-<span id="L68" class="ln">    68  </span>		}
-<span id="L69" class="ln">    69  </span>	}
-<span id="L70" class="ln">    70  </span>	return false
-<span id="L71" class="ln">    71  </span>}
-<span id="L72" class="ln">    72  </span>
+<span id="L25" class="ln">    25  </span>	<span class="comment">// ErrGone は対象が既に失われ、正本を取得し直さない限り回復しない場合に使用します。</span>
+<span id="L26" class="ln">    26  </span>	ErrGone = xerrors.New(&#34;gone&#34;)
+<span id="L27" class="ln">    27  </span>	<span class="comment">// ErrCanceled はクライアントがリクエストをキャンセル/切断した場合に使用します。</span>
+<span id="L28" class="ln">    28  </span>	ErrCanceled = xerrors.New(&#34;request canceled&#34;)
+<span id="L29" class="ln">    29  </span>	<span class="comment">// ErrInternal はサーバ内部で予期しないエラーが発生した場合に使用します。</span>
+<span id="L30" class="ln">    30  </span>	ErrInternal = xerrors.New(&#34;internal error&#34;)
+<span id="L31" class="ln">    31  </span>	<span class="comment">// ErrUnimplemented は実装されていない操作が呼び出された場合に使用します。</span>
+<span id="L32" class="ln">    32  </span>	ErrUnimplemented = xerrors.New(&#34;unimplemented&#34;)
+<span id="L33" class="ln">    33  </span>	<span class="comment">// ErrUnavailable は一時的に利用できない状態を示します（リトライで解消される可能性がある場合）。</span>
+<span id="L34" class="ln">    34  </span>	ErrUnavailable = xerrors.New(&#34;service unavailable&#34;)
+<span id="L35" class="ln">    35  </span>)
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span><span class="comment">// worker のメッセージ処理分類センチネル。</span>
+<span id="L38" class="ln">    38  </span><span class="comment">// HTTP エラー taxonomy ではないため、appErrors（IsAppError 判定対象）には含めません。</span>
+<span id="L39" class="ln">    39  </span>var (
+<span id="L40" class="ln">    40  </span>	<span class="comment">// ErrRetryable は一時障害を示します。engine は Nack で再配送します。</span>
+<span id="L41" class="ln">    41  </span>	ErrRetryable = xerrors.New(&#34;retryable&#34;)
+<span id="L42" class="ln">    42  </span>	<span class="comment">// ErrPermanent は永久失敗を示します。engine は FailureHandler へ退避してから Ack します。</span>
+<span id="L43" class="ln">    43  </span>	ErrPermanent = xerrors.New(&#34;permanent&#34;)
+<span id="L44" class="ln">    44  </span>	<span class="comment">// ErrFatal はプロセス継続不能を示します。engine は drain して停止します。</span>
+<span id="L45" class="ln">    45  </span>	ErrFatal = xerrors.New(&#34;fatal&#34;)
+<span id="L46" class="ln">    46  </span>)
+<span id="L47" class="ln">    47  </span>
+<span id="L48" class="ln">    48  </span><span class="comment">// appErrors は、HTTP taxonomy に属する全センチネルです。</span>
+<span id="L49" class="ln">    49  </span>var appErrors = []error{
+<span id="L50" class="ln">    50  </span>	ErrInvalidArgument,
+<span id="L51" class="ln">    51  </span>	ErrUnauthenticated,
+<span id="L52" class="ln">    52  </span>	ErrPermissionDenied,
+<span id="L53" class="ln">    53  </span>	ErrNotFound,
+<span id="L54" class="ln">    54  </span>	ErrConflict,
+<span id="L55" class="ln">    55  </span>	ErrValidation,
+<span id="L56" class="ln">    56  </span>	ErrUnsupportedMediaType,
+<span id="L57" class="ln">    57  </span>	ErrPayloadTooLarge,
+<span id="L58" class="ln">    58  </span>	ErrTooManyRequests,
+<span id="L59" class="ln">    59  </span>	ErrGone,
+<span id="L60" class="ln">    60  </span>	ErrCanceled,
+<span id="L61" class="ln">    61  </span>	ErrInternal,
+<span id="L62" class="ln">    62  </span>	ErrUnimplemented,
+<span id="L63" class="ln">    63  </span>	ErrUnavailable,
+<span id="L64" class="ln">    64  </span>}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span><span class="comment">// IsAppError は、err がいずれかの apperror センチネルに該当するかを返します。</span>
+<span id="L67" class="ln">    67  </span>func IsAppError(err error) bool {
+<span id="L68" class="ln">    68  </span>	for _, sentinel := range appErrors {
+<span id="L69" class="ln">    69  </span>		if xerrors.Is(err, sentinel) {
+<span id="L70" class="ln">    70  </span>			return true
+<span id="L71" class="ln">    71  </span>		}
+<span id="L72" class="ln">    72  </span>	}
+<span id="L73" class="ln">    73  </span>	return false
+<span id="L74" class="ln">    74  </span>}
+<span id="L75" class="ln">    75  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/apperror/apperror.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

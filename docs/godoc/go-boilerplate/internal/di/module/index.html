@@ -129,7 +129,16 @@
 				<dd><a href="#ObservabilityModule">func ObservabilityModule() fx.Option</a></dd>
 			
 				
-				<dd><a href="#OutboxRelayModule">func OutboxRelayModule() fx.Option</a></dd>
+				<dd><a href="#OutboxRelayModule">func OutboxRelayModule(channel outboxbndry.Channel) fx.Option</a></dd>
+			
+				
+				<dd><a href="#RealtimeAdapterModule">func RealtimeAdapterModule() fx.Option</a></dd>
+			
+				
+				<dd><a href="#RealtimeCleanupModule">func RealtimeCleanupModule() fx.Option</a></dd>
+			
+				
+				<dd><a href="#ServeRealtimeModule">func ServeRealtimeModule() fx.Option</a></dd>
 			
 				
 				<dd><a href="#SystemModule">func SystemModule() fx.Option</a></dd>
@@ -189,6 +198,14 @@
 			
 				<a href="../../../../src/go-boilerplate/internal/di/module/persistence.go.html">persistence.go</a>
 			
+				<a href="../../../../src/go-boilerplate/internal/di/module/realtime.go.html">realtime.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/di/module/realtimeadapter.go.html">realtimeadapter.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/di/module/realtimecleanup.go.html">realtimecleanup.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/di/module/realtimepublisher.go.html">realtimepublisher.go</a>
+			
 				<a href="../../../../src/go-boilerplate/internal/di/module/system.go.html">system.go</a>
 			
 				<a href="../../../../src/go-boilerplate/internal/di/module/token.go.html">token.go</a>
@@ -217,6 +234,13 @@
 
 				</p><pre>var <span id="ErrInvalidConsumerQueue">ErrInvalidConsumerQueue</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>, &#34;invalid consumer queue&#34;)</pre>
 			
+				<p>ErrRealtimeTopicNotConfigured は、fan-out を配線したのに REALTIME_TOPIC が空であることを示すエラーです。
+
+				</p><pre>var <span id="ErrRealtimeTopicNotConfigured">ErrRealtimeTopicNotConfigured</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(
+    <a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>,
+    &#34;REALTIME_TOPIC must be set when the realtime fan-out is wired&#34;,
+)</pre>
+			
 		
 		
 			
@@ -235,7 +259,7 @@
 		
 			
 			
-			</p><h2 id="ControllerModule">func <a href="../../../../src/go-boilerplate/internal/di/module/controller.go.html?s=3572:3605#L31">ControllerModule</a>
+			</p><h2 id="ControllerModule">func <a href="../../../../src/go-boilerplate/internal/di/module/controller.go.html?s=4718:4751#L39">ControllerModule</a>
 				<a class="permalink" href="#ControllerModule">¶</a>
 				
 				
@@ -321,16 +345,66 @@ outbox publisher は relay 専用のため含めず、OutboxRelayModule 側で�
 		
 			
 			
-			</p><h2 id="OutboxRelayModule">func <a href="../../../../src/go-boilerplate/internal/di/module/outboxrelay.go.html?s=1211:1245#L18">OutboxRelayModule</a>
+			</p><h2 id="OutboxRelayModule">func <a href="../../../../src/go-boilerplate/internal/di/module/outboxrelay.go.html?s=1906:1967#L38">OutboxRelayModule</a>
 				<a class="permalink" href="#OutboxRelayModule">¶</a>
 				
 				
 			</h2>
-			<pre>func OutboxRelayModule() <a href="../../../../go.uber.org/fx/">fx</a>.<a href="../../../../go.uber.org/fx/#Option">Option</a></pre>
-			<p>OutboxRelayModule は、outbox relay engine とそのライフサイクルフックを提供するfx.Moduleです。
-relay 専用プロセス（cmd outbox-relay）でのみ使用します。
-outboxPublisherModule は非標準の httpclient profile（MaxAttempts=1 等）を value group へ寄与するため、
-relay 以外のプロセスへ漏れないよう共有 InfrastructureModule ではなくここに閉じ込めます。
+			<pre>func OutboxRelayModule(channel <a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/">outboxbndry</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>) <a href="../../../../go.uber.org/fx/">fx</a>.<a href="../../../../go.uber.org/fx/#Option">Option</a></pre>
+			<p>OutboxRelayModule は、1 つの配送チャネルを担う outbox relay engine とそのライフサイクルフックを
+提供するfx.Moduleです。relay 専用プロセス（cmd outbox-relay）でのみ使用します。
+チャネル隔離と publisher profile の閉じ込めは internal/di/README.md の Optional を参照。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="RealtimeAdapterModule">func <a href="../../../../src/go-boilerplate/internal/di/module/realtimeadapter.go.html?s=967:1005#L13">RealtimeAdapterModule</a>
+				<a class="permalink" href="#RealtimeAdapterModule">¶</a>
+				
+				
+			</h2>
+			<pre>func RealtimeAdapterModule() <a href="../../../../go.uber.org/fx/">fx</a>.<a href="../../../../go.uber.org/fx/#Option">Option</a></pre>
+			<p>RealtimeAdapterModule は、feature の realtime adapter が要る最小の seam——ticket を発行するまでの
+経路——を提供する fx.Module です。SSE の受信側は持ちません。realtimeModule() がこの module を
+合成するので、両方を同じ graph に結線してはいけません。
+内訳・分割の理由・採番境界の所在は internal/di/module/README.md の Module List を参照。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="RealtimeCleanupModule">func <a href="../../../../src/go-boilerplate/internal/di/module/realtimecleanup.go.html?s=982:1020#L15">RealtimeCleanupModule</a>
+				<a class="permalink" href="#RealtimeCleanupModule">¶</a>
+				
+				
+			</h2>
+			<pre>func RealtimeCleanupModule() <a href="../../../../go.uber.org/fx/">fx</a>.<a href="../../../../go.uber.org/fx/#Option">Option</a></pre>
+			<p>RealtimeCleanupModule は、orphan cleanup ジョブを job profile へ登録する fx.Module です。
+ジョブの登録（group:&#34;jobs&#34;）まで自分で行うため、JobModule() は Realtime を知りません。
+</p><p>Realtime の依存は graph に載せず、ジョブが選ばれたときに SweeperFactory の中で組み立てます
+（eager に載せてはならない理由は internal/di/module/README.md「Design Policy」）。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="ServeRealtimeModule">func <a href="../../../../src/go-boilerplate/internal/di/module/realtime.go.html?s=2279:2315#L43">ServeRealtimeModule</a>
+				<a class="permalink" href="#ServeRealtimeModule">¶</a>
+				
+				
+			</h2>
+			<pre>func ServeRealtimeModule() <a href="../../../../go.uber.org/fx/">fx</a>.<a href="../../../../go.uber.org/fx/#Option">Option</a></pre>
+			<p>ServeRealtimeModule は、Realtime Delivery の受信側 runtime を serve profile へ結線する入口です。
+呼び出しは feature の realtime adapter と同じ sample-api マーカー行にだけ載せます
+（adapter と一緒に消える理由は internal/di/module/README.md「Module List」ServeRealtimeModule()）。
+</p><p>RealtimeAdapterModule() は realtimeModule() が合成するので、両方を同じ graph へ結線してはいけません。
 
 			
 			
@@ -352,7 +426,7 @@ relay 以外のプロセスへ漏れないよう共有 InfrastructureModule で�
 		
 			
 			
-			</p><h2 id="UsecaseModule">func <a href="../../../../src/go-boilerplate/internal/di/module/usecase.go.html?s=2384:2414#L26">UsecaseModule</a>
+			</p><h2 id="UsecaseModule">func <a href="../../../../src/go-boilerplate/internal/di/module/usecase.go.html?s=3175:3205#L36">UsecaseModule</a>
 				<a class="permalink" href="#UsecaseModule">¶</a>
 				
 				

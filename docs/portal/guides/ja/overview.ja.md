@@ -3,8 +3,6 @@
 ![Go Version](https://img.shields.io/github/go-mod/go-version/Tomy-ch/go-boilerplate)
 ![License](https://img.shields.io/github/license/Tomy-ch/go-boilerplate)
 
-日本語 | [English](README.md)
-
 **Golang × Echo × OpenAPI × PostgreSQL × オニオンアーキテクチャ** で構築したバックエンド基盤プロジェクトです。
 
 広く使われる OSS — `uber/fx`（DI）・`sqlc`（型安全 SQL）・`golang-migrate`（マイグレーション）・

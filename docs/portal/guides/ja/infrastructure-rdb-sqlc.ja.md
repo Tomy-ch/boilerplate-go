@@ -1,7 +1,5 @@
 ## sqlc パッケージ
 
-[English](README.md) | 日本語
-
 このディレクトリは、[sqlc](https://docs.sqlc.dev/) を使用して SQL から Go コードを生成した結果と、
 それらを補助する **SQL 実行関連ユーティリティ** を提供します。
 

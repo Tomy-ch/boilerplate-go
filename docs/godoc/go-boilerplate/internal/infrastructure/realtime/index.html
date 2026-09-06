@@ -1,0 +1,451 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package realtime
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/infrastructure/realtime&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package realtime は、Realtime Delivery の fan-out substrate（wakeup の publish と、serve instance ごとの
+受信先）の実装を選ぶ唯一の場所です。背後の substrate を差し替える場合に書き換えるのはこのパッケージだけで、
+DI はここを通ります。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+				
+				<dd><a href="#EnsureTopic">func EnsureTopic(ctx context.Context, c Clients, name string) (string, error)</a></dd>
+			
+				
+				<dd><a href="#NewInstanceSubscription">func NewInstanceSubscription(c Clients, target SubscriptionTarget, attrs AttributesBuilder, tf observability.TracerFactory) rt.InstanceSubscription</a></dd>
+			
+				
+				<dd><a href="#NewOrphanReclaimer">func NewOrphanReclaimer(c Clients, target SubscriptionTarget, tf observability.TracerFactory) rt.OrphanReclaimer</a></dd>
+			
+				
+				<dd><a href="#NewPublisher">func NewPublisher(log rt.EventLogStore, c Clients, topicARN string, tf observability.TracerFactory, metrics *observability.RealtimeMetrics) publisherbndry.Publisher</a></dd>
+			
+				
+				<dd><a href="#NewRevocationNotifier">func NewRevocationNotifier(c Clients, topicARN string, tf observability.TracerFactory) rt.RevocationNotifier</a></dd>
+			
+			
+				
+				<dd><a href="#AttributesBuilder">type AttributesBuilder</a></dd>
+				
+					
+					<dd>    <a href="#NewEmulatorQueueAttributes">func NewEmulatorQueueAttributes() AttributesBuilder</a></dd>
+				
+					
+					<dd>    <a href="#NewQueueAttributes">func NewQueueAttributes(in QueueAttributesInput) AttributesBuilder</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ClientConfig">type ClientConfig</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Clients">type Clients</a></dd>
+				
+					
+					<dd>    <a href="#NewClients">func NewClients(ctx context.Context, cfg ClientConfig) (Clients, error)</a></dd>
+				
+				
+			
+				
+				<dd><a href="#QueueAttributesInput">type QueueAttributesInput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#SubscriptionTarget">type SubscriptionTarget</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html">realtime.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+			
+			
+			<h2 id="EnsureTopic">func <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=3068:3145#L55">EnsureTopic</a>
+				<a class="permalink" href="#EnsureTopic">¶</a>
+				
+				
+			</h2>
+			<pre>func EnsureTopic(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, c <a href="#Clients">Clients</a>, name <a href="../../../../builtin/#string">string</a>) (<a href="../../../../builtin/#string">string</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+			<p>EnsureTopic は、name の topic を実在させ、その ARN を返します（one-shot の初期化と contract test 用。application の起動時には呼ばない）。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewInstanceSubscription">func <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=2347:2498#L43">NewInstanceSubscription</a>
+				<a class="permalink" href="#NewInstanceSubscription">¶</a>
+				
+				
+			</h2>
+			<pre>func NewInstanceSubscription(
+    c <a href="#Clients">Clients</a>, target <a href="#SubscriptionTarget">SubscriptionTarget</a>, attrs <a href="#AttributesBuilder">AttributesBuilder</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+) <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#InstanceSubscription">InstanceSubscription</a></pre>
+			<p>NewInstanceSubscription は、instance 固有の受信先（queue + subscription）の lifecycle を持つ InstanceSubscription を返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewOrphanReclaimer">func <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=2716:2828#L50">NewOrphanReclaimer</a>
+				<a class="permalink" href="#NewOrphanReclaimer">¶</a>
+				
+				
+			</h2>
+			<pre>func NewOrphanReclaimer(c <a href="#Clients">Clients</a>, target <a href="#SubscriptionTarget">SubscriptionTarget</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>) <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#OrphanReclaimer">OrphanReclaimer</a></pre>
+			<p>NewOrphanReclaimer は、死んだ instance が残した受信先を識別子から辿って片付ける OrphanReclaimer を返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewPublisher">func <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=1674:1846#L27">NewPublisher</a>
+				<a class="permalink" href="#NewPublisher">¶</a>
+				
+				
+			</h2>
+			<pre>func NewPublisher(
+    log <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#EventLogStore">EventLogStore</a>,
+    c <a href="#Clients">Clients</a>,
+    topicARN <a href="../../../../builtin/#string">string</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+    metrics *<a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#RealtimeMetrics">RealtimeMetrics</a>,
+) <a href="../../../../go-boilerplate/internal/usecase/boundary/publisher/">publisherbndry</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/publisher/#Publisher">Publisher</a></pre>
+			<p>NewPublisher は、realtime channel の outbox publisher（EventLog へ append → wakeup を publish）を返します。
+
+			
+			
+
+		
+			
+			
+			</p><h2 id="NewRevocationNotifier">func <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=2028:2136#L38">NewRevocationNotifier</a>
+				<a class="permalink" href="#NewRevocationNotifier">¶</a>
+				
+				
+			</h2>
+			<pre>func NewRevocationNotifier(c <a href="#Clients">Clients</a>, topicARN <a href="../../../../builtin/#string">string</a>, tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>) <a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/">rt</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/realtime/#RevocationNotifier">RevocationNotifier</a></pre>
+			<p>NewRevocationNotifier は、失効通知を全 instance へ publish する RevocationNotifier を返します。
+
+			
+			
+
+		
+		
+			
+			
+			</p><h2 id="AttributesBuilder">type <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=978:1024#L13">AttributesBuilder</a>
+				<a class="permalink" href="#AttributesBuilder">¶</a>
+				
+				
+			</h2>
+			<p>AttributesBuilder は、instance queue に設定する属性の集合を組み立てる境界です。
+
+			</p><pre>type AttributesBuilder = <a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/">aws</a>.<a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/#AttributesBuilder">AttributesBuilder</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewEmulatorQueueAttributes">func <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=3537:3588#L65">NewEmulatorQueueAttributes</a>
+					<a class="permalink" href="#NewEmulatorQueueAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func NewEmulatorQueueAttributes() <a href="#AttributesBuilder">AttributesBuilder</a></pre>
+				<p>NewEmulatorQueueAttributes は、emulator が受け付ける属性（timings）だけを返します。
+
+				
+				
+			
+				
+				</p><h3 id="NewQueueAttributes">func <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=3323:3389#L60">NewQueueAttributes</a>
+					<a class="permalink" href="#NewQueueAttributes">¶</a>
+					
+					
+				</h3>
+				<pre>func NewQueueAttributes(in <a href="#QueueAttributesInput">QueueAttributesInput</a>) <a href="#AttributesBuilder">AttributesBuilder</a></pre>
+				<p>NewQueueAttributes は、production の instance queue の属性（policy / redrive / 暗号化 / timings）を返します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="ClientConfig">type <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=708:744#L7">ClientConfig</a>
+				<a class="permalink" href="#ClientConfig">¶</a>
+				
+				
+			</h2>
+			<p>ClientConfig は、fan-out substrate のクライアント設定です。
+
+			</p><pre>type ClientConfig = <a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/">aws</a>.<a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/#ClientConfig">ClientConfig</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Clients">type <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=844:870#L10">Clients</a>
+				<a class="permalink" href="#Clients">¶</a>
+				
+				
+			</h2>
+			<p>Clients は、同じ資格情報で組み立てた SNS / SQS クライアントの組です。
+
+			</p><pre>type Clients = <a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/">aws</a>.<a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/#Clients">Clients</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewClients">func <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=1438:1509#L22">NewClients</a>
+					<a class="permalink" href="#NewClients">¶</a>
+					
+					
+				</h3>
+				<pre>func NewClients(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, cfg <a href="#ClientConfig">ClientConfig</a>) (<a href="#Clients">Clients</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewClients は、設定から SNS / SQS クライアントを生成します。
+
+				
+				
+			
+
+			
+		
+			
+			
+			</p><h2 id="QueueAttributesInput">type <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=1146:1198#L16">QueueAttributesInput</a>
+				<a class="permalink" href="#QueueAttributesInput">¶</a>
+				
+				
+			</h2>
+			<p>QueueAttributesInput は、production の属性を組み立てるのに要る deployment 依存の識別子です。
+
+			</p><pre>type QueueAttributesInput = <a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/">aws</a>.<a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/#QueueAttributesInput">QueueAttributesInput</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="SubscriptionTarget">type <a href="../../../../src/go-boilerplate/internal/infrastructure/realtime/realtime.go.html?s=1305:1353#L19">SubscriptionTarget</a>
+				<a class="permalink" href="#SubscriptionTarget">¶</a>
+				
+				
+			</h2>
+			<p>SubscriptionTarget は、instance の受信先をどの topic に、どの名前で作るかです。
+
+			</p><pre>type SubscriptionTarget = <a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/">aws</a>.<a href="../../../../go-boilerplate/internal/infrastructure/realtime/aws/#SubscriptionTarget">SubscriptionTarget</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

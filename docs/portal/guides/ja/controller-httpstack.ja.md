@@ -1,7 +1,5 @@
 # httpstack
 
-[English](README.md) | 日本語
-
 Echo サーバ起動時に登録する **HTTP 周りの共通ミドルウェア群**をまとめたディレクトリです。
 
 各サブパッケージは小さな役割に分割されており、アプリケーションの起動処理で組み合わせて利用します。
@@ -25,6 +23,7 @@ Echo サーバ起動時に登録する **HTTP 周りの共通ミドルウェア�
 |`requestid`|`Middleware`|X-Request-ID ヘッダの自動生成|
 |`logging`|`Middleware`|HTTP リクエスト / レスポンスの構造化ログ|
 |`recovery`|`Middleware`|パニックのキャッチとログ出力|
+|`redaction`|`Redactor`|ログ出力前に URI / query から資格情報（spec 由来の名前）を除去|
 |`cors`|`Middleware`|CORS 設定|
 |`security`|`Middleware`|セキュリティヘッダ（HSTS, X-Frame-Options 等）|
 |`cookie`|`Middleware`|Set-Cookie ヘッダのセキュリティ属性強制|
@@ -58,6 +57,7 @@ Echo サーバ起動時に登録する **HTTP 周りの共通ミドルウェア�
 |`basicauth`|`NewBasicAuthValidator`|メトリクスエンドポイント用 Basic 認証|
 |`ipextractor`|`New`|環境に応じたクライアント IP 抽出|
 |`ops`|`IsOpsPath`|運用系パス（/health, /metrics 等）の判定|
+|`streampath`|`Is` / `IsCommittedStream`|SSE の stream path の判定と、stream として確定したレスポンスの判定|
 
 ## ミドルウェア登録
 
@@ -101,18 +101,19 @@ func ConfigureHTTP(e *echo.Echo, cfg *config.ApplicationConfig, logger logging.L
 
 ### ミドルウェアではないサブパッケージ
 
-境界はどの表に載っているかではなく `next` を取るかどうかにある。`oapi` は *OpenAPI 連携* 表に置かれているが `echo.MiddlewareFunc` を返して同じ `e.Use` チェーンに乗るため、以下のミドルウェア向け観点がそのまま適用される。Echo や oapi-codegen が持つスロットに収まるサブパッケージ — `ops` / `oapi/skipper` / `oapi/auth` / `oapi/validator` / `basicauth` / `ipextractor` — は `next` を持たない。素通しと `Before` / `After` の観点は適用されず、*実体を使う対象とモックにする対象* の表は適用される。次の 3 類型に分かれる。
+境界はどの表に載っているかではなく `next` を取るかどうかにある。`oapi` は *OpenAPI 連携* 表に置かれているが `echo.MiddlewareFunc` を返して同じ `e.Use` チェーンに乗るため、以下のミドルウェア向け観点がそのまま適用される。Echo や oapi-codegen が持つスロットに収まるサブパッケージ — `ops` / `streampath` / `oapi/skipper` / `oapi/auth` / `oapi/validator` / `basicauth` / `ipextractor` — は `next` を持たない。素通しと `Before` / `After` の観点は適用されず、*実体を使う対象とモックにする対象* の表は適用される。次の 3 類型に分かれる。
 
-- **述語・抽出関数**（`ops` / `oapi/skipper` / `basicauth` / `ipextractor`）— 構築した関数値を直接呼んで判定結果を検証する。`echo.New()` + `httptest` は関数が受け取る `*echo.Context` を組む材料にすぎない。観点は判定境界の両側であり、正常経路では通らないが呼び出し側からは到達しうる端（末尾スラッシュ・空の資格情報・ルート不一致のパス）を含める。加えて *環境による分岐* に挙げた config 選択の各モードを網羅する。
+- **述語・抽出関数**（`ops` / `streampath` / `oapi/skipper` / `basicauth` / `ipextractor`）— 構築した関数値を直接呼んで判定結果を検証する。`echo.New()` + `httptest` は関数が受け取る `*echo.Context` を組む材料にすぎない。観点は判定境界の両側であり、正常経路では通らないが呼び出し側からは到達しうる端（末尾スラッシュ・空の資格情報・ルート不一致のパス）を含める。加えて *環境による分岐* に挙げた config 選択の各モードを網羅する。
 - **アダプタのスロットに入る関数**（`oapi/auth`）— Echo ではなくアダプタが要求するシグネチャ（`openapi3filter.AuthenticationFunc`）で駆動する。結果は戻り値ではなくリクエストコンテキストへの副作用として現れることが多いため、書き込まれた値を検証する。拒否経路では「エラーが返った」ではなくエラーの同一性を検証する。
 - **spec プロバイダ**（`oapi/validator`）— 返る `*openapi3.T` そのものが検証対象であり、テストは spec に対する契約になる（例: 公開許可リスト外の全 operation が認証必須の `security` を宣言している）。production 側に対応関数を持たないのは設計どおり。
 
-`errorhandler` は `e.HTTPErrorHandler` を差し替えるもので観点がパッケージ固有になるため、自前の *テスト戦略* 節を持つ — [`errorhandler/README.ja.md`](errorhandler/README.ja.md) を参照。
+`errorhandler` は `e.HTTPErrorHandler` を差し替えるもので観点がパッケージ固有になるため、自前の *テスト戦略* 節を持つ — [`errorhandler/README.ja.md`](errorhandler/README.ja.md) を参照。 `redaction` は 3 つの形のどれにも当たらない — Echo にも oapi-codegen のスロットにも入らない純粋な値変換 — ため、同じく自分の節を持つ: [`redaction/README.ja.md`](redaction/README.ja.md)。
 
 ### 全ミドルウェア共通で押さえる観点
 
 - **素通し** — ミドルウェアが介入しないリクエストは変更されずに `next` へ届き、`next` の戻り値がそのまま伝播すること。
 - **運用系パスの除外** — `ops.IsOpsPath` を参照するミドルウェア（`logging` / `redmetrics`、および `oapi/skipper` の skipper）は両側を検証する。運用系パス（`/health`・`/metrics` 等）ではログ／メトリクスが出ず、アプリケーションパスでは出ること。
+- **stream の除外** — タイミングの異なる 2 つの述語なので、別々に検証する。`timeout` が参照するのは `streampath.Is`（path、handler の前）で、`/v1/streams/…` には deadline が付かず、アプリケーションパスには付くこと。`logging` / `redmetrics` が参照するのは `streampath.IsCommittedStream`（レスポンスの content type、handler の後）で、`text/event-stream` として確定したレスポンスにはレスポンスのログもメトリクスも付かず、*同じパス* での拒否には両方とも付くこと。確定した側だけを通すテストは拒否側について何も証明しないが、ticket の総当たりや容量の枯渇が現れるのはその拒否側である。`oapi/skipper` はどちらの述語も**一切**参照してはならない。stream のリクエストを OpenAPI 検証の外へ逃がすことは、その ticket の security scheme を飛ばすことになるため。
 - **`server.ResponseOf` の縮退** — Echo のレスポンスを取り出すミドルウェアは、ライタを unwrap できない場合に単なる素通しへ縮退する。`c.SetResponse(httptest.NewRecorder())` で再現し、失敗もせず何も記録しないことを検証する。この分岐は本番スタック経由では到達しないため、パッケージ単体テストだけが担保となる。
 - **環境依存の分岐** — 設定によって振る舞いが切り替わる場合（`recovery` のスタックサイズ、`ipextractor` の抽出方式）は、config セッタで各モードを網羅する。不明モードのフォールバックも含めること。
 

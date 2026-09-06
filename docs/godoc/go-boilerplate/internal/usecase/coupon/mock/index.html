@@ -1,0 +1,305 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>mock - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package mock_coupon
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/coupon/mock&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package mock_coupon is a generated GoMock package.
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#MockUsecase">type MockUsecase</a></dd>
+				
+					
+					<dd>    <a href="#NewMockUsecase">func NewMockUsecase(ctrl *gomock.Controller) *MockUsecase</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockUsecase.EXPECT">func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.ListApplicableToMyCart">func (m *MockUsecase) ListApplicableToMyCart(ctx context.Context, authn *auth.Authn) ([]coupon.CartCouponView, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecase.ListMyCoupons">func (m *MockUsecase) ListMyCoupons(ctx context.Context, authn *auth.Authn) ([]coupon.CouponView, error)</a></dd>
+				
+			
+				
+				<dd><a href="#MockUsecaseMockRecorder">type MockUsecaseMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.ListApplicableToMyCart">func (mr *MockUsecaseMockRecorder) ListApplicableToMyCart(ctx, authn any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockUsecaseMockRecorder.ListMyCoupons">func (mr *MockUsecaseMockRecorder) ListMyCoupons(ctx, authn any) *gomock.Call</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html">mock_coupon_usecase.go.gen.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="MockUsecase">type <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html?s=528:638#L12">MockUsecase</a>
+				<a class="permalink" href="#MockUsecase">¶</a>
+				
+				
+			</h2>
+			<p>MockUsecase is a mock of Usecase interface.
+
+			</p><pre>type MockUsecase struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockUsecase">func <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html?s=812:869#L24">NewMockUsecase</a>
+					<a class="permalink" href="#NewMockUsecase">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockUsecase(ctrl *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockUsecase">MockUsecase</a></pre>
+				<p>NewMockUsecase creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockUsecase.EXPECT">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html?s=1047:1102#L31">EXPECT</a>
+					<a class="permalink" href="#MockUsecase.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) EXPECT() *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.ListApplicableToMyCart">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html?s=1172:1289#L36">ListApplicableToMyCart</a>
+					<a class="permalink" href="#MockUsecase.ListApplicableToMyCart">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) ListApplicableToMyCart(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, authn *<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>) ([]<a href="../../../../../go-boilerplate/internal/usecase/coupon/">coupon</a>.<a href="../../../../../go-boilerplate/internal/usecase/coupon/#CartCouponView">CartCouponView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>ListApplicableToMyCart mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecase.ListMyCoupons">func (*MockUsecase) <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html?s=1852:1956#L51">ListMyCoupons</a>
+					<a class="permalink" href="#MockUsecase.ListMyCoupons">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockUsecase">MockUsecase</a>) ListMyCoupons(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, authn *<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>) ([]<a href="../../../../../go-boilerplate/internal/usecase/coupon/">coupon</a>.<a href="../../../../../go-boilerplate/internal/usecase/coupon/#CouponView">CouponView</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>ListMyCoupons mocks base method.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockUsecaseMockRecorder">type <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html?s=705:763#L19">MockUsecaseMockRecorder</a>
+				<a class="permalink" href="#MockUsecaseMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockUsecaseMockRecorder is the mock recorder for MockUsecase.
+
+			</p><pre>type MockUsecaseMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockUsecaseMockRecorder.ListApplicableToMyCart">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html?s=1546:1632#L45">ListApplicableToMyCart</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.ListApplicableToMyCart">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) ListApplicableToMyCart(ctx, authn <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>ListApplicableToMyCart indicates an expected call of ListApplicableToMyCart.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockUsecaseMockRecorder.ListMyCoupons">func (*MockUsecaseMockRecorder) <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/mock/mock_coupon_usecase.go.gen.go.html?s=2182:2259#L60">ListMyCoupons</a>
+					<a class="permalink" href="#MockUsecaseMockRecorder.ListMyCoupons">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockUsecaseMockRecorder">MockUsecaseMockRecorder</a>) ListMyCoupons(ctx, authn <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>ListMyCoupons indicates an expected call of ListMyCoupons.
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

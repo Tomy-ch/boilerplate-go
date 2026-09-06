@@ -145,7 +145,7 @@ publish adapter（infrastructure 層）の双方が依存する境界です。
 		
 			
 			
-			<h2 id="Message">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/publisher/publisher.go.html?s=683:1178#L6">Message</a>
+			<h2 id="Message">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/publisher/publisher.go.html?s=691:1329#L7">Message</a>
 				<a class="permalink" href="#Message">¶</a>
 				
 				
@@ -162,6 +162,8 @@ substrate（HTTP 等）へ載せ替える際の中立表現です。net/http 等
     Payload []<a href="../../../../../builtin/#byte">byte</a>
 <span id="Message.Headers"></span>    <span class="comment">// Headers は publish 時に伝搬するヘッダ（traceparent 等）です。engine が解釈せず素通しします。</span>
     Headers map[<a href="../../../../../builtin/#string">string</a>]<a href="../../../../../builtin/#string">string</a>
+<span id="Message.CreatedAt"></span>    <span class="comment">// CreatedAt は、業務 tx が outbox へ記録した時刻です。publish 側が遅れを測るのに使います。</span>
+    CreatedAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
 }
 </pre>
 
@@ -179,7 +181,7 @@ substrate（HTTP 等）へ載せ替える際の中立表現です。net/http 等
 		
 			
 			
-			<h2 id="Publisher">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/publisher/publisher.go.html?s=1254:1488#L18">Publisher</a>
+			<h2 id="Publisher">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/publisher/publisher.go.html?s=1405:1856#L21">Publisher</a>
 				<a class="permalink" href="#Publisher">¶</a>
 				
 				
@@ -189,6 +191,8 @@ substrate（HTTP 等）へ載せ替える際の中立表現です。net/http 等
 			</p><pre>type Publisher interface {
     <span class="comment">// Publish は、m を publish 先へ送ります。</span>
     <span class="comment">// 送信失敗時はエラーを返し、relay の次 poll で再送されます（at-least-once）。</span>
+    <span class="comment">// 実装は失敗を apperror.ErrPermanent または apperror.ErrRetryable で分類してよく、</span>
+    <span class="comment">// どちらも運ばないエラーは一時失敗として扱われます（dead 化の基準は ADR-0058）。</span>
     Publish(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, m <a href="#Message">Message</a>) <a href="../../../../../builtin/#error">error</a>
 }</pre>
 

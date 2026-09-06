@@ -1,7 +1,5 @@
 # clock
 
-[English](README.md) | 日本語
-
 現在時刻を取得する `Clock` インターフェースと、待機のための `Sleeper` インターフェースを提供します。
 
 ```go

@@ -1,0 +1,1040 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>module - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/di">di</a>/<a href="../../../../../src/go-boilerplate/internal/di/module">module</a>/<span class="text-muted">realtime_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/di/module">go-boilerplate/internal/di/module</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package module
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;net/http&#34;
+<span id="L6" class="ln">     6  </span>	&#34;net/http/httptest&#34;
+<span id="L7" class="ln">     7  </span>	&#34;sync&#34;
+<span id="L8" class="ln">     8  </span>	&#34;testing&#34;
+<span id="L9" class="ln">     9  </span>	&#34;time&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/config&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/controller/ctxhelper&#34;
+<span id="L14" class="ln">    14  </span>	oapiauth &#34;go-boilerplate/internal/controller/httpstack/oapi/auth&#34;
+<span id="L15" class="ln">    15  </span>	ctrlrealtime &#34;go-boilerplate/internal/controller/realtime&#34;
+<span id="L16" class="ln">    16  </span>	mock_ctrlrealtime &#34;go-boilerplate/internal/controller/realtime/mock&#34;
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/controller/stream&#34;
+<span id="L18" class="ln">    18  </span>	streamauth &#34;go-boilerplate/internal/controller/stream/auth&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/internal/di/lifecycle&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/di/server/hook&#34;
+<span id="L21" class="ln">    21  </span>	&#34;go-boilerplate/internal/infrastructure/dynamodbclient/testkit&#34;
+<span id="L22" class="ln">    22  </span>	realtimeinfra &#34;go-boilerplate/internal/infrastructure/realtime&#34;
+<span id="L23" class="ln">    23  </span>	&#34;go-boilerplate/internal/logging&#34;
+<span id="L24" class="ln">    24  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L25" class="ln">    25  </span>	mock_clock &#34;go-boilerplate/internal/usecase/boundary/clock/mock&#34;
+<span id="L26" class="ln">    26  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L27" class="ln">    27  </span>	mock_rt &#34;go-boilerplate/internal/usecase/boundary/realtime/mock&#34;
+<span id="L28" class="ln">    28  </span>	ucrealtime &#34;go-boilerplate/internal/usecase/realtime&#34;
+<span id="L29" class="ln">    29  </span>	mock_realtime &#34;go-boilerplate/internal/usecase/realtime/mock&#34;
+<span id="L30" class="ln">    30  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span>	awssdk &#34;github.com/aws/aws-sdk-go-v2/aws&#34;
+<span id="L33" class="ln">    33  </span>	&#34;github.com/getkin/kin-openapi/openapi3&#34;
+<span id="L34" class="ln">    34  </span>	&#34;github.com/getkin/kin-openapi/openapi3filter&#34;
+<span id="L35" class="ln">    35  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L36" class="ln">    36  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L37" class="ln">    37  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L38" class="ln">    38  </span>	&#34;go.uber.org/fx&#34;
+<span id="L39" class="ln">    39  </span>	&#34;go.uber.org/mock/gomock&#34;
+<span id="L40" class="ln">    40  </span>)
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// realtimeDeps は、realtime module の graph 検証に要る下位モジュール群です（clock は infrastructure 側の module）。</span>
+<span id="L43" class="ln">    43  </span><span class="comment">// stream handler の登録に要る *echo.Echo だけは server module の代わりにここで供給します。</span>
+<span id="L44" class="ln">    44  </span>func realtimeDeps() []fx.Option {
+<span id="L45" class="ln">    45  </span>	return append(commonDeps(), clockModule(), realtimeModule(), fx.Provide(echo.New))
+<span id="L46" class="ln">    46  </span>}
+<span id="L47" class="ln">    47  </span>
+<span id="L48" class="ln">    48  </span><span class="comment">// realtimeRunDeps は、constructor を実際に走らせて value group を集めるための依存です。ConfigModule /</span>
+<span id="L49" class="ln">    49  </span><span class="comment">// ObservabilityModule / DatabaseModule は global（設定の読み込みと prometheus の既定 registry）へ触るため、</span>
+<span id="L50" class="ln">    50  </span><span class="comment">// 並列テストと競合する。realtime が要るのは設定 3 つと Logger / TracerFactory / outbound クライアントだけ</span>
+<span id="L51" class="ln">    51  </span><span class="comment">// なので、いずれも test 用の実装を直接差し込む。</span>
+<span id="L52" class="ln">    52  </span>func realtimeRunDeps(t *testing.T) fx.Option {
+<span id="L53" class="ln">    53  </span>	t.Helper()
+<span id="L54" class="ln">    54  </span>
+<span id="L55" class="ln">    55  </span>	cfg := config.MockConfigForTest(t)
+<span id="L56" class="ln">    56  </span>
+<span id="L57" class="ln">    57  </span>	return fx.Options(
+<span id="L58" class="ln">    58  </span>		lifecycle.Module(), clockModule(), realtimeModule(),
+<span id="L59" class="ln">    59  </span>		fx.Provide(func() *config.ApplicationConfig { return config.NewApplicationConfig(cfg) }),
+<span id="L60" class="ln">    60  </span>		fx.Provide(func() *config.EndpointConfig { return config.NewEndpointConfig(cfg) }),
+<span id="L61" class="ln">    61  </span>		fx.Provide(func() *config.RealtimeConfig { return config.NewRealtimeConfig(cfg) }),
+<span id="L62" class="ln">    62  </span>		fx.Provide(func() logging.Logger { return logging.NewTestLogger(t) }),
+<span id="L63" class="ln">    63  </span>		fx.Provide(func() observability.TracerFactory { return observability.NewNoopTracerFactory(t) }),
+<span id="L64" class="ln">    64  </span>		fx.Provide(func() *observability.OutboundHTTPClient { return observability.NewDisabledOutboundHTTPClient(true) }),
+<span id="L65" class="ln">    65  </span>		fx.Provide(echo.New),
+<span id="L66" class="ln">    66  </span>		fx.Replace(testFanout(t)),
+<span id="L67" class="ln">    67  </span>		<span class="comment">// 計装は MeterProvider を要るが、ObservabilityModule は global の registry を触るため</span>
+<span id="L68" class="ln">    68  </span>		<span class="comment">// 並列テストと競合する。noop の実体で差し替えて構築子ごと迂回する。</span>
+<span id="L69" class="ln">    69  </span>		fx.Replace(observability.NewNoopRealtimeMetrics(t)),
+<span id="L70" class="ln">    70  </span>	)
+<span id="L71" class="ln">    71  </span>}
+<span id="L72" class="ln">    72  </span>
+<span id="L73" class="ln">    73  </span><span class="comment">// testFanout は、emulator の endpoint を向いた fan-out の依存を返します（接続はしない）。</span>
+<span id="L74" class="ln">    74  </span>func testFanout(t *testing.T) realtimeFanout {
+<span id="L75" class="ln">    75  </span>	t.Helper()
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>	clients, err := realtimeinfra.NewClients(t.Context(), realtimeinfra.ClientConfig{
+<span id="L78" class="ln">    78  </span>		Endpoint: &#34;http://localhost:4100&#34;, Region: &#34;us-east-1&#34;, AccessKeyID: &#34;k&#34;, SecretAccessKey: &#34;s&#34;,
+<span id="L79" class="ln">    79  </span>	})
+<span id="L80" class="ln">    80  </span>	require.NoError(t, err)
+<span id="L81" class="ln">    81  </span>
+<span id="L82" class="ln">    82  </span>	return realtimeFanout{clients: clients, topicARN: &#34;arn:aws:sns:us-east-1:000000000000:realtime-test&#34;}
+<span id="L83" class="ln">    83  </span>}
+<span id="L84" class="ln">    84  </span>
+<span id="L85" class="ln">    85  </span>func Test_realtimeModule_GraphIsValid(t *testing.T) {
+<span id="L86" class="ln">    86  </span>	t.Parallel()
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span>	validateGraph(t, realtimeDeps()...)
+<span id="L89" class="ln">    89  </span>}
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>func Test_realtimeModule(t *testing.T) {
+<span id="L92" class="ln">    92  </span>	t.Parallel()
+<span id="L93" class="ln">    93  </span>
+<span id="L94" class="ln">    94  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L95" class="ln">    95  </span>		t.Parallel()
+<span id="L96" class="ln">    96  </span>
+<span id="L97" class="ln">    97  </span>		t.Run(&#34;3 つの store と機構側 usecase と StreamTicket scheme の認証器を提供する&#34;, func(t *testing.T) {
+<span id="L98" class="ln">    98  </span>			t.Parallel()
+<span id="L99" class="ln">    99  </span>
+<span id="L100" class="ln">   100  </span>			var (
+<span id="L101" class="ln">   101  </span>				log      rt.EventLogStore
+<span id="L102" class="ln">   102  </span>				tickets  rt.StreamTicketStore
+<span id="L103" class="ln">   103  </span>				leases   rt.InstanceLeaseStore
+<span id="L104" class="ln">   104  </span>				secrets  rt.SecretGenerator
+<span id="L105" class="ln">   105  </span>				cursor   ucrealtime.CursorValidator
+<span id="L106" class="ln">   106  </span>				issuer   ucrealtime.TicketIssuer
+<span id="L107" class="ln">   107  </span>				verifier ucrealtime.TicketVerifier
+<span id="L108" class="ln">   108  </span>			)
+<span id="L109" class="ln">   109  </span>
+<span id="L110" class="ln">   110  </span>			validateGraph(
+<span id="L111" class="ln">   111  </span>				t,
+<span id="L112" class="ln">   112  </span>				append(
+<span id="L113" class="ln">   113  </span>					realtimeDeps(),
+<span id="L114" class="ln">   114  </span>					fx.Populate(&amp;log, &amp;tickets, &amp;leases, &amp;secrets, &amp;cursor, &amp;issuer, &amp;verifier),
+<span id="L115" class="ln">   115  </span>				)...,
+<span id="L116" class="ln">   116  </span>			)
+<span id="L117" class="ln">   117  </span>
+<span id="L118" class="ln">   118  </span>			<span class="comment">// value group は空でも解決するため、group への登録は実体を集めて数える。</span>
+<span id="L119" class="ln">   119  </span>			schemes := collectGroup[oapiauth.SchemeAuthenticator](t, `group:&#34;oapi.security.schemes&#34;`, realtimeRunDeps(t))
+<span id="L120" class="ln">   120  </span>			assert.Len(t, schemes, 1)
+<span id="L121" class="ln">   121  </span>		})
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span>		t.Run(&#34;fan-out の publish 側・受信側・lifecycle の参加者を提供する&#34;, func(t *testing.T) {
+<span id="L124" class="ln">   124  </span>			t.Parallel()
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>			var (
+<span id="L127" class="ln">   127  </span>				notifier  rt.RevocationNotifier
+<span id="L128" class="ln">   128  </span>				revoker   ucrealtime.AccessRevoker
+<span id="L129" class="ln">   129  </span>				id        rt.InstanceID
+<span id="L130" class="ln">   130  </span>				attrs     realtimeinfra.AttributesBuilder
+<span id="L131" class="ln">   131  </span>				sub       rt.InstanceSubscription
+<span id="L132" class="ln">   132  </span>				keeper    ucrealtime.LeaseKeeper
+<span id="L133" class="ln">   133  </span>				engine    *ctrlrealtime.Engine
+<span id="L134" class="ln">   134  </span>				heartbeat *ctrlrealtime.Heartbeat
+<span id="L135" class="ln">   135  </span>			)
+<span id="L136" class="ln">   136  </span>
+<span id="L137" class="ln">   137  </span>			validateGraph(t, append(realtimeDeps(),
+<span id="L138" class="ln">   138  </span>				fx.Populate(&amp;notifier, &amp;revoker, &amp;id, &amp;attrs, &amp;sub, &amp;keeper, &amp;engine, &amp;heartbeat))...)
+<span id="L139" class="ln">   139  </span>
+<span id="L140" class="ln">   140  </span>			<span class="comment">// value group は空でも解決するため、参加者は実体を集めて名前まで見る。</span>
+<span id="L141" class="ln">   141  </span>			deps := realtimeRunDeps(t)
+<span id="L142" class="ln">   142  </span>			probes := collectGroup[hook.StartupProbe](t, `group:&#34;serve.startup&#34;`, deps)
+<span id="L143" class="ln">   143  </span>			provisioners := collectGroup[hook.Provisioner](t, `group:&#34;serve.provisioners&#34;`, deps)
+<span id="L144" class="ln">   144  </span>			runners := collectGroup[hook.Runner](t, `group:&#34;serve.runners&#34;`, deps)
+<span id="L145" class="ln">   145  </span>			drainers := collectGroup[hook.Drainer](t, `group:&#34;serve.drainers&#34;`, deps)
+<span id="L146" class="ln">   146  </span>
+<span id="L147" class="ln">   147  </span>			require.Len(t, probes, 1)
+<span id="L148" class="ln">   148  </span>			require.Len(t, provisioners, 1)
+<span id="L149" class="ln">   149  </span>			require.Len(t, runners, 2)
+<span id="L150" class="ln">   150  </span>			require.Len(t, drainers, 1)
+<span id="L151" class="ln">   151  </span>			assert.Equal(t, realtimeParticipantName, probes[0].Name)
+<span id="L152" class="ln">   152  </span>			assert.Equal(t, realtimeParticipantName, provisioners[0].Name)
+<span id="L153" class="ln">   153  </span>			assert.ElementsMatch(t, []string{&#34;realtime-consumer&#34;, &#34;realtime-heartbeat&#34;}, []string{runners[0].Name, runners[1].Name})
+<span id="L154" class="ln">   154  </span>			assert.Equal(t, realtimeParticipantName+&#34;-stream&#34;, drainers[0].Name)
+<span id="L155" class="ln">   155  </span>		})
+<span id="L156" class="ln">   156  </span>	})
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L159" class="ln">   159  </span>		t.Parallel()
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span>		t.Run(&#34;未配線では EventLogStore が解決できずグラフ検証に失敗する&#34;, func(t *testing.T) {
+<span id="L162" class="ln">   162  </span>			t.Parallel()
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>			var log rt.EventLogStore
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>			opts := append(commonDeps(), fx.Populate(&amp;log), fx.NopLogger)
+<span id="L167" class="ln">   167  </span>			require.Error(t, fx.ValidateApp(opts...))
+<span id="L168" class="ln">   168  </span>		})
+<span id="L169" class="ln">   169  </span>	})
+<span id="L170" class="ln">   170  </span>}
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>func Test_provideRealtimeClient(t *testing.T) {
+<span id="L173" class="ln">   173  </span>	t.Parallel()
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L176" class="ln">   176  </span>		t.Parallel()
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>		t.Run(&#34;設定の endpoint と資格情報からクライアントを組み立てる&#34;, func(t *testing.T) {
+<span id="L179" class="ln">   179  </span>			t.Parallel()
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>			mock := config.MockConfigForTest(t)
+<span id="L182" class="ln">   182  </span>			c, err := provideRealtimeClient(
+<span id="L183" class="ln">   183  </span>				config.NewRealtimeConfig(
+<span id="L184" class="ln">   184  </span>					mock,
+<span id="L185" class="ln">   185  </span>				),
+<span id="L186" class="ln">   186  </span>				config.NewEndpointConfig(mock),
+<span id="L187" class="ln">   187  </span>				observability.NewDisabledOutboundHTTPClient(true),
+<span id="L188" class="ln">   188  </span>			)
+<span id="L189" class="ln">   189  </span>			require.NoError(t, err)
+<span id="L190" class="ln">   190  </span>			assert.Nil(t, c.Options().BaseEndpoint, &#34;テスト設定の endpoint は空＝SDK 既定の解決&#34;)
+<span id="L191" class="ln">   191  </span>			assert.Equal(t, config.NewRealtimeConfig(mock).Region(), c.Options().Region)
+<span id="L192" class="ln">   192  </span>		})
+<span id="L193" class="ln">   193  </span>	})
+<span id="L194" class="ln">   194  </span>}
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>func Test_provideEventLogStore(t *testing.T) {
+<span id="L197" class="ln">   197  </span>	t.Parallel()
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span>	cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L200" class="ln">   200  </span>	assert.NotNil(t, provideEventLogStore(testkit.NewTestClient(t), cfg, observability.NewNoopTracerFactory(t)))
+<span id="L201" class="ln">   201  </span>}
+<span id="L202" class="ln">   202  </span>
+<span id="L203" class="ln">   203  </span>func Test_provideStreamTicketStore(t *testing.T) {
+<span id="L204" class="ln">   204  </span>	t.Parallel()
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>	cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L207" class="ln">   207  </span>	assert.NotNil(t, provideStreamTicketStore(testkit.NewTestClient(t), cfg, observability.NewNoopTracerFactory(t)))
+<span id="L208" class="ln">   208  </span>}
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>func Test_provideInstanceLeaseStore(t *testing.T) {
+<span id="L211" class="ln">   211  </span>	t.Parallel()
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>	cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L214" class="ln">   214  </span>	assert.NotNil(t, provideInstanceLeaseStore(testkit.NewTestClient(t), cfg, observability.NewNoopTracerFactory(t)))
+<span id="L215" class="ln">   215  </span>}
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span>func Test_provideRealtimeSecretGenerator(t *testing.T) {
+<span id="L218" class="ln">   218  </span>	t.Parallel()
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>	assert.NotNil(t, provideRealtimeSecretGenerator())
+<span id="L221" class="ln">   221  </span>}
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>func Test_provideCursorValidator(t *testing.T) {
+<span id="L224" class="ln">   224  </span>	t.Parallel()
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>	cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L227" class="ln">   227  </span>	log := provideEventLogStore(testkit.NewTestClient(t), cfg, observability.NewNoopTracerFactory(t))
+<span id="L228" class="ln">   228  </span>	assert.NotNil(
+<span id="L229" class="ln">   229  </span>		t,
+<span id="L230" class="ln">   230  </span>		provideCursorValidator(
+<span id="L231" class="ln">   231  </span>			log,
+<span id="L232" class="ln">   232  </span>			mock_clock.NewMockClock(gomock.NewController(t)),
+<span id="L233" class="ln">   233  </span>			observability.NewNoopTracerFactory(t),
+<span id="L234" class="ln">   234  </span>		),
+<span id="L235" class="ln">   235  </span>	)
+<span id="L236" class="ln">   236  </span>}
+<span id="L237" class="ln">   237  </span>
+<span id="L238" class="ln">   238  </span>func Test_provideTicketIssuer(t *testing.T) {
+<span id="L239" class="ln">   239  </span>	t.Parallel()
+<span id="L240" class="ln">   240  </span>
+<span id="L241" class="ln">   241  </span>	cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L242" class="ln">   242  </span>	store := provideStreamTicketStore(testkit.NewTestClient(t), cfg, observability.NewNoopTracerFactory(t))
+<span id="L243" class="ln">   243  </span>	clk := mock_clock.NewMockClock(gomock.NewController(t))
+<span id="L244" class="ln">   244  </span>	assert.NotNil(
+<span id="L245" class="ln">   245  </span>		t,
+<span id="L246" class="ln">   246  </span>		provideTicketIssuer(store, provideRealtimeSecretGenerator(), clk, observability.NewNoopTracerFactory(t)),
+<span id="L247" class="ln">   247  </span>	)
+<span id="L248" class="ln">   248  </span>}
+<span id="L249" class="ln">   249  </span>
+<span id="L250" class="ln">   250  </span>func Test_provideTicketVerifier(t *testing.T) {
+<span id="L251" class="ln">   251  </span>	t.Parallel()
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span>	cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L254" class="ln">   254  </span>	store := provideStreamTicketStore(testkit.NewTestClient(t), cfg, observability.NewNoopTracerFactory(t))
+<span id="L255" class="ln">   255  </span>	assert.NotNil(
+<span id="L256" class="ln">   256  </span>		t,
+<span id="L257" class="ln">   257  </span>		provideTicketVerifier(
+<span id="L258" class="ln">   258  </span>			store,
+<span id="L259" class="ln">   259  </span>			mock_clock.NewMockClock(gomock.NewController(t)),
+<span id="L260" class="ln">   260  </span>			observability.NewNoopTracerFactory(t),
+<span id="L261" class="ln">   261  </span>		),
+<span id="L262" class="ln">   262  </span>	)
+<span id="L263" class="ln">   263  </span>}
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>func Test_provideStreamTicketScheme(t *testing.T) {
+<span id="L266" class="ln">   266  </span>	t.Parallel()
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L269" class="ln">   269  </span>		t.Parallel()
+<span id="L270" class="ln">   270  </span>
+<span id="L271" class="ln">   271  </span>		t.Run(&#34;StreamTicket scheme を担当する認証器を返す&#34;, func(t *testing.T) {
+<span id="L272" class="ln">   272  </span>			t.Parallel()
+<span id="L273" class="ln">   273  </span>
+<span id="L274" class="ln">   274  </span>			ctrl := gomock.NewController(t)
+<span id="L275" class="ln">   275  </span>			v := mock_realtime.NewMockTicketVerifier(ctrl)
+<span id="L276" class="ln">   276  </span>			v.EXPECT().Verify(gomock.Any(), &#34;raw&#34;, rt.StreamID(&#34;d&#34;)).Return(rt.StreamGrant{Subject: &#34;s&#34;}, nil)
+<span id="L277" class="ln">   277  </span>
+<span id="L278" class="ln">   278  </span>			s := provideStreamTicketScheme(v)
+<span id="L279" class="ln">   279  </span>			assert.Equal(t, streamauth.SchemeName, s.Scheme())
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span>			<span class="comment">// 受け取った verifier がそのまま認証器に渡っていること（検証が mock に届く）。</span>
+<span id="L282" class="ln">   282  </span>			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, &#34;/v1/streams/d?ticket=raw&#34;, nil)
+<span id="L283" class="ln">   283  </span>			req = req.WithContext(ctxhelper.WithStreamGrant(req.Context()))
+<span id="L284" class="ln">   284  </span>			in := &amp;openapi3filter.AuthenticationInput{
+<span id="L285" class="ln">   285  </span>				RequestValidationInput: &amp;openapi3filter.RequestValidationInput{
+<span id="L286" class="ln">   286  </span>					Request:    req,
+<span id="L287" class="ln">   287  </span>					PathParams: map[string]string{&#34;destination&#34;: &#34;d&#34;},
+<span id="L288" class="ln">   288  </span>				},
+<span id="L289" class="ln">   289  </span>				SecuritySchemeName: streamauth.SchemeName,
+<span id="L290" class="ln">   290  </span>				SecurityScheme:     &amp;openapi3.SecurityScheme{Type: &#34;apiKey&#34;, In: &#34;query&#34;, Name: &#34;ticket&#34;},
+<span id="L291" class="ln">   291  </span>			}
+<span id="L292" class="ln">   292  </span>			require.NoError(t, s.Authenticate(context.Background(), in))
+<span id="L293" class="ln">   293  </span>		})
+<span id="L294" class="ln">   294  </span>	})
+<span id="L295" class="ln">   295  </span>}
+<span id="L296" class="ln">   296  </span>
+<span id="L297" class="ln">   297  </span>func Test_provideRealtimeFanout(t *testing.T) {
+<span id="L298" class="ln">   298  </span>	t.Parallel()
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L301" class="ln">   301  </span>		t.Parallel()
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span>		t.Run(&#34;topic の ARN と SNS / SQS の endpoint を設定から写し、SDK は outbound クライアントで呼ぶ&#34;, func(t *testing.T) {
+<span id="L304" class="ln">   304  </span>			t.Parallel()
+<span id="L305" class="ln">   305  </span>
+<span id="L306" class="ln">   306  </span>			mock := config.MockConfigForTest(t)
+<span id="L307" class="ln">   307  </span>			cfg := config.NewRealtimeConfig(mock)
+<span id="L308" class="ln">   308  </span>			epCfg := config.NewEndpointConfig(mock)
+<span id="L309" class="ln">   309  </span>			cfg.SetTopic(t, &#34;arn:aws:sns:us-east-1:000000000000:realtime&#34;)
+<span id="L310" class="ln">   310  </span>			epCfg.SetRealtimePubSub(t, &#34;http://localhost:4100&#34;)
+<span id="L311" class="ln">   311  </span>			outbound := observability.NewDisabledOutboundHTTPClient(true)
+<span id="L312" class="ln">   312  </span>
+<span id="L313" class="ln">   313  </span>			f, err := provideRealtimeFanout(cfg, epCfg, outbound)
+<span id="L314" class="ln">   314  </span>			require.NoError(t, err)
+<span id="L315" class="ln">   315  </span>			assert.Equal(t, &#34;arn:aws:sns:us-east-1:000000000000:realtime&#34;, f.topicARN)
+<span id="L316" class="ln">   316  </span>			assert.Equal(t, &#34;http://localhost:4100&#34;, awssdk.ToString(f.clients.SNS.Options().BaseEndpoint))
+<span id="L317" class="ln">   317  </span>			assert.Equal(t, &#34;http://localhost:4100&#34;, awssdk.ToString(f.clients.SQS.Options().BaseEndpoint))
+<span id="L318" class="ln">   318  </span>			assert.Equal(t, cfg.Region(), f.clients.SNS.Options().Region)
+<span id="L319" class="ln">   319  </span>			assert.Same(t, outbound, f.clients.SNS.Options().HTTPClient)
+<span id="L320" class="ln">   320  </span>		})
+<span id="L321" class="ln">   321  </span>	})
+<span id="L322" class="ln">   322  </span>
+<span id="L323" class="ln">   323  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L324" class="ln">   324  </span>		t.Parallel()
+<span id="L325" class="ln">   325  </span>
+<span id="L326" class="ln">   326  </span>		t.Run(&#34;テスト設定は topic の ARN が空なので ErrRealtimeTopicNotConfigured（fail-closed）&#34;, func(t *testing.T) {
+<span id="L327" class="ln">   327  </span>			t.Parallel()
+<span id="L328" class="ln">   328  </span>
+<span id="L329" class="ln">   329  </span>			mock := config.MockConfigForTest(t)
+<span id="L330" class="ln">   330  </span>			_, err := provideRealtimeFanout(
+<span id="L331" class="ln">   331  </span>				config.NewRealtimeConfig(mock),
+<span id="L332" class="ln">   332  </span>				config.NewEndpointConfig(mock),
+<span id="L333" class="ln">   333  </span>				observability.NewDisabledOutboundHTTPClient(true),
+<span id="L334" class="ln">   334  </span>			)
+<span id="L335" class="ln">   335  </span>			require.ErrorIs(t, err, ErrRealtimeTopicNotConfigured)
+<span id="L336" class="ln">   336  </span>		})
+<span id="L337" class="ln">   337  </span>	})
+<span id="L338" class="ln">   338  </span>}
+<span id="L339" class="ln">   339  </span>
+<span id="L340" class="ln">   340  </span>func Test_newRealtimeFanout(t *testing.T) {
+<span id="L341" class="ln">   341  </span>	t.Parallel()
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L344" class="ln">   344  </span>		t.Parallel()
+<span id="L345" class="ln">   345  </span>
+<span id="L346" class="ln">   346  </span>		t.Run(&#34;topic の ARN と接続設定からクライアントを組み立てる&#34;, func(t *testing.T) {
+<span id="L347" class="ln">   347  </span>			t.Parallel()
+<span id="L348" class="ln">   348  </span>
+<span id="L349" class="ln">   349  </span>			f, err := newRealtimeFanout(t.Context(), &#34;arn:aws:sns:us-east-1:000000000000:realtime-test&#34;, realtimeinfra.ClientConfig{
+<span id="L350" class="ln">   350  </span>				Endpoint: &#34;http://localhost:4100&#34;, Region: &#34;us-east-1&#34;, AccessKeyID: &#34;k&#34;, SecretAccessKey: &#34;s&#34;,
+<span id="L351" class="ln">   351  </span>			})
+<span id="L352" class="ln">   352  </span>			require.NoError(t, err)
+<span id="L353" class="ln">   353  </span>			assert.Equal(t, &#34;arn:aws:sns:us-east-1:000000000000:realtime-test&#34;, f.topicARN)
+<span id="L354" class="ln">   354  </span>			assert.NotNil(t, f.clients.SNS)
+<span id="L355" class="ln">   355  </span>			assert.NotNil(t, f.clients.SQS)
+<span id="L356" class="ln">   356  </span>		})
+<span id="L357" class="ln">   357  </span>	})
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L360" class="ln">   360  </span>		t.Parallel()
+<span id="L361" class="ln">   361  </span>
+<span id="L362" class="ln">   362  </span>		t.Run(&#34;topic の ARN が空なら ErrRealtimeTopicNotConfigured&#34;, func(t *testing.T) {
+<span id="L363" class="ln">   363  </span>			t.Parallel()
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>			_, err := newRealtimeFanout(t.Context(), &#34;&#34;, realtimeinfra.ClientConfig{Region: &#34;us-east-1&#34;})
+<span id="L366" class="ln">   366  </span>			require.ErrorIs(t, err, ErrRealtimeTopicNotConfigured)
+<span id="L367" class="ln">   367  </span>		})
+<span id="L368" class="ln">   368  </span>
+<span id="L369" class="ln">   369  </span>		t.Run(&#34;資格情報が片方だけなら構築に失敗する&#34;, func(t *testing.T) {
+<span id="L370" class="ln">   370  </span>			t.Parallel()
+<span id="L371" class="ln">   371  </span>
+<span id="L372" class="ln">   372  </span>			_, err := newRealtimeFanout(t.Context(), &#34;arn:topic&#34;, realtimeinfra.ClientConfig{Region: &#34;us-east-1&#34;, AccessKeyID: &#34;k&#34;})
+<span id="L373" class="ln">   373  </span>			require.Error(t, err)
+<span id="L374" class="ln">   374  </span>		})
+<span id="L375" class="ln">   375  </span>	})
+<span id="L376" class="ln">   376  </span>}
+<span id="L377" class="ln">   377  </span>
+<span id="L378" class="ln">   378  </span>func Test_provideRevocationNotifier(t *testing.T) {
+<span id="L379" class="ln">   379  </span>	t.Parallel()
+<span id="L380" class="ln">   380  </span>
+<span id="L381" class="ln">   381  </span>	assert.NotNil(t, provideRevocationNotifier(testFanout(t), observability.NewNoopTracerFactory(t)))
+<span id="L382" class="ln">   382  </span>}
+<span id="L383" class="ln">   383  </span>
+<span id="L384" class="ln">   384  </span>func Test_provideAccessRevoker(t *testing.T) {
+<span id="L385" class="ln">   385  </span>	t.Parallel()
+<span id="L386" class="ln">   386  </span>
+<span id="L387" class="ln">   387  </span>	ctrl := gomock.NewController(t)
+<span id="L388" class="ln">   388  </span>	assert.NotNil(
+<span id="L389" class="ln">   389  </span>		t,
+<span id="L390" class="ln">   390  </span>		provideAccessRevoker(
+<span id="L391" class="ln">   391  </span>			mock_rt.NewMockStreamTicketStore(ctrl),
+<span id="L392" class="ln">   392  </span>			mock_rt.NewMockRevocationNotifier(ctrl),
+<span id="L393" class="ln">   393  </span>			observability.NewNoopTracerFactory(t),
+<span id="L394" class="ln">   394  </span>		),
+<span id="L395" class="ln">   395  </span>	)
+<span id="L396" class="ln">   396  </span>}
+<span id="L397" class="ln">   397  </span>
+<span id="L398" class="ln">   398  </span>func Test_provideInstanceID(t *testing.T) {
+<span id="L399" class="ln">   399  </span>	t.Parallel()
+<span id="L400" class="ln">   400  </span>
+<span id="L401" class="ln">   401  </span>	a, err := provideInstanceID()
+<span id="L402" class="ln">   402  </span>	require.NoError(t, err)
+<span id="L403" class="ln">   403  </span>	b, err := provideInstanceID()
+<span id="L404" class="ln">   404  </span>	require.NoError(t, err)
+<span id="L405" class="ln">   405  </span>
+<span id="L406" class="ln">   406  </span>	assert.Regexp(t, `^[0-9a-f-]{36}$`, string(a))
+<span id="L407" class="ln">   407  </span>	assert.NotEqual(t, a, b, &#34;起動ごとに別の識別子&#34;)
+<span id="L408" class="ln">   408  </span>}
+<span id="L409" class="ln">   409  </span>
+<span id="L410" class="ln">   410  </span>func Test_provideInstanceQueueAttributes(t *testing.T) {
+<span id="L411" class="ln">   411  </span>	t.Parallel()
+<span id="L412" class="ln">   412  </span>
+<span id="L413" class="ln">   413  </span>	cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L416" class="ln">   416  </span>		t.Parallel()
+<span id="L417" class="ln">   417  </span>
+<span id="L418" class="ln">   418  </span>		<span class="comment">// buildFor は、env の実装が組み立てる属性を返す。</span>
+<span id="L419" class="ln">   419  </span>		buildFor := func(t *testing.T, env string) map[string]string {
+<span id="L420" class="ln">   420  </span>			t.Helper()
+<span id="L421" class="ln">   421  </span>
+<span id="L422" class="ln">   422  </span>			attrs, err := provideInstanceQueueAttributes(newAppCfgForEnv(t, env), cfg)
+<span id="L423" class="ln">   423  </span>			require.NoError(t, err)
+<span id="L424" class="ln">   424  </span>
+<span id="L425" class="ln">   425  </span>			built, err := attrs.Build(&#34;arn:q&#34;)
+<span id="L426" class="ln">   426  </span>			require.NoError(t, err)
+<span id="L427" class="ln">   427  </span>
+<span id="L428" class="ln">   428  </span>			return built
+<span id="L429" class="ln">   429  </span>		}
+<span id="L430" class="ln">   430  </span>
+<span id="L431" class="ln">   431  </span>		t.Run(&#34;local は timings だけの属性&#34;, func(t *testing.T) {
+<span id="L432" class="ln">   432  </span>			t.Parallel()
+<span id="L433" class="ln">   433  </span>
+<span id="L434" class="ln">   434  </span>			built := buildFor(t, config.EnvLocal)
+<span id="L435" class="ln">   435  </span>			assert.NotContains(t, built, &#34;Policy&#34;)
+<span id="L436" class="ln">   436  </span>			assert.Contains(t, built, &#34;VisibilityTimeout&#34;)
+<span id="L437" class="ln">   437  </span>		})
+<span id="L438" class="ln">   438  </span>
+<span id="L439" class="ln">   439  </span>		t.Run(&#34;ci は timings だけの属性&#34;, func(t *testing.T) {
+<span id="L440" class="ln">   440  </span>			t.Parallel()
+<span id="L441" class="ln">   441  </span>
+<span id="L442" class="ln">   442  </span>			built := buildFor(t, config.EnvCI)
+<span id="L443" class="ln">   443  </span>			assert.NotContains(t, built, &#34;Policy&#34;)
+<span id="L444" class="ln">   444  </span>			assert.Contains(t, built, &#34;VisibilityTimeout&#34;)
+<span id="L445" class="ln">   445  </span>		})
+<span id="L446" class="ln">   446  </span>
+<span id="L447" class="ln">   447  </span>		t.Run(&#34;test は timings だけの属性&#34;, func(t *testing.T) {
+<span id="L448" class="ln">   448  </span>			t.Parallel()
+<span id="L449" class="ln">   449  </span>
+<span id="L450" class="ln">   450  </span>			built := buildFor(t, config.EnvTest)
+<span id="L451" class="ln">   451  </span>			assert.NotContains(t, built, &#34;Policy&#34;)
+<span id="L452" class="ln">   452  </span>			assert.Contains(t, built, &#34;VisibilityTimeout&#34;)
+<span id="L453" class="ln">   453  </span>		})
+<span id="L454" class="ln">   454  </span>
+<span id="L455" class="ln">   455  </span>		t.Run(&#34;dast は timings だけの属性&#34;, func(t *testing.T) {
+<span id="L456" class="ln">   456  </span>			t.Parallel()
+<span id="L457" class="ln">   457  </span>
+<span id="L458" class="ln">   458  </span>			built := buildFor(t, config.EnvDast)
+<span id="L459" class="ln">   459  </span>			assert.NotContains(t, built, &#34;Policy&#34;)
+<span id="L460" class="ln">   460  </span>			assert.Contains(t, built, &#34;VisibilityTimeout&#34;)
+<span id="L461" class="ln">   461  </span>		})
+<span id="L462" class="ln">   462  </span>
+<span id="L463" class="ln">   463  </span>		t.Run(&#34;dev は policy を含む全属性&#34;, func(t *testing.T) {
+<span id="L464" class="ln">   464  </span>			t.Parallel()
+<span id="L465" class="ln">   465  </span>
+<span id="L466" class="ln">   466  </span>			built := buildFor(t, config.EnvDevelopment)
+<span id="L467" class="ln">   467  </span>			assert.Contains(t, built, &#34;Policy&#34;)
+<span id="L468" class="ln">   468  </span>			assert.Contains(t, built, &#34;SqsManagedSseEnabled&#34;)
+<span id="L469" class="ln">   469  </span>		})
+<span id="L470" class="ln">   470  </span>
+<span id="L471" class="ln">   471  </span>		t.Run(&#34;stg は policy を含む全属性&#34;, func(t *testing.T) {
+<span id="L472" class="ln">   472  </span>			t.Parallel()
+<span id="L473" class="ln">   473  </span>
+<span id="L474" class="ln">   474  </span>			built := buildFor(t, config.EnvStaging)
+<span id="L475" class="ln">   475  </span>			assert.Contains(t, built, &#34;Policy&#34;)
+<span id="L476" class="ln">   476  </span>			assert.Contains(t, built, &#34;SqsManagedSseEnabled&#34;)
+<span id="L477" class="ln">   477  </span>		})
+<span id="L478" class="ln">   478  </span>
+<span id="L479" class="ln">   479  </span>		t.Run(&#34;prd は policy を含む全属性&#34;, func(t *testing.T) {
+<span id="L480" class="ln">   480  </span>			t.Parallel()
+<span id="L481" class="ln">   481  </span>
+<span id="L482" class="ln">   482  </span>			built := buildFor(t, config.EnvProduction)
+<span id="L483" class="ln">   483  </span>			assert.Contains(t, built, &#34;Policy&#34;)
+<span id="L484" class="ln">   484  </span>			assert.Contains(t, built, &#34;SqsManagedSseEnabled&#34;)
+<span id="L485" class="ln">   485  </span>		})
+<span id="L486" class="ln">   486  </span>	})
+<span id="L487" class="ln">   487  </span>
+<span id="L488" class="ln">   488  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L489" class="ln">   489  </span>		t.Parallel()
+<span id="L490" class="ln">   490  </span>
+<span id="L491" class="ln">   491  </span>		t.Run(&#34;名指ししない環境は ErrInvalidArgument&#34;, func(t *testing.T) {
+<span id="L492" class="ln">   492  </span>			t.Parallel()
+<span id="L493" class="ln">   493  </span>
+<span id="L494" class="ln">   494  </span>			_, err := provideInstanceQueueAttributes(newAppCfgForEnv(t, &#34;unknown&#34;), cfg)
+<span id="L495" class="ln">   495  </span>			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
+<span id="L496" class="ln">   496  </span>		})
+<span id="L497" class="ln">   497  </span>	})
+<span id="L498" class="ln">   498  </span>}
+<span id="L499" class="ln">   499  </span>
+<span id="L500" class="ln">   500  </span>func Test_provideInstanceSubscription(t *testing.T) {
+<span id="L501" class="ln">   501  </span>	t.Parallel()
+<span id="L502" class="ln">   502  </span>
+<span id="L503" class="ln">   503  </span>	cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L504" class="ln">   504  </span>	assert.NotNil(
+<span id="L505" class="ln">   505  </span>		t,
+<span id="L506" class="ln">   506  </span>		provideInstanceSubscription(
+<span id="L507" class="ln">   507  </span>			testFanout(t),
+<span id="L508" class="ln">   508  </span>			cfg,
+<span id="L509" class="ln">   509  </span>			realtimeinfra.NewEmulatorQueueAttributes(),
+<span id="L510" class="ln">   510  </span>			observability.NewNoopTracerFactory(t),
+<span id="L511" class="ln">   511  </span>		),
+<span id="L512" class="ln">   512  </span>	)
+<span id="L513" class="ln">   513  </span>}
+<span id="L514" class="ln">   514  </span>
+<span id="L515" class="ln">   515  </span>func Test_provideLeaseKeeper(t *testing.T) {
+<span id="L516" class="ln">   516  </span>	t.Parallel()
+<span id="L517" class="ln">   517  </span>
+<span id="L518" class="ln">   518  </span>	ctrl := gomock.NewController(t)
+<span id="L519" class="ln">   519  </span>	assert.NotNil(
+<span id="L520" class="ln">   520  </span>		t,
+<span id="L521" class="ln">   521  </span>		provideLeaseKeeper(
+<span id="L522" class="ln">   522  </span>			mock_rt.NewMockInstanceLeaseStore(ctrl),
+<span id="L523" class="ln">   523  </span>			mock_clock.NewMockClock(ctrl),
+<span id="L524" class="ln">   524  </span>			observability.NewNoopTracerFactory(t),
+<span id="L525" class="ln">   525  </span>		),
+<span id="L526" class="ln">   526  </span>	)
+<span id="L527" class="ln">   527  </span>}
+<span id="L528" class="ln">   528  </span>
+<span id="L529" class="ln">   529  </span>func Test_provideRealtimeConsumer(t *testing.T) {
+<span id="L530" class="ln">   530  </span>	t.Parallel()
+<span id="L531" class="ln">   531  </span>
+<span id="L532" class="ln">   532  </span>	ctrl := gomock.NewController(t)
+<span id="L533" class="ln">   533  </span>	engine := provideRealtimeConsumer(
+<span id="L534" class="ln">   534  </span>		mock_rt.NewMockInstanceSubscription(ctrl),
+<span id="L535" class="ln">   535  </span>		mock_ctrlrealtime.NewMockReprovisioner(ctrl),
+<span id="L536" class="ln">   536  </span>		mock_ctrlrealtime.NewMockFanoutObserver(ctrl),
+<span id="L537" class="ln">   537  </span>		mock_ctrlrealtime.NewMockWaker(ctrl), mock_ctrlrealtime.NewMockRevoker(ctrl),
+<span id="L538" class="ln">   538  </span>		mock_clock.NewMockSleeper(ctrl),
+<span id="L539" class="ln">   539  </span>		logging.NewTestLogger(t), observability.NewNoopTracerFactory(t),
+<span id="L540" class="ln">   540  </span>		observability.NewNoopRealtimeMetrics(t),
+<span id="L541" class="ln">   541  </span>	)
+<span id="L542" class="ln">   542  </span>	assert.NotNil(t, engine)
+<span id="L543" class="ln">   543  </span>}
+<span id="L544" class="ln">   544  </span>
+<span id="L545" class="ln">   545  </span>func Test_provideRealtimeHeartbeat(t *testing.T) {
+<span id="L546" class="ln">   546  </span>	t.Parallel()
+<span id="L547" class="ln">   547  </span>
+<span id="L548" class="ln">   548  </span>	ctrl := gomock.NewController(t)
+<span id="L549" class="ln">   549  </span>	assert.NotNil(t, provideRealtimeHeartbeat(
+<span id="L550" class="ln">   550  </span>		mock_realtime.NewMockLeaseKeeper(
+<span id="L551" class="ln">   551  </span>			ctrl,
+<span id="L552" class="ln">   552  </span>		),
+<span id="L553" class="ln">   553  </span>		&#34;inst-1&#34;,
+<span id="L554" class="ln">   554  </span>		mock_clock.NewMockSleeper(ctrl),
+<span id="L555" class="ln">   555  </span>		logging.NewTestLogger(t),
+<span id="L556" class="ln">   556  </span>		observability.NewNoopTracerFactory(t),
+<span id="L557" class="ln">   557  </span>		observability.NewNoopRealtimeMetrics(t),
+<span id="L558" class="ln">   558  </span>	))
+<span id="L559" class="ln">   559  </span>}
+<span id="L560" class="ln">   560  </span>
+<span id="L561" class="ln">   561  </span>func Test_provideRealtimeStartupProbe(t *testing.T) {
+<span id="L562" class="ln">   562  </span>	t.Parallel()
+<span id="L563" class="ln">   563  </span>
+<span id="L564" class="ln">   564  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L565" class="ln">   565  </span>		t.Parallel()
+<span id="L566" class="ln">   566  </span>
+<span id="L567" class="ln">   567  </span>		t.Run(&#34;EventLog の読み取りが通れば到達可能&#34;, func(t *testing.T) {
+<span id="L568" class="ln">   568  </span>			t.Parallel()
+<span id="L569" class="ln">   569  </span>
+<span id="L570" class="ln">   570  </span>			log := mock_rt.NewMockEventLogStore(gomock.NewController(t))
+<span id="L571" class="ln">   571  </span>			log.EXPECT().Latest(gomock.Any(), gomock.Any()).Return(rt.DeliveryEvent{}, false, nil)
+<span id="L572" class="ln">   572  </span>
+<span id="L573" class="ln">   573  </span>			p := provideRealtimeStartupProbe(provideRealtimeHealth(log))
+<span id="L574" class="ln">   574  </span>			assert.Equal(t, realtimeParticipantName, p.Name)
+<span id="L575" class="ln">   575  </span>			require.NoError(t, p.Probe(t.Context()))
+<span id="L576" class="ln">   576  </span>		})
+<span id="L577" class="ln">   577  </span>	})
+<span id="L578" class="ln">   578  </span>
+<span id="L579" class="ln">   579  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L580" class="ln">   580  </span>		t.Parallel()
+<span id="L581" class="ln">   581  </span>
+<span id="L582" class="ln">   582  </span>		t.Run(&#34;store に届かなければその失敗を返す&#34;, func(t *testing.T) {
+<span id="L583" class="ln">   583  </span>			t.Parallel()
+<span id="L584" class="ln">   584  </span>
+<span id="L585" class="ln">   585  </span>			log := mock_rt.NewMockEventLogStore(gomock.NewController(t))
+<span id="L586" class="ln">   586  </span>			log.EXPECT().
+<span id="L587" class="ln">   587  </span>				Latest(gomock.Any(), gomock.Any()).
+<span id="L588" class="ln">   588  </span>				Return(rt.DeliveryEvent{}, false, apperror.ErrUnavailable)
+<span id="L589" class="ln">   589  </span>
+<span id="L590" class="ln">   590  </span>			probe := provideRealtimeStartupProbe(provideRealtimeHealth(log))
+<span id="L591" class="ln">   591  </span>
+<span id="L592" class="ln">   592  </span>			require.ErrorIs(t, probe.Probe(t.Context()), apperror.ErrUnavailable)
+<span id="L593" class="ln">   593  </span>		})
+<span id="L594" class="ln">   594  </span>	})
+<span id="L595" class="ln">   595  </span>}
+<span id="L596" class="ln">   596  </span>
+<span id="L597" class="ln">   597  </span>func Test_provideRealtimeProvisioner(t *testing.T) {
+<span id="L598" class="ln">   598  </span>	t.Parallel()
+<span id="L599" class="ln">   599  </span>
+<span id="L600" class="ln">   600  </span>	errBoom := xerrors.New(&#34;boom&#34;)
+<span id="L601" class="ln">   601  </span>
+<span id="L602" class="ln">   602  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L603" class="ln">   603  </span>		t.Parallel()
+<span id="L604" class="ln">   604  </span>
+<span id="L605" class="ln">   605  </span>		t.Run(&#34;起動は lease → 受信先、片付けは 受信先 → lease の順&#34;, func(t *testing.T) {
+<span id="L606" class="ln">   606  </span>			t.Parallel()
+<span id="L607" class="ln">   607  </span>
+<span id="L608" class="ln">   608  </span>			ctrl := gomock.NewController(t)
+<span id="L609" class="ln">   609  </span>			sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L610" class="ln">   610  </span>			keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L611" class="ln">   611  </span>			gomock.InOrder(
+<span id="L612" class="ln">   612  </span>				keeper.EXPECT().Beat(gomock.Any(), rt.InstanceID(&#34;inst-1&#34;)).Return(nil),
+<span id="L613" class="ln">   613  </span>				sub.EXPECT().Provision(gomock.Any(), rt.InstanceID(&#34;inst-1&#34;)).Return(nil),
+<span id="L614" class="ln">   614  </span>				sub.EXPECT().Teardown(gomock.Any()).Return(nil),
+<span id="L615" class="ln">   615  </span>				keeper.EXPECT().Release(gomock.Any(), rt.InstanceID(&#34;inst-1&#34;)).Return(nil),
+<span id="L616" class="ln">   616  </span>			)
+<span id="L617" class="ln">   617  </span>
+<span id="L618" class="ln">   618  </span>			p := provideRealtimeProvisioner(sub, keeper, &#34;inst-1&#34;)
+<span id="L619" class="ln">   619  </span>			assert.Equal(t, realtimeParticipantName, p.Name)
+<span id="L620" class="ln">   620  </span>			require.NoError(t, p.Provision(t.Context()))
+<span id="L621" class="ln">   621  </span>			require.NoError(t, p.Teardown(t.Context()))
+<span id="L622" class="ln">   622  </span>		})
+<span id="L623" class="ln">   623  </span>	})
+<span id="L624" class="ln">   624  </span>
+<span id="L625" class="ln">   625  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L626" class="ln">   626  </span>		t.Parallel()
+<span id="L627" class="ln">   627  </span>
+<span id="L628" class="ln">   628  </span>		t.Run(&#34;lease が書けなければ受信先を作らない&#34;, func(t *testing.T) {
+<span id="L629" class="ln">   629  </span>			t.Parallel()
+<span id="L630" class="ln">   630  </span>
+<span id="L631" class="ln">   631  </span>			ctrl := gomock.NewController(t)
+<span id="L632" class="ln">   632  </span>			sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L633" class="ln">   633  </span>			keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L634" class="ln">   634  </span>			keeper.EXPECT().Beat(gomock.Any(), gomock.Any()).Return(errBoom)
+<span id="L635" class="ln">   635  </span>
+<span id="L636" class="ln">   636  </span>			require.ErrorIs(t, provideRealtimeProvisioner(sub, keeper, &#34;inst-1&#34;).Provision(t.Context()), errBoom)
+<span id="L637" class="ln">   637  </span>		})
+<span id="L638" class="ln">   638  </span>
+<span id="L639" class="ln">   639  </span>		t.Run(&#34;受信先を作れなければ、片付けてから lease を取り消して失敗する&#34;, func(t *testing.T) {
+<span id="L640" class="ln">   640  </span>			t.Parallel()
+<span id="L641" class="ln">   641  </span>
+<span id="L642" class="ln">   642  </span>			ctrl := gomock.NewController(t)
+<span id="L643" class="ln">   643  </span>			sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L644" class="ln">   644  </span>			keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L645" class="ln">   645  </span>			gomock.InOrder(
+<span id="L646" class="ln">   646  </span>				keeper.EXPECT().Beat(gomock.Any(), gomock.Any()).Return(nil),
+<span id="L647" class="ln">   647  </span>				sub.EXPECT().Provision(gomock.Any(), gomock.Any()).Return(errBoom),
+<span id="L648" class="ln">   648  </span>				sub.EXPECT().Teardown(gomock.Any()).Return(nil),
+<span id="L649" class="ln">   649  </span>				keeper.EXPECT().Release(gomock.Any(), gomock.Any()).Return(nil),
+<span id="L650" class="ln">   650  </span>			)
+<span id="L651" class="ln">   651  </span>
+<span id="L652" class="ln">   652  </span>			require.ErrorIs(t, provideRealtimeProvisioner(sub, keeper, &#34;inst-1&#34;).Provision(t.Context()), errBoom)
+<span id="L653" class="ln">   653  </span>		})
+<span id="L654" class="ln">   654  </span>
+<span id="L655" class="ln">   655  </span>		t.Run(&#34;受信先を作れず片付けにも失敗したら lease は残す&#34;, func(t *testing.T) {
+<span id="L656" class="ln">   656  </span>			t.Parallel()
+<span id="L657" class="ln">   657  </span>
+<span id="L658" class="ln">   658  </span>			ctrl := gomock.NewController(t)
+<span id="L659" class="ln">   659  </span>			sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L660" class="ln">   660  </span>			keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L661" class="ln">   661  </span>			gomock.InOrder(
+<span id="L662" class="ln">   662  </span>				keeper.EXPECT().Beat(gomock.Any(), gomock.Any()).Return(nil),
+<span id="L663" class="ln">   663  </span>				sub.EXPECT().Provision(gomock.Any(), gomock.Any()).Return(errBoom),
+<span id="L664" class="ln">   664  </span>				sub.EXPECT().Teardown(gomock.Any()).Return(apperror.ErrUnavailable),
+<span id="L665" class="ln">   665  </span>			)
+<span id="L666" class="ln">   666  </span>
+<span id="L667" class="ln">   667  </span>			err := provideRealtimeProvisioner(sub, keeper, &#34;inst-1&#34;).Provision(t.Context())
+<span id="L668" class="ln">   668  </span>			require.ErrorIs(t, err, errBoom)
+<span id="L669" class="ln">   669  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L670" class="ln">   670  </span>		})
+<span id="L671" class="ln">   671  </span>
+<span id="L672" class="ln">   672  </span>		t.Run(&#34;片付けに失敗したら lease は残す（orphan cleanup が辿れるようにする）&#34;, func(t *testing.T) {
+<span id="L673" class="ln">   673  </span>			t.Parallel()
+<span id="L674" class="ln">   674  </span>
+<span id="L675" class="ln">   675  </span>			ctrl := gomock.NewController(t)
+<span id="L676" class="ln">   676  </span>			sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L677" class="ln">   677  </span>			keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L678" class="ln">   678  </span>			sub.EXPECT().Teardown(gomock.Any()).Return(errBoom)
+<span id="L679" class="ln">   679  </span>
+<span id="L680" class="ln">   680  </span>			require.ErrorIs(t, provideRealtimeProvisioner(sub, keeper, &#34;inst-1&#34;).Teardown(t.Context()), errBoom)
+<span id="L681" class="ln">   681  </span>		})
+<span id="L682" class="ln">   682  </span>
+<span id="L683" class="ln">   683  </span>		t.Run(&#34;片付けの後に lease の取り消しが失敗すればその失敗を返す&#34;, func(t *testing.T) {
+<span id="L684" class="ln">   684  </span>			t.Parallel()
+<span id="L685" class="ln">   685  </span>
+<span id="L686" class="ln">   686  </span>			ctrl := gomock.NewController(t)
+<span id="L687" class="ln">   687  </span>			sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L688" class="ln">   688  </span>			keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L689" class="ln">   689  </span>			sub.EXPECT().Teardown(gomock.Any()).Return(nil)
+<span id="L690" class="ln">   690  </span>			keeper.EXPECT().Release(gomock.Any(), gomock.Any()).Return(apperror.ErrUnavailable)
+<span id="L691" class="ln">   691  </span>
+<span id="L692" class="ln">   692  </span>			require.ErrorIs(t, provideRealtimeProvisioner(sub, keeper, &#34;inst-1&#34;).Teardown(t.Context()), apperror.ErrUnavailable)
+<span id="L693" class="ln">   693  </span>		})
+<span id="L694" class="ln">   694  </span>	})
+<span id="L695" class="ln">   695  </span>}
+<span id="L696" class="ln">   696  </span>
+<span id="L697" class="ln">   697  </span>func Test_provideRealtimeConsumerRunner(t *testing.T) {
+<span id="L698" class="ln">   698  </span>	t.Parallel()
+<span id="L699" class="ln">   699  </span>
+<span id="L700" class="ln">   700  </span>	ctrl := gomock.NewController(t)
+<span id="L701" class="ln">   701  </span>	sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L702" class="ln">   702  </span>	ran := make(chan struct{})
+<span id="L703" class="ln">   703  </span>	var once sync.Once
+<span id="L704" class="ln">   704  </span>	sub.EXPECT().
+<span id="L705" class="ln">   705  </span>		Receive(gomock.Any(), gomock.Any()).
+<span id="L706" class="ln">   706  </span>		DoAndReturn(func(ctx context.Context, _ int) ([]rt.Notification, error) {
+<span id="L707" class="ln">   707  </span>			once.Do(func() { close(ran) })
+<span id="L708" class="ln">   708  </span>			&lt;-ctx.Done()
+<span id="L709" class="ln">   709  </span>
+<span id="L710" class="ln">   710  </span>			return nil, ctx.Err()
+<span id="L711" class="ln">   711  </span>		}).
+<span id="L712" class="ln">   712  </span>		MinTimes(1)
+<span id="L713" class="ln">   713  </span>	fanout := mock_ctrlrealtime.NewMockFanoutObserver(ctrl)
+<span id="L714" class="ln">   714  </span>	<span class="comment">// runner は engine を実際に回すので、受信のたびに観測が届きます（値の検証は engine 側のテスト）。</span>
+<span id="L715" class="ln">   715  </span>	fanout.EXPECT().ObserveFanout(gomock.Any()).AnyTimes()
+<span id="L716" class="ln">   716  </span>
+<span id="L717" class="ln">   717  </span>	engine := provideRealtimeConsumer(
+<span id="L718" class="ln">   718  </span>		sub,
+<span id="L719" class="ln">   719  </span>		mock_ctrlrealtime.NewMockReprovisioner(ctrl),
+<span id="L720" class="ln">   720  </span>		fanout,
+<span id="L721" class="ln">   721  </span>		mock_ctrlrealtime.NewMockWaker(ctrl),
+<span id="L722" class="ln">   722  </span>		mock_ctrlrealtime.NewMockRevoker(ctrl),
+<span id="L723" class="ln">   723  </span>		mock_clock.NewMockSleeper(ctrl),
+<span id="L724" class="ln">   724  </span>		logging.NewTestLogger(t),
+<span id="L725" class="ln">   725  </span>		observability.NewNoopTracerFactory(t),
+<span id="L726" class="ln">   726  </span>		observability.NewNoopRealtimeMetrics(t),
+<span id="L727" class="ln">   727  </span>	)
+<span id="L728" class="ln">   728  </span>
+<span id="L729" class="ln">   729  </span>	r := provideRealtimeConsumerRunner(engine)
+<span id="L730" class="ln">   730  </span>	assert.Equal(t, &#34;realtime-consumer&#34;, r.Name)
+<span id="L731" class="ln">   731  </span>
+<span id="L732" class="ln">   732  </span>	start, stop := r.Runner.Bind()
+<span id="L733" class="ln">   733  </span>	require.NoError(t, start(t.Context()))
+<span id="L734" class="ln">   734  </span>	&lt;-ran <span class="comment">// Body が engine を回している</span>
+<span id="L735" class="ln">   735  </span>	require.NoError(t, stop(t.Context()))
+<span id="L736" class="ln">   736  </span>}
+<span id="L737" class="ln">   737  </span>
+<span id="L738" class="ln">   738  </span>func Test_provideRealtimeHeartbeatRunner(t *testing.T) {
+<span id="L739" class="ln">   739  </span>	t.Parallel()
+<span id="L740" class="ln">   740  </span>
+<span id="L741" class="ln">   741  </span>	ctrl := gomock.NewController(t)
+<span id="L742" class="ln">   742  </span>	keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L743" class="ln">   743  </span>	ran := make(chan struct{})
+<span id="L744" class="ln">   744  </span>	var once sync.Once
+<span id="L745" class="ln">   745  </span>	keeper.EXPECT().Beat(gomock.Any(), gomock.Any()).DoAndReturn(func(context.Context, rt.InstanceID) error {
+<span id="L746" class="ln">   746  </span>		once.Do(func() { close(ran) })
+<span id="L747" class="ln">   747  </span>
+<span id="L748" class="ln">   748  </span>		return nil
+<span id="L749" class="ln">   749  </span>	}).MinTimes(1)
+<span id="L750" class="ln">   750  </span>	sleeper := mock_clock.NewMockSleeper(ctrl)
+<span id="L751" class="ln">   751  </span>	sleeper.EXPECT().Sleep(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, _ time.Duration) error {
+<span id="L752" class="ln">   752  </span>		&lt;-ctx.Done()
+<span id="L753" class="ln">   753  </span>
+<span id="L754" class="ln">   754  </span>		return ctx.Err()
+<span id="L755" class="ln">   755  </span>	}).AnyTimes()
+<span id="L756" class="ln">   756  </span>	heartbeat := provideRealtimeHeartbeat(
+<span id="L757" class="ln">   757  </span>		keeper,
+<span id="L758" class="ln">   758  </span>		&#34;inst-1&#34;,
+<span id="L759" class="ln">   759  </span>		sleeper,
+<span id="L760" class="ln">   760  </span>		logging.NewTestLogger(t),
+<span id="L761" class="ln">   761  </span>		observability.NewNoopTracerFactory(t),
+<span id="L762" class="ln">   762  </span>		observability.NewNoopRealtimeMetrics(t),
+<span id="L763" class="ln">   763  </span>	)
+<span id="L764" class="ln">   764  </span>
+<span id="L765" class="ln">   765  </span>	r := provideRealtimeHeartbeatRunner(heartbeat)
+<span id="L766" class="ln">   766  </span>	assert.Equal(t, &#34;realtime-heartbeat&#34;, r.Name)
+<span id="L767" class="ln">   767  </span>
+<span id="L768" class="ln">   768  </span>	start, stop := r.Runner.Bind()
+<span id="L769" class="ln">   769  </span>	require.NoError(t, start(t.Context()))
+<span id="L770" class="ln">   770  </span>	&lt;-ran <span class="comment">// Body が heartbeat を回している</span>
+<span id="L771" class="ln">   771  </span>	require.NoError(t, stop(t.Context()))
+<span id="L772" class="ln">   772  </span>}
+<span id="L773" class="ln">   773  </span>
+<span id="L774" class="ln">   774  </span><span class="comment">// newTestRegistry は、provider が返す registry を組み立てます（依存はすべて test 用）。</span>
+<span id="L775" class="ln">   775  </span>func newTestRegistry(t *testing.T) *stream.Registry {
+<span id="L776" class="ln">   776  </span>	t.Helper()
+<span id="L777" class="ln">   777  </span>
+<span id="L778" class="ln">   778  </span>	ctrl := gomock.NewController(t)
+<span id="L779" class="ln">   779  </span>
+<span id="L780" class="ln">   780  </span>	return provideConnectionRegistry(
+<span id="L781" class="ln">   781  </span>		config.NewRealtimeConfig(config.MockConfigForTest(t)),
+<span id="L782" class="ln">   782  </span>		mock_realtime.NewMockReplayer(ctrl),
+<span id="L783" class="ln">   783  </span>		mock_clock.NewMockSleeper(ctrl),
+<span id="L784" class="ln">   784  </span>		logging.NewTestLogger(t),
+<span id="L785" class="ln">   785  </span>		observability.NewNoopTracerFactory(t),
+<span id="L786" class="ln">   786  </span>		observability.NewNoopRealtimeMetrics(t),
+<span id="L787" class="ln">   787  </span>		provideRealtimeHealth(mock_rt.NewMockEventLogStore(ctrl)),
+<span id="L788" class="ln">   788  </span>	)
+<span id="L789" class="ln">   789  </span>}
+<span id="L790" class="ln">   790  </span>
+<span id="L791" class="ln">   791  </span>func Test_newStreamSettings(t *testing.T) {
+<span id="L792" class="ln">   792  </span>	t.Parallel()
+<span id="L793" class="ln">   793  </span>
+<span id="L794" class="ln">   794  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L795" class="ln">   795  </span>		t.Parallel()
+<span id="L796" class="ln">   796  </span>
+<span id="L797" class="ln">   797  </span>		t.Run(&#34;接続数上限と replay 同時実行数がそれぞれの設定へ写る&#34;, func(t *testing.T) {
+<span id="L798" class="ln">   798  </span>			t.Parallel()
+<span id="L799" class="ln">   799  </span>
+<span id="L800" class="ln">   800  </span>			cfg := config.NewRealtimeConfig(config.MockConfigForTest(t))
+<span id="L801" class="ln">   801  </span>			<span class="comment">// 2 つの値が違うことが、取り違えを検出できる前提そのもの。</span>
+<span id="L802" class="ln">   802  </span>			require.NotEqual(t, cfg.MaxConnections(), cfg.ReplayConcurrency())
+<span id="L803" class="ln">   803  </span>
+<span id="L804" class="ln">   804  </span>			set := newStreamSettings(cfg)
+<span id="L805" class="ln">   805  </span>
+<span id="L806" class="ln">   806  </span>			assert.Equal(t, cfg.MaxConnections(), set.MaxConnections)
+<span id="L807" class="ln">   807  </span>			assert.Equal(t, cfg.ReplayConcurrency(), set.ReplayConcurrency)
+<span id="L808" class="ln">   808  </span>		})
+<span id="L809" class="ln">   809  </span>	})
+<span id="L810" class="ln">   810  </span>}
+<span id="L811" class="ln">   811  </span>
+<span id="L812" class="ln">   812  </span>func Test_provideReplayer(t *testing.T) {
+<span id="L813" class="ln">   813  </span>	t.Parallel()
+<span id="L814" class="ln">   814  </span>
+<span id="L815" class="ln">   815  </span>	assert.NotNil(t, provideReplayer(
+<span id="L816" class="ln">   816  </span>		mock_rt.NewMockEventLogStore(gomock.NewController(t)),
+<span id="L817" class="ln">   817  </span>		observability.NewNoopTracerFactory(t),
+<span id="L818" class="ln">   818  </span>	))
+<span id="L819" class="ln">   819  </span>}
+<span id="L820" class="ln">   820  </span>
+<span id="L821" class="ln">   821  </span>func Test_provideConnectionRegistry(t *testing.T) {
+<span id="L822" class="ln">   822  </span>	t.Parallel()
+<span id="L823" class="ln">   823  </span>
+<span id="L824" class="ln">   824  </span>	assert.NotNil(t, newTestRegistry(t))
+<span id="L825" class="ln">   825  </span>}
+<span id="L826" class="ln">   826  </span>
+<span id="L827" class="ln">   827  </span>func Test_provideStreamer(t *testing.T) {
+<span id="L828" class="ln">   828  </span>	t.Parallel()
+<span id="L829" class="ln">   829  </span>
+<span id="L830" class="ln">   830  </span>	registry := newTestRegistry(t)
+<span id="L831" class="ln">   831  </span>
+<span id="L832" class="ln">   832  </span>	assert.Same(t, registry, provideStreamer(registry), &#34;registry がそのまま Streamer として出ること&#34;)
+<span id="L833" class="ln">   833  </span>}
+<span id="L834" class="ln">   834  </span>
+<span id="L835" class="ln">   835  </span>func Test_provideWaker(t *testing.T) {
+<span id="L836" class="ln">   836  </span>	t.Parallel()
+<span id="L837" class="ln">   837  </span>
+<span id="L838" class="ln">   838  </span>	registry := newTestRegistry(t)
+<span id="L839" class="ln">   839  </span>
+<span id="L840" class="ln">   840  </span>	assert.Same(t, registry, provideWaker(registry), &#34;Streamer と同じ registry が wakeup の受け口になること&#34;)
+<span id="L841" class="ln">   841  </span>}
+<span id="L842" class="ln">   842  </span>
+<span id="L843" class="ln">   843  </span>func Test_provideRevoker(t *testing.T) {
+<span id="L844" class="ln">   844  </span>	t.Parallel()
+<span id="L845" class="ln">   845  </span>
+<span id="L846" class="ln">   846  </span>	registry := newTestRegistry(t)
+<span id="L847" class="ln">   847  </span>
+<span id="L848" class="ln">   848  </span>	assert.Same(t, registry, provideRevoker(registry), &#34;Streamer と同じ registry が失効の受け口になること&#34;)
+<span id="L849" class="ln">   849  </span>}
+<span id="L850" class="ln">   850  </span>
+<span id="L851" class="ln">   851  </span>func Test_provideRealtimeStreamDrainer(t *testing.T) {
+<span id="L852" class="ln">   852  </span>	t.Parallel()
+<span id="L853" class="ln">   853  </span>
+<span id="L854" class="ln">   854  </span>	d := provideRealtimeStreamDrainer(newTestRegistry(t))
+<span id="L855" class="ln">   855  </span>
+<span id="L856" class="ln">   856  </span>	assert.Equal(t, &#34;realtime-stream&#34;, d.Name)
+<span id="L857" class="ln">   857  </span>	require.NotNil(t, d.Drain)
+<span id="L858" class="ln">   858  </span>	require.NoError(t, d.Drain(t.Context()), &#34;接続が 1 本も無ければ drain は即座に終わる&#34;)
+<span id="L859" class="ln">   859  </span>}
+<span id="L860" class="ln">   860  </span>
+<span id="L861" class="ln">   861  </span>func Test_provideRealtimeReprovisioner(t *testing.T) {
+<span id="L862" class="ln">   862  </span>	t.Parallel()
+<span id="L863" class="ln">   863  </span>
+<span id="L864" class="ln">   864  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L865" class="ln">   865  </span>		t.Parallel()
+<span id="L866" class="ln">   866  </span>
+<span id="L867" class="ln">   867  </span>		t.Run(&#34;lease を書き直してから受信先を作り直す&#34;, func(t *testing.T) {
+<span id="L868" class="ln">   868  </span>			t.Parallel()
+<span id="L869" class="ln">   869  </span>
+<span id="L870" class="ln">   870  </span>			ctrl := gomock.NewController(t)
+<span id="L871" class="ln">   871  </span>			sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L872" class="ln">   872  </span>			keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L873" class="ln">   873  </span>
+<span id="L874" class="ln">   874  </span>			<span class="comment">// この順序が逆になると、lease に指されない queue ができて orphan cleanup から辿れなくなる。</span>
+<span id="L875" class="ln">   875  </span>			gomock.InOrder(
+<span id="L876" class="ln">   876  </span>				keeper.EXPECT().Beat(gomock.Any(), rt.InstanceID(&#34;inst-1&#34;)).Return(nil),
+<span id="L877" class="ln">   877  </span>				sub.EXPECT().Provision(gomock.Any(), rt.InstanceID(&#34;inst-1&#34;)).Return(nil),
+<span id="L878" class="ln">   878  </span>			)
+<span id="L879" class="ln">   879  </span>
+<span id="L880" class="ln">   880  </span>			require.NoError(t, provideRealtimeReprovisioner(sub, keeper, &#34;inst-1&#34;).Reprovision(t.Context()))
+<span id="L881" class="ln">   881  </span>		})
+<span id="L882" class="ln">   882  </span>	})
+<span id="L883" class="ln">   883  </span>
+<span id="L884" class="ln">   884  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L885" class="ln">   885  </span>		t.Parallel()
+<span id="L886" class="ln">   886  </span>
+<span id="L887" class="ln">   887  </span>		t.Run(&#34;lease を書き直せなければ受信先を作らない&#34;, func(t *testing.T) {
+<span id="L888" class="ln">   888  </span>			t.Parallel()
+<span id="L889" class="ln">   889  </span>
+<span id="L890" class="ln">   890  </span>			ctrl := gomock.NewController(t)
+<span id="L891" class="ln">   891  </span>			sub := mock_rt.NewMockInstanceSubscription(ctrl)
+<span id="L892" class="ln">   892  </span>			keeper := mock_realtime.NewMockLeaseKeeper(ctrl)
+<span id="L893" class="ln">   893  </span>			keeper.EXPECT().Beat(gomock.Any(), gomock.Any()).Return(apperror.ErrUnavailable)
+<span id="L894" class="ln">   894  </span>
+<span id="L895" class="ln">   895  </span>			err := provideRealtimeReprovisioner(sub, keeper, &#34;inst-1&#34;).Reprovision(t.Context())
+<span id="L896" class="ln">   896  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L897" class="ln">   897  </span>		})
+<span id="L898" class="ln">   898  </span>	})
+<span id="L899" class="ln">   899  </span>}
+<span id="L900" class="ln">   900  </span>
+<span id="L901" class="ln">   901  </span>func TestServeRealtimeModule(t *testing.T) {
+<span id="L902" class="ln">   902  </span>	t.Parallel()
+<span id="L903" class="ln">   903  </span>
+<span id="L904" class="ln">   904  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L905" class="ln">   905  </span>		t.Parallel()
+<span id="L906" class="ln">   906  </span>
+<span id="L907" class="ln">   907  </span>		t.Run(&#34;serve から呼ぶ入口が realtime module の graph を返す&#34;, func(t *testing.T) {
+<span id="L908" class="ln">   908  </span>			t.Parallel()
+<span id="L909" class="ln">   909  </span>
+<span id="L910" class="ln">   910  </span>			validateGraph(t, append(commonDeps(),
+<span id="L911" class="ln">   911  </span>				clockModule(), ServeRealtimeModule(), fx.Provide(echo.New),
+<span id="L912" class="ln">   912  </span>			)...)
+<span id="L913" class="ln">   913  </span>		})
+<span id="L914" class="ln">   914  </span>	})
+<span id="L915" class="ln">   915  </span>}
+<span id="L916" class="ln">   916  </span>
+<span id="L917" class="ln">   917  </span>func Test_provideRealtimeHealth(t *testing.T) {
+<span id="L918" class="ln">   918  </span>	t.Parallel()
+<span id="L919" class="ln">   919  </span>
+<span id="L920" class="ln">   920  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L921" class="ln">   921  </span>		t.Parallel()
+<span id="L922" class="ln">   922  </span>
+<span id="L923" class="ln">   923  </span>		t.Run(&#34;fan-out は健全な状態から始まる&#34;, func(t *testing.T) {
+<span id="L924" class="ln">   924  </span>			t.Parallel()
+<span id="L925" class="ln">   925  </span>
+<span id="L926" class="ln">   926  </span>			health := provideRealtimeHealth(mock_rt.NewMockEventLogStore(gomock.NewController(t)))
+<span id="L927" class="ln">   927  </span>
+<span id="L928" class="ln">   928  </span>			require.NotNil(t, health)
+<span id="L929" class="ln">   929  </span>			<span class="comment">// 起動直後に縮退を名乗ると、consumer が最初の受信を終えるまで新規接続を全部断ってしまう。</span>
+<span id="L930" class="ln">   930  </span>			assert.False(t, health.FanoutDegraded())
+<span id="L931" class="ln">   931  </span>		})
+<span id="L932" class="ln">   932  </span>	})
+<span id="L933" class="ln">   933  </span>}
+<span id="L934" class="ln">   934  </span>
+<span id="L935" class="ln">   935  </span>func Test_provideFanoutObserver(t *testing.T) {
+<span id="L936" class="ln">   936  </span>	t.Parallel()
+<span id="L937" class="ln">   937  </span>
+<span id="L938" class="ln">   938  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L939" class="ln">   939  </span>		t.Parallel()
+<span id="L940" class="ln">   940  </span>
+<span id="L941" class="ln">   941  </span>		t.Run(&#34;consumer の観測が同じ Health へ届く&#34;, func(t *testing.T) {
+<span id="L942" class="ln">   942  </span>			t.Parallel()
+<span id="L943" class="ln">   943  </span>
+<span id="L944" class="ln">   944  </span>			health := provideRealtimeHealth(mock_rt.NewMockEventLogStore(gomock.NewController(t)))
+<span id="L945" class="ln">   945  </span>
+<span id="L946" class="ln">   946  </span>			provideFanoutObserver(health).ObserveFanout(xerrors.New(&#34;receive failed&#34;))
+<span id="L947" class="ln">   947  </span>
+<span id="L948" class="ln">   948  </span>			<span class="comment">// 別の実体を返すと、engine が観測しても /ready と SSE の判定が変わらない。</span>
+<span id="L949" class="ln">   949  </span>			assert.True(t, health.FanoutDegraded())
+<span id="L950" class="ln">   950  </span>		})
+<span id="L951" class="ln">   951  </span>	})
+<span id="L952" class="ln">   952  </span>}
+<span id="L953" class="ln">   953  </span>
+<span id="L954" class="ln">   954  </span>func Test_provideRealtimeReadinessProbe(t *testing.T) {
+<span id="L955" class="ln">   955  </span>	t.Parallel()
+<span id="L956" class="ln">   956  </span>
+<span id="L957" class="ln">   957  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L958" class="ln">   958  </span>		t.Parallel()
+<span id="L959" class="ln">   959  </span>
+<span id="L960" class="ln">   960  </span>		t.Run(&#34;subsystem 名で Health の判定を /ready へ出す&#34;, func(t *testing.T) {
+<span id="L961" class="ln">   961  </span>			t.Parallel()
+<span id="L962" class="ln">   962  </span>
+<span id="L963" class="ln">   963  </span>			log := mock_rt.NewMockEventLogStore(gomock.NewController(t))
+<span id="L964" class="ln">   964  </span>			log.EXPECT().Latest(gomock.Any(), gomock.Any()).Return(rt.DeliveryEvent{}, false, apperror.ErrUnavailable)
+<span id="L965" class="ln">   965  </span>
+<span id="L966" class="ln">   966  </span>			probe := provideRealtimeReadinessProbe(provideRealtimeHealth(log))
+<span id="L967" class="ln">   967  </span>
+<span id="L968" class="ln">   968  </span>			assert.Equal(t, ucrealtime.SubsystemName, probe.Name)
+<span id="L969" class="ln">   969  </span>			<span class="comment">// 別の判定を渡すと、起動時 probe と /ready で「到達できる」の意味がずれる。</span>
+<span id="L970" class="ln">   970  </span>			require.ErrorIs(t, probe.Check(t.Context()), apperror.ErrUnavailable)
+<span id="L971" class="ln">   971  </span>		})
+<span id="L972" class="ln">   972  </span>	})
+<span id="L973" class="ln">   973  </span>}
+<span id="L974" class="ln">   974  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/di/module/realtime_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

@@ -104,7 +104,7 @@
 			
 			
 				
-				<dd><a href="#Middleware">func Middleware(z logging.Logger, lf logging.LogFieldBuilder, appCfg *config.ApplicationConfig) echo.MiddlewareFunc</a></dd>
+				<dd><a href="#Middleware">func Middleware(z logging.Logger, lf logging.LogFieldBuilder, appCfg *config.ApplicationConfig, red redaction.Redactor) echo.MiddlewareFunc</a></dd>
 			
 			
 			
@@ -133,12 +133,14 @@
 		
 			
 			
-			<h2 id="Middleware">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/recovery/recover.go.html?s=1055:1170#L19">Middleware</a>
+			<h2 id="Middleware">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/recovery/recover.go.html?s=1113:1256#L20">Middleware</a>
 				<a class="permalink" href="#Middleware">¶</a>
 				
 				
 			</h2>
-			<pre>func Middleware(z <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>, lf <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#LogFieldBuilder">LogFieldBuilder</a>, appCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#ApplicationConfig">ApplicationConfig</a>) echo.<a href="#MiddlewareFunc">MiddlewareFunc</a></pre>
+			<pre>func Middleware(
+    z <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>, lf <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#LogFieldBuilder">LogFieldBuilder</a>, appCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#ApplicationConfig">ApplicationConfig</a>, red <a href="../../../../../go-boilerplate/internal/controller/httpstack/redaction/">redaction</a>.<a href="../../../../../go-boilerplate/internal/controller/httpstack/redaction/#Redactor">Redactor</a>,
+) echo.<a href="#MiddlewareFunc">MiddlewareFunc</a></pre>
 			<p>Middleware は、Echoフレームワークのミドルウェアで、パニックからのリカバリを行います。
 </p><p><a href="/github.com/labstack/echo/v5/middleware#RecoverWithConfig">middleware.RecoverWithConfig</a> は復帰した panic を <a href="/github.com/labstack/echo/v5/middleware#PanicStackError">middleware.PanicStackError</a> へ包んで
 戻り値のエラーとして返すため、その外側でスタック付きのログを出し、

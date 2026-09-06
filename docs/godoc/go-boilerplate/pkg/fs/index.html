@@ -120,6 +120,9 @@ os への直接依存を一点に集約し、利用側はインターフェー�
 					<dd>    <a href="#OS.Glob">func (OS) Glob(pattern string) ([]string, error)</a></dd>
 				
 					
+					<dd>    <a href="#OS.MkdirAll">func (OS) MkdirAll(path string, perm os.FileMode) error</a></dd>
+				
+					
 					<dd>    <a href="#OS.ReadFile">func (OS) ReadFile(name string) ([]byte, error)</a></dd>
 				
 					
@@ -153,7 +156,7 @@ os への直接依存を一点に集約し、利用側はインターフェー�
 		
 			
 			
-			<h2 id="FS">type <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=463:624#L3">FS</a>
+			<h2 id="FS">type <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=463:671#L3">FS</a>
 				<a class="permalink" href="#FS">¶</a>
 				
 				
@@ -164,6 +167,7 @@ os への直接依存を一点に集約し、利用側はインターフェー�
     ReadFile(name <a href="../../../builtin/#string">string</a>) ([]<a href="../../../builtin/#byte">byte</a>, <a href="../../../builtin/#error">error</a>)
     WriteFile(name <a href="../../../builtin/#string">string</a>, data []<a href="../../../builtin/#byte">byte</a>, perm <a href="../../../os/">os</a>.<a href="../../../os/#FileMode">FileMode</a>) <a href="../../../builtin/#error">error</a>
     Glob(pattern <a href="../../../builtin/#string">string</a>) ([]<a href="../../../builtin/#string">string</a>, <a href="../../../builtin/#error">error</a>)
+    MkdirAll(path <a href="../../../builtin/#string">string</a>, perm <a href="../../../os/">os</a>.<a href="../../../os/#FileMode">FileMode</a>) <a href="../../../builtin/#error">error</a>
 }</pre>
 
 			
@@ -180,7 +184,7 @@ os への直接依存を一点に集約し、利用側はインターフェー�
 		
 			
 			
-			<h2 id="OS">type <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=692:708#L10">OS</a>
+			<h2 id="OS">type <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=739:755#L11">OS</a>
 				<a class="permalink" href="#OS">¶</a>
 				
 				
@@ -202,7 +206,7 @@ os への直接依存を一点に集約し、利用側はインターフェー�
 
 			
 				
-				<h3 id="OS.Glob">func (OS) <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=1405:1453#L24">Glob</a>
+				<h3 id="OS.Glob">func (OS) <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=1452:1500#L25">Glob</a>
 					<a class="permalink" href="#OS.Glob">¶</a>
 					
 					
@@ -215,7 +219,20 @@ os への直接依存を一点に集約し、利用側はインターフェー�
 				
 			
 				
-				</p><h3 id="OS.ReadFile">func (OS) <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=794:841#L13">ReadFile</a>
+				</p><h3 id="OS.MkdirAll">func (OS) <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=1660:1715#L30">MkdirAll</a>
+					<a class="permalink" href="#OS.MkdirAll">¶</a>
+					
+					
+				</h3>
+				<pre>func (<a href="#OS">OS</a>) MkdirAll(path <a href="../../../builtin/#string">string</a>, perm <a href="../../../os/">os</a>.<a href="../../../os/#FileMode">FileMode</a>) <a href="../../../builtin/#error">error</a></pre>
+				<p>MkdirAll は、path のディレクトリを親ごと作成します。既に存在する場合は何もしません。
+
+				
+				
+				
+			
+				
+				</p><h3 id="OS.ReadFile">func (OS) <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=841:888#L14">ReadFile</a>
 					<a class="permalink" href="#OS.ReadFile">¶</a>
 					
 					
@@ -228,7 +245,7 @@ os への直接依存を一点に集約し、利用側はインターフェー�
 				
 			
 				
-				</p><h3 id="OS.WriteFile">func (OS) <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=1208:1277#L19">WriteFile</a>
+				</p><h3 id="OS.WriteFile">func (OS) <a href="../../../src/go-boilerplate/pkg/fs/fs.go.html?s=1255:1324#L20">WriteFile</a>
 					<a class="permalink" href="#OS.WriteFile">¶</a>
 					
 					

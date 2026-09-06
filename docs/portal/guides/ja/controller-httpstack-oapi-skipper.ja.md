@@ -1,7 +1,5 @@
 # oapi/skipper
 
-[English](README.md) | 日本語
-
 運用系エンドポイントの OpenAPI バリデーションをバイパスする Skipper 関数です。
 
 ## スキップ対象パス

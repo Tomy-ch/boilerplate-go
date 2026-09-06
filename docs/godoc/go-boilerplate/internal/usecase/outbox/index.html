@@ -106,6 +106,8 @@
 				<dd><a href="#pkg-constants">Constants</a></dd>
 			
 			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
 			
 			
 				
@@ -135,6 +137,11 @@
 				
 			
 				
+				<dd><a href="#RelayDeps">type RelayDeps</a></dd>
+				
+				
+			
+				
 				<dd><a href="#RelayResult">type RelayResult</a></dd>
 				
 				
@@ -143,7 +150,7 @@
 				<dd><a href="#RelayUsecase">type RelayUsecase</a></dd>
 				
 					
-					<dd>    <a href="#NewRelay">func NewRelay(txm tx.Manager, store outboxbndry.Store, pub publisher.Publisher, metrics Metrics, clk clock.Clock, log logging.Logger, tf observability.TracerFactory) RelayUsecase</a></dd>
+					<dd>    <a href="#NewRelay">func NewRelay(deps RelayDeps, channel outboxbndry.Channel) RelayUsecase</a></dd>
 				
 				
 			
@@ -197,17 +204,22 @@
 				<pre>const (
     <span class="comment">// DefaultBatchSize は、1 回の relay で claim する pending エントリ数の既定値です。</span>
     <span id="DefaultBatchSize">DefaultBatchSize</span> <a href="../../../../builtin/#int32">int32</a> = 100
-    <span class="comment">// DefaultMaxAttempts は、dead 化までの publish 試行回数の既定値です。</span>
-    <span id="DefaultMaxAttempts">DefaultMaxAttempts</span> <a href="../../../../builtin/#int32">int32</a> = 10
 )</pre>
 			
 		
 		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrInvalidOrdering は、順序キーと位置の指定が対になっていないことを示すエラーです。
+
+				</p><pre>var <span id="ErrInvalidOrdering">ErrInvalidOrdering</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrInvalidArgument">ErrInvalidArgument</a>, &#34;invalid outbox ordering&#34;)</pre>
+			
+		
 		
 		
 			
 			
-			<h2 id="EmitInput">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/emit.go.html?s=604:1361#L9">EmitInput</a>
+			<h2 id="EmitInput">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/emit.go.html?s=818:1982#L12">EmitInput</a>
 				<a class="permalink" href="#EmitInput">¶</a>
 				
 				
@@ -227,6 +239,12 @@
     <span class="comment">// 既知の機微ヘッダ名（Authorization / Cookie 等）は送出前に落としますが、それは defense-in-depth で</span>
     <span class="comment">// あって主契約ではありません。機微情報は入れないこと。</span>
     Headers map[<a href="../../../../builtin/#string">string</a>]<a href="../../../../builtin/#string">string</a>
+<span id="EmitInput.Channel"></span>    <span class="comment">// Channel は配送レーンです。既定値を持たないため、必ず指定します。</span>
+    Channel <a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/">outboxbndry</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>
+<span id="EmitInput.OrderingKey"></span>    <span class="comment">// OrderingKey は順序保証の単位（ストリーム）です。順序を持たない配送では空にします。</span>
+    OrderingKey <a href="../../../../builtin/#string">string</a>
+<span id="EmitInput.OrderingSequence"></span>    <span class="comment">// OrderingSequence は OrderingKey 内の位置（1 起算）です。OrderingKey が空なら 0 にします。</span>
+    OrderingSequence <a href="../../../../builtin/#int64">int64</a>
 }
 </pre>
 
@@ -244,7 +262,7 @@
 		
 			
 			
-			<h2 id="EmitUsecase">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/emit.go.html?s=1475:1978#L25">EmitUsecase</a>
+			<h2 id="EmitUsecase">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/emit.go.html?s=2096:2599#L34">EmitUsecase</a>
 				<a class="permalink" href="#EmitUsecase">¶</a>
 				
 				
@@ -268,7 +286,7 @@
 
 			
 				
-				<h3 id="NewEmit">func <a href="../../../../src/go-boilerplate/internal/usecase/outbox/emit.go.html?s=2120:2201#L38">NewEmit</a>
+				<h3 id="NewEmit">func <a href="../../../../src/go-boilerplate/internal/usecase/outbox/emit.go.html?s=2741:2822#L47">NewEmit</a>
 					<a class="permalink" href="#NewEmit">¶</a>
 					
 					
@@ -323,18 +341,21 @@
 		
 			
 			
-			</p><h2 id="Metrics">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=844:1131#L18">Metrics</a>
+			</p><h2 id="Metrics">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=1525:2038#L35">Metrics</a>
 				<a class="permalink" href="#Metrics">¶</a>
 				
 				
 			</h2>
 			<p>Metrics は、relay engine が記録する outbox 固有の o11y シンクです。
+channel はチャネル名で、いずれの記録もチャネル単位で識別されます。
 
 			</p><pre>type Metrics interface {
     <span class="comment">// SetLagSeconds は、最古 pending エントリの経過秒数（SLI=outbox lag）を記録します。</span>
-    SetLagSeconds(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, seconds <a href="../../../../builtin/#int64">int64</a>)
+    SetLagSeconds(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, channel <a href="../../../../builtin/#string">string</a>, seconds <a href="../../../../builtin/#int64">int64</a>)
     <span class="comment">// IncDead は、dead 化したメッセージ数を計上します。</span>
-    IncDead(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>)
+    IncDead(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, channel <a href="../../../../builtin/#string">string</a>)
+    <span class="comment">// SetBlockedStreams は、先頭エントリが dead で進行が止まっているストリーム数を記録します。</span>
+    SetBlockedStreams(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, channel <a href="../../../../builtin/#string">string</a>, count <a href="../../../../builtin/#int64">int64</a>)
 }</pre>
 
 			
@@ -351,7 +372,46 @@
 		
 			
 			
-			<h2 id="RelayResult">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=1193:1434#L26">RelayResult</a>
+			<h2 id="RelayDeps">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=3680:4371#L77">RelayDeps</a>
+				<a class="permalink" href="#RelayDeps">¶</a>
+				
+				
+			</h2>
+			<p>RelayDeps は、RelayUsecase が必要とする依存です。
+
+			</p><pre>type RelayDeps struct {
+<span id="RelayDeps.Txm"></span>    <span class="comment">// Txm は、claim → publish → mark を 1 tx で囲むトランザクション境界です。</span>
+    Txm <a href="../../../../go-boilerplate/internal/usecase/boundary/tx/">tx</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/tx/#Manager">Manager</a>
+<span id="RelayDeps.Store"></span>    <span class="comment">// Store は、outbox の永続化境界です。</span>
+    Store <a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/">outboxbndry</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/#Store">Store</a>
+<span id="RelayDeps.Publisher"></span>    <span class="comment">// Publisher は、publish 先への送出境界です。</span>
+    Publisher <a href="../../../../go-boilerplate/internal/usecase/boundary/publisher/">publisher</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/publisher/#Publisher">Publisher</a>
+<span id="RelayDeps.Metrics"></span>    <span class="comment">// Metrics は、outbox 固有の o11y シンクです。</span>
+    Metrics <a href="#Metrics">Metrics</a>
+<span id="RelayDeps.Clock"></span>    <span class="comment">// Clock は、次回試行時刻と lag の算出に使う現在時刻です。</span>
+    Clock <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>
+<span id="RelayDeps.Logging"></span>    <span class="comment">// Logging は、dead 化を運用者へ知らせるロガーです。</span>
+    Logging <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#Logger">Logger</a>
+<span id="RelayDeps.Tracer"></span>    <span class="comment">// Tracer は、usecase 層の span を開く tracer の生成元です。</span>
+    Tracer <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="RelayResult">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=2100:2341#L45">RelayResult</a>
 				<a class="permalink" href="#RelayResult">¶</a>
 				
 				
@@ -380,7 +440,7 @@
 		
 			
 			
-			<h2 id="RelayUsecase">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=1583:2262#L34">RelayUsecase</a>
+			<h2 id="RelayUsecase">type <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=2490:3364#L53">RelayUsecase</a>
 				<a class="permalink" href="#RelayUsecase">¶</a>
 				
 				
@@ -395,6 +455,8 @@
     <span class="comment">// RecordLag は、最古 pending エントリの経過時間（outbox lag）を SLI メトリクスへ記録します。</span>
     <span class="comment">// pending のエントリが無ければ 0 を記録します。</span>
     RecordLag(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>
+    <span class="comment">// RecordBlockedStreams は、先頭エントリが dead で進行が止まっているストリーム数をメトリクスへ記録します。</span>
+    RecordBlockedStreams(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>) <a href="../../../../builtin/#error">error</a>
 }</pre>
 
 			
@@ -407,21 +469,14 @@
 
 			
 				
-				<h3 id="NewRelay">func <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=2567:2755#L56">NewRelay</a>
+				<h3 id="NewRelay">func <a href="../../../../src/go-boilerplate/internal/usecase/outbox/relay.go.html?s=4529:4600#L96">NewRelay</a>
 					<a class="permalink" href="#NewRelay">¶</a>
 					
 					
 				</h3>
-				<pre>func NewRelay(
-    txm <a href="../../../../go-boilerplate/internal/usecase/boundary/tx/">tx</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/tx/#Manager">Manager</a>,
-    store <a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/">outboxbndry</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/#Store">Store</a>,
-    pub <a href="../../../../go-boilerplate/internal/usecase/boundary/publisher/">publisher</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/publisher/#Publisher">Publisher</a>,
-    metrics <a href="#Metrics">Metrics</a>,
-    clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>,
-    log <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#Logger">Logger</a>,
-    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
-) <a href="#RelayUsecase">RelayUsecase</a></pre>
-				<p>NewRelay は、RelayUsecase を生成します。
+				<pre>func NewRelay(deps <a href="#RelayDeps">RelayDeps</a>, channel <a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/">outboxbndry</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>) <a href="#RelayUsecase">RelayUsecase</a></pre>
+				<p>NewRelay は、channel を担う RelayUsecase を生成します
+（チャネル隔離は docs/design/outbox.md の Design invariants を参照）。
 
 				
 				

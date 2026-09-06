@@ -104,7 +104,7 @@
 			
 			
 				
-				<dd><a href="#BuildHTTPRequestLogInput">func BuildHTTPRequestLogInput(c *echo.Context, eventType string) logging.HTTPRequestLogInput</a></dd>
+				<dd><a href="#BuildHTTPRequestLogInput">func BuildHTTPRequestLogInput(c *echo.Context, eventType string, red redaction.Redactor) logging.HTTPRequestLogInput</a></dd>
 			
 				
 				<dd><a href="#ExtractPathParams">func ExtractPathParams(c *echo.Context) map[string]string</a></dd>
@@ -150,13 +150,13 @@
 		
 			
 			
-			<h2 id="BuildHTTPRequestLogInput">func <a href="../../../../src/go-boilerplate/internal/controller/server/echo.go.html?s=409:501#L3">BuildHTTPRequestLogInput</a>
+			<h2 id="BuildHTTPRequestLogInput">func <a href="../../../../src/go-boilerplate/internal/controller/server/echo.go.html?s=415:531#L4">BuildHTTPRequestLogInput</a>
 				<a class="permalink" href="#BuildHTTPRequestLogInput">¶</a>
 				
 				
 			</h2>
-			<pre>func BuildHTTPRequestLogInput(c *echo.<a href="#Context">Context</a>, eventType <a href="../../../../builtin/#string">string</a>) <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#HTTPRequestLogInput">HTTPRequestLogInput</a></pre>
-			<p>BuildHTTPRequestLogInput は、Echo コンテキストから HTTP リクエストのログ入力を組み立てます（エラー/リカバリ経路の共通生成点）。
+			<pre>func BuildHTTPRequestLogInput(c *echo.<a href="#Context">Context</a>, eventType <a href="../../../../builtin/#string">string</a>, red <a href="../../../../go-boilerplate/internal/controller/httpstack/redaction/">redaction</a>.<a href="../../../../go-boilerplate/internal/controller/httpstack/redaction/#Redactor">Redactor</a>) <a href="../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../go-boilerplate/internal/logging/#HTTPRequestLogInput">HTTPRequestLogInput</a></pre>
+			<p>BuildHTTPRequestLogInput は、Echo コンテキストから HTTP リクエストのログ入力を組み立てます。
 eventType には呼び出し経路に応じたイベント種別（logging.EventTypeError / EventTypePanic 等）を渡す。
 
 			
@@ -165,7 +165,7 @@ eventType には呼び出し経路に応じたイベント種別（logging.Event
 		
 			
 			
-			</p><h2 id="ExtractPathParams">func <a href="../../../../src/go-boilerplate/internal/controller/server/echo.go.html?s=1130:1187#L24">ExtractPathParams</a>
+			</p><h2 id="ExtractPathParams">func <a href="../../../../src/go-boilerplate/internal/controller/server/echo.go.html?s=1186:1243#L25">ExtractPathParams</a>
 				<a class="permalink" href="#ExtractPathParams">¶</a>
 				
 				
@@ -179,7 +179,7 @@ eventType には呼び出し経路に応じたイベント種別（logging.Event
 		
 			
 			
-			</p><h2 id="ExtractQueryParams">func <a href="../../../../src/go-boilerplate/internal/controller/server/echo.go.html?s=1427:1487#L34">ExtractQueryParams</a>
+			</p><h2 id="ExtractQueryParams">func <a href="../../../../src/go-boilerplate/internal/controller/server/echo.go.html?s=1483:1543#L35">ExtractQueryParams</a>
 				<a class="permalink" href="#ExtractQueryParams">¶</a>
 				
 				
@@ -222,7 +222,7 @@ Echo v5 の <a href="/github.com/labstack/echo/v5#StartConfig">echo.StartConfig<
 		
 			
 			
-			</p><h2 id="ResponseOf">func <a href="../../../../src/go-boilerplate/internal/controller/server/echo.go.html?s=1984:2031#L43">ResponseOf</a>
+			</p><h2 id="ResponseOf">func <a href="../../../../src/go-boilerplate/internal/controller/server/echo.go.html?s=2040:2087#L44">ResponseOf</a>
 				<a class="permalink" href="#ResponseOf">¶</a>
 				
 				

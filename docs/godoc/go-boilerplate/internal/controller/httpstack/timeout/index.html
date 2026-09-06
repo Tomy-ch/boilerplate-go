@@ -133,7 +133,7 @@
 		
 			
 			
-			<h2 id="Middleware">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/timeout/timeout.go.html?s=669:727#L8">Middleware</a>
+			<h2 id="Middleware">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/timeout/timeout.go.html?s=1051:1109#L12">Middleware</a>
 				<a class="permalink" href="#Middleware">¶</a>
 				
 				
@@ -141,6 +141,9 @@
 			<pre>func Middleware(timeout <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Duration">Duration</a>) echo.<a href="#MiddlewareFunc">MiddlewareFunc</a></pre>
 			<p>Middleware は、リクエスト context に timeout の deadline を設定するミドルウェアを返します。
 deadline 超過は apperror.ErrUnavailable(503) へ、それ以外のエラーはそのまま伝播します。
+SSE stream endpoint だけは deadline を持ちません — 接続は分単位で開き続けるのが正常な状態で、
+単一 budget を当てると必ず途中で切れます。接続側の境界（write deadline・heartbeat・
+connection maximum lifetime）がこの budget の代わりを務めます。
 単一 deadline budget の共有と ContextTimeout を基底に選んだ理由は README を参照してください。
 
 			

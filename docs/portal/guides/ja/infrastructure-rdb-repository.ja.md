@@ -1,7 +1,5 @@
 # Repository 実装ガイド
 
-[English](README.md) | 日本語
-
 ## オニオンアーキテクチャにおける Repository の位置づけ
 
 オニオンアーキテクチャにおいて、Repository は **依存性逆転の原則（DIP）を体現する中心的なパターン**です。

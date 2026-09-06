@@ -108,6 +108,11 @@
 			
 			
 				
+				<dd><a href="#AppliedCouponReadModel">type AppliedCouponReadModel</a></dd>
+				
+				
+			
+				
 				<dd><a href="#ListFeedParams">type ListFeedParams</a></dd>
 				
 				
@@ -183,7 +188,38 @@
 		
 			
 			
-			<h2 id="ListFeedParams">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_feed_query_service.go.html?s=1837:2602#L20">ListFeedParams</a>
+			<h2 id="AppliedCouponReadModel">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_detail_query_service.go.html?s=2082:2240#L37">AppliedCouponReadModel</a>
+				<a class="permalink" href="#AppliedCouponReadModel">¶</a>
+				
+				
+			</h2>
+			<p>AppliedCouponReadModel は、購入に適用したクーポンの読み取りモデルです。
+商品名と同じく結合で解決した現在値です（docs/spec/usecase/purchase.md の GET 詳細）。
+
+			</p><pre>type AppliedCouponReadModel struct {
+<span id="AppliedCouponReadModel.ID"></span>    ID            <a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="AppliedCouponReadModel.DiscountKind"></span>    DiscountKind  <a href="../../../../../builtin/#int">int</a>
+<span id="AppliedCouponReadModel.DiscountValue"></span>    DiscountValue <a href="../../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+<span id="AppliedCouponReadModel.ScopeKind"></span>    ScopeKind     <a href="../../../../../builtin/#int">int</a>
+<span id="AppliedCouponReadModel.ScopeTargetID"></span>    ScopeTargetID *<a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ListFeedParams">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_feed_query_service.go.html?s=1837:2742#L20">ListFeedParams</a>
 				<a class="permalink" href="#ListFeedParams">¶</a>
 				
 				
@@ -203,6 +239,8 @@
 <span id="ListFeedParams.StatusCodes"></span>    <span class="comment">// StatusCodes は、購入ステータスの業務キーによる絞り込みです。いずれかに一致する購入を対象とし、</span>
     <span class="comment">// 空の場合は全ステータスを対象とします。既知でないコードは 0 件として扱います。</span>
     StatusCodes []<a href="../../../../../builtin/#int16">int16</a>
+<span id="ListFeedParams.ProductID"></span>    <span class="comment">// ProductID は、指定商品を含む購入だけに絞る条件です。nil の場合は絞り込みません。</span>
+    ProductID *<a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
 }
 </pre>
 
@@ -220,7 +258,7 @@
 		
 			
 			
-			<h2 id="PurchaseDetailItem">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_detail_query_service.go.html?s=2012:2131#L34">PurchaseDetailItem</a>
+			<h2 id="PurchaseDetailItem">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_detail_query_service.go.html?s=2477:2596#L47">PurchaseDetailItem</a>
 				<a class="permalink" href="#PurchaseDetailItem">¶</a>
 				
 				
@@ -250,7 +288,7 @@ UnitPrice は購入時点の単価スナップショット（価格スケール�
 		
 			
 			
-			<h2 id="PurchaseDetailQueryService">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_detail_query_service.go.html?s=671:1164#L6">PurchaseDetailQueryService</a>
+			<h2 id="PurchaseDetailQueryService">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_detail_query_service.go.html?s=701:1194#L7">PurchaseDetailQueryService</a>
 				<a class="permalink" href="#PurchaseDetailQueryService">¶</a>
 				
 				
@@ -278,7 +316,7 @@ UnitPrice は購入時点の単価スナップショット（価格スケール�
 		
 			
 			
-			<h2 id="PurchaseDetailReadModel">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_detail_query_service.go.html?s=1387:1775#L15">PurchaseDetailReadModel</a>
+			<h2 id="PurchaseDetailReadModel">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_detail_query_service.go.html?s=1417:1867#L16">PurchaseDetailReadModel</a>
 				<a class="permalink" href="#PurchaseDetailReadModel">¶</a>
 				
 				
@@ -294,6 +332,8 @@ UnitPrice は購入時点の単価スナップショット（価格スケール�
 <span id="PurchaseDetailReadModel.StatusCode"></span>    StatusCode     <a href="../../../../../builtin/#int">int</a>
 <span id="PurchaseDetailReadModel.StatusName"></span>    StatusName     <a href="../../../../../builtin/#string">string</a>
 <span id="PurchaseDetailReadModel.SubtotalAmount"></span>    SubtotalAmount <a href="../../../../../builtin/#int64">int64</a>
+<span id="PurchaseDetailReadModel.DiscountAmount"></span>    DiscountAmount <a href="../../../../../builtin/#int64">int64</a>
+<span id="PurchaseDetailReadModel.AppliedCoupon"></span>    AppliedCoupon  *<a href="#AppliedCouponReadModel">AppliedCouponReadModel</a>
 <span id="PurchaseDetailReadModel.TaxAmount"></span>    TaxAmount      <a href="../../../../../builtin/#int64">int64</a>
 <span id="PurchaseDetailReadModel.ShippingFee"></span>    ShippingFee    <a href="../../../../../builtin/#int64">int64</a>
 <span id="PurchaseDetailReadModel.TotalAmount"></span>    TotalAmount    <a href="../../../../../builtin/#int64">int64</a>
@@ -324,7 +364,7 @@ UnitPrice は購入時点の単価スナップショット（価格スケール�
 				
 			</h2>
 			<p>PurchaseFeedQueryService は、購入履歴一覧の集約跨ぎ read 投影を提供する QueryService です
-（配置根拠: docs/spec/purchase/usecase.md § GET 一覧）。
+（配置根拠: docs/spec/usecase/purchase.md § GET 一覧）。
 
 			</p><pre>type PurchaseFeedQueryService interface {
     <span class="comment">// FindFeedByUserID は、指定ユーザーの購入履歴を注文日時の降順（同時刻は ID 降順）の安定順で</span>
@@ -353,7 +393,7 @@ UnitPrice は購入時点の単価スナップショット（価格スケール�
 		
 			
 			
-			<h2 id="PurchaseFeedReadModel">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_feed_query_service.go.html?s=2823:4018#L36">PurchaseFeedReadModel</a>
+			<h2 id="PurchaseFeedReadModel">type <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/query/purchase_feed_query_service.go.html?s=2963:4158#L38">PurchaseFeedReadModel</a>
 				<a class="permalink" href="#PurchaseFeedReadModel">¶</a>
 				
 				

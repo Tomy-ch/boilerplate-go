@@ -1,7 +1,5 @@
 # コントローラー層（`internal/controller`）ガイド
 
-[English](README.md) | 日本語
-
 ## オニオンアーキテクチャでの役割
 
 - **外界（HTTP/CLI）とアプリケーションの境界面**
@@ -21,6 +19,10 @@
 - `worker/` — キューのメッセージ
 - `outbox/` — outbox を polling して publish する relay
 
+`stream/` は 5 種目ではなく、ひとつの機構（Realtime Delivery の SSE transport）の HTTP 入口である。HTTP リクエストで
+あることは変わらず、feature 中立・非 strict・機構自身の DI module が結線する、という理由で `handler/` の隣に置く
+（`docs/design/realtime-delivery.md` §3.1）。
+
 残りのディレクトリはこの 4 つに奉仕する。`server/` は Echo インスタンスの構築、`httpstack/` は
 ミドルウェアスタック、`error/response/` はエラーボディ、`conv/` は生成型とドメイン型の境界、
 `ctxhelper/` は Echo context のアクセサである。
@@ -30,9 +32,11 @@
 |ディレクトリ|説明|詳細|
 |---|---|---|
 |`handler/`|HTTP リクエストを受け取り Usecase へ委譲するハンドラ|[README](handler/README.ja.md)|
+|`stream/`|Realtime Delivery の SSE endpoint。確定前の検証（ticket・cursor）と `Streamer` seam|[README](stream/README.ja.md)|
 |`job/`|CLI から起動されるジョブのコントローラ|[README](job/README.ja.md)|
 |`worker/`|pull-ack メッセージキューを消費し Usecase へディスパッチするワーカーエンジン|[README](worker/README.ja.md)|
 |`outbox/`|outbox を周期的に poll し未 publish メッセージを送るリレーエンジン|[README](outbox/README.ja.md)|
+|`realtime/`|instance 自身の queue から Realtime Delivery の wakeup / revocation を受け取り、接続側へ渡す consumer エンジン。instance lease の heartbeat ループ|[README](realtime/README.ja.md)|
 |`server/`|Echo インスタンスの初期化と DI ライフサイクルへの統合|[README](server/README.ja.md)|
 |`httpstack/`|ミドルウェア群（CORS, セキュリティ, ログ, 認証等）|[README](httpstack/README.ja.md)|
 |`error/response/`|統一的な HTTP エラーレスポンスの生成と apperror マッピング|[README](error/response/README.ja.md)|
@@ -67,7 +71,7 @@ detail を参照）。ハンドラのメソッドは非公開の `server` に対
 
 ## テスト戦略
 
-ここに書くのは層の基準である。controller は inbound adapter の総称であり、全てが HTTP を話すわけではない。以下を適用する前に、駆動方式に対応するサブセクションを読むこと。独自の節を持つサブツリーはその節が観点を専有する: [`handler/`](handler/README.ja.md)、[`job/`](job/README.ja.md)、[`httpstack/`](httpstack/README.ja.md)、[`server/`](server/README.ja.md)。
+ここに書くのは層の基準である。controller は inbound adapter の総称であり、全てが HTTP を話すわけではない。以下を適用する前に、駆動方式に対応するサブセクションを読むこと。独自の節を持つサブツリーはその節が観点を専有する: [`handler/`](handler/README.ja.md)、[`stream/`](stream/README.ja.md)、[`job/`](job/README.ja.md)、[`httpstack/`](httpstack/README.ja.md)、[`server/`](server/README.ja.md)。
 
 ### HTTP ハンドラ
 
@@ -80,9 +84,9 @@ detail を参照）。ハンドラのメソッドは非公開の `server` に対
 
 境界レベルの HTTP 結線（Router → Middleware → Handler → Presenter）は `internal/integration` の HTTP 境界テストで別途カバーする。
 
-### ループ駆動の controller（`outbox/` / `worker/`）
+### ループ駆動の controller（`outbox/` / `worker/` / `realtime/`）
 
-これらの adapter はリクエストではなく poll / consume ループで駆動されるため、上記の Echo・bind・HTTP status に関する記述は一切当てはまらない。usecase と boundary ポート（`usecase/boundary/clock`・`usecase/boundary/worker`）を mock し、ロガーは `logging.NewTestLogger`、トレーサは `observability.NewNoopTracerFactory`、実ブローカの代わりに `usecase/boundary/worker/testkit` の in-memory fake を使う。テスト対象はループそのものなので、ループとして駆動して検証する。
+これらの adapter はリクエストではなく poll / consume ループで駆動されるため、上記の Echo・bind・HTTP status に関する記述は一切当てはまらない。usecase と boundary ポート（`usecase/boundary/clock`・`usecase/boundary/worker`・`usecase/boundary/realtime`）を mock し、ロガーは `logging.NewTestLogger`、トレーサは `observability.NewNoopTracerFactory`、実ブローカの代わりに `usecase/boundary/worker/testkit` の in-memory fake を使う。テスト対象はループそのものなので、ループとして駆動して検証する。
 
 - **1 反復の効果** — 処理対象を見つけた poll はディスパッチし、見つからなかった poll は設定された間隔だけバックオフすること。検証は mock した sleeper を通して行い、テスト内で実際に sleep しないこと。
 - **停止のセマンティクス** — context のキャンセルでループが終了して return すること、処理中の要素が各パッケージの文書化された drain 契約どおりに完了 or 放棄されること。`SupervisedRunner` 駆動の shutdown が依存しているのがこの分岐。

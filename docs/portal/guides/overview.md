@@ -3,8 +3,6 @@
 ![Go Version](https://img.shields.io/github/go-mod/go-version/Tomy-ch/go-boilerplate)
 ![License](https://img.shields.io/github/license/Tomy-ch/go-boilerplate)
 
-English | [日本語](README.ja.md)
-
 A backend base project built with **Golang × Echo × OpenAPI × PostgreSQL × Onion Architecture**.
 
 It integrates widely used OSS — `uber/fx` (DI), `sqlc` (type-safe SQL), `golang-migrate`

@@ -187,616 +187,623 @@
 <span id="L130" class="ln">   130  </span>		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(&#34;Invalid format for parameter includeUnpublished: %s&#34;, err))
 <span id="L131" class="ln">   131  </span>	}
 <span id="L132" class="ln">   132  </span>
-<span id="L133" class="ln">   133  </span>	<span class="comment">// Invoke the callback with all the unmarshaled arguments</span>
-<span id="L134" class="ln">   134  </span>	err = w.Handler.GetProducts(ctx, params)
-<span id="L135" class="ln">   135  </span>	return err
-<span id="L136" class="ln">   136  </span>}
-<span id="L137" class="ln">   137  </span>
-<span id="L138" class="ln">   138  </span><span class="comment">// PostProducts converts echo context to params.</span>
-<span id="L139" class="ln">   139  </span>func (w *ServerInterfaceWrapper) PostProducts(ctx *echo.Context) error {
-<span id="L140" class="ln">   140  </span>	var err error
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>	<span class="comment">// Invoke the callback with all the unmarshaled arguments</span>
-<span id="L143" class="ln">   143  </span>	err = w.Handler.PostProducts(ctx)
-<span id="L144" class="ln">   144  </span>	return err
-<span id="L145" class="ln">   145  </span>}
-<span id="L146" class="ln">   146  </span>
-<span id="L147" class="ln">   147  </span><span class="comment">// PostProductsImages converts echo context to params.</span>
-<span id="L148" class="ln">   148  </span>func (w *ServerInterfaceWrapper) PostProductsImages(ctx *echo.Context) error {
-<span id="L149" class="ln">   149  </span>	var err error
-<span id="L150" class="ln">   150  </span>
-<span id="L151" class="ln">   151  </span>	<span class="comment">// Invoke the callback with all the unmarshaled arguments</span>
-<span id="L152" class="ln">   152  </span>	err = w.Handler.PostProductsImages(ctx)
-<span id="L153" class="ln">   153  </span>	return err
-<span id="L154" class="ln">   154  </span>}
-<span id="L155" class="ln">   155  </span>
-<span id="L156" class="ln">   156  </span><span class="comment">// This is a simple interface which specifies echo.Route addition functions which</span>
-<span id="L157" class="ln">   157  </span><span class="comment">// are present on both echo.Echo and echo.Group, since we want to allow using</span>
-<span id="L158" class="ln">   158  </span><span class="comment">// either of them for path registration</span>
-<span id="L159" class="ln">   159  </span>type EchoRouter interface {
-<span id="L160" class="ln">   160  </span>	CONNECT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L161" class="ln">   161  </span>	DELETE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L162" class="ln">   162  </span>	GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L163" class="ln">   163  </span>	HEAD(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L164" class="ln">   164  </span>	OPTIONS(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L165" class="ln">   165  </span>	PATCH(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L166" class="ln">   166  </span>	POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L167" class="ln">   167  </span>	PUT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L168" class="ln">   168  </span>	TRACE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
-<span id="L169" class="ln">   169  </span>}
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span><span class="comment">// RegisterHandlersOptions configures RegisterHandlersWithOptions.</span>
-<span id="L172" class="ln">   172  </span>type RegisterHandlersOptions struct {
-<span id="L173" class="ln">   173  </span>	<span class="comment">// BaseURL is prepended to every registered path so the API can be served</span>
-<span id="L174" class="ln">   174  </span>	<span class="comment">// under a prefix.</span>
-<span id="L175" class="ln">   175  </span>	BaseURL string
-<span id="L176" class="ln">   176  </span>	<span class="comment">// OperationMiddlewares lets the caller attach per-operation middleware at</span>
-<span id="L177" class="ln">   177  </span>	<span class="comment">// registration time. The map key is the OpenAPI `operationId` value as it</span>
-<span id="L178" class="ln">   178  </span>	<span class="comment">// appears in the spec (the raw, un-normalized form). Operations that have</span>
-<span id="L179" class="ln">   179  </span>	<span class="comment">// no entry are registered with no extra middleware. A nil map disables</span>
-<span id="L180" class="ln">   180  </span>	<span class="comment">// per-operation middleware entirely.</span>
-<span id="L181" class="ln">   181  </span>	OperationMiddlewares map[string][]echo.MiddlewareFunc
-<span id="L182" class="ln">   182  </span>}
-<span id="L183" class="ln">   183  </span>
-<span id="L184" class="ln">   184  </span><span class="comment">// RegisterHandlers adds each server route to the EchoRouter.</span>
-<span id="L185" class="ln">   185  </span>func RegisterHandlers(router EchoRouter, si ServerInterface) {
-<span id="L186" class="ln">   186  </span>	RegisterHandlersWithOptions(router, si, RegisterHandlersOptions{})
-<span id="L187" class="ln">   187  </span>}
-<span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span><span class="comment">// RegisterHandlersWithBaseURL registers handlers and prepends BaseURL to the</span>
-<span id="L190" class="ln">   190  </span><span class="comment">// paths so the API can be served under a prefix.</span>
-<span id="L191" class="ln">   191  </span>func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL string) {
-<span id="L192" class="ln">   192  </span>	RegisterHandlersWithOptions(router, si, RegisterHandlersOptions{BaseURL: baseURL})
-<span id="L193" class="ln">   193  </span>}
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span><span class="comment">// RegisterHandlersWithOptions registers handlers using the supplied options,</span>
-<span id="L196" class="ln">   196  </span><span class="comment">// including any per-operation middleware.</span>
-<span id="L197" class="ln">   197  </span>func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options RegisterHandlersOptions) {
-<span id="L198" class="ln">   198  </span>
-<span id="L199" class="ln">   199  </span>	wrapper := ServerInterfaceWrapper{
-<span id="L200" class="ln">   200  </span>		Handler: si,
-<span id="L201" class="ln">   201  </span>	}
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span>	router.GET(options.BaseURL+&#34;/v1/products&#34;, wrapper.GetProducts, options.OperationMiddlewares[&#34;GetProducts&#34;]...)
-<span id="L204" class="ln">   204  </span>	router.POST(options.BaseURL+&#34;/v1/products&#34;, wrapper.PostProducts, options.OperationMiddlewares[&#34;PostProducts&#34;]...)
-<span id="L205" class="ln">   205  </span>	router.POST(options.BaseURL+&#34;/v1/products/images&#34;, wrapper.PostProductsImages, options.OperationMiddlewares[&#34;PostProductsImages&#34;]...)
-<span id="L206" class="ln">   206  </span>
-<span id="L207" class="ln">   207  </span>}
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>type BadRequest400JSONResponse ErrorResponse
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>type Forbidden403JSONResponse ErrorResponse
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span>type InternalServerError500JSONResponse ErrorResponse
-<span id="L214" class="ln">   214  </span>
-<span id="L215" class="ln">   215  </span>type MethodNotAllowed405JSONResponse ErrorResponse
-<span id="L216" class="ln">   216  </span>
-<span id="L217" class="ln">   217  </span>type PayloadTooLarge413JSONResponse ErrorResponse
-<span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>type ServiceUnavailable503JSONResponse ErrorResponse
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>type Unauthorized401JSONResponse ErrorResponse
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>type UnprocessableEntity422JSONResponse ErrorResponseWithDetails
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>type UnsupportedMediaType415JSONResponse ErrorResponse
-<span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span>type GetProductsRequestObject struct {
-<span id="L228" class="ln">   228  </span>	Params GetProductsParams
-<span id="L229" class="ln">   229  </span>}
-<span id="L230" class="ln">   230  </span>
-<span id="L231" class="ln">   231  </span>type GetProductsResponseObject interface {
-<span id="L232" class="ln">   232  </span>	VisitGetProductsResponse(w http.ResponseWriter) error
-<span id="L233" class="ln">   233  </span>}
-<span id="L234" class="ln">   234  </span>
-<span id="L235" class="ln">   235  </span>type GetProducts200JSONResponse ProductListResponse
-<span id="L236" class="ln">   236  </span>
-<span id="L237" class="ln">   237  </span>func (response GetProducts200JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
-<span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>	var buf bytes.Buffer
-<span id="L240" class="ln">   240  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L241" class="ln">   241  </span>		return err
-<span id="L242" class="ln">   242  </span>	}
-<span id="L243" class="ln">   243  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L244" class="ln">   244  </span>	w.WriteHeader(200)
-<span id="L245" class="ln">   245  </span>	_, err := buf.WriteTo(w)
-<span id="L246" class="ln">   246  </span>	return err
-<span id="L247" class="ln">   247  </span>}
-<span id="L248" class="ln">   248  </span>
-<span id="L249" class="ln">   249  </span>type GetProducts400JSONResponse struct{ BadRequest400JSONResponse }
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>func (response GetProducts400JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
-<span id="L252" class="ln">   252  </span>
-<span id="L253" class="ln">   253  </span>	var buf bytes.Buffer
-<span id="L254" class="ln">   254  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L255" class="ln">   255  </span>		return err
-<span id="L256" class="ln">   256  </span>	}
-<span id="L257" class="ln">   257  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L258" class="ln">   258  </span>	w.WriteHeader(400)
-<span id="L259" class="ln">   259  </span>	_, err := buf.WriteTo(w)
-<span id="L260" class="ln">   260  </span>	return err
-<span id="L261" class="ln">   261  </span>}
-<span id="L262" class="ln">   262  </span>
-<span id="L263" class="ln">   263  </span>type GetProducts401JSONResponse struct{ Unauthorized401JSONResponse }
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>func (response GetProducts401JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
-<span id="L266" class="ln">   266  </span>
-<span id="L267" class="ln">   267  </span>	var buf bytes.Buffer
-<span id="L268" class="ln">   268  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L269" class="ln">   269  </span>		return err
-<span id="L270" class="ln">   270  </span>	}
-<span id="L271" class="ln">   271  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L272" class="ln">   272  </span>	w.WriteHeader(401)
-<span id="L273" class="ln">   273  </span>	_, err := buf.WriteTo(w)
-<span id="L274" class="ln">   274  </span>	return err
-<span id="L275" class="ln">   275  </span>}
-<span id="L276" class="ln">   276  </span>
-<span id="L277" class="ln">   277  </span>type GetProducts403JSONResponse struct{ Forbidden403JSONResponse }
-<span id="L278" class="ln">   278  </span>
-<span id="L279" class="ln">   279  </span>func (response GetProducts403JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
-<span id="L280" class="ln">   280  </span>
-<span id="L281" class="ln">   281  </span>	var buf bytes.Buffer
-<span id="L282" class="ln">   282  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L283" class="ln">   283  </span>		return err
-<span id="L284" class="ln">   284  </span>	}
-<span id="L285" class="ln">   285  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L286" class="ln">   286  </span>	w.WriteHeader(403)
-<span id="L287" class="ln">   287  </span>	_, err := buf.WriteTo(w)
-<span id="L288" class="ln">   288  </span>	return err
-<span id="L289" class="ln">   289  </span>}
-<span id="L290" class="ln">   290  </span>
-<span id="L291" class="ln">   291  </span>type GetProducts405JSONResponse struct {
-<span id="L292" class="ln">   292  </span>	MethodNotAllowed405JSONResponse
-<span id="L293" class="ln">   293  </span>}
-<span id="L294" class="ln">   294  </span>
-<span id="L295" class="ln">   295  </span>func (response GetProducts405JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
-<span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>	var buf bytes.Buffer
-<span id="L298" class="ln">   298  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L299" class="ln">   299  </span>		return err
-<span id="L300" class="ln">   300  </span>	}
-<span id="L301" class="ln">   301  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L302" class="ln">   302  </span>	w.WriteHeader(405)
-<span id="L303" class="ln">   303  </span>	_, err := buf.WriteTo(w)
-<span id="L304" class="ln">   304  </span>	return err
-<span id="L305" class="ln">   305  </span>}
-<span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>type GetProducts500JSONResponse struct {
-<span id="L308" class="ln">   308  </span>	InternalServerError500JSONResponse
-<span id="L309" class="ln">   309  </span>}
-<span id="L310" class="ln">   310  </span>
-<span id="L311" class="ln">   311  </span>func (response GetProducts500JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
-<span id="L312" class="ln">   312  </span>
-<span id="L313" class="ln">   313  </span>	var buf bytes.Buffer
-<span id="L314" class="ln">   314  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L315" class="ln">   315  </span>		return err
-<span id="L316" class="ln">   316  </span>	}
-<span id="L317" class="ln">   317  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L318" class="ln">   318  </span>	w.WriteHeader(500)
-<span id="L319" class="ln">   319  </span>	_, err := buf.WriteTo(w)
-<span id="L320" class="ln">   320  </span>	return err
-<span id="L321" class="ln">   321  </span>}
-<span id="L322" class="ln">   322  </span>
-<span id="L323" class="ln">   323  </span>type GetProducts503JSONResponse struct {
-<span id="L324" class="ln">   324  </span>	ServiceUnavailable503JSONResponse
-<span id="L325" class="ln">   325  </span>}
-<span id="L326" class="ln">   326  </span>
-<span id="L327" class="ln">   327  </span>func (response GetProducts503JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
-<span id="L328" class="ln">   328  </span>
-<span id="L329" class="ln">   329  </span>	var buf bytes.Buffer
-<span id="L330" class="ln">   330  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L331" class="ln">   331  </span>		return err
-<span id="L332" class="ln">   332  </span>	}
-<span id="L333" class="ln">   333  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L334" class="ln">   334  </span>	w.WriteHeader(503)
-<span id="L335" class="ln">   335  </span>	_, err := buf.WriteTo(w)
-<span id="L336" class="ln">   336  </span>	return err
-<span id="L337" class="ln">   337  </span>}
-<span id="L338" class="ln">   338  </span>
-<span id="L339" class="ln">   339  </span>type PostProductsRequestObject struct {
-<span id="L340" class="ln">   340  </span>	Body *PostProductsJSONRequestBody
-<span id="L341" class="ln">   341  </span>}
-<span id="L342" class="ln">   342  </span>
-<span id="L343" class="ln">   343  </span>type PostProductsResponseObject interface {
-<span id="L344" class="ln">   344  </span>	VisitPostProductsResponse(w http.ResponseWriter) error
-<span id="L345" class="ln">   345  </span>}
-<span id="L346" class="ln">   346  </span>
-<span id="L347" class="ln">   347  </span>type PostProducts201JSONResponse ProductResponse
-<span id="L348" class="ln">   348  </span>
-<span id="L349" class="ln">   349  </span>func (response PostProducts201JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
-<span id="L350" class="ln">   350  </span>
-<span id="L351" class="ln">   351  </span>	var buf bytes.Buffer
-<span id="L352" class="ln">   352  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L353" class="ln">   353  </span>		return err
-<span id="L354" class="ln">   354  </span>	}
-<span id="L355" class="ln">   355  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L356" class="ln">   356  </span>	w.WriteHeader(201)
-<span id="L357" class="ln">   357  </span>	_, err := buf.WriteTo(w)
-<span id="L358" class="ln">   358  </span>	return err
-<span id="L359" class="ln">   359  </span>}
-<span id="L360" class="ln">   360  </span>
-<span id="L361" class="ln">   361  </span>type PostProducts400JSONResponse struct{ BadRequest400JSONResponse }
-<span id="L362" class="ln">   362  </span>
-<span id="L363" class="ln">   363  </span>func (response PostProducts400JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
-<span id="L364" class="ln">   364  </span>
-<span id="L365" class="ln">   365  </span>	var buf bytes.Buffer
-<span id="L366" class="ln">   366  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L367" class="ln">   367  </span>		return err
-<span id="L368" class="ln">   368  </span>	}
-<span id="L369" class="ln">   369  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L370" class="ln">   370  </span>	w.WriteHeader(400)
-<span id="L371" class="ln">   371  </span>	_, err := buf.WriteTo(w)
-<span id="L372" class="ln">   372  </span>	return err
-<span id="L373" class="ln">   373  </span>}
-<span id="L374" class="ln">   374  </span>
-<span id="L375" class="ln">   375  </span>type PostProducts401JSONResponse struct{ Unauthorized401JSONResponse }
-<span id="L376" class="ln">   376  </span>
-<span id="L377" class="ln">   377  </span>func (response PostProducts401JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
-<span id="L378" class="ln">   378  </span>
-<span id="L379" class="ln">   379  </span>	var buf bytes.Buffer
-<span id="L380" class="ln">   380  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L381" class="ln">   381  </span>		return err
-<span id="L382" class="ln">   382  </span>	}
-<span id="L383" class="ln">   383  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L384" class="ln">   384  </span>	w.WriteHeader(401)
-<span id="L385" class="ln">   385  </span>	_, err := buf.WriteTo(w)
-<span id="L386" class="ln">   386  </span>	return err
-<span id="L387" class="ln">   387  </span>}
-<span id="L388" class="ln">   388  </span>
-<span id="L389" class="ln">   389  </span>type PostProducts403JSONResponse struct{ Forbidden403JSONResponse }
-<span id="L390" class="ln">   390  </span>
-<span id="L391" class="ln">   391  </span>func (response PostProducts403JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
-<span id="L392" class="ln">   392  </span>
-<span id="L393" class="ln">   393  </span>	var buf bytes.Buffer
-<span id="L394" class="ln">   394  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L395" class="ln">   395  </span>		return err
-<span id="L396" class="ln">   396  </span>	}
-<span id="L397" class="ln">   397  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L398" class="ln">   398  </span>	w.WriteHeader(403)
-<span id="L399" class="ln">   399  </span>	_, err := buf.WriteTo(w)
-<span id="L400" class="ln">   400  </span>	return err
-<span id="L401" class="ln">   401  </span>}
-<span id="L402" class="ln">   402  </span>
-<span id="L403" class="ln">   403  </span>type PostProducts405JSONResponse struct {
-<span id="L404" class="ln">   404  </span>	MethodNotAllowed405JSONResponse
-<span id="L405" class="ln">   405  </span>}
-<span id="L406" class="ln">   406  </span>
-<span id="L407" class="ln">   407  </span>func (response PostProducts405JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
-<span id="L408" class="ln">   408  </span>
-<span id="L409" class="ln">   409  </span>	var buf bytes.Buffer
-<span id="L410" class="ln">   410  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L411" class="ln">   411  </span>		return err
-<span id="L412" class="ln">   412  </span>	}
-<span id="L413" class="ln">   413  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L414" class="ln">   414  </span>	w.WriteHeader(405)
-<span id="L415" class="ln">   415  </span>	_, err := buf.WriteTo(w)
-<span id="L416" class="ln">   416  </span>	return err
-<span id="L417" class="ln">   417  </span>}
-<span id="L418" class="ln">   418  </span>
-<span id="L419" class="ln">   419  </span>type PostProducts422JSONResponse struct {
-<span id="L420" class="ln">   420  </span>	UnprocessableEntity422JSONResponse
-<span id="L421" class="ln">   421  </span>}
-<span id="L422" class="ln">   422  </span>
-<span id="L423" class="ln">   423  </span>func (response PostProducts422JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
-<span id="L424" class="ln">   424  </span>
-<span id="L425" class="ln">   425  </span>	var buf bytes.Buffer
-<span id="L426" class="ln">   426  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L427" class="ln">   427  </span>		return err
-<span id="L428" class="ln">   428  </span>	}
-<span id="L429" class="ln">   429  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L430" class="ln">   430  </span>	w.WriteHeader(422)
-<span id="L431" class="ln">   431  </span>	_, err := buf.WriteTo(w)
-<span id="L432" class="ln">   432  </span>	return err
-<span id="L433" class="ln">   433  </span>}
-<span id="L434" class="ln">   434  </span>
-<span id="L435" class="ln">   435  </span>type PostProducts500JSONResponse struct {
-<span id="L436" class="ln">   436  </span>	InternalServerError500JSONResponse
-<span id="L437" class="ln">   437  </span>}
-<span id="L438" class="ln">   438  </span>
-<span id="L439" class="ln">   439  </span>func (response PostProducts500JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
-<span id="L440" class="ln">   440  </span>
-<span id="L441" class="ln">   441  </span>	var buf bytes.Buffer
-<span id="L442" class="ln">   442  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L443" class="ln">   443  </span>		return err
-<span id="L444" class="ln">   444  </span>	}
-<span id="L445" class="ln">   445  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L446" class="ln">   446  </span>	w.WriteHeader(500)
-<span id="L447" class="ln">   447  </span>	_, err := buf.WriteTo(w)
-<span id="L448" class="ln">   448  </span>	return err
-<span id="L449" class="ln">   449  </span>}
-<span id="L450" class="ln">   450  </span>
-<span id="L451" class="ln">   451  </span>type PostProducts503JSONResponse struct {
-<span id="L452" class="ln">   452  </span>	ServiceUnavailable503JSONResponse
-<span id="L453" class="ln">   453  </span>}
-<span id="L454" class="ln">   454  </span>
-<span id="L455" class="ln">   455  </span>func (response PostProducts503JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
-<span id="L456" class="ln">   456  </span>
-<span id="L457" class="ln">   457  </span>	var buf bytes.Buffer
-<span id="L458" class="ln">   458  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L459" class="ln">   459  </span>		return err
-<span id="L460" class="ln">   460  </span>	}
-<span id="L461" class="ln">   461  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L462" class="ln">   462  </span>	w.WriteHeader(503)
-<span id="L463" class="ln">   463  </span>	_, err := buf.WriteTo(w)
-<span id="L464" class="ln">   464  </span>	return err
-<span id="L465" class="ln">   465  </span>}
-<span id="L466" class="ln">   466  </span>
-<span id="L467" class="ln">   467  </span>type PostProductsImagesRequestObject struct {
-<span id="L468" class="ln">   468  </span>	Body *multipart.Reader
-<span id="L469" class="ln">   469  </span>}
-<span id="L470" class="ln">   470  </span>
-<span id="L471" class="ln">   471  </span>type PostProductsImagesResponseObject interface {
-<span id="L472" class="ln">   472  </span>	VisitPostProductsImagesResponse(w http.ResponseWriter) error
-<span id="L473" class="ln">   473  </span>}
-<span id="L474" class="ln">   474  </span>
-<span id="L475" class="ln">   475  </span>type PostProductsImages201JSONResponse ProductImageResponse
-<span id="L476" class="ln">   476  </span>
-<span id="L477" class="ln">   477  </span>func (response PostProductsImages201JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L478" class="ln">   478  </span>
-<span id="L479" class="ln">   479  </span>	var buf bytes.Buffer
-<span id="L480" class="ln">   480  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L481" class="ln">   481  </span>		return err
-<span id="L482" class="ln">   482  </span>	}
-<span id="L483" class="ln">   483  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L484" class="ln">   484  </span>	w.WriteHeader(201)
-<span id="L485" class="ln">   485  </span>	_, err := buf.WriteTo(w)
-<span id="L486" class="ln">   486  </span>	return err
-<span id="L487" class="ln">   487  </span>}
-<span id="L488" class="ln">   488  </span>
-<span id="L489" class="ln">   489  </span>type PostProductsImages400JSONResponse struct{ BadRequest400JSONResponse }
-<span id="L490" class="ln">   490  </span>
-<span id="L491" class="ln">   491  </span>func (response PostProductsImages400JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L492" class="ln">   492  </span>
-<span id="L493" class="ln">   493  </span>	var buf bytes.Buffer
-<span id="L494" class="ln">   494  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L495" class="ln">   495  </span>		return err
-<span id="L496" class="ln">   496  </span>	}
-<span id="L497" class="ln">   497  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L498" class="ln">   498  </span>	w.WriteHeader(400)
-<span id="L499" class="ln">   499  </span>	_, err := buf.WriteTo(w)
-<span id="L500" class="ln">   500  </span>	return err
-<span id="L501" class="ln">   501  </span>}
-<span id="L502" class="ln">   502  </span>
-<span id="L503" class="ln">   503  </span>type PostProductsImages401JSONResponse struct{ Unauthorized401JSONResponse }
-<span id="L504" class="ln">   504  </span>
-<span id="L505" class="ln">   505  </span>func (response PostProductsImages401JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L506" class="ln">   506  </span>
-<span id="L507" class="ln">   507  </span>	var buf bytes.Buffer
-<span id="L508" class="ln">   508  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L509" class="ln">   509  </span>		return err
-<span id="L510" class="ln">   510  </span>	}
-<span id="L511" class="ln">   511  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L512" class="ln">   512  </span>	w.WriteHeader(401)
-<span id="L513" class="ln">   513  </span>	_, err := buf.WriteTo(w)
-<span id="L514" class="ln">   514  </span>	return err
-<span id="L515" class="ln">   515  </span>}
-<span id="L516" class="ln">   516  </span>
-<span id="L517" class="ln">   517  </span>type PostProductsImages403JSONResponse struct{ Forbidden403JSONResponse }
-<span id="L518" class="ln">   518  </span>
-<span id="L519" class="ln">   519  </span>func (response PostProductsImages403JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L520" class="ln">   520  </span>
-<span id="L521" class="ln">   521  </span>	var buf bytes.Buffer
-<span id="L522" class="ln">   522  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L523" class="ln">   523  </span>		return err
-<span id="L524" class="ln">   524  </span>	}
-<span id="L525" class="ln">   525  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L526" class="ln">   526  </span>	w.WriteHeader(403)
-<span id="L527" class="ln">   527  </span>	_, err := buf.WriteTo(w)
-<span id="L528" class="ln">   528  </span>	return err
-<span id="L529" class="ln">   529  </span>}
-<span id="L530" class="ln">   530  </span>
-<span id="L531" class="ln">   531  </span>type PostProductsImages405JSONResponse struct {
-<span id="L532" class="ln">   532  </span>	MethodNotAllowed405JSONResponse
-<span id="L533" class="ln">   533  </span>}
-<span id="L534" class="ln">   534  </span>
-<span id="L535" class="ln">   535  </span>func (response PostProductsImages405JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L536" class="ln">   536  </span>
-<span id="L537" class="ln">   537  </span>	var buf bytes.Buffer
-<span id="L538" class="ln">   538  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L539" class="ln">   539  </span>		return err
-<span id="L540" class="ln">   540  </span>	}
-<span id="L541" class="ln">   541  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L542" class="ln">   542  </span>	w.WriteHeader(405)
-<span id="L543" class="ln">   543  </span>	_, err := buf.WriteTo(w)
-<span id="L544" class="ln">   544  </span>	return err
-<span id="L545" class="ln">   545  </span>}
-<span id="L546" class="ln">   546  </span>
-<span id="L547" class="ln">   547  </span>type PostProductsImages413JSONResponse struct{ PayloadTooLarge413JSONResponse }
-<span id="L548" class="ln">   548  </span>
-<span id="L549" class="ln">   549  </span>func (response PostProductsImages413JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L550" class="ln">   550  </span>
-<span id="L551" class="ln">   551  </span>	var buf bytes.Buffer
-<span id="L552" class="ln">   552  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L553" class="ln">   553  </span>		return err
-<span id="L554" class="ln">   554  </span>	}
-<span id="L555" class="ln">   555  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L556" class="ln">   556  </span>	w.WriteHeader(413)
-<span id="L557" class="ln">   557  </span>	_, err := buf.WriteTo(w)
-<span id="L558" class="ln">   558  </span>	return err
-<span id="L559" class="ln">   559  </span>}
-<span id="L560" class="ln">   560  </span>
-<span id="L561" class="ln">   561  </span>type PostProductsImages415JSONResponse struct {
-<span id="L562" class="ln">   562  </span>	UnsupportedMediaType415JSONResponse
-<span id="L563" class="ln">   563  </span>}
-<span id="L564" class="ln">   564  </span>
-<span id="L565" class="ln">   565  </span>func (response PostProductsImages415JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L566" class="ln">   566  </span>
-<span id="L567" class="ln">   567  </span>	var buf bytes.Buffer
-<span id="L568" class="ln">   568  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L569" class="ln">   569  </span>		return err
-<span id="L570" class="ln">   570  </span>	}
-<span id="L571" class="ln">   571  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L572" class="ln">   572  </span>	w.WriteHeader(415)
-<span id="L573" class="ln">   573  </span>	_, err := buf.WriteTo(w)
-<span id="L574" class="ln">   574  </span>	return err
-<span id="L575" class="ln">   575  </span>}
-<span id="L576" class="ln">   576  </span>
-<span id="L577" class="ln">   577  </span>type PostProductsImages422JSONResponse struct {
-<span id="L578" class="ln">   578  </span>	UnprocessableEntity422JSONResponse
-<span id="L579" class="ln">   579  </span>}
-<span id="L580" class="ln">   580  </span>
-<span id="L581" class="ln">   581  </span>func (response PostProductsImages422JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L582" class="ln">   582  </span>
-<span id="L583" class="ln">   583  </span>	var buf bytes.Buffer
-<span id="L584" class="ln">   584  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L585" class="ln">   585  </span>		return err
-<span id="L586" class="ln">   586  </span>	}
-<span id="L587" class="ln">   587  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L588" class="ln">   588  </span>	w.WriteHeader(422)
-<span id="L589" class="ln">   589  </span>	_, err := buf.WriteTo(w)
-<span id="L590" class="ln">   590  </span>	return err
-<span id="L591" class="ln">   591  </span>}
-<span id="L592" class="ln">   592  </span>
-<span id="L593" class="ln">   593  </span>type PostProductsImages500JSONResponse struct {
-<span id="L594" class="ln">   594  </span>	InternalServerError500JSONResponse
-<span id="L595" class="ln">   595  </span>}
-<span id="L596" class="ln">   596  </span>
-<span id="L597" class="ln">   597  </span>func (response PostProductsImages500JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L598" class="ln">   598  </span>
-<span id="L599" class="ln">   599  </span>	var buf bytes.Buffer
-<span id="L600" class="ln">   600  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L601" class="ln">   601  </span>		return err
-<span id="L602" class="ln">   602  </span>	}
-<span id="L603" class="ln">   603  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L604" class="ln">   604  </span>	w.WriteHeader(500)
-<span id="L605" class="ln">   605  </span>	_, err := buf.WriteTo(w)
-<span id="L606" class="ln">   606  </span>	return err
-<span id="L607" class="ln">   607  </span>}
-<span id="L608" class="ln">   608  </span>
-<span id="L609" class="ln">   609  </span>type PostProductsImages503JSONResponse struct {
-<span id="L610" class="ln">   610  </span>	ServiceUnavailable503JSONResponse
-<span id="L611" class="ln">   611  </span>}
-<span id="L612" class="ln">   612  </span>
-<span id="L613" class="ln">   613  </span>func (response PostProductsImages503JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
-<span id="L614" class="ln">   614  </span>
-<span id="L615" class="ln">   615  </span>	var buf bytes.Buffer
-<span id="L616" class="ln">   616  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
-<span id="L617" class="ln">   617  </span>		return err
-<span id="L618" class="ln">   618  </span>	}
-<span id="L619" class="ln">   619  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
-<span id="L620" class="ln">   620  </span>	w.WriteHeader(503)
-<span id="L621" class="ln">   621  </span>	_, err := buf.WriteTo(w)
-<span id="L622" class="ln">   622  </span>	return err
-<span id="L623" class="ln">   623  </span>}
-<span id="L624" class="ln">   624  </span>
-<span id="L625" class="ln">   625  </span><span class="comment">// StrictServerInterface represents all server handlers.</span>
-<span id="L626" class="ln">   626  </span>type StrictServerInterface interface {
-<span id="L627" class="ln">   627  </span>	<span class="comment">// GetProducts 商品一覧の取得</span>
-<span id="L628" class="ln">   628  </span>	<span class="comment">// (GET /v1/products)</span>
-<span id="L629" class="ln">   629  </span>	GetProducts(ctx context.Context, request GetProductsRequestObject) (GetProductsResponseObject, error)
-<span id="L630" class="ln">   630  </span>	<span class="comment">// PostProducts 商品の作成</span>
-<span id="L631" class="ln">   631  </span>	<span class="comment">// (POST /v1/products)</span>
-<span id="L632" class="ln">   632  </span>	PostProducts(ctx context.Context, request PostProductsRequestObject) (PostProductsResponseObject, error)
-<span id="L633" class="ln">   633  </span>	<span class="comment">// PostProductsImages 商品画像のアップロード</span>
-<span id="L634" class="ln">   634  </span>	<span class="comment">// (POST /v1/products/images)</span>
-<span id="L635" class="ln">   635  </span>	PostProductsImages(ctx context.Context, request PostProductsImagesRequestObject) (PostProductsImagesResponseObject, error)
-<span id="L636" class="ln">   636  </span>}
-<span id="L637" class="ln">   637  </span>
-<span id="L638" class="ln">   638  </span>type StrictHandlerFunc func(ctx *echo.Context, request any) (any, error)
-<span id="L639" class="ln">   639  </span>type StrictMiddlewareFunc func(f StrictHandlerFunc, operationID string) StrictHandlerFunc
-<span id="L640" class="ln">   640  </span>
-<span id="L641" class="ln">   641  </span>func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) ServerInterface {
-<span id="L642" class="ln">   642  </span>	return &amp;strictHandler{ssi: ssi, middlewares: middlewares}
+<span id="L133" class="ln">   133  </span>	<span class="comment">// ------------- Optional query parameter &#34;discontinued&#34; -------------</span>
+<span id="L134" class="ln">   134  </span>
+<span id="L135" class="ln">   135  </span>	err = runtime.BindQueryParameterWithOptions(&#34;form&#34;, true, false, &#34;discontinued&#34;, ctx.QueryParams(), &amp;params.Discontinued, runtime.BindQueryParameterOptions{Type: &#34;boolean&#34;, Format: &#34;&#34;})
+<span id="L136" class="ln">   136  </span>	if err != nil {
+<span id="L137" class="ln">   137  </span>		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(&#34;Invalid format for parameter discontinued: %s&#34;, err))
+<span id="L138" class="ln">   138  </span>	}
+<span id="L139" class="ln">   139  </span>
+<span id="L140" class="ln">   140  </span>	<span class="comment">// Invoke the callback with all the unmarshaled arguments</span>
+<span id="L141" class="ln">   141  </span>	err = w.Handler.GetProducts(ctx, params)
+<span id="L142" class="ln">   142  </span>	return err
+<span id="L143" class="ln">   143  </span>}
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span><span class="comment">// PostProducts converts echo context to params.</span>
+<span id="L146" class="ln">   146  </span>func (w *ServerInterfaceWrapper) PostProducts(ctx *echo.Context) error {
+<span id="L147" class="ln">   147  </span>	var err error
+<span id="L148" class="ln">   148  </span>
+<span id="L149" class="ln">   149  </span>	<span class="comment">// Invoke the callback with all the unmarshaled arguments</span>
+<span id="L150" class="ln">   150  </span>	err = w.Handler.PostProducts(ctx)
+<span id="L151" class="ln">   151  </span>	return err
+<span id="L152" class="ln">   152  </span>}
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span><span class="comment">// PostProductsImages converts echo context to params.</span>
+<span id="L155" class="ln">   155  </span>func (w *ServerInterfaceWrapper) PostProductsImages(ctx *echo.Context) error {
+<span id="L156" class="ln">   156  </span>	var err error
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>	<span class="comment">// Invoke the callback with all the unmarshaled arguments</span>
+<span id="L159" class="ln">   159  </span>	err = w.Handler.PostProductsImages(ctx)
+<span id="L160" class="ln">   160  </span>	return err
+<span id="L161" class="ln">   161  </span>}
+<span id="L162" class="ln">   162  </span>
+<span id="L163" class="ln">   163  </span><span class="comment">// This is a simple interface which specifies echo.Route addition functions which</span>
+<span id="L164" class="ln">   164  </span><span class="comment">// are present on both echo.Echo and echo.Group, since we want to allow using</span>
+<span id="L165" class="ln">   165  </span><span class="comment">// either of them for path registration</span>
+<span id="L166" class="ln">   166  </span>type EchoRouter interface {
+<span id="L167" class="ln">   167  </span>	CONNECT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L168" class="ln">   168  </span>	DELETE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L169" class="ln">   169  </span>	GET(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L170" class="ln">   170  </span>	HEAD(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L171" class="ln">   171  </span>	OPTIONS(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L172" class="ln">   172  </span>	PATCH(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L173" class="ln">   173  </span>	POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L174" class="ln">   174  </span>	PUT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L175" class="ln">   175  </span>	TRACE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) echo.RouteInfo
+<span id="L176" class="ln">   176  </span>}
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span><span class="comment">// RegisterHandlersOptions configures RegisterHandlersWithOptions.</span>
+<span id="L179" class="ln">   179  </span>type RegisterHandlersOptions struct {
+<span id="L180" class="ln">   180  </span>	<span class="comment">// BaseURL is prepended to every registered path so the API can be served</span>
+<span id="L181" class="ln">   181  </span>	<span class="comment">// under a prefix.</span>
+<span id="L182" class="ln">   182  </span>	BaseURL string
+<span id="L183" class="ln">   183  </span>	<span class="comment">// OperationMiddlewares lets the caller attach per-operation middleware at</span>
+<span id="L184" class="ln">   184  </span>	<span class="comment">// registration time. The map key is the OpenAPI `operationId` value as it</span>
+<span id="L185" class="ln">   185  </span>	<span class="comment">// appears in the spec (the raw, un-normalized form). Operations that have</span>
+<span id="L186" class="ln">   186  </span>	<span class="comment">// no entry are registered with no extra middleware. A nil map disables</span>
+<span id="L187" class="ln">   187  </span>	<span class="comment">// per-operation middleware entirely.</span>
+<span id="L188" class="ln">   188  </span>	OperationMiddlewares map[string][]echo.MiddlewareFunc
+<span id="L189" class="ln">   189  </span>}
+<span id="L190" class="ln">   190  </span>
+<span id="L191" class="ln">   191  </span><span class="comment">// RegisterHandlers adds each server route to the EchoRouter.</span>
+<span id="L192" class="ln">   192  </span>func RegisterHandlers(router EchoRouter, si ServerInterface) {
+<span id="L193" class="ln">   193  </span>	RegisterHandlersWithOptions(router, si, RegisterHandlersOptions{})
+<span id="L194" class="ln">   194  </span>}
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span><span class="comment">// RegisterHandlersWithBaseURL registers handlers and prepends BaseURL to the</span>
+<span id="L197" class="ln">   197  </span><span class="comment">// paths so the API can be served under a prefix.</span>
+<span id="L198" class="ln">   198  </span>func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL string) {
+<span id="L199" class="ln">   199  </span>	RegisterHandlersWithOptions(router, si, RegisterHandlersOptions{BaseURL: baseURL})
+<span id="L200" class="ln">   200  </span>}
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span><span class="comment">// RegisterHandlersWithOptions registers handlers using the supplied options,</span>
+<span id="L203" class="ln">   203  </span><span class="comment">// including any per-operation middleware.</span>
+<span id="L204" class="ln">   204  </span>func RegisterHandlersWithOptions(router EchoRouter, si ServerInterface, options RegisterHandlersOptions) {
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>	wrapper := ServerInterfaceWrapper{
+<span id="L207" class="ln">   207  </span>		Handler: si,
+<span id="L208" class="ln">   208  </span>	}
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>	router.GET(options.BaseURL+&#34;/v1/products&#34;, wrapper.GetProducts, options.OperationMiddlewares[&#34;GetProducts&#34;]...)
+<span id="L211" class="ln">   211  </span>	router.POST(options.BaseURL+&#34;/v1/products&#34;, wrapper.PostProducts, options.OperationMiddlewares[&#34;PostProducts&#34;]...)
+<span id="L212" class="ln">   212  </span>	router.POST(options.BaseURL+&#34;/v1/products/images&#34;, wrapper.PostProductsImages, options.OperationMiddlewares[&#34;PostProductsImages&#34;]...)
+<span id="L213" class="ln">   213  </span>
+<span id="L214" class="ln">   214  </span>}
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>type BadRequest400JSONResponse ErrorResponse
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>type Forbidden403JSONResponse ErrorResponse
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>type InternalServerError500JSONResponse ErrorResponse
+<span id="L221" class="ln">   221  </span>
+<span id="L222" class="ln">   222  </span>type MethodNotAllowed405JSONResponse ErrorResponse
+<span id="L223" class="ln">   223  </span>
+<span id="L224" class="ln">   224  </span>type PayloadTooLarge413JSONResponse ErrorResponse
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>type ServiceUnavailable503JSONResponse ErrorResponse
+<span id="L227" class="ln">   227  </span>
+<span id="L228" class="ln">   228  </span>type Unauthorized401JSONResponse ErrorResponse
+<span id="L229" class="ln">   229  </span>
+<span id="L230" class="ln">   230  </span>type UnprocessableEntity422JSONResponse ErrorResponseWithDetails
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>type UnsupportedMediaType415JSONResponse ErrorResponse
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>type GetProductsRequestObject struct {
+<span id="L235" class="ln">   235  </span>	Params GetProductsParams
+<span id="L236" class="ln">   236  </span>}
+<span id="L237" class="ln">   237  </span>
+<span id="L238" class="ln">   238  </span>type GetProductsResponseObject interface {
+<span id="L239" class="ln">   239  </span>	VisitGetProductsResponse(w http.ResponseWriter) error
+<span id="L240" class="ln">   240  </span>}
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>type GetProducts200JSONResponse ProductListResponse
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>func (response GetProducts200JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
+<span id="L245" class="ln">   245  </span>
+<span id="L246" class="ln">   246  </span>	var buf bytes.Buffer
+<span id="L247" class="ln">   247  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L248" class="ln">   248  </span>		return err
+<span id="L249" class="ln">   249  </span>	}
+<span id="L250" class="ln">   250  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L251" class="ln">   251  </span>	w.WriteHeader(200)
+<span id="L252" class="ln">   252  </span>	_, err := buf.WriteTo(w)
+<span id="L253" class="ln">   253  </span>	return err
+<span id="L254" class="ln">   254  </span>}
+<span id="L255" class="ln">   255  </span>
+<span id="L256" class="ln">   256  </span>type GetProducts400JSONResponse struct{ BadRequest400JSONResponse }
+<span id="L257" class="ln">   257  </span>
+<span id="L258" class="ln">   258  </span>func (response GetProducts400JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>	var buf bytes.Buffer
+<span id="L261" class="ln">   261  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L262" class="ln">   262  </span>		return err
+<span id="L263" class="ln">   263  </span>	}
+<span id="L264" class="ln">   264  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L265" class="ln">   265  </span>	w.WriteHeader(400)
+<span id="L266" class="ln">   266  </span>	_, err := buf.WriteTo(w)
+<span id="L267" class="ln">   267  </span>	return err
+<span id="L268" class="ln">   268  </span>}
+<span id="L269" class="ln">   269  </span>
+<span id="L270" class="ln">   270  </span>type GetProducts401JSONResponse struct{ Unauthorized401JSONResponse }
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>func (response GetProducts401JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
+<span id="L273" class="ln">   273  </span>
+<span id="L274" class="ln">   274  </span>	var buf bytes.Buffer
+<span id="L275" class="ln">   275  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L276" class="ln">   276  </span>		return err
+<span id="L277" class="ln">   277  </span>	}
+<span id="L278" class="ln">   278  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L279" class="ln">   279  </span>	w.WriteHeader(401)
+<span id="L280" class="ln">   280  </span>	_, err := buf.WriteTo(w)
+<span id="L281" class="ln">   281  </span>	return err
+<span id="L282" class="ln">   282  </span>}
+<span id="L283" class="ln">   283  </span>
+<span id="L284" class="ln">   284  </span>type GetProducts403JSONResponse struct{ Forbidden403JSONResponse }
+<span id="L285" class="ln">   285  </span>
+<span id="L286" class="ln">   286  </span>func (response GetProducts403JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>	var buf bytes.Buffer
+<span id="L289" class="ln">   289  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L290" class="ln">   290  </span>		return err
+<span id="L291" class="ln">   291  </span>	}
+<span id="L292" class="ln">   292  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L293" class="ln">   293  </span>	w.WriteHeader(403)
+<span id="L294" class="ln">   294  </span>	_, err := buf.WriteTo(w)
+<span id="L295" class="ln">   295  </span>	return err
+<span id="L296" class="ln">   296  </span>}
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span>type GetProducts405JSONResponse struct {
+<span id="L299" class="ln">   299  </span>	MethodNotAllowed405JSONResponse
+<span id="L300" class="ln">   300  </span>}
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>func (response GetProducts405JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
+<span id="L303" class="ln">   303  </span>
+<span id="L304" class="ln">   304  </span>	var buf bytes.Buffer
+<span id="L305" class="ln">   305  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L306" class="ln">   306  </span>		return err
+<span id="L307" class="ln">   307  </span>	}
+<span id="L308" class="ln">   308  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L309" class="ln">   309  </span>	w.WriteHeader(405)
+<span id="L310" class="ln">   310  </span>	_, err := buf.WriteTo(w)
+<span id="L311" class="ln">   311  </span>	return err
+<span id="L312" class="ln">   312  </span>}
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span>type GetProducts500JSONResponse struct {
+<span id="L315" class="ln">   315  </span>	InternalServerError500JSONResponse
+<span id="L316" class="ln">   316  </span>}
+<span id="L317" class="ln">   317  </span>
+<span id="L318" class="ln">   318  </span>func (response GetProducts500JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span>	var buf bytes.Buffer
+<span id="L321" class="ln">   321  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L322" class="ln">   322  </span>		return err
+<span id="L323" class="ln">   323  </span>	}
+<span id="L324" class="ln">   324  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L325" class="ln">   325  </span>	w.WriteHeader(500)
+<span id="L326" class="ln">   326  </span>	_, err := buf.WriteTo(w)
+<span id="L327" class="ln">   327  </span>	return err
+<span id="L328" class="ln">   328  </span>}
+<span id="L329" class="ln">   329  </span>
+<span id="L330" class="ln">   330  </span>type GetProducts503JSONResponse struct {
+<span id="L331" class="ln">   331  </span>	ServiceUnavailable503JSONResponse
+<span id="L332" class="ln">   332  </span>}
+<span id="L333" class="ln">   333  </span>
+<span id="L334" class="ln">   334  </span>func (response GetProducts503JSONResponse) VisitGetProductsResponse(w http.ResponseWriter) error {
+<span id="L335" class="ln">   335  </span>
+<span id="L336" class="ln">   336  </span>	var buf bytes.Buffer
+<span id="L337" class="ln">   337  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L338" class="ln">   338  </span>		return err
+<span id="L339" class="ln">   339  </span>	}
+<span id="L340" class="ln">   340  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L341" class="ln">   341  </span>	w.WriteHeader(503)
+<span id="L342" class="ln">   342  </span>	_, err := buf.WriteTo(w)
+<span id="L343" class="ln">   343  </span>	return err
+<span id="L344" class="ln">   344  </span>}
+<span id="L345" class="ln">   345  </span>
+<span id="L346" class="ln">   346  </span>type PostProductsRequestObject struct {
+<span id="L347" class="ln">   347  </span>	Body *PostProductsJSONRequestBody
+<span id="L348" class="ln">   348  </span>}
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>type PostProductsResponseObject interface {
+<span id="L351" class="ln">   351  </span>	VisitPostProductsResponse(w http.ResponseWriter) error
+<span id="L352" class="ln">   352  </span>}
+<span id="L353" class="ln">   353  </span>
+<span id="L354" class="ln">   354  </span>type PostProducts201JSONResponse ProductResponse
+<span id="L355" class="ln">   355  </span>
+<span id="L356" class="ln">   356  </span>func (response PostProducts201JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
+<span id="L357" class="ln">   357  </span>
+<span id="L358" class="ln">   358  </span>	var buf bytes.Buffer
+<span id="L359" class="ln">   359  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L360" class="ln">   360  </span>		return err
+<span id="L361" class="ln">   361  </span>	}
+<span id="L362" class="ln">   362  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L363" class="ln">   363  </span>	w.WriteHeader(201)
+<span id="L364" class="ln">   364  </span>	_, err := buf.WriteTo(w)
+<span id="L365" class="ln">   365  </span>	return err
+<span id="L366" class="ln">   366  </span>}
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>type PostProducts400JSONResponse struct{ BadRequest400JSONResponse }
+<span id="L369" class="ln">   369  </span>
+<span id="L370" class="ln">   370  </span>func (response PostProducts400JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
+<span id="L371" class="ln">   371  </span>
+<span id="L372" class="ln">   372  </span>	var buf bytes.Buffer
+<span id="L373" class="ln">   373  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L374" class="ln">   374  </span>		return err
+<span id="L375" class="ln">   375  </span>	}
+<span id="L376" class="ln">   376  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L377" class="ln">   377  </span>	w.WriteHeader(400)
+<span id="L378" class="ln">   378  </span>	_, err := buf.WriteTo(w)
+<span id="L379" class="ln">   379  </span>	return err
+<span id="L380" class="ln">   380  </span>}
+<span id="L381" class="ln">   381  </span>
+<span id="L382" class="ln">   382  </span>type PostProducts401JSONResponse struct{ Unauthorized401JSONResponse }
+<span id="L383" class="ln">   383  </span>
+<span id="L384" class="ln">   384  </span>func (response PostProducts401JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
+<span id="L385" class="ln">   385  </span>
+<span id="L386" class="ln">   386  </span>	var buf bytes.Buffer
+<span id="L387" class="ln">   387  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L388" class="ln">   388  </span>		return err
+<span id="L389" class="ln">   389  </span>	}
+<span id="L390" class="ln">   390  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L391" class="ln">   391  </span>	w.WriteHeader(401)
+<span id="L392" class="ln">   392  </span>	_, err := buf.WriteTo(w)
+<span id="L393" class="ln">   393  </span>	return err
+<span id="L394" class="ln">   394  </span>}
+<span id="L395" class="ln">   395  </span>
+<span id="L396" class="ln">   396  </span>type PostProducts403JSONResponse struct{ Forbidden403JSONResponse }
+<span id="L397" class="ln">   397  </span>
+<span id="L398" class="ln">   398  </span>func (response PostProducts403JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
+<span id="L399" class="ln">   399  </span>
+<span id="L400" class="ln">   400  </span>	var buf bytes.Buffer
+<span id="L401" class="ln">   401  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L402" class="ln">   402  </span>		return err
+<span id="L403" class="ln">   403  </span>	}
+<span id="L404" class="ln">   404  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L405" class="ln">   405  </span>	w.WriteHeader(403)
+<span id="L406" class="ln">   406  </span>	_, err := buf.WriteTo(w)
+<span id="L407" class="ln">   407  </span>	return err
+<span id="L408" class="ln">   408  </span>}
+<span id="L409" class="ln">   409  </span>
+<span id="L410" class="ln">   410  </span>type PostProducts405JSONResponse struct {
+<span id="L411" class="ln">   411  </span>	MethodNotAllowed405JSONResponse
+<span id="L412" class="ln">   412  </span>}
+<span id="L413" class="ln">   413  </span>
+<span id="L414" class="ln">   414  </span>func (response PostProducts405JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
+<span id="L415" class="ln">   415  </span>
+<span id="L416" class="ln">   416  </span>	var buf bytes.Buffer
+<span id="L417" class="ln">   417  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L418" class="ln">   418  </span>		return err
+<span id="L419" class="ln">   419  </span>	}
+<span id="L420" class="ln">   420  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L421" class="ln">   421  </span>	w.WriteHeader(405)
+<span id="L422" class="ln">   422  </span>	_, err := buf.WriteTo(w)
+<span id="L423" class="ln">   423  </span>	return err
+<span id="L424" class="ln">   424  </span>}
+<span id="L425" class="ln">   425  </span>
+<span id="L426" class="ln">   426  </span>type PostProducts422JSONResponse struct {
+<span id="L427" class="ln">   427  </span>	UnprocessableEntity422JSONResponse
+<span id="L428" class="ln">   428  </span>}
+<span id="L429" class="ln">   429  </span>
+<span id="L430" class="ln">   430  </span>func (response PostProducts422JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
+<span id="L431" class="ln">   431  </span>
+<span id="L432" class="ln">   432  </span>	var buf bytes.Buffer
+<span id="L433" class="ln">   433  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L434" class="ln">   434  </span>		return err
+<span id="L435" class="ln">   435  </span>	}
+<span id="L436" class="ln">   436  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L437" class="ln">   437  </span>	w.WriteHeader(422)
+<span id="L438" class="ln">   438  </span>	_, err := buf.WriteTo(w)
+<span id="L439" class="ln">   439  </span>	return err
+<span id="L440" class="ln">   440  </span>}
+<span id="L441" class="ln">   441  </span>
+<span id="L442" class="ln">   442  </span>type PostProducts500JSONResponse struct {
+<span id="L443" class="ln">   443  </span>	InternalServerError500JSONResponse
+<span id="L444" class="ln">   444  </span>}
+<span id="L445" class="ln">   445  </span>
+<span id="L446" class="ln">   446  </span>func (response PostProducts500JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
+<span id="L447" class="ln">   447  </span>
+<span id="L448" class="ln">   448  </span>	var buf bytes.Buffer
+<span id="L449" class="ln">   449  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L450" class="ln">   450  </span>		return err
+<span id="L451" class="ln">   451  </span>	}
+<span id="L452" class="ln">   452  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L453" class="ln">   453  </span>	w.WriteHeader(500)
+<span id="L454" class="ln">   454  </span>	_, err := buf.WriteTo(w)
+<span id="L455" class="ln">   455  </span>	return err
+<span id="L456" class="ln">   456  </span>}
+<span id="L457" class="ln">   457  </span>
+<span id="L458" class="ln">   458  </span>type PostProducts503JSONResponse struct {
+<span id="L459" class="ln">   459  </span>	ServiceUnavailable503JSONResponse
+<span id="L460" class="ln">   460  </span>}
+<span id="L461" class="ln">   461  </span>
+<span id="L462" class="ln">   462  </span>func (response PostProducts503JSONResponse) VisitPostProductsResponse(w http.ResponseWriter) error {
+<span id="L463" class="ln">   463  </span>
+<span id="L464" class="ln">   464  </span>	var buf bytes.Buffer
+<span id="L465" class="ln">   465  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L466" class="ln">   466  </span>		return err
+<span id="L467" class="ln">   467  </span>	}
+<span id="L468" class="ln">   468  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L469" class="ln">   469  </span>	w.WriteHeader(503)
+<span id="L470" class="ln">   470  </span>	_, err := buf.WriteTo(w)
+<span id="L471" class="ln">   471  </span>	return err
+<span id="L472" class="ln">   472  </span>}
+<span id="L473" class="ln">   473  </span>
+<span id="L474" class="ln">   474  </span>type PostProductsImagesRequestObject struct {
+<span id="L475" class="ln">   475  </span>	Body *multipart.Reader
+<span id="L476" class="ln">   476  </span>}
+<span id="L477" class="ln">   477  </span>
+<span id="L478" class="ln">   478  </span>type PostProductsImagesResponseObject interface {
+<span id="L479" class="ln">   479  </span>	VisitPostProductsImagesResponse(w http.ResponseWriter) error
+<span id="L480" class="ln">   480  </span>}
+<span id="L481" class="ln">   481  </span>
+<span id="L482" class="ln">   482  </span>type PostProductsImages201JSONResponse ProductImageResponse
+<span id="L483" class="ln">   483  </span>
+<span id="L484" class="ln">   484  </span>func (response PostProductsImages201JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L485" class="ln">   485  </span>
+<span id="L486" class="ln">   486  </span>	var buf bytes.Buffer
+<span id="L487" class="ln">   487  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L488" class="ln">   488  </span>		return err
+<span id="L489" class="ln">   489  </span>	}
+<span id="L490" class="ln">   490  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L491" class="ln">   491  </span>	w.WriteHeader(201)
+<span id="L492" class="ln">   492  </span>	_, err := buf.WriteTo(w)
+<span id="L493" class="ln">   493  </span>	return err
+<span id="L494" class="ln">   494  </span>}
+<span id="L495" class="ln">   495  </span>
+<span id="L496" class="ln">   496  </span>type PostProductsImages400JSONResponse struct{ BadRequest400JSONResponse }
+<span id="L497" class="ln">   497  </span>
+<span id="L498" class="ln">   498  </span>func (response PostProductsImages400JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L499" class="ln">   499  </span>
+<span id="L500" class="ln">   500  </span>	var buf bytes.Buffer
+<span id="L501" class="ln">   501  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L502" class="ln">   502  </span>		return err
+<span id="L503" class="ln">   503  </span>	}
+<span id="L504" class="ln">   504  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L505" class="ln">   505  </span>	w.WriteHeader(400)
+<span id="L506" class="ln">   506  </span>	_, err := buf.WriteTo(w)
+<span id="L507" class="ln">   507  </span>	return err
+<span id="L508" class="ln">   508  </span>}
+<span id="L509" class="ln">   509  </span>
+<span id="L510" class="ln">   510  </span>type PostProductsImages401JSONResponse struct{ Unauthorized401JSONResponse }
+<span id="L511" class="ln">   511  </span>
+<span id="L512" class="ln">   512  </span>func (response PostProductsImages401JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L513" class="ln">   513  </span>
+<span id="L514" class="ln">   514  </span>	var buf bytes.Buffer
+<span id="L515" class="ln">   515  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L516" class="ln">   516  </span>		return err
+<span id="L517" class="ln">   517  </span>	}
+<span id="L518" class="ln">   518  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L519" class="ln">   519  </span>	w.WriteHeader(401)
+<span id="L520" class="ln">   520  </span>	_, err := buf.WriteTo(w)
+<span id="L521" class="ln">   521  </span>	return err
+<span id="L522" class="ln">   522  </span>}
+<span id="L523" class="ln">   523  </span>
+<span id="L524" class="ln">   524  </span>type PostProductsImages403JSONResponse struct{ Forbidden403JSONResponse }
+<span id="L525" class="ln">   525  </span>
+<span id="L526" class="ln">   526  </span>func (response PostProductsImages403JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L527" class="ln">   527  </span>
+<span id="L528" class="ln">   528  </span>	var buf bytes.Buffer
+<span id="L529" class="ln">   529  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L530" class="ln">   530  </span>		return err
+<span id="L531" class="ln">   531  </span>	}
+<span id="L532" class="ln">   532  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L533" class="ln">   533  </span>	w.WriteHeader(403)
+<span id="L534" class="ln">   534  </span>	_, err := buf.WriteTo(w)
+<span id="L535" class="ln">   535  </span>	return err
+<span id="L536" class="ln">   536  </span>}
+<span id="L537" class="ln">   537  </span>
+<span id="L538" class="ln">   538  </span>type PostProductsImages405JSONResponse struct {
+<span id="L539" class="ln">   539  </span>	MethodNotAllowed405JSONResponse
+<span id="L540" class="ln">   540  </span>}
+<span id="L541" class="ln">   541  </span>
+<span id="L542" class="ln">   542  </span>func (response PostProductsImages405JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L543" class="ln">   543  </span>
+<span id="L544" class="ln">   544  </span>	var buf bytes.Buffer
+<span id="L545" class="ln">   545  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L546" class="ln">   546  </span>		return err
+<span id="L547" class="ln">   547  </span>	}
+<span id="L548" class="ln">   548  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L549" class="ln">   549  </span>	w.WriteHeader(405)
+<span id="L550" class="ln">   550  </span>	_, err := buf.WriteTo(w)
+<span id="L551" class="ln">   551  </span>	return err
+<span id="L552" class="ln">   552  </span>}
+<span id="L553" class="ln">   553  </span>
+<span id="L554" class="ln">   554  </span>type PostProductsImages413JSONResponse struct{ PayloadTooLarge413JSONResponse }
+<span id="L555" class="ln">   555  </span>
+<span id="L556" class="ln">   556  </span>func (response PostProductsImages413JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L557" class="ln">   557  </span>
+<span id="L558" class="ln">   558  </span>	var buf bytes.Buffer
+<span id="L559" class="ln">   559  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L560" class="ln">   560  </span>		return err
+<span id="L561" class="ln">   561  </span>	}
+<span id="L562" class="ln">   562  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L563" class="ln">   563  </span>	w.WriteHeader(413)
+<span id="L564" class="ln">   564  </span>	_, err := buf.WriteTo(w)
+<span id="L565" class="ln">   565  </span>	return err
+<span id="L566" class="ln">   566  </span>}
+<span id="L567" class="ln">   567  </span>
+<span id="L568" class="ln">   568  </span>type PostProductsImages415JSONResponse struct {
+<span id="L569" class="ln">   569  </span>	UnsupportedMediaType415JSONResponse
+<span id="L570" class="ln">   570  </span>}
+<span id="L571" class="ln">   571  </span>
+<span id="L572" class="ln">   572  </span>func (response PostProductsImages415JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L573" class="ln">   573  </span>
+<span id="L574" class="ln">   574  </span>	var buf bytes.Buffer
+<span id="L575" class="ln">   575  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L576" class="ln">   576  </span>		return err
+<span id="L577" class="ln">   577  </span>	}
+<span id="L578" class="ln">   578  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L579" class="ln">   579  </span>	w.WriteHeader(415)
+<span id="L580" class="ln">   580  </span>	_, err := buf.WriteTo(w)
+<span id="L581" class="ln">   581  </span>	return err
+<span id="L582" class="ln">   582  </span>}
+<span id="L583" class="ln">   583  </span>
+<span id="L584" class="ln">   584  </span>type PostProductsImages422JSONResponse struct {
+<span id="L585" class="ln">   585  </span>	UnprocessableEntity422JSONResponse
+<span id="L586" class="ln">   586  </span>}
+<span id="L587" class="ln">   587  </span>
+<span id="L588" class="ln">   588  </span>func (response PostProductsImages422JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L589" class="ln">   589  </span>
+<span id="L590" class="ln">   590  </span>	var buf bytes.Buffer
+<span id="L591" class="ln">   591  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L592" class="ln">   592  </span>		return err
+<span id="L593" class="ln">   593  </span>	}
+<span id="L594" class="ln">   594  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L595" class="ln">   595  </span>	w.WriteHeader(422)
+<span id="L596" class="ln">   596  </span>	_, err := buf.WriteTo(w)
+<span id="L597" class="ln">   597  </span>	return err
+<span id="L598" class="ln">   598  </span>}
+<span id="L599" class="ln">   599  </span>
+<span id="L600" class="ln">   600  </span>type PostProductsImages500JSONResponse struct {
+<span id="L601" class="ln">   601  </span>	InternalServerError500JSONResponse
+<span id="L602" class="ln">   602  </span>}
+<span id="L603" class="ln">   603  </span>
+<span id="L604" class="ln">   604  </span>func (response PostProductsImages500JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L605" class="ln">   605  </span>
+<span id="L606" class="ln">   606  </span>	var buf bytes.Buffer
+<span id="L607" class="ln">   607  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L608" class="ln">   608  </span>		return err
+<span id="L609" class="ln">   609  </span>	}
+<span id="L610" class="ln">   610  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L611" class="ln">   611  </span>	w.WriteHeader(500)
+<span id="L612" class="ln">   612  </span>	_, err := buf.WriteTo(w)
+<span id="L613" class="ln">   613  </span>	return err
+<span id="L614" class="ln">   614  </span>}
+<span id="L615" class="ln">   615  </span>
+<span id="L616" class="ln">   616  </span>type PostProductsImages503JSONResponse struct {
+<span id="L617" class="ln">   617  </span>	ServiceUnavailable503JSONResponse
+<span id="L618" class="ln">   618  </span>}
+<span id="L619" class="ln">   619  </span>
+<span id="L620" class="ln">   620  </span>func (response PostProductsImages503JSONResponse) VisitPostProductsImagesResponse(w http.ResponseWriter) error {
+<span id="L621" class="ln">   621  </span>
+<span id="L622" class="ln">   622  </span>	var buf bytes.Buffer
+<span id="L623" class="ln">   623  </span>	if err := json.NewEncoder(&amp;buf).Encode(response); err != nil {
+<span id="L624" class="ln">   624  </span>		return err
+<span id="L625" class="ln">   625  </span>	}
+<span id="L626" class="ln">   626  </span>	w.Header().Set(&#34;Content-Type&#34;, &#34;application/json&#34;)
+<span id="L627" class="ln">   627  </span>	w.WriteHeader(503)
+<span id="L628" class="ln">   628  </span>	_, err := buf.WriteTo(w)
+<span id="L629" class="ln">   629  </span>	return err
+<span id="L630" class="ln">   630  </span>}
+<span id="L631" class="ln">   631  </span>
+<span id="L632" class="ln">   632  </span><span class="comment">// StrictServerInterface represents all server handlers.</span>
+<span id="L633" class="ln">   633  </span>type StrictServerInterface interface {
+<span id="L634" class="ln">   634  </span>	<span class="comment">// GetProducts 商品一覧の取得</span>
+<span id="L635" class="ln">   635  </span>	<span class="comment">// (GET /v1/products)</span>
+<span id="L636" class="ln">   636  </span>	GetProducts(ctx context.Context, request GetProductsRequestObject) (GetProductsResponseObject, error)
+<span id="L637" class="ln">   637  </span>	<span class="comment">// PostProducts 商品の作成</span>
+<span id="L638" class="ln">   638  </span>	<span class="comment">// (POST /v1/products)</span>
+<span id="L639" class="ln">   639  </span>	PostProducts(ctx context.Context, request PostProductsRequestObject) (PostProductsResponseObject, error)
+<span id="L640" class="ln">   640  </span>	<span class="comment">// PostProductsImages 商品画像のアップロード</span>
+<span id="L641" class="ln">   641  </span>	<span class="comment">// (POST /v1/products/images)</span>
+<span id="L642" class="ln">   642  </span>	PostProductsImages(ctx context.Context, request PostProductsImagesRequestObject) (PostProductsImagesResponseObject, error)
 <span id="L643" class="ln">   643  </span>}
 <span id="L644" class="ln">   644  </span>
-<span id="L645" class="ln">   645  </span>type strictHandler struct {
-<span id="L646" class="ln">   646  </span>	ssi         StrictServerInterface
-<span id="L647" class="ln">   647  </span>	middlewares []StrictMiddlewareFunc
-<span id="L648" class="ln">   648  </span>}
-<span id="L649" class="ln">   649  </span>
-<span id="L650" class="ln">   650  </span><span class="comment">// GetProducts operation middleware</span>
-<span id="L651" class="ln">   651  </span>func (sh *strictHandler) GetProducts(ctx *echo.Context, params GetProductsParams) error {
-<span id="L652" class="ln">   652  </span>	var request GetProductsRequestObject
-<span id="L653" class="ln">   653  </span>
-<span id="L654" class="ln">   654  </span>	request.Params = params
-<span id="L655" class="ln">   655  </span>
-<span id="L656" class="ln">   656  </span>	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
-<span id="L657" class="ln">   657  </span>		return sh.ssi.GetProducts(ctx.Request().Context(), request.(GetProductsRequestObject))
-<span id="L658" class="ln">   658  </span>	}
-<span id="L659" class="ln">   659  </span>	for _, middleware := range sh.middlewares {
-<span id="L660" class="ln">   660  </span>		handler = middleware(handler, &#34;GetProducts&#34;)
-<span id="L661" class="ln">   661  </span>	}
+<span id="L645" class="ln">   645  </span>type StrictHandlerFunc func(ctx *echo.Context, request any) (any, error)
+<span id="L646" class="ln">   646  </span>type StrictMiddlewareFunc func(f StrictHandlerFunc, operationID string) StrictHandlerFunc
+<span id="L647" class="ln">   647  </span>
+<span id="L648" class="ln">   648  </span>func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) ServerInterface {
+<span id="L649" class="ln">   649  </span>	return &amp;strictHandler{ssi: ssi, middlewares: middlewares}
+<span id="L650" class="ln">   650  </span>}
+<span id="L651" class="ln">   651  </span>
+<span id="L652" class="ln">   652  </span>type strictHandler struct {
+<span id="L653" class="ln">   653  </span>	ssi         StrictServerInterface
+<span id="L654" class="ln">   654  </span>	middlewares []StrictMiddlewareFunc
+<span id="L655" class="ln">   655  </span>}
+<span id="L656" class="ln">   656  </span>
+<span id="L657" class="ln">   657  </span><span class="comment">// GetProducts operation middleware</span>
+<span id="L658" class="ln">   658  </span>func (sh *strictHandler) GetProducts(ctx *echo.Context, params GetProductsParams) error {
+<span id="L659" class="ln">   659  </span>	var request GetProductsRequestObject
+<span id="L660" class="ln">   660  </span>
+<span id="L661" class="ln">   661  </span>	request.Params = params
 <span id="L662" class="ln">   662  </span>
-<span id="L663" class="ln">   663  </span>	response, err := handler(ctx, request)
-<span id="L664" class="ln">   664  </span>
-<span id="L665" class="ln">   665  </span>	if err != nil {
-<span id="L666" class="ln">   666  </span>		return err
-<span id="L667" class="ln">   667  </span>	} else if validResponse, ok := response.(GetProductsResponseObject); ok {
-<span id="L668" class="ln">   668  </span>		return validResponse.VisitGetProductsResponse(ctx.Response())
-<span id="L669" class="ln">   669  </span>	} else if response != nil {
-<span id="L670" class="ln">   670  </span>		return fmt.Errorf(&#34;unexpected response type: %T&#34;, response)
-<span id="L671" class="ln">   671  </span>	}
-<span id="L672" class="ln">   672  </span>	return nil
-<span id="L673" class="ln">   673  </span>}
-<span id="L674" class="ln">   674  </span>
-<span id="L675" class="ln">   675  </span><span class="comment">// PostProducts operation middleware</span>
-<span id="L676" class="ln">   676  </span>func (sh *strictHandler) PostProducts(ctx *echo.Context) error {
-<span id="L677" class="ln">   677  </span>	var request PostProductsRequestObject
-<span id="L678" class="ln">   678  </span>
-<span id="L679" class="ln">   679  </span>	var body PostProductsJSONRequestBody
-<span id="L680" class="ln">   680  </span>	var err error
-<span id="L681" class="ln">   681  </span>	if _, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
-<span id="L682" class="ln">   682  </span>		<span class="comment">// Bind only the request body, so that path and query parameters</span>
-<span id="L683" class="ln">   683  </span>		<span class="comment">// are not also bound into the body struct.</span>
-<span id="L684" class="ln">   684  </span>		err = echo.BindBody(ctx, &amp;body)
-<span id="L685" class="ln">   685  </span>	} else {
-<span id="L686" class="ln">   686  </span>		<span class="comment">// A custom binder is installed on the Echo instance; defer to it</span>
-<span id="L687" class="ln">   687  </span>		<span class="comment">// entirely, since echo.Binder does not expose body-only binding.</span>
-<span id="L688" class="ln">   688  </span>		err = ctx.Bind(&amp;body)
-<span id="L689" class="ln">   689  </span>	}
-<span id="L690" class="ln">   690  </span>	if err != nil {
-<span id="L691" class="ln">   691  </span>		return err
-<span id="L692" class="ln">   692  </span>	}
-<span id="L693" class="ln">   693  </span>	request.Body = &amp;body
-<span id="L694" class="ln">   694  </span>
-<span id="L695" class="ln">   695  </span>	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
-<span id="L696" class="ln">   696  </span>		return sh.ssi.PostProducts(ctx.Request().Context(), request.(PostProductsRequestObject))
-<span id="L697" class="ln">   697  </span>	}
-<span id="L698" class="ln">   698  </span>	for _, middleware := range sh.middlewares {
-<span id="L699" class="ln">   699  </span>		handler = middleware(handler, &#34;PostProducts&#34;)
-<span id="L700" class="ln">   700  </span>	}
+<span id="L663" class="ln">   663  </span>	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
+<span id="L664" class="ln">   664  </span>		return sh.ssi.GetProducts(ctx.Request().Context(), request.(GetProductsRequestObject))
+<span id="L665" class="ln">   665  </span>	}
+<span id="L666" class="ln">   666  </span>	for _, middleware := range sh.middlewares {
+<span id="L667" class="ln">   667  </span>		handler = middleware(handler, &#34;GetProducts&#34;)
+<span id="L668" class="ln">   668  </span>	}
+<span id="L669" class="ln">   669  </span>
+<span id="L670" class="ln">   670  </span>	response, err := handler(ctx, request)
+<span id="L671" class="ln">   671  </span>
+<span id="L672" class="ln">   672  </span>	if err != nil {
+<span id="L673" class="ln">   673  </span>		return err
+<span id="L674" class="ln">   674  </span>	} else if validResponse, ok := response.(GetProductsResponseObject); ok {
+<span id="L675" class="ln">   675  </span>		return validResponse.VisitGetProductsResponse(ctx.Response())
+<span id="L676" class="ln">   676  </span>	} else if response != nil {
+<span id="L677" class="ln">   677  </span>		return fmt.Errorf(&#34;unexpected response type: %T&#34;, response)
+<span id="L678" class="ln">   678  </span>	}
+<span id="L679" class="ln">   679  </span>	return nil
+<span id="L680" class="ln">   680  </span>}
+<span id="L681" class="ln">   681  </span>
+<span id="L682" class="ln">   682  </span><span class="comment">// PostProducts operation middleware</span>
+<span id="L683" class="ln">   683  </span>func (sh *strictHandler) PostProducts(ctx *echo.Context) error {
+<span id="L684" class="ln">   684  </span>	var request PostProductsRequestObject
+<span id="L685" class="ln">   685  </span>
+<span id="L686" class="ln">   686  </span>	var body PostProductsJSONRequestBody
+<span id="L687" class="ln">   687  </span>	var err error
+<span id="L688" class="ln">   688  </span>	if _, ok := ctx.Echo().Binder.(*echo.DefaultBinder); ok {
+<span id="L689" class="ln">   689  </span>		<span class="comment">// Bind only the request body, so that path and query parameters</span>
+<span id="L690" class="ln">   690  </span>		<span class="comment">// are not also bound into the body struct.</span>
+<span id="L691" class="ln">   691  </span>		err = echo.BindBody(ctx, &amp;body)
+<span id="L692" class="ln">   692  </span>	} else {
+<span id="L693" class="ln">   693  </span>		<span class="comment">// A custom binder is installed on the Echo instance; defer to it</span>
+<span id="L694" class="ln">   694  </span>		<span class="comment">// entirely, since echo.Binder does not expose body-only binding.</span>
+<span id="L695" class="ln">   695  </span>		err = ctx.Bind(&amp;body)
+<span id="L696" class="ln">   696  </span>	}
+<span id="L697" class="ln">   697  </span>	if err != nil {
+<span id="L698" class="ln">   698  </span>		return err
+<span id="L699" class="ln">   699  </span>	}
+<span id="L700" class="ln">   700  </span>	request.Body = &amp;body
 <span id="L701" class="ln">   701  </span>
-<span id="L702" class="ln">   702  </span>	response, err := handler(ctx, request)
-<span id="L703" class="ln">   703  </span>
-<span id="L704" class="ln">   704  </span>	if err != nil {
-<span id="L705" class="ln">   705  </span>		return err
-<span id="L706" class="ln">   706  </span>	} else if validResponse, ok := response.(PostProductsResponseObject); ok {
-<span id="L707" class="ln">   707  </span>		return validResponse.VisitPostProductsResponse(ctx.Response())
-<span id="L708" class="ln">   708  </span>	} else if response != nil {
-<span id="L709" class="ln">   709  </span>		return fmt.Errorf(&#34;unexpected response type: %T&#34;, response)
-<span id="L710" class="ln">   710  </span>	}
-<span id="L711" class="ln">   711  </span>	return nil
-<span id="L712" class="ln">   712  </span>}
-<span id="L713" class="ln">   713  </span>
-<span id="L714" class="ln">   714  </span><span class="comment">// PostProductsImages operation middleware</span>
-<span id="L715" class="ln">   715  </span>func (sh *strictHandler) PostProductsImages(ctx *echo.Context) error {
-<span id="L716" class="ln">   716  </span>	var request PostProductsImagesRequestObject
-<span id="L717" class="ln">   717  </span>
-<span id="L718" class="ln">   718  </span>	if reader, err := ctx.Request().MultipartReader(); err != nil {
-<span id="L719" class="ln">   719  </span>		return err
-<span id="L720" class="ln">   720  </span>	} else {
-<span id="L721" class="ln">   721  </span>		request.Body = reader
-<span id="L722" class="ln">   722  </span>	}
-<span id="L723" class="ln">   723  </span>
-<span id="L724" class="ln">   724  </span>	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
-<span id="L725" class="ln">   725  </span>		return sh.ssi.PostProductsImages(ctx.Request().Context(), request.(PostProductsImagesRequestObject))
-<span id="L726" class="ln">   726  </span>	}
-<span id="L727" class="ln">   727  </span>	for _, middleware := range sh.middlewares {
-<span id="L728" class="ln">   728  </span>		handler = middleware(handler, &#34;PostProductsImages&#34;)
+<span id="L702" class="ln">   702  </span>	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
+<span id="L703" class="ln">   703  </span>		return sh.ssi.PostProducts(ctx.Request().Context(), request.(PostProductsRequestObject))
+<span id="L704" class="ln">   704  </span>	}
+<span id="L705" class="ln">   705  </span>	for _, middleware := range sh.middlewares {
+<span id="L706" class="ln">   706  </span>		handler = middleware(handler, &#34;PostProducts&#34;)
+<span id="L707" class="ln">   707  </span>	}
+<span id="L708" class="ln">   708  </span>
+<span id="L709" class="ln">   709  </span>	response, err := handler(ctx, request)
+<span id="L710" class="ln">   710  </span>
+<span id="L711" class="ln">   711  </span>	if err != nil {
+<span id="L712" class="ln">   712  </span>		return err
+<span id="L713" class="ln">   713  </span>	} else if validResponse, ok := response.(PostProductsResponseObject); ok {
+<span id="L714" class="ln">   714  </span>		return validResponse.VisitPostProductsResponse(ctx.Response())
+<span id="L715" class="ln">   715  </span>	} else if response != nil {
+<span id="L716" class="ln">   716  </span>		return fmt.Errorf(&#34;unexpected response type: %T&#34;, response)
+<span id="L717" class="ln">   717  </span>	}
+<span id="L718" class="ln">   718  </span>	return nil
+<span id="L719" class="ln">   719  </span>}
+<span id="L720" class="ln">   720  </span>
+<span id="L721" class="ln">   721  </span><span class="comment">// PostProductsImages operation middleware</span>
+<span id="L722" class="ln">   722  </span>func (sh *strictHandler) PostProductsImages(ctx *echo.Context) error {
+<span id="L723" class="ln">   723  </span>	var request PostProductsImagesRequestObject
+<span id="L724" class="ln">   724  </span>
+<span id="L725" class="ln">   725  </span>	if reader, err := ctx.Request().MultipartReader(); err != nil {
+<span id="L726" class="ln">   726  </span>		return err
+<span id="L727" class="ln">   727  </span>	} else {
+<span id="L728" class="ln">   728  </span>		request.Body = reader
 <span id="L729" class="ln">   729  </span>	}
 <span id="L730" class="ln">   730  </span>
-<span id="L731" class="ln">   731  </span>	response, err := handler(ctx, request)
-<span id="L732" class="ln">   732  </span>
-<span id="L733" class="ln">   733  </span>	if err != nil {
-<span id="L734" class="ln">   734  </span>		return err
-<span id="L735" class="ln">   735  </span>	} else if validResponse, ok := response.(PostProductsImagesResponseObject); ok {
-<span id="L736" class="ln">   736  </span>		return validResponse.VisitPostProductsImagesResponse(ctx.Response())
-<span id="L737" class="ln">   737  </span>	} else if response != nil {
-<span id="L738" class="ln">   738  </span>		return fmt.Errorf(&#34;unexpected response type: %T&#34;, response)
-<span id="L739" class="ln">   739  </span>	}
-<span id="L740" class="ln">   740  </span>	return nil
-<span id="L741" class="ln">   741  </span>}
-<span id="L742" class="ln">   742  </span>
+<span id="L731" class="ln">   731  </span>	handler := func(ctx *echo.Context, request interface{}) (interface{}, error) {
+<span id="L732" class="ln">   732  </span>		return sh.ssi.PostProductsImages(ctx.Request().Context(), request.(PostProductsImagesRequestObject))
+<span id="L733" class="ln">   733  </span>	}
+<span id="L734" class="ln">   734  </span>	for _, middleware := range sh.middlewares {
+<span id="L735" class="ln">   735  </span>		handler = middleware(handler, &#34;PostProductsImages&#34;)
+<span id="L736" class="ln">   736  </span>	}
+<span id="L737" class="ln">   737  </span>
+<span id="L738" class="ln">   738  </span>	response, err := handler(ctx, request)
+<span id="L739" class="ln">   739  </span>
+<span id="L740" class="ln">   740  </span>	if err != nil {
+<span id="L741" class="ln">   741  </span>		return err
+<span id="L742" class="ln">   742  </span>	} else if validResponse, ok := response.(PostProductsImagesResponseObject); ok {
+<span id="L743" class="ln">   743  </span>		return validResponse.VisitPostProductsImagesResponse(ctx.Response())
+<span id="L744" class="ln">   744  </span>	} else if response != nil {
+<span id="L745" class="ln">   745  </span>		return fmt.Errorf(&#34;unexpected response type: %T&#34;, response)
+<span id="L746" class="ln">   746  </span>	}
+<span id="L747" class="ln">   747  </span>	return nil
+<span id="L748" class="ln">   748  </span>}
+<span id="L749" class="ln">   749  </span>
 </pre><p><a href="../../../../../../../../src/go-boilerplate/internal/controller/handler/v1/products/gen/server.gen.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

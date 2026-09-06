@@ -1,0 +1,114 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>coupon - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/domain">domain</a>/<a href="../../../../../src/go-boilerplate/internal/domain/coupon">coupon</a>/<span class="text-muted">line.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/domain/coupon">go-boilerplate/internal/domain/coupon</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package coupon
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;go-boilerplate/pkg/decimal&#34;
+<span id="L5" class="ln">     5  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L6" class="ln">     6  </span>)
+<span id="L7" class="ln">     7  </span>
+<span id="L8" class="ln">     8  </span><span class="comment">// Line は、値引きの対象になりうる明細 1 件の観測値です。</span>
+<span id="L9" class="ln">     9  </span><span class="comment">//</span>
+<span id="L10" class="ln">    10  </span><span class="comment">// クーポンはカート集約も購入集約も参照しないため、どちらの明細もこの形に写してから渡します</span>
+<span id="L11" class="ln">    11  </span><span class="comment">// （集約をまたぐ参照は識別子に限る。internal/domain/README.md の Aggregate Design）。</span>
+<span id="L12" class="ln">    12  </span><span class="comment">// 商品カテゴリを持つのは、適用範囲がカテゴリで絞れるためです。</span>
+<span id="L13" class="ln">    13  </span>type Line struct {
+<span id="L14" class="ln">    14  </span>	productID  uuid.UUID
+<span id="L15" class="ln">    15  </span>	categoryID uuid.UUID
+<span id="L16" class="ln">    16  </span>	subtotal   decimal.Decimal
+<span id="L17" class="ln">    17  </span>}
+<span id="L18" class="ln">    18  </span>
+<span id="L19" class="ln">    19  </span><span class="comment">// LineAttributes は、明細の観測値一式です。productID と categoryID が同型のため構造体で受けます</span>
+<span id="L20" class="ln">    20  </span><span class="comment">// （基準は docs/rules.md の Function Signature Rules）。</span>
+<span id="L21" class="ln">    21  </span>type LineAttributes struct {
+<span id="L22" class="ln">    22  </span>	<span class="comment">// ProductID は、明細が指す商品です。</span>
+<span id="L23" class="ln">    23  </span>	ProductID uuid.UUID
+<span id="L24" class="ln">    24  </span>	<span class="comment">// CategoryID は、その商品が属する商品カテゴリです。</span>
+<span id="L25" class="ln">    25  </span>	CategoryID uuid.UUID
+<span id="L26" class="ln">    26  </span>	<span class="comment">// Subtotal は、明細の小計（単価 × 数量）です。価格スケールの十進量で、丸めません。</span>
+<span id="L27" class="ln">    27  </span>	Subtotal decimal.Decimal
+<span id="L28" class="ln">    28  </span>}
+<span id="L29" class="ln">    29  </span>
+<span id="L30" class="ln">    30  </span><span class="comment">// NewLine は、明細の観測値を組み立てます。検証は持ちません</span>
+<span id="L31" class="ln">    31  </span><span class="comment">// （理由は docs/spec/domain/coupon.md の Value Objects &gt; Line を参照）。</span>
+<span id="L32" class="ln">    32  </span>func NewLine(attrs LineAttributes) Line {
+<span id="L33" class="ln">    33  </span>	return Line{
+<span id="L34" class="ln">    34  </span>		productID:  attrs.ProductID,
+<span id="L35" class="ln">    35  </span>		categoryID: attrs.CategoryID,
+<span id="L36" class="ln">    36  </span>		subtotal:   attrs.Subtotal,
+<span id="L37" class="ln">    37  </span>	}
+<span id="L38" class="ln">    38  </span>}
+<span id="L39" class="ln">    39  </span>
+<span id="L40" class="ln">    40  </span><span class="comment">// ProductID は、明細が指す商品の ID を返します。</span>
+<span id="L41" class="ln">    41  </span>func (l Line) ProductID() uuid.UUID { return l.productID }
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span><span class="comment">// CategoryID は、明細が指す商品の属する商品カテゴリの ID を返します。</span>
+<span id="L44" class="ln">    44  </span>func (l Line) CategoryID() uuid.UUID { return l.categoryID }
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span><span class="comment">// Subtotal は、明細の小計を返します。</span>
+<span id="L47" class="ln">    47  </span>func (l Line) Subtotal() decimal.Decimal { return l.subtotal }
+<span id="L48" class="ln">    48  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/domain/coupon/line.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

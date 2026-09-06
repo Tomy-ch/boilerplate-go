@@ -1,7 +1,5 @@
 # Observability Subsystem Design Reference
 
-[Observability README](../../internal/observability/README.md) | 日本語: [observability.ja.md](observability.ja.md)
-
 This document consolidates the observability subsystem's **role theory, signal lifecycles, implementation locations, provided capabilities, what an integrator must implement, and glossary** into a single reference, derived from a close reading of the implementation. For the package-level API overview see the README; for the subsystems it instruments see [worker.md](worker.md), [outbox.md](outbox.md), [idempotency.md](idempotency.md), and [rest.md](rest.md).
 
 ---
@@ -153,7 +151,7 @@ flowchart TD
 
 | Path | Instruments | How it leaves the process |
 | --- | --- | --- |
-| **OTLP push** (OTel meter) | `outbox` / `worker` / `idempotency` / `httpclient` + Go runtime + `otelpgx` DB metrics | `MeterProvider` `PeriodicReader` → Collector, only when `MetricsEnabled()` |
+| **OTLP push** (OTel meter) | `outbox` / `worker` / `idempotency` / `httpclient` / `realtime` + Go runtime + `otelpgx` DB metrics | `MeterProvider` `PeriodicReader` → Collector, only when `MetricsEnabled()` |
 | **Prometheus scrape** | `app_build_info` (buildinfo), `worker_queue_*` (queue) | registered to the default registry, served at `/metrics` via `promhttp`, independent of `OBS_*` |
 
 The scrape path exists for values that are naturally *pull* (build identity resolved once at wiring time; broker queue depth polled per scrape) and does not require an OTLP exporter to be enabled.
@@ -168,10 +166,11 @@ The substrate ships the following ready-to-use instrumentation. An integrator mo
 | --- | --- | --- |
 | **Per-layer tracing** | `TracerFactory.Controller()/Usecase()/Infra()` → `LayerTracer.Start` | span name `layer.package.function`; auto start/end + `trace_id`/`span_id` structured logs |
 | **Ad-hoc span helper** | `RunWithSpan` / `StartSpanWithParent` / `StartWithSuffix` | span any function without a layer tracer; suffix to disambiguate multiple spans in one function |
+| **Span link to an origin trace** | `LayerTracer.StartWithLink` | parent stays the caller's span, the carrier becomes a link; for work that happens long after — and elsewhere than — the trace that caused it |
 | **HTTP root spans** | `echootel` middleware | per-request root span (the controller-layer span largely duplicates it — see README §Design Policy 5) |
 | **DB tracing + metrics** | `NewPgxTracer` (`otelpgx`) | connection details suppressed from attributes |
 | **Outbound HTTP RED metrics** | `NewHTTPClientTransport` + `HTTPClientMetrics` | requests / errors / latency + retries / in-flight / breaker-state gauge |
-| **Subsystem metrics** | `OutboxMetrics` / `WorkerMetrics` / `IdempotencyMetrics` | lag & dead / engine RED + DLQ / idempotency result & GC; low-cardinality labels only |
+| **Subsystem metrics** | `OutboxMetrics` / `WorkerMetrics` / `IdempotencyMetrics` / `RealtimeMetrics` | lag & dead / engine RED + DLQ / idempotency result & GC / SSE connection, replay and delivery lifecycle; low-cardinality labels only |
 | **Runtime metrics** | `runtime.Start` | Go GC / mem / goroutine metrics, only when `MetricsEnabled()` |
 | **Build-info gauge** | `metrics/buildinfo` → `app_build_info` | same source of truth as `/version` |
 | **Queue-depth gauge** | `metrics/queue` → `worker_queue_depth` | pulled from the broker adapter per scrape (approximate on SQS) |

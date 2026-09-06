@@ -113,6 +113,9 @@ breaker / o11y といった resilient な振る舞いは実装側で完結し、
 				<dd><a href="#pkg-variables">Variables</a></dd>
 			
 			
+				
+				<dd><a href="#RetryableOutcome">func RetryableOutcome(resp *Response, err error) bool</a></dd>
+			
 			
 				
 				<dd><a href="#BreakerConfig">type BreakerConfig</a></dd>
@@ -281,10 +284,26 @@ breaker / o11y といった resilient な振る舞いは実装側で完結し、
 			
 		
 		
+			
+			
+			<h2 id="RetryableOutcome">func <a href="../../../../src/go-boilerplate/internal/infrastructure/httpclient/retry.go.html?s=1398:1451#L31">RetryableOutcome</a>
+				<a class="permalink" href="#RetryableOutcome">¶</a>
+				
+				
+			</h2>
+			<pre>func RetryableOutcome(resp *<a href="#Response">Response</a>, err <a href="../../../../builtin/#error">error</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+			<p>RetryableOutcome は、試行結果が retry 対象かを返します。
+5xx / 429 / 応答未取得の transport 失敗は retry 対象、4xx / 成功 / ctx cancel は対象外です。
+この判定表を持つのはこの関数だけです（公開理由は README の Design Policy を参照）。
+
+			
+			
+
+		
 		
 			
 			
-			<h2 id="BreakerConfig">type <a href="../../../../src/go-boilerplate/internal/infrastructure/httpclient/profile.go.html?s=2813:3239#L52">BreakerConfig</a>
+			</p><h2 id="BreakerConfig">type <a href="../../../../src/go-boilerplate/internal/infrastructure/httpclient/profile.go.html?s=2813:3239#L52">BreakerConfig</a>
 				<a class="permalink" href="#BreakerConfig">¶</a>
 				
 				

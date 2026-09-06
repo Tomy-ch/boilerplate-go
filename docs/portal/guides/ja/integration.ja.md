@@ -1,7 +1,5 @@
 ## integration ディレクトリ
 
-[English](README.md) | 日本語
-
 このディレクトリは **結合テスト (integration test)** をまとめるための場所です。  
 
 ユニットテストでは拾いきれない、Echo サーバを立ち上げて **実際の HTTP 通信経路** を通した検証を行います。

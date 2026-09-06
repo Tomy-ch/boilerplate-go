@@ -1,7 +1,5 @@
 # server
 
-English | [日本語](README.ja.md)
-
 `server` is the package that **creates and configures the HTTP server** and provides HTTP request logging / parameter-extraction utilities for the Echo context.
 
 It builds the Echo instance and the `http.Server` that serves it with the timeouts from `ServerConfig`; middleware application and DI-lifecycle (start / shutdown) registration are handled by other packages (see Role).

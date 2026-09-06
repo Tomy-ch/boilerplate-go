@@ -1,7 +1,5 @@
 # clock
 
-English | [日本語](README.ja.md)
-
 Provides a `Clock` interface for retrieving the current time and a `Sleeper` interface for waiting.
 
 ```go

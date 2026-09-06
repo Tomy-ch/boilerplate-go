@@ -66,35 +66,35 @@
 <span id="L9" class="ln">     9  </span>	&#34;go-boilerplate/internal/config&#34;
 <span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/internal/di/lifecycle&#34;
 <span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/di/module&#34;
-<span id="L12" class="ln">    12  </span>	outboxuc &#34;go-boilerplate/internal/usecase/outbox&#34;
-<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/uuid&#34;
-<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
-<span id="L15" class="ln">    15  </span>)
-<span id="L16" class="ln">    16  </span>
-<span id="L17" class="ln">    17  </span><span class="comment">// outboxRelayCommonOptions は、relay / replay が共有する共通モジュール群を返します。</span>
-<span id="L18" class="ln">    18  </span>func outboxRelayCommonOptions() []fx.Option {
-<span id="L19" class="ln">    19  </span>	return []fx.Option{
-<span id="L20" class="ln">    20  </span>		lifecycle.Module(),
-<span id="L21" class="ln">    21  </span>		module.ConfigModule(),
-<span id="L22" class="ln">    22  </span>		module.LoggingModule(),
-<span id="L23" class="ln">    23  </span>		module.ObservabilityModule(),
-<span id="L24" class="ln">    24  </span>		module.DatabaseModule(),
-<span id="L25" class="ln">    25  </span>		module.SystemModule(),
-<span id="L26" class="ln">    26  </span>		module.InfrastructureModule(),
-<span id="L27" class="ln">    27  </span>		module.UsecaseModule(),
-<span id="L28" class="ln">    28  </span>	}
-<span id="L29" class="ln">    29  </span>}
-<span id="L30" class="ln">    30  </span>
-<span id="L31" class="ln">    31  </span><span class="comment">// NewOutboxRelayCore は、relay 常駐プロセス用の fx.App を構成する fx.Option を返します。</span>
-<span id="L32" class="ln">    32  </span>func NewOutboxRelayCore() fx.Option {
-<span id="L33" class="ln">    33  </span>	return fx.Options(append(outboxRelayCommonOptions(), module.OutboxRelayModule())...)
-<span id="L34" class="ln">    34  </span>}
-<span id="L35" class="ln">    35  </span>
-<span id="L36" class="ln">    36  </span><span class="comment">// NewOutboxRelayApp は、relay 常駐プロセス用の fx.App を生成します。</span>
-<span id="L37" class="ln">    37  </span><span class="comment">// grace（APP_SHUTDOWN_TIMEOUT）を fx.StopTimeout に設定し、fx 既定（15s）が停止猶予より</span>
-<span id="L38" class="ln">    38  </span><span class="comment">// 先に teardown を打ち切らないようにします（停止軸を grace に一本化）。</span>
-<span id="L39" class="ln">    39  </span>func NewOutboxRelayApp(grace time.Duration) *fx.App {
-<span id="L40" class="ln">    40  </span>	return fx.New(NewOutboxRelayCore(), fx.StopTimeout(grace), fx.WithLogger(NewFxEventLogger))
+<span id="L12" class="ln">    12  </span>	outboxbndry &#34;go-boilerplate/internal/usecase/boundary/outbox&#34;
+<span id="L13" class="ln">    13  </span>	outboxuc &#34;go-boilerplate/internal/usecase/outbox&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L16" class="ln">    16  </span>)
+<span id="L17" class="ln">    17  </span>
+<span id="L18" class="ln">    18  </span><span class="comment">// outboxRelayCommonOptions は、relay / replay が共有する共通モジュール群を返します。</span>
+<span id="L19" class="ln">    19  </span>func outboxRelayCommonOptions() []fx.Option {
+<span id="L20" class="ln">    20  </span>	return []fx.Option{
+<span id="L21" class="ln">    21  </span>		lifecycle.Module(),
+<span id="L22" class="ln">    22  </span>		module.ConfigModule(),
+<span id="L23" class="ln">    23  </span>		module.LoggingModule(),
+<span id="L24" class="ln">    24  </span>		module.ObservabilityModule(),
+<span id="L25" class="ln">    25  </span>		module.DatabaseModule(),
+<span id="L26" class="ln">    26  </span>		module.SystemModule(),
+<span id="L27" class="ln">    27  </span>		module.InfrastructureModule(),
+<span id="L28" class="ln">    28  </span>		module.UsecaseModule(),
+<span id="L29" class="ln">    29  </span>	}
+<span id="L30" class="ln">    30  </span>}
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span><span class="comment">// NewOutboxRelayCore は、channel を担う relay 常駐プロセス用の fx.App を構成する fx.Option を返します。</span>
+<span id="L33" class="ln">    33  </span>func NewOutboxRelayCore(channel outboxbndry.Channel) fx.Option {
+<span id="L34" class="ln">    34  </span>	return fx.Options(append(outboxRelayCommonOptions(), module.OutboxRelayModule(channel))...)
+<span id="L35" class="ln">    35  </span>}
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span><span class="comment">// NewOutboxRelayApp は、channel を担う relay 常駐プロセス用の fx.App を生成します。</span>
+<span id="L38" class="ln">    38  </span><span class="comment">// 停止軸を grace へ一本化する理由は internal/di/README.md の Execution Profile Switching を参照。</span>
+<span id="L39" class="ln">    39  </span>func NewOutboxRelayApp(grace time.Duration, channel outboxbndry.Channel) *fx.App {
+<span id="L40" class="ln">    40  </span>	return fx.New(NewOutboxRelayCore(channel), fx.StopTimeout(grace), fx.WithLogger(NewFxEventLogger))
 <span id="L41" class="ln">    41  </span>}
 <span id="L42" class="ln">    42  </span>
 <span id="L43" class="ln">    43  </span><span class="comment">// RunOutboxReplay は、dead 状態の outbox 行を pending へ戻すワンショット実行を行い、</span>
@@ -111,7 +111,7 @@
 <span id="L54" class="ln">    54  </span>		fx.Populate(&amp;replay, &amp;appCfg), fx.WithLogger(NewFxEventLogger))
 <span id="L55" class="ln">    55  </span>	app := fx.New(opts...)
 <span id="L56" class="ln">    56  </span>
-<span id="L57" class="ln">    57  </span>	<span class="comment">// RunJob と同じく、fx.Populate が nil を残す構築失敗を replay / appCfg 参照より先に返す。</span>
+<span id="L57" class="ln">    57  </span>	<span class="comment">// fx.Populate は構築失敗時に nil を残すため、replay / appCfg の参照より先にエラーを返す。</span>
 <span id="L58" class="ln">    58  </span>	if err := app.Err(); err != nil {
 <span id="L59" class="ln">    59  </span>		return 0, err
 <span id="L60" class="ln">    60  </span>	}

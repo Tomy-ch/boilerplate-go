@@ -1,0 +1,157 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>testkit - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure">infrastructure</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime">realtime</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/testkit">testkit</a>/<span class="text-muted">testkit_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/infrastructure/realtime/testkit">go-boilerplate/internal/infrastructure/realtime/testkit</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package testkit
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;testing&#34;
+<span id="L6" class="ln">     6  </span>
+<span id="L7" class="ln">     7  </span>	awssdk &#34;github.com/aws/aws-sdk-go-v2/aws&#34;
+<span id="L8" class="ln">     8  </span>	&#34;github.com/aws/aws-sdk-go-v2/service/sns&#34;
+<span id="L9" class="ln">     9  </span>	&#34;github.com/aws/aws-sdk-go-v2/service/sqs&#34;
+<span id="L10" class="ln">    10  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L11" class="ln">    11  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L12" class="ln">    12  </span>
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/infrastructure/realtime/aws&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/internal/infrastructure/realtime/local&#34;
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L16" class="ln">    16  </span>)
+<span id="L17" class="ln">    17  </span>
+<span id="L18" class="ln">    18  </span>func TestNewTestClients(t *testing.T) {
+<span id="L19" class="ln">    19  </span>	t.Parallel()
+<span id="L20" class="ln">    20  </span>
+<span id="L21" class="ln">    21  </span>	c := NewTestClients(t)
+<span id="L22" class="ln">    22  </span>	assert.NotNil(t, c.SNS)
+<span id="L23" class="ln">    23  </span>	assert.NotNil(t, c.SQS)
+<span id="L24" class="ln">    24  </span>}
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span>func TestName(t *testing.T) {
+<span id="L27" class="ln">    27  </span>	t.Parallel()
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span>	a := Name(t, &#34;topic&#34;)
+<span id="L30" class="ln">    30  </span>	b := Name(t, &#34;topic&#34;)
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span>	assert.Regexp(t, `^test-topic-[0-9a-f]{12}$`, a)
+<span id="L33" class="ln">    33  </span>	assert.NotEqual(t, a, b, &#34;実行ごとに一意&#34;)
+<span id="L34" class="ln">    34  </span>}
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span>func TestCreateTopic(t *testing.T) {
+<span id="L37" class="ln">    37  </span>	t.Parallel()
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span>	c := NewTestClients(t)
+<span id="L40" class="ln">    40  </span>
+<span id="L41" class="ln">    41  </span>	<span class="comment">// Cleanup は後に登録したものから走るため、ここで登録した検証は CreateTopic の削除の後に回る。</span>
+<span id="L42" class="ln">    42  </span>	var arn string
+<span id="L43" class="ln">    43  </span>	t.Cleanup(func() {
+<span id="L44" class="ln">    44  </span>		assert.False(t, topicExists(t, c, arn), &#34;テスト終了時に topic は削除されている&#34;)
+<span id="L45" class="ln">    45  </span>	})
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span>	arn = CreateTopic(t, c, Name(t, &#34;create&#34;))
+<span id="L48" class="ln">    48  </span>	assert.True(t, topicExists(t, c, arn))
+<span id="L49" class="ln">    49  </span>}
+<span id="L50" class="ln">    50  </span>
+<span id="L51" class="ln">    51  </span><span class="comment">// topicExists は、arn の topic が一覧に載っているかを返します（emulator が GetTopicAttributes を持たないため一覧で見る）。</span>
+<span id="L52" class="ln">    52  </span>func topicExists(t *testing.T, c aws.Clients, arn string) bool {
+<span id="L53" class="ln">    53  </span>	t.Helper()
+<span id="L54" class="ln">    54  </span>
+<span id="L55" class="ln">    55  </span>	p := sns.NewListTopicsPaginator(c.SNS, &amp;sns.ListTopicsInput{})
+<span id="L56" class="ln">    56  </span>	for p.HasMorePages() {
+<span id="L57" class="ln">    57  </span>		page, err := p.NextPage(context.Background())
+<span id="L58" class="ln">    58  </span>		require.NoError(t, err)
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>		for _, topic := range page.Topics {
+<span id="L61" class="ln">    61  </span>			if awssdk.ToString(topic.TopicArn) == arn {
+<span id="L62" class="ln">    62  </span>				return true
+<span id="L63" class="ln">    63  </span>			}
+<span id="L64" class="ln">    64  </span>		}
+<span id="L65" class="ln">    65  </span>	}
+<span id="L66" class="ln">    66  </span>
+<span id="L67" class="ln">    67  </span>	return false
+<span id="L68" class="ln">    68  </span>}
+<span id="L69" class="ln">    69  </span>
+<span id="L70" class="ln">    70  </span>func TestTeardownOnCleanup(t *testing.T) {
+<span id="L71" class="ln">    71  </span>	t.Parallel()
+<span id="L72" class="ln">    72  </span>
+<span id="L73" class="ln">    73  </span>	c := NewTestClients(t)
+<span id="L74" class="ln">    74  </span>	arn := CreateTopic(t, c, Name(t, &#34;teardown&#34;))
+<span id="L75" class="ln">    75  </span>	prefix := Name(t, &#34;q&#34;)
+<span id="L76" class="ln">    76  </span>	sub := aws.NewInstanceSubscription(
+<span id="L77" class="ln">    77  </span>		c.SNS, c.SQS, aws.SubscriptionTarget{TopicARN: arn, QueuePrefix: prefix},
+<span id="L78" class="ln">    78  </span>		local.NewQueueAttributes(), observability.NewNoopTracerFactory(t),
+<span id="L79" class="ln">    79  </span>	)
+<span id="L80" class="ln">    80  </span>	require.NoError(t, sub.Provision(t.Context(), &#34;inst1&#34;))
+<span id="L81" class="ln">    81  </span>
+<span id="L82" class="ln">    82  </span>	<span class="comment">// Cleanup は後に登録したものから走るため、ここで登録した検証は TeardownOnCleanup の片付けの後に回る。</span>
+<span id="L83" class="ln">    83  </span>	t.Cleanup(func() {
+<span id="L84" class="ln">    84  </span>		out, err := c.SQS.ListQueues(context.Background(), &amp;sqs.ListQueuesInput{QueueNamePrefix: awssdk.String(prefix)})
+<span id="L85" class="ln">    85  </span>		require.NoError(t, err)
+<span id="L86" class="ln">    86  </span>		assert.Empty(t, out.QueueUrls, &#34;テスト終了時に instance の queue は片付けられている&#34;)
+<span id="L87" class="ln">    87  </span>	})
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span>	TeardownOnCleanup(t, sub)
+<span id="L90" class="ln">    90  </span>}
+<span id="L91" class="ln">    91  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/realtime/testkit/testkit_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

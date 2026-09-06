@@ -112,7 +112,10 @@
 				
 				
 					
-					<dd>    <a href="#MockStore.ClaimPending">func (m *MockStore) ClaimPending(ctx context.Context, limit int32) ([]outbox.PendingMessage, error)</a></dd>
+					<dd>    <a href="#MockStore.ClaimPending">func (m *MockStore) ClaimPending(ctx context.Context, channel outbox.Channel, limit int32) ([]outbox.PendingMessage, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockStore.CountBlockedStreams">func (m *MockStore) CountBlockedStreams(ctx context.Context, channel outbox.Channel) (int64, error)</a></dd>
 				
 					
 					<dd>    <a href="#MockStore.DeletePublished">func (m *MockStore) DeletePublished(ctx context.Context, cutoff time.Time, limit int32) (int64, error)</a></dd>
@@ -127,13 +130,13 @@
 					<dd>    <a href="#MockStore.MarkDead">func (m *MockStore) MarkDead(ctx context.Context, id int64) error</a></dd>
 				
 					
-					<dd>    <a href="#MockStore.MarkFailed">func (m *MockStore) MarkFailed(ctx context.Context, id int64, lastErr string) (int32, error)</a></dd>
+					<dd>    <a href="#MockStore.MarkFailed">func (m *MockStore) MarkFailed(ctx context.Context, id int64, lastErr string, nextAttemptAt time.Time) error</a></dd>
 				
 					
 					<dd>    <a href="#MockStore.MarkPublished">func (m *MockStore) MarkPublished(ctx context.Context, id int64) error</a></dd>
 				
 					
-					<dd>    <a href="#MockStore.OldestPendingCreatedAt">func (m *MockStore) OldestPendingCreatedAt(ctx context.Context) (time.Time, bool, error)</a></dd>
+					<dd>    <a href="#MockStore.OldestPendingCreatedAt">func (m *MockStore) OldestPendingCreatedAt(ctx context.Context, channel outbox.Channel) (time.Time, bool, error)</a></dd>
 				
 					
 					<dd>    <a href="#MockStore.ReplayDead">func (m *MockStore) ReplayDead(ctx context.Context, messageID *uuid.UUID) (int64, error)</a></dd>
@@ -144,7 +147,10 @@
 				
 				
 					
-					<dd>    <a href="#MockStoreMockRecorder.ClaimPending">func (mr *MockStoreMockRecorder) ClaimPending(ctx, limit any) *gomock.Call</a></dd>
+					<dd>    <a href="#MockStoreMockRecorder.ClaimPending">func (mr *MockStoreMockRecorder) ClaimPending(ctx, channel, limit any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockStoreMockRecorder.CountBlockedStreams">func (mr *MockStoreMockRecorder) CountBlockedStreams(ctx, channel any) *gomock.Call</a></dd>
 				
 					
 					<dd>    <a href="#MockStoreMockRecorder.DeletePublished">func (mr *MockStoreMockRecorder) DeletePublished(ctx, cutoff, limit any) *gomock.Call</a></dd>
@@ -156,13 +162,13 @@
 					<dd>    <a href="#MockStoreMockRecorder.MarkDead">func (mr *MockStoreMockRecorder) MarkDead(ctx, id any) *gomock.Call</a></dd>
 				
 					
-					<dd>    <a href="#MockStoreMockRecorder.MarkFailed">func (mr *MockStoreMockRecorder) MarkFailed(ctx, id, lastErr any) *gomock.Call</a></dd>
+					<dd>    <a href="#MockStoreMockRecorder.MarkFailed">func (mr *MockStoreMockRecorder) MarkFailed(ctx, id, lastErr, nextAttemptAt any) *gomock.Call</a></dd>
 				
 					
 					<dd>    <a href="#MockStoreMockRecorder.MarkPublished">func (mr *MockStoreMockRecorder) MarkPublished(ctx, id any) *gomock.Call</a></dd>
 				
 					
-					<dd>    <a href="#MockStoreMockRecorder.OldestPendingCreatedAt">func (mr *MockStoreMockRecorder) OldestPendingCreatedAt(ctx any) *gomock.Call</a></dd>
+					<dd>    <a href="#MockStoreMockRecorder.OldestPendingCreatedAt">func (mr *MockStoreMockRecorder) OldestPendingCreatedAt(ctx, channel any) *gomock.Call</a></dd>
 				
 					
 					<dd>    <a href="#MockStoreMockRecorder.ReplayDead">func (mr *MockStoreMockRecorder) ReplayDead(ctx, messageID any) *gomock.Call</a></dd>
@@ -231,12 +237,12 @@
 
 			
 				
-				</p><h3 id="MockStore.ClaimPending">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=1105:1204#L37">ClaimPending</a>
+				</p><h3 id="MockStore.ClaimPending">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=1105:1228#L37">ClaimPending</a>
 					<a class="permalink" href="#MockStore.ClaimPending">¶</a>
 					
 					
 				</h3>
-				<pre>func (m *<a href="#MockStore">MockStore</a>) ClaimPending(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, limit <a href="../../../../../../builtin/#int32">int32</a>) ([]<a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/">outbox</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/#PendingMessage">PendingMessage</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<pre>func (m *<a href="#MockStore">MockStore</a>) ClaimPending(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, channel <a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/">outbox</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>, limit <a href="../../../../../../builtin/#int32">int32</a>) ([]<a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/">outbox</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/#PendingMessage">PendingMessage</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
 				<p>ClaimPending mocks base method.
 
 				
@@ -244,7 +250,20 @@
 				
 			
 				
-				</p><h3 id="MockStore.DeletePublished">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=1705:1807#L52">DeletePublished</a>
+				</p><h3 id="MockStore.CountBlockedStreams">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=1760:1859#L52">CountBlockedStreams</a>
+					<a class="permalink" href="#MockStore.CountBlockedStreams">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockStore">MockStore</a>) CountBlockedStreams(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, channel <a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/">outbox</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>) (<a href="../../../../../../builtin/#int64">int64</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>CountBlockedStreams mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockStore.DeletePublished">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=2390:2492#L67">DeletePublished</a>
 					<a class="permalink" href="#MockStore.DeletePublished">¶</a>
 					
 					
@@ -270,7 +289,7 @@
 				
 			
 				
-				</p><h3 id="MockStore.Insert">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=2323:2410#L67">Insert</a>
+				</p><h3 id="MockStore.Insert">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=3008:3095#L82">Insert</a>
 					<a class="permalink" href="#MockStore.Insert">¶</a>
 					
 					
@@ -283,7 +302,7 @@
 				
 			
 				
-				</p><h3 id="MockStore.MarkDead">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=2842:2907#L82">MarkDead</a>
+				</p><h3 id="MockStore.MarkDead">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=3527:3592#L97">MarkDead</a>
 					<a class="permalink" href="#MockStore.MarkDead">¶</a>
 					
 					
@@ -296,12 +315,12 @@
 				
 			
 				
-				</p><h3 id="MockStore.MarkFailed">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=3319:3411#L96">MarkFailed</a>
+				</p><h3 id="MockStore.MarkFailed">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=4004:4112#L111">MarkFailed</a>
 					<a class="permalink" href="#MockStore.MarkFailed">¶</a>
 					
 					
 				</h3>
-				<pre>func (m *<a href="#MockStore">MockStore</a>) MarkFailed(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, id <a href="../../../../../../builtin/#int64">int64</a>, lastErr <a href="../../../../../../builtin/#string">string</a>) (<a href="../../../../../../builtin/#int32">int32</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<pre>func (m *<a href="#MockStore">MockStore</a>) MarkFailed(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, id <a href="../../../../../../builtin/#int64">int64</a>, lastErr <a href="../../../../../../builtin/#string">string</a>, nextAttemptAt <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>) <a href="../../../../../../builtin/#error">error</a></pre>
 				<p>MarkFailed mocks base method.
 
 				
@@ -309,7 +328,7 @@
 				
 			
 				
-				</p><h3 id="MockStore.MarkPublished">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=3898:3968#L111">MarkPublished</a>
+				</p><h3 id="MockStore.MarkPublished">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=4611:4681#L125">MarkPublished</a>
 					<a class="permalink" href="#MockStore.MarkPublished">¶</a>
 					
 					
@@ -322,12 +341,12 @@
 				
 			
 				
-				</p><h3 id="MockStore.OldestPendingCreatedAt">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=4422:4510#L125">OldestPendingCreatedAt</a>
+				</p><h3 id="MockStore.OldestPendingCreatedAt">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=5135:5247#L139">OldestPendingCreatedAt</a>
 					<a class="permalink" href="#MockStore.OldestPendingCreatedAt">¶</a>
 					
 					
 				</h3>
-				<pre>func (m *<a href="#MockStore">MockStore</a>) OldestPendingCreatedAt(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>) (<a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>, <a href="../../../../../../builtin/#bool">bool</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<pre>func (m *<a href="#MockStore">MockStore</a>) OldestPendingCreatedAt(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, channel <a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/">outbox</a>.<a href="../../../../../../go-boilerplate/internal/usecase/boundary/outbox/#Channel">Channel</a>) (<a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>, <a href="../../../../../../builtin/#bool">bool</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
 				<p>OldestPendingCreatedAt mocks base method.
 
 				
@@ -335,7 +354,7 @@
 				
 			
 				
-				</p><h3 id="MockStore.ReplayDead">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=5063:5151#L141">ReplayDead</a>
+				</p><h3 id="MockStore.ReplayDead">func (*MockStore) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=5827:5915#L155">ReplayDead</a>
 					<a class="permalink" href="#MockStore.ReplayDead">¶</a>
 					
 					
@@ -374,12 +393,12 @@
 
 			
 				
-				<h3 id="MockStoreMockRecorder.ClaimPending">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=1431:1505#L46">ClaimPending</a>
+				<h3 id="MockStoreMockRecorder.ClaimPending">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=1464:1547#L46">ClaimPending</a>
 					<a class="permalink" href="#MockStoreMockRecorder.ClaimPending">¶</a>
 					
 					
 				</h3>
-				<pre>func (mr *<a href="#MockStoreMockRecorder">MockStoreMockRecorder</a>) ClaimPending(ctx, limit <a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<pre>func (mr *<a href="#MockStoreMockRecorder">MockStoreMockRecorder</a>) ClaimPending(ctx, channel, limit <a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
 				<p>ClaimPending indicates an expected call of ClaimPending.
 
 				
@@ -387,7 +406,20 @@
 				
 			
 				
-				</p><h3 id="MockStoreMockRecorder.DeletePublished">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=2033:2118#L61">DeletePublished</a>
+				</p><h3 id="MockStoreMockRecorder.CountBlockedStreams">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=2091:2174#L61">CountBlockedStreams</a>
+					<a class="permalink" href="#MockStoreMockRecorder.CountBlockedStreams">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockStoreMockRecorder">MockStoreMockRecorder</a>) CountBlockedStreams(ctx, channel <a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>CountBlockedStreams indicates an expected call of CountBlockedStreams.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockStoreMockRecorder.DeletePublished">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=2718:2803#L76">DeletePublished</a>
 					<a class="permalink" href="#MockStoreMockRecorder.DeletePublished">¶</a>
 					
 					
@@ -400,7 +432,7 @@
 				
 			
 				
-				</p><h3 id="MockStoreMockRecorder.Insert">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=2601:2665#L76">Insert</a>
+				</p><h3 id="MockStoreMockRecorder.Insert">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=3286:3350#L91">Insert</a>
 					<a class="permalink" href="#MockStoreMockRecorder.Insert">¶</a>
 					
 					
@@ -413,7 +445,7 @@
 				
 			
 				
-				</p><h3 id="MockStoreMockRecorder.MarkDead">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=3068:3135#L90">MarkDead</a>
+				</p><h3 id="MockStoreMockRecorder.MarkDead">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=3753:3820#L105">MarkDead</a>
 					<a class="permalink" href="#MockStoreMockRecorder.MarkDead">¶</a>
 					
 					
@@ -426,12 +458,12 @@
 				
 			
 				
-				</p><h3 id="MockStoreMockRecorder.MarkFailed">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=3620:3698#L105">MarkFailed</a>
+				</p><h3 id="MockStoreMockRecorder.MarkFailed">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=4303:4396#L119">MarkFailed</a>
 					<a class="permalink" href="#MockStoreMockRecorder.MarkFailed">¶</a>
 					
 					
 				</h3>
-				<pre>func (mr *<a href="#MockStoreMockRecorder">MockStoreMockRecorder</a>) MarkFailed(ctx, id, lastErr <a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<pre>func (mr *<a href="#MockStoreMockRecorder">MockStoreMockRecorder</a>) MarkFailed(ctx, id, lastErr, nextAttemptAt <a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
 				<p>MarkFailed indicates an expected call of MarkFailed.
 
 				
@@ -439,7 +471,7 @@
 				
 			
 				
-				</p><h3 id="MockStoreMockRecorder.MarkPublished">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=4144:4216#L119">MarkPublished</a>
+				</p><h3 id="MockStoreMockRecorder.MarkPublished">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=4857:4929#L133">MarkPublished</a>
 					<a class="permalink" href="#MockStoreMockRecorder.MarkPublished">¶</a>
 					
 					
@@ -452,12 +484,12 @@
 				
 			
 				
-				</p><h3 id="MockStoreMockRecorder.OldestPendingCreatedAt">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=4778:4855#L135">OldestPendingCreatedAt</a>
+				</p><h3 id="MockStoreMockRecorder.OldestPendingCreatedAt">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=5524:5610#L149">OldestPendingCreatedAt</a>
 					<a class="permalink" href="#MockStoreMockRecorder.OldestPendingCreatedAt">¶</a>
 					
 					
 				</h3>
-				<pre>func (mr *<a href="#MockStoreMockRecorder">MockStoreMockRecorder</a>) OldestPendingCreatedAt(ctx <a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<pre>func (mr *<a href="#MockStoreMockRecorder">MockStoreMockRecorder</a>) OldestPendingCreatedAt(ctx, channel <a href="../../../../../../builtin/#any">any</a>) *<a href="../../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
 				<p>OldestPendingCreatedAt indicates an expected call of OldestPendingCreatedAt.
 
 				
@@ -465,7 +497,7 @@
 				
 			
 				
-				</p><h3 id="MockStoreMockRecorder.ReplayDead">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=5358:5434#L150">ReplayDead</a>
+				</p><h3 id="MockStoreMockRecorder.ReplayDead">func (*MockStoreMockRecorder) <a href="../../../../../../src/go-boilerplate/internal/usecase/boundary/outbox/mock/mock_store.go.gen.go.html?s=6122:6198#L164">ReplayDead</a>
 					<a class="permalink" href="#MockStoreMockRecorder.ReplayDead">¶</a>
 					
 					

@@ -1,7 +1,5 @@
 # oapi
 
-English | [日本語](README.ja.md)
-
 `oapi` is the **OpenAPI integration layer** that provides request validation and authentication for the Echo HTTP stack.
 
 This package is the entry point that wires together schema validation, authentication, and route skipping into a single Echo middleware.

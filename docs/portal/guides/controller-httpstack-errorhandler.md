@@ -1,7 +1,5 @@
 # errorhandler
 
-English | [日本語](README.ja.md)
-
 Unified HTTP error handler that normalizes errors from Echo, OpenAPI validation, and application-level errors into consistent JSON responses with structured logging.
 
 ## Architecture
@@ -159,8 +157,8 @@ When the upstream `recovery` middleware has already logged the panic, the same c
 |`detail_exposure.go`|`DetailPolicy` — per-endpoint `details` opt-in resolved from the OpenAPI spec, plus the shared host-agnostic router constructor both policies build on|
 |`allow_methods.go`|`AllowPolicy` — per-path `Allow` header value resolved from the OpenAPI spec|
 
-Both spec-derived policies reach the handler as a single `Policies` value, so adding another one does
-not widen `New`'s signature again.
+The spec-derived policies and the redactor reach the handler as a single `Policies` value built by
+`NewPolicies`, so adding another one does not widen `New`'s signature again.
 
 ## Test Strategy
 
@@ -183,6 +181,8 @@ Pin the strip as **wire-only**: `details` disappear from the body handed to the 
 ### The handler
 
 - **Normalization priority** — the arms of `normalizeHTTPError` are selected by error shape, so each gets its own case: an already-wrapped `HTTPErrorResponse`, an error carrying a status (`echo.HTTPError`, Echo's predefined errors whose type is unexported, an OpenAPI validation failure), and everything else. Build the validation failure by running the real `oapi.Middleware` against the real spec and capturing what it returns, rather than hand-constructing an `echo.HTTPError`: the point of the case is that the status stays extractable when the upstream middleware changes how it wraps, and a hand-built error re-states the current wrapping instead of observing it. The out-of-range correction — a `HTTPErrorResponse` whose status falls outside 400-599 is re-derived from `Internal` — is its own case, being the only path that overrides a status the caller chose. Its `Details` handling needs both directions: a caller-supplied `Details` wins, and a nil one leaves the re-derived `Internal` `Details` standing. Only the nil case can detect the guard being dropped, which would silently blank the fields a validation error names.
+- **Cache suppression** — every error response carries `Cache-Control: no-store`, whatever the status. A 410 is heuristically cacheable, and the URL it was answered for may carry a query credential (the stream ticket), so a shared cache must never keep it. Assert it on a status a cache would otherwise store.
+- **Policies as one value** — `NewPolicies` is the only way to build a `Policies`, so a redaction left unset cannot be constructed; assert that all three (detail / allow / redact) reach the handler, the last by driving a request whose query carries a credential and reading the redacted URI back from the error log.
 - **Re-entrance** — invoking the handler twice on one context must write the response exactly once. That count is the whole contract: a second successful write is indistinguishable from the outside, and the guard is what keeps an error raised *while writing the error response* from recursing.
 - **Recovery coordination** — with the `Recovered` sentinel set the 500 is still written but no error line is logged; without it both happen. Assert both directions, since a dropped 500 and a duplicated panic log are each real defects and a one-sided test hides one of them.
 - **Commit state** — an already-committed response skips the write entirely *but is still logged*, because the log line is the only trace left of an error whose body can no longer be written; that needs its own case, subject to the log, since a case asserting the absent header and body stays green if logging moves inside the write branch. A failing write is logged without committing a second time. Reproduce the failure with a `ResponseWriter` whose `Write` always errors. The fallback `WriteHeader(500)` nested inside that failure additionally needs the response to be unwrappable-into-nothing: install that same writer through `c.SetResponse` as well, so `responseCommitted` stays false across the failure and the fallback runs. Give the JSON write a status other than 500 — a validation error works — because the writer records the status the JSON path sends before it fails, and only a differing status proves the trailing 500 came from the fallback. That degraded state is unreachable through the production serving path (nothing outside tests calls `c.SetResponse`), so this package-level test is the only thing holding the fallback — the same standing the `server.ResponseOf` degradation viewpoint has in [`httpstack/README.md`](../README.md), applied here to a terminal handler rather than a middleware. What it pins is that the fallback still writes the 500; the `!responseCommitted` guard around it is not observable, because `echo.Response.WriteHeader` already refuses a second write once committed.

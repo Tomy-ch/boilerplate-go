@@ -1,7 +1,5 @@
 # database
 
-English | [日本語](README.ja.md)
-
 `database/` stores **all database-related artifacts**.
 
 It manages migrations, sqlc DML sources, seed data, and generated outputs.

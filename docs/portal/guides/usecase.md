@@ -1,7 +1,5 @@
 # Usecase Layer (`internal/usecase`) Guide
 
-English | [日本語](README.ja.md)
-
 ## Role in Onion Architecture
 
 - Acts as an **application service layer** that orchestrates **procedures (workflows)** of use cases.
@@ -353,9 +351,14 @@ each other.
   contract, still in application vocabulary: which collaborator carries a guarantee, why the
   transaction boundary sits where it does, what degrades instead of failing, why a conflict is not
   retryable.
-- **Never restate the interface doc verbatim.** A duplicate adds nothing and rots in two places. When
-  there is no concrete detail worth adding, **omit the implementation doc entirely** — the
-  implementation type is unexported, so `revive`'s `exported` rule does not require one.
+- **Never restate the interface doc verbatim, and never leave the implementation bare.** A copy adds
+  nothing and rots in two places; an omission is worse, because Go does not carry an interface's doc
+  to its implementations — a reader hovering the method body would see *less* than a reader at the
+  interface, and the guarantee becomes invisible exactly where someone is about to change the code
+  that produces it. State the same guarantee **through what produces it**: not `// Get は、対象を
+  1 件返します。無ければ NotFound を返します。` twice over, but which collaborator the not-found comes
+  from, or which of the branches decides it. When nothing concrete can be said that way, that is a
+  signal the implementation is a pass-through, not a licence to delete the doc.
 
 This interface-vs-implementation split is **not specific to this layer**. It applies wherever an
 interface and its unexported implementation live in the same package — `internal/logging`'s `Logger`

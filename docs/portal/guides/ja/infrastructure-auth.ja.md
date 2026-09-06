@@ -1,7 +1,5 @@
 # auth Directory
 
-[English](README.md) | 日本語
-
 > このファイルは canonical な [README.md](README.md) の日本語訳です。直接編集せず、更新は README.md 側から反映してください。
 
 `internal/infrastructure/auth` は **認証インフラストラクチャ** を提供するディレクトリです。

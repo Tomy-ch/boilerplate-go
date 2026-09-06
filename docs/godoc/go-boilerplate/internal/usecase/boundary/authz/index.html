@@ -175,7 +175,7 @@
 		
 			
 			
-			<h2 id="Action">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/authz/action.go.html?s=2536:2554#L32">Action</a>
+			<h2 id="Action">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/authz/action.go.html?s=3459:3477#L43">Action</a>
 				<a class="permalink" href="#Action">¶</a>
 				
 				
@@ -205,6 +205,9 @@
     <span id="ActionProductUpdate">ActionProductUpdate</span> <a href="#Action">Action</a> = &#34;product:update&#34;
     <span class="comment">// ActionProductStockUpdate は、商品在庫の増減操作（admin）を表します。</span>
     <span id="ActionProductStockUpdate">ActionProductStockUpdate</span> <a href="#Action">Action</a> = &#34;product:stock:update&#34;
+    <span class="comment">// ActionProductDiscontinue は、商品の廃番操作と、その影響の見積もりの参照（admin）を表します。</span>
+    <span class="comment">// 見積もりは廃番を実行できる主体だけが見るべき情報なので、実行と同じ権限で守ります。</span>
+    <span id="ActionProductDiscontinue">ActionProductDiscontinue</span> <a href="#Action">Action</a> = &#34;product:discontinue&#34;
     <span class="comment">// ActionProductListLowStock は、在庫僅少商品一覧の参照操作（admin）を表します。</span>
     <span id="ActionProductListLowStock">ActionProductListLowStock</span> <a href="#Action">Action</a> = &#34;product:low-stock:list&#34;
     <span class="comment">// ActionProductReadUnpublished は、未公開商品を含む商品の参照操作（admin）を表します。</span>
@@ -220,6 +223,14 @@
     <span id="ActionPurchaseDeliver">ActionPurchaseDeliver</span> <a href="#Action">Action</a> = &#34;purchase:deliver&#34;
     <span class="comment">// ActionDashboardRead は、ダッシュボード集計の参照操作（admin）を表します。</span>
     <span id="ActionDashboardRead">ActionDashboardRead</span> <a href="#Action">Action</a> = &#34;dashboard:read&#34;
+    <span class="comment">// ActionInquiryList は、問い合わせの列挙操作（admin）を表します。</span>
+    <span id="ActionInquiryList">ActionInquiryList</span> <a href="#Action">Action</a> = &#34;inquiry:list&#34;
+    <span class="comment">// ActionInquiryReadAll は、利用者を問わない問い合わせの参照操作（admin）を表します。</span>
+    <span id="ActionInquiryReadAll">ActionInquiryReadAll</span> <a href="#Action">Action</a> = &#34;inquiry:read-all&#34;
+    <span class="comment">// ActionInquiryReply は、問い合わせへの回答操作（admin）を表します。</span>
+    <span id="ActionInquiryReply">ActionInquiryReply</span> <a href="#Action">Action</a> = &#34;inquiry:reply&#34;
+    <span class="comment">// ActionInquiryFeedSubscribe は、問い合わせ更新フィードの購読操作（admin）を表します。</span>
+    <span id="ActionInquiryFeedSubscribe">ActionInquiryFeedSubscribe</span> <a href="#Action">Action</a> = &#34;inquiry-feed:subscribe&#34;
 )</pre>
 			
 
@@ -233,7 +244,7 @@
 
 			
 				
-				<h3 id="Action.String">func (Action) <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/authz/action.go.html?s=2616:2647#L35">String</a>
+				<h3 id="Action.String">func (Action) <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/authz/action.go.html?s=3539:3570#L46">String</a>
 					<a class="permalink" href="#Action.String">¶</a>
 					
 					

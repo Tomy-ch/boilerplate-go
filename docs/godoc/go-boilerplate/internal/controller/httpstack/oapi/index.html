@@ -135,7 +135,7 @@
 		
 			
 			
-			<h2 id="Middleware">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/oapi/oapi.go.html?s=910:1037#L8">Middleware</a>
+			<h2 id="Middleware">func <a href="../../../../../src/go-boilerplate/internal/controller/httpstack/oapi/oapi.go.html?s=974:1101#L9">Middleware</a>
 				<a class="permalink" href="#Middleware">¶</a>
 				
 				
@@ -146,7 +146,8 @@
     authFunc <a href="../../../../../github.com/getkin/kin-openapi/openapi3filter/">openapi3filter</a>.<a href="../../../../../github.com/getkin/kin-openapi/openapi3filter/#AuthenticationFunc">AuthenticationFunc</a>,
 ) echo.<a href="#MiddlewareFunc">MiddlewareFunc</a></pre>
 			<p>Middleware は、OpenAPI スキーマに基づくリクエストバリデーション（認証は authFunc 経由）を行うミドルウェアを返します。
-バリデーション実行前にリクエストコンテキストへ authn スロット（ctxhelper.WithAuthn）を注入するため、authFunc はそのスロットへ認証結果を書き込めます。
+バリデーション実行前にリクエストコンテキストへ authn スロット（ctxhelper.WithAuthn）と stream grant スロット
+（ctxhelper.WithStreamGrant）を注入するため、authFunc はそのスロットへ認証結果を書き込めます。
 認証が失敗したリクエストは、spec がそれを任意と宣言していてもハンドラへ到達しません（failClosed）。
 
 			

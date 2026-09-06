@@ -60,41 +60,52 @@
 <span id="L3" class="ln">     3  </span>import (
 <span id="L4" class="ln">     4  </span>	&#34;context&#34;
 <span id="L5" class="ln">     5  </span>
-<span id="L6" class="ln">     6  </span>	&#34;go.opentelemetry.io/otel/metric&#34;
-<span id="L7" class="ln">     7  </span>)
-<span id="L8" class="ln">     8  </span>
-<span id="L9" class="ln">     9  </span><span class="comment">// outboxMeterName は、outbox relay 計装の meter 名です。</span>
-<span id="L10" class="ln">    10  </span>const outboxMeterName = &#34;go-boilerplate/outbox&#34;
-<span id="L11" class="ln">    11  </span>
-<span id="L12" class="ln">    12  </span><span class="comment">// OutboxMetrics は、outbox relay 所有の outbox 固有計装です。</span>
-<span id="L13" class="ln">    13  </span><span class="comment">// publish 自体の count/latency/error は httpclient(downstream=outbox) の計装で賄うため、</span>
-<span id="L14" class="ln">    14  </span><span class="comment">// ここでは outbox 固有の SLI（lag）と dead 数のみを持ちます。</span>
-<span id="L15" class="ln">    15  </span>type OutboxMetrics struct {
-<span id="L16" class="ln">    16  </span>	lagSeconds metric.Int64Gauge
-<span id="L17" class="ln">    17  </span>	dead       metric.Int64Counter
-<span id="L18" class="ln">    18  </span>}
-<span id="L19" class="ln">    19  </span>
-<span id="L20" class="ln">    20  </span><span class="comment">// NewOutboxMetrics は、注入された MeterProvider から outbox relay の計装一式を生成します。</span>
-<span id="L21" class="ln">    21  </span>func NewOutboxMetrics(mp metric.MeterProvider) (*OutboxMetrics, error) {
-<span id="L22" class="ln">    22  </span>	b := &amp;meterBuilder{m: mp.Meter(outboxMeterName)}
-<span id="L23" class="ln">    23  </span>	om := &amp;OutboxMetrics{
-<span id="L24" class="ln">    24  </span>		lagSeconds: b.gauge(&#34;outbox.lag_seconds&#34;, &#34;最古 pending 行の経過秒数（SLI=outbox lag）&#34;),
-<span id="L25" class="ln">    25  </span>		dead:       b.counter(&#34;outbox.dead&#34;, &#34;max attempts 到達で dead 化したメッセージ数&#34;),
-<span id="L26" class="ln">    26  </span>	}
-<span id="L27" class="ln">    27  </span>	if b.err != nil {
-<span id="L28" class="ln">    28  </span>		return nil, b.err
-<span id="L29" class="ln">    29  </span>	}
-<span id="L30" class="ln">    30  </span>	return om, nil
-<span id="L31" class="ln">    31  </span>}
-<span id="L32" class="ln">    32  </span>
-<span id="L33" class="ln">    33  </span><span class="comment">// SetLagSeconds は、最古 pending 行の経過秒数（outbox lag）を記録します（pending 無しは 0）。</span>
-<span id="L34" class="ln">    34  </span>func (m *OutboxMetrics) SetLagSeconds(ctx context.Context, seconds int64) {
-<span id="L35" class="ln">    35  </span>	m.lagSeconds.Record(ctx, seconds)
-<span id="L36" class="ln">    36  </span>}
-<span id="L37" class="ln">    37  </span>
-<span id="L38" class="ln">    38  </span><span class="comment">// IncDead は、dead 化したメッセージ数を計上します。</span>
-<span id="L39" class="ln">    39  </span>func (m *OutboxMetrics) IncDead(ctx context.Context) { m.dead.Add(ctx, 1) }
-<span id="L40" class="ln">    40  </span>
+<span id="L6" class="ln">     6  </span>	&#34;go.opentelemetry.io/otel/attribute&#34;
+<span id="L7" class="ln">     7  </span>	&#34;go.opentelemetry.io/otel/metric&#34;
+<span id="L8" class="ln">     8  </span>)
+<span id="L9" class="ln">     9  </span>
+<span id="L10" class="ln">    10  </span><span class="comment">// outboxMeterName は、outbox relay 計装の meter 名です。</span>
+<span id="L11" class="ln">    11  </span>const outboxMeterName = &#34;go-boilerplate/outbox&#34;
+<span id="L12" class="ln">    12  </span>
+<span id="L13" class="ln">    13  </span><span class="comment">// OutboxMetrics は、outbox relay 所有の outbox 固有計装です。</span>
+<span id="L14" class="ln">    14  </span><span class="comment">// publish 自体の count/latency/error は httpclient(downstream=outbox) の計装で賄うため、</span>
+<span id="L15" class="ln">    15  </span><span class="comment">// ここでは outbox 固有の SLI（lag / blocked streams）と dead 数のみを持ちます。</span>
+<span id="L16" class="ln">    16  </span><span class="comment">// relay は配送チャネルごとに独立して動くため、いずれもチャネル属性を伴います。</span>
+<span id="L17" class="ln">    17  </span>type OutboxMetrics struct {
+<span id="L18" class="ln">    18  </span>	lagSeconds     metric.Int64Gauge
+<span id="L19" class="ln">    19  </span>	dead           metric.Int64Counter
+<span id="L20" class="ln">    20  </span>	blockedStreams metric.Int64Gauge
+<span id="L21" class="ln">    21  </span>}
+<span id="L22" class="ln">    22  </span>
+<span id="L23" class="ln">    23  </span><span class="comment">// NewOutboxMetrics は、注入された MeterProvider から outbox relay の計装一式を生成します。</span>
+<span id="L24" class="ln">    24  </span>func NewOutboxMetrics(mp metric.MeterProvider) (*OutboxMetrics, error) {
+<span id="L25" class="ln">    25  </span>	b := &amp;meterBuilder{m: mp.Meter(outboxMeterName)}
+<span id="L26" class="ln">    26  </span>	om := &amp;OutboxMetrics{
+<span id="L27" class="ln">    27  </span>		lagSeconds:     b.gauge(&#34;outbox.lag_seconds&#34;, &#34;最古 pending 行の経過秒数（SLI=outbox lag）&#34;),
+<span id="L28" class="ln">    28  </span>		dead:           b.counter(&#34;outbox.dead&#34;, &#34;恒久エラーと判定して dead 化したメッセージ数&#34;),
+<span id="L29" class="ln">    29  </span>		blockedStreams: b.gauge(&#34;outbox.blocked_streams&#34;, &#34;先頭行が dead で進行が止まっているストリーム数&#34;),
+<span id="L30" class="ln">    30  </span>	}
+<span id="L31" class="ln">    31  </span>	if b.err != nil {
+<span id="L32" class="ln">    32  </span>		return nil, b.err
+<span id="L33" class="ln">    33  </span>	}
+<span id="L34" class="ln">    34  </span>	return om, nil
+<span id="L35" class="ln">    35  </span>}
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span><span class="comment">// SetLagSeconds は、最古 pending 行の経過秒数（outbox lag）をチャネル別に記録します（pending 無しは 0）。</span>
+<span id="L38" class="ln">    38  </span>func (m *OutboxMetrics) SetLagSeconds(ctx context.Context, channel string, seconds int64) {
+<span id="L39" class="ln">    39  </span>	m.lagSeconds.Record(ctx, seconds, metric.WithAttributes(attribute.String(&#34;channel&#34;, channel)))
+<span id="L40" class="ln">    40  </span>}
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// IncDead は、dead 化したメッセージ数をチャネル別に計上します。</span>
+<span id="L43" class="ln">    43  </span>func (m *OutboxMetrics) IncDead(ctx context.Context, channel string) {
+<span id="L44" class="ln">    44  </span>	m.dead.Add(ctx, 1, metric.WithAttributes(attribute.String(&#34;channel&#34;, channel)))
+<span id="L45" class="ln">    45  </span>}
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span><span class="comment">// SetBlockedStreams は、先頭行が dead で止まっているストリーム数をチャネル別に記録します。</span>
+<span id="L48" class="ln">    48  </span>func (m *OutboxMetrics) SetBlockedStreams(ctx context.Context, channel string, count int64) {
+<span id="L49" class="ln">    49  </span>	m.blockedStreams.Record(ctx, count, metric.WithAttributes(attribute.String(&#34;channel&#34;, channel)))
+<span id="L50" class="ln">    50  </span>}
+<span id="L51" class="ln">    51  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/observability/outbox_metrics.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

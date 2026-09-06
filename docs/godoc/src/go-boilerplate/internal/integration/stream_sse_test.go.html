@@ -1,0 +1,425 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>integration - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../src/go-boilerplate/internal/integration">integration</a>/<span class="text-muted">stream_sse_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/internal/integration">go-boilerplate/internal/integration</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package integration
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;encoding/json&#34;
+<span id="L6" class="ln">     6  </span>	&#34;net/http&#34;
+<span id="L7" class="ln">     7  </span>	&#34;strconv&#34;
+<span id="L8" class="ln">     8  </span>	&#34;testing&#34;
+<span id="L9" class="ln">     9  </span>	&#34;time&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;github.com/labstack/echo/v5&#34;
+<span id="L12" class="ln">    12  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L13" class="ln">    13  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go.uber.org/mock/gomock&#34;
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/controller/httpstack/oapi/auth&#34;
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/controller/httpstack/oapi/skipper&#34;
+<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/internal/controller/httpstack/oapi/validator&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/internal/controller/httpstack/redaction&#34;
+<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/internal/controller/stream&#34;
+<span id="L21" class="ln">    21  </span>	streamauth &#34;go-boilerplate/internal/controller/stream/auth&#34;
+<span id="L22" class="ln">    22  </span>	&#34;go-boilerplate/internal/di/server/extension/inbound&#34;
+<span id="L23" class="ln">    23  </span>	&#34;go-boilerplate/internal/di/server/extension/instrumentation&#34;
+<span id="L24" class="ln">    24  </span>	&#34;go-boilerplate/internal/logging&#34;
+<span id="L25" class="ln">    25  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L26" class="ln">    26  </span>	mock_auth &#34;go-boilerplate/internal/usecase/boundary/auth/mock&#34;
+<span id="L27" class="ln">    27  </span>	clocktestkit &#34;go-boilerplate/internal/usecase/boundary/clock/testkit&#34;
+<span id="L28" class="ln">    28  </span>	rt &#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L29" class="ln">    29  </span>	rttestkit &#34;go-boilerplate/internal/usecase/boundary/realtime/testkit&#34;
+<span id="L30" class="ln">    30  </span>	ucrealtime &#34;go-boilerplate/internal/usecase/realtime&#34;
+<span id="L31" class="ln">    31  </span>)
+<span id="L32" class="ln">    32  </span>
+<span id="L33" class="ln">    33  </span><span class="comment">// 接続の周期処理の待ち時間を見分ける帯の境界。controller/stream の定数は非公開なので、</span>
+<span id="L34" class="ln">    34  </span><span class="comment">// heartbeat(15s) / catch-up(30s + jitter) / lifetime(1h) が分かれる位置に取ります。</span>
+<span id="L35" class="ln">    35  </span>const (
+<span id="L36" class="ln">    36  </span>	sseHeartbeatCeiling = 20 * time.Second
+<span id="L37" class="ln">    37  </span>	sseCatchUpCeiling   = 5 * time.Minute
+<span id="L38" class="ln">    38  </span>)
+<span id="L39" class="ln">    39  </span>
+<span id="L40" class="ln">    40  </span><span class="comment">// sseNow は、EventLog に置く event の発生時刻であり、cursor の失効判定が見る現在時刻でもあります。</span>
+<span id="L41" class="ln">    41  </span>var sseNow = time.Date(2026, time.January, 10, 0, 0, 0, 0, time.UTC)
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span><span class="comment">// sseSleeper は、接続の周期処理を止めておく Sleeper です。catch-up の周期だけテストが名指しで進め、</span>
+<span id="L44" class="ln">    44  </span><span class="comment">// heartbeat と connection lifetime は ctx が終わるまで起きません。実時間には一切依存しません。</span>
+<span id="L45" class="ln">    45  </span>type sseSleeper struct {
+<span id="L46" class="ln">    46  </span>	catchUp chan struct{}
+<span id="L47" class="ln">    47  </span>}
+<span id="L48" class="ln">    48  </span>
+<span id="L49" class="ln">    49  </span><span class="comment">// sseFixture は、SSE の scenario を駆動するのに要る一式です。EventLog を cursor 検証用と replay 用に</span>
+<span id="L50" class="ln">    50  </span><span class="comment">// 分けて持つのは、replay の読み取りだけを止めて枠を握らせる scenario があるためです。1 つにすると</span>
+<span id="L51" class="ln">    51  </span><span class="comment">// 確定前の cursor 検証まで止まり、確定前と確定後の区別が付けられません。</span>
+<span id="L52" class="ln">    52  </span>type sseFixture struct {
+<span id="L53" class="ln">    53  </span>	srv *Server
+<span id="L54" class="ln">    54  </span>	<span class="comment">// cursorLog は、確定前の cursor 検証が読む EventLog です。</span>
+<span id="L55" class="ln">    55  </span>	cursorLog *rttestkit.EventLog
+<span id="L56" class="ln">    56  </span>	<span class="comment">// replayLog は、確定後の replay / catch-up が読む EventLog です。</span>
+<span id="L57" class="ln">    57  </span>	replayLog *rttestkit.EventLog
+<span id="L58" class="ln">    58  </span>	sleeper   *sseSleeper
+<span id="L59" class="ln">    59  </span>	registry  *stream.Registry
+<span id="L60" class="ln">    60  </span>}
+<span id="L61" class="ln">    61  </span>
+<span id="L62" class="ln">    62  </span>func newSSESleeper() *sseSleeper {
+<span id="L63" class="ln">    63  </span>	return &amp;sseSleeper{catchUp: make(chan struct{})}
+<span id="L64" class="ln">    64  </span>}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span><span class="comment">// Sleep は、待ち時間の帯で tick の種類を見分け、catch-up だけテストの合図を待ちます。</span>
+<span id="L67" class="ln">    67  </span>func (s *sseSleeper) Sleep(ctx context.Context, d time.Duration) error {
+<span id="L68" class="ln">    68  </span>	if d &lt;= sseHeartbeatCeiling || d &gt; sseCatchUpCeiling {
+<span id="L69" class="ln">    69  </span>		&lt;-ctx.Done()
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span>		return ctx.Err()
+<span id="L72" class="ln">    72  </span>	}
+<span id="L73" class="ln">    73  </span>
+<span id="L74" class="ln">    74  </span>	select {
+<span id="L75" class="ln">    75  </span>	case &lt;-s.catchUp:
+<span id="L76" class="ln">    76  </span>		return nil
+<span id="L77" class="ln">    77  </span>	case &lt;-ctx.Done():
+<span id="L78" class="ln">    78  </span>		return ctx.Err()
+<span id="L79" class="ln">    79  </span>	}
+<span id="L80" class="ln">    80  </span>}
+<span id="L81" class="ln">    81  </span>
+<span id="L82" class="ln">    82  </span><span class="comment">// tickCatchUp は、周期 catch-up を 1 回だけ進めます。</span>
+<span id="L83" class="ln">    83  </span>func (s *sseSleeper) tickCatchUp(t *testing.T) {
+<span id="L84" class="ln">    84  </span>	t.Helper()
+<span id="L85" class="ln">    85  </span>
+<span id="L86" class="ln">    86  </span>	select {
+<span id="L87" class="ln">    87  </span>	case s.catchUp &lt;- struct{}{}:
+<span id="L88" class="ln">    88  </span>	case &lt;-time.After(sseReadTimeout):
+<span id="L89" class="ln">    89  </span>		t.Fatal(&#34;catch-up の待ちが起きなかった&#34;)
+<span id="L90" class="ln">    90  </span>	}
+<span id="L91" class="ln">    91  </span>}
+<span id="L92" class="ln">    92  </span>
+<span id="L93" class="ln">    93  </span><span class="comment">// seed は、1 から n までの連続した event を両方の EventLog に置きます。</span>
+<span id="L94" class="ln">    94  </span>func (f *sseFixture) seed(n int) {
+<span id="L95" class="ln">    95  </span>	seedEvents(f.cursorLog, n)
+<span id="L96" class="ln">    96  </span>	seedEvents(f.replayLog, n)
+<span id="L97" class="ln">    97  </span>}
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span><span class="comment">// add は、後から届いた event を両方の EventLog に置きます。</span>
+<span id="L100" class="ln">   100  </span>func (f *sseFixture) add(events ...rt.DeliveryEvent) {
+<span id="L101" class="ln">   101  </span>	f.cursorLog.Seed(events...)
+<span id="L102" class="ln">   102  </span>	f.replayLog.Seed(events...)
+<span id="L103" class="ln">   103  </span>}
+<span id="L104" class="ln">   104  </span>
+<span id="L105" class="ln">   105  </span><span class="comment">// sseEvent は、seq の位置の封筒を組み立てます。</span>
+<span id="L106" class="ln">   106  </span>func sseEvent(seq rt.Sequence) rt.DeliveryEvent {
+<span id="L107" class="ln">   107  </span>	return rt.DeliveryEvent{
+<span id="L108" class="ln">   108  </span>		EventID:       &#34;evt-&#34; + seq.String(),
+<span id="L109" class="ln">   109  </span>		StreamID:      streamTestDestination,
+<span id="L110" class="ln">   110  </span>		Sequence:      seq,
+<span id="L111" class="ln">   111  </span>		Type:          &#34;sample.thing.created.v1&#34;,
+<span id="L112" class="ln">   112  </span>		OccurredAt:    sseNow,
+<span id="L113" class="ln">   113  </span>		SchemaVersion: 1,
+<span id="L114" class="ln">   114  </span>		Payload:       json.RawMessage(`{&#34;n&#34;:` + seq.String() + `}`),
+<span id="L115" class="ln">   115  </span>	}
+<span id="L116" class="ln">   116  </span>}
+<span id="L117" class="ln">   117  </span>
+<span id="L118" class="ln">   118  </span><span class="comment">// seedEvents は、1 から n までの連続した event を EventLog に置きます。</span>
+<span id="L119" class="ln">   119  </span>func seedEvents(log *rttestkit.EventLog, n int) {
+<span id="L120" class="ln">   120  </span>	events := make([]rt.DeliveryEvent, 0, n)
+<span id="L121" class="ln">   121  </span>	for i := 1; i &lt;= n; i++ {
+<span id="L122" class="ln">   122  </span>		events = append(events, sseEvent(rt.Sequence(i)))
+<span id="L123" class="ln">   123  </span>	}
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>	log.Seed(events...)
+<span id="L126" class="ln">   126  </span>}
+<span id="L127" class="ln">   127  </span>
+<span id="L128" class="ln">   128  </span><span class="comment">// newSSEServer は、stream_auth_test.go と同じ配線に**本物の connection registry** を Streamer として差した</span>
+<span id="L129" class="ln">   129  </span><span class="comment">// サーバーを起動します。差し替えるのは ticket の検証（stub）と EventLog（in-memory fake）だけで、</span>
+<span id="L130" class="ln">   130  </span><span class="comment">// OpenAPI validator・security scheme・cursor の失効判定・replay は本物が走ります。</span>
+<span id="L131" class="ln">   131  </span>func newSSEServer(t *testing.T, set stream.Settings) *sseFixture {
+<span id="L132" class="ln">   132  </span>	t.Helper()
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>	spec, err := validator.GetValidator()
+<span id="L135" class="ln">   135  </span>	require.NoError(t, err)
+<span id="L136" class="ln">   136  </span>
+<span id="L137" class="ln">   137  </span>	bearer := mock_auth.NewMockAuthenticator(gomock.NewController(t))
+<span id="L138" class="ln">   138  </span>	authFunc, err := auth.NewAuthenticator(
+<span id="L139" class="ln">   139  </span>		bearer, stubIdentityResolver{}, []auth.SchemeAuthenticator{streamauth.New(stubTicketVerifier{})},
+<span id="L140" class="ln">   140  </span>	)
+<span id="L141" class="ln">   141  </span>	require.NoError(t, err)
+<span id="L142" class="ln">   142  </span>
+<span id="L143" class="ln">   143  </span>	cursorLog, replayLog := rttestkit.NewEventLog(), rttestkit.NewEventLog()
+<span id="L144" class="ln">   144  </span>	sleeper := newSSESleeper()
+<span id="L145" class="ln">   145  </span>	tf := observability.NewNoopTracerFactory(t)
+<span id="L146" class="ln">   146  </span>	logger := logging.NewTestLogger(t)
+<span id="L147" class="ln">   147  </span>
+<span id="L148" class="ln">   148  </span>	cursors := ucrealtime.NewCursorValidator(cursorLog, clocktestkit.NewMockClock(t, sseNow), tf)
+<span id="L149" class="ln">   149  </span>	registry := stream.NewRegistry(ucrealtime.NewReplayer(replayLog, tf), sleeper, logger, tf,
+<span id="L150" class="ln">   150  </span>		observability.NewNoopRealtimeMetrics(t), ucrealtime.NewHealth(replayLog), set)
+<span id="L151" class="ln">   151  </span>
+<span id="L152" class="ln">   152  </span>	e := echo.New()
+<span id="L153" class="ln">   153  </span>	UseAppErrorHandlerWithLogger(t, e, logger,
+<span id="L154" class="ln">   154  </span>		instrumentation.LoggingMiddleware(logger, logging.NewTestLogFieldBuilder(t), redaction.FromSpec(spec)).Middleware,
+<span id="L155" class="ln">   155  </span>		inbound.OpenAPIMiddleware(spec, skipper.New(), authFunc).Middleware,
+<span id="L156" class="ln">   156  </span>	)
+<span id="L157" class="ln">   157  </span>	stream.BindHandler(e, tf, cursors, registry)
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>	return &amp;sseFixture{
+<span id="L160" class="ln">   160  </span>		srv: StartServer(t, e), cursorLog: cursorLog, replayLog: replayLog, sleeper: sleeper, registry: registry,
+<span id="L161" class="ln">   161  </span>	}
+<span id="L162" class="ln">   162  </span>}
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span><span class="comment">// streamPath は、ticket 付きの接続先を組み立てます。</span>
+<span id="L165" class="ln">   165  </span>func streamPath(after rt.Sequence) string {
+<span id="L166" class="ln">   166  </span>	return &#34;/v1/streams/&#34; + string(streamTestDestination) + &#34;?ticket=&#34; + streamTestTicket + &#34;&amp;after=&#34; + after.String()
+<span id="L167" class="ln">   167  </span>}
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>func TestStreamSSE_Integration(t *testing.T) {
+<span id="L170" class="ln">   170  </span>	t.Parallel()
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L173" class="ln">   173  </span>		t.Parallel()
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>		t.Run(&#34;接続すると cursor より後ろの event が sequence 順に届く&#34;, func(t *testing.T) {
+<span id="L176" class="ln">   176  </span>			t.Parallel()
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>			f := newSSEServer(t, stream.Settings{})
+<span id="L179" class="ln">   179  </span>			f.seed(3)
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>			c, res := connectSSE(t, f.srv, streamPath(1))
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>			require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L184" class="ln">   184  </span>			assert.Equal(t, &#34;text/event-stream&#34;, res.Header.Get(&#34;Content-Type&#34;))
+<span id="L185" class="ln">   185  </span>			assert.Equal(t, &#34;no-store&#34;, res.Header.Get(&#34;Cache-Control&#34;))
+<span id="L186" class="ln">   186  </span>			assert.Equal(t, &#34;2&#34;, c.next().id)
+<span id="L187" class="ln">   187  </span>			assert.Equal(t, &#34;3&#34;, c.next().id)
+<span id="L188" class="ln">   188  </span>		})
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>		t.Run(&#34;afterとLast-Event-IDのどちらでも途中から再開できる&#34;, func(t *testing.T) {
+<span id="L191" class="ln">   191  </span>			t.Parallel()
+<span id="L192" class="ln">   192  </span>
+<span id="L193" class="ln">   193  </span>			f := newSSEServer(t, stream.Settings{})
+<span id="L194" class="ln">   194  </span>			f.seed(4)
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>			byAfter, res := connectSSE(t, f.srv, streamPath(3))
+<span id="L197" class="ln">   197  </span>			require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L198" class="ln">   198  </span>			require.Equal(t, &#34;4&#34;, byAfter.next().id)
+<span id="L199" class="ln">   199  </span>			byAfter.close()
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>			<span class="comment">// 同じ位置を Last-Event-ID で提示すると同じ続きが届く（優先順は Phase 5 で固定済み）。</span>
+<span id="L202" class="ln">   202  </span>			headers := http.Header{}
+<span id="L203" class="ln">   203  </span>			headers.Set(&#34;Last-Event-ID&#34;, &#34;3&#34;)
+<span id="L204" class="ln">   204  </span>			byHeader, res := connectSSEWithHeaders(t, f.srv, streamPath(0), headers)
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>			require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L207" class="ln">   207  </span>			assert.Equal(t, &#34;4&#34;, byHeader.next().id)
+<span id="L208" class="ln">   208  </span>		})
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>		t.Run(&#34;wakeupが届かなくても周期catch-upで配信される&#34;, func(t *testing.T) {
+<span id="L211" class="ln">   211  </span>			t.Parallel()
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>			f := newSSEServer(t, stream.Settings{})
+<span id="L214" class="ln">   214  </span>			f.seed(1)
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span>			c, res := connectSSE(t, f.srv, streamPath(0))
+<span id="L217" class="ln">   217  </span>			require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L218" class="ln">   218  </span>			require.Equal(t, &#34;1&#34;, c.next().id)
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>			<span class="comment">// wakeup は一切送らず、後から届いた event を catch-up だけで拾わせる。</span>
+<span id="L221" class="ln">   221  </span>			f.add(sseEvent(2))
+<span id="L222" class="ln">   222  </span>			f.sleeper.tickCatchUp(t)
+<span id="L223" class="ln">   223  </span>
+<span id="L224" class="ln">   224  </span>			assert.Equal(t, &#34;2&#34;, c.next().id)
+<span id="L225" class="ln">   225  </span>		})
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span>		t.Run(&#34;接続が閉じた後も再接続すれば取りこぼした event が届く&#34;, func(t *testing.T) {
+<span id="L228" class="ln">   228  </span>			t.Parallel()
+<span id="L229" class="ln">   229  </span>
+<span id="L230" class="ln">   230  </span>			f := newSSEServer(t, stream.Settings{})
+<span id="L231" class="ln">   231  </span>			f.seed(5)
+<span id="L232" class="ln">   232  </span>
+<span id="L233" class="ln">   233  </span>			first, res := connectSSE(t, f.srv, streamPath(0))
+<span id="L234" class="ln">   234  </span>			require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L235" class="ln">   235  </span>			require.Equal(t, &#34;1&#34;, first.next().id)
+<span id="L236" class="ln">   236  </span>			first.close() <span class="comment">// 2 件目以降を読まずに切る</span>
+<span id="L237" class="ln">   237  </span>
+<span id="L238" class="ln">   238  </span>			second, res := connectSSE(t, f.srv, streamPath(parseSequence(t, first.lastEventID)))
+<span id="L239" class="ln">   239  </span>
+<span id="L240" class="ln">   240  </span>			require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L241" class="ln">   241  </span>			assert.Equal(t, &#34;2&#34;, second.next().id, &#34;受け取っていない event は EventLog に残っていること&#34;)
+<span id="L242" class="ln">   242  </span>		})
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>		t.Run(&#34;停止に入ると RECONNECT を送って閉じ、新規接続は 503 になる&#34;, func(t *testing.T) {
+<span id="L245" class="ln">   245  </span>			t.Parallel()
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>			f := newSSEServer(t, stream.Settings{})
+<span id="L248" class="ln">   248  </span>			f.seed(1)
+<span id="L249" class="ln">   249  </span>			c, res := connectSSE(t, f.srv, streamPath(0))
+<span id="L250" class="ln">   250  </span>			require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L251" class="ln">   251  </span>			require.Equal(t, &#34;1&#34;, c.next().id)
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span>			go func() { _ = f.registry.Drain(context.Background()) }()
+<span id="L254" class="ln">   254  </span>
+<span id="L255" class="ln">   255  </span>			frame := c.next()
+<span id="L256" class="ln">   256  </span>			assert.Equal(t, &#34;control&#34;, frame.event)
+<span id="L257" class="ln">   257  </span>			require.NotNil(t, c.lastControl)
+<span id="L258" class="ln">   258  </span>			assert.Equal(t, &#34;RECONNECT&#34;, string(c.lastControl.Action))
+<span id="L259" class="ln">   259  </span>			assert.Equal(t, &#34;SERVER_DRAINING&#34;, string(c.lastControl.Reason))
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span>			_, refused := connectSSE(t, f.srv, streamPath(0))
+<span id="L262" class="ln">   262  </span>			assert.Equal(t, http.StatusServiceUnavailable, refused.StatusCode)
+<span id="L263" class="ln">   263  </span>		})
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>		t.Run(&#34;失効通知を受けた接続は STOP で閉じ client 側が自ら閉じる&#34;, func(t *testing.T) {
+<span id="L266" class="ln">   266  </span>			t.Parallel()
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>			f := newSSEServer(t, stream.Settings{})
+<span id="L269" class="ln">   269  </span>			f.seed(1)
+<span id="L270" class="ln">   270  </span>			c, res := connectSSE(t, f.srv, streamPath(0))
+<span id="L271" class="ln">   271  </span>			require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L272" class="ln">   272  </span>			require.Equal(t, &#34;1&#34;, c.next().id)
+<span id="L273" class="ln">   273  </span>
+<span id="L274" class="ln">   274  </span>			f.registry.Revoke(context.Background(), &#34;subject-1&#34;, streamTestDestination)
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>			frame := c.next()
+<span id="L277" class="ln">   277  </span>			assert.Equal(t, &#34;control&#34;, frame.event)
+<span id="L278" class="ln">   278  </span>			assert.Empty(t, frame.id, &#34;control event が Last-Event-ID を汚さないこと&#34;)
+<span id="L279" class="ln">   279  </span>			assert.Equal(t, &#34;1&#34;, c.lastEventID, &#34;cursor は business event のままであること&#34;)
+<span id="L280" class="ln">   280  </span>			require.NotNil(t, c.lastControl)
+<span id="L281" class="ln">   281  </span>			assert.Equal(t, &#34;STOP&#34;, string(c.lastControl.Action))
+<span id="L282" class="ln">   282  </span>			assert.True(t, c.closedBySelf, &#34;STOP を受けた client は EOF を待たず自ら閉じること&#34;)
+<span id="L283" class="ln">   283  </span>		})
+<span id="L284" class="ln">   284  </span>
+<span id="L285" class="ln">   285  </span>		t.Run(&#34;cursorの続きが失われていれば接続前に410で断られる&#34;, func(t *testing.T) {
+<span id="L286" class="ln">   286  </span>			t.Parallel()
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>			f := newSSEServer(t, stream.Settings{})
+<span id="L289" class="ln">   289  </span>			<span class="comment">// 1 と 2 が保持期間から落ち、3 だけが残っている状態。</span>
+<span id="L290" class="ln">   290  </span>			f.add(sseEvent(3))
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span>			_, res := connectSSE(t, f.srv, streamPath(1))
+<span id="L293" class="ln">   293  </span>
+<span id="L294" class="ln">   294  </span>			require.Equal(t, http.StatusGone, res.StatusCode)
+<span id="L295" class="ln">   295  </span>		})
+<span id="L296" class="ln">   296  </span>	})
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L299" class="ln">   299  </span>		t.Parallel()
+<span id="L300" class="ln">   300  </span>
+<span id="L301" class="ln">   301  </span>		t.Run(&#34;接続数の上限を超えると503とRetry-Afterで断られ、閉じれば戻る&#34;, func(t *testing.T) {
+<span id="L302" class="ln">   302  </span>			t.Parallel()
+<span id="L303" class="ln">   303  </span>
+<span id="L304" class="ln">   304  </span>			f := newSSEServer(t, stream.Settings{MaxConnections: 3})
+<span id="L305" class="ln">   305  </span>			f.seed(1)
+<span id="L306" class="ln">   306  </span>
+<span id="L307" class="ln">   307  </span>			held := make([]*sseClient, 0, 3)
+<span id="L308" class="ln">   308  </span>			for range 3 {
+<span id="L309" class="ln">   309  </span>				c, res := connectSSE(t, f.srv, streamPath(0))
+<span id="L310" class="ln">   310  </span>				require.Equal(t, http.StatusOK, res.StatusCode)
+<span id="L311" class="ln">   311  </span>				require.Equal(t, &#34;1&#34;, c.next().id)
+<span id="L312" class="ln">   312  </span>				held = append(held, c)
+<span id="L313" class="ln">   313  </span>			}
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>			_, refused := connectSSE(t, f.srv, streamPath(0))
+<span id="L316" class="ln">   316  </span>			require.Equal(t, http.StatusServiceUnavailable, refused.StatusCode)
+<span id="L317" class="ln">   317  </span>			assert.Equal(t, &#34;5&#34;, refused.Header.Get(&#34;Retry-After&#34;))
+<span id="L318" class="ln">   318  </span>
+<span id="L319" class="ln">   319  </span>			held[0].close()
+<span id="L320" class="ln">   320  </span>
+<span id="L321" class="ln">   321  </span>			require.Eventually(t, func() bool {
+<span id="L322" class="ln">   322  </span>				_, res := connectSSE(t, f.srv, streamPath(0))
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span>				return res.StatusCode == http.StatusOK
+<span id="L325" class="ln">   325  </span>			}, sseReadTimeout, 20*time.Millisecond, &#34;閉じた接続の容量が回収されること&#34;)
+<span id="L326" class="ln">   326  </span>		})
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>		t.Run(&#34;初回replayの枠が空かなければ503で断られる&#34;, func(t *testing.T) {
+<span id="L329" class="ln">   329  </span>			t.Parallel()
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>			f := newSSEServer(t, stream.Settings{ReplayConcurrency: 1})
+<span id="L332" class="ln">   332  </span>			f.seed(1)
+<span id="L333" class="ln">   333  </span>
+<span id="L334" class="ln">   334  </span>			<span class="comment">// 1 本目に枠を握らせたまま初回 replay を終わらせない。</span>
+<span id="L335" class="ln">   335  </span>			release := f.replayLog.Hold()
+<span id="L336" class="ln">   336  </span>			t.Cleanup(release)
+<span id="L337" class="ln">   337  </span>
+<span id="L338" class="ln">   338  </span>			_, res := connectSSE(t, f.srv, streamPath(0))
+<span id="L339" class="ln">   339  </span>			require.Equal(t, http.StatusOK, res.StatusCode, &#34;枠は確定前に取れているので 1 本目は繋がる&#34;)
+<span id="L340" class="ln">   340  </span>
+<span id="L341" class="ln">   341  </span>			<span class="comment">// 枠は 1 本しかないので、2 本目は有界待ちの後に断られる。</span>
+<span id="L342" class="ln">   342  </span>			_, refused := connectSSE(t, f.srv, streamPath(0))
+<span id="L343" class="ln">   343  </span>
+<span id="L344" class="ln">   344  </span>			assert.Equal(t, http.StatusServiceUnavailable, refused.StatusCode)
+<span id="L345" class="ln">   345  </span>			assert.Equal(t, &#34;5&#34;, refused.Header.Get(&#34;Retry-After&#34;))
+<span id="L346" class="ln">   346  </span>		})
+<span id="L347" class="ln">   347  </span>	})
+<span id="L348" class="ln">   348  </span>}
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span><span class="comment">// parseSequence は、client が保持している Last-Event-ID を cursor に直します。</span>
+<span id="L351" class="ln">   351  </span>func parseSequence(t *testing.T, s string) rt.Sequence {
+<span id="L352" class="ln">   352  </span>	t.Helper()
+<span id="L353" class="ln">   353  </span>
+<span id="L354" class="ln">   354  </span>	n, err := strconv.ParseInt(s, 10, 64)
+<span id="L355" class="ln">   355  </span>	require.NoError(t, err)
+<span id="L356" class="ln">   356  </span>
+<span id="L357" class="ln">   357  </span>	return rt.Sequence(n)
+<span id="L358" class="ln">   358  </span>}
+<span id="L359" class="ln">   359  </span>
+</pre><p><a href="../../../../src/go-boilerplate/internal/integration/stream_sse_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

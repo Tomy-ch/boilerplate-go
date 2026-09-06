@@ -71,301 +71,384 @@
 <span id="L14" class="ln">    14  </span>
 <span id="L15" class="ln">    15  </span>const claimPendingOutbox = `-- name: ClaimPendingOutbox :many
 <span id="L16" class="ln">    16  </span>SELECT
-<span id="L17" class="ln">    17  </span>    id,
-<span id="L18" class="ln">    18  </span>    message_id,
-<span id="L19" class="ln">    19  </span>    aggregate_type,
-<span id="L20" class="ln">    20  </span>    aggregate_id,
-<span id="L21" class="ln">    21  </span>    event_type,
-<span id="L22" class="ln">    22  </span>    payload,
-<span id="L23" class="ln">    23  </span>    headers,
-<span id="L24" class="ln">    24  </span>    attempts
-<span id="L25" class="ln">    25  </span>FROM outbox
-<span id="L26" class="ln">    26  </span>WHERE status = &#39;pending&#39;
-<span id="L27" class="ln">    27  </span>ORDER BY id
-<span id="L28" class="ln">    28  </span>LIMIT $1
-<span id="L29" class="ln">    29  </span>FOR UPDATE SKIP LOCKED
-<span id="L30" class="ln">    30  </span>`
-<span id="L31" class="ln">    31  </span>
-<span id="L32" class="ln">    32  </span>type ClaimPendingOutboxRow struct {
-<span id="L33" class="ln">    33  </span>	ID            int64
-<span id="L34" class="ln">    34  </span>	MessageID     uuid.UUID
-<span id="L35" class="ln">    35  </span>	AggregateType string
-<span id="L36" class="ln">    36  </span>	AggregateID   string
-<span id="L37" class="ln">    37  </span>	EventType     string
-<span id="L38" class="ln">    38  </span>	Payload       []byte
-<span id="L39" class="ln">    39  </span>	Headers       []byte
-<span id="L40" class="ln">    40  </span>	Attempts      int32
-<span id="L41" class="ln">    41  </span>}
-<span id="L42" class="ln">    42  </span>
-<span id="L43" class="ln">    43  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/claim_pending_outbox.sql ===</span>
-<span id="L44" class="ln">    44  </span><span class="comment">// pending 行を最大 $1 件 claim する。SKIP LOCKED により多インスタンスでも同一行を二重取得しない。</span>
-<span id="L45" class="ln">    45  </span><span class="comment">// 順序保証は捨てているため id 昇順で十分。呼び出し側 tx の保持中だけロックされる。</span>
-<span id="L46" class="ln">    46  </span><span class="comment">//</span>
-<span id="L47" class="ln">    47  </span><span class="comment">//	SELECT</span>
-<span id="L48" class="ln">    48  </span><span class="comment">//	    id,</span>
-<span id="L49" class="ln">    49  </span><span class="comment">//	    message_id,</span>
-<span id="L50" class="ln">    50  </span><span class="comment">//	    aggregate_type,</span>
-<span id="L51" class="ln">    51  </span><span class="comment">//	    aggregate_id,</span>
-<span id="L52" class="ln">    52  </span><span class="comment">//	    event_type,</span>
-<span id="L53" class="ln">    53  </span><span class="comment">//	    payload,</span>
-<span id="L54" class="ln">    54  </span><span class="comment">//	    headers,</span>
-<span id="L55" class="ln">    55  </span><span class="comment">//	    attempts</span>
-<span id="L56" class="ln">    56  </span><span class="comment">//	FROM outbox</span>
-<span id="L57" class="ln">    57  </span><span class="comment">//	WHERE status = &#39;pending&#39;</span>
-<span id="L58" class="ln">    58  </span><span class="comment">//	ORDER BY id</span>
-<span id="L59" class="ln">    59  </span><span class="comment">//	LIMIT $1</span>
-<span id="L60" class="ln">    60  </span><span class="comment">//	FOR UPDATE SKIP LOCKED</span>
-<span id="L61" class="ln">    61  </span>func (q *Queries) ClaimPendingOutbox(ctx context.Context, limit int32) ([]*ClaimPendingOutboxRow, error) {
-<span id="L62" class="ln">    62  </span>	rows, err := q.db.Query(ctx, claimPendingOutbox, limit)
-<span id="L63" class="ln">    63  </span>	if err != nil {
-<span id="L64" class="ln">    64  </span>		return nil, err
-<span id="L65" class="ln">    65  </span>	}
-<span id="L66" class="ln">    66  </span>	defer rows.Close()
-<span id="L67" class="ln">    67  </span>	var items []*ClaimPendingOutboxRow
-<span id="L68" class="ln">    68  </span>	for rows.Next() {
-<span id="L69" class="ln">    69  </span>		var i ClaimPendingOutboxRow
-<span id="L70" class="ln">    70  </span>		if err := rows.Scan(
-<span id="L71" class="ln">    71  </span>			&amp;i.ID,
-<span id="L72" class="ln">    72  </span>			&amp;i.MessageID,
-<span id="L73" class="ln">    73  </span>			&amp;i.AggregateType,
-<span id="L74" class="ln">    74  </span>			&amp;i.AggregateID,
-<span id="L75" class="ln">    75  </span>			&amp;i.EventType,
-<span id="L76" class="ln">    76  </span>			&amp;i.Payload,
-<span id="L77" class="ln">    77  </span>			&amp;i.Headers,
-<span id="L78" class="ln">    78  </span>			&amp;i.Attempts,
-<span id="L79" class="ln">    79  </span>		); err != nil {
-<span id="L80" class="ln">    80  </span>			return nil, err
-<span id="L81" class="ln">    81  </span>		}
-<span id="L82" class="ln">    82  </span>		items = append(items, &amp;i)
-<span id="L83" class="ln">    83  </span>	}
-<span id="L84" class="ln">    84  </span>	if err := rows.Err(); err != nil {
-<span id="L85" class="ln">    85  </span>		return nil, err
-<span id="L86" class="ln">    86  </span>	}
-<span id="L87" class="ln">    87  </span>	return items, nil
-<span id="L88" class="ln">    88  </span>}
-<span id="L89" class="ln">    89  </span>
-<span id="L90" class="ln">    90  </span>const deletePublishedOutbox = `-- name: DeletePublishedOutbox :execrows
-<span id="L91" class="ln">    91  </span>DELETE FROM outbox
-<span id="L92" class="ln">    92  </span>WHERE id IN (
-<span id="L93" class="ln">    93  </span>        SELECT o.id
-<span id="L94" class="ln">    94  </span>        FROM outbox AS o
-<span id="L95" class="ln">    95  </span>        WHERE o.status = &#39;published&#39;
-<span id="L96" class="ln">    96  </span>            AND o.published_at &lt; $1
-<span id="L97" class="ln">    97  </span>        ORDER BY o.published_at
-<span id="L98" class="ln">    98  </span>        LIMIT $2
-<span id="L99" class="ln">    99  </span>    )
-<span id="L100" class="ln">   100  </span>`
-<span id="L101" class="ln">   101  </span>
-<span id="L102" class="ln">   102  </span>type DeletePublishedOutboxParams struct {
-<span id="L103" class="ln">   103  </span>	PublishedAt *time.Time
-<span id="L104" class="ln">   104  </span>	Limit       int32
-<span id="L105" class="ln">   105  </span>}
-<span id="L106" class="ln">   106  </span>
-<span id="L107" class="ln">   107  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/delete_published_outbox.sql ===</span>
-<span id="L108" class="ln">   108  </span><span class="comment">// retention 用 GC。published_at が cutoff より古い行を最大 $2 件削除し、削除件数を返す。</span>
-<span id="L109" class="ln">   109  </span><span class="comment">//</span>
-<span id="L110" class="ln">   110  </span><span class="comment">//	DELETE FROM outbox</span>
-<span id="L111" class="ln">   111  </span><span class="comment">//	WHERE id IN (</span>
-<span id="L112" class="ln">   112  </span><span class="comment">//	        SELECT o.id</span>
-<span id="L113" class="ln">   113  </span><span class="comment">//	        FROM outbox AS o</span>
-<span id="L114" class="ln">   114  </span><span class="comment">//	        WHERE o.status = &#39;published&#39;</span>
-<span id="L115" class="ln">   115  </span><span class="comment">//	            AND o.published_at &lt; $1</span>
-<span id="L116" class="ln">   116  </span><span class="comment">//	        ORDER BY o.published_at</span>
-<span id="L117" class="ln">   117  </span><span class="comment">//	        LIMIT $2</span>
-<span id="L118" class="ln">   118  </span><span class="comment">//	    )</span>
-<span id="L119" class="ln">   119  </span>func (q *Queries) DeletePublishedOutbox(ctx context.Context, arg *DeletePublishedOutboxParams) (int64, error) {
-<span id="L120" class="ln">   120  </span>	result, err := q.db.Exec(ctx, deletePublishedOutbox, arg.PublishedAt, arg.Limit)
-<span id="L121" class="ln">   121  </span>	if err != nil {
-<span id="L122" class="ln">   122  </span>		return 0, err
-<span id="L123" class="ln">   123  </span>	}
-<span id="L124" class="ln">   124  </span>	return result.RowsAffected(), nil
-<span id="L125" class="ln">   125  </span>}
-<span id="L126" class="ln">   126  </span>
-<span id="L127" class="ln">   127  </span>const insertOutbox = `-- name: InsertOutbox :one
-<span id="L128" class="ln">   128  </span>INSERT INTO outbox (
-<span id="L129" class="ln">   129  </span>    aggregate_type,
-<span id="L130" class="ln">   130  </span>    aggregate_id,
-<span id="L131" class="ln">   131  </span>    event_type,
-<span id="L132" class="ln">   132  </span>    payload,
-<span id="L133" class="ln">   133  </span>    headers
-<span id="L134" class="ln">   134  </span>) VALUES (
-<span id="L135" class="ln">   135  </span>    $1, $2, $3, $4, $5
-<span id="L136" class="ln">   136  </span>)
-<span id="L137" class="ln">   137  </span>RETURNING id, message_id
-<span id="L138" class="ln">   138  </span>`
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>type InsertOutboxParams struct {
-<span id="L141" class="ln">   141  </span>	AggregateType string
-<span id="L142" class="ln">   142  </span>	AggregateID   string
-<span id="L143" class="ln">   143  </span>	EventType     string
-<span id="L144" class="ln">   144  </span>	Payload       []byte
-<span id="L145" class="ln">   145  </span>	Headers       []byte
-<span id="L146" class="ln">   146  </span>}
-<span id="L147" class="ln">   147  </span>
-<span id="L148" class="ln">   148  </span>type InsertOutboxRow struct {
-<span id="L149" class="ln">   149  </span>	ID        int64
-<span id="L150" class="ln">   150  </span>	MessageID uuid.UUID
-<span id="L151" class="ln">   151  </span>}
-<span id="L152" class="ln">   152  </span>
-<span id="L153" class="ln">   153  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/insert_outbox.sql ===</span>
-<span id="L154" class="ln">   154  </span><span class="comment">// 業務 tx 内で outbox 行を 1 行 INSERT する（emit）。message_id は DB が採番し返す。</span>
-<span id="L155" class="ln">   155  </span><span class="comment">//</span>
-<span id="L156" class="ln">   156  </span><span class="comment">//	INSERT INTO outbox (</span>
-<span id="L157" class="ln">   157  </span><span class="comment">//	    aggregate_type,</span>
-<span id="L158" class="ln">   158  </span><span class="comment">//	    aggregate_id,</span>
-<span id="L159" class="ln">   159  </span><span class="comment">//	    event_type,</span>
-<span id="L160" class="ln">   160  </span><span class="comment">//	    payload,</span>
-<span id="L161" class="ln">   161  </span><span class="comment">//	    headers</span>
-<span id="L162" class="ln">   162  </span><span class="comment">//	) VALUES (</span>
-<span id="L163" class="ln">   163  </span><span class="comment">//	    $1, $2, $3, $4, $5</span>
-<span id="L164" class="ln">   164  </span><span class="comment">//	)</span>
-<span id="L165" class="ln">   165  </span><span class="comment">//	RETURNING id, message_id</span>
-<span id="L166" class="ln">   166  </span>func (q *Queries) InsertOutbox(ctx context.Context, arg *InsertOutboxParams) (*InsertOutboxRow, error) {
-<span id="L167" class="ln">   167  </span>	row := q.db.QueryRow(ctx, insertOutbox,
-<span id="L168" class="ln">   168  </span>		arg.AggregateType,
-<span id="L169" class="ln">   169  </span>		arg.AggregateID,
-<span id="L170" class="ln">   170  </span>		arg.EventType,
-<span id="L171" class="ln">   171  </span>		arg.Payload,
-<span id="L172" class="ln">   172  </span>		arg.Headers,
-<span id="L173" class="ln">   173  </span>	)
-<span id="L174" class="ln">   174  </span>	var i InsertOutboxRow
-<span id="L175" class="ln">   175  </span>	err := row.Scan(&amp;i.ID, &amp;i.MessageID)
-<span id="L176" class="ln">   176  </span>	return &amp;i, err
-<span id="L177" class="ln">   177  </span>}
-<span id="L178" class="ln">   178  </span>
-<span id="L179" class="ln">   179  </span>const markOutboxDead = `-- name: MarkOutboxDead :execrows
-<span id="L180" class="ln">   180  </span>UPDATE outbox
-<span id="L181" class="ln">   181  </span>SET status = &#39;dead&#39;
-<span id="L182" class="ln">   182  </span>WHERE id = $1
-<span id="L183" class="ln">   183  </span>    AND status = &#39;pending&#39;
-<span id="L184" class="ln">   184  </span>`
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/mark_outbox_dead.sql ===</span>
-<span id="L187" class="ln">   187  </span><span class="comment">// attempts が max に達した行を dead へ遷移する（dead の意味は docs/design/outbox.md）。</span>
-<span id="L188" class="ln">   188  </span><span class="comment">//</span>
-<span id="L189" class="ln">   189  </span><span class="comment">//	UPDATE outbox</span>
-<span id="L190" class="ln">   190  </span><span class="comment">//	SET status = &#39;dead&#39;</span>
-<span id="L191" class="ln">   191  </span><span class="comment">//	WHERE id = $1</span>
-<span id="L192" class="ln">   192  </span><span class="comment">//	    AND status = &#39;pending&#39;</span>
-<span id="L193" class="ln">   193  </span>func (q *Queries) MarkOutboxDead(ctx context.Context, id int64) (int64, error) {
-<span id="L194" class="ln">   194  </span>	result, err := q.db.Exec(ctx, markOutboxDead, id)
-<span id="L195" class="ln">   195  </span>	if err != nil {
-<span id="L196" class="ln">   196  </span>		return 0, err
-<span id="L197" class="ln">   197  </span>	}
-<span id="L198" class="ln">   198  </span>	return result.RowsAffected(), nil
-<span id="L199" class="ln">   199  </span>}
-<span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>const markOutboxFailed = `-- name: MarkOutboxFailed :one
-<span id="L202" class="ln">   202  </span>UPDATE outbox
-<span id="L203" class="ln">   203  </span>SET
-<span id="L204" class="ln">   204  </span>    attempts = attempts + 1,
-<span id="L205" class="ln">   205  </span>    last_error = $2
-<span id="L206" class="ln">   206  </span>WHERE id = $1
-<span id="L207" class="ln">   207  </span>    AND status = &#39;pending&#39;
-<span id="L208" class="ln">   208  </span>RETURNING attempts
-<span id="L209" class="ln">   209  </span>`
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>type MarkOutboxFailedParams struct {
-<span id="L212" class="ln">   212  </span>	ID        int64
-<span id="L213" class="ln">   213  </span>	LastError *string
+<span id="L17" class="ln">    17  </span>    o.id,
+<span id="L18" class="ln">    18  </span>    o.message_id,
+<span id="L19" class="ln">    19  </span>    o.aggregate_type,
+<span id="L20" class="ln">    20  </span>    o.aggregate_id,
+<span id="L21" class="ln">    21  </span>    o.event_type,
+<span id="L22" class="ln">    22  </span>    o.payload,
+<span id="L23" class="ln">    23  </span>    o.headers,
+<span id="L24" class="ln">    24  </span>    o.attempts,
+<span id="L25" class="ln">    25  </span>    o.created_at
+<span id="L26" class="ln">    26  </span>FROM outbox AS o
+<span id="L27" class="ln">    27  </span>WHERE o.status = &#39;pending&#39;
+<span id="L28" class="ln">    28  </span>    AND o.delivery_channel = $1
+<span id="L29" class="ln">    29  </span>    AND o.next_attempt_at &lt;= NOW()
+<span id="L30" class="ln">    30  </span>    AND NOT EXISTS (
+<span id="L31" class="ln">    31  </span>        SELECT earlier.id
+<span id="L32" class="ln">    32  </span>        FROM outbox AS earlier
+<span id="L33" class="ln">    33  </span>        WHERE earlier.ordering_key = o.ordering_key
+<span id="L34" class="ln">    34  </span>            AND earlier.ordering_sequence &lt; o.ordering_sequence
+<span id="L35" class="ln">    35  </span>            AND earlier.status &lt;&gt; &#39;published&#39;
+<span id="L36" class="ln">    36  </span>    )
+<span id="L37" class="ln">    37  </span>ORDER BY o.id
+<span id="L38" class="ln">    38  </span>LIMIT $2
+<span id="L39" class="ln">    39  </span>FOR UPDATE OF o SKIP LOCKED
+<span id="L40" class="ln">    40  </span>`
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span>type ClaimPendingOutboxParams struct {
+<span id="L43" class="ln">    43  </span>	DeliveryChannel string
+<span id="L44" class="ln">    44  </span>	Limit           int32
+<span id="L45" class="ln">    45  </span>}
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span>type ClaimPendingOutboxRow struct {
+<span id="L48" class="ln">    48  </span>	ID            int64
+<span id="L49" class="ln">    49  </span>	MessageID     uuid.UUID
+<span id="L50" class="ln">    50  </span>	AggregateType string
+<span id="L51" class="ln">    51  </span>	AggregateID   string
+<span id="L52" class="ln">    52  </span>	EventType     string
+<span id="L53" class="ln">    53  </span>	Payload       []byte
+<span id="L54" class="ln">    54  </span>	Headers       []byte
+<span id="L55" class="ln">    55  </span>	Attempts      int32
+<span id="L56" class="ln">    56  </span>	CreatedAt     time.Time
+<span id="L57" class="ln">    57  </span>}
+<span id="L58" class="ln">    58  </span>
+<span id="L59" class="ln">    59  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/claim_pending_outbox.sql ===</span>
+<span id="L60" class="ln">    60  </span><span class="comment">// 指定チャネルの pending 行を最大 $2 件、SKIP LOCKED で claim する（多重取得防止は ADR-0056）。</span>
+<span id="L61" class="ln">    61  </span><span class="comment">// バックオフ中（next_attempt_at が未来）の行は述語段階で外れるためロックもされず、SKIP LOCKED と干渉しない。</span>
+<span id="L62" class="ln">    62  </span><span class="comment">// NOT EXISTS は head-of-line 規則（ADR-0072）。同一 ordering_key の先行 sequence が未 published なら claim しない。</span>
+<span id="L63" class="ln">    63  </span><span class="comment">// ordering_key が NULL の行は NULL 比較で NOT EXISTS が真になり、順序を持たないチャネルは除外されない。</span>
+<span id="L64" class="ln">    64  </span><span class="comment">//</span>
+<span id="L65" class="ln">    65  </span><span class="comment">//	SELECT</span>
+<span id="L66" class="ln">    66  </span><span class="comment">//	    o.id,</span>
+<span id="L67" class="ln">    67  </span><span class="comment">//	    o.message_id,</span>
+<span id="L68" class="ln">    68  </span><span class="comment">//	    o.aggregate_type,</span>
+<span id="L69" class="ln">    69  </span><span class="comment">//	    o.aggregate_id,</span>
+<span id="L70" class="ln">    70  </span><span class="comment">//	    o.event_type,</span>
+<span id="L71" class="ln">    71  </span><span class="comment">//	    o.payload,</span>
+<span id="L72" class="ln">    72  </span><span class="comment">//	    o.headers,</span>
+<span id="L73" class="ln">    73  </span><span class="comment">//	    o.attempts,</span>
+<span id="L74" class="ln">    74  </span><span class="comment">//	    o.created_at</span>
+<span id="L75" class="ln">    75  </span><span class="comment">//	FROM outbox AS o</span>
+<span id="L76" class="ln">    76  </span><span class="comment">//	WHERE o.status = &#39;pending&#39;</span>
+<span id="L77" class="ln">    77  </span><span class="comment">//	    AND o.delivery_channel = $1</span>
+<span id="L78" class="ln">    78  </span><span class="comment">//	    AND o.next_attempt_at &lt;= NOW()</span>
+<span id="L79" class="ln">    79  </span><span class="comment">//	    AND NOT EXISTS (</span>
+<span id="L80" class="ln">    80  </span><span class="comment">//	        SELECT earlier.id</span>
+<span id="L81" class="ln">    81  </span><span class="comment">//	        FROM outbox AS earlier</span>
+<span id="L82" class="ln">    82  </span><span class="comment">//	        WHERE earlier.ordering_key = o.ordering_key</span>
+<span id="L83" class="ln">    83  </span><span class="comment">//	            AND earlier.ordering_sequence &lt; o.ordering_sequence</span>
+<span id="L84" class="ln">    84  </span><span class="comment">//	            AND earlier.status &lt;&gt; &#39;published&#39;</span>
+<span id="L85" class="ln">    85  </span><span class="comment">//	    )</span>
+<span id="L86" class="ln">    86  </span><span class="comment">//	ORDER BY o.id</span>
+<span id="L87" class="ln">    87  </span><span class="comment">//	LIMIT $2</span>
+<span id="L88" class="ln">    88  </span><span class="comment">//	FOR UPDATE OF o SKIP LOCKED</span>
+<span id="L89" class="ln">    89  </span>func (q *Queries) ClaimPendingOutbox(ctx context.Context, arg *ClaimPendingOutboxParams) ([]*ClaimPendingOutboxRow, error) {
+<span id="L90" class="ln">    90  </span>	rows, err := q.db.Query(ctx, claimPendingOutbox, arg.DeliveryChannel, arg.Limit)
+<span id="L91" class="ln">    91  </span>	if err != nil {
+<span id="L92" class="ln">    92  </span>		return nil, err
+<span id="L93" class="ln">    93  </span>	}
+<span id="L94" class="ln">    94  </span>	defer rows.Close()
+<span id="L95" class="ln">    95  </span>	var items []*ClaimPendingOutboxRow
+<span id="L96" class="ln">    96  </span>	for rows.Next() {
+<span id="L97" class="ln">    97  </span>		var i ClaimPendingOutboxRow
+<span id="L98" class="ln">    98  </span>		if err := rows.Scan(
+<span id="L99" class="ln">    99  </span>			&amp;i.ID,
+<span id="L100" class="ln">   100  </span>			&amp;i.MessageID,
+<span id="L101" class="ln">   101  </span>			&amp;i.AggregateType,
+<span id="L102" class="ln">   102  </span>			&amp;i.AggregateID,
+<span id="L103" class="ln">   103  </span>			&amp;i.EventType,
+<span id="L104" class="ln">   104  </span>			&amp;i.Payload,
+<span id="L105" class="ln">   105  </span>			&amp;i.Headers,
+<span id="L106" class="ln">   106  </span>			&amp;i.Attempts,
+<span id="L107" class="ln">   107  </span>			&amp;i.CreatedAt,
+<span id="L108" class="ln">   108  </span>		); err != nil {
+<span id="L109" class="ln">   109  </span>			return nil, err
+<span id="L110" class="ln">   110  </span>		}
+<span id="L111" class="ln">   111  </span>		items = append(items, &amp;i)
+<span id="L112" class="ln">   112  </span>	}
+<span id="L113" class="ln">   113  </span>	if err := rows.Err(); err != nil {
+<span id="L114" class="ln">   114  </span>		return nil, err
+<span id="L115" class="ln">   115  </span>	}
+<span id="L116" class="ln">   116  </span>	return items, nil
+<span id="L117" class="ln">   117  </span>}
+<span id="L118" class="ln">   118  </span>
+<span id="L119" class="ln">   119  </span>const countBlockedStreamsOutbox = `-- name: CountBlockedStreamsOutbox :one
+<span id="L120" class="ln">   120  </span>SELECT COUNT(*)
+<span id="L121" class="ln">   121  </span>FROM (
+<span id="L122" class="ln">   122  </span>    SELECT DISTINCT ON (ordering_key) status
+<span id="L123" class="ln">   123  </span>    FROM outbox
+<span id="L124" class="ln">   124  </span>    WHERE delivery_channel = $1
+<span id="L125" class="ln">   125  </span>        AND ordering_key IS NOT NULL
+<span id="L126" class="ln">   126  </span>        AND status &lt;&gt; &#39;published&#39;
+<span id="L127" class="ln">   127  </span>    ORDER BY ordering_key, ordering_sequence
+<span id="L128" class="ln">   128  </span>) AS heads
+<span id="L129" class="ln">   129  </span>WHERE heads.status = &#39;dead&#39;
+<span id="L130" class="ln">   130  </span>`
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/count_blocked_streams_outbox.sql ===</span>
+<span id="L133" class="ln">   133  </span><span class="comment">// 先頭が dead のストリーム数（blocked stream の定義は docs/design/outbox.md の用語集）。</span>
+<span id="L134" class="ln">   134  </span><span class="comment">//</span>
+<span id="L135" class="ln">   135  </span><span class="comment">//	SELECT COUNT(*)</span>
+<span id="L136" class="ln">   136  </span><span class="comment">//	FROM (</span>
+<span id="L137" class="ln">   137  </span><span class="comment">//	    SELECT DISTINCT ON (ordering_key) status</span>
+<span id="L138" class="ln">   138  </span><span class="comment">//	    FROM outbox</span>
+<span id="L139" class="ln">   139  </span><span class="comment">//	    WHERE delivery_channel = $1</span>
+<span id="L140" class="ln">   140  </span><span class="comment">//	        AND ordering_key IS NOT NULL</span>
+<span id="L141" class="ln">   141  </span><span class="comment">//	        AND status &lt;&gt; &#39;published&#39;</span>
+<span id="L142" class="ln">   142  </span><span class="comment">//	    ORDER BY ordering_key, ordering_sequence</span>
+<span id="L143" class="ln">   143  </span><span class="comment">//	) AS heads</span>
+<span id="L144" class="ln">   144  </span><span class="comment">//	WHERE heads.status = &#39;dead&#39;</span>
+<span id="L145" class="ln">   145  </span>func (q *Queries) CountBlockedStreamsOutbox(ctx context.Context, deliveryChannel string) (int64, error) {
+<span id="L146" class="ln">   146  </span>	row := q.db.QueryRow(ctx, countBlockedStreamsOutbox, deliveryChannel)
+<span id="L147" class="ln">   147  </span>	var count int64
+<span id="L148" class="ln">   148  </span>	err := row.Scan(&amp;count)
+<span id="L149" class="ln">   149  </span>	return count, err
+<span id="L150" class="ln">   150  </span>}
+<span id="L151" class="ln">   151  </span>
+<span id="L152" class="ln">   152  </span>const deletePublishedOutbox = `-- name: DeletePublishedOutbox :execrows
+<span id="L153" class="ln">   153  </span>DELETE FROM outbox
+<span id="L154" class="ln">   154  </span>WHERE id IN (
+<span id="L155" class="ln">   155  </span>        SELECT o.id
+<span id="L156" class="ln">   156  </span>        FROM outbox AS o
+<span id="L157" class="ln">   157  </span>        WHERE o.status = &#39;published&#39;
+<span id="L158" class="ln">   158  </span>            AND o.published_at &lt; $1
+<span id="L159" class="ln">   159  </span>        ORDER BY o.published_at
+<span id="L160" class="ln">   160  </span>        LIMIT $2
+<span id="L161" class="ln">   161  </span>    )
+<span id="L162" class="ln">   162  </span>`
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>type DeletePublishedOutboxParams struct {
+<span id="L165" class="ln">   165  </span>	PublishedAt *time.Time
+<span id="L166" class="ln">   166  </span>	Limit       int32
+<span id="L167" class="ln">   167  </span>}
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/delete_published_outbox.sql ===</span>
+<span id="L170" class="ln">   170  </span><span class="comment">// retention 用 GC。published_at が cutoff より古い行を最大 $2 件削除し、削除件数を返す。</span>
+<span id="L171" class="ln">   171  </span><span class="comment">//</span>
+<span id="L172" class="ln">   172  </span><span class="comment">//	DELETE FROM outbox</span>
+<span id="L173" class="ln">   173  </span><span class="comment">//	WHERE id IN (</span>
+<span id="L174" class="ln">   174  </span><span class="comment">//	        SELECT o.id</span>
+<span id="L175" class="ln">   175  </span><span class="comment">//	        FROM outbox AS o</span>
+<span id="L176" class="ln">   176  </span><span class="comment">//	        WHERE o.status = &#39;published&#39;</span>
+<span id="L177" class="ln">   177  </span><span class="comment">//	            AND o.published_at &lt; $1</span>
+<span id="L178" class="ln">   178  </span><span class="comment">//	        ORDER BY o.published_at</span>
+<span id="L179" class="ln">   179  </span><span class="comment">//	        LIMIT $2</span>
+<span id="L180" class="ln">   180  </span><span class="comment">//	    )</span>
+<span id="L181" class="ln">   181  </span>func (q *Queries) DeletePublishedOutbox(ctx context.Context, arg *DeletePublishedOutboxParams) (int64, error) {
+<span id="L182" class="ln">   182  </span>	result, err := q.db.Exec(ctx, deletePublishedOutbox, arg.PublishedAt, arg.Limit)
+<span id="L183" class="ln">   183  </span>	if err != nil {
+<span id="L184" class="ln">   184  </span>		return 0, err
+<span id="L185" class="ln">   185  </span>	}
+<span id="L186" class="ln">   186  </span>	return result.RowsAffected(), nil
+<span id="L187" class="ln">   187  </span>}
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>const insertOutbox = `-- name: InsertOutbox :one
+<span id="L190" class="ln">   190  </span>INSERT INTO outbox (
+<span id="L191" class="ln">   191  </span>    aggregate_type,
+<span id="L192" class="ln">   192  </span>    aggregate_id,
+<span id="L193" class="ln">   193  </span>    event_type,
+<span id="L194" class="ln">   194  </span>    payload,
+<span id="L195" class="ln">   195  </span>    headers,
+<span id="L196" class="ln">   196  </span>    delivery_channel,
+<span id="L197" class="ln">   197  </span>    ordering_key,
+<span id="L198" class="ln">   198  </span>    ordering_sequence
+<span id="L199" class="ln">   199  </span>) VALUES (
+<span id="L200" class="ln">   200  </span>    $1, $2, $3, $4, $5, $6, $7, $8
+<span id="L201" class="ln">   201  </span>)
+<span id="L202" class="ln">   202  </span>RETURNING id, message_id
+<span id="L203" class="ln">   203  </span>`
+<span id="L204" class="ln">   204  </span>
+<span id="L205" class="ln">   205  </span>type InsertOutboxParams struct {
+<span id="L206" class="ln">   206  </span>	AggregateType    string
+<span id="L207" class="ln">   207  </span>	AggregateID      string
+<span id="L208" class="ln">   208  </span>	EventType        string
+<span id="L209" class="ln">   209  </span>	Payload          []byte
+<span id="L210" class="ln">   210  </span>	Headers          []byte
+<span id="L211" class="ln">   211  </span>	DeliveryChannel  string
+<span id="L212" class="ln">   212  </span>	OrderingKey      *string
+<span id="L213" class="ln">   213  </span>	OrderingSequence *int64
 <span id="L214" class="ln">   214  </span>}
 <span id="L215" class="ln">   215  </span>
-<span id="L216" class="ln">   216  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/mark_outbox_failed.sql ===</span>
-<span id="L217" class="ln">   217  </span><span class="comment">// publish 失敗時に attempts を加算し last_error を記録する。加算後の attempts を返し、</span>
-<span id="L218" class="ln">   218  </span><span class="comment">// 呼び出し側が max 到達判定（dead 化）に用いる。</span>
-<span id="L219" class="ln">   219  </span><span class="comment">//</span>
-<span id="L220" class="ln">   220  </span><span class="comment">//	UPDATE outbox</span>
-<span id="L221" class="ln">   221  </span><span class="comment">//	SET</span>
-<span id="L222" class="ln">   222  </span><span class="comment">//	    attempts = attempts + 1,</span>
-<span id="L223" class="ln">   223  </span><span class="comment">//	    last_error = $2</span>
-<span id="L224" class="ln">   224  </span><span class="comment">//	WHERE id = $1</span>
-<span id="L225" class="ln">   225  </span><span class="comment">//	    AND status = &#39;pending&#39;</span>
-<span id="L226" class="ln">   226  </span><span class="comment">//	RETURNING attempts</span>
-<span id="L227" class="ln">   227  </span>func (q *Queries) MarkOutboxFailed(ctx context.Context, arg *MarkOutboxFailedParams) (int32, error) {
-<span id="L228" class="ln">   228  </span>	row := q.db.QueryRow(ctx, markOutboxFailed, arg.ID, arg.LastError)
-<span id="L229" class="ln">   229  </span>	var attempts int32
-<span id="L230" class="ln">   230  </span>	err := row.Scan(&amp;attempts)
-<span id="L231" class="ln">   231  </span>	return attempts, err
-<span id="L232" class="ln">   232  </span>}
-<span id="L233" class="ln">   233  </span>
-<span id="L234" class="ln">   234  </span>const markOutboxPublished = `-- name: MarkOutboxPublished :execrows
-<span id="L235" class="ln">   235  </span>UPDATE outbox
-<span id="L236" class="ln">   236  </span>SET
-<span id="L237" class="ln">   237  </span>    status = &#39;published&#39;,
-<span id="L238" class="ln">   238  </span>    published_at = NOW()
-<span id="L239" class="ln">   239  </span>WHERE id = $1
-<span id="L240" class="ln">   240  </span>    AND status = &#39;pending&#39;
-<span id="L241" class="ln">   241  </span>`
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/mark_outbox_published.sql ===</span>
-<span id="L244" class="ln">   244  </span><span class="comment">// publish 成功行を published へ遷移する。published_at に遷移時刻を記録する。</span>
-<span id="L245" class="ln">   245  </span><span class="comment">//</span>
-<span id="L246" class="ln">   246  </span><span class="comment">//	UPDATE outbox</span>
-<span id="L247" class="ln">   247  </span><span class="comment">//	SET</span>
-<span id="L248" class="ln">   248  </span><span class="comment">//	    status = &#39;published&#39;,</span>
-<span id="L249" class="ln">   249  </span><span class="comment">//	    published_at = NOW()</span>
-<span id="L250" class="ln">   250  </span><span class="comment">//	WHERE id = $1</span>
-<span id="L251" class="ln">   251  </span><span class="comment">//	    AND status = &#39;pending&#39;</span>
-<span id="L252" class="ln">   252  </span>func (q *Queries) MarkOutboxPublished(ctx context.Context, id int64) (int64, error) {
-<span id="L253" class="ln">   253  </span>	result, err := q.db.Exec(ctx, markOutboxPublished, id)
-<span id="L254" class="ln">   254  </span>	if err != nil {
-<span id="L255" class="ln">   255  </span>		return 0, err
-<span id="L256" class="ln">   256  </span>	}
-<span id="L257" class="ln">   257  </span>	return result.RowsAffected(), nil
-<span id="L258" class="ln">   258  </span>}
-<span id="L259" class="ln">   259  </span>
-<span id="L260" class="ln">   260  </span>const oldestPendingOutbox = `-- name: OldestPendingOutbox :one
-<span id="L261" class="ln">   261  </span>SELECT created_at
-<span id="L262" class="ln">   262  </span>FROM outbox
-<span id="L263" class="ln">   263  </span>WHERE status = &#39;pending&#39;
-<span id="L264" class="ln">   264  </span>ORDER BY id
-<span id="L265" class="ln">   265  </span>LIMIT 1
-<span id="L266" class="ln">   266  </span>`
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/oldest_pending_outbox.sql ===</span>
-<span id="L269" class="ln">   269  </span><span class="comment">// SLI(outbox lag) 算出用。最古 pending 行の created_at を返す。pending 行が無ければ 0 行を返す。</span>
-<span id="L270" class="ln">   270  </span><span class="comment">//</span>
-<span id="L271" class="ln">   271  </span><span class="comment">//	SELECT created_at</span>
-<span id="L272" class="ln">   272  </span><span class="comment">//	FROM outbox</span>
-<span id="L273" class="ln">   273  </span><span class="comment">//	WHERE status = &#39;pending&#39;</span>
-<span id="L274" class="ln">   274  </span><span class="comment">//	ORDER BY id</span>
-<span id="L275" class="ln">   275  </span><span class="comment">//	LIMIT 1</span>
-<span id="L276" class="ln">   276  </span>func (q *Queries) OldestPendingOutbox(ctx context.Context) (time.Time, error) {
-<span id="L277" class="ln">   277  </span>	row := q.db.QueryRow(ctx, oldestPendingOutbox)
-<span id="L278" class="ln">   278  </span>	var created_at time.Time
-<span id="L279" class="ln">   279  </span>	err := row.Scan(&amp;created_at)
-<span id="L280" class="ln">   280  </span>	return created_at, err
-<span id="L281" class="ln">   281  </span>}
-<span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>const replayDeadOutbox = `-- name: ReplayDeadOutbox :execrows
-<span id="L284" class="ln">   284  </span>UPDATE outbox
-<span id="L285" class="ln">   285  </span>SET
-<span id="L286" class="ln">   286  </span>    status = &#39;pending&#39;,
-<span id="L287" class="ln">   287  </span>    attempts = 0,
-<span id="L288" class="ln">   288  </span>    last_error = NULL
-<span id="L289" class="ln">   289  </span>WHERE status = &#39;dead&#39;
-<span id="L290" class="ln">   290  </span>    AND ($1::UUID IS NULL OR message_id = $1::UUID)
-<span id="L291" class="ln">   291  </span>`
-<span id="L292" class="ln">   292  </span>
-<span id="L293" class="ln">   293  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/replay_dead_outbox.sql ===</span>
-<span id="L294" class="ln">   294  </span><span class="comment">// dead 行を pending へ戻し再 publish 対象に復帰させる（運用 replay）。</span>
-<span id="L295" class="ln">   295  </span><span class="comment">// $1 が NULL の場合は全 dead 行、指定時は当該 message_id のみを対象とする。</span>
-<span id="L296" class="ln">   296  </span><span class="comment">//</span>
-<span id="L297" class="ln">   297  </span><span class="comment">//	UPDATE outbox</span>
-<span id="L298" class="ln">   298  </span><span class="comment">//	SET</span>
-<span id="L299" class="ln">   299  </span><span class="comment">//	    status = &#39;pending&#39;,</span>
-<span id="L300" class="ln">   300  </span><span class="comment">//	    attempts = 0,</span>
-<span id="L301" class="ln">   301  </span><span class="comment">//	    last_error = NULL</span>
-<span id="L302" class="ln">   302  </span><span class="comment">//	WHERE status = &#39;dead&#39;</span>
-<span id="L303" class="ln">   303  </span><span class="comment">//	    AND ($1::UUID IS NULL OR message_id = $1::UUID)</span>
-<span id="L304" class="ln">   304  </span>func (q *Queries) ReplayDeadOutbox(ctx context.Context, messageID *uuid.UUID) (int64, error) {
-<span id="L305" class="ln">   305  </span>	result, err := q.db.Exec(ctx, replayDeadOutbox, messageID)
-<span id="L306" class="ln">   306  </span>	if err != nil {
-<span id="L307" class="ln">   307  </span>		return 0, err
-<span id="L308" class="ln">   308  </span>	}
-<span id="L309" class="ln">   309  </span>	return result.RowsAffected(), nil
-<span id="L310" class="ln">   310  </span>}
-<span id="L311" class="ln">   311  </span>
+<span id="L216" class="ln">   216  </span>type InsertOutboxRow struct {
+<span id="L217" class="ln">   217  </span>	ID        int64
+<span id="L218" class="ln">   218  </span>	MessageID uuid.UUID
+<span id="L219" class="ln">   219  </span>}
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/insert_outbox.sql ===</span>
+<span id="L222" class="ln">   222  </span><span class="comment">// 業務 tx 内で outbox 行を 1 行 INSERT する（emit）。message_id は DB が採番し返す。</span>
+<span id="L223" class="ln">   223  </span><span class="comment">// delivery_channel は必須（既定値なし。EmitParams.Channel 参照）。</span>
+<span id="L224" class="ln">   224  </span><span class="comment">//</span>
+<span id="L225" class="ln">   225  </span><span class="comment">//	INSERT INTO outbox (</span>
+<span id="L226" class="ln">   226  </span><span class="comment">//	    aggregate_type,</span>
+<span id="L227" class="ln">   227  </span><span class="comment">//	    aggregate_id,</span>
+<span id="L228" class="ln">   228  </span><span class="comment">//	    event_type,</span>
+<span id="L229" class="ln">   229  </span><span class="comment">//	    payload,</span>
+<span id="L230" class="ln">   230  </span><span class="comment">//	    headers,</span>
+<span id="L231" class="ln">   231  </span><span class="comment">//	    delivery_channel,</span>
+<span id="L232" class="ln">   232  </span><span class="comment">//	    ordering_key,</span>
+<span id="L233" class="ln">   233  </span><span class="comment">//	    ordering_sequence</span>
+<span id="L234" class="ln">   234  </span><span class="comment">//	) VALUES (</span>
+<span id="L235" class="ln">   235  </span><span class="comment">//	    $1, $2, $3, $4, $5, $6, $7, $8</span>
+<span id="L236" class="ln">   236  </span><span class="comment">//	)</span>
+<span id="L237" class="ln">   237  </span><span class="comment">//	RETURNING id, message_id</span>
+<span id="L238" class="ln">   238  </span>func (q *Queries) InsertOutbox(ctx context.Context, arg *InsertOutboxParams) (*InsertOutboxRow, error) {
+<span id="L239" class="ln">   239  </span>	row := q.db.QueryRow(ctx, insertOutbox,
+<span id="L240" class="ln">   240  </span>		arg.AggregateType,
+<span id="L241" class="ln">   241  </span>		arg.AggregateID,
+<span id="L242" class="ln">   242  </span>		arg.EventType,
+<span id="L243" class="ln">   243  </span>		arg.Payload,
+<span id="L244" class="ln">   244  </span>		arg.Headers,
+<span id="L245" class="ln">   245  </span>		arg.DeliveryChannel,
+<span id="L246" class="ln">   246  </span>		arg.OrderingKey,
+<span id="L247" class="ln">   247  </span>		arg.OrderingSequence,
+<span id="L248" class="ln">   248  </span>	)
+<span id="L249" class="ln">   249  </span>	var i InsertOutboxRow
+<span id="L250" class="ln">   250  </span>	err := row.Scan(&amp;i.ID, &amp;i.MessageID)
+<span id="L251" class="ln">   251  </span>	return &amp;i, err
+<span id="L252" class="ln">   252  </span>}
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>const markOutboxDead = `-- name: MarkOutboxDead :execrows
+<span id="L255" class="ln">   255  </span>UPDATE outbox
+<span id="L256" class="ln">   256  </span>SET status = &#39;dead&#39;
+<span id="L257" class="ln">   257  </span>WHERE id = $1
+<span id="L258" class="ln">   258  </span>    AND status = &#39;pending&#39;
+<span id="L259" class="ln">   259  </span>`
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/mark_outbox_dead.sql ===</span>
+<span id="L262" class="ln">   262  </span><span class="comment">// attempts が max に達した行を dead へ遷移する（dead の意味は docs/design/outbox.md）。</span>
+<span id="L263" class="ln">   263  </span><span class="comment">//</span>
+<span id="L264" class="ln">   264  </span><span class="comment">//	UPDATE outbox</span>
+<span id="L265" class="ln">   265  </span><span class="comment">//	SET status = &#39;dead&#39;</span>
+<span id="L266" class="ln">   266  </span><span class="comment">//	WHERE id = $1</span>
+<span id="L267" class="ln">   267  </span><span class="comment">//	    AND status = &#39;pending&#39;</span>
+<span id="L268" class="ln">   268  </span>func (q *Queries) MarkOutboxDead(ctx context.Context, id int64) (int64, error) {
+<span id="L269" class="ln">   269  </span>	result, err := q.db.Exec(ctx, markOutboxDead, id)
+<span id="L270" class="ln">   270  </span>	if err != nil {
+<span id="L271" class="ln">   271  </span>		return 0, err
+<span id="L272" class="ln">   272  </span>	}
+<span id="L273" class="ln">   273  </span>	return result.RowsAffected(), nil
+<span id="L274" class="ln">   274  </span>}
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>const markOutboxFailed = `-- name: MarkOutboxFailed :execrows
+<span id="L277" class="ln">   277  </span>UPDATE outbox
+<span id="L278" class="ln">   278  </span>SET
+<span id="L279" class="ln">   279  </span>    attempts = attempts + 1,
+<span id="L280" class="ln">   280  </span>    last_error = $2,
+<span id="L281" class="ln">   281  </span>    next_attempt_at = $3
+<span id="L282" class="ln">   282  </span>WHERE id = $1
+<span id="L283" class="ln">   283  </span>    AND status = &#39;pending&#39;
+<span id="L284" class="ln">   284  </span>`
+<span id="L285" class="ln">   285  </span>
+<span id="L286" class="ln">   286  </span>type MarkOutboxFailedParams struct {
+<span id="L287" class="ln">   287  </span>	ID            int64
+<span id="L288" class="ln">   288  </span>	LastError     *string
+<span id="L289" class="ln">   289  </span>	NextAttemptAt time.Time
+<span id="L290" class="ln">   290  </span>}
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/mark_outbox_failed.sql ===</span>
+<span id="L293" class="ln">   293  </span><span class="comment">// publish 失敗時に last_error を記録し、次に claim してよい時刻をバックオフ後の時刻へ進める。</span>
+<span id="L294" class="ln">   294  </span><span class="comment">// attempts は診断のために加算し続けるが、dead 判定の基準ではない（判定はエラー分類。ADR-0058）。</span>
+<span id="L295" class="ln">   295  </span><span class="comment">//</span>
+<span id="L296" class="ln">   296  </span><span class="comment">//	UPDATE outbox</span>
+<span id="L297" class="ln">   297  </span><span class="comment">//	SET</span>
+<span id="L298" class="ln">   298  </span><span class="comment">//	    attempts = attempts + 1,</span>
+<span id="L299" class="ln">   299  </span><span class="comment">//	    last_error = $2,</span>
+<span id="L300" class="ln">   300  </span><span class="comment">//	    next_attempt_at = $3</span>
+<span id="L301" class="ln">   301  </span><span class="comment">//	WHERE id = $1</span>
+<span id="L302" class="ln">   302  </span><span class="comment">//	    AND status = &#39;pending&#39;</span>
+<span id="L303" class="ln">   303  </span>func (q *Queries) MarkOutboxFailed(ctx context.Context, arg *MarkOutboxFailedParams) (int64, error) {
+<span id="L304" class="ln">   304  </span>	result, err := q.db.Exec(ctx, markOutboxFailed, arg.ID, arg.LastError, arg.NextAttemptAt)
+<span id="L305" class="ln">   305  </span>	if err != nil {
+<span id="L306" class="ln">   306  </span>		return 0, err
+<span id="L307" class="ln">   307  </span>	}
+<span id="L308" class="ln">   308  </span>	return result.RowsAffected(), nil
+<span id="L309" class="ln">   309  </span>}
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>const markOutboxPublished = `-- name: MarkOutboxPublished :execrows
+<span id="L312" class="ln">   312  </span>UPDATE outbox
+<span id="L313" class="ln">   313  </span>SET
+<span id="L314" class="ln">   314  </span>    status = &#39;published&#39;,
+<span id="L315" class="ln">   315  </span>    published_at = NOW()
+<span id="L316" class="ln">   316  </span>WHERE id = $1
+<span id="L317" class="ln">   317  </span>    AND status = &#39;pending&#39;
+<span id="L318" class="ln">   318  </span>`
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/mark_outbox_published.sql ===</span>
+<span id="L321" class="ln">   321  </span><span class="comment">// publish 成功行を published へ遷移する。published_at に遷移時刻を記録する。</span>
+<span id="L322" class="ln">   322  </span><span class="comment">//</span>
+<span id="L323" class="ln">   323  </span><span class="comment">//	UPDATE outbox</span>
+<span id="L324" class="ln">   324  </span><span class="comment">//	SET</span>
+<span id="L325" class="ln">   325  </span><span class="comment">//	    status = &#39;published&#39;,</span>
+<span id="L326" class="ln">   326  </span><span class="comment">//	    published_at = NOW()</span>
+<span id="L327" class="ln">   327  </span><span class="comment">//	WHERE id = $1</span>
+<span id="L328" class="ln">   328  </span><span class="comment">//	    AND status = &#39;pending&#39;</span>
+<span id="L329" class="ln">   329  </span>func (q *Queries) MarkOutboxPublished(ctx context.Context, id int64) (int64, error) {
+<span id="L330" class="ln">   330  </span>	result, err := q.db.Exec(ctx, markOutboxPublished, id)
+<span id="L331" class="ln">   331  </span>	if err != nil {
+<span id="L332" class="ln">   332  </span>		return 0, err
+<span id="L333" class="ln">   333  </span>	}
+<span id="L334" class="ln">   334  </span>	return result.RowsAffected(), nil
+<span id="L335" class="ln">   335  </span>}
+<span id="L336" class="ln">   336  </span>
+<span id="L337" class="ln">   337  </span>const oldestPendingOutbox = `-- name: OldestPendingOutbox :one
+<span id="L338" class="ln">   338  </span>SELECT created_at
+<span id="L339" class="ln">   339  </span>FROM outbox
+<span id="L340" class="ln">   340  </span>WHERE status = &#39;pending&#39;
+<span id="L341" class="ln">   341  </span>    AND delivery_channel = $1
+<span id="L342" class="ln">   342  </span>ORDER BY id
+<span id="L343" class="ln">   343  </span>LIMIT 1
+<span id="L344" class="ln">   344  </span>`
+<span id="L345" class="ln">   345  </span>
+<span id="L346" class="ln">   346  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/oldest_pending_outbox.sql ===</span>
+<span id="L347" class="ln">   347  </span><span class="comment">// SLI(outbox lag) 算出用。指定チャネルの最古 pending 行の created_at を返す。pending 行が無ければ 0 行を返す。</span>
+<span id="L348" class="ln">   348  </span><span class="comment">// バックオフ中の行も未配送なので除外しない（lag は未配送の最古行の年齢）。</span>
+<span id="L349" class="ln">   349  </span><span class="comment">//</span>
+<span id="L350" class="ln">   350  </span><span class="comment">//	SELECT created_at</span>
+<span id="L351" class="ln">   351  </span><span class="comment">//	FROM outbox</span>
+<span id="L352" class="ln">   352  </span><span class="comment">//	WHERE status = &#39;pending&#39;</span>
+<span id="L353" class="ln">   353  </span><span class="comment">//	    AND delivery_channel = $1</span>
+<span id="L354" class="ln">   354  </span><span class="comment">//	ORDER BY id</span>
+<span id="L355" class="ln">   355  </span><span class="comment">//	LIMIT 1</span>
+<span id="L356" class="ln">   356  </span>func (q *Queries) OldestPendingOutbox(ctx context.Context, deliveryChannel string) (time.Time, error) {
+<span id="L357" class="ln">   357  </span>	row := q.db.QueryRow(ctx, oldestPendingOutbox, deliveryChannel)
+<span id="L358" class="ln">   358  </span>	var created_at time.Time
+<span id="L359" class="ln">   359  </span>	err := row.Scan(&amp;created_at)
+<span id="L360" class="ln">   360  </span>	return created_at, err
+<span id="L361" class="ln">   361  </span>}
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span>const replayDeadOutbox = `-- name: ReplayDeadOutbox :execrows
+<span id="L364" class="ln">   364  </span>UPDATE outbox
+<span id="L365" class="ln">   365  </span>SET
+<span id="L366" class="ln">   366  </span>    status = &#39;pending&#39;,
+<span id="L367" class="ln">   367  </span>    attempts = 0,
+<span id="L368" class="ln">   368  </span>    last_error = NULL,
+<span id="L369" class="ln">   369  </span>    next_attempt_at = NOW()
+<span id="L370" class="ln">   370  </span>WHERE status = &#39;dead&#39;
+<span id="L371" class="ln">   371  </span>    AND ($1::UUID IS NULL OR message_id = $1::UUID)
+<span id="L372" class="ln">   372  </span>`
+<span id="L373" class="ln">   373  </span>
+<span id="L374" class="ln">   374  </span><span class="comment">// === source: database/dml/system_cqrs/outbox/replay_dead_outbox.sql ===</span>
+<span id="L375" class="ln">   375  </span><span class="comment">// dead 行を pending へ戻し再 publish 対象に復帰させる（運用 replay）。</span>
+<span id="L376" class="ln">   376  </span><span class="comment">// $1 が NULL の場合は全 dead 行、指定時は当該 message_id のみを対象とする。</span>
+<span id="L377" class="ln">   377  </span><span class="comment">// next_attempt_at を現在時刻へ戻さないと、dead 化前のバックオフ済み時刻が残って直後に claim されない。</span>
+<span id="L378" class="ln">   378  </span><span class="comment">//</span>
+<span id="L379" class="ln">   379  </span><span class="comment">//	UPDATE outbox</span>
+<span id="L380" class="ln">   380  </span><span class="comment">//	SET</span>
+<span id="L381" class="ln">   381  </span><span class="comment">//	    status = &#39;pending&#39;,</span>
+<span id="L382" class="ln">   382  </span><span class="comment">//	    attempts = 0,</span>
+<span id="L383" class="ln">   383  </span><span class="comment">//	    last_error = NULL,</span>
+<span id="L384" class="ln">   384  </span><span class="comment">//	    next_attempt_at = NOW()</span>
+<span id="L385" class="ln">   385  </span><span class="comment">//	WHERE status = &#39;dead&#39;</span>
+<span id="L386" class="ln">   386  </span><span class="comment">//	    AND ($1::UUID IS NULL OR message_id = $1::UUID)</span>
+<span id="L387" class="ln">   387  </span>func (q *Queries) ReplayDeadOutbox(ctx context.Context, messageID *uuid.UUID) (int64, error) {
+<span id="L388" class="ln">   388  </span>	result, err := q.db.Exec(ctx, replayDeadOutbox, messageID)
+<span id="L389" class="ln">   389  </span>	if err != nil {
+<span id="L390" class="ln">   390  </span>		return 0, err
+<span id="L391" class="ln">   391  </span>	}
+<span id="L392" class="ln">   392  </span>	return result.RowsAffected(), nil
+<span id="L393" class="ln">   393  </span>}
+<span id="L394" class="ln">   394  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/outbox_system_cqrs.gen.sql.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -1,7 +1,5 @@
 # Query Service 実装ガイド
 
-[English](README.md) | 日本語
-
 ## オニオンアーキテクチャにおける Query Service の位置づけ
 
 オニオンアーキテクチャでは、永続化の抽象は Domain 層の **Repository interface** として定義されます。Repository は Aggregate 単位の CRUD を担い、Domain の不変条件を守ります。

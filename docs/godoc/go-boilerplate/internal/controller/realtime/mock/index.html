@@ -1,0 +1,648 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>mock - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package mock_realtime
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/controller/realtime/mock&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package mock_realtime is a generated GoMock package.
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#MockFanoutObserver">type MockFanoutObserver</a></dd>
+				
+					
+					<dd>    <a href="#NewMockFanoutObserver">func NewMockFanoutObserver(ctrl *gomock.Controller) *MockFanoutObserver</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockFanoutObserver.EXPECT">func (m *MockFanoutObserver) EXPECT() *MockFanoutObserverMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockFanoutObserver.ObserveFanout">func (m *MockFanoutObserver) ObserveFanout(err error)</a></dd>
+				
+			
+				
+				<dd><a href="#MockFanoutObserverMockRecorder">type MockFanoutObserverMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockFanoutObserverMockRecorder.ObserveFanout">func (mr *MockFanoutObserverMockRecorder) ObserveFanout(err any) *gomock.Call</a></dd>
+				
+			
+				
+				<dd><a href="#MockReprovisioner">type MockReprovisioner</a></dd>
+				
+					
+					<dd>    <a href="#NewMockReprovisioner">func NewMockReprovisioner(ctrl *gomock.Controller) *MockReprovisioner</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockReprovisioner.EXPECT">func (m *MockReprovisioner) EXPECT() *MockReprovisionerMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockReprovisioner.Reprovision">func (m *MockReprovisioner) Reprovision(ctx context.Context) error</a></dd>
+				
+			
+				
+				<dd><a href="#MockReprovisionerMockRecorder">type MockReprovisionerMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockReprovisionerMockRecorder.Reprovision">func (mr *MockReprovisionerMockRecorder) Reprovision(ctx any) *gomock.Call</a></dd>
+				
+			
+				
+				<dd><a href="#MockRevoker">type MockRevoker</a></dd>
+				
+					
+					<dd>    <a href="#NewMockRevoker">func NewMockRevoker(ctrl *gomock.Controller) *MockRevoker</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockRevoker.EXPECT">func (m *MockRevoker) EXPECT() *MockRevokerMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockRevoker.Revoke">func (m *MockRevoker) Revoke(ctx context.Context, subject string, destination realtime.StreamID)</a></dd>
+				
+			
+				
+				<dd><a href="#MockRevokerMockRecorder">type MockRevokerMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockRevokerMockRecorder.Revoke">func (mr *MockRevokerMockRecorder) Revoke(ctx, subject, destination any) *gomock.Call</a></dd>
+				
+			
+				
+				<dd><a href="#MockWaker">type MockWaker</a></dd>
+				
+					
+					<dd>    <a href="#NewMockWaker">func NewMockWaker(ctrl *gomock.Controller) *MockWaker</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockWaker.EXPECT">func (m *MockWaker) EXPECT() *MockWakerMockRecorder</a></dd>
+				
+					
+					<dd>    <a href="#MockWaker.Wake">func (m *MockWaker) Wake(ctx context.Context, streamID realtime.StreamID, upTo realtime.Sequence)</a></dd>
+				
+			
+				
+				<dd><a href="#MockWakerMockRecorder">type MockWakerMockRecorder</a></dd>
+				
+				
+					
+					<dd>    <a href="#MockWakerMockRecorder.Wake">func (mr *MockWakerMockRecorder) Wake(ctx, streamID, upTo any) *gomock.Call</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html">mock_sink.go.gen.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="MockFanoutObserver">type <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=2710:2834#L83">MockFanoutObserver</a>
+				<a class="permalink" href="#MockFanoutObserver">¶</a>
+				
+				
+			</h2>
+			<p>MockFanoutObserver is a mock of FanoutObserver interface.
+
+			</p><pre>type MockFanoutObserver struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockFanoutObserver">func <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=3043:3114#L95">NewMockFanoutObserver</a>
+					<a class="permalink" href="#NewMockFanoutObserver">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockFanoutObserver(ctrl *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockFanoutObserver">MockFanoutObserver</a></pre>
+				<p>NewMockFanoutObserver creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockFanoutObserver.EXPECT">func (*MockFanoutObserver) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=3306:3375#L102">EXPECT</a>
+					<a class="permalink" href="#MockFanoutObserver.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockFanoutObserver">MockFanoutObserver</a>) EXPECT() *<a href="#MockFanoutObserverMockRecorder">MockFanoutObserverMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockFanoutObserver.ObserveFanout">func (*MockFanoutObserver) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=3436:3489#L107">ObserveFanout</a>
+					<a class="permalink" href="#MockFanoutObserver.ObserveFanout">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockFanoutObserver">MockFanoutObserver</a>) ObserveFanout(err <a href="../../../../../builtin/#error">error</a>)</pre>
+				<p>ObserveFanout mocks base method.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockFanoutObserverMockRecorder">type <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=2915:2987#L90">MockFanoutObserverMockRecorder</a>
+				<a class="permalink" href="#MockFanoutObserverMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockFanoutObserverMockRecorder is the mock recorder for MockFanoutObserver.
+
+			</p><pre>type MockFanoutObserverMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockFanoutObserverMockRecorder.ObserveFanout">func (*MockFanoutObserverMockRecorder) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=3614:3691#L113">ObserveFanout</a>
+					<a class="permalink" href="#MockFanoutObserverMockRecorder.ObserveFanout">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockFanoutObserverMockRecorder">MockFanoutObserverMockRecorder</a>) ObserveFanout(err <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>ObserveFanout indicates an expected call of ObserveFanout.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockReprovisioner">type <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=3916:4038#L119">MockReprovisioner</a>
+				<a class="permalink" href="#MockReprovisioner">¶</a>
+				
+				
+			</h2>
+			<p>MockReprovisioner is a mock of Reprovisioner interface.
+
+			</p><pre>type MockReprovisioner struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockReprovisioner">func <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=4242:4311#L131">NewMockReprovisioner</a>
+					<a class="permalink" href="#NewMockReprovisioner">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockReprovisioner(ctrl *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockReprovisioner">MockReprovisioner</a></pre>
+				<p>NewMockReprovisioner creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockReprovisioner.EXPECT">func (*MockReprovisioner) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=4501:4568#L138">EXPECT</a>
+					<a class="permalink" href="#MockReprovisioner.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockReprovisioner">MockReprovisioner</a>) EXPECT() *<a href="#MockReprovisionerMockRecorder">MockReprovisionerMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockReprovisioner.Reprovision">func (*MockReprovisioner) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=4627:4693#L143">Reprovision</a>
+					<a class="permalink" href="#MockReprovisioner.Reprovision">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockReprovisioner">MockReprovisioner</a>) Reprovision(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>) <a href="../../../../../builtin/#error">error</a></pre>
+				<p>Reprovision mocks base method.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockReprovisionerMockRecorder">type <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=4117:4187#L126">MockReprovisionerMockRecorder</a>
+				<a class="permalink" href="#MockReprovisionerMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockReprovisionerMockRecorder is the mock recorder for MockReprovisioner.
+
+			</p><pre>type MockReprovisionerMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockReprovisionerMockRecorder.Reprovision">func (*MockReprovisionerMockRecorder) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=4859:4933#L151">Reprovision</a>
+					<a class="permalink" href="#MockReprovisionerMockRecorder.Reprovision">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockReprovisionerMockRecorder">MockReprovisionerMockRecorder</a>) Reprovision(ctx <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Reprovision indicates an expected call of Reprovision.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockRevoker">type <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=1547:1657#L47">MockRevoker</a>
+				<a class="permalink" href="#MockRevoker">¶</a>
+				
+				
+			</h2>
+			<p>MockRevoker is a mock of Revoker interface.
+
+			</p><pre>type MockRevoker struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockRevoker">func <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=1831:1888#L59">NewMockRevoker</a>
+					<a class="permalink" href="#NewMockRevoker">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockRevoker(ctrl *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockRevoker">MockRevoker</a></pre>
+				<p>NewMockRevoker creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockRevoker.EXPECT">func (*MockRevoker) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=2066:2121#L66">EXPECT</a>
+					<a class="permalink" href="#MockRevoker.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockRevoker">MockRevoker</a>) EXPECT() *<a href="#MockRevokerMockRecorder">MockRevokerMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockRevoker.Revoke">func (*MockRevoker) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=2175:2271#L71">Revoke</a>
+					<a class="permalink" href="#MockRevoker.Revoke">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockRevoker">MockRevoker</a>) Revoke(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, subject <a href="../../../../../builtin/#string">string</a>, destination <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">realtime</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>)</pre>
+				<p>Revoke mocks base method.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockRevokerMockRecorder">type <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=1724:1782#L54">MockRevokerMockRecorder</a>
+				<a class="permalink" href="#MockRevokerMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockRevokerMockRecorder is the mock recorder for MockRevoker.
+
+			</p><pre>type MockRevokerMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockRevokerMockRecorder.Revoke">func (*MockRevokerMockRecorder) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=2397:2482#L77">Revoke</a>
+					<a class="permalink" href="#MockRevokerMockRecorder.Revoke">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockRevokerMockRecorder">MockRevokerMockRecorder</a>) Revoke(ctx, subject, destination <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Revoke indicates an expected call of Revoke.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockWaker">type <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=459:565#L11">MockWaker</a>
+				<a class="permalink" href="#MockWaker">¶</a>
+				
+				
+			</h2>
+			<p>MockWaker is a mock of Waker interface.
+
+			</p><pre>type MockWaker struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewMockWaker">func <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=729:782#L23">NewMockWaker</a>
+					<a class="permalink" href="#NewMockWaker">¶</a>
+					
+					
+				</h3>
+				<pre>func NewMockWaker(ctrl *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Controller">Controller</a>) *<a href="#MockWaker">MockWaker</a></pre>
+				<p>NewMockWaker creates a new mock instance.
+
+				
+				
+			
+
+			
+				
+				</p><h3 id="MockWaker.EXPECT">func (*MockWaker) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=956:1007#L30">EXPECT</a>
+					<a class="permalink" href="#MockWaker.EXPECT">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockWaker">MockWaker</a>) EXPECT() *<a href="#MockWakerMockRecorder">MockWakerMockRecorder</a></pre>
+				<p>EXPECT returns an object that allows the caller to indicate expected use.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockWaker.Wake">func (*MockWaker) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=1059:1156#L35">Wake</a>
+					<a class="permalink" href="#MockWaker.Wake">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockWaker">MockWaker</a>) Wake(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, streamID <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">realtime</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#StreamID">StreamID</a>, upTo <a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/">realtime</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/realtime/#Sequence">Sequence</a>)</pre>
+				<p>Wake mocks base method.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="MockWakerMockRecorder">type <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=628:682#L18">MockWakerMockRecorder</a>
+				<a class="permalink" href="#MockWakerMockRecorder">¶</a>
+				
+				
+			</h2>
+			<p>MockWakerMockRecorder is the mock recorder for MockWaker.
+
+			</p><pre>type MockWakerMockRecorder struct {
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="MockWakerMockRecorder.Wake">func (*MockWakerMockRecorder) <a href="../../../../../src/go-boilerplate/internal/controller/realtime/mock/mock_sink.go.gen.go.html?s=1270:1345#L41">Wake</a>
+					<a class="permalink" href="#MockWakerMockRecorder.Wake">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockWakerMockRecorder">MockWakerMockRecorder</a>) Wake(ctx, streamID, upTo <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Wake indicates an expected call of Wake.
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+</p><div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

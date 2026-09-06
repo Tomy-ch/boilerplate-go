@@ -1,7 +1,5 @@
 # ctxhelper
 
-English | [日本語](README.ja.md)
-
 ctxhelper is a "boundary layer that controls the usage of context".
 
 This package provides helper functions for carrying request-scoped values on `context.Context`.
@@ -25,6 +23,14 @@ Hand-written (`authn.go`) — the `Authn` slot:
 - `RequireUserID(ctx) (uuid.UUID, error)` — read the resolved internal user ID out of the slot's `Authn`
 - `SetAuthnFailure(ctx, err) bool` — record an authentication failure; returns `false` when no slot is present
 - `AuthnFailure(ctx) error` — read the recorded failure; `nil` when authentication did not fail
+
+Hand-written (`stream_grant.go`) — the `StreamGrant` slot, filled by the `StreamTicket` security scheme (ADR-0074 (query-ticket-stream-authentication)) with the verified ticket's bindings. A rejected ticket is recorded through `SetAuthnFailure`, so the same fail-closed stage denies it:
+
+- `WithStreamGrant(ctx) context.Context` — install an empty slot (call before authentication)
+- `SetStreamGrant(ctx, grant) bool` — write the verified `realtime.StreamGrant`; `false` when no slot is present
+- `GetStreamGrant(ctx) (realtime.StreamGrant, bool)` — read; `ok=false` when unset
+- `RequireStreamGrant(ctx) (realtime.StreamGrant, error)` — read, returning `ErrStreamGrantMissing` when unset
+- `SetStreamRevalidator(ctx, fn) bool` / `GetStreamRevalidator(ctx) (fn, bool)` — the same slot also carries a way to verify the *same* ticket again. Establishing a stream connection runs ticket verification, then external I/O, then registration, and a revocation arriving in between misses a connection that is not indexed yet; re-verifying once after registration closes that window. The credential itself stays inside the security scheme — what travels is the closure
 
 The slot carries failures as well as successes because a spec may declare authentication
 optional, and validation of such an operation succeeds even when a presented credential was
@@ -93,6 +99,14 @@ make gen-go-code
 
 - specifying only import path (e.g., `github.com/foo/bar`) is not allowed
 - external types must always specify both `--type` and `--import`
+
+## Test Strategy
+
+The package is neither an inbound adapter nor a middleware, so nothing in [`../README.md`](../README.md) applies; the viewpoints here are its own.
+
+- **Three slot states, both sides** — every accessor is asserted with no slot installed, a slot installed but unset, and a slot written: `With*` seeds an *empty* slot (the immediate `Get*` must report unset), `Set*` reports `false` without a slot and `true` with one, `Get*` / `Require*` distinguish unset from written. The unset-after-install case is the one that matters: a slot that reads as set with a zero value is how an unauthenticated request would pass as authenticated.
+- **Failure carried beside success** — for the `Authn` slot, a recorded failure survives a later read; assert it independently of the success path.
+- **Generated flags** — the `genctxkey` outputs are pinned by their generated tests; do not duplicate them here.
 
 ## About editing
 

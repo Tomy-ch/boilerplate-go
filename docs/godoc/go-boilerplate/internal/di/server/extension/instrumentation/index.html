@@ -110,7 +110,7 @@
 				<dd><a href="#HTTPRedMetricsModule">func HTTPRedMetricsModule() fx.Option</a></dd>
 			
 				
-				<dd><a href="#LoggingMiddleware">func LoggingMiddleware(z logging.Logger, lf logging.LogFieldBuilder) extension.UseMiddlewareOut</a></dd>
+				<dd><a href="#LoggingMiddleware">func LoggingMiddleware(z logging.Logger, lf logging.LogFieldBuilder, red redaction.Redactor) extension.UseMiddlewareOut</a></dd>
 			
 				
 				<dd><a href="#LoggingModule">func LoggingModule() fx.Option</a></dd>
@@ -188,12 +188,12 @@
 		
 			
 			
-			</p><h2 id="LoggingMiddleware">func <a href="../../../../../../src/go-boilerplate/internal/di/server/extension/instrumentation/logging_di.go.html?s=945:1040#L16">LoggingMiddleware</a>
+			</p><h2 id="LoggingMiddleware">func <a href="../../../../../../src/go-boilerplate/internal/di/server/extension/instrumentation/logging_di.go.html?s=1003:1122#L17">LoggingMiddleware</a>
 				<a class="permalink" href="#LoggingMiddleware">¶</a>
 				
 				
 			</h2>
-			<pre>func LoggingMiddleware(z <a href="../../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>, lf <a href="../../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../../go-boilerplate/internal/logging/#LogFieldBuilder">LogFieldBuilder</a>) <a href="../../../../../../go-boilerplate/internal/di/server/extension/">extension</a>.<a href="../../../../../../go-boilerplate/internal/di/server/extension/#UseMiddlewareOut">UseMiddlewareOut</a></pre>
+			<pre>func LoggingMiddleware(z <a href="../../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>, lf <a href="../../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../../go-boilerplate/internal/logging/#LogFieldBuilder">LogFieldBuilder</a>, red <a href="../../../../../../go-boilerplate/internal/controller/httpstack/redaction/">redaction</a>.<a href="../../../../../../go-boilerplate/internal/controller/httpstack/redaction/#Redactor">Redactor</a>) <a href="../../../../../../go-boilerplate/internal/di/server/extension/">extension</a>.<a href="../../../../../../go-boilerplate/internal/di/server/extension/#UseMiddlewareOut">UseMiddlewareOut</a></pre>
 			<p>LoggingMiddleware は、HTTPリクエスト／レスポンスのアクセスログを出力するミドルウェアを提供します（OTel トレースコンテキストの TraceID・SpanID を含む）。
 
 			
@@ -202,7 +202,7 @@
 		
 			
 			
-			</p><h2 id="LoggingModule">func <a href="../../../../../../src/go-boilerplate/internal/di/server/extension/instrumentation/logging_di.go.html?s=622:652#L7">LoggingModule</a>
+			</p><h2 id="LoggingModule">func <a href="../../../../../../src/go-boilerplate/internal/di/server/extension/instrumentation/logging_di.go.html?s=680:710#L8">LoggingModule</a>
 				<a class="permalink" href="#LoggingModule">¶</a>
 				
 				

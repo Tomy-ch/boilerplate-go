@@ -1,7 +1,5 @@
 # Tools コンテナ
 
-[English](README.md) | 日本語
-
 プロジェクトの**コード生成・バンドル用ツールコンテナ**を定義する Dockerfile です。マルチステージビルドにより Go / Node.js / Python のツール環境を提供します。
 
 ## 役割
@@ -12,7 +10,7 @@
 
 |ターゲット|ベースイメージ|担当範囲|
 |---|---|---|
-|`go_tools`|`golang:1.26.6-alpine`|Go のコード生成・lint・セキュリティスキャン・ドキュメント生成（[ツール](#go_tools)）|
+|`go_tools`|`golang:1.27.1-alpine`|Go のコード生成・lint・セキュリティスキャン・ドキュメント生成（[ツール](#go_tools)）|
 |`node_tools`|`node:24.19.0-alpine`|OpenAPI バンドル、Markdown / コミットの lint、ポータルのビルドとスクリプトのテスト（[ツール](#node_tools)）|
 |`python_tools`|`python:3.14.7-slim`|SQL の lint（[ツール](#python_tools)）|
 
@@ -62,7 +60,7 @@ SQL リンティングツール：
 他の 2 つのステージと違い、ツール本体は `mise.toml` 由来ではありません。mise が入れるのは `uv` だけで、
 `sqlfluff` はその `uv` が [`python/sqlfluff.txt`](../../python/sqlfluff.txt) から `--require-hashes` 付きで
 install します。これにより推移依存まで含めてバージョンとハッシュが固定されます
-（[ADR-0080 (mise-ssot-drift-gate)](../../docs/adr/0080-mise-ssot-drift-gate.ja.md)）。
+（[ADR-0084 (mise-ssot-drift-gate)](../../docs/adr/0084-mise-ssot-drift-gate.ja.md)）。
 
 ## docker-compose サービス
 

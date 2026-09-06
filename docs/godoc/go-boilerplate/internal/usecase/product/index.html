@@ -119,6 +119,21 @@
 				
 			
 				
+				<dd><a href="#DiscontinueImpactView">type DiscontinueImpactView</a></dd>
+				
+				
+			
+				
+				<dd><a href="#DiscontinueProductParams">type DiscontinueProductParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#DiscontinueProductView">type DiscontinueProductView</a></dd>
+				
+				
+			
+				
 				<dd><a href="#GetProductParams">type GetProductParams</a></dd>
 				
 				
@@ -132,7 +147,7 @@
 				<dd><a href="#ImageGCUsecase">type ImageGCUsecase</a></dd>
 				
 					
-					<dd>    <a href="#NewImageGC">func NewImageGC(tf observability.TracerFactory, clk clock.Clock, storage objectstorage.Storage, productRepo product.Repository) ImageGCUsecase</a></dd>
+					<dd>    <a href="#NewImageGC">func NewImageGC(tf observability.TracerFactory, clk clock.Clock, storage objectstorage.Storage, images query.ProductImageQueryService) ImageGCUsecase</a></dd>
 				
 				
 			
@@ -205,7 +220,7 @@
 				<dd><a href="#Usecase">type Usecase</a></dd>
 				
 					
-					<dd>    <a href="#New">func New(txm tx.Manager, repo product.Repository, categoryRepo category.Repository, statusRepo status.Repository, storage objectstorage.Storage, authorizer authz.Authorizer, clk clock.Clock, maxUploadBytes int64, tf observability.TracerFactory) Usecase</a></dd>
+					<dd>    <a href="#New">func New(txm tx.Manager, repo product.Repository, categoryRepo category.Repository, statusRepo status.Repository, storage objectstorage.Storage, authorizer authz.Authorizer, clk clock.Clock, maxUploadBytes int64, purchaseRepo purchase.Repository, discontinueCmd command.CommandService, discontinueImpactQuery query.DiscontinueImpactQueryService, tf observability.TracerFactory) Usecase</a></dd>
 				
 				
 			
@@ -223,6 +238,8 @@
 				<a href="../../../../src/go-boilerplate/internal/usecase/product/product_create_usecase.go.html">product_create_usecase.go</a>
 			
 				<a href="../../../../src/go-boilerplate/internal/usecase/product/product_cursor.go.html">product_cursor.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/product/product_discontinue_usecase.go.html">product_discontinue_usecase.go</a>
 			
 				<a href="../../../../src/go-boilerplate/internal/usecase/product/product_image_gc_usecase.go.html">product_image_gc_usecase.go</a>
 			
@@ -252,7 +269,7 @@
     <span class="comment">// DefaultImageGCBatchSize は、1 バッチあたりのオブジェクト列挙件数の既定値です。</span>
     <span id="DefaultImageGCBatchSize">DefaultImageGCBatchSize</span> <a href="../../../../builtin/#int32">int32</a> = 1_000
     <span class="comment">// DefaultImageGCGrace は、アップロードされた画像を未参照でも回収しない既定の猶予期間です。</span>
-    <span class="comment">// 猶予が要る理由は docs/spec/product/usecase.md の SweepOrphans notes を参照。</span>
+    <span class="comment">// 猶予が要る理由は docs/spec/usecase/product.md の SweepOrphans notes を参照。</span>
     <span id="DefaultImageGCGrace">DefaultImageGCGrace</span> = 24 * <a href="../../../../time/">time</a>.<a href="../../../../time/#Hour">Hour</a>
 )</pre>
 			
@@ -262,7 +279,7 @@
 		
 			
 			
-			<h2 id="CountProductsParams">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=3980:4151#L75">CountProductsParams</a>
+			<h2 id="CountProductsParams">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=4053:4224#L78">CountProductsParams</a>
 				<a class="permalink" href="#CountProductsParams">¶</a>
 				
 				
@@ -326,7 +343,101 @@
 		
 			
 			
-			<h2 id="GetProductParams">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=4231:4449#L83">GetProductParams</a>
+			<h2 id="DiscontinueImpactView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_discontinue_usecase.go.html?s=1650:2130#L28">DiscontinueImpactView</a>
+				<a class="permalink" href="#DiscontinueImpactView">¶</a>
+				
+				
+			</h2>
+			<p>DiscontinueImpactView は、廃番の影響の見積もりです。ロックを取らないため実行時の値と一致しません。
+
+			</p><pre>type DiscontinueImpactView struct {
+<span id="DiscontinueImpactView.AffectedCartCount"></span>    <span class="comment">// AffectedCartCount は、対象商品の明細を持つカートの件数です。ゲストのカートも含みます。</span>
+    AffectedCartCount <a href="../../../../builtin/#int64">int64</a>
+<span id="DiscontinueImpactView.AffectedUserCount"></span>    <span class="comment">// AffectedUserCount は、クーポンの受給対象になる確定済みユーザーの数です。</span>
+    AffectedUserCount <a href="../../../../builtin/#int64">int64</a>
+<span id="DiscontinueImpactView.InProgressPurchaseCount"></span>    <span class="comment">// InProgressPurchaseCount は、対象商品を含む進行中の購入の件数です。1 以上なら廃番は拒まれます。</span>
+    InProgressPurchaseCount <a href="../../../../builtin/#int64">int64</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="DiscontinueProductParams">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_discontinue_usecase.go.html?s=565:921#L8">DiscontinueProductParams</a>
+				<a class="permalink" href="#DiscontinueProductParams">¶</a>
+				
+				
+			</h2>
+			<p>DiscontinueProductParams は、商品を廃番にする要求の入力です。要求で条件を受ける理由は
+docs/spec/usecase/product.md の Workflow — DiscontinueProduct の notes を参照。
+
+			</p><pre>type DiscontinueProductParams struct {
+<span id="DiscontinueProductParams.CouponDiscountRate"></span>    <span class="comment">// CouponDiscountRate は、代替クーポンの値引き率です。0 より大きく 1 以下である必要があります。</span>
+    CouponDiscountRate <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+<span id="DiscontinueProductParams.CouponValidity"></span>    <span class="comment">// CouponValidity は、代替クーポンの有効期間です。発行日時からこの長さだけ有効です。</span>
+    CouponValidity <a href="../../../../time/">time</a>.<a href="../../../../time/#Duration">Duration</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="DiscontinueProductView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_discontinue_usecase.go.html?s=986:1508#L16">DiscontinueProductView</a>
+				<a class="permalink" href="#DiscontinueProductView">¶</a>
+				
+				
+			</h2>
+			<p>DiscontinueProductView は、廃番の実行結果です。
+
+			</p><pre>type DiscontinueProductView struct {
+<span id="DiscontinueProductView.DiscontinuedAt"></span>    <span class="comment">// DiscontinuedAt は、廃番が確定した日時です。</span>
+    DiscontinuedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="DiscontinueProductView.AffectedCartCount"></span>    <span class="comment">// AffectedCartCount は、対象商品の明細を持っていたカートの件数です。ゲストのカートも含みます。</span>
+    AffectedCartCount <a href="../../../../builtin/#int64">int64</a>
+<span id="DiscontinueProductView.AffectedUserCount"></span>    <span class="comment">// AffectedUserCount は、クーポンの受給対象になった確定済みユーザーの数です。</span>
+    AffectedUserCount <a href="../../../../builtin/#int64">int64</a>
+<span id="DiscontinueProductView.IssuedCouponCount"></span>    <span class="comment">// IssuedCouponCount は、実際に発行したクーポンの枚数です。</span>
+    IssuedCouponCount <a href="../../../../builtin/#int64">int64</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="GetProductParams">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=4304:4522#L86">GetProductParams</a>
 				<a class="permalink" href="#GetProductParams">¶</a>
 				
 				
@@ -355,7 +466,7 @@
 		
 			
 			
-			<h2 id="ImageGCResult">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_image_gc_usecase.go.html?s=834:1127#L15">ImageGCResult</a>
+			<h2 id="ImageGCResult">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_image_gc_usecase.go.html?s=841:1134#L15">ImageGCResult</a>
 				<a class="permalink" href="#ImageGCResult">¶</a>
 				
 				
@@ -384,7 +495,7 @@
 		
 			
 			
-			<h2 id="ImageGCUsecase">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_image_gc_usecase.go.html?s=1277:2032#L23">ImageGCUsecase</a>
+			<h2 id="ImageGCUsecase">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_image_gc_usecase.go.html?s=1284:2039#L23">ImageGCUsecase</a>
 				<a class="permalink" href="#ImageGCUsecase">¶</a>
 				
 				
@@ -397,7 +508,7 @@
     <span class="comment">// dryRun が true の場合は削除を行わず、削除対象となった件数だけを結果に返します。</span>
     <span class="comment">// grace / batchSize が 0 以下の場合は、それぞれ既定値を用います。</span>
     <span class="comment">// エラーを返す場合も、失敗したページより前に削除済みの累計を結果に含めます</span>
-    <span class="comment">// （理由は docs/spec/product/usecase.md の SweepOrphans errors）。</span>
+    <span class="comment">// （理由は docs/spec/usecase/product.md の SweepOrphans errors）。</span>
     SweepOrphans(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, grace <a href="../../../../time/">time</a>.<a href="../../../../time/#Duration">Duration</a>, batchSize <a href="../../../../builtin/#int32">int32</a>, dryRun <a href="../../../../builtin/#bool">bool</a>) (<a href="#ImageGCResult">ImageGCResult</a>, <a href="../../../../builtin/#error">error</a>)
 }</pre>
 
@@ -411,7 +522,7 @@
 
 			
 				
-				<h3 id="NewImageGC">func <a href="../../../../src/go-boilerplate/internal/usecase/product/product_image_gc_usecase.go.html?s=2859:3008#L52">NewImageGC</a>
+				<h3 id="NewImageGC">func <a href="../../../../src/go-boilerplate/internal/usecase/product/product_image_gc_usecase.go.html?s=2741:2897#L51">NewImageGC</a>
 					<a class="permalink" href="#NewImageGC">¶</a>
 					
 					
@@ -420,7 +531,7 @@
     tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
     clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>,
     storage <a href="../../../../go-boilerplate/internal/usecase/boundary/objectstorage/">objectstorage</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/objectstorage/#Storage">Storage</a>,
-    productRepo <a href="../../../../go-boilerplate/internal/domain/product/">product</a>.<a href="../../../../go-boilerplate/internal/domain/product/#Repository">Repository</a>,
+    images <a href="../../../../go-boilerplate/internal/usecase/product/query/">query</a>.<a href="../../../../go-boilerplate/internal/usecase/product/query/#ProductImageQueryService">ProductImageQueryService</a>,
 ) <a href="#ImageGCUsecase">ImageGCUsecase</a></pre>
 				<p>NewImageGC は、ImageGCUsecase を初期化します。
 
@@ -459,7 +570,7 @@
 		
 			
 			
-			<h2 id="ListProductsParams">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=3164:3761#L60">ListProductsParams</a>
+			<h2 id="ListProductsParams">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=3237:3834#L63">ListProductsParams</a>
 				<a class="permalink" href="#ListProductsParams">¶</a>
 				
 				
@@ -494,7 +605,7 @@
 		
 			
 			
-			<h2 id="ProductCountView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=6301:6346#L116">ProductCountView</a>
+			<h2 id="ProductCountView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=6506:6551#L121">ProductCountView</a>
 				<a class="permalink" href="#ProductCountView">¶</a>
 				
 				
@@ -520,7 +631,7 @@
 		
 			
 			
-			<h2 id="ProductImageItemView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=2464:2715#L44">ProductImageItemView</a>
+			<h2 id="ProductImageItemView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=2537:2788#L47">ProductImageItemView</a>
 				<a class="permalink" href="#ProductImageItemView">¶</a>
 				
 				
@@ -605,7 +716,7 @@
 		
 			
 			
-			<h2 id="ProductListView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=2831:3076#L52">ProductListView</a>
+			<h2 id="ProductListView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=2904:3149#L55">ProductListView</a>
 				<a class="permalink" href="#ProductListView">¶</a>
 				
 				
@@ -661,7 +772,7 @@
 		
 			
 			
-			<h2 id="ProductView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=1691:2369#L25">ProductView</a>
+			<h2 id="ProductView">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=1730:2442#L27">ProductView</a>
 				<a class="permalink" href="#ProductView">¶</a>
 				
 				
@@ -681,6 +792,7 @@
 <span id="ProductView.CategoryID"></span>    CategoryID            <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
 <span id="ProductView.CategoryName"></span>    CategoryName          <a href="../../../../builtin/#string">string</a>
 <span id="ProductView.PublishedAt"></span>    PublishedAt           *<a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="ProductView.DiscontinuedAt"></span>    DiscontinuedAt        *<a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
 <span id="ProductView.Images"></span>    <span class="comment">// Images は、商品画像を表示順の昇順で並べたものです。画像未設定の場合は空です。</span>
     Images []<a href="#ProductImageItemView">ProductImageItemView</a>
 <span id="ProductView.Version"></span>    <span class="comment">// Version は、楽観ロックのバージョンです。部分更新の要求へそのまま渡すことで競合を検出できます。</span>
@@ -702,7 +814,7 @@
 		
 			
 			
-			<h2 id="SearchFilter">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=4709:6230#L92">SearchFilter</a>
+			<h2 id="SearchFilter">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=4782:6435#L95">SearchFilter</a>
 				<a class="permalink" href="#SearchFilter">¶</a>
 				
 				
@@ -731,6 +843,8 @@
 <span id="SearchFilter.MinQuantity"></span>    <span class="comment">// MinQuantity / MaxQuantity は、在庫数の包含下限／包含上限です。nil の側は制限しません。</span>
     MinQuantity *<a href="../../../../builtin/#int32">int32</a>
 <span id="SearchFilter.MaxQuantity"></span>    MaxQuantity *<a href="../../../../builtin/#int32">int32</a>
+<span id="SearchFilter.Discontinued"></span>    <span class="comment">// Discontinued は、廃番かどうかによる絞り込みです。nil の場合は絞り込みません。</span>
+    Discontinued *<a href="../../../../builtin/#bool">bool</a>
 }
 </pre>
 
@@ -851,7 +965,7 @@ nil のポインタは未指定（現在値を据え置く）を表し、クリ�
 		
 			
 			
-			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=6788:10071#L130">Usecase</a>
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=6993:11172#L135">Usecase</a>
 				<a class="permalink" href="#Usecase">¶</a>
 				
 				
@@ -879,6 +993,13 @@ nil のポインタは未指定（現在値を据え置く）を表し、クリ�
     <span class="comment">// UpdateProduct は、admin が商品の属性を部分更新し、更新後の商品を返します。未認証は 401、非 admin は 403、</span>
     <span class="comment">// 未存在は 404、読み込み後に他者が更新していた場合は 409、業務不変条件違反は 422 を返します。</span>
     UpdateProduct(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, params <a href="#UpdateProductParams">UpdateProductParams</a>) (<a href="#ProductView">ProductView</a>, <a href="../../../../builtin/#error">error</a>)
+    <span class="comment">// DiscontinueProduct は、admin が商品を廃番にし、影響の件数を返します。未認証は 401、非 admin は 403、</span>
+    <span class="comment">// 未存在は 404、進行中の購入が残っている場合は 409、値引き率が範囲外の場合は 422 を返します。</span>
+    <span class="comment">// 商品の非公開化と代替クーポンの一括発行は同一トランザクションで行います。</span>
+    DiscontinueProduct(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, params <a href="#DiscontinueProductParams">DiscontinueProductParams</a>) (<a href="#DiscontinueProductView">DiscontinueProductView</a>, <a href="../../../../builtin/#error">error</a>)
+    <span class="comment">// GetDiscontinueImpact は、admin が廃番の影響を実行前に件数で取得します。未認証は 401、非 admin は 403、</span>
+    <span class="comment">// 未存在は 404 を返します。行をロックしないため実行時の件数と一致する保証はありません。</span>
+    GetDiscontinueImpact(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#DiscontinueImpactView">DiscontinueImpactView</a>, <a href="../../../../builtin/#error">error</a>)
     <span class="comment">// UpdateProductStock は、admin が商品の在庫を増減し、更新後の商品を返します。未認証は 401、非 admin は 403、</span>
     <span class="comment">// 未存在は 404、取得後に他者が更新していた場合は 409、増減後の在庫が保持できる範囲を外れる場合は 422 を返します。</span>
     UpdateProductStock(
@@ -901,7 +1022,7 @@ nil のポインタは未指定（現在値を据え置く）を表し、クリ�
 
 			
 				
-				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=10470:10734#L176">New</a>
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/product/product_usecase.go.html?s=11857:12257#L193">New</a>
 					<a class="permalink" href="#New">¶</a>
 					
 					
@@ -915,6 +1036,9 @@ nil のポインタは未指定（現在値を据え置く）を表し、クリ�
     authorizer <a href="../../../../go-boilerplate/internal/usecase/boundary/authz/">authz</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/authz/#Authorizer">Authorizer</a>,
     clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>,
     maxUploadBytes <a href="../../../../builtin/#int64">int64</a>,
+    purchaseRepo <a href="../../../../go-boilerplate/internal/domain/purchase/">purchase</a>.<a href="../../../../go-boilerplate/internal/domain/purchase/#Repository">Repository</a>,
+    discontinueCmd <a href="../../../../go-boilerplate/internal/usecase/product/command/">command</a>.<a href="../../../../go-boilerplate/internal/usecase/product/command/#CommandService">CommandService</a>,
+    discontinueImpactQuery <a href="../../../../go-boilerplate/internal/usecase/product/query/">query</a>.<a href="../../../../go-boilerplate/internal/usecase/product/query/#DiscontinueImpactQueryService">DiscontinueImpactQueryService</a>,
     tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
 ) <a href="#Usecase">Usecase</a></pre>
 				<p>New は、商品に関するユースケース実装を生成します。

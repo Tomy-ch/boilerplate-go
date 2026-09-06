@@ -163,6 +163,19 @@
 				
 			
 				
+				<dd><a href="#ReadyDependency">type ReadyDependency</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ReadyDependencyStatus">type ReadyDependencyStatus</a></dd>
+				
+				
+					
+					<dd>    <a href="#ReadyDependencyStatus.Valid">func (e ReadyDependencyStatus) Valid() bool</a></dd>
+				
+			
+				
 				<dd><a href="#ReadyResponse">type ReadyResponse</a></dd>
 				
 				
@@ -319,7 +332,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ErrorResponse">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=828:1230#L22">ErrorResponse</a>
+			<h2 id="ErrorResponse">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=1399:1801#L40">ErrorResponse</a>
 				<a class="permalink" href="#ErrorResponse">¶</a>
 				
 				
@@ -477,7 +490,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="MethodNotAllowed405">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=2227:2267#L68">MethodNotAllowed405</a>
+			<h2 id="MethodNotAllowed405">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=3617:3657#L107">MethodNotAllowed405</a>
 				<a class="permalink" href="#MethodNotAllowed405">¶</a>
 				
 				
@@ -522,7 +535,85 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ReadyResponse">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=1322:1920#L40">ReadyResponse</a>
+			<h2 id="ReadyDependency">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=2031:2262#L58">ReadyDependency</a>
+				<a class="permalink" href="#ReadyDependency">¶</a>
+				
+				
+			</h2>
+			<p>ReadyDependency readiness に加わる依存 1 つの状態です。ここに並ぶのは、落ちていても通常の HTTP 応答を続けられる 依存だけで、不可欠な依存は起動時に fail-fast します。
+
+			</p><pre>type ReadyDependency struct {
+<span id="ReadyDependency.Name"></span>    <span class="comment">// Name 依存する subsystem の名前</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: realtime</span>
+    Name <a href="../../../../../../builtin/#string">string</a> `json:&#34;name&#34;`
+
+<span id="ReadyDependency.Status"></span>    <span class="comment">// Status その subsystem の状態</span>
+    <span class="comment">//</span>
+    <span class="comment">// Example: ok</span>
+    Status <a href="#ReadyDependencyStatus">ReadyDependencyStatus</a> `json:&#34;status&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ReadyDependencyStatus">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=2334:2367#L73">ReadyDependencyStatus</a>
+				<a class="permalink" href="#ReadyDependencyStatus">¶</a>
+				
+				
+			</h2>
+			<p>ReadyDependencyStatus その subsystem の状態
+</p><p>Example: ok
+
+			</p><pre>type ReadyDependencyStatus <a href="../../../../../../builtin/#string">string</a></pre>
+
+			
+				<p>Defines values for ReadyDependencyStatus.
+
+				</p><pre>const (
+    <span id="ReadyDependencyStatusDegraded">ReadyDependencyStatusDegraded</span> <a href="#ReadyDependencyStatus">ReadyDependencyStatus</a> = &#34;degraded&#34;
+    <span id="ReadyDependencyStatusOk">ReadyDependencyStatusOk</span>       <a href="#ReadyDependencyStatus">ReadyDependencyStatus</a> = &#34;ok&#34;
+)</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="ReadyDependencyStatus.Valid">func (ReadyDependencyStatus) <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=471:514#L7">Valid</a>
+					<a class="permalink" href="#ReadyDependencyStatus.Valid">¶</a>
+					
+					
+				</h3>
+				<pre>func (e <a href="#ReadyDependencyStatus">ReadyDependencyStatus</a>) Valid() <a href="../../../../../../builtin/#bool">bool</a></pre>
+				<p>Valid indicates whether the value is a known member of the ReadyDependencyStatus enum.
+
+				
+				
+				
+			
+		
+			
+			
+			</p><h2 id="ReadyResponse">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=2459:3310#L76">ReadyResponse</a>
 				<a class="permalink" href="#ReadyResponse">¶</a>
 				
 				
@@ -545,6 +636,9 @@ either of them for path registration
     <span class="comment">// Example: 2024-06-01T12:00:00Z</span>
     DbRespondedAt <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a> `json:&#34;dbRespondedAt&#34;`
 
+<span id="ReadyResponse.Dependencies"></span>    <span class="comment">// Dependencies 通常の HTTP 応答は続けられるが、落ちていれば縮退する依存の状態です。 該当する依存が結線されていなければ現れません。</span>
+    Dependencies *[]<a href="#ReadyDependency">ReadyDependency</a> `json:&#34;dependencies,omitempty&#34;`
+
 <span id="ReadyResponse.Status"></span>    <span class="comment">// Status サーバーのレディネス状態</span>
     <span class="comment">//</span>
     <span class="comment">// Example: ok</span>
@@ -566,7 +660,7 @@ either of them for path registration
 		
 			
 			
-			<h2 id="ReadyResponseStatus">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=2000:2031#L65">ReadyResponseStatus</a>
+			<h2 id="ReadyResponseStatus">type <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=3390:3421#L104">ReadyResponseStatus</a>
 				<a class="permalink" href="#ReadyResponseStatus">¶</a>
 				
 				
@@ -580,9 +674,9 @@ either of them for path registration
 				<p>Defines values for ReadyResponseStatus.
 
 				</p><pre>const (
-    <span id="Degraded">Degraded</span>  <a href="#ReadyResponseStatus">ReadyResponseStatus</a> = &#34;degraded&#34;
-    <span id="Ok">Ok</span>        <a href="#ReadyResponseStatus">ReadyResponseStatus</a> = &#34;ok&#34;
-    <span id="Unhealthy">Unhealthy</span> <a href="#ReadyResponseStatus">ReadyResponseStatus</a> = &#34;unhealthy&#34;
+    <span id="ReadyResponseStatusDegraded">ReadyResponseStatusDegraded</span>  <a href="#ReadyResponseStatus">ReadyResponseStatus</a> = &#34;degraded&#34;
+    <span id="ReadyResponseStatusOk">ReadyResponseStatusOk</span>        <a href="#ReadyResponseStatus">ReadyResponseStatus</a> = &#34;ok&#34;
+    <span id="ReadyResponseStatusUnhealthy">ReadyResponseStatusUnhealthy</span> <a href="#ReadyResponseStatus">ReadyResponseStatus</a> = &#34;unhealthy&#34;
 )</pre>
 			
 
@@ -596,7 +690,7 @@ either of them for path registration
 
 			
 				
-				<h3 id="ReadyResponseStatus.Valid">func (ReadyResponseStatus) <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=468:509#L8">Valid</a>
+				<h3 id="ReadyResponseStatus.Valid">func (ReadyResponseStatus) <a href="../../../../../../src/go-boilerplate/internal/controller/handler/ready/gen/type.gen.go.html?s=982:1023#L26">Valid</a>
 					<a class="permalink" href="#ReadyResponseStatus.Valid">¶</a>
 					
 					

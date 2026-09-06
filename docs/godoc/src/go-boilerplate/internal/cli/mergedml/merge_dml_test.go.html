@@ -155,631 +155,632 @@
 <span id="L98" class="ln">    98  </span>				func(_ string, data []byte, _ os.FileMode) error {
 <span id="L99" class="ln">    99  </span>					written = data
 <span id="L100" class="ln">   100  </span>					return nil
-<span id="L101" class="ln">   101  </span>				})
-<span id="L102" class="ln">   102  </span>
-<span id="L103" class="ln">   103  </span>			g := newTestGenerator(t, fs)
-<span id="L104" class="ln">   104  </span>			require.NoError(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
-<span id="L105" class="ln">   105  </span>
-<span id="L106" class="ln">   106  </span>			got := string(written)
-<span id="L107" class="ln">   107  </span>			assert.Contains(t, got, &#34;SELECT 1;&#34;)
-<span id="L108" class="ln">   108  </span>			assert.Contains(t, got, &#34;SELECT 2;&#34;)
-<span id="L109" class="ln">   109  </span>			assert.Less(t, strings.Index(got, &#34;SELECT 1;&#34;), strings.Index(got, &#34;SELECT 2;&#34;))
-<span id="L110" class="ln">   110  </span>			assert.Contains(t, got, &#34;-- === source:&#34;)
-<span id="L111" class="ln">   111  </span>			<span class="comment">// 末尾改行が無い入力でも連結が壊れないこと。</span>
-<span id="L112" class="ln">   112  </span>			assert.NotContains(t, got, &#34;SELECT 1;SELECT 2;&#34;)
-<span id="L113" class="ln">   113  </span>		})
-<span id="L114" class="ln">   114  </span>
-<span id="L115" class="ln">   115  </span>		t.Run(&#34;SQLが空のカテゴリは生成物を削除する&#34;, func(t *testing.T) {
-<span id="L116" class="ln">   116  </span>			t.Parallel()
-<span id="L117" class="ln">   117  </span>			ctrl := gomock.NewController(t)
-<span id="L118" class="ln">   118  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L119" class="ln">   119  </span>
-<span id="L120" class="ln">   120  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return(nil, nil)
-<span id="L121" class="ln">   121  </span>			fs.EXPECT().Remove(dstPath).Return(nil)
-<span id="L122" class="ln">   122  </span>
-<span id="L123" class="ln">   123  </span>			g := newTestGenerator(t, fs)
-<span id="L124" class="ln">   124  </span>			require.NoError(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
-<span id="L125" class="ln">   125  </span>		})
-<span id="L126" class="ln">   126  </span>
-<span id="L127" class="ln">   127  </span>		t.Run(&#34;SQLが空で生成物が未存在ならNotExistを無視する&#34;, func(t *testing.T) {
-<span id="L128" class="ln">   128  </span>			t.Parallel()
-<span id="L129" class="ln">   129  </span>			ctrl := gomock.NewController(t)
-<span id="L130" class="ln">   130  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L131" class="ln">   131  </span>
-<span id="L132" class="ln">   132  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return(nil, nil)
-<span id="L133" class="ln">   133  </span>			fs.EXPECT().Remove(dstPath).Return(os.ErrNotExist)
-<span id="L134" class="ln">   134  </span>
-<span id="L135" class="ln">   135  </span>			g := newTestGenerator(t, fs)
-<span id="L136" class="ln">   136  </span>			require.NoError(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
-<span id="L137" class="ln">   137  </span>		})
-<span id="L138" class="ln">   138  </span>	})
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L141" class="ln">   141  </span>		t.Parallel()
-<span id="L142" class="ln">   142  </span>
-<span id="L143" class="ln">   143  </span>		t.Run(&#34;入力走査に失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L144" class="ln">   144  </span>			t.Parallel()
-<span id="L145" class="ln">   145  </span>			ctrl := gomock.NewController(t)
-<span id="L146" class="ln">   146  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L147" class="ln">   147  </span>
-<span id="L148" class="ln">   148  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return(nil, xerrors.New(&#34;walk failed&#34;))
-<span id="L149" class="ln">   149  </span>
-<span id="L150" class="ln">   150  </span>			g := newTestGenerator(t, fs)
-<span id="L151" class="ln">   151  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
-<span id="L152" class="ln">   152  </span>		})
-<span id="L153" class="ln">   153  </span>
-<span id="L154" class="ln">   154  </span>		t.Run(&#34;連結中のReadFileに失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L155" class="ln">   155  </span>			t.Parallel()
-<span id="L156" class="ln">   156  </span>			ctrl := gomock.NewController(t)
-<span id="L157" class="ln">   157  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>			f1 := filepath.Join(dmlDir, &#34;001.sql&#34;)
-<span id="L160" class="ln">   160  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return([]string{f1}, nil)
-<span id="L161" class="ln">   161  </span>			fs.EXPECT().ReadFile(f1).Return(nil, xerrors.New(&#34;read failed&#34;))
-<span id="L162" class="ln">   162  </span>
-<span id="L163" class="ln">   163  </span>			g := newTestGenerator(t, fs)
-<span id="L164" class="ln">   164  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
-<span id="L165" class="ln">   165  </span>		})
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>		t.Run(&#34;連結結果の書き出しに失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L168" class="ln">   168  </span>			t.Parallel()
-<span id="L169" class="ln">   169  </span>			ctrl := gomock.NewController(t)
-<span id="L170" class="ln">   170  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>			f1 := filepath.Join(dmlDir, &#34;001.sql&#34;)
-<span id="L173" class="ln">   173  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return([]string{f1}, nil)
-<span id="L174" class="ln">   174  </span>			fs.EXPECT().ReadFile(f1).Return([]byte(&#34;SELECT 1;&#34;), nil)
-<span id="L175" class="ln">   175  </span>			fs.EXPECT().WriteFile(dstPath, gomock.Any(), os.FileMode(genFilePerm)).Return(xerrors.New(&#34;write failed&#34;))
-<span id="L176" class="ln">   176  </span>
-<span id="L177" class="ln">   177  </span>			g := newTestGenerator(t, fs)
-<span id="L178" class="ln">   178  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
-<span id="L179" class="ln">   179  </span>		})
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>		t.Run(&#34;SQLが空でRemoveがNotExist以外で失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L182" class="ln">   182  </span>			t.Parallel()
-<span id="L183" class="ln">   183  </span>			ctrl := gomock.NewController(t)
-<span id="L184" class="ln">   184  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return(nil, nil)
-<span id="L187" class="ln">   187  </span>			fs.EXPECT().Remove(dstPath).Return(xerrors.New(&#34;remove failed&#34;))
-<span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span>			g := newTestGenerator(t, fs)
-<span id="L190" class="ln">   190  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
-<span id="L191" class="ln">   191  </span>		})
-<span id="L192" class="ln">   192  </span>
-<span id="L193" class="ln">   193  </span>		t.Run(&#34;SQLが空でも生成先がgenRootDir外ならensureUnderDirで弾く&#34;, func(t *testing.T) {
-<span id="L194" class="ln">   194  </span>			t.Parallel()
-<span id="L195" class="ln">   195  </span>			ctrl := gomock.NewController(t)
-<span id="L196" class="ln">   196  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>			<span class="comment">// カテゴリ名に相対上昇を含めると生成先が genRootDir の外へ抜け、Remove 前に弾かれる。</span>
-<span id="L199" class="ln">   199  </span>			escCategory := &#34;../../../../etc&#34;
-<span id="L200" class="ln">   200  </span>			escDmlDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, &#34;repository&#34;, escCategory)
-<span id="L201" class="ln">   201  </span>			fs.EXPECT().FindSQLFiles(escDmlDir).Return(nil, nil)
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span>			g := newTestGenerator(t, fs)
-<span id="L204" class="ln">   204  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), escCategory, &#34;repository&#34;))
-<span id="L205" class="ln">   205  </span>		})
-<span id="L206" class="ln">   206  </span>
-<span id="L207" class="ln">   207  </span>		t.Run(&#34;SQLがあっても生成先がgenRootDir外なら連結前にensureUnderDirで弾く&#34;, func(t *testing.T) {
-<span id="L208" class="ln">   208  </span>			t.Parallel()
-<span id="L209" class="ln">   209  </span>			ctrl := gomock.NewController(t)
-<span id="L210" class="ln">   210  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span>			<span class="comment">// 生成先が genRootDir の外を指すため、ReadFile/WriteFile へ進む前に弾かれる。</span>
-<span id="L213" class="ln">   213  </span>			escCategory := &#34;../../../../etc&#34;
-<span id="L214" class="ln">   214  </span>			escDmlDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, &#34;repository&#34;, escCategory)
-<span id="L215" class="ln">   215  </span>			fs.EXPECT().FindSQLFiles(escDmlDir).Return([]string{filepath.Join(escDmlDir, &#34;001.sql&#34;)}, nil)
-<span id="L216" class="ln">   216  </span>
-<span id="L217" class="ln">   217  </span>			g := newTestGenerator(t, fs)
-<span id="L218" class="ln">   218  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), escCategory, &#34;repository&#34;))
-<span id="L219" class="ln">   219  </span>		})
-<span id="L220" class="ln">   220  </span>	})
-<span id="L221" class="ln">   221  </span>}
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>func TestGenerator_cleanupStaleGeneratedFiles(t *testing.T) {
-<span id="L224" class="ln">   224  </span>	t.Parallel()
-<span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>	genAbs := filepath.Join(testWorkDir, &#34;database/gen/&#34;)
-<span id="L227" class="ln">   227  </span>
-<span id="L228" class="ln">   228  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L229" class="ln">   229  </span>		t.Parallel()
-<span id="L230" class="ln">   230  </span>
-<span id="L231" class="ln">   231  </span>		t.Run(&#34;keep対象は残し同typeのstaleのみ削除し他typeは触らない&#34;, func(t *testing.T) {
-<span id="L232" class="ln">   232  </span>			t.Parallel()
-<span id="L233" class="ln">   233  </span>			ctrl := gomock.NewController(t)
-<span id="L234" class="ln">   234  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{
-<span id="L237" class="ln">   237  </span>				&#34;user_repository.gen.sql&#34;,   <span class="comment">// keep（今回の生成対象）</span>
-<span id="L238" class="ln">   238  </span>				&#34;old_repository.gen.sql&#34;,    <span class="comment">// stale（同 type・keep外）→削除</span>
-<span id="L239" class="ln">   239  </span>				&#34;foo_query_service.gen.sql&#34;, <span class="comment">// 別 type →非対象で温存</span>
-<span id="L240" class="ln">   240  </span>			}, nil)
-<span id="L241" class="ln">   241  </span>			<span class="comment">// 削除されるのは old_repository のみ（他が Remove されたら gomock が失敗させる）。</span>
-<span id="L242" class="ln">   242  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;old_repository.gen.sql&#34;)).Return(nil)
-<span id="L243" class="ln">   243  </span>
-<span id="L244" class="ln">   244  </span>			g := newTestGenerator(t, fs)
-<span id="L245" class="ln">   245  </span>			require.NoError(t, g.cleanupStaleGeneratedFiles(context.Background(), []string{&#34;user&#34;}, &#34;repository&#34;))
-<span id="L246" class="ln">   246  </span>		})
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>		t.Run(&#34;カテゴリ0件のとき同typeの生成物を全削除し他typeは温存する&#34;, func(t *testing.T) {
-<span id="L249" class="ln">   249  </span>			t.Parallel()
-<span id="L250" class="ln">   250  </span>			ctrl := gomock.NewController(t)
-<span id="L251" class="ln">   251  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L252" class="ln">   252  </span>
-<span id="L253" class="ln">   253  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{
-<span id="L254" class="ln">   254  </span>				&#34;a_repository.gen.sql&#34;,
-<span id="L255" class="ln">   255  </span>				&#34;b_repository.gen.sql&#34;,
-<span id="L256" class="ln">   256  </span>				&#34;x_query_service.gen.sql&#34;,
-<span id="L257" class="ln">   257  </span>			}, nil)
-<span id="L258" class="ln">   258  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;a_repository.gen.sql&#34;)).Return(nil)
-<span id="L259" class="ln">   259  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;b_repository.gen.sql&#34;)).Return(nil)
-<span id="L260" class="ln">   260  </span>
-<span id="L261" class="ln">   261  </span>			g := newTestGenerator(t, fs)
-<span id="L262" class="ln">   262  </span>			require.NoError(t, g.cleanupStaleGeneratedFiles(context.Background(), nil, &#34;repository&#34;))
-<span id="L263" class="ln">   263  </span>		})
-<span id="L264" class="ln">   264  </span>	})
-<span id="L265" class="ln">   265  </span>
-<span id="L266" class="ln">   266  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L267" class="ln">   267  </span>		t.Parallel()
-<span id="L268" class="ln">   268  </span>
-<span id="L269" class="ln">   269  </span>		t.Run(&#34;一覧取得に失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L270" class="ln">   270  </span>			t.Parallel()
-<span id="L271" class="ln">   271  </span>			ctrl := gomock.NewController(t)
-<span id="L272" class="ln">   272  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L273" class="ln">   273  </span>
-<span id="L274" class="ln">   274  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return(nil, xerrors.New(&#34;read failed&#34;))
-<span id="L275" class="ln">   275  </span>
-<span id="L276" class="ln">   276  </span>			g := newTestGenerator(t, fs)
-<span id="L277" class="ln">   277  </span>			require.Error(t, g.cleanupStaleGeneratedFiles(context.Background(), []string{&#34;user&#34;}, &#34;repository&#34;))
-<span id="L278" class="ln">   278  </span>		})
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>		t.Run(&#34;stale削除に失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L281" class="ln">   281  </span>			t.Parallel()
-<span id="L282" class="ln">   282  </span>			ctrl := gomock.NewController(t)
-<span id="L283" class="ln">   283  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L284" class="ln">   284  </span>
-<span id="L285" class="ln">   285  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{&#34;old_repository.gen.sql&#34;}, nil)
-<span id="L286" class="ln">   286  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;old_repository.gen.sql&#34;)).Return(xerrors.New(&#34;remove failed&#34;))
-<span id="L287" class="ln">   287  </span>
-<span id="L288" class="ln">   288  </span>			g := newTestGenerator(t, fs)
-<span id="L289" class="ln">   289  </span>			require.Error(t, g.cleanupStaleGeneratedFiles(context.Background(), []string{&#34;user&#34;}, &#34;repository&#34;))
-<span id="L290" class="ln">   290  </span>		})
-<span id="L291" class="ln">   291  </span>
-<span id="L292" class="ln">   292  </span>		t.Run(&#34;削除対象がgenRootDir外を指すとensureUnderDirで弾く&#34;, func(t *testing.T) {
-<span id="L293" class="ln">   293  </span>			t.Parallel()
-<span id="L294" class="ln">   294  </span>			ctrl := gomock.NewController(t)
-<span id="L295" class="ln">   295  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>			<span class="comment">// suffix 一致かつ keep 外だが、相対上昇で genRootDir の外へ抜けるため Remove 前に弾かれる。</span>
-<span id="L298" class="ln">   298  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{&#34;../../../../etc_repository.gen.sql&#34;}, nil)
-<span id="L299" class="ln">   299  </span>
-<span id="L300" class="ln">   300  </span>			g := newTestGenerator(t, fs)
-<span id="L301" class="ln">   301  </span>			require.Error(t, g.cleanupStaleGeneratedFiles(context.Background(), nil, &#34;repository&#34;))
-<span id="L302" class="ln">   302  </span>		})
-<span id="L303" class="ln">   303  </span>	})
-<span id="L304" class="ln">   304  </span>}
-<span id="L305" class="ln">   305  </span>
-<span id="L306" class="ln">   306  </span>func TestGenerator_ensureUnderDir(t *testing.T) {
-<span id="L307" class="ln">   307  </span>	t.Parallel()
-<span id="L308" class="ln">   308  </span>
-<span id="L309" class="ln">   309  </span>	g := newTestGenerator(t, nil)
-<span id="L310" class="ln">   310  </span>
-<span id="L311" class="ln">   311  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L312" class="ln">   312  </span>		t.Parallel()
-<span id="L313" class="ln">   313  </span>
-<span id="L314" class="ln">   314  </span>		t.Run(&#34;genRootDir配下のパスは許容される&#34;, func(t *testing.T) {
-<span id="L315" class="ln">   315  </span>			t.Parallel()
-<span id="L316" class="ln">   316  </span>			err := g.ensureUnderDir(filepath.Join(testWorkDir, &#34;database/gen&#34;, &#34;user_repository.gen.sql&#34;))
-<span id="L317" class="ln">   317  </span>			require.NoError(t, err)
-<span id="L318" class="ln">   318  </span>		})
-<span id="L319" class="ln">   319  </span>	})
-<span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L322" class="ln">   322  </span>		t.Parallel()
-<span id="L323" class="ln">   323  </span>
-<span id="L324" class="ln">   324  </span>		t.Run(&#34;genRootDirの外を指すパスはエラー&#34;, func(t *testing.T) {
-<span id="L325" class="ln">   325  </span>			t.Parallel()
-<span id="L326" class="ln">   326  </span>			err := g.ensureUnderDir(filepath.Join(testWorkDir, &#34;database&#34;, &#34;outside.sql&#34;))
-<span id="L327" class="ln">   327  </span>			require.ErrorIs(t, err, errPathOutsideBaseDir)
-<span id="L328" class="ln">   328  </span>		})
-<span id="L329" class="ln">   329  </span>	})
-<span id="L330" class="ln">   330  </span>}
-<span id="L331" class="ln">   331  </span>
-<span id="L332" class="ln">   332  </span>func TestGenerator_dmlTypeRootAbs(t *testing.T) {
-<span id="L333" class="ln">   333  </span>	t.Parallel()
-<span id="L334" class="ln">   334  </span>
-<span id="L335" class="ln">   335  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L336" class="ln">   336  </span>		t.Parallel()
-<span id="L337" class="ln">   337  </span>
-<span id="L338" class="ln">   338  </span>		t.Run(&#34;workDirとdmlRootDirとtypeを結合した絶対パスを返す&#34;, func(t *testing.T) {
-<span id="L339" class="ln">   339  </span>			t.Parallel()
-<span id="L340" class="ln">   340  </span>
-<span id="L341" class="ln">   341  </span>			g := newTestGenerator(t, nil)
-<span id="L342" class="ln">   342  </span>			assert.Equal(t, filepath.Join(testWorkDir, &#34;database/dml/&#34;, &#34;repository&#34;), g.dmlTypeRootAbs(&#34;repository&#34;))
-<span id="L343" class="ln">   343  </span>		})
-<span id="L344" class="ln">   344  </span>	})
-<span id="L345" class="ln">   345  </span>}
-<span id="L346" class="ln">   346  </span>
-<span id="L347" class="ln">   347  </span>func Test_resolveConcurrencyConst(t *testing.T) {
-<span id="L348" class="ln">   348  </span>	t.Parallel()
-<span id="L349" class="ln">   349  </span>
-<span id="L350" class="ln">   350  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L351" class="ln">   351  </span>		t.Parallel()
-<span id="L352" class="ln">   352  </span>
-<span id="L353" class="ln">   353  </span>		t.Run(&#34;実行時CPU数を下限と上限の範囲内にクランプして返す&#34;, func(t *testing.T) {
-<span id="L354" class="ln">   354  </span>			t.Parallel()
-<span id="L355" class="ln">   355  </span>
-<span id="L356" class="ln">   356  </span>			got := resolveConcurrencyConst()
-<span id="L357" class="ln">   357  </span>			assert.GreaterOrEqual(t, got, 1)
-<span id="L358" class="ln">   358  </span>			assert.LessOrEqual(t, got, maxSQLCConcurrency)
-<span id="L359" class="ln">   359  </span>		})
-<span id="L360" class="ln">   360  </span>	})
-<span id="L361" class="ln">   361  </span>}
-<span id="L362" class="ln">   362  </span>
-<span id="L363" class="ln">   363  </span>func Test_resolveConcurrency(t *testing.T) {
-<span id="L364" class="ln">   364  </span>	t.Parallel()
-<span id="L365" class="ln">   365  </span>
-<span id="L366" class="ln">   366  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L367" class="ln">   367  </span>		t.Parallel()
-<span id="L368" class="ln">   368  </span>
-<span id="L369" class="ln">   369  </span>		t.Run(&#34;CPU数が下限未満なら下限まで引き上げる&#34;, func(t *testing.T) {
-<span id="L370" class="ln">   370  </span>			t.Parallel()
-<span id="L371" class="ln">   371  </span>			assert.Equal(t, minSQLCConcurrency, resolveConcurrency(1))
-<span id="L372" class="ln">   372  </span>		})
-<span id="L373" class="ln">   373  </span>		t.Run(&#34;CPU数が下限と同じならそのまま&#34;, func(t *testing.T) {
-<span id="L374" class="ln">   374  </span>			t.Parallel()
-<span id="L375" class="ln">   375  </span>			assert.Equal(t, minSQLCConcurrency, resolveConcurrency(minSQLCConcurrency))
-<span id="L376" class="ln">   376  </span>		})
-<span id="L377" class="ln">   377  </span>		t.Run(&#34;CPU数が下限と上限の間ならそのCPU数を採用する&#34;, func(t *testing.T) {
-<span id="L378" class="ln">   378  </span>			t.Parallel()
-<span id="L379" class="ln">   379  </span>			assert.Equal(t, maxSQLCConcurrency-1, resolveConcurrency(maxSQLCConcurrency-1))
-<span id="L380" class="ln">   380  </span>		})
-<span id="L381" class="ln">   381  </span>		t.Run(&#34;CPU数が上限と同じなら上限を採用する&#34;, func(t *testing.T) {
-<span id="L382" class="ln">   382  </span>			t.Parallel()
-<span id="L383" class="ln">   383  </span>			assert.Equal(t, maxSQLCConcurrency, resolveConcurrency(maxSQLCConcurrency))
-<span id="L384" class="ln">   384  </span>		})
-<span id="L385" class="ln">   385  </span>		t.Run(&#34;CPU数が上限超過でも上限で頭打ちにする&#34;, func(t *testing.T) {
-<span id="L386" class="ln">   386  </span>			t.Parallel()
-<span id="L387" class="ln">   387  </span>			assert.Equal(t, maxSQLCConcurrency, resolveConcurrency(maxSQLCConcurrency+8))
-<span id="L388" class="ln">   388  </span>		})
-<span id="L389" class="ln">   389  </span>	})
-<span id="L390" class="ln">   390  </span>}
-<span id="L391" class="ln">   391  </span>
-<span id="L392" class="ln">   392  </span>func TestNewGenerator(t *testing.T) {
-<span id="L393" class="ln">   393  </span>	t.Parallel()
-<span id="L394" class="ln">   394  </span>
-<span id="L395" class="ln">   395  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L396" class="ln">   396  </span>		t.Parallel()
-<span id="L397" class="ln">   397  </span>
-<span id="L398" class="ln">   398  </span>		t.Run(&#34;workDirと固定ディレクトリ設定とFS注入が宣言通りに行われる&#34;, func(t *testing.T) {
-<span id="L399" class="ln">   399  </span>			t.Parallel()
-<span id="L400" class="ln">   400  </span>
-<span id="L401" class="ln">   401  </span>			g := NewGenerator(logging.NewTestLogger(t), &#34;/custom&#34;)
-<span id="L402" class="ln">   402  </span>			assert.Equal(t, &#34;/custom&#34;, g.workDir)
-<span id="L403" class="ln">   403  </span>			assert.Equal(t, &#34;database/dml/&#34;, g.dmlRootDir)
-<span id="L404" class="ln">   404  </span>			assert.Equal(t, &#34;database/gen/&#34;, g.genRootDir)
-<span id="L405" class="ln">   405  </span>			assert.Equal(t, 1, g.callerSkipCount)
-<span id="L406" class="ln">   406  </span>			assert.NotNil(t, g.fs)
-<span id="L407" class="ln">   407  </span>		})
-<span id="L408" class="ln">   408  </span>	})
-<span id="L409" class="ln">   409  </span>}
-<span id="L410" class="ln">   410  </span>
-<span id="L411" class="ln">   411  </span>func TestRunMerge(t *testing.T) {
-<span id="L412" class="ln">   412  </span>	t.Parallel()
-<span id="L413" class="ln">   413  </span>
-<span id="L414" class="ln">   414  </span>	const targetType = &#34;repository&#34;
-<span id="L415" class="ln">   415  </span>	typeRoot := filepath.Join(testWorkDir, &#34;database/dml/&#34;, targetType)
-<span id="L416" class="ln">   416  </span>	genAbs := filepath.Join(testWorkDir, &#34;database/gen/&#34;)
-<span id="L417" class="ln">   417  </span>
-<span id="L418" class="ln">   418  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L419" class="ln">   419  </span>		t.Parallel()
-<span id="L420" class="ln">   420  </span>
-<span id="L421" class="ln">   421  </span>		t.Run(&#34;カテゴリを並列マージしstaleを掃除する&#34;, func(t *testing.T) {
-<span id="L422" class="ln">   422  </span>			t.Parallel()
-<span id="L423" class="ln">   423  </span>			ctrl := gomock.NewController(t)
-<span id="L424" class="ln">   424  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L425" class="ln">   425  </span>
-<span id="L426" class="ln">   426  </span>			userDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, targetType, &#34;user&#34;)
-<span id="L427" class="ln">   427  </span>			userSQL := filepath.Join(userDir, &#34;001.sql&#34;)
-<span id="L428" class="ln">   428  </span>			dst := filepath.Join(genAbs, &#34;user_repository.gen.sql&#34;)
-<span id="L429" class="ln">   429  </span>
-<span id="L430" class="ln">   430  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return([]string{&#34;user&#34;}, nil)
-<span id="L431" class="ln">   431  </span>			fs.EXPECT().FindSQLFiles(userDir).Return([]string{userSQL}, nil)
-<span id="L432" class="ln">   432  </span>			fs.EXPECT().ReadFile(userSQL).Return([]byte(&#34;SELECT 1;&#34;), nil)
-<span id="L433" class="ln">   433  </span>			fs.EXPECT().WriteFile(dst, gomock.Any(), os.FileMode(genFilePerm)).Return(nil)
-<span id="L434" class="ln">   434  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{&#34;user_repository.gen.sql&#34;}, nil)
-<span id="L435" class="ln">   435  </span>
-<span id="L436" class="ln">   436  </span>			g := newTestGenerator(t, fs)
-<span id="L437" class="ln">   437  </span>			require.NoError(t, RunMerge(context.Background(), g, targetType))
-<span id="L438" class="ln">   438  </span>		})
-<span id="L439" class="ln">   439  </span>
-<span id="L440" class="ln">   440  </span>		t.Run(&#34;カテゴリ0件のときはcleanupのみ実行する&#34;, func(t *testing.T) {
-<span id="L441" class="ln">   441  </span>			t.Parallel()
-<span id="L442" class="ln">   442  </span>			ctrl := gomock.NewController(t)
-<span id="L443" class="ln">   443  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L444" class="ln">   444  </span>
-<span id="L445" class="ln">   445  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return(nil, nil)
-<span id="L446" class="ln">   446  </span>			<span class="comment">// 0件でも同 type の stale は全消し対象になる。</span>
-<span id="L447" class="ln">   447  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{&#34;old_repository.gen.sql&#34;}, nil)
-<span id="L448" class="ln">   448  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;old_repository.gen.sql&#34;)).Return(nil)
-<span id="L449" class="ln">   449  </span>
-<span id="L450" class="ln">   450  </span>			g := newTestGenerator(t, fs)
-<span id="L451" class="ln">   451  </span>			require.NoError(t, RunMerge(context.Background(), g, targetType))
-<span id="L452" class="ln">   452  </span>		})
-<span id="L453" class="ln">   453  </span>	})
-<span id="L454" class="ln">   454  </span>
-<span id="L455" class="ln">   455  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L456" class="ln">   456  </span>		t.Parallel()
-<span id="L457" class="ln">   457  </span>
-<span id="L458" class="ln">   458  </span>		t.Run(&#34;不正なtypeはFS操作前に弾く&#34;, func(t *testing.T) {
-<span id="L459" class="ln">   459  </span>			t.Parallel()
-<span id="L460" class="ln">   460  </span>			ctrl := gomock.NewController(t)
-<span id="L461" class="ln">   461  </span>			<span class="comment">// whitelist で弾かれるため ListSubDirNames 等の FS 呼び出しには一切到達しない。</span>
-<span id="L462" class="ln">   462  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L463" class="ln">   463  </span>
-<span id="L464" class="ln">   464  </span>			g := newTestGenerator(t, fs)
-<span id="L465" class="ln">   465  </span>			require.Error(t, RunMerge(context.Background(), g, &#34;invalid_type&#34;))
-<span id="L466" class="ln">   466  </span>		})
-<span id="L467" class="ln">   467  </span>
-<span id="L468" class="ln">   468  </span>		t.Run(&#34;カテゴリ一覧の取得に失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L469" class="ln">   469  </span>			t.Parallel()
-<span id="L470" class="ln">   470  </span>			ctrl := gomock.NewController(t)
-<span id="L471" class="ln">   471  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L472" class="ln">   472  </span>
-<span id="L473" class="ln">   473  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return(nil, xerrors.New(&#34;read dir failed&#34;))
-<span id="L474" class="ln">   474  </span>
-<span id="L475" class="ln">   475  </span>			g := newTestGenerator(t, fs)
-<span id="L476" class="ln">   476  </span>			require.Error(t, RunMerge(context.Background(), g, targetType))
-<span id="L477" class="ln">   477  </span>		})
-<span id="L478" class="ln">   478  </span>
-<span id="L479" class="ln">   479  </span>		t.Run(&#34;カテゴリ0件かつcleanupに失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L480" class="ln">   480  </span>			t.Parallel()
-<span id="L481" class="ln">   481  </span>			ctrl := gomock.NewController(t)
-<span id="L482" class="ln">   482  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L483" class="ln">   483  </span>
-<span id="L484" class="ln">   484  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return(nil, nil)
-<span id="L485" class="ln">   485  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return(nil, xerrors.New(&#34;list failed&#34;))
-<span id="L486" class="ln">   486  </span>
-<span id="L487" class="ln">   487  </span>			g := newTestGenerator(t, fs)
-<span id="L488" class="ln">   488  </span>			require.Error(t, RunMerge(context.Background(), g, targetType))
-<span id="L489" class="ln">   489  </span>		})
-<span id="L490" class="ln">   490  </span>
-<span id="L491" class="ln">   491  </span>		t.Run(&#34;カテゴリのマージに失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L492" class="ln">   492  </span>			t.Parallel()
-<span id="L493" class="ln">   493  </span>			ctrl := gomock.NewController(t)
-<span id="L494" class="ln">   494  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L495" class="ln">   495  </span>
-<span id="L496" class="ln">   496  </span>			userDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, targetType, &#34;user&#34;)
-<span id="L497" class="ln">   497  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return([]string{&#34;user&#34;}, nil)
-<span id="L498" class="ln">   498  </span>			fs.EXPECT().FindSQLFiles(userDir).Return(nil, xerrors.New(&#34;walk failed&#34;))
-<span id="L499" class="ln">   499  </span>
-<span id="L500" class="ln">   500  </span>			g := newTestGenerator(t, fs)
-<span id="L501" class="ln">   501  </span>			require.Error(t, RunMerge(context.Background(), g, targetType))
-<span id="L502" class="ln">   502  </span>		})
-<span id="L503" class="ln">   503  </span>
-<span id="L504" class="ln">   504  </span>		t.Run(&#34;ctxキャンセル済みならセマフォ取得に失敗しエラー&#34;, func(t *testing.T) {
-<span id="L505" class="ln">   505  </span>			t.Parallel()
-<span id="L506" class="ln">   506  </span>			ctrl := gomock.NewController(t)
-<span id="L507" class="ln">   507  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L508" class="ln">   508  </span>
-<span id="L509" class="ln">   509  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return([]string{&#34;user&#34;}, nil)
-<span id="L510" class="ln">   510  </span>
-<span id="L511" class="ln">   511  </span>			ctx, cancel := context.WithCancel(context.Background())
-<span id="L512" class="ln">   512  </span>			cancel()
-<span id="L513" class="ln">   513  </span>
-<span id="L514" class="ln">   514  </span>			g := newTestGenerator(t, fs)
-<span id="L515" class="ln">   515  </span>			require.Error(t, RunMerge(ctx, g, targetType))
-<span id="L516" class="ln">   516  </span>		})
-<span id="L517" class="ln">   517  </span>
-<span id="L518" class="ln">   518  </span>		t.Run(&#34;マージ成功後のcleanupに失敗するとエラー&#34;, func(t *testing.T) {
-<span id="L519" class="ln">   519  </span>			t.Parallel()
-<span id="L520" class="ln">   520  </span>			ctrl := gomock.NewController(t)
-<span id="L521" class="ln">   521  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
-<span id="L522" class="ln">   522  </span>
-<span id="L523" class="ln">   523  </span>			userDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, targetType, &#34;user&#34;)
-<span id="L524" class="ln">   524  </span>			userSQL := filepath.Join(userDir, &#34;001.sql&#34;)
-<span id="L525" class="ln">   525  </span>			dst := filepath.Join(genAbs, &#34;user_repository.gen.sql&#34;)
-<span id="L526" class="ln">   526  </span>
-<span id="L527" class="ln">   527  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return([]string{&#34;user&#34;}, nil)
-<span id="L528" class="ln">   528  </span>			fs.EXPECT().FindSQLFiles(userDir).Return([]string{userSQL}, nil)
-<span id="L529" class="ln">   529  </span>			fs.EXPECT().ReadFile(userSQL).Return([]byte(&#34;SELECT 1;&#34;), nil)
-<span id="L530" class="ln">   530  </span>			fs.EXPECT().WriteFile(dst, gomock.Any(), os.FileMode(genFilePerm)).Return(nil)
-<span id="L531" class="ln">   531  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return(nil, xerrors.New(&#34;list failed&#34;))
-<span id="L532" class="ln">   532  </span>
-<span id="L533" class="ln">   533  </span>			g := newTestGenerator(t, fs)
-<span id="L534" class="ln">   534  </span>			require.Error(t, RunMerge(context.Background(), g, targetType))
-<span id="L535" class="ln">   535  </span>		})
-<span id="L536" class="ln">   536  </span>	})
-<span id="L537" class="ln">   537  </span>}
-<span id="L538" class="ln">   538  </span>
-<span id="L539" class="ln">   539  </span>func Test_osFileSystem_ListSubDirNames(t *testing.T) {
-<span id="L540" class="ln">   540  </span>	t.Parallel()
-<span id="L541" class="ln">   541  </span>
-<span id="L542" class="ln">   542  </span>	var sut osFileSystem
-<span id="L543" class="ln">   543  </span>
-<span id="L544" class="ln">   544  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L545" class="ln">   545  </span>		t.Parallel()
-<span id="L546" class="ln">   546  </span>
-<span id="L547" class="ln">   547  </span>		t.Run(&#34;サブディレクトリ名を昇順で返しファイルは除外する&#34;, func(t *testing.T) {
-<span id="L548" class="ln">   548  </span>			t.Parallel()
-<span id="L549" class="ln">   549  </span>			base := t.TempDir()
-<span id="L550" class="ln">   550  </span>			require.NoError(t, os.Mkdir(filepath.Join(base, &#34;b&#34;), 0o750))
-<span id="L551" class="ln">   551  </span>			require.NoError(t, os.Mkdir(filepath.Join(base, &#34;a&#34;), 0o750))
-<span id="L552" class="ln">   552  </span>			require.NoError(t, os.WriteFile(filepath.Join(base, &#34;file.txt&#34;), []byte(&#34;x&#34;), 0o600))
-<span id="L553" class="ln">   553  </span>
-<span id="L554" class="ln">   554  </span>			dirs, err := sut.ListSubDirNames(base)
-<span id="L555" class="ln">   555  </span>			require.NoError(t, err)
-<span id="L556" class="ln">   556  </span>			assert.Equal(t, []string{&#34;a&#34;, &#34;b&#34;}, dirs)
-<span id="L557" class="ln">   557  </span>		})
-<span id="L558" class="ln">   558  </span>	})
-<span id="L559" class="ln">   559  </span>
-<span id="L560" class="ln">   560  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L561" class="ln">   561  </span>		t.Parallel()
-<span id="L562" class="ln">   562  </span>
-<span id="L563" class="ln">   563  </span>		t.Run(&#34;存在しないディレクトリはエラー&#34;, func(t *testing.T) {
-<span id="L564" class="ln">   564  </span>			t.Parallel()
-<span id="L565" class="ln">   565  </span>			_, err := sut.ListSubDirNames(filepath.Join(t.TempDir(), &#34;missing&#34;))
-<span id="L566" class="ln">   566  </span>			require.Error(t, err)
-<span id="L567" class="ln">   567  </span>		})
-<span id="L568" class="ln">   568  </span>	})
-<span id="L569" class="ln">   569  </span>}
-<span id="L570" class="ln">   570  </span>
-<span id="L571" class="ln">   571  </span>func Test_osFileSystem_ListGenFileNames(t *testing.T) {
-<span id="L572" class="ln">   572  </span>	t.Parallel()
-<span id="L573" class="ln">   573  </span>
-<span id="L574" class="ln">   574  </span>	var sut osFileSystem
-<span id="L575" class="ln">   575  </span>
-<span id="L576" class="ln">   576  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L577" class="ln">   577  </span>		t.Parallel()
-<span id="L578" class="ln">   578  </span>
-<span id="L579" class="ln">   579  </span>		t.Run(&#34;ファイル名のみ返しディレクトリは除外する&#34;, func(t *testing.T) {
-<span id="L580" class="ln">   580  </span>			t.Parallel()
-<span id="L581" class="ln">   581  </span>			dir := t.TempDir()
-<span id="L582" class="ln">   582  </span>			require.NoError(t, os.WriteFile(filepath.Join(dir, &#34;a.sql&#34;), []byte(&#34;x&#34;), 0o600))
-<span id="L583" class="ln">   583  </span>			require.NoError(t, os.Mkdir(filepath.Join(dir, &#34;sub&#34;), 0o750))
-<span id="L584" class="ln">   584  </span>
-<span id="L585" class="ln">   585  </span>			names, err := sut.ListGenFileNames(dir)
-<span id="L586" class="ln">   586  </span>			require.NoError(t, err)
-<span id="L587" class="ln">   587  </span>			assert.Equal(t, []string{&#34;a.sql&#34;}, names)
-<span id="L588" class="ln">   588  </span>		})
-<span id="L589" class="ln">   589  </span>	})
-<span id="L590" class="ln">   590  </span>
-<span id="L591" class="ln">   591  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L592" class="ln">   592  </span>		t.Parallel()
-<span id="L593" class="ln">   593  </span>
-<span id="L594" class="ln">   594  </span>		t.Run(&#34;存在しないディレクトリはエラー&#34;, func(t *testing.T) {
-<span id="L595" class="ln">   595  </span>			t.Parallel()
-<span id="L596" class="ln">   596  </span>			_, err := sut.ListGenFileNames(filepath.Join(t.TempDir(), &#34;missing&#34;))
-<span id="L597" class="ln">   597  </span>			require.Error(t, err)
-<span id="L598" class="ln">   598  </span>		})
-<span id="L599" class="ln">   599  </span>	})
-<span id="L600" class="ln">   600  </span>}
-<span id="L601" class="ln">   601  </span>
-<span id="L602" class="ln">   602  </span>func Test_osFileSystem_FindSQLFiles(t *testing.T) {
-<span id="L603" class="ln">   603  </span>	t.Parallel()
-<span id="L604" class="ln">   604  </span>
-<span id="L605" class="ln">   605  </span>	var sut osFileSystem
-<span id="L606" class="ln">   606  </span>
-<span id="L607" class="ln">   607  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L608" class="ln">   608  </span>		t.Parallel()
-<span id="L609" class="ln">   609  </span>
-<span id="L610" class="ln">   610  </span>		t.Run(&#34;配下のsqlのみ昇順で返す&#34;, func(t *testing.T) {
-<span id="L611" class="ln">   611  </span>			t.Parallel()
-<span id="L612" class="ln">   612  </span>			root := t.TempDir()
-<span id="L613" class="ln">   613  </span>			sub := filepath.Join(root, &#34;sub&#34;)
-<span id="L614" class="ln">   614  </span>			require.NoError(t, os.Mkdir(sub, 0o750))
-<span id="L615" class="ln">   615  </span>			require.NoError(t, os.WriteFile(filepath.Join(root, &#34;b.sql&#34;), []byte(&#34;x&#34;), 0o600))
-<span id="L616" class="ln">   616  </span>			require.NoError(t, os.WriteFile(filepath.Join(sub, &#34;a.sql&#34;), []byte(&#34;x&#34;), 0o600))
-<span id="L617" class="ln">   617  </span>			require.NoError(t, os.WriteFile(filepath.Join(root, &#34;note.txt&#34;), []byte(&#34;x&#34;), 0o600))
-<span id="L618" class="ln">   618  </span>
-<span id="L619" class="ln">   619  </span>			files, err := sut.FindSQLFiles(root)
-<span id="L620" class="ln">   620  </span>			require.NoError(t, err)
-<span id="L621" class="ln">   621  </span>			<span class="comment">// フルパス文字列の昇順（&#34;…/b.sql&#34; &lt; &#34;…/sub/a.sql&#34;）で返ること。</span>
-<span id="L622" class="ln">   622  </span>			assert.Equal(t, []string{filepath.Join(root, &#34;b.sql&#34;), filepath.Join(sub, &#34;a.sql&#34;)}, files)
-<span id="L623" class="ln">   623  </span>		})
-<span id="L624" class="ln">   624  </span>	})
-<span id="L625" class="ln">   625  </span>
-<span id="L626" class="ln">   626  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L627" class="ln">   627  </span>		t.Parallel()
-<span id="L628" class="ln">   628  </span>
-<span id="L629" class="ln">   629  </span>		t.Run(&#34;存在しないルートはエラー&#34;, func(t *testing.T) {
-<span id="L630" class="ln">   630  </span>			t.Parallel()
-<span id="L631" class="ln">   631  </span>			_, err := sut.FindSQLFiles(filepath.Join(t.TempDir(), &#34;missing&#34;))
-<span id="L632" class="ln">   632  </span>			require.Error(t, err)
-<span id="L633" class="ln">   633  </span>		})
-<span id="L634" class="ln">   634  </span>	})
-<span id="L635" class="ln">   635  </span>}
-<span id="L636" class="ln">   636  </span>
-<span id="L637" class="ln">   637  </span>func Test_osFileSystem_ReadFile(t *testing.T) {
-<span id="L638" class="ln">   638  </span>	t.Parallel()
-<span id="L639" class="ln">   639  </span>
-<span id="L640" class="ln">   640  </span>	var sut osFileSystem
-<span id="L641" class="ln">   641  </span>
-<span id="L642" class="ln">   642  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L643" class="ln">   643  </span>		t.Parallel()
-<span id="L644" class="ln">   644  </span>
-<span id="L645" class="ln">   645  </span>		t.Run(&#34;WriteFileで書き込んだ内容を読み戻せる&#34;, func(t *testing.T) {
-<span id="L646" class="ln">   646  </span>			t.Parallel()
-<span id="L647" class="ln">   647  </span>			p := filepath.Join(t.TempDir(), &#34;x.sql&#34;)
-<span id="L648" class="ln">   648  </span>			require.NoError(t, sut.WriteFile(p, []byte(&#34;SELECT 1;&#34;), 0o600))
-<span id="L649" class="ln">   649  </span>
-<span id="L650" class="ln">   650  </span>			b, err := sut.ReadFile(p)
-<span id="L651" class="ln">   651  </span>			require.NoError(t, err)
-<span id="L652" class="ln">   652  </span>			assert.Equal(t, &#34;SELECT 1;&#34;, string(b))
-<span id="L653" class="ln">   653  </span>		})
-<span id="L654" class="ln">   654  </span>	})
-<span id="L655" class="ln">   655  </span>
-<span id="L656" class="ln">   656  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L657" class="ln">   657  </span>		t.Parallel()
-<span id="L658" class="ln">   658  </span>
-<span id="L659" class="ln">   659  </span>		t.Run(&#34;存在しないファイルはエラー&#34;, func(t *testing.T) {
-<span id="L660" class="ln">   660  </span>			t.Parallel()
-<span id="L661" class="ln">   661  </span>			_, err := sut.ReadFile(filepath.Join(t.TempDir(), &#34;missing.sql&#34;))
-<span id="L662" class="ln">   662  </span>			require.Error(t, err)
-<span id="L663" class="ln">   663  </span>		})
-<span id="L664" class="ln">   664  </span>	})
-<span id="L665" class="ln">   665  </span>}
-<span id="L666" class="ln">   666  </span>
-<span id="L667" class="ln">   667  </span>func Test_osFileSystem_WriteFile(t *testing.T) {
-<span id="L668" class="ln">   668  </span>	t.Parallel()
-<span id="L669" class="ln">   669  </span>
-<span id="L670" class="ln">   670  </span>	var sut osFileSystem
-<span id="L671" class="ln">   671  </span>
-<span id="L672" class="ln">   672  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L673" class="ln">   673  </span>		t.Parallel()
-<span id="L674" class="ln">   674  </span>
-<span id="L675" class="ln">   675  </span>		t.Run(&#34;指定パスへ内容を書き込む&#34;, func(t *testing.T) {
-<span id="L676" class="ln">   676  </span>			t.Parallel()
-<span id="L677" class="ln">   677  </span>			p := filepath.Join(t.TempDir(), &#34;x.sql&#34;)
-<span id="L678" class="ln">   678  </span>			require.NoError(t, sut.WriteFile(p, []byte(&#34;SELECT 1;&#34;), 0o600))
-<span id="L679" class="ln">   679  </span>
-<span id="L680" class="ln">   680  </span>			b, err := os.ReadFile(p) <span class="comment">//nolint:gosec // テスト内で生成したパスのみ読み込む</span>
-<span id="L681" class="ln">   681  </span>			require.NoError(t, err)
-<span id="L682" class="ln">   682  </span>			assert.Equal(t, &#34;SELECT 1;&#34;, string(b))
-<span id="L683" class="ln">   683  </span>		})
-<span id="L684" class="ln">   684  </span>	})
-<span id="L685" class="ln">   685  </span>
-<span id="L686" class="ln">   686  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L687" class="ln">   687  </span>		t.Parallel()
-<span id="L688" class="ln">   688  </span>
-<span id="L689" class="ln">   689  </span>		t.Run(&#34;存在しない親ディレクトリへの書き込みはエラー&#34;, func(t *testing.T) {
-<span id="L690" class="ln">   690  </span>			t.Parallel()
-<span id="L691" class="ln">   691  </span>			p := filepath.Join(t.TempDir(), &#34;missing&#34;, &#34;x.sql&#34;)
-<span id="L692" class="ln">   692  </span>			require.Error(t, sut.WriteFile(p, []byte(&#34;x&#34;), 0o600))
-<span id="L693" class="ln">   693  </span>		})
-<span id="L694" class="ln">   694  </span>	})
-<span id="L695" class="ln">   695  </span>}
-<span id="L696" class="ln">   696  </span>
-<span id="L697" class="ln">   697  </span>func Test_osFileSystem_Remove(t *testing.T) {
-<span id="L698" class="ln">   698  </span>	t.Parallel()
-<span id="L699" class="ln">   699  </span>
-<span id="L700" class="ln">   700  </span>	var sut osFileSystem
-<span id="L701" class="ln">   701  </span>
-<span id="L702" class="ln">   702  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L703" class="ln">   703  </span>		t.Parallel()
-<span id="L704" class="ln">   704  </span>
-<span id="L705" class="ln">   705  </span>		t.Run(&#34;ファイルを削除できる&#34;, func(t *testing.T) {
-<span id="L706" class="ln">   706  </span>			t.Parallel()
-<span id="L707" class="ln">   707  </span>			p := filepath.Join(t.TempDir(), &#34;x.sql&#34;)
-<span id="L708" class="ln">   708  </span>			require.NoError(t, os.WriteFile(p, []byte(&#34;x&#34;), 0o600))
-<span id="L709" class="ln">   709  </span>			require.NoError(t, sut.Remove(p))
-<span id="L710" class="ln">   710  </span>
-<span id="L711" class="ln">   711  </span>			_, err := os.Stat(p)
-<span id="L712" class="ln">   712  </span>			require.Error(t, err)
-<span id="L713" class="ln">   713  </span>		})
-<span id="L714" class="ln">   714  </span>	})
-<span id="L715" class="ln">   715  </span>
-<span id="L716" class="ln">   716  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L717" class="ln">   717  </span>		t.Parallel()
-<span id="L718" class="ln">   718  </span>
-<span id="L719" class="ln">   719  </span>		t.Run(&#34;存在しないファイルはエラー&#34;, func(t *testing.T) {
-<span id="L720" class="ln">   720  </span>			t.Parallel()
-<span id="L721" class="ln">   721  </span>			require.Error(t, sut.Remove(filepath.Join(t.TempDir(), &#34;missing.sql&#34;)))
-<span id="L722" class="ln">   722  </span>		})
-<span id="L723" class="ln">   723  </span>	})
-<span id="L724" class="ln">   724  </span>}
-<span id="L725" class="ln">   725  </span>
+<span id="L101" class="ln">   101  </span>				},
+<span id="L102" class="ln">   102  </span>			)
+<span id="L103" class="ln">   103  </span>
+<span id="L104" class="ln">   104  </span>			g := newTestGenerator(t, fs)
+<span id="L105" class="ln">   105  </span>			require.NoError(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
+<span id="L106" class="ln">   106  </span>
+<span id="L107" class="ln">   107  </span>			got := string(written)
+<span id="L108" class="ln">   108  </span>			assert.Contains(t, got, &#34;SELECT 1;&#34;)
+<span id="L109" class="ln">   109  </span>			assert.Contains(t, got, &#34;SELECT 2;&#34;)
+<span id="L110" class="ln">   110  </span>			assert.Less(t, strings.Index(got, &#34;SELECT 1;&#34;), strings.Index(got, &#34;SELECT 2;&#34;))
+<span id="L111" class="ln">   111  </span>			assert.Contains(t, got, &#34;-- === source:&#34;)
+<span id="L112" class="ln">   112  </span>			<span class="comment">// 末尾改行が無い入力でも連結が壊れないこと。</span>
+<span id="L113" class="ln">   113  </span>			assert.NotContains(t, got, &#34;SELECT 1;SELECT 2;&#34;)
+<span id="L114" class="ln">   114  </span>		})
+<span id="L115" class="ln">   115  </span>
+<span id="L116" class="ln">   116  </span>		t.Run(&#34;SQLが空のカテゴリは生成物を削除する&#34;, func(t *testing.T) {
+<span id="L117" class="ln">   117  </span>			t.Parallel()
+<span id="L118" class="ln">   118  </span>			ctrl := gomock.NewController(t)
+<span id="L119" class="ln">   119  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L120" class="ln">   120  </span>
+<span id="L121" class="ln">   121  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return(nil, nil)
+<span id="L122" class="ln">   122  </span>			fs.EXPECT().Remove(dstPath).Return(nil)
+<span id="L123" class="ln">   123  </span>
+<span id="L124" class="ln">   124  </span>			g := newTestGenerator(t, fs)
+<span id="L125" class="ln">   125  </span>			require.NoError(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
+<span id="L126" class="ln">   126  </span>		})
+<span id="L127" class="ln">   127  </span>
+<span id="L128" class="ln">   128  </span>		t.Run(&#34;SQLが空で生成物が未存在ならNotExistを無視する&#34;, func(t *testing.T) {
+<span id="L129" class="ln">   129  </span>			t.Parallel()
+<span id="L130" class="ln">   130  </span>			ctrl := gomock.NewController(t)
+<span id="L131" class="ln">   131  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L132" class="ln">   132  </span>
+<span id="L133" class="ln">   133  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return(nil, nil)
+<span id="L134" class="ln">   134  </span>			fs.EXPECT().Remove(dstPath).Return(os.ErrNotExist)
+<span id="L135" class="ln">   135  </span>
+<span id="L136" class="ln">   136  </span>			g := newTestGenerator(t, fs)
+<span id="L137" class="ln">   137  </span>			require.NoError(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
+<span id="L138" class="ln">   138  </span>		})
+<span id="L139" class="ln">   139  </span>	})
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L142" class="ln">   142  </span>		t.Parallel()
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>		t.Run(&#34;入力走査に失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L145" class="ln">   145  </span>			t.Parallel()
+<span id="L146" class="ln">   146  </span>			ctrl := gomock.NewController(t)
+<span id="L147" class="ln">   147  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L148" class="ln">   148  </span>
+<span id="L149" class="ln">   149  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return(nil, xerrors.New(&#34;walk failed&#34;))
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>			g := newTestGenerator(t, fs)
+<span id="L152" class="ln">   152  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
+<span id="L153" class="ln">   153  </span>		})
+<span id="L154" class="ln">   154  </span>
+<span id="L155" class="ln">   155  </span>		t.Run(&#34;連結中のReadFileに失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L156" class="ln">   156  </span>			t.Parallel()
+<span id="L157" class="ln">   157  </span>			ctrl := gomock.NewController(t)
+<span id="L158" class="ln">   158  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L159" class="ln">   159  </span>
+<span id="L160" class="ln">   160  </span>			f1 := filepath.Join(dmlDir, &#34;001.sql&#34;)
+<span id="L161" class="ln">   161  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return([]string{f1}, nil)
+<span id="L162" class="ln">   162  </span>			fs.EXPECT().ReadFile(f1).Return(nil, xerrors.New(&#34;read failed&#34;))
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>			g := newTestGenerator(t, fs)
+<span id="L165" class="ln">   165  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
+<span id="L166" class="ln">   166  </span>		})
+<span id="L167" class="ln">   167  </span>
+<span id="L168" class="ln">   168  </span>		t.Run(&#34;連結結果の書き出しに失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L169" class="ln">   169  </span>			t.Parallel()
+<span id="L170" class="ln">   170  </span>			ctrl := gomock.NewController(t)
+<span id="L171" class="ln">   171  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>			f1 := filepath.Join(dmlDir, &#34;001.sql&#34;)
+<span id="L174" class="ln">   174  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return([]string{f1}, nil)
+<span id="L175" class="ln">   175  </span>			fs.EXPECT().ReadFile(f1).Return([]byte(&#34;SELECT 1;&#34;), nil)
+<span id="L176" class="ln">   176  </span>			fs.EXPECT().WriteFile(dstPath, gomock.Any(), os.FileMode(genFilePerm)).Return(xerrors.New(&#34;write failed&#34;))
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>			g := newTestGenerator(t, fs)
+<span id="L179" class="ln">   179  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
+<span id="L180" class="ln">   180  </span>		})
+<span id="L181" class="ln">   181  </span>
+<span id="L182" class="ln">   182  </span>		t.Run(&#34;SQLが空でRemoveがNotExist以外で失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L183" class="ln">   183  </span>			t.Parallel()
+<span id="L184" class="ln">   184  </span>			ctrl := gomock.NewController(t)
+<span id="L185" class="ln">   185  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>			fs.EXPECT().FindSQLFiles(dmlDir).Return(nil, nil)
+<span id="L188" class="ln">   188  </span>			fs.EXPECT().Remove(dstPath).Return(xerrors.New(&#34;remove failed&#34;))
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>			g := newTestGenerator(t, fs)
+<span id="L191" class="ln">   191  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), &#34;user&#34;, &#34;repository&#34;))
+<span id="L192" class="ln">   192  </span>		})
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span>		t.Run(&#34;SQLが空でも生成先がgenRootDir外ならensureUnderDirで弾く&#34;, func(t *testing.T) {
+<span id="L195" class="ln">   195  </span>			t.Parallel()
+<span id="L196" class="ln">   196  </span>			ctrl := gomock.NewController(t)
+<span id="L197" class="ln">   197  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L198" class="ln">   198  </span>
+<span id="L199" class="ln">   199  </span>			<span class="comment">// カテゴリ名に相対上昇を含めると生成先が genRootDir の外へ抜け、Remove 前に弾かれる。</span>
+<span id="L200" class="ln">   200  </span>			escCategory := &#34;../../../../etc&#34;
+<span id="L201" class="ln">   201  </span>			escDmlDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, &#34;repository&#34;, escCategory)
+<span id="L202" class="ln">   202  </span>			fs.EXPECT().FindSQLFiles(escDmlDir).Return(nil, nil)
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>			g := newTestGenerator(t, fs)
+<span id="L205" class="ln">   205  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), escCategory, &#34;repository&#34;))
+<span id="L206" class="ln">   206  </span>		})
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>		t.Run(&#34;SQLがあっても生成先がgenRootDir外なら連結前にensureUnderDirで弾く&#34;, func(t *testing.T) {
+<span id="L209" class="ln">   209  </span>			t.Parallel()
+<span id="L210" class="ln">   210  </span>			ctrl := gomock.NewController(t)
+<span id="L211" class="ln">   211  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>			<span class="comment">// 生成先が genRootDir の外を指すため、ReadFile/WriteFile へ進む前に弾かれる。</span>
+<span id="L214" class="ln">   214  </span>			escCategory := &#34;../../../../etc&#34;
+<span id="L215" class="ln">   215  </span>			escDmlDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, &#34;repository&#34;, escCategory)
+<span id="L216" class="ln">   216  </span>			fs.EXPECT().FindSQLFiles(escDmlDir).Return([]string{filepath.Join(escDmlDir, &#34;001.sql&#34;)}, nil)
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>			g := newTestGenerator(t, fs)
+<span id="L219" class="ln">   219  </span>			require.Error(t, g.buildCategorySQLFile(context.Background(), escCategory, &#34;repository&#34;))
+<span id="L220" class="ln">   220  </span>		})
+<span id="L221" class="ln">   221  </span>	})
+<span id="L222" class="ln">   222  </span>}
+<span id="L223" class="ln">   223  </span>
+<span id="L224" class="ln">   224  </span>func TestGenerator_cleanupStaleGeneratedFiles(t *testing.T) {
+<span id="L225" class="ln">   225  </span>	t.Parallel()
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span>	genAbs := filepath.Join(testWorkDir, &#34;database/gen/&#34;)
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L230" class="ln">   230  </span>		t.Parallel()
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>		t.Run(&#34;keep対象は残し同typeのstaleのみ削除し他typeは触らない&#34;, func(t *testing.T) {
+<span id="L233" class="ln">   233  </span>			t.Parallel()
+<span id="L234" class="ln">   234  </span>			ctrl := gomock.NewController(t)
+<span id="L235" class="ln">   235  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L236" class="ln">   236  </span>
+<span id="L237" class="ln">   237  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{
+<span id="L238" class="ln">   238  </span>				&#34;user_repository.gen.sql&#34;,   <span class="comment">// keep（今回の生成対象）</span>
+<span id="L239" class="ln">   239  </span>				&#34;old_repository.gen.sql&#34;,    <span class="comment">// stale（同 type・keep外）→削除</span>
+<span id="L240" class="ln">   240  </span>				&#34;foo_query_service.gen.sql&#34;, <span class="comment">// 別 type →非対象で温存</span>
+<span id="L241" class="ln">   241  </span>			}, nil)
+<span id="L242" class="ln">   242  </span>			<span class="comment">// 削除されるのは old_repository のみ（他が Remove されたら gomock が失敗させる）。</span>
+<span id="L243" class="ln">   243  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;old_repository.gen.sql&#34;)).Return(nil)
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>			g := newTestGenerator(t, fs)
+<span id="L246" class="ln">   246  </span>			require.NoError(t, g.cleanupStaleGeneratedFiles(context.Background(), []string{&#34;user&#34;}, &#34;repository&#34;))
+<span id="L247" class="ln">   247  </span>		})
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>		t.Run(&#34;カテゴリ0件のとき同typeの生成物を全削除し他typeは温存する&#34;, func(t *testing.T) {
+<span id="L250" class="ln">   250  </span>			t.Parallel()
+<span id="L251" class="ln">   251  </span>			ctrl := gomock.NewController(t)
+<span id="L252" class="ln">   252  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{
+<span id="L255" class="ln">   255  </span>				&#34;a_repository.gen.sql&#34;,
+<span id="L256" class="ln">   256  </span>				&#34;b_repository.gen.sql&#34;,
+<span id="L257" class="ln">   257  </span>				&#34;x_query_service.gen.sql&#34;,
+<span id="L258" class="ln">   258  </span>			}, nil)
+<span id="L259" class="ln">   259  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;a_repository.gen.sql&#34;)).Return(nil)
+<span id="L260" class="ln">   260  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;b_repository.gen.sql&#34;)).Return(nil)
+<span id="L261" class="ln">   261  </span>
+<span id="L262" class="ln">   262  </span>			g := newTestGenerator(t, fs)
+<span id="L263" class="ln">   263  </span>			require.NoError(t, g.cleanupStaleGeneratedFiles(context.Background(), nil, &#34;repository&#34;))
+<span id="L264" class="ln">   264  </span>		})
+<span id="L265" class="ln">   265  </span>	})
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L268" class="ln">   268  </span>		t.Parallel()
+<span id="L269" class="ln">   269  </span>
+<span id="L270" class="ln">   270  </span>		t.Run(&#34;一覧取得に失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L271" class="ln">   271  </span>			t.Parallel()
+<span id="L272" class="ln">   272  </span>			ctrl := gomock.NewController(t)
+<span id="L273" class="ln">   273  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L274" class="ln">   274  </span>
+<span id="L275" class="ln">   275  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return(nil, xerrors.New(&#34;read failed&#34;))
+<span id="L276" class="ln">   276  </span>
+<span id="L277" class="ln">   277  </span>			g := newTestGenerator(t, fs)
+<span id="L278" class="ln">   278  </span>			require.Error(t, g.cleanupStaleGeneratedFiles(context.Background(), []string{&#34;user&#34;}, &#34;repository&#34;))
+<span id="L279" class="ln">   279  </span>		})
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span>		t.Run(&#34;stale削除に失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L282" class="ln">   282  </span>			t.Parallel()
+<span id="L283" class="ln">   283  </span>			ctrl := gomock.NewController(t)
+<span id="L284" class="ln">   284  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L285" class="ln">   285  </span>
+<span id="L286" class="ln">   286  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{&#34;old_repository.gen.sql&#34;}, nil)
+<span id="L287" class="ln">   287  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;old_repository.gen.sql&#34;)).Return(xerrors.New(&#34;remove failed&#34;))
+<span id="L288" class="ln">   288  </span>
+<span id="L289" class="ln">   289  </span>			g := newTestGenerator(t, fs)
+<span id="L290" class="ln">   290  </span>			require.Error(t, g.cleanupStaleGeneratedFiles(context.Background(), []string{&#34;user&#34;}, &#34;repository&#34;))
+<span id="L291" class="ln">   291  </span>		})
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>		t.Run(&#34;削除対象がgenRootDir外を指すとensureUnderDirで弾く&#34;, func(t *testing.T) {
+<span id="L294" class="ln">   294  </span>			t.Parallel()
+<span id="L295" class="ln">   295  </span>			ctrl := gomock.NewController(t)
+<span id="L296" class="ln">   296  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span>			<span class="comment">// suffix 一致かつ keep 外だが、相対上昇で genRootDir の外へ抜けるため Remove 前に弾かれる。</span>
+<span id="L299" class="ln">   299  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{&#34;../../../../etc_repository.gen.sql&#34;}, nil)
+<span id="L300" class="ln">   300  </span>
+<span id="L301" class="ln">   301  </span>			g := newTestGenerator(t, fs)
+<span id="L302" class="ln">   302  </span>			require.Error(t, g.cleanupStaleGeneratedFiles(context.Background(), nil, &#34;repository&#34;))
+<span id="L303" class="ln">   303  </span>		})
+<span id="L304" class="ln">   304  </span>	})
+<span id="L305" class="ln">   305  </span>}
+<span id="L306" class="ln">   306  </span>
+<span id="L307" class="ln">   307  </span>func TestGenerator_ensureUnderDir(t *testing.T) {
+<span id="L308" class="ln">   308  </span>	t.Parallel()
+<span id="L309" class="ln">   309  </span>
+<span id="L310" class="ln">   310  </span>	g := newTestGenerator(t, nil)
+<span id="L311" class="ln">   311  </span>
+<span id="L312" class="ln">   312  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L313" class="ln">   313  </span>		t.Parallel()
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>		t.Run(&#34;genRootDir配下のパスは許容される&#34;, func(t *testing.T) {
+<span id="L316" class="ln">   316  </span>			t.Parallel()
+<span id="L317" class="ln">   317  </span>			err := g.ensureUnderDir(filepath.Join(testWorkDir, &#34;database/gen&#34;, &#34;user_repository.gen.sql&#34;))
+<span id="L318" class="ln">   318  </span>			require.NoError(t, err)
+<span id="L319" class="ln">   319  </span>		})
+<span id="L320" class="ln">   320  </span>	})
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L323" class="ln">   323  </span>		t.Parallel()
+<span id="L324" class="ln">   324  </span>
+<span id="L325" class="ln">   325  </span>		t.Run(&#34;genRootDirの外を指すパスはエラー&#34;, func(t *testing.T) {
+<span id="L326" class="ln">   326  </span>			t.Parallel()
+<span id="L327" class="ln">   327  </span>			err := g.ensureUnderDir(filepath.Join(testWorkDir, &#34;database&#34;, &#34;outside.sql&#34;))
+<span id="L328" class="ln">   328  </span>			require.ErrorIs(t, err, errPathOutsideBaseDir)
+<span id="L329" class="ln">   329  </span>		})
+<span id="L330" class="ln">   330  </span>	})
+<span id="L331" class="ln">   331  </span>}
+<span id="L332" class="ln">   332  </span>
+<span id="L333" class="ln">   333  </span>func TestGenerator_dmlTypeRootAbs(t *testing.T) {
+<span id="L334" class="ln">   334  </span>	t.Parallel()
+<span id="L335" class="ln">   335  </span>
+<span id="L336" class="ln">   336  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L337" class="ln">   337  </span>		t.Parallel()
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>		t.Run(&#34;workDirとdmlRootDirとtypeを結合した絶対パスを返す&#34;, func(t *testing.T) {
+<span id="L340" class="ln">   340  </span>			t.Parallel()
+<span id="L341" class="ln">   341  </span>
+<span id="L342" class="ln">   342  </span>			g := newTestGenerator(t, nil)
+<span id="L343" class="ln">   343  </span>			assert.Equal(t, filepath.Join(testWorkDir, &#34;database/dml/&#34;, &#34;repository&#34;), g.dmlTypeRootAbs(&#34;repository&#34;))
+<span id="L344" class="ln">   344  </span>		})
+<span id="L345" class="ln">   345  </span>	})
+<span id="L346" class="ln">   346  </span>}
+<span id="L347" class="ln">   347  </span>
+<span id="L348" class="ln">   348  </span>func Test_resolveConcurrencyConst(t *testing.T) {
+<span id="L349" class="ln">   349  </span>	t.Parallel()
+<span id="L350" class="ln">   350  </span>
+<span id="L351" class="ln">   351  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L352" class="ln">   352  </span>		t.Parallel()
+<span id="L353" class="ln">   353  </span>
+<span id="L354" class="ln">   354  </span>		t.Run(&#34;実行時CPU数を下限と上限の範囲内にクランプして返す&#34;, func(t *testing.T) {
+<span id="L355" class="ln">   355  </span>			t.Parallel()
+<span id="L356" class="ln">   356  </span>
+<span id="L357" class="ln">   357  </span>			got := resolveConcurrencyConst()
+<span id="L358" class="ln">   358  </span>			assert.GreaterOrEqual(t, got, 1)
+<span id="L359" class="ln">   359  </span>			assert.LessOrEqual(t, got, maxSQLCConcurrency)
+<span id="L360" class="ln">   360  </span>		})
+<span id="L361" class="ln">   361  </span>	})
+<span id="L362" class="ln">   362  </span>}
+<span id="L363" class="ln">   363  </span>
+<span id="L364" class="ln">   364  </span>func Test_resolveConcurrency(t *testing.T) {
+<span id="L365" class="ln">   365  </span>	t.Parallel()
+<span id="L366" class="ln">   366  </span>
+<span id="L367" class="ln">   367  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L368" class="ln">   368  </span>		t.Parallel()
+<span id="L369" class="ln">   369  </span>
+<span id="L370" class="ln">   370  </span>		t.Run(&#34;CPU数が下限未満なら下限まで引き上げる&#34;, func(t *testing.T) {
+<span id="L371" class="ln">   371  </span>			t.Parallel()
+<span id="L372" class="ln">   372  </span>			assert.Equal(t, minSQLCConcurrency, resolveConcurrency(1))
+<span id="L373" class="ln">   373  </span>		})
+<span id="L374" class="ln">   374  </span>		t.Run(&#34;CPU数が下限と同じならそのまま&#34;, func(t *testing.T) {
+<span id="L375" class="ln">   375  </span>			t.Parallel()
+<span id="L376" class="ln">   376  </span>			assert.Equal(t, minSQLCConcurrency, resolveConcurrency(minSQLCConcurrency))
+<span id="L377" class="ln">   377  </span>		})
+<span id="L378" class="ln">   378  </span>		t.Run(&#34;CPU数が下限と上限の間ならそのCPU数を採用する&#34;, func(t *testing.T) {
+<span id="L379" class="ln">   379  </span>			t.Parallel()
+<span id="L380" class="ln">   380  </span>			assert.Equal(t, maxSQLCConcurrency-1, resolveConcurrency(maxSQLCConcurrency-1))
+<span id="L381" class="ln">   381  </span>		})
+<span id="L382" class="ln">   382  </span>		t.Run(&#34;CPU数が上限と同じなら上限を採用する&#34;, func(t *testing.T) {
+<span id="L383" class="ln">   383  </span>			t.Parallel()
+<span id="L384" class="ln">   384  </span>			assert.Equal(t, maxSQLCConcurrency, resolveConcurrency(maxSQLCConcurrency))
+<span id="L385" class="ln">   385  </span>		})
+<span id="L386" class="ln">   386  </span>		t.Run(&#34;CPU数が上限超過でも上限で頭打ちにする&#34;, func(t *testing.T) {
+<span id="L387" class="ln">   387  </span>			t.Parallel()
+<span id="L388" class="ln">   388  </span>			assert.Equal(t, maxSQLCConcurrency, resolveConcurrency(maxSQLCConcurrency+8))
+<span id="L389" class="ln">   389  </span>		})
+<span id="L390" class="ln">   390  </span>	})
+<span id="L391" class="ln">   391  </span>}
+<span id="L392" class="ln">   392  </span>
+<span id="L393" class="ln">   393  </span>func TestNewGenerator(t *testing.T) {
+<span id="L394" class="ln">   394  </span>	t.Parallel()
+<span id="L395" class="ln">   395  </span>
+<span id="L396" class="ln">   396  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L397" class="ln">   397  </span>		t.Parallel()
+<span id="L398" class="ln">   398  </span>
+<span id="L399" class="ln">   399  </span>		t.Run(&#34;workDirと固定ディレクトリ設定とFS注入が宣言通りに行われる&#34;, func(t *testing.T) {
+<span id="L400" class="ln">   400  </span>			t.Parallel()
+<span id="L401" class="ln">   401  </span>
+<span id="L402" class="ln">   402  </span>			g := NewGenerator(logging.NewTestLogger(t), &#34;/custom&#34;)
+<span id="L403" class="ln">   403  </span>			assert.Equal(t, &#34;/custom&#34;, g.workDir)
+<span id="L404" class="ln">   404  </span>			assert.Equal(t, &#34;database/dml/&#34;, g.dmlRootDir)
+<span id="L405" class="ln">   405  </span>			assert.Equal(t, &#34;database/gen/&#34;, g.genRootDir)
+<span id="L406" class="ln">   406  </span>			assert.Equal(t, 1, g.callerSkipCount)
+<span id="L407" class="ln">   407  </span>			assert.NotNil(t, g.fs)
+<span id="L408" class="ln">   408  </span>		})
+<span id="L409" class="ln">   409  </span>	})
+<span id="L410" class="ln">   410  </span>}
+<span id="L411" class="ln">   411  </span>
+<span id="L412" class="ln">   412  </span>func TestRunMerge(t *testing.T) {
+<span id="L413" class="ln">   413  </span>	t.Parallel()
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>	const targetType = &#34;repository&#34;
+<span id="L416" class="ln">   416  </span>	typeRoot := filepath.Join(testWorkDir, &#34;database/dml/&#34;, targetType)
+<span id="L417" class="ln">   417  </span>	genAbs := filepath.Join(testWorkDir, &#34;database/gen/&#34;)
+<span id="L418" class="ln">   418  </span>
+<span id="L419" class="ln">   419  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L420" class="ln">   420  </span>		t.Parallel()
+<span id="L421" class="ln">   421  </span>
+<span id="L422" class="ln">   422  </span>		t.Run(&#34;カテゴリを並列マージしstaleを掃除する&#34;, func(t *testing.T) {
+<span id="L423" class="ln">   423  </span>			t.Parallel()
+<span id="L424" class="ln">   424  </span>			ctrl := gomock.NewController(t)
+<span id="L425" class="ln">   425  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L426" class="ln">   426  </span>
+<span id="L427" class="ln">   427  </span>			userDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, targetType, &#34;user&#34;)
+<span id="L428" class="ln">   428  </span>			userSQL := filepath.Join(userDir, &#34;001.sql&#34;)
+<span id="L429" class="ln">   429  </span>			dst := filepath.Join(genAbs, &#34;user_repository.gen.sql&#34;)
+<span id="L430" class="ln">   430  </span>
+<span id="L431" class="ln">   431  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return([]string{&#34;user&#34;}, nil)
+<span id="L432" class="ln">   432  </span>			fs.EXPECT().FindSQLFiles(userDir).Return([]string{userSQL}, nil)
+<span id="L433" class="ln">   433  </span>			fs.EXPECT().ReadFile(userSQL).Return([]byte(&#34;SELECT 1;&#34;), nil)
+<span id="L434" class="ln">   434  </span>			fs.EXPECT().WriteFile(dst, gomock.Any(), os.FileMode(genFilePerm)).Return(nil)
+<span id="L435" class="ln">   435  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{&#34;user_repository.gen.sql&#34;}, nil)
+<span id="L436" class="ln">   436  </span>
+<span id="L437" class="ln">   437  </span>			g := newTestGenerator(t, fs)
+<span id="L438" class="ln">   438  </span>			require.NoError(t, RunMerge(context.Background(), g, targetType))
+<span id="L439" class="ln">   439  </span>		})
+<span id="L440" class="ln">   440  </span>
+<span id="L441" class="ln">   441  </span>		t.Run(&#34;カテゴリ0件のときはcleanupのみ実行する&#34;, func(t *testing.T) {
+<span id="L442" class="ln">   442  </span>			t.Parallel()
+<span id="L443" class="ln">   443  </span>			ctrl := gomock.NewController(t)
+<span id="L444" class="ln">   444  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L445" class="ln">   445  </span>
+<span id="L446" class="ln">   446  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return(nil, nil)
+<span id="L447" class="ln">   447  </span>			<span class="comment">// 0件でも同 type の stale は全消し対象になる。</span>
+<span id="L448" class="ln">   448  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return([]string{&#34;old_repository.gen.sql&#34;}, nil)
+<span id="L449" class="ln">   449  </span>			fs.EXPECT().Remove(filepath.Join(genAbs, &#34;old_repository.gen.sql&#34;)).Return(nil)
+<span id="L450" class="ln">   450  </span>
+<span id="L451" class="ln">   451  </span>			g := newTestGenerator(t, fs)
+<span id="L452" class="ln">   452  </span>			require.NoError(t, RunMerge(context.Background(), g, targetType))
+<span id="L453" class="ln">   453  </span>		})
+<span id="L454" class="ln">   454  </span>	})
+<span id="L455" class="ln">   455  </span>
+<span id="L456" class="ln">   456  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L457" class="ln">   457  </span>		t.Parallel()
+<span id="L458" class="ln">   458  </span>
+<span id="L459" class="ln">   459  </span>		t.Run(&#34;不正なtypeはFS操作前に弾く&#34;, func(t *testing.T) {
+<span id="L460" class="ln">   460  </span>			t.Parallel()
+<span id="L461" class="ln">   461  </span>			ctrl := gomock.NewController(t)
+<span id="L462" class="ln">   462  </span>			<span class="comment">// whitelist で弾かれるため ListSubDirNames 等の FS 呼び出しには一切到達しない。</span>
+<span id="L463" class="ln">   463  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L464" class="ln">   464  </span>
+<span id="L465" class="ln">   465  </span>			g := newTestGenerator(t, fs)
+<span id="L466" class="ln">   466  </span>			require.Error(t, RunMerge(context.Background(), g, &#34;invalid_type&#34;))
+<span id="L467" class="ln">   467  </span>		})
+<span id="L468" class="ln">   468  </span>
+<span id="L469" class="ln">   469  </span>		t.Run(&#34;カテゴリ一覧の取得に失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L470" class="ln">   470  </span>			t.Parallel()
+<span id="L471" class="ln">   471  </span>			ctrl := gomock.NewController(t)
+<span id="L472" class="ln">   472  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L473" class="ln">   473  </span>
+<span id="L474" class="ln">   474  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return(nil, xerrors.New(&#34;read dir failed&#34;))
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span>			g := newTestGenerator(t, fs)
+<span id="L477" class="ln">   477  </span>			require.Error(t, RunMerge(context.Background(), g, targetType))
+<span id="L478" class="ln">   478  </span>		})
+<span id="L479" class="ln">   479  </span>
+<span id="L480" class="ln">   480  </span>		t.Run(&#34;カテゴリ0件かつcleanupに失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L481" class="ln">   481  </span>			t.Parallel()
+<span id="L482" class="ln">   482  </span>			ctrl := gomock.NewController(t)
+<span id="L483" class="ln">   483  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L484" class="ln">   484  </span>
+<span id="L485" class="ln">   485  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return(nil, nil)
+<span id="L486" class="ln">   486  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return(nil, xerrors.New(&#34;list failed&#34;))
+<span id="L487" class="ln">   487  </span>
+<span id="L488" class="ln">   488  </span>			g := newTestGenerator(t, fs)
+<span id="L489" class="ln">   489  </span>			require.Error(t, RunMerge(context.Background(), g, targetType))
+<span id="L490" class="ln">   490  </span>		})
+<span id="L491" class="ln">   491  </span>
+<span id="L492" class="ln">   492  </span>		t.Run(&#34;カテゴリのマージに失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L493" class="ln">   493  </span>			t.Parallel()
+<span id="L494" class="ln">   494  </span>			ctrl := gomock.NewController(t)
+<span id="L495" class="ln">   495  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L496" class="ln">   496  </span>
+<span id="L497" class="ln">   497  </span>			userDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, targetType, &#34;user&#34;)
+<span id="L498" class="ln">   498  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return([]string{&#34;user&#34;}, nil)
+<span id="L499" class="ln">   499  </span>			fs.EXPECT().FindSQLFiles(userDir).Return(nil, xerrors.New(&#34;walk failed&#34;))
+<span id="L500" class="ln">   500  </span>
+<span id="L501" class="ln">   501  </span>			g := newTestGenerator(t, fs)
+<span id="L502" class="ln">   502  </span>			require.Error(t, RunMerge(context.Background(), g, targetType))
+<span id="L503" class="ln">   503  </span>		})
+<span id="L504" class="ln">   504  </span>
+<span id="L505" class="ln">   505  </span>		t.Run(&#34;ctxキャンセル済みならセマフォ取得に失敗しエラー&#34;, func(t *testing.T) {
+<span id="L506" class="ln">   506  </span>			t.Parallel()
+<span id="L507" class="ln">   507  </span>			ctrl := gomock.NewController(t)
+<span id="L508" class="ln">   508  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L509" class="ln">   509  </span>
+<span id="L510" class="ln">   510  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return([]string{&#34;user&#34;}, nil)
+<span id="L511" class="ln">   511  </span>
+<span id="L512" class="ln">   512  </span>			ctx, cancel := context.WithCancel(context.Background())
+<span id="L513" class="ln">   513  </span>			cancel()
+<span id="L514" class="ln">   514  </span>
+<span id="L515" class="ln">   515  </span>			g := newTestGenerator(t, fs)
+<span id="L516" class="ln">   516  </span>			require.Error(t, RunMerge(ctx, g, targetType))
+<span id="L517" class="ln">   517  </span>		})
+<span id="L518" class="ln">   518  </span>
+<span id="L519" class="ln">   519  </span>		t.Run(&#34;マージ成功後のcleanupに失敗するとエラー&#34;, func(t *testing.T) {
+<span id="L520" class="ln">   520  </span>			t.Parallel()
+<span id="L521" class="ln">   521  </span>			ctrl := gomock.NewController(t)
+<span id="L522" class="ln">   522  </span>			fs := mock_mergedml.NewMockFileSystem(ctrl)
+<span id="L523" class="ln">   523  </span>
+<span id="L524" class="ln">   524  </span>			userDir := filepath.Join(testWorkDir, &#34;database/dml/&#34;, targetType, &#34;user&#34;)
+<span id="L525" class="ln">   525  </span>			userSQL := filepath.Join(userDir, &#34;001.sql&#34;)
+<span id="L526" class="ln">   526  </span>			dst := filepath.Join(genAbs, &#34;user_repository.gen.sql&#34;)
+<span id="L527" class="ln">   527  </span>
+<span id="L528" class="ln">   528  </span>			fs.EXPECT().ListSubDirNames(typeRoot).Return([]string{&#34;user&#34;}, nil)
+<span id="L529" class="ln">   529  </span>			fs.EXPECT().FindSQLFiles(userDir).Return([]string{userSQL}, nil)
+<span id="L530" class="ln">   530  </span>			fs.EXPECT().ReadFile(userSQL).Return([]byte(&#34;SELECT 1;&#34;), nil)
+<span id="L531" class="ln">   531  </span>			fs.EXPECT().WriteFile(dst, gomock.Any(), os.FileMode(genFilePerm)).Return(nil)
+<span id="L532" class="ln">   532  </span>			fs.EXPECT().ListGenFileNames(genAbs).Return(nil, xerrors.New(&#34;list failed&#34;))
+<span id="L533" class="ln">   533  </span>
+<span id="L534" class="ln">   534  </span>			g := newTestGenerator(t, fs)
+<span id="L535" class="ln">   535  </span>			require.Error(t, RunMerge(context.Background(), g, targetType))
+<span id="L536" class="ln">   536  </span>		})
+<span id="L537" class="ln">   537  </span>	})
+<span id="L538" class="ln">   538  </span>}
+<span id="L539" class="ln">   539  </span>
+<span id="L540" class="ln">   540  </span>func Test_osFileSystem_ListSubDirNames(t *testing.T) {
+<span id="L541" class="ln">   541  </span>	t.Parallel()
+<span id="L542" class="ln">   542  </span>
+<span id="L543" class="ln">   543  </span>	var sut osFileSystem
+<span id="L544" class="ln">   544  </span>
+<span id="L545" class="ln">   545  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L546" class="ln">   546  </span>		t.Parallel()
+<span id="L547" class="ln">   547  </span>
+<span id="L548" class="ln">   548  </span>		t.Run(&#34;サブディレクトリ名を昇順で返しファイルは除外する&#34;, func(t *testing.T) {
+<span id="L549" class="ln">   549  </span>			t.Parallel()
+<span id="L550" class="ln">   550  </span>			base := t.TempDir()
+<span id="L551" class="ln">   551  </span>			require.NoError(t, os.Mkdir(filepath.Join(base, &#34;b&#34;), 0o750))
+<span id="L552" class="ln">   552  </span>			require.NoError(t, os.Mkdir(filepath.Join(base, &#34;a&#34;), 0o750))
+<span id="L553" class="ln">   553  </span>			require.NoError(t, os.WriteFile(filepath.Join(base, &#34;file.txt&#34;), []byte(&#34;x&#34;), 0o600))
+<span id="L554" class="ln">   554  </span>
+<span id="L555" class="ln">   555  </span>			dirs, err := sut.ListSubDirNames(base)
+<span id="L556" class="ln">   556  </span>			require.NoError(t, err)
+<span id="L557" class="ln">   557  </span>			assert.Equal(t, []string{&#34;a&#34;, &#34;b&#34;}, dirs)
+<span id="L558" class="ln">   558  </span>		})
+<span id="L559" class="ln">   559  </span>	})
+<span id="L560" class="ln">   560  </span>
+<span id="L561" class="ln">   561  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L562" class="ln">   562  </span>		t.Parallel()
+<span id="L563" class="ln">   563  </span>
+<span id="L564" class="ln">   564  </span>		t.Run(&#34;存在しないディレクトリはエラー&#34;, func(t *testing.T) {
+<span id="L565" class="ln">   565  </span>			t.Parallel()
+<span id="L566" class="ln">   566  </span>			_, err := sut.ListSubDirNames(filepath.Join(t.TempDir(), &#34;missing&#34;))
+<span id="L567" class="ln">   567  </span>			require.Error(t, err)
+<span id="L568" class="ln">   568  </span>		})
+<span id="L569" class="ln">   569  </span>	})
+<span id="L570" class="ln">   570  </span>}
+<span id="L571" class="ln">   571  </span>
+<span id="L572" class="ln">   572  </span>func Test_osFileSystem_ListGenFileNames(t *testing.T) {
+<span id="L573" class="ln">   573  </span>	t.Parallel()
+<span id="L574" class="ln">   574  </span>
+<span id="L575" class="ln">   575  </span>	var sut osFileSystem
+<span id="L576" class="ln">   576  </span>
+<span id="L577" class="ln">   577  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L578" class="ln">   578  </span>		t.Parallel()
+<span id="L579" class="ln">   579  </span>
+<span id="L580" class="ln">   580  </span>		t.Run(&#34;ファイル名のみ返しディレクトリは除外する&#34;, func(t *testing.T) {
+<span id="L581" class="ln">   581  </span>			t.Parallel()
+<span id="L582" class="ln">   582  </span>			dir := t.TempDir()
+<span id="L583" class="ln">   583  </span>			require.NoError(t, os.WriteFile(filepath.Join(dir, &#34;a.sql&#34;), []byte(&#34;x&#34;), 0o600))
+<span id="L584" class="ln">   584  </span>			require.NoError(t, os.Mkdir(filepath.Join(dir, &#34;sub&#34;), 0o750))
+<span id="L585" class="ln">   585  </span>
+<span id="L586" class="ln">   586  </span>			names, err := sut.ListGenFileNames(dir)
+<span id="L587" class="ln">   587  </span>			require.NoError(t, err)
+<span id="L588" class="ln">   588  </span>			assert.Equal(t, []string{&#34;a.sql&#34;}, names)
+<span id="L589" class="ln">   589  </span>		})
+<span id="L590" class="ln">   590  </span>	})
+<span id="L591" class="ln">   591  </span>
+<span id="L592" class="ln">   592  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L593" class="ln">   593  </span>		t.Parallel()
+<span id="L594" class="ln">   594  </span>
+<span id="L595" class="ln">   595  </span>		t.Run(&#34;存在しないディレクトリはエラー&#34;, func(t *testing.T) {
+<span id="L596" class="ln">   596  </span>			t.Parallel()
+<span id="L597" class="ln">   597  </span>			_, err := sut.ListGenFileNames(filepath.Join(t.TempDir(), &#34;missing&#34;))
+<span id="L598" class="ln">   598  </span>			require.Error(t, err)
+<span id="L599" class="ln">   599  </span>		})
+<span id="L600" class="ln">   600  </span>	})
+<span id="L601" class="ln">   601  </span>}
+<span id="L602" class="ln">   602  </span>
+<span id="L603" class="ln">   603  </span>func Test_osFileSystem_FindSQLFiles(t *testing.T) {
+<span id="L604" class="ln">   604  </span>	t.Parallel()
+<span id="L605" class="ln">   605  </span>
+<span id="L606" class="ln">   606  </span>	var sut osFileSystem
+<span id="L607" class="ln">   607  </span>
+<span id="L608" class="ln">   608  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L609" class="ln">   609  </span>		t.Parallel()
+<span id="L610" class="ln">   610  </span>
+<span id="L611" class="ln">   611  </span>		t.Run(&#34;配下のsqlのみ昇順で返す&#34;, func(t *testing.T) {
+<span id="L612" class="ln">   612  </span>			t.Parallel()
+<span id="L613" class="ln">   613  </span>			root := t.TempDir()
+<span id="L614" class="ln">   614  </span>			sub := filepath.Join(root, &#34;sub&#34;)
+<span id="L615" class="ln">   615  </span>			require.NoError(t, os.Mkdir(sub, 0o750))
+<span id="L616" class="ln">   616  </span>			require.NoError(t, os.WriteFile(filepath.Join(root, &#34;b.sql&#34;), []byte(&#34;x&#34;), 0o600))
+<span id="L617" class="ln">   617  </span>			require.NoError(t, os.WriteFile(filepath.Join(sub, &#34;a.sql&#34;), []byte(&#34;x&#34;), 0o600))
+<span id="L618" class="ln">   618  </span>			require.NoError(t, os.WriteFile(filepath.Join(root, &#34;note.txt&#34;), []byte(&#34;x&#34;), 0o600))
+<span id="L619" class="ln">   619  </span>
+<span id="L620" class="ln">   620  </span>			files, err := sut.FindSQLFiles(root)
+<span id="L621" class="ln">   621  </span>			require.NoError(t, err)
+<span id="L622" class="ln">   622  </span>			<span class="comment">// フルパス文字列の昇順（&#34;…/b.sql&#34; &lt; &#34;…/sub/a.sql&#34;）で返ること。</span>
+<span id="L623" class="ln">   623  </span>			assert.Equal(t, []string{filepath.Join(root, &#34;b.sql&#34;), filepath.Join(sub, &#34;a.sql&#34;)}, files)
+<span id="L624" class="ln">   624  </span>		})
+<span id="L625" class="ln">   625  </span>	})
+<span id="L626" class="ln">   626  </span>
+<span id="L627" class="ln">   627  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L628" class="ln">   628  </span>		t.Parallel()
+<span id="L629" class="ln">   629  </span>
+<span id="L630" class="ln">   630  </span>		t.Run(&#34;存在しないルートはエラー&#34;, func(t *testing.T) {
+<span id="L631" class="ln">   631  </span>			t.Parallel()
+<span id="L632" class="ln">   632  </span>			_, err := sut.FindSQLFiles(filepath.Join(t.TempDir(), &#34;missing&#34;))
+<span id="L633" class="ln">   633  </span>			require.Error(t, err)
+<span id="L634" class="ln">   634  </span>		})
+<span id="L635" class="ln">   635  </span>	})
+<span id="L636" class="ln">   636  </span>}
+<span id="L637" class="ln">   637  </span>
+<span id="L638" class="ln">   638  </span>func Test_osFileSystem_ReadFile(t *testing.T) {
+<span id="L639" class="ln">   639  </span>	t.Parallel()
+<span id="L640" class="ln">   640  </span>
+<span id="L641" class="ln">   641  </span>	var sut osFileSystem
+<span id="L642" class="ln">   642  </span>
+<span id="L643" class="ln">   643  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L644" class="ln">   644  </span>		t.Parallel()
+<span id="L645" class="ln">   645  </span>
+<span id="L646" class="ln">   646  </span>		t.Run(&#34;WriteFileで書き込んだ内容を読み戻せる&#34;, func(t *testing.T) {
+<span id="L647" class="ln">   647  </span>			t.Parallel()
+<span id="L648" class="ln">   648  </span>			p := filepath.Join(t.TempDir(), &#34;x.sql&#34;)
+<span id="L649" class="ln">   649  </span>			require.NoError(t, sut.WriteFile(p, []byte(&#34;SELECT 1;&#34;), 0o600))
+<span id="L650" class="ln">   650  </span>
+<span id="L651" class="ln">   651  </span>			b, err := sut.ReadFile(p)
+<span id="L652" class="ln">   652  </span>			require.NoError(t, err)
+<span id="L653" class="ln">   653  </span>			assert.Equal(t, &#34;SELECT 1;&#34;, string(b))
+<span id="L654" class="ln">   654  </span>		})
+<span id="L655" class="ln">   655  </span>	})
+<span id="L656" class="ln">   656  </span>
+<span id="L657" class="ln">   657  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L658" class="ln">   658  </span>		t.Parallel()
+<span id="L659" class="ln">   659  </span>
+<span id="L660" class="ln">   660  </span>		t.Run(&#34;存在しないファイルはエラー&#34;, func(t *testing.T) {
+<span id="L661" class="ln">   661  </span>			t.Parallel()
+<span id="L662" class="ln">   662  </span>			_, err := sut.ReadFile(filepath.Join(t.TempDir(), &#34;missing.sql&#34;))
+<span id="L663" class="ln">   663  </span>			require.Error(t, err)
+<span id="L664" class="ln">   664  </span>		})
+<span id="L665" class="ln">   665  </span>	})
+<span id="L666" class="ln">   666  </span>}
+<span id="L667" class="ln">   667  </span>
+<span id="L668" class="ln">   668  </span>func Test_osFileSystem_WriteFile(t *testing.T) {
+<span id="L669" class="ln">   669  </span>	t.Parallel()
+<span id="L670" class="ln">   670  </span>
+<span id="L671" class="ln">   671  </span>	var sut osFileSystem
+<span id="L672" class="ln">   672  </span>
+<span id="L673" class="ln">   673  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L674" class="ln">   674  </span>		t.Parallel()
+<span id="L675" class="ln">   675  </span>
+<span id="L676" class="ln">   676  </span>		t.Run(&#34;指定パスへ内容を書き込む&#34;, func(t *testing.T) {
+<span id="L677" class="ln">   677  </span>			t.Parallel()
+<span id="L678" class="ln">   678  </span>			p := filepath.Join(t.TempDir(), &#34;x.sql&#34;)
+<span id="L679" class="ln">   679  </span>			require.NoError(t, sut.WriteFile(p, []byte(&#34;SELECT 1;&#34;), 0o600))
+<span id="L680" class="ln">   680  </span>
+<span id="L681" class="ln">   681  </span>			b, err := os.ReadFile(p) <span class="comment">//nolint:gosec // テスト内で生成したパスのみ読み込む</span>
+<span id="L682" class="ln">   682  </span>			require.NoError(t, err)
+<span id="L683" class="ln">   683  </span>			assert.Equal(t, &#34;SELECT 1;&#34;, string(b))
+<span id="L684" class="ln">   684  </span>		})
+<span id="L685" class="ln">   685  </span>	})
+<span id="L686" class="ln">   686  </span>
+<span id="L687" class="ln">   687  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L688" class="ln">   688  </span>		t.Parallel()
+<span id="L689" class="ln">   689  </span>
+<span id="L690" class="ln">   690  </span>		t.Run(&#34;存在しない親ディレクトリへの書き込みはエラー&#34;, func(t *testing.T) {
+<span id="L691" class="ln">   691  </span>			t.Parallel()
+<span id="L692" class="ln">   692  </span>			p := filepath.Join(t.TempDir(), &#34;missing&#34;, &#34;x.sql&#34;)
+<span id="L693" class="ln">   693  </span>			require.Error(t, sut.WriteFile(p, []byte(&#34;x&#34;), 0o600))
+<span id="L694" class="ln">   694  </span>		})
+<span id="L695" class="ln">   695  </span>	})
+<span id="L696" class="ln">   696  </span>}
+<span id="L697" class="ln">   697  </span>
+<span id="L698" class="ln">   698  </span>func Test_osFileSystem_Remove(t *testing.T) {
+<span id="L699" class="ln">   699  </span>	t.Parallel()
+<span id="L700" class="ln">   700  </span>
+<span id="L701" class="ln">   701  </span>	var sut osFileSystem
+<span id="L702" class="ln">   702  </span>
+<span id="L703" class="ln">   703  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L704" class="ln">   704  </span>		t.Parallel()
+<span id="L705" class="ln">   705  </span>
+<span id="L706" class="ln">   706  </span>		t.Run(&#34;ファイルを削除できる&#34;, func(t *testing.T) {
+<span id="L707" class="ln">   707  </span>			t.Parallel()
+<span id="L708" class="ln">   708  </span>			p := filepath.Join(t.TempDir(), &#34;x.sql&#34;)
+<span id="L709" class="ln">   709  </span>			require.NoError(t, os.WriteFile(p, []byte(&#34;x&#34;), 0o600))
+<span id="L710" class="ln">   710  </span>			require.NoError(t, sut.Remove(p))
+<span id="L711" class="ln">   711  </span>
+<span id="L712" class="ln">   712  </span>			_, err := os.Stat(p)
+<span id="L713" class="ln">   713  </span>			require.Error(t, err)
+<span id="L714" class="ln">   714  </span>		})
+<span id="L715" class="ln">   715  </span>	})
+<span id="L716" class="ln">   716  </span>
+<span id="L717" class="ln">   717  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L718" class="ln">   718  </span>		t.Parallel()
+<span id="L719" class="ln">   719  </span>
+<span id="L720" class="ln">   720  </span>		t.Run(&#34;存在しないファイルはエラー&#34;, func(t *testing.T) {
+<span id="L721" class="ln">   721  </span>			t.Parallel()
+<span id="L722" class="ln">   722  </span>			require.Error(t, sut.Remove(filepath.Join(t.TempDir(), &#34;missing.sql&#34;)))
+<span id="L723" class="ln">   723  </span>		})
+<span id="L724" class="ln">   724  </span>	})
+<span id="L725" class="ln">   725  </span>}
+<span id="L726" class="ln">   726  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/cli/mergedml/merge_dml_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -133,592 +133,635 @@
 <span id="L76" class="ln">    76  </span>		&#34;graphify-out/manifest.json&#34;: fmt.Sprintf(
 <span id="L77" class="ln">    77  </span>			`{&#34;README.md&#34;:{&#34;ast_hash&#34;:&#34;%[1]s&#34;,&#34;semantic_hash&#34;:&#34;%[1]s&#34;},`+
 <span id="L78" class="ln">    78  </span>				`&#34;docs/architecture.md&#34;:{&#34;ast_hash&#34;:&#34;%[1]s&#34;,&#34;semantic_hash&#34;:&#34;%[1]s&#34;}}`,
-<span id="L79" class="ln">    79  </span>			digest(extracted)),
-<span id="L80" class="ln">    80  </span>		&#34;README.md&#34;:            edited,
-<span id="L81" class="ln">    81  </span>		&#34;docs/architecture.md&#34;: extracted,
-<span id="L82" class="ln">    82  </span>		&#34;.graphifyignore&#34;:      &#34;&#34;,
-<span id="L83" class="ln">    83  </span>	}
-<span id="L84" class="ln">    84  </span>
-<span id="L85" class="ln">    85  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L86" class="ln">    86  </span>		t.Run(&#34;内容が変わったドキュメントだけを未処理として数える&#34;, func(t *testing.T) {
-<span id="L87" class="ln">    87  </span>			buffer := captureLog(t)
-<span id="L88" class="ln">    88  </span>
-<span id="L89" class="ln">    89  </span>			err := run(nil, staticRead(corpus), staticGit(baseline+&#34;\n&#34;, &#34;12\t3\tREADME.md\n&#34;))
-<span id="L90" class="ln">    90  </span>
-<span id="L91" class="ln">    91  </span>			require.NoError(t, err)
-<span id="L92" class="ln">    92  </span>			assert.Contains(t, buffer.String(), &#34;未処理 1 ファイル / 15 行&#34;)
-<span id="L93" class="ln">    93  </span>			assert.Contains(t, buffer.String(), &#34;README.md&#34;)
-<span id="L94" class="ln">    94  </span>			assert.NotContains(t, buffer.String(), &#34;docs/architecture.md&#34;)
-<span id="L95" class="ln">    95  </span>		})
-<span id="L96" class="ln">    96  </span>
-<span id="L97" class="ln">    97  </span>		t.Run(&#34;全て抽出済みなら未処理なしと報告する&#34;, func(t *testing.T) {
-<span id="L98" class="ln">    98  </span>			buffer := captureLog(t)
-<span id="L99" class="ln">    99  </span>			clean := map[string]string{
-<span id="L100" class="ln">   100  </span>				&#34;graphify-out/manifest.json&#34;: fmt.Sprintf(
-<span id="L101" class="ln">   101  </span>					`{&#34;README.md&#34;:{&#34;ast_hash&#34;:&#34;%[1]s&#34;,&#34;semantic_hash&#34;:&#34;%[1]s&#34;}}`, digest(extracted)),
-<span id="L102" class="ln">   102  </span>				&#34;README.md&#34;:       extracted,
-<span id="L103" class="ln">   103  </span>				&#34;.graphifyignore&#34;: &#34;&#34;,
-<span id="L104" class="ln">   104  </span>			}
-<span id="L105" class="ln">   105  </span>
-<span id="L106" class="ln">   106  </span>			err := run(nil, staticRead(clean), staticGit(baseline+&#34;\n&#34;, &#34;&#34;))
+<span id="L79" class="ln">    79  </span>			digest(extracted),
+<span id="L80" class="ln">    80  </span>		),
+<span id="L81" class="ln">    81  </span>		&#34;README.md&#34;:            edited,
+<span id="L82" class="ln">    82  </span>		&#34;docs/architecture.md&#34;: extracted,
+<span id="L83" class="ln">    83  </span>		&#34;.graphifyignore&#34;:      &#34;&#34;,
+<span id="L84" class="ln">    84  </span>	}
+<span id="L85" class="ln">    85  </span>
+<span id="L86" class="ln">    86  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L87" class="ln">    87  </span>		t.Run(&#34;内容が変わったドキュメントだけを未処理として数える&#34;, func(t *testing.T) {
+<span id="L88" class="ln">    88  </span>			buffer := captureLog(t)
+<span id="L89" class="ln">    89  </span>
+<span id="L90" class="ln">    90  </span>			err := run(nil, staticRead(corpus), staticGit(baseline+&#34;\n&#34;, &#34;12\t3\tREADME.md\n&#34;))
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>			require.NoError(t, err)
+<span id="L93" class="ln">    93  </span>			assert.Contains(t, buffer.String(), &#34;未処理 1 ファイル / 15 行&#34;)
+<span id="L94" class="ln">    94  </span>			assert.Contains(t, buffer.String(), &#34;README.md&#34;)
+<span id="L95" class="ln">    95  </span>			assert.NotContains(t, buffer.String(), &#34;docs/architecture.md&#34;)
+<span id="L96" class="ln">    96  </span>		})
+<span id="L97" class="ln">    97  </span>
+<span id="L98" class="ln">    98  </span>		t.Run(&#34;全て抽出済みなら未処理なしと報告する&#34;, func(t *testing.T) {
+<span id="L99" class="ln">    99  </span>			buffer := captureLog(t)
+<span id="L100" class="ln">   100  </span>			clean := map[string]string{
+<span id="L101" class="ln">   101  </span>				&#34;graphify-out/manifest.json&#34;: fmt.Sprintf(
+<span id="L102" class="ln">   102  </span>					`{&#34;README.md&#34;:{&#34;ast_hash&#34;:&#34;%[1]s&#34;,&#34;semantic_hash&#34;:&#34;%[1]s&#34;}}`, digest(extracted),
+<span id="L103" class="ln">   103  </span>				),
+<span id="L104" class="ln">   104  </span>				&#34;README.md&#34;:       extracted,
+<span id="L105" class="ln">   105  </span>				&#34;.graphifyignore&#34;: &#34;&#34;,
+<span id="L106" class="ln">   106  </span>			}
 <span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span>			require.NoError(t, err)
-<span id="L109" class="ln">   109  </span>			assert.Contains(t, buffer.String(), &#34;未処理はありません&#34;)
-<span id="L110" class="ln">   110  </span>		})
-<span id="L111" class="ln">   111  </span>
-<span id="L112" class="ln">   112  </span>		t.Run(&#34;基準コミットが無ければ落とさず件数だけ報告する&#34;, func(t *testing.T) {
-<span id="L113" class="ln">   113  </span>			buffer := captureLog(t)
-<span id="L114" class="ln">   114  </span>
-<span id="L115" class="ln">   115  </span>			<span class="comment">// 意味論抽出をまだ一度もコミットしていない状態。守るべき履歴が無いだけで異常ではない。</span>
-<span id="L116" class="ln">   116  </span>			err := run(nil, staticRead(corpus), staticGit(&#34;&#34;, &#34;&#34;))
-<span id="L117" class="ln">   117  </span>
-<span id="L118" class="ln">   118  </span>			require.NoError(t, err)
-<span id="L119" class="ln">   119  </span>			assert.Contains(t, buffer.String(), &#34;未処理 1 ファイル&#34;)
-<span id="L120" class="ln">   120  </span>			assert.Contains(t, buffer.String(), &#34;行数は測れません&#34;)
-<span id="L121" class="ln">   121  </span>		})
-<span id="L122" class="ln">   122  </span>
-<span id="L123" class="ln">   123  </span>		t.Run(&#34;消えたファイルは抽出し直す対象ではないので数えない&#34;, func(t *testing.T) {
-<span id="L124" class="ln">   124  </span>			buffer := captureLog(t)
-<span id="L125" class="ln">   125  </span>			missing := map[string]string{
-<span id="L126" class="ln">   126  </span>				&#34;graphify-out/manifest.json&#34;: `{&#34;deleted.md&#34;:{&#34;ast_hash&#34;:&#34;x&#34;,&#34;semantic_hash&#34;:&#34;x&#34;}}`,
-<span id="L127" class="ln">   127  </span>				&#34;.graphifyignore&#34;:            &#34;&#34;,
-<span id="L128" class="ln">   128  </span>			}
-<span id="L129" class="ln">   129  </span>
-<span id="L130" class="ln">   130  </span>			err := run(nil, staticRead(missing), staticGit(baseline+&#34;\n&#34;, &#34;&#34;))
+<span id="L108" class="ln">   108  </span>			err := run(nil, staticRead(clean), staticGit(baseline+&#34;\n&#34;, &#34;&#34;))
+<span id="L109" class="ln">   109  </span>
+<span id="L110" class="ln">   110  </span>			require.NoError(t, err)
+<span id="L111" class="ln">   111  </span>			assert.Contains(t, buffer.String(), &#34;未処理はありません&#34;)
+<span id="L112" class="ln">   112  </span>		})
+<span id="L113" class="ln">   113  </span>
+<span id="L114" class="ln">   114  </span>		t.Run(&#34;基準コミットが無ければ落とさず件数だけ報告する&#34;, func(t *testing.T) {
+<span id="L115" class="ln">   115  </span>			buffer := captureLog(t)
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>			<span class="comment">// 意味論抽出をまだ一度もコミットしていない状態。守るべき履歴が無いだけで異常ではない。</span>
+<span id="L118" class="ln">   118  </span>			err := run(nil, staticRead(corpus), staticGit(&#34;&#34;, &#34;&#34;))
+<span id="L119" class="ln">   119  </span>
+<span id="L120" class="ln">   120  </span>			require.NoError(t, err)
+<span id="L121" class="ln">   121  </span>			assert.Contains(t, buffer.String(), &#34;未処理 1 ファイル&#34;)
+<span id="L122" class="ln">   122  </span>			assert.Contains(t, buffer.String(), &#34;行数は測れません&#34;)
+<span id="L123" class="ln">   123  </span>		})
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>		t.Run(&#34;消えたファイルは抽出し直す対象ではないので数えない&#34;, func(t *testing.T) {
+<span id="L126" class="ln">   126  </span>			buffer := captureLog(t)
+<span id="L127" class="ln">   127  </span>			missing := map[string]string{
+<span id="L128" class="ln">   128  </span>				&#34;graphify-out/manifest.json&#34;: `{&#34;deleted.md&#34;:{&#34;ast_hash&#34;:&#34;x&#34;,&#34;semantic_hash&#34;:&#34;x&#34;}}`,
+<span id="L129" class="ln">   129  </span>				&#34;.graphifyignore&#34;:            &#34;&#34;,
+<span id="L130" class="ln">   130  </span>			}
 <span id="L131" class="ln">   131  </span>
-<span id="L132" class="ln">   132  </span>			require.NoError(t, err)
-<span id="L133" class="ln">   133  </span>			assert.Contains(t, buffer.String(), &#34;未処理はありません&#34;)
-<span id="L134" class="ln">   134  </span>		})
-<span id="L135" class="ln">   135  </span>
-<span id="L136" class="ln">   136  </span>		t.Run(&#34;ヘルプ要求は失敗にしない&#34;, func(t *testing.T) {
-<span id="L137" class="ln">   137  </span>			captureLog(t)
-<span id="L138" class="ln">   138  </span>
-<span id="L139" class="ln">   139  </span>			require.NoError(t, run([]string{&#34;-h&#34;}, staticRead(nil), staticGit(&#34;&#34;, &#34;&#34;)))
-<span id="L140" class="ln">   140  </span>		})
-<span id="L141" class="ln">   141  </span>	})
-<span id="L142" class="ln">   142  </span>
-<span id="L143" class="ln">   143  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L144" class="ln">   144  </span>		t.Run(&#34;manifestを読めなければ0件ではなくエラーにする&#34;, func(t *testing.T) {
-<span id="L145" class="ln">   145  </span>			captureLog(t)
-<span id="L146" class="ln">   146  </span>
-<span id="L147" class="ln">   147  </span>			err := run(nil, staticRead(nil), staticGit(&#34;&#34;, &#34;&#34;))
+<span id="L132" class="ln">   132  </span>			err := run(nil, staticRead(missing), staticGit(baseline+&#34;\n&#34;, &#34;&#34;))
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>			require.NoError(t, err)
+<span id="L135" class="ln">   135  </span>			assert.Contains(t, buffer.String(), &#34;未処理はありません&#34;)
+<span id="L136" class="ln">   136  </span>		})
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>		t.Run(&#34;ヘルプ要求は失敗にしない&#34;, func(t *testing.T) {
+<span id="L139" class="ln">   139  </span>			captureLog(t)
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span>			require.NoError(t, run([]string{&#34;-h&#34;}, staticRead(nil), staticGit(&#34;&#34;, &#34;&#34;)))
+<span id="L142" class="ln">   142  </span>		})
+<span id="L143" class="ln">   143  </span>	})
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L146" class="ln">   146  </span>		t.Run(&#34;manifestを読めなければ0件ではなくエラーにする&#34;, func(t *testing.T) {
+<span id="L147" class="ln">   147  </span>			captureLog(t)
 <span id="L148" class="ln">   148  </span>
-<span id="L149" class="ln">   149  </span>			require.ErrorIs(t, err, errManifestUnreadable)
-<span id="L150" class="ln">   150  </span>		})
-<span id="L151" class="ln">   151  </span>
-<span id="L152" class="ln">   152  </span>		t.Run(&#34;manifestが壊れていれば0件ではなくエラーにする&#34;, func(t *testing.T) {
-<span id="L153" class="ln">   153  </span>			captureLog(t)
-<span id="L154" class="ln">   154  </span>
-<span id="L155" class="ln">   155  </span>			err := run(nil, staticRead(map[string]string{&#34;graphify-out/manifest.json&#34;: &#34;{&#34;}), staticGit(&#34;&#34;, &#34;&#34;))
+<span id="L149" class="ln">   149  </span>			err := run(nil, staticRead(nil), staticGit(&#34;&#34;, &#34;&#34;))
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>			require.ErrorIs(t, err, errManifestUnreadable)
+<span id="L152" class="ln">   152  </span>		})
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span>		t.Run(&#34;manifestが壊れていれば0件ではなくエラーにする&#34;, func(t *testing.T) {
+<span id="L155" class="ln">   155  </span>			captureLog(t)
 <span id="L156" class="ln">   156  </span>
-<span id="L157" class="ln">   157  </span>			require.ErrorIs(t, err, errManifestUnreadable)
-<span id="L158" class="ln">   158  </span>		})
-<span id="L159" class="ln">   159  </span>
-<span id="L160" class="ln">   160  </span>		t.Run(&#34;差分を測れなければエラーにする&#34;, func(t *testing.T) {
-<span id="L161" class="ln">   161  </span>			captureLog(t)
-<span id="L162" class="ln">   162  </span>			sentinel := xerrors.New(&#34;bad revision&#34;)
-<span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span>			err := run(nil, staticRead(corpus), func(args ...string) (string, error) {
-<span id="L165" class="ln">   165  </span>				if args[0] == &#34;log&#34; {
-<span id="L166" class="ln">   166  </span>					return baseline + &#34;\n&#34;, nil
-<span id="L167" class="ln">   167  </span>				}
-<span id="L168" class="ln">   168  </span>
-<span id="L169" class="ln">   169  </span>				return &#34;&#34;, sentinel
-<span id="L170" class="ln">   170  </span>			})
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>			require.ErrorIs(t, err, sentinel)
-<span id="L173" class="ln">   173  </span>		})
-<span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>		t.Run(&#34;未知のフラグは失敗にする&#34;, func(t *testing.T) {
-<span id="L176" class="ln">   176  </span>			captureLog(t)
-<span id="L177" class="ln">   177  </span>
-<span id="L178" class="ln">   178  </span>			require.Error(t, run([]string{&#34;-unknown&#34;}, staticRead(corpus), staticGit(&#34;&#34;, &#34;&#34;)))
-<span id="L179" class="ln">   179  </span>		})
-<span id="L180" class="ln">   180  </span>	})
-<span id="L181" class="ln">   181  </span>}
-<span id="L182" class="ln">   182  </span>
-<span id="L183" class="ln">   183  </span>func Test_staleDocuments(t *testing.T) {
-<span id="L184" class="ln">   184  </span>	t.Parallel()
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span>	const body = &#34;content\n&#34;
+<span id="L157" class="ln">   157  </span>			err := run(nil, staticRead(map[string]string{&#34;graphify-out/manifest.json&#34;: &#34;{&#34;}), staticGit(&#34;&#34;, &#34;&#34;))
+<span id="L158" class="ln">   158  </span>
+<span id="L159" class="ln">   159  </span>			require.ErrorIs(t, err, errManifestUnreadable)
+<span id="L160" class="ln">   160  </span>		})
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>		t.Run(&#34;差分を測れなければエラーにする&#34;, func(t *testing.T) {
+<span id="L163" class="ln">   163  </span>			captureLog(t)
+<span id="L164" class="ln">   164  </span>			sentinel := xerrors.New(&#34;bad revision&#34;)
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>			err := run(nil, staticRead(corpus), func(args ...string) (string, error) {
+<span id="L167" class="ln">   167  </span>				if args[0] == &#34;log&#34; {
+<span id="L168" class="ln">   168  </span>					return baseline + &#34;\n&#34;, nil
+<span id="L169" class="ln">   169  </span>				}
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>				return &#34;&#34;, sentinel
+<span id="L172" class="ln">   172  </span>			})
+<span id="L173" class="ln">   173  </span>
+<span id="L174" class="ln">   174  </span>			require.ErrorIs(t, err, sentinel)
+<span id="L175" class="ln">   175  </span>		})
+<span id="L176" class="ln">   176  </span>
+<span id="L177" class="ln">   177  </span>		t.Run(&#34;未知のフラグは失敗にする&#34;, func(t *testing.T) {
+<span id="L178" class="ln">   178  </span>			captureLog(t)
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span>			require.Error(t, run([]string{&#34;-unknown&#34;}, staticRead(corpus), staticGit(&#34;&#34;, &#34;&#34;)))
+<span id="L181" class="ln">   181  </span>		})
+<span id="L182" class="ln">   182  </span>	})
+<span id="L183" class="ln">   183  </span>}
+<span id="L184" class="ln">   184  </span>
+<span id="L185" class="ln">   185  </span>func Test_staleDocuments(t *testing.T) {
+<span id="L186" class="ln">   186  </span>	t.Parallel()
 <span id="L187" class="ln">   187  </span>
-<span id="L188" class="ln">   188  </span>	manifest := func(entries string) map[string]string {
-<span id="L189" class="ln">   189  </span>		return map[string]string{&#34;m.json&#34;: entries}
-<span id="L190" class="ln">   190  </span>	}
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L193" class="ln">   193  </span>		t.Parallel()
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>		t.Run(&#34;graphifyignore のディレクトリ配下は数えない&#34;, func(t *testing.T) {
-<span id="L196" class="ln">   196  </span>			t.Parallel()
-<span id="L197" class="ln">   197  </span>			files := manifest(`{&#34;docs/godoc/index.html&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;},&#34;README.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;}}`)
-<span id="L198" class="ln">   198  </span>			files[&#34;docs/godoc/index.html&#34;] = body
-<span id="L199" class="ln">   199  </span>			files[&#34;README.md&#34;] = body
-<span id="L200" class="ln">   200  </span>			files[&#34;ignore&#34;] = &#34;docs/godoc/\n&#34;
-<span id="L201" class="ln">   201  </span>
-<span id="L202" class="ln">   202  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;ignore&#34;, staticRead(files))
+<span id="L188" class="ln">   188  </span>	const body = &#34;content\n&#34;
+<span id="L189" class="ln">   189  </span>
+<span id="L190" class="ln">   190  </span>	manifest := func(entries string) map[string]string {
+<span id="L191" class="ln">   191  </span>		return map[string]string{&#34;m.json&#34;: entries}
+<span id="L192" class="ln">   192  </span>	}
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L195" class="ln">   195  </span>		t.Parallel()
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>		t.Run(&#34;graphifyignore のディレクトリ配下は数えない&#34;, func(t *testing.T) {
+<span id="L198" class="ln">   198  </span>			t.Parallel()
+<span id="L199" class="ln">   199  </span>			files := manifest(`{&#34;docs/godoc/index.html&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;},&#34;README.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;}}`)
+<span id="L200" class="ln">   200  </span>			files[&#34;docs/godoc/index.html&#34;] = body
+<span id="L201" class="ln">   201  </span>			files[&#34;README.md&#34;] = body
+<span id="L202" class="ln">   202  </span>			files[&#34;ignore&#34;] = &#34;docs/godoc/\n&#34;
 <span id="L203" class="ln">   203  </span>
-<span id="L204" class="ln">   204  </span>			require.NoError(t, err)
-<span id="L205" class="ln">   205  </span>			assert.Equal(t, []string{&#34;README.md&#34;}, stale)
-<span id="L206" class="ln">   206  </span>		})
-<span id="L207" class="ln">   207  </span>
-<span id="L208" class="ln">   208  </span>		t.Run(&#34;graphifyignore の拡張子パターンは数えない&#34;, func(t *testing.T) {
-<span id="L209" class="ln">   209  </span>			t.Parallel()
-<span id="L210" class="ln">   210  </span>			files := manifest(`{&#34;docs/rules.ja.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;},&#34;docs/rules.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;}}`)
-<span id="L211" class="ln">   211  </span>			files[&#34;docs/rules.ja.md&#34;] = body
-<span id="L212" class="ln">   212  </span>			files[&#34;docs/rules.md&#34;] = body
-<span id="L213" class="ln">   213  </span>			files[&#34;ignore&#34;] = &#34;*.ja.md\n**/*.ja.md\n&#34;
-<span id="L214" class="ln">   214  </span>
-<span id="L215" class="ln">   215  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;ignore&#34;, staticRead(files))
+<span id="L204" class="ln">   204  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;ignore&#34;, staticRead(files))
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>			require.NoError(t, err)
+<span id="L207" class="ln">   207  </span>			assert.Equal(t, []string{&#34;README.md&#34;}, stale)
+<span id="L208" class="ln">   208  </span>		})
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>		t.Run(&#34;graphifyignore の拡張子パターンは数えない&#34;, func(t *testing.T) {
+<span id="L211" class="ln">   211  </span>			t.Parallel()
+<span id="L212" class="ln">   212  </span>			files := manifest(`{&#34;docs/rules.ja.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;},&#34;docs/rules.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;}}`)
+<span id="L213" class="ln">   213  </span>			files[&#34;docs/rules.ja.md&#34;] = body
+<span id="L214" class="ln">   214  </span>			files[&#34;docs/rules.md&#34;] = body
+<span id="L215" class="ln">   215  </span>			files[&#34;ignore&#34;] = &#34;*.ja.md\n**/*.ja.md\n&#34;
 <span id="L216" class="ln">   216  </span>
-<span id="L217" class="ln">   217  </span>			require.NoError(t, err)
-<span id="L218" class="ln">   218  </span>			assert.Equal(t, []string{&#34;docs/rules.md&#34;}, stale)
-<span id="L219" class="ln">   219  </span>		})
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>		t.Run(&#34;意味論の対象外の拡張子は数えない&#34;, func(t *testing.T) {
-<span id="L222" class="ln">   222  </span>			t.Parallel()
-<span id="L223" class="ln">   223  </span>			files := manifest(`{&#34;main.go&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;},&#34;README.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;}}`)
-<span id="L224" class="ln">   224  </span>			files[&#34;main.go&#34;] = body
-<span id="L225" class="ln">   225  </span>			files[&#34;README.md&#34;] = body
-<span id="L226" class="ln">   226  </span>			files[&#34;ignore&#34;] = &#34;&#34;
-<span id="L227" class="ln">   227  </span>
-<span id="L228" class="ln">   228  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;ignore&#34;, staticRead(files))
+<span id="L217" class="ln">   217  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;ignore&#34;, staticRead(files))
+<span id="L218" class="ln">   218  </span>
+<span id="L219" class="ln">   219  </span>			require.NoError(t, err)
+<span id="L220" class="ln">   220  </span>			assert.Equal(t, []string{&#34;docs/rules.md&#34;}, stale)
+<span id="L221" class="ln">   221  </span>		})
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>		t.Run(&#34;意味論の対象外の拡張子は数えない&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L225" class="ln">   225  </span>			files := manifest(`{&#34;main.go&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;},&#34;README.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;}}`)
+<span id="L226" class="ln">   226  </span>			files[&#34;main.go&#34;] = body
+<span id="L227" class="ln">   227  </span>			files[&#34;README.md&#34;] = body
+<span id="L228" class="ln">   228  </span>			files[&#34;ignore&#34;] = &#34;&#34;
 <span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			require.NoError(t, err)
-<span id="L231" class="ln">   231  </span>			assert.Equal(t, []string{&#34;README.md&#34;}, stale)
-<span id="L232" class="ln">   232  </span>		})
-<span id="L233" class="ln">   233  </span>
-<span id="L234" class="ln">   234  </span>		t.Run(&#34;graphifyignore が無くても除外なしで動く&#34;, func(t *testing.T) {
-<span id="L235" class="ln">   235  </span>			t.Parallel()
-<span id="L236" class="ln">   236  </span>			files := manifest(`{&#34;README.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;}}`)
-<span id="L237" class="ln">   237  </span>			files[&#34;README.md&#34;] = body
-<span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;absent&#34;, staticRead(files))
+<span id="L230" class="ln">   230  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;ignore&#34;, staticRead(files))
+<span id="L231" class="ln">   231  </span>
+<span id="L232" class="ln">   232  </span>			require.NoError(t, err)
+<span id="L233" class="ln">   233  </span>			assert.Equal(t, []string{&#34;README.md&#34;}, stale)
+<span id="L234" class="ln">   234  </span>		})
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>		t.Run(&#34;graphifyignore が無くても除外なしで動く&#34;, func(t *testing.T) {
+<span id="L237" class="ln">   237  </span>			t.Parallel()
+<span id="L238" class="ln">   238  </span>			files := manifest(`{&#34;README.md&#34;:{&#34;semantic_hash&#34;:&#34;stale&#34;}}`)
+<span id="L239" class="ln">   239  </span>			files[&#34;README.md&#34;] = body
 <span id="L240" class="ln">   240  </span>
-<span id="L241" class="ln">   241  </span>			require.NoError(t, err)
-<span id="L242" class="ln">   242  </span>			assert.Equal(t, []string{&#34;README.md&#34;}, stale)
-<span id="L243" class="ln">   243  </span>		})
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>		t.Run(&#34;semantic_hash が空なら未抽出として数える&#34;, func(t *testing.T) {
-<span id="L246" class="ln">   246  </span>			t.Parallel()
-<span id="L247" class="ln">   247  </span>			files := manifest(`{&#34;README.md&#34;:{&#34;semantic_hash&#34;:&#34;&#34;}}`)
-<span id="L248" class="ln">   248  </span>			files[&#34;README.md&#34;] = body
-<span id="L249" class="ln">   249  </span>			files[&#34;ignore&#34;] = &#34;&#34;
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;ignore&#34;, staticRead(files))
+<span id="L241" class="ln">   241  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;absent&#34;, staticRead(files))
+<span id="L242" class="ln">   242  </span>
+<span id="L243" class="ln">   243  </span>			require.NoError(t, err)
+<span id="L244" class="ln">   244  </span>			assert.Equal(t, []string{&#34;README.md&#34;}, stale)
+<span id="L245" class="ln">   245  </span>		})
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>		t.Run(&#34;semantic_hash が空なら未抽出として数える&#34;, func(t *testing.T) {
+<span id="L248" class="ln">   248  </span>			t.Parallel()
+<span id="L249" class="ln">   249  </span>			files := manifest(`{&#34;README.md&#34;:{&#34;semantic_hash&#34;:&#34;&#34;}}`)
+<span id="L250" class="ln">   250  </span>			files[&#34;README.md&#34;] = body
+<span id="L251" class="ln">   251  </span>			files[&#34;ignore&#34;] = &#34;&#34;
 <span id="L252" class="ln">   252  </span>
-<span id="L253" class="ln">   253  </span>			require.NoError(t, err)
-<span id="L254" class="ln">   254  </span>			assert.Equal(t, []string{&#34;README.md&#34;}, stale)
-<span id="L255" class="ln">   255  </span>		})
-<span id="L256" class="ln">   256  </span>	})
-<span id="L257" class="ln">   257  </span>}
-<span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>func Test_matchesIgnore(t *testing.T) {
-<span id="L260" class="ln">   260  </span>	t.Parallel()
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>	cases := map[string]struct {
-<span id="L263" class="ln">   263  </span>		file, pattern string
-<span id="L264" class="ln">   264  </span>		want          bool
-<span id="L265" class="ln">   265  </span>	}{
-<span id="L266" class="ln">   266  </span>		&#34;ディレクトリ接頭辞は配下に当たる&#34;:        {&#34;docs/godoc/a/b.html&#34;, &#34;docs/godoc/&#34;, true},
-<span id="L267" class="ln">   267  </span>		&#34;ディレクトリ接頭辞は別ディレクトリに当たらない&#34;: {&#34;docs/adr/0001.md&#34;, &#34;docs/godoc/&#34;, false},
-<span id="L268" class="ln">   268  </span>		&#34;拡張子パターンは深い階層にも当たる&#34;:       {&#34;docs/adr/0001.ja.md&#34;, &#34;*.ja.md&#34;, true},
-<span id="L269" class="ln">   269  </span>		&#34;拡張子パターンは正本に当たらない&#34;:        {&#34;docs/adr/0001.md&#34;, &#34;*.ja.md&#34;, false},
-<span id="L270" class="ln">   270  </span>		&#34;二重アスタリスクの拡張子パターン&#34;:        {&#34;internal/x/y.gen.go&#34;, &#34;**/*.gen.go&#34;, true},
-<span id="L271" class="ln">   271  </span>		&#34;二重アスタリスクのディレクトリ名&#34;:        {&#34;database/gen/a.sql&#34;, &#34;**/gen/&#34;, true},
-<span id="L272" class="ln">   272  </span>		&#34;素のパスは完全一致&#34;:               {&#34;openapi/openapi.gen.yaml&#34;, &#34;openapi/openapi.gen.yaml&#34;, true},
-<span id="L273" class="ln">   273  </span>		&#34;素のパスは前方一致では当たらない&#34;:        {&#34;openapi/openapi.yaml&#34;, &#34;openapi/openapi.gen.yaml&#34;, false},
-<span id="L274" class="ln">   274  </span>		&#34;素のパスはディレクトリとしても当たる&#34;:      {&#34;vendor/x/y.md&#34;, &#34;vendor&#34;, true},
-<span id="L275" class="ln">   275  </span>	}
-<span id="L276" class="ln">   276  </span>
-<span id="L277" class="ln">   277  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L278" class="ln">   278  </span>		t.Parallel()
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>		for name, tt := range cases {
-<span id="L281" class="ln">   281  </span>			t.Run(name, func(t *testing.T) {
-<span id="L282" class="ln">   282  </span>				t.Parallel()
-<span id="L283" class="ln">   283  </span>
-<span id="L284" class="ln">   284  </span>				assert.Equal(t, tt.want, matchesIgnore(tt.file, tt.pattern))
-<span id="L285" class="ln">   285  </span>			})
-<span id="L286" class="ln">   286  </span>		}
-<span id="L287" class="ln">   287  </span>	})
-<span id="L288" class="ln">   288  </span>}
-<span id="L289" class="ln">   289  </span>
-<span id="L290" class="ln">   290  </span><span class="comment">//nolint:paralleltest // t.Chdir を使うため並列化できない</span>
-<span id="L291" class="ln">   291  </span>func Test_gitOutput(t *testing.T) {
-<span id="L292" class="ln">   292  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L293" class="ln">   293  </span>		t.Run(&#34;標準出力をそのまま返す&#34;, func(t *testing.T) {
-<span id="L294" class="ln">   294  </span>			t.Chdir(t.TempDir())
-<span id="L295" class="ln">   295  </span>
-<span id="L296" class="ln">   296  </span>			out, err := gitOutput(&#34;--version&#34;)
+<span id="L253" class="ln">   253  </span>			stale, err := staleDocuments(&#34;m.json&#34;, &#34;ignore&#34;, staticRead(files))
+<span id="L254" class="ln">   254  </span>
+<span id="L255" class="ln">   255  </span>			require.NoError(t, err)
+<span id="L256" class="ln">   256  </span>			assert.Equal(t, []string{&#34;README.md&#34;}, stale)
+<span id="L257" class="ln">   257  </span>		})
+<span id="L258" class="ln">   258  </span>	})
+<span id="L259" class="ln">   259  </span>}
+<span id="L260" class="ln">   260  </span>
+<span id="L261" class="ln">   261  </span>func Test_matchesIgnore(t *testing.T) {
+<span id="L262" class="ln">   262  </span>	t.Parallel()
+<span id="L263" class="ln">   263  </span>
+<span id="L264" class="ln">   264  </span>	cases := map[string]struct {
+<span id="L265" class="ln">   265  </span>		file, pattern string
+<span id="L266" class="ln">   266  </span>		want          bool
+<span id="L267" class="ln">   267  </span>	}{
+<span id="L268" class="ln">   268  </span>		&#34;ディレクトリ接頭辞は配下に当たる&#34;:        {&#34;docs/godoc/a/b.html&#34;, &#34;docs/godoc/&#34;, true},
+<span id="L269" class="ln">   269  </span>		&#34;ディレクトリ接頭辞は別ディレクトリに当たらない&#34;: {&#34;docs/adr/0001.md&#34;, &#34;docs/godoc/&#34;, false},
+<span id="L270" class="ln">   270  </span>		&#34;拡張子パターンは深い階層にも当たる&#34;:       {&#34;docs/adr/0001.ja.md&#34;, &#34;*.ja.md&#34;, true},
+<span id="L271" class="ln">   271  </span>		&#34;拡張子パターンは正本に当たらない&#34;:        {&#34;docs/adr/0001.md&#34;, &#34;*.ja.md&#34;, false},
+<span id="L272" class="ln">   272  </span>		&#34;二重アスタリスクの拡張子パターン&#34;:        {&#34;internal/x/y.gen.go&#34;, &#34;**/*.gen.go&#34;, true},
+<span id="L273" class="ln">   273  </span>		&#34;二重アスタリスクのディレクトリ名&#34;:        {&#34;database/gen/a.sql&#34;, &#34;**/gen/&#34;, true},
+<span id="L274" class="ln">   274  </span>		&#34;素のパスは完全一致&#34;:               {&#34;openapi/openapi.gen.yaml&#34;, &#34;openapi/openapi.gen.yaml&#34;, true},
+<span id="L275" class="ln">   275  </span>		&#34;素のパスは前方一致では当たらない&#34;:        {&#34;openapi/openapi.yaml&#34;, &#34;openapi/openapi.gen.yaml&#34;, false},
+<span id="L276" class="ln">   276  </span>		&#34;素のパスはディレクトリとしても当たる&#34;:      {&#34;vendor/x/y.md&#34;, &#34;vendor&#34;, true},
+<span id="L277" class="ln">   277  </span>	}
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L280" class="ln">   280  </span>		t.Parallel()
+<span id="L281" class="ln">   281  </span>
+<span id="L282" class="ln">   282  </span>		for name, tt := range cases {
+<span id="L283" class="ln">   283  </span>			t.Run(name, func(t *testing.T) {
+<span id="L284" class="ln">   284  </span>				t.Parallel()
+<span id="L285" class="ln">   285  </span>
+<span id="L286" class="ln">   286  </span>				assert.Equal(t, tt.want, matchesIgnore(tt.file, tt.pattern))
+<span id="L287" class="ln">   287  </span>			})
+<span id="L288" class="ln">   288  </span>		}
+<span id="L289" class="ln">   289  </span>	})
+<span id="L290" class="ln">   290  </span>}
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span><span class="comment">//nolint:paralleltest // t.Chdir を使うため並列化できない</span>
+<span id="L293" class="ln">   293  </span>func Test_gitOutput(t *testing.T) {
+<span id="L294" class="ln">   294  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L295" class="ln">   295  </span>		t.Run(&#34;標準出力をそのまま返す&#34;, func(t *testing.T) {
+<span id="L296" class="ln">   296  </span>			t.Chdir(t.TempDir())
 <span id="L297" class="ln">   297  </span>
-<span id="L298" class="ln">   298  </span>			require.NoError(t, err)
-<span id="L299" class="ln">   299  </span>			assert.Contains(t, out, &#34;git version&#34;)
-<span id="L300" class="ln">   300  </span>		})
-<span id="L301" class="ln">   301  </span>	})
-<span id="L302" class="ln">   302  </span>
-<span id="L303" class="ln">   303  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L304" class="ln">   304  </span>		t.Run(&#34;gitリポジトリの外では空ではなくエラーを返す&#34;, func(t *testing.T) {
-<span id="L305" class="ln">   305  </span>			t.Chdir(t.TempDir())
-<span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>			out, err := gitOutput(&#34;log&#34;, &#34;-1&#34;, &#34;--format=%H&#34;)
+<span id="L298" class="ln">   298  </span>			out, err := gitOutput(&#34;--version&#34;)
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>			require.NoError(t, err)
+<span id="L301" class="ln">   301  </span>			assert.Contains(t, out, &#34;git version&#34;)
+<span id="L302" class="ln">   302  </span>		})
+<span id="L303" class="ln">   303  </span>	})
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L306" class="ln">   306  </span>		t.Run(&#34;gitリポジトリの外では空ではなくエラーを返す&#34;, func(t *testing.T) {
+<span id="L307" class="ln">   307  </span>			t.Chdir(t.TempDir())
 <span id="L308" class="ln">   308  </span>
-<span id="L309" class="ln">   309  </span>			require.Error(t, err)
-<span id="L310" class="ln">   310  </span>			assert.Empty(t, out)
-<span id="L311" class="ln">   311  </span>		})
-<span id="L312" class="ln">   312  </span>	})
-<span id="L313" class="ln">   313  </span>}
-<span id="L314" class="ln">   314  </span>
-<span id="L315" class="ln">   315  </span>func Test_lastSemanticCommit(t *testing.T) {
-<span id="L316" class="ln">   316  </span>	t.Parallel()
-<span id="L317" class="ln">   317  </span>
-<span id="L318" class="ln">   318  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L319" class="ln">   319  </span>		t.Parallel()
-<span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>		t.Run(&#34;改行を落としたコミットハッシュを返す&#34;, func(t *testing.T) {
-<span id="L322" class="ln">   322  </span>			t.Parallel()
-<span id="L323" class="ln">   323  </span>
-<span id="L324" class="ln">   324  </span>			got, err := lastSemanticCommit(&#34;cache&#34;, func(...string) (string, error) { return &#34;abc123\n&#34;, nil })
+<span id="L309" class="ln">   309  </span>			out, err := gitOutput(&#34;log&#34;, &#34;-1&#34;, &#34;--format=%H&#34;)
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>			require.Error(t, err)
+<span id="L312" class="ln">   312  </span>			assert.Empty(t, out)
+<span id="L313" class="ln">   313  </span>		})
+<span id="L314" class="ln">   314  </span>	})
+<span id="L315" class="ln">   315  </span>}
+<span id="L316" class="ln">   316  </span>
+<span id="L317" class="ln">   317  </span>func Test_lastSemanticCommit(t *testing.T) {
+<span id="L318" class="ln">   318  </span>	t.Parallel()
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L321" class="ln">   321  </span>		t.Parallel()
+<span id="L322" class="ln">   322  </span>
+<span id="L323" class="ln">   323  </span>		t.Run(&#34;改行を落としたコミットハッシュを返す&#34;, func(t *testing.T) {
+<span id="L324" class="ln">   324  </span>			t.Parallel()
 <span id="L325" class="ln">   325  </span>
-<span id="L326" class="ln">   326  </span>			require.NoError(t, err)
-<span id="L327" class="ln">   327  </span>			assert.Equal(t, &#34;abc123&#34;, got)
-<span id="L328" class="ln">   328  </span>		})
-<span id="L329" class="ln">   329  </span>	})
-<span id="L330" class="ln">   330  </span>
-<span id="L331" class="ln">   331  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L332" class="ln">   332  </span>		t.Parallel()
-<span id="L333" class="ln">   333  </span>
-<span id="L334" class="ln">   334  </span>		t.Run(&#34;履歴が空なら基準なしとして扱う&#34;, func(t *testing.T) {
-<span id="L335" class="ln">   335  </span>			t.Parallel()
-<span id="L336" class="ln">   336  </span>
-<span id="L337" class="ln">   337  </span>			_, err := lastSemanticCommit(&#34;cache&#34;, func(...string) (string, error) { return &#34;\n&#34;, nil })
+<span id="L326" class="ln">   326  </span>			got, err := lastSemanticCommit(&#34;cache&#34;, func(...string) (string, error) { return &#34;abc123\n&#34;, nil })
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>			require.NoError(t, err)
+<span id="L329" class="ln">   329  </span>			assert.Equal(t, &#34;abc123&#34;, got)
+<span id="L330" class="ln">   330  </span>		})
+<span id="L331" class="ln">   331  </span>	})
+<span id="L332" class="ln">   332  </span>
+<span id="L333" class="ln">   333  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L334" class="ln">   334  </span>		t.Parallel()
+<span id="L335" class="ln">   335  </span>
+<span id="L336" class="ln">   336  </span>		t.Run(&#34;履歴が空なら基準なしとして扱う&#34;, func(t *testing.T) {
+<span id="L337" class="ln">   337  </span>			t.Parallel()
 <span id="L338" class="ln">   338  </span>
-<span id="L339" class="ln">   339  </span>			require.ErrorIs(t, err, errNoBaseline)
-<span id="L340" class="ln">   340  </span>		})
-<span id="L341" class="ln">   341  </span>
-<span id="L342" class="ln">   342  </span>		t.Run(&#34;gitが失敗すれば基準なしとは区別してエラーにする&#34;, func(t *testing.T) {
-<span id="L343" class="ln">   343  </span>			t.Parallel()
-<span id="L344" class="ln">   344  </span>			sentinel := xerrors.New(&#34;not a repository&#34;)
-<span id="L345" class="ln">   345  </span>
-<span id="L346" class="ln">   346  </span>			_, err := lastSemanticCommit(&#34;cache&#34;, func(...string) (string, error) { return &#34;&#34;, sentinel })
+<span id="L339" class="ln">   339  </span>			_, err := lastSemanticCommit(&#34;cache&#34;, func(...string) (string, error) { return &#34;\n&#34;, nil })
+<span id="L340" class="ln">   340  </span>
+<span id="L341" class="ln">   341  </span>			require.ErrorIs(t, err, errNoBaseline)
+<span id="L342" class="ln">   342  </span>		})
+<span id="L343" class="ln">   343  </span>
+<span id="L344" class="ln">   344  </span>		t.Run(&#34;gitが失敗すれば基準なしとは区別してエラーにする&#34;, func(t *testing.T) {
+<span id="L345" class="ln">   345  </span>			t.Parallel()
+<span id="L346" class="ln">   346  </span>			sentinel := xerrors.New(&#34;not a repository&#34;)
 <span id="L347" class="ln">   347  </span>
-<span id="L348" class="ln">   348  </span>			require.ErrorIs(t, err, sentinel)
-<span id="L349" class="ln">   349  </span>			assert.NotErrorIs(t, err, errNoBaseline)
-<span id="L350" class="ln">   350  </span>		})
-<span id="L351" class="ln">   351  </span>	})
-<span id="L352" class="ln">   352  </span>}
-<span id="L353" class="ln">   353  </span>
-<span id="L354" class="ln">   354  </span>func Test_matchesGlob(t *testing.T) {
-<span id="L355" class="ln">   355  </span>	t.Parallel()
-<span id="L356" class="ln">   356  </span>
-<span id="L357" class="ln">   357  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L358" class="ln">   358  </span>		t.Parallel()
-<span id="L359" class="ln">   359  </span>
-<span id="L360" class="ln">   360  </span>		t.Run(&#34;先頭のアスタリスクは接尾辞一致になる&#34;, func(t *testing.T) {
-<span id="L361" class="ln">   361  </span>			t.Parallel()
-<span id="L362" class="ln">   362  </span>
-<span id="L363" class="ln">   363  </span>			assert.True(t, matchesGlob(&#34;rules.ja.md&#34;, &#34;*.ja.md&#34;))
-<span id="L364" class="ln">   364  </span>		})
-<span id="L365" class="ln">   365  </span>
-<span id="L366" class="ln">   366  </span>		t.Run(&#34;アスタリスクが無ければ完全一致になる&#34;, func(t *testing.T) {
-<span id="L367" class="ln">   367  </span>			t.Parallel()
-<span id="L368" class="ln">   368  </span>
-<span id="L369" class="ln">   369  </span>			assert.True(t, matchesGlob(&#34;LICENSE&#34;, &#34;LICENSE&#34;))
-<span id="L370" class="ln">   370  </span>			assert.False(t, matchesGlob(&#34;LICENSE.md&#34;, &#34;LICENSE&#34;))
-<span id="L371" class="ln">   371  </span>		})
-<span id="L372" class="ln">   372  </span>	})
-<span id="L373" class="ln">   373  </span>}
-<span id="L374" class="ln">   374  </span>
-<span id="L375" class="ln">   375  </span>func Test_loadIgnore(t *testing.T) {
-<span id="L376" class="ln">   376  </span>	t.Parallel()
-<span id="L377" class="ln">   377  </span>
-<span id="L378" class="ln">   378  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L379" class="ln">   379  </span>		t.Parallel()
-<span id="L380" class="ln">   380  </span>
-<span id="L381" class="ln">   381  </span>		t.Run(&#34;コメントと空行は宣言として読まない&#34;, func(t *testing.T) {
-<span id="L382" class="ln">   382  </span>			t.Parallel()
-<span id="L383" class="ln">   383  </span>			body := &#34;# 見出し\n\n  \nvendor/\n&#34;
-<span id="L384" class="ln">   384  </span>
-<span id="L385" class="ln">   385  </span>			excluded, err := loadIgnore(&#34;ignore&#34;, staticRead(map[string]string{&#34;ignore&#34;: body}))
+<span id="L348" class="ln">   348  </span>			_, err := lastSemanticCommit(&#34;cache&#34;, func(...string) (string, error) { return &#34;&#34;, sentinel })
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>			require.ErrorIs(t, err, sentinel)
+<span id="L351" class="ln">   351  </span>			assert.NotErrorIs(t, err, errNoBaseline)
+<span id="L352" class="ln">   352  </span>		})
+<span id="L353" class="ln">   353  </span>	})
+<span id="L354" class="ln">   354  </span>}
+<span id="L355" class="ln">   355  </span>
+<span id="L356" class="ln">   356  </span>func Test_matchesGlob(t *testing.T) {
+<span id="L357" class="ln">   357  </span>	t.Parallel()
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L360" class="ln">   360  </span>		t.Parallel()
+<span id="L361" class="ln">   361  </span>
+<span id="L362" class="ln">   362  </span>		t.Run(&#34;先頭のアスタリスクは接尾辞一致になる&#34;, func(t *testing.T) {
+<span id="L363" class="ln">   363  </span>			t.Parallel()
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>			assert.True(t, matchesGlob(&#34;rules.ja.md&#34;, &#34;*.ja.md&#34;))
+<span id="L366" class="ln">   366  </span>		})
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>		t.Run(&#34;アスタリスクが無ければ完全一致になる&#34;, func(t *testing.T) {
+<span id="L369" class="ln">   369  </span>			t.Parallel()
+<span id="L370" class="ln">   370  </span>
+<span id="L371" class="ln">   371  </span>			assert.True(t, matchesGlob(&#34;LICENSE&#34;, &#34;LICENSE&#34;))
+<span id="L372" class="ln">   372  </span>			assert.False(t, matchesGlob(&#34;LICENSE.md&#34;, &#34;LICENSE&#34;))
+<span id="L373" class="ln">   373  </span>		})
+<span id="L374" class="ln">   374  </span>	})
+<span id="L375" class="ln">   375  </span>}
+<span id="L376" class="ln">   376  </span>
+<span id="L377" class="ln">   377  </span>func Test_loadIgnore(t *testing.T) {
+<span id="L378" class="ln">   378  </span>	t.Parallel()
+<span id="L379" class="ln">   379  </span>
+<span id="L380" class="ln">   380  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L381" class="ln">   381  </span>		t.Parallel()
+<span id="L382" class="ln">   382  </span>
+<span id="L383" class="ln">   383  </span>		t.Run(&#34;コメントと空行は宣言として読まない&#34;, func(t *testing.T) {
+<span id="L384" class="ln">   384  </span>			t.Parallel()
+<span id="L385" class="ln">   385  </span>			body := &#34;# 見出し\n\n  \nvendor/\n&#34;
 <span id="L386" class="ln">   386  </span>
-<span id="L387" class="ln">   387  </span>			require.NoError(t, err)
-<span id="L388" class="ln">   388  </span>			assert.True(t, excluded(&#34;vendor/a.md&#34;))
-<span id="L389" class="ln">   389  </span>			assert.False(t, excluded(&#34;README.md&#34;))
-<span id="L390" class="ln">   390  </span>		})
-<span id="L391" class="ln">   391  </span>	})
-<span id="L392" class="ln">   392  </span>
-<span id="L393" class="ln">   393  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L394" class="ln">   394  </span>		t.Parallel()
-<span id="L395" class="ln">   395  </span>
-<span id="L396" class="ln">   396  </span>		t.Run(&#34;読み込み失敗は除外なしに丸めずエラーにする&#34;, func(t *testing.T) {
-<span id="L397" class="ln">   397  </span>			t.Parallel()
-<span id="L398" class="ln">   398  </span>			sentinel := xerrors.New(&#34;permission denied&#34;)
-<span id="L399" class="ln">   399  </span>
-<span id="L400" class="ln">   400  </span>			_, err := loadIgnore(&#34;ignore&#34;, func(string) ([]byte, error) { return nil, sentinel })
+<span id="L387" class="ln">   387  </span>			excluded, err := loadIgnore(&#34;ignore&#34;, staticRead(map[string]string{&#34;ignore&#34;: body}))
+<span id="L388" class="ln">   388  </span>
+<span id="L389" class="ln">   389  </span>			require.NoError(t, err)
+<span id="L390" class="ln">   390  </span>			assert.True(t, excluded(&#34;vendor/a.md&#34;))
+<span id="L391" class="ln">   391  </span>			assert.False(t, excluded(&#34;README.md&#34;))
+<span id="L392" class="ln">   392  </span>		})
+<span id="L393" class="ln">   393  </span>	})
+<span id="L394" class="ln">   394  </span>
+<span id="L395" class="ln">   395  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L396" class="ln">   396  </span>		t.Parallel()
+<span id="L397" class="ln">   397  </span>
+<span id="L398" class="ln">   398  </span>		t.Run(&#34;読み込み失敗は除外なしに丸めずエラーにする&#34;, func(t *testing.T) {
+<span id="L399" class="ln">   399  </span>			t.Parallel()
+<span id="L400" class="ln">   400  </span>			sentinel := xerrors.New(&#34;permission denied&#34;)
 <span id="L401" class="ln">   401  </span>
-<span id="L402" class="ln">   402  </span>			require.ErrorIs(t, err, sentinel)
-<span id="L403" class="ln">   403  </span>		})
-<span id="L404" class="ln">   404  </span>	})
-<span id="L405" class="ln">   405  </span>}
-<span id="L406" class="ln">   406  </span>
-<span id="L407" class="ln">   407  </span>func Test_measure(t *testing.T) {
-<span id="L408" class="ln">   408  </span>	t.Parallel()
-<span id="L409" class="ln">   409  </span>
-<span id="L410" class="ln">   410  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L411" class="ln">   411  </span>		t.Parallel()
-<span id="L412" class="ln">   412  </span>
-<span id="L413" class="ln">   413  </span>		t.Run(&#34;基準コミットから HEAD までを対象ファイルに限って測る&#34;, func(t *testing.T) {
-<span id="L414" class="ln">   414  </span>			t.Parallel()
-<span id="L415" class="ln">   415  </span>			var got []string
-<span id="L416" class="ln">   416  </span>
-<span id="L417" class="ln">   417  </span>			_, _, err := measure(&#34;abc123&#34;, []string{&#34;docs/a.md&#34;, &#34;docs/b.md&#34;}, func(args ...string) (string, error) {
-<span id="L418" class="ln">   418  </span>				got = args
-<span id="L419" class="ln">   419  </span>
-<span id="L420" class="ln">   420  </span>				return &#34;&#34;, nil
-<span id="L421" class="ln">   421  </span>			})
-<span id="L422" class="ln">   422  </span>
-<span id="L423" class="ln">   423  </span>			require.NoError(t, err)
-<span id="L424" class="ln">   424  </span>			assert.Equal(t, []string{&#34;diff&#34;, &#34;--numstat&#34;, &#34;abc123..HEAD&#34;, &#34;--&#34;, &#34;docs/a.md&#34;, &#34;docs/b.md&#34;}, got)
-<span id="L425" class="ln">   425  </span>		})
-<span id="L426" class="ln">   426  </span>
-<span id="L427" class="ln">   427  </span>		t.Run(&#34;numstat の結果を変更量の降順で返す&#34;, func(t *testing.T) {
-<span id="L428" class="ln">   428  </span>			t.Parallel()
-<span id="L429" class="ln">   429  </span>
-<span id="L430" class="ln">   430  </span>			items, total, err := measure(&#34;abc123&#34;, []string{&#34;a.md&#34;, &#34;b.md&#34;},
-<span id="L431" class="ln">   431  </span>				func(...string) (string, error) { return &#34;1\t2\ta.md\n30\t0\tb.md\n&#34;, nil })
-<span id="L432" class="ln">   432  </span>
-<span id="L433" class="ln">   433  </span>			require.NoError(t, err)
-<span id="L434" class="ln">   434  </span>			assert.Equal(t, 33, total)
-<span id="L435" class="ln">   435  </span>			require.Len(t, items, 2)
-<span id="L436" class="ln">   436  </span>			assert.Equal(t, &#34;b.md&#34;, items[0].path)
-<span id="L437" class="ln">   437  </span>		})
-<span id="L438" class="ln">   438  </span>	})
-<span id="L439" class="ln">   439  </span>
-<span id="L440" class="ln">   440  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L441" class="ln">   441  </span>		t.Parallel()
-<span id="L442" class="ln">   442  </span>
-<span id="L443" class="ln">   443  </span>		t.Run(&#34;git が失敗すれば基準コミットを添えてエラーにする&#34;, func(t *testing.T) {
-<span id="L444" class="ln">   444  </span>			t.Parallel()
-<span id="L445" class="ln">   445  </span>			sentinel := xerrors.New(&#34;bad revision&#34;)
-<span id="L446" class="ln">   446  </span>
-<span id="L447" class="ln">   447  </span>			_, _, err := measure(&#34;abcdef1234567890&#34;, nil, func(...string) (string, error) { return &#34;&#34;, sentinel })
+<span id="L402" class="ln">   402  </span>			_, err := loadIgnore(&#34;ignore&#34;, func(string) ([]byte, error) { return nil, sentinel })
+<span id="L403" class="ln">   403  </span>
+<span id="L404" class="ln">   404  </span>			require.ErrorIs(t, err, sentinel)
+<span id="L405" class="ln">   405  </span>		})
+<span id="L406" class="ln">   406  </span>	})
+<span id="L407" class="ln">   407  </span>}
+<span id="L408" class="ln">   408  </span>
+<span id="L409" class="ln">   409  </span>func Test_measure(t *testing.T) {
+<span id="L410" class="ln">   410  </span>	t.Parallel()
+<span id="L411" class="ln">   411  </span>
+<span id="L412" class="ln">   412  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L413" class="ln">   413  </span>		t.Parallel()
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>		t.Run(&#34;基準コミットから HEAD までを対象ファイルに限って測る&#34;, func(t *testing.T) {
+<span id="L416" class="ln">   416  </span>			t.Parallel()
+<span id="L417" class="ln">   417  </span>			var got []string
+<span id="L418" class="ln">   418  </span>
+<span id="L419" class="ln">   419  </span>			_, _, err := measure(&#34;abc123&#34;, []string{&#34;docs/a.md&#34;, &#34;docs/b.md&#34;}, func(args ...string) (string, error) {
+<span id="L420" class="ln">   420  </span>				got = args
+<span id="L421" class="ln">   421  </span>
+<span id="L422" class="ln">   422  </span>				return &#34;&#34;, nil
+<span id="L423" class="ln">   423  </span>			})
+<span id="L424" class="ln">   424  </span>
+<span id="L425" class="ln">   425  </span>			require.NoError(t, err)
+<span id="L426" class="ln">   426  </span>			assert.Equal(t, []string{&#34;diff&#34;, &#34;--numstat&#34;, &#34;abc123..HEAD&#34;, &#34;--&#34;, &#34;docs/a.md&#34;, &#34;docs/b.md&#34;}, got)
+<span id="L427" class="ln">   427  </span>		})
+<span id="L428" class="ln">   428  </span>
+<span id="L429" class="ln">   429  </span>		t.Run(&#34;numstat の結果を変更量の降順で返す&#34;, func(t *testing.T) {
+<span id="L430" class="ln">   430  </span>			t.Parallel()
+<span id="L431" class="ln">   431  </span>
+<span id="L432" class="ln">   432  </span>			items, total, err := measure(&#34;abc123&#34;, []string{&#34;a.md&#34;, &#34;b.md&#34;},
+<span id="L433" class="ln">   433  </span>				func(...string) (string, error) { return &#34;1\t2\ta.md\n30\t0\tb.md\n&#34;, nil })
+<span id="L434" class="ln">   434  </span>
+<span id="L435" class="ln">   435  </span>			require.NoError(t, err)
+<span id="L436" class="ln">   436  </span>			assert.Equal(t, 33, total)
+<span id="L437" class="ln">   437  </span>			require.Len(t, items, 2)
+<span id="L438" class="ln">   438  </span>			assert.Equal(t, &#34;b.md&#34;, items[0].path)
+<span id="L439" class="ln">   439  </span>		})
+<span id="L440" class="ln">   440  </span>	})
+<span id="L441" class="ln">   441  </span>
+<span id="L442" class="ln">   442  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L443" class="ln">   443  </span>		t.Parallel()
+<span id="L444" class="ln">   444  </span>
+<span id="L445" class="ln">   445  </span>		t.Run(&#34;git が失敗すれば基準コミットを添えてエラーにする&#34;, func(t *testing.T) {
+<span id="L446" class="ln">   446  </span>			t.Parallel()
+<span id="L447" class="ln">   447  </span>			sentinel := xerrors.New(&#34;bad revision&#34;)
 <span id="L448" class="ln">   448  </span>
-<span id="L449" class="ln">   449  </span>			require.ErrorIs(t, err, sentinel)
-<span id="L450" class="ln">   450  </span>			assert.Contains(t, err.Error(), short(&#34;abcdef1234567890&#34;))
-<span id="L451" class="ln">   451  </span>		})
-<span id="L452" class="ln">   452  </span>	})
-<span id="L453" class="ln">   453  </span>}
-<span id="L454" class="ln">   454  </span>
-<span id="L455" class="ln">   455  </span>func Test_atoiOrZero(t *testing.T) {
-<span id="L456" class="ln">   456  </span>	t.Parallel()
-<span id="L457" class="ln">   457  </span>
-<span id="L458" class="ln">   458  </span>	cases := map[string]struct {
-<span id="L459" class="ln">   459  </span>		field string
-<span id="L460" class="ln">   460  </span>		want  int
-<span id="L461" class="ln">   461  </span>	}{
-<span id="L462" class="ln">   462  </span>		&#34;十進の数はそのまま&#34;:     {&#34;12&#34;, 12},
-<span id="L463" class="ln">   463  </span>		&#34;ゼロはゼロ&#34;:         {&#34;0&#34;, 0},
-<span id="L464" class="ln">   464  </span>		&#34;符号付きも解釈する&#34;:     {&#34;-3&#34;, -3},
-<span id="L465" class="ln">   465  </span>		&#34;バイナリを表すハイフンは0&#34;: {&#34;-&#34;, 0},
-<span id="L466" class="ln">   466  </span>		&#34;数でない欄は0&#34;:       {&#34;x&#34;, 0},
-<span id="L467" class="ln">   467  </span>		&#34;空欄は0&#34;:          {&#34;&#34;, 0},
-<span id="L468" class="ln">   468  </span>		&#34;前後に空白があるものは0&#34;:  {&#34; 1 &#34;, 0},
-<span id="L469" class="ln">   469  </span>	}
-<span id="L470" class="ln">   470  </span>
-<span id="L471" class="ln">   471  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L472" class="ln">   472  </span>		t.Parallel()
-<span id="L473" class="ln">   473  </span>
-<span id="L474" class="ln">   474  </span>		for name, tt := range cases {
-<span id="L475" class="ln">   475  </span>			t.Run(name, func(t *testing.T) {
-<span id="L476" class="ln">   476  </span>				t.Parallel()
-<span id="L477" class="ln">   477  </span>
-<span id="L478" class="ln">   478  </span>				assert.Equal(t, tt.want, atoiOrZero(tt.field))
-<span id="L479" class="ln">   479  </span>			})
-<span id="L480" class="ln">   480  </span>		}
-<span id="L481" class="ln">   481  </span>	})
-<span id="L482" class="ln">   482  </span>}
-<span id="L483" class="ln">   483  </span>
-<span id="L484" class="ln">   484  </span>func Test_parseNumstat(t *testing.T) {
-<span id="L485" class="ln">   485  </span>	t.Parallel()
-<span id="L486" class="ln">   486  </span>
-<span id="L487" class="ln">   487  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L488" class="ln">   488  </span>		t.Parallel()
-<span id="L489" class="ln">   489  </span>
-<span id="L490" class="ln">   490  </span>		t.Run(&#34;追加と削除を足して変更量の降順で返す&#34;, func(t *testing.T) {
-<span id="L491" class="ln">   491  </span>			t.Parallel()
-<span id="L492" class="ln">   492  </span>
-<span id="L493" class="ln">   493  </span>			items, total, err := parseNumstat(&#34;1\t2\ta.md\n30\t0\tb.md\n&#34;)
+<span id="L449" class="ln">   449  </span>			_, _, err := measure(&#34;abcdef1234567890&#34;, nil, func(...string) (string, error) { return &#34;&#34;, sentinel })
+<span id="L450" class="ln">   450  </span>
+<span id="L451" class="ln">   451  </span>			require.ErrorIs(t, err, sentinel)
+<span id="L452" class="ln">   452  </span>			assert.Contains(t, err.Error(), short(&#34;abcdef1234567890&#34;))
+<span id="L453" class="ln">   453  </span>		})
+<span id="L454" class="ln">   454  </span>	})
+<span id="L455" class="ln">   455  </span>}
+<span id="L456" class="ln">   456  </span>
+<span id="L457" class="ln">   457  </span>func Test_atoiOrZero(t *testing.T) {
+<span id="L458" class="ln">   458  </span>	t.Parallel()
+<span id="L459" class="ln">   459  </span>
+<span id="L460" class="ln">   460  </span>	cases := map[string]struct {
+<span id="L461" class="ln">   461  </span>		field string
+<span id="L462" class="ln">   462  </span>		want  int
+<span id="L463" class="ln">   463  </span>	}{
+<span id="L464" class="ln">   464  </span>		&#34;十進の数はそのまま&#34;:     {&#34;12&#34;, 12},
+<span id="L465" class="ln">   465  </span>		&#34;ゼロはゼロ&#34;:         {&#34;0&#34;, 0},
+<span id="L466" class="ln">   466  </span>		&#34;符号付きも解釈する&#34;:     {&#34;-3&#34;, -3},
+<span id="L467" class="ln">   467  </span>		&#34;バイナリを表すハイフンは0&#34;: {&#34;-&#34;, 0},
+<span id="L468" class="ln">   468  </span>		&#34;数でない欄は0&#34;:       {&#34;x&#34;, 0},
+<span id="L469" class="ln">   469  </span>		&#34;空欄は0&#34;:          {&#34;&#34;, 0},
+<span id="L470" class="ln">   470  </span>		&#34;前後に空白があるものは0&#34;:  {&#34; 1 &#34;, 0},
+<span id="L471" class="ln">   471  </span>	}
+<span id="L472" class="ln">   472  </span>
+<span id="L473" class="ln">   473  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L474" class="ln">   474  </span>		t.Parallel()
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span>		for name, tt := range cases {
+<span id="L477" class="ln">   477  </span>			t.Run(name, func(t *testing.T) {
+<span id="L478" class="ln">   478  </span>				t.Parallel()
+<span id="L479" class="ln">   479  </span>
+<span id="L480" class="ln">   480  </span>				assert.Equal(t, tt.want, atoiOrZero(tt.field))
+<span id="L481" class="ln">   481  </span>			})
+<span id="L482" class="ln">   482  </span>		}
+<span id="L483" class="ln">   483  </span>	})
+<span id="L484" class="ln">   484  </span>}
+<span id="L485" class="ln">   485  </span>
+<span id="L486" class="ln">   486  </span>func Test_parseNumstat(t *testing.T) {
+<span id="L487" class="ln">   487  </span>	t.Parallel()
+<span id="L488" class="ln">   488  </span>
+<span id="L489" class="ln">   489  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L490" class="ln">   490  </span>		t.Parallel()
+<span id="L491" class="ln">   491  </span>
+<span id="L492" class="ln">   492  </span>		t.Run(&#34;追加と削除を足して変更量の降順で返す&#34;, func(t *testing.T) {
+<span id="L493" class="ln">   493  </span>			t.Parallel()
 <span id="L494" class="ln">   494  </span>
-<span id="L495" class="ln">   495  </span>			require.NoError(t, err)
-<span id="L496" class="ln">   496  </span>			assert.Equal(t, 33, total)
-<span id="L497" class="ln">   497  </span>			assert.Equal(t, &#34;b.md&#34;, items[0].path)
-<span id="L498" class="ln">   498  </span>			assert.Equal(t, 30, items[0].changed)
-<span id="L499" class="ln">   499  </span>		})
-<span id="L500" class="ln">   500  </span>
-<span id="L501" class="ln">   501  </span>		t.Run(&#34;バイナリ扱いの行は0行として数えるがファイルは残す&#34;, func(t *testing.T) {
-<span id="L502" class="ln">   502  </span>			t.Parallel()
-<span id="L503" class="ln">   503  </span>
-<span id="L504" class="ln">   504  </span>			items, total, err := parseNumstat(&#34;-\t-\tdiagram.png\n&#34;)
+<span id="L495" class="ln">   495  </span>			items, total, err := parseNumstat(&#34;1\t2\ta.md\n30\t0\tb.md\n&#34;)
+<span id="L496" class="ln">   496  </span>
+<span id="L497" class="ln">   497  </span>			require.NoError(t, err)
+<span id="L498" class="ln">   498  </span>			assert.Equal(t, 33, total)
+<span id="L499" class="ln">   499  </span>			assert.Equal(t, &#34;b.md&#34;, items[0].path)
+<span id="L500" class="ln">   500  </span>			assert.Equal(t, 30, items[0].changed)
+<span id="L501" class="ln">   501  </span>		})
+<span id="L502" class="ln">   502  </span>
+<span id="L503" class="ln">   503  </span>		t.Run(&#34;バイナリ扱いの行は0行として数えるがファイルは残す&#34;, func(t *testing.T) {
+<span id="L504" class="ln">   504  </span>			t.Parallel()
 <span id="L505" class="ln">   505  </span>
-<span id="L506" class="ln">   506  </span>			require.NoError(t, err)
-<span id="L507" class="ln">   507  </span>			assert.Equal(t, 0, total)
-<span id="L508" class="ln">   508  </span>			require.Len(t, items, 1)
-<span id="L509" class="ln">   509  </span>		})
-<span id="L510" class="ln">   510  </span>
-<span id="L511" class="ln">   511  </span>		t.Run(&#34;同じ変更量ならパス順で安定する&#34;, func(t *testing.T) {
-<span id="L512" class="ln">   512  </span>			t.Parallel()
-<span id="L513" class="ln">   513  </span>
-<span id="L514" class="ln">   514  </span>			items, _, err := parseNumstat(&#34;1\t0\tb.md\n1\t0\ta.md\n&#34;)
+<span id="L506" class="ln">   506  </span>			items, total, err := parseNumstat(&#34;-\t-\tdiagram.png\n&#34;)
+<span id="L507" class="ln">   507  </span>
+<span id="L508" class="ln">   508  </span>			require.NoError(t, err)
+<span id="L509" class="ln">   509  </span>			assert.Equal(t, 0, total)
+<span id="L510" class="ln">   510  </span>			require.Len(t, items, 1)
+<span id="L511" class="ln">   511  </span>		})
+<span id="L512" class="ln">   512  </span>
+<span id="L513" class="ln">   513  </span>		t.Run(&#34;同じ変更量ならパス順で安定する&#34;, func(t *testing.T) {
+<span id="L514" class="ln">   514  </span>			t.Parallel()
 <span id="L515" class="ln">   515  </span>
-<span id="L516" class="ln">   516  </span>			require.NoError(t, err)
-<span id="L517" class="ln">   517  </span>			assert.Equal(t, []string{&#34;a.md&#34;, &#34;b.md&#34;}, []string{items[0].path, items[1].path})
-<span id="L518" class="ln">   518  </span>		})
-<span id="L519" class="ln">   519  </span>
-<span id="L520" class="ln">   520  </span>		t.Run(&#34;空の出力は0件を返す&#34;, func(t *testing.T) {
-<span id="L521" class="ln">   521  </span>			t.Parallel()
-<span id="L522" class="ln">   522  </span>
-<span id="L523" class="ln">   523  </span>			items, total, err := parseNumstat(&#34;\n&#34;)
+<span id="L516" class="ln">   516  </span>			items, _, err := parseNumstat(&#34;1\t0\tb.md\n1\t0\ta.md\n&#34;)
+<span id="L517" class="ln">   517  </span>
+<span id="L518" class="ln">   518  </span>			require.NoError(t, err)
+<span id="L519" class="ln">   519  </span>			assert.Equal(t, []string{&#34;a.md&#34;, &#34;b.md&#34;}, []string{items[0].path, items[1].path})
+<span id="L520" class="ln">   520  </span>		})
+<span id="L521" class="ln">   521  </span>
+<span id="L522" class="ln">   522  </span>		t.Run(&#34;空の出力は0件を返す&#34;, func(t *testing.T) {
+<span id="L523" class="ln">   523  </span>			t.Parallel()
 <span id="L524" class="ln">   524  </span>
-<span id="L525" class="ln">   525  </span>			require.NoError(t, err)
-<span id="L526" class="ln">   526  </span>			assert.Empty(t, items)
-<span id="L527" class="ln">   527  </span>			assert.Equal(t, 0, total)
-<span id="L528" class="ln">   528  </span>		})
-<span id="L529" class="ln">   529  </span>	})
-<span id="L530" class="ln">   530  </span>
-<span id="L531" class="ln">   531  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L532" class="ln">   532  </span>		t.Parallel()
-<span id="L533" class="ln">   533  </span>
-<span id="L534" class="ln">   534  </span>		t.Run(&#34;欄の足りない行は0件に丸めずエラーにする&#34;, func(t *testing.T) {
-<span id="L535" class="ln">   535  </span>			t.Parallel()
-<span id="L536" class="ln">   536  </span>
-<span id="L537" class="ln">   537  </span>			_, _, err := parseNumstat(&#34;1\ta.md\n&#34;)
+<span id="L525" class="ln">   525  </span>			items, total, err := parseNumstat(&#34;\n&#34;)
+<span id="L526" class="ln">   526  </span>
+<span id="L527" class="ln">   527  </span>			require.NoError(t, err)
+<span id="L528" class="ln">   528  </span>			assert.Empty(t, items)
+<span id="L529" class="ln">   529  </span>			assert.Equal(t, 0, total)
+<span id="L530" class="ln">   530  </span>		})
+<span id="L531" class="ln">   531  </span>	})
+<span id="L532" class="ln">   532  </span>
+<span id="L533" class="ln">   533  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L534" class="ln">   534  </span>		t.Parallel()
+<span id="L535" class="ln">   535  </span>
+<span id="L536" class="ln">   536  </span>		t.Run(&#34;欄の足りない行は0件に丸めずエラーにする&#34;, func(t *testing.T) {
+<span id="L537" class="ln">   537  </span>			t.Parallel()
 <span id="L538" class="ln">   538  </span>
-<span id="L539" class="ln">   539  </span>			require.ErrorIs(t, err, errManifestUnreadable)
-<span id="L540" class="ln">   540  </span>		})
-<span id="L541" class="ln">   541  </span>	})
-<span id="L542" class="ln">   542  </span>}
-<span id="L543" class="ln">   543  </span>
-<span id="L544" class="ln">   544  </span><span class="comment">// t.Setenv がプロセス全体の環境を触るため、このテストは並列化しない。</span>
-<span id="L545" class="ln">   545  </span>func Test_report(t *testing.T) {
-<span id="L546" class="ln">   546  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L547" class="ln">   547  </span>		t.Run(&#34;閾値を超えていれば警告付きで job summary に書く&#34;, func(t *testing.T) {
-<span id="L548" class="ln">   548  </span>			path := filepath.Join(t.TempDir(), &#34;summary.md&#34;)
-<span id="L549" class="ln">   549  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, path)
-<span id="L550" class="ln">   550  </span>
-<span id="L551" class="ln">   551  </span>			require.NoError(t, report(true, 2, 40, 20, []pending{{path: &#34;a.md&#34;, changed: 40}}))
+<span id="L539" class="ln">   539  </span>			_, _, err := parseNumstat(&#34;1\ta.md\n&#34;)
+<span id="L540" class="ln">   540  </span>
+<span id="L541" class="ln">   541  </span>			require.ErrorIs(t, err, errManifestUnreadable)
+<span id="L542" class="ln">   542  </span>		})
+<span id="L543" class="ln">   543  </span>	})
+<span id="L544" class="ln">   544  </span>}
+<span id="L545" class="ln">   545  </span>
+<span id="L546" class="ln">   546  </span><span class="comment">// t.Setenv がプロセス全体の環境を触るため、このテストは並列化しない。</span>
+<span id="L547" class="ln">   547  </span>func Test_emitCounts(t *testing.T) {
+<span id="L548" class="ln">   548  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L549" class="ln">   549  </span>		t.Run(&#34;未処理量をステップ出力へ書く&#34;, func(t *testing.T) {
+<span id="L550" class="ln">   550  </span>			path := filepath.Join(t.TempDir(), &#34;output.txt&#34;)
+<span id="L551" class="ln">   551  </span>			t.Setenv(&#34;GITHUB_OUTPUT&#34;, path)
 <span id="L552" class="ln">   552  </span>
-<span id="L553" class="ln">   553  </span>			body, err := os.ReadFile(path) <span class="comment">//nolint:gosec // テスト内で組み立てた一時パス</span>
-<span id="L554" class="ln">   554  </span>			require.NoError(t, err)
-<span id="L555" class="ln">   555  </span>			assert.Contains(t, string(body), &#34;⚠️&#34;)
-<span id="L556" class="ln">   556  </span>			assert.Contains(t, string(body), &#34;`a.md` (40)&#34;)
-<span id="L557" class="ln">   557  </span>		})
-<span id="L558" class="ln">   558  </span>
-<span id="L559" class="ln">   559  </span>		t.Run(&#34;閾値未満なら警告を付けない&#34;, func(t *testing.T) {
-<span id="L560" class="ln">   560  </span>			path := filepath.Join(t.TempDir(), &#34;summary.md&#34;)
-<span id="L561" class="ln">   561  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, path)
-<span id="L562" class="ln">   562  </span>
-<span id="L563" class="ln">   563  </span>			require.NoError(t, report(true, 1, 3, 20, []pending{{path: &#34;a.md&#34;, changed: 3}}))
-<span id="L564" class="ln">   564  </span>
-<span id="L565" class="ln">   565  </span>			body, err := os.ReadFile(path) <span class="comment">//nolint:gosec // テスト内で組み立てた一時パス</span>
-<span id="L566" class="ln">   566  </span>			require.NoError(t, err)
-<span id="L567" class="ln">   567  </span>			assert.NotContains(t, string(body), &#34;⚠️&#34;)
-<span id="L568" class="ln">   568  </span>		})
-<span id="L569" class="ln">   569  </span>
-<span id="L570" class="ln">   570  </span>		t.Run(&#34;上限を超えたら省略して残数を示す&#34;, func(t *testing.T) {
-<span id="L571" class="ln">   571  </span>			path := filepath.Join(t.TempDir(), &#34;summary.md&#34;)
-<span id="L572" class="ln">   572  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, path)
-<span id="L573" class="ln">   573  </span>			items := make([]pending, 0, maxListedFiles+2)
-<span id="L574" class="ln">   574  </span>			for i := range maxListedFiles + 2 {
-<span id="L575" class="ln">   575  </span>				items = append(items, pending{path: fmt.Sprintf(&#34;%d.md&#34;, i), changed: 1})
-<span id="L576" class="ln">   576  </span>			}
+<span id="L553" class="ln">   553  </span>			require.NoError(t, emitCounts(3, 120))
+<span id="L554" class="ln">   554  </span>
+<span id="L555" class="ln">   555  </span>			body, err := os.ReadFile(path) <span class="comment">//nolint:gosec // テスト内で組み立てた一時パス</span>
+<span id="L556" class="ln">   556  </span>			require.NoError(t, err)
+<span id="L557" class="ln">   557  </span>			assert.Equal(t, &#34;files=3\nlines=120\n&#34;, string(body))
+<span id="L558" class="ln">   558  </span>		})
+<span id="L559" class="ln">   559  </span>
+<span id="L560" class="ln">   560  </span>		t.Run(&#34;溜まっていなければ 0 を書く&#34;, func(t *testing.T) {
+<span id="L561" class="ln">   561  </span>			path := filepath.Join(t.TempDir(), &#34;output.txt&#34;)
+<span id="L562" class="ln">   562  </span>			t.Setenv(&#34;GITHUB_OUTPUT&#34;, path)
+<span id="L563" class="ln">   563  </span>
+<span id="L564" class="ln">   564  </span>			require.NoError(t, emitCounts(0, 0))
+<span id="L565" class="ln">   565  </span>
+<span id="L566" class="ln">   566  </span>			body, err := os.ReadFile(path) <span class="comment">//nolint:gosec // テスト内で組み立てた一時パス</span>
+<span id="L567" class="ln">   567  </span>			require.NoError(t, err)
+<span id="L568" class="ln">   568  </span>			assert.Equal(t, &#34;files=0\nlines=0\n&#34;, string(body))
+<span id="L569" class="ln">   569  </span>		})
+<span id="L570" class="ln">   570  </span>
+<span id="L571" class="ln">   571  </span>		t.Run(&#34;Actions の外では何も書かない&#34;, func(t *testing.T) {
+<span id="L572" class="ln">   572  </span>			t.Setenv(&#34;GITHUB_OUTPUT&#34;, &#34;&#34;)
+<span id="L573" class="ln">   573  </span>
+<span id="L574" class="ln">   574  </span>			require.NoError(t, emitCounts(3, 120))
+<span id="L575" class="ln">   575  </span>		})
+<span id="L576" class="ln">   576  </span>	})
 <span id="L577" class="ln">   577  </span>
-<span id="L578" class="ln">   578  </span>			require.NoError(t, report(true, len(items), len(items), 1, items))
-<span id="L579" class="ln">   579  </span>
-<span id="L580" class="ln">   580  </span>			body, err := os.ReadFile(path) <span class="comment">//nolint:gosec // テスト内で組み立てた一時パス</span>
-<span id="L581" class="ln">   581  </span>			require.NoError(t, err)
-<span id="L582" class="ln">   582  </span>			assert.Contains(t, string(body), &#34;... 2 more&#34;)
+<span id="L578" class="ln">   578  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L579" class="ln">   579  </span>		t.Run(&#34;宛先を開けなければ失敗する&#34;, func(t *testing.T) {
+<span id="L580" class="ln">   580  </span>			t.Setenv(&#34;GITHUB_OUTPUT&#34;, filepath.Join(t.TempDir(), &#34;missing&#34;, &#34;output.txt&#34;))
+<span id="L581" class="ln">   581  </span>
+<span id="L582" class="ln">   582  </span>			require.Error(t, emitCounts(3, 120))
 <span id="L583" class="ln">   583  </span>		})
-<span id="L584" class="ln">   584  </span>
-<span id="L585" class="ln">   585  </span>		t.Run(&#34;github を指定しなければ何も書かない&#34;, func(t *testing.T) {
-<span id="L586" class="ln">   586  </span>			path := filepath.Join(t.TempDir(), &#34;summary.md&#34;)
-<span id="L587" class="ln">   587  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, path)
-<span id="L588" class="ln">   588  </span>
-<span id="L589" class="ln">   589  </span>			require.NoError(t, report(false, 1, 1, 1, nil))
-<span id="L590" class="ln">   590  </span>
-<span id="L591" class="ln">   591  </span>			_, err := os.Stat(path)
-<span id="L592" class="ln">   592  </span>			require.ErrorIs(t, err, os.ErrNotExist)
-<span id="L593" class="ln">   593  </span>		})
-<span id="L594" class="ln">   594  </span>
-<span id="L595" class="ln">   595  </span>		t.Run(&#34;宛先が未設定なら何も書かない&#34;, func(t *testing.T) {
-<span id="L596" class="ln">   596  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, &#34;&#34;)
-<span id="L597" class="ln">   597  </span>
-<span id="L598" class="ln">   598  </span>			require.NoError(t, report(true, 1, 1, 1, nil))
-<span id="L599" class="ln">   599  </span>		})
-<span id="L600" class="ln">   600  </span>	})
+<span id="L584" class="ln">   584  </span>	})
+<span id="L585" class="ln">   585  </span>}
+<span id="L586" class="ln">   586  </span>
+<span id="L587" class="ln">   587  </span><span class="comment">// t.Setenv がプロセス全体の環境を触るため、このテストは並列化しない。</span>
+<span id="L588" class="ln">   588  </span>func Test_report(t *testing.T) {
+<span id="L589" class="ln">   589  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L590" class="ln">   590  </span>		t.Run(&#34;閾値を超えていれば警告付きで job summary に書く&#34;, func(t *testing.T) {
+<span id="L591" class="ln">   591  </span>			path := filepath.Join(t.TempDir(), &#34;summary.md&#34;)
+<span id="L592" class="ln">   592  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, path)
+<span id="L593" class="ln">   593  </span>
+<span id="L594" class="ln">   594  </span>			require.NoError(t, report(true, 2, 40, 20, []pending{{path: &#34;a.md&#34;, changed: 40}}))
+<span id="L595" class="ln">   595  </span>
+<span id="L596" class="ln">   596  </span>			body, err := os.ReadFile(path) <span class="comment">//nolint:gosec // テスト内で組み立てた一時パス</span>
+<span id="L597" class="ln">   597  </span>			require.NoError(t, err)
+<span id="L598" class="ln">   598  </span>			assert.Contains(t, string(body), &#34;⚠️&#34;)
+<span id="L599" class="ln">   599  </span>			assert.Contains(t, string(body), &#34;`a.md` (40)&#34;)
+<span id="L600" class="ln">   600  </span>		})
 <span id="L601" class="ln">   601  </span>
-<span id="L602" class="ln">   602  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L603" class="ln">   603  </span>		t.Run(&#34;宛先を開けなければエラーにする&#34;, func(t *testing.T) {
-<span id="L604" class="ln">   604  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, filepath.Join(t.TempDir(), &#34;absent&#34;, &#34;summary.md&#34;))
+<span id="L602" class="ln">   602  </span>		t.Run(&#34;閾値未満なら警告を付けない&#34;, func(t *testing.T) {
+<span id="L603" class="ln">   603  </span>			path := filepath.Join(t.TempDir(), &#34;summary.md&#34;)
+<span id="L604" class="ln">   604  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, path)
 <span id="L605" class="ln">   605  </span>
-<span id="L606" class="ln">   606  </span>			require.Error(t, report(true, 1, 1, 1, nil))
-<span id="L607" class="ln">   607  </span>		})
-<span id="L608" class="ln">   608  </span>	})
-<span id="L609" class="ln">   609  </span>}
-<span id="L610" class="ln">   610  </span>
-<span id="L611" class="ln">   611  </span>func Test_short(t *testing.T) {
-<span id="L612" class="ln">   612  </span>	t.Parallel()
-<span id="L613" class="ln">   613  </span>
-<span id="L614" class="ln">   614  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L615" class="ln">   615  </span>		t.Parallel()
-<span id="L616" class="ln">   616  </span>
-<span id="L617" class="ln">   617  </span>		t.Run(&#34;長いハッシュは8桁に切る&#34;, func(t *testing.T) {
-<span id="L618" class="ln">   618  </span>			t.Parallel()
-<span id="L619" class="ln">   619  </span>
-<span id="L620" class="ln">   620  </span>			assert.Equal(t, &#34;0123456789abcdef&#34;[:8], short(&#34;0123456789abcdef&#34;))
-<span id="L621" class="ln">   621  </span>		})
+<span id="L606" class="ln">   606  </span>			require.NoError(t, report(true, 1, 3, 20, []pending{{path: &#34;a.md&#34;, changed: 3}}))
+<span id="L607" class="ln">   607  </span>
+<span id="L608" class="ln">   608  </span>			body, err := os.ReadFile(path) <span class="comment">//nolint:gosec // テスト内で組み立てた一時パス</span>
+<span id="L609" class="ln">   609  </span>			require.NoError(t, err)
+<span id="L610" class="ln">   610  </span>			assert.NotContains(t, string(body), &#34;⚠️&#34;)
+<span id="L611" class="ln">   611  </span>		})
+<span id="L612" class="ln">   612  </span>
+<span id="L613" class="ln">   613  </span>		t.Run(&#34;上限を超えたら省略して残数を示す&#34;, func(t *testing.T) {
+<span id="L614" class="ln">   614  </span>			path := filepath.Join(t.TempDir(), &#34;summary.md&#34;)
+<span id="L615" class="ln">   615  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, path)
+<span id="L616" class="ln">   616  </span>			items := make([]pending, 0, maxListedFiles+2)
+<span id="L617" class="ln">   617  </span>			for i := range maxListedFiles + 2 {
+<span id="L618" class="ln">   618  </span>				items = append(items, pending{path: fmt.Sprintf(&#34;%d.md&#34;, i), changed: 1})
+<span id="L619" class="ln">   619  </span>			}
+<span id="L620" class="ln">   620  </span>
+<span id="L621" class="ln">   621  </span>			require.NoError(t, report(true, len(items), len(items), 1, items))
 <span id="L622" class="ln">   622  </span>
-<span id="L623" class="ln">   623  </span>		t.Run(&#34;短い値はそのまま返す&#34;, func(t *testing.T) {
-<span id="L624" class="ln">   624  </span>			t.Parallel()
-<span id="L625" class="ln">   625  </span>
-<span id="L626" class="ln">   626  </span>			assert.Equal(t, &#34;abc&#34;, short(&#34;abc&#34;))
-<span id="L627" class="ln">   627  </span>		})
-<span id="L628" class="ln">   628  </span>	})
-<span id="L629" class="ln">   629  </span>}
-<span id="L630" class="ln">   630  </span>
-<span id="L631" class="ln">   631  </span>func Test_isDocument(t *testing.T) {
-<span id="L632" class="ln">   632  </span>	t.Parallel()
+<span id="L623" class="ln">   623  </span>			body, err := os.ReadFile(path) <span class="comment">//nolint:gosec // テスト内で組み立てた一時パス</span>
+<span id="L624" class="ln">   624  </span>			require.NoError(t, err)
+<span id="L625" class="ln">   625  </span>			assert.Contains(t, string(body), &#34;... 2 more&#34;)
+<span id="L626" class="ln">   626  </span>		})
+<span id="L627" class="ln">   627  </span>
+<span id="L628" class="ln">   628  </span>		t.Run(&#34;github を指定しなければ何も書かない&#34;, func(t *testing.T) {
+<span id="L629" class="ln">   629  </span>			path := filepath.Join(t.TempDir(), &#34;summary.md&#34;)
+<span id="L630" class="ln">   630  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, path)
+<span id="L631" class="ln">   631  </span>
+<span id="L632" class="ln">   632  </span>			require.NoError(t, report(false, 1, 1, 1, nil))
 <span id="L633" class="ln">   633  </span>
-<span id="L634" class="ln">   634  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L635" class="ln">   635  </span>		t.Parallel()
-<span id="L636" class="ln">   636  </span>
-<span id="L637" class="ln">   637  </span>		t.Run(&#34;意味論の対象拡張子を認める&#34;, func(t *testing.T) {
-<span id="L638" class="ln">   638  </span>			t.Parallel()
-<span id="L639" class="ln">   639  </span>
-<span id="L640" class="ln">   640  </span>			for _, ext := range docExtensions {
-<span id="L641" class="ln">   641  </span>				assert.True(t, isDocument(&#34;a&#34;+ext), ext)
-<span id="L642" class="ln">   642  </span>			}
-<span id="L643" class="ln">   643  </span>		})
+<span id="L634" class="ln">   634  </span>			_, err := os.Stat(path)
+<span id="L635" class="ln">   635  </span>			require.ErrorIs(t, err, os.ErrNotExist)
+<span id="L636" class="ln">   636  </span>		})
+<span id="L637" class="ln">   637  </span>
+<span id="L638" class="ln">   638  </span>		t.Run(&#34;宛先が未設定なら何も書かない&#34;, func(t *testing.T) {
+<span id="L639" class="ln">   639  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, &#34;&#34;)
+<span id="L640" class="ln">   640  </span>
+<span id="L641" class="ln">   641  </span>			require.NoError(t, report(true, 1, 1, 1, nil))
+<span id="L642" class="ln">   642  </span>		})
+<span id="L643" class="ln">   643  </span>	})
 <span id="L644" class="ln">   644  </span>
-<span id="L645" class="ln">   645  </span>		t.Run(&#34;大文字の拡張子も認める&#34;, func(t *testing.T) {
-<span id="L646" class="ln">   646  </span>			t.Parallel()
-<span id="L647" class="ln">   647  </span>
-<span id="L648" class="ln">   648  </span>			assert.True(t, isDocument(&#34;README.MD&#34;))
-<span id="L649" class="ln">   649  </span>		})
-<span id="L650" class="ln">   650  </span>
-<span id="L651" class="ln">   651  </span>		t.Run(&#34;コード拡張子は認めない&#34;, func(t *testing.T) {
-<span id="L652" class="ln">   652  </span>			t.Parallel()
+<span id="L645" class="ln">   645  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L646" class="ln">   646  </span>		t.Run(&#34;宛先を開けなければエラーにする&#34;, func(t *testing.T) {
+<span id="L647" class="ln">   647  </span>			t.Setenv(&#34;GITHUB_STEP_SUMMARY&#34;, filepath.Join(t.TempDir(), &#34;absent&#34;, &#34;summary.md&#34;))
+<span id="L648" class="ln">   648  </span>
+<span id="L649" class="ln">   649  </span>			require.Error(t, report(true, 1, 1, 1, nil))
+<span id="L650" class="ln">   650  </span>		})
+<span id="L651" class="ln">   651  </span>	})
+<span id="L652" class="ln">   652  </span>}
 <span id="L653" class="ln">   653  </span>
-<span id="L654" class="ln">   654  </span>			assert.False(t, isDocument(&#34;main.go&#34;))
-<span id="L655" class="ln">   655  </span>		})
+<span id="L654" class="ln">   654  </span>func Test_short(t *testing.T) {
+<span id="L655" class="ln">   655  </span>	t.Parallel()
 <span id="L656" class="ln">   656  </span>
-<span id="L657" class="ln">   657  </span>		t.Run(&#34;拡張子が無ければ認めない&#34;, func(t *testing.T) {
-<span id="L658" class="ln">   658  </span>			t.Parallel()
+<span id="L657" class="ln">   657  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L658" class="ln">   658  </span>		t.Parallel()
 <span id="L659" class="ln">   659  </span>
-<span id="L660" class="ln">   660  </span>			assert.False(t, isDocument(strings.TrimSuffix(&#34;LICENSE&#34;, &#34;&#34;)))
-<span id="L661" class="ln">   661  </span>		})
-<span id="L662" class="ln">   662  </span>	})
-<span id="L663" class="ln">   663  </span>}
-<span id="L664" class="ln">   664  </span>
+<span id="L660" class="ln">   660  </span>		t.Run(&#34;長いハッシュは8桁に切る&#34;, func(t *testing.T) {
+<span id="L661" class="ln">   661  </span>			t.Parallel()
+<span id="L662" class="ln">   662  </span>
+<span id="L663" class="ln">   663  </span>			assert.Equal(t, &#34;0123456789abcdef&#34;[:8], short(&#34;0123456789abcdef&#34;))
+<span id="L664" class="ln">   664  </span>		})
+<span id="L665" class="ln">   665  </span>
+<span id="L666" class="ln">   666  </span>		t.Run(&#34;短い値はそのまま返す&#34;, func(t *testing.T) {
+<span id="L667" class="ln">   667  </span>			t.Parallel()
+<span id="L668" class="ln">   668  </span>
+<span id="L669" class="ln">   669  </span>			assert.Equal(t, &#34;abc&#34;, short(&#34;abc&#34;))
+<span id="L670" class="ln">   670  </span>		})
+<span id="L671" class="ln">   671  </span>	})
+<span id="L672" class="ln">   672  </span>}
+<span id="L673" class="ln">   673  </span>
+<span id="L674" class="ln">   674  </span>func Test_isDocument(t *testing.T) {
+<span id="L675" class="ln">   675  </span>	t.Parallel()
+<span id="L676" class="ln">   676  </span>
+<span id="L677" class="ln">   677  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L678" class="ln">   678  </span>		t.Parallel()
+<span id="L679" class="ln">   679  </span>
+<span id="L680" class="ln">   680  </span>		t.Run(&#34;意味論の対象拡張子を認める&#34;, func(t *testing.T) {
+<span id="L681" class="ln">   681  </span>			t.Parallel()
+<span id="L682" class="ln">   682  </span>
+<span id="L683" class="ln">   683  </span>			for _, ext := range docExtensions {
+<span id="L684" class="ln">   684  </span>				assert.True(t, isDocument(&#34;a&#34;+ext), ext)
+<span id="L685" class="ln">   685  </span>			}
+<span id="L686" class="ln">   686  </span>		})
+<span id="L687" class="ln">   687  </span>
+<span id="L688" class="ln">   688  </span>		t.Run(&#34;大文字の拡張子も認める&#34;, func(t *testing.T) {
+<span id="L689" class="ln">   689  </span>			t.Parallel()
+<span id="L690" class="ln">   690  </span>
+<span id="L691" class="ln">   691  </span>			assert.True(t, isDocument(&#34;README.MD&#34;))
+<span id="L692" class="ln">   692  </span>		})
+<span id="L693" class="ln">   693  </span>
+<span id="L694" class="ln">   694  </span>		t.Run(&#34;コード拡張子は認めない&#34;, func(t *testing.T) {
+<span id="L695" class="ln">   695  </span>			t.Parallel()
+<span id="L696" class="ln">   696  </span>
+<span id="L697" class="ln">   697  </span>			assert.False(t, isDocument(&#34;main.go&#34;))
+<span id="L698" class="ln">   698  </span>		})
+<span id="L699" class="ln">   699  </span>
+<span id="L700" class="ln">   700  </span>		t.Run(&#34;拡張子が無ければ認めない&#34;, func(t *testing.T) {
+<span id="L701" class="ln">   701  </span>			t.Parallel()
+<span id="L702" class="ln">   702  </span>
+<span id="L703" class="ln">   703  </span>			assert.False(t, isDocument(strings.TrimSuffix(&#34;LICENSE&#34;, &#34;&#34;)))
+<span id="L704" class="ln">   704  </span>		})
+<span id="L705" class="ln">   705  </span>	})
+<span id="L706" class="ln">   706  </span>}
+<span id="L707" class="ln">   707  </span>
 </pre><p><a href="../../../../src/go-boilerplate/scripts/graphify-pending/main_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

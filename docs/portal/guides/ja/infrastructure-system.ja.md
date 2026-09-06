@@ -1,7 +1,5 @@
 # system
 
-[English](README.md) | 日本語
-
 `internal/infrastructure/system` は、時刻取得やコンテキスト対応の待機などの **システム依存処理の Infrastructure 実装**を提供するパッケージです。
 
 `internal/usecase/boundary/clock` の 2 つのインターフェースを実装します。

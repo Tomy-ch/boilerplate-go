@@ -1,7 +1,5 @@
 # httpstack
 
-English | [日本語](README.ja.md)
-
 A directory of **common HTTP middleware** registered when starting the Echo server.
 
 Each sub-package is split into small responsibilities and combined during application startup.
@@ -25,6 +23,7 @@ Each sub-package is split into small responsibilities and combined during applic
 |`requestid`|`Middleware`|Auto-generate X-Request-ID header|
 |`logging`|`Middleware`|Structured logging for HTTP request / response|
 |`recovery`|`Middleware`|Catch panics and log them|
+|`redaction`|`Redactor`|Remove query credentials (spec-derived names) from URI / query before logging|
 |`cors`|`Middleware`|CORS configuration|
 |`security`|`Middleware`|Security headers (HSTS, X-Frame-Options, etc.)|
 |`cookie`|`Middleware`|Enforce security attributes on Set-Cookie headers|
@@ -58,6 +57,7 @@ Each sub-package is split into small responsibilities and combined during applic
 |`basicauth`|`NewBasicAuthValidator`|Basic auth for metrics endpoint|
 |`ipextractor`|`New`|Environment-aware client IP extraction|
 |`ops`|`IsOpsPath`|Identify ops paths (/health, /metrics, etc.)|
+|`streampath`|`Is` / `IsCommittedStream`|Identify the SSE stream path, and a response that committed as a stream|
 
 ## Middleware Registration
 
@@ -101,18 +101,19 @@ Drive the middleware directly (`Middleware(...)(next)(c)`) when the assertion is
 
 ### Sub-packages that are not middleware
 
-The dividing line is whether the sub-package takes a `next`, not which table it sits in: `oapi` is listed under *OpenAPI Integration* but returns an `echo.MiddlewareFunc` and joins the same `e.Use` chain, so the middleware viewpoints below apply to it in full. The sub-packages that go into a slot Echo or oapi-codegen owns — `ops`, `oapi/skipper`, `oapi/auth`, `oapi/validator`, `basicauth`, `ipextractor` — have no `next`: pass-through and the `Before` / `After` viewpoints do not apply to them, while the *Real vs mocked* table does. They fall into three shapes.
+The dividing line is whether the sub-package takes a `next`, not which table it sits in: `oapi` is listed under *OpenAPI Integration* but returns an `echo.MiddlewareFunc` and joins the same `e.Use` chain, so the middleware viewpoints below apply to it in full. The sub-packages that go into a slot Echo or oapi-codegen owns — `ops`, `streampath`, `oapi/skipper`, `oapi/auth`, `oapi/validator`, `basicauth`, `ipextractor` — have no `next`: pass-through and the `Before` / `After` viewpoints do not apply to them, while the *Real vs mocked* table does. They fall into three shapes.
 
-- **Predicates and extractors** (`ops`, `oapi/skipper`, `basicauth`, `ipextractor`) — call the constructed function value directly and assert its verdict; `echo.New()` + `httptest` is only the material for the `*echo.Context` it takes. The viewpoint is the decision boundary from both sides, including the edges a caller can reach but the happy path does not (a trailing slash, an empty credential, an unroutable path), plus the config-selected variants under *Environment-dependent branches*.
+- **Predicates and extractors** (`ops`, `streampath`, `oapi/skipper`, `basicauth`, `ipextractor`) — call the constructed function value directly and assert its verdict; `echo.New()` + `httptest` is only the material for the `*echo.Context` it takes. The viewpoint is the decision boundary from both sides, including the edges a caller can reach but the happy path does not (a trailing slash, an empty credential, an unroutable path), plus the config-selected variants under *Environment-dependent branches*.
 - **Adapter-slot functions** (`oapi/auth`) — driven through the signature the adapter demands (`openapi3filter.AuthenticationFunc`), not through Echo. The result is usually a side effect on the request context rather than a return value, so assert the written value, and on each rejection path assert the error identity rather than merely that an error occurred.
 - **Spec providers** (`oapi/validator`) — the returned `*openapi3.T` is itself the subject, so the tests are contracts over the spec (e.g. every operation outside the public allowlist declares an authenticated `security`). They have no production counterpart by design.
 
-`errorhandler` replaces `e.HTTPErrorHandler` and its viewpoints are package-specific, so it carries its own *Test Strategy* section — see [`errorhandler/README.md`](errorhandler/README.md).
+`errorhandler` replaces `e.HTTPErrorHandler` and its viewpoints are package-specific, so it carries its own *Test Strategy* section — see [`errorhandler/README.md`](errorhandler/README.md). `redaction` fits none of the three shapes — a pure value transformation that goes into no Echo or oapi-codegen slot — and carries its own section too: [`redaction/README.md`](redaction/README.md).
 
 ### Viewpoints every middleware covers
 
 - **Pass-through** — a request the middleware does not act on reaches `next` unchanged, and `next`'s return value is propagated verbatim.
 - **Ops-path exclusion** — for middleware that consults `ops.IsOpsPath` (`logging` / `redmetrics`, and the `oapi/skipper` skipper), assert both sides: an ops path (`/health`, `/metrics`, …) produces no log / no metric, an application path does.
+- **Stream exclusion** — two predicates with different timing, so assert them separately. `timeout` consults `streampath.Is` (path, before the handler): `/v1/streams/…` gets no deadline, an application path does. `logging` / `redmetrics` consult `streampath.IsCommittedStream` (response content type, after): a committed `text/event-stream` response produces no response log / no metric, while a refusal on the *same path* still produces both. A test that covers only the committed case proves nothing about the refusals, which is where a ticket brute-force or capacity exhaustion would show. `oapi/skipper` must consult **neither** predicate, since letting a stream request past OpenAPI validation skips its ticket security scheme.
 - **`server.ResponseOf` degradation** — middleware that unwraps the Echo response degrades to a plain pass-through when the writer cannot be unwrapped. Reproduce it with `c.SetResponse(httptest.NewRecorder())` and assert the middleware neither fails nor records anything. This branch is unreachable through the production stack, so the package-level test is the only thing holding it.
 - **Environment-dependent branches** — when config selects a variant (`recovery` stack size, `ipextractor` extraction mode), exercise each mode through the config setters, including the unknown-mode fallback.
 

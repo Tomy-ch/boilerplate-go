@@ -1,7 +1,5 @@
 # CLI core
 
-English | [日本語](README.ja.md)
-
 `internal/cli` holds the **pure, testable core logic** for the application's CLI commands.
 
 It does NOT depend on Cobra or infrastructure wiring. The Cobra command definitions and the
@@ -22,6 +20,7 @@ live in `cmd/` (package `main`). This split keeps the core unit-testable and the
 |`merge-dml`|`mergedml/`|`cmd/merge_dml.go`|Merge DML directory SQL files by type|
 |`worker`|`worker/`|`cmd/worker.go`|Run a registered worker (`worker <worker-name> [args...]`)|
 |`outbox-relay`|`outbox/`|`cmd/outbox_relay.go`|Run the outbox relay; `replay` subcommand returns dead rows to pending|
+|`realtime-init`|`realtimeinit/`|`cmd/realtime_init.go`|Create the Realtime Delivery tables (EventLog / StreamTicket / InstanceLease) in the DynamoDB-compatible store and the fan-out topic on the SNS-compatible broker; idempotent one-shot, never run at application start|
 |`db-slot`|`dbslot/`|`cmd/db-slot.go`|Lease a database slot from the shared worktree pool (`acquire` / `release` / `heartbeat` / `status` / `env` / `require-owner`)|
 
 ## Structure
@@ -60,7 +59,8 @@ pushed out to `cmd/`. The package boundary equals the test boundary.
   its own README — see [`dbslot/`](dbslot/README.md).
 - **The thin `cmd/` shells are excluded** from the coverage gate (`gen|cmd|mock|apperror|scripts`).
   Their runtime correctness is covered by CI boot checks: `app-di-startup-check` (serve → `/ready`),
-  `job-boot-check` (job dispatch), `worker-boot-check` (worker dispatch), `migration-check`
+  `job-boot-check` (job dispatch), `worker-boot-check` (worker dispatch),
+  `outbox-relay-boot-check` (relay start and drain), `migration-check`
   (up/down round-trip), `gen-*-artifacts-check` (codegen dogfooding) — all against a real Postgres
   service. DB access behaviour is covered by
   repository tests against a real Postgres (`internal/infrastructure/rdb/testkit`).

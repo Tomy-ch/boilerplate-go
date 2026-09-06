@@ -1,7 +1,5 @@
 # Controller Layer Handler (`internal/controller/handler`) Guide
 
-English | [日本語](README.ja.md)
-
 ## What is the Controller Layer
 
 In this project, the following are defined as the **Controller Layer**:

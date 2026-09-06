@@ -114,87 +114,87 @@
 <span id="L57" class="ln">    57  </span>	}
 <span id="L58" class="ln">    58  </span>
 <span id="L59" class="ln">    59  </span>	list, err := s.uc.ListProducts(ctx, ctxhelper.OptionalAuthn(ctx), productuc.ListProductsParams{
-<span id="L60" class="ln">    60  </span>		SearchFilter: productuc.SearchFilter{
-<span id="L61" class="ln">    61  </span>			CategoryID:    conv.UUIDPtr(request.Params.CategoryId),
-<span id="L62" class="ln">    62  </span>			StatusID:      conv.UUIDPtr(request.Params.StatusId),
-<span id="L63" class="ln">    63  </span>			CategoryCodes: categoryCodes,
-<span id="L64" class="ln">    64  </span>			StatusCodes:   statusCodes,
-<span id="L65" class="ln">    65  </span>			Keyword:       request.Params.Keyword,
-<span id="L66" class="ln">    66  </span>			MinPrice:      request.Params.MinPrice,
-<span id="L67" class="ln">    67  </span>			MaxPrice:      request.Params.MaxPrice,
-<span id="L68" class="ln">    68  </span>			MinQuantity:   request.Params.MinQuantity,
-<span id="L69" class="ln">    69  </span>			MaxQuantity:   request.Params.MaxQuantity,
-<span id="L70" class="ln">    70  </span>		},
-<span id="L71" class="ln">    71  </span>		Cursor:             cursor,
-<span id="L72" class="ln">    72  </span>		Ascending:          isAscending(request.Params.Sort),
-<span id="L73" class="ln">    73  </span>		IncludeUnpublished: ptr.Deref(request.Params.IncludeUnpublished, false),
-<span id="L74" class="ln">    74  </span>	})
-<span id="L75" class="ln">    75  </span>	if err != nil {
-<span id="L76" class="ln">    76  </span>		return nil, err
-<span id="L77" class="ln">    77  </span>	}
-<span id="L78" class="ln">    78  </span>
-<span id="L79" class="ln">    79  </span>	products := make([]gen.ProductResponse, len(list.Items))
-<span id="L80" class="ln">    80  </span>	for i, dto := range list.Items {
-<span id="L81" class="ln">    81  </span>		res, err := toProductResponse(dto)
-<span id="L82" class="ln">    82  </span>		if err != nil {
-<span id="L83" class="ln">    83  </span>			return nil, err
-<span id="L84" class="ln">    84  </span>		}
-<span id="L85" class="ln">    85  </span>		products[i] = res
-<span id="L86" class="ln">    86  </span>	}
-<span id="L87" class="ln">    87  </span>
-<span id="L88" class="ln">    88  </span>	return gen.GetProducts200JSONResponse(gen.ProductListResponse{
-<span id="L89" class="ln">    89  </span>		Products:   products,
-<span id="L90" class="ln">    90  </span>		NextCursor: list.NextCursor,
-<span id="L91" class="ln">    91  </span>		HasNext:    list.NextCursor != nil,
-<span id="L92" class="ln">    92  </span>	}), nil
-<span id="L93" class="ln">    93  </span>}
-<span id="L94" class="ln">    94  </span>
-<span id="L95" class="ln">    95  </span><span class="comment">// isAscending は、sort パラメータを昇順フラグへ変換します。publishedAt のみ昇順、それ以外（既定の -publishedAt / 未指定）は降順です。</span>
-<span id="L96" class="ln">    96  </span>func isAscending(sort *gen.GetProductsParamsSort) bool {
-<span id="L97" class="ln">    97  </span>	return sort != nil &amp;&amp; string(*sort) == sortPublishedAtAsc
-<span id="L98" class="ln">    98  </span>}
-<span id="L99" class="ln">    99  </span>
-<span id="L100" class="ln">   100  </span><span class="comment">// toProductResponse は、ユースケースの DTO を HTTP レスポンスへ変換します。</span>
-<span id="L101" class="ln">   101  </span><span class="comment">// 在庫数・在庫警告閾値・バージョンが int32 に収まらない場合はエラーを返します。</span>
-<span id="L102" class="ln">   102  </span>func toProductResponse(dto productuc.ProductView) (gen.ProductResponse, error) {
-<span id="L103" class="ln">   103  </span>	quantity, err := safecast.IntToInt32(dto.Quantity)
-<span id="L104" class="ln">   104  </span>	if err != nil {
-<span id="L105" class="ln">   105  </span>		return gen.ProductResponse{}, xerrors.Wrap(err, &#34;invalid product quantity&#34;)
-<span id="L106" class="ln">   106  </span>	}
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span>	threshold, err := safecast.IntPtrToInt32Ptr(dto.StockWarningThreshold)
-<span id="L109" class="ln">   109  </span>	if err != nil {
-<span id="L110" class="ln">   110  </span>		return gen.ProductResponse{}, xerrors.Wrap(err, &#34;invalid product stock warning threshold&#34;)
-<span id="L111" class="ln">   111  </span>	}
-<span id="L112" class="ln">   112  </span>
-<span id="L113" class="ln">   113  </span>	version, err := safecast.IntToInt32(dto.Version)
-<span id="L114" class="ln">   114  </span>	if err != nil {
-<span id="L115" class="ln">   115  </span>		return gen.ProductResponse{}, xerrors.Wrap(err, &#34;invalid product version&#34;)
-<span id="L116" class="ln">   116  </span>	}
-<span id="L117" class="ln">   117  </span>
-<span id="L118" class="ln">   118  </span>	images, err := toProductImageItems(dto.Images)
-<span id="L119" class="ln">   119  </span>	if err != nil {
-<span id="L120" class="ln">   120  </span>		return gen.ProductResponse{}, err
-<span id="L121" class="ln">   121  </span>	}
-<span id="L122" class="ln">   122  </span>
-<span id="L123" class="ln">   123  </span>	return gen.ProductResponse{
-<span id="L124" class="ln">   124  </span>		Id:                    dto.ID.ToPrimitive(),
-<span id="L125" class="ln">   125  </span>		Name:                  dto.Name,
-<span id="L126" class="ln">   126  </span>		Description:           dto.Description,
-<span id="L127" class="ln">   127  </span>		Price:                 dto.Price.String(),
-<span id="L128" class="ln">   128  </span>		Quantity:              quantity,
-<span id="L129" class="ln">   129  </span>		StockWarningThreshold: threshold,
-<span id="L130" class="ln">   130  </span>		Status: gen.ProductStatusRef{
-<span id="L131" class="ln">   131  </span>			Id:   dto.StatusID.ToPrimitive(),
-<span id="L132" class="ln">   132  </span>			Name: dto.StatusName,
-<span id="L133" class="ln">   133  </span>		},
-<span id="L134" class="ln">   134  </span>		Category: gen.ProductCategoryRef{
-<span id="L135" class="ln">   135  </span>			Id:   dto.CategoryID.ToPrimitive(),
-<span id="L136" class="ln">   136  </span>			Name: dto.CategoryName,
-<span id="L137" class="ln">   137  </span>		},
-<span id="L138" class="ln">   138  </span>		PublishedAt: dto.PublishedAt,
-<span id="L139" class="ln">   139  </span>		Images:      images,
-<span id="L140" class="ln">   140  </span>		Version:     version,
+<span id="L60" class="ln">    60  </span>		CategoryID:         conv.UUIDPtr(request.Params.CategoryId),
+<span id="L61" class="ln">    61  </span>		StatusID:           conv.UUIDPtr(request.Params.StatusId),
+<span id="L62" class="ln">    62  </span>		CategoryCodes:      categoryCodes,
+<span id="L63" class="ln">    63  </span>		StatusCodes:        statusCodes,
+<span id="L64" class="ln">    64  </span>		Keyword:            request.Params.Keyword,
+<span id="L65" class="ln">    65  </span>		MinPrice:           request.Params.MinPrice,
+<span id="L66" class="ln">    66  </span>		MaxPrice:           request.Params.MaxPrice,
+<span id="L67" class="ln">    67  </span>		MinQuantity:        request.Params.MinQuantity,
+<span id="L68" class="ln">    68  </span>		MaxQuantity:        request.Params.MaxQuantity,
+<span id="L69" class="ln">    69  </span>		Discontinued:       request.Params.Discontinued,
+<span id="L70" class="ln">    70  </span>		Cursor:             cursor,
+<span id="L71" class="ln">    71  </span>		Ascending:          isAscending(request.Params.Sort),
+<span id="L72" class="ln">    72  </span>		IncludeUnpublished: ptr.Deref(request.Params.IncludeUnpublished, false),
+<span id="L73" class="ln">    73  </span>	})
+<span id="L74" class="ln">    74  </span>	if err != nil {
+<span id="L75" class="ln">    75  </span>		return nil, err
+<span id="L76" class="ln">    76  </span>	}
+<span id="L77" class="ln">    77  </span>
+<span id="L78" class="ln">    78  </span>	products := make([]gen.ProductResponse, len(list.Items))
+<span id="L79" class="ln">    79  </span>	for i, dto := range list.Items {
+<span id="L80" class="ln">    80  </span>		res, err := toProductResponse(dto)
+<span id="L81" class="ln">    81  </span>		if err != nil {
+<span id="L82" class="ln">    82  </span>			return nil, err
+<span id="L83" class="ln">    83  </span>		}
+<span id="L84" class="ln">    84  </span>		products[i] = res
+<span id="L85" class="ln">    85  </span>	}
+<span id="L86" class="ln">    86  </span>
+<span id="L87" class="ln">    87  </span>	return gen.GetProducts200JSONResponse(gen.ProductListResponse{
+<span id="L88" class="ln">    88  </span>		Products:   products,
+<span id="L89" class="ln">    89  </span>		NextCursor: list.NextCursor,
+<span id="L90" class="ln">    90  </span>		HasNext:    list.NextCursor != nil,
+<span id="L91" class="ln">    91  </span>	}), nil
+<span id="L92" class="ln">    92  </span>}
+<span id="L93" class="ln">    93  </span>
+<span id="L94" class="ln">    94  </span><span class="comment">// isAscending は、sort パラメータを昇順フラグへ変換します。publishedAt のみ昇順、それ以外（既定の -publishedAt / 未指定）は降順です。</span>
+<span id="L95" class="ln">    95  </span>func isAscending(sort *gen.GetProductsParamsSort) bool {
+<span id="L96" class="ln">    96  </span>	return sort != nil &amp;&amp; string(*sort) == sortPublishedAtAsc
+<span id="L97" class="ln">    97  </span>}
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span><span class="comment">// toProductResponse は、ユースケースの DTO を HTTP レスポンスへ変換します。</span>
+<span id="L100" class="ln">   100  </span><span class="comment">// 在庫数・在庫警告閾値・バージョンが int32 に収まらない場合はエラーを返します。</span>
+<span id="L101" class="ln">   101  </span>func toProductResponse(dto productuc.ProductView) (gen.ProductResponse, error) {
+<span id="L102" class="ln">   102  </span>	quantity, err := safecast.IntToInt32(dto.Quantity)
+<span id="L103" class="ln">   103  </span>	if err != nil {
+<span id="L104" class="ln">   104  </span>		return gen.ProductResponse{}, xerrors.Wrap(err, &#34;invalid product quantity&#34;)
+<span id="L105" class="ln">   105  </span>	}
+<span id="L106" class="ln">   106  </span>
+<span id="L107" class="ln">   107  </span>	threshold, err := safecast.IntPtrToInt32Ptr(dto.StockWarningThreshold)
+<span id="L108" class="ln">   108  </span>	if err != nil {
+<span id="L109" class="ln">   109  </span>		return gen.ProductResponse{}, xerrors.Wrap(err, &#34;invalid product stock warning threshold&#34;)
+<span id="L110" class="ln">   110  </span>	}
+<span id="L111" class="ln">   111  </span>
+<span id="L112" class="ln">   112  </span>	version, err := safecast.IntToInt32(dto.Version)
+<span id="L113" class="ln">   113  </span>	if err != nil {
+<span id="L114" class="ln">   114  </span>		return gen.ProductResponse{}, xerrors.Wrap(err, &#34;invalid product version&#34;)
+<span id="L115" class="ln">   115  </span>	}
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>	images, err := toProductImageItems(dto.Images)
+<span id="L118" class="ln">   118  </span>	if err != nil {
+<span id="L119" class="ln">   119  </span>		return gen.ProductResponse{}, err
+<span id="L120" class="ln">   120  </span>	}
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>	return gen.ProductResponse{
+<span id="L123" class="ln">   123  </span>		Id:                    dto.ID.ToPrimitive(),
+<span id="L124" class="ln">   124  </span>		Name:                  dto.Name,
+<span id="L125" class="ln">   125  </span>		Description:           dto.Description,
+<span id="L126" class="ln">   126  </span>		Price:                 dto.Price.String(),
+<span id="L127" class="ln">   127  </span>		Quantity:              quantity,
+<span id="L128" class="ln">   128  </span>		StockWarningThreshold: threshold,
+<span id="L129" class="ln">   129  </span>		Status: gen.ProductStatusRef{
+<span id="L130" class="ln">   130  </span>			Id:   dto.StatusID.ToPrimitive(),
+<span id="L131" class="ln">   131  </span>			Name: dto.StatusName,
+<span id="L132" class="ln">   132  </span>		},
+<span id="L133" class="ln">   133  </span>		Category: gen.ProductCategoryRef{
+<span id="L134" class="ln">   134  </span>			Id:   dto.CategoryID.ToPrimitive(),
+<span id="L135" class="ln">   135  </span>			Name: dto.CategoryName,
+<span id="L136" class="ln">   136  </span>		},
+<span id="L137" class="ln">   137  </span>		PublishedAt:    dto.PublishedAt,
+<span id="L138" class="ln">   138  </span>		DiscontinuedAt: dto.DiscontinuedAt,
+<span id="L139" class="ln">   139  </span>		Images:         images,
+<span id="L140" class="ln">   140  </span>		Version:        version,
 <span id="L141" class="ln">   141  </span>	}, nil
 <span id="L142" class="ln">   142  </span>}
 <span id="L143" class="ln">   143  </span>

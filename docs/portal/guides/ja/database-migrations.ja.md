@@ -1,7 +1,5 @@
 # migrations
 
-[English](README.md) | 日本語
-
 `database/migrations` は、**golang-migrate によるデータベースマイグレーションファイル**を格納するディレクトリです。
 
 ## ファイル生成

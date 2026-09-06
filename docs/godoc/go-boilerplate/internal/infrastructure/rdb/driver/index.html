@@ -287,7 +287,7 @@
 		
 			
 			
-			</p><h2 id="NewTransactionManager">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/rdb/driver/transaction.go.html?s=1531:1667#L37">NewTransactionManager</a>
+			</p><h2 id="NewTransactionManager">func <a href="../../../../../src/go-boilerplate/internal/infrastructure/rdb/driver/transaction.go.html?s=1264:1400#L33">NewTransactionManager</a>
 				<a class="permalink" href="#NewTransactionManager">¶</a>
 				
 				
@@ -295,10 +295,8 @@
 			<pre>func NewTransactionManager(
     db <a href="#DatabaseDriver">DatabaseDriver</a>, dbCfg *<a href="../../../../../go-boilerplate/internal/config/">config</a>.<a href="../../../../../go-boilerplate/internal/config/#DatabaseConfig">DatabaseConfig</a>, logger <a href="../../../../../go-boilerplate/internal/logging/">logging</a>.<a href="../../../../../go-boilerplate/internal/logging/#Logger">Logger</a>, sleeper <a href="../../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/clock/#Sleeper">Sleeper</a>,
 ) <a href="../../../../../go-boilerplate/internal/usecase/boundary/tx/">tx</a>.<a href="../../../../../go-boilerplate/internal/usecase/boundary/tx/#Manager">Manager</a></pre>
-			<p>NewTransactionManager は、トランザクションマネージャを初期化します。
-</p><p>serialization failure / deadlock 検出時に fn を有限回まで再試行します。
-リトライ上限・backoff は config（DB_TX_MAX_RETRIES / DB_TX_RETRY_BASE_BACKOFF /
-DB_TX_RETRY_MAX_BACKOFF）から取得します。0 以下の場合は既定値にフォールバックします。
+			<p>NewTransactionManager は、リトライ上限と backoff を config から読んで組み立てます。
+0 以下の値は既定値へ倒します（リトライ方針そのものは ADR-0035）。
 
 			
 			

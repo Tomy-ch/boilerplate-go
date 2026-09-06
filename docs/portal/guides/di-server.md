@@ -1,7 +1,5 @@
 # server DI Module
 
-English | [日本語](README.ja.md)
-
 This directory is the **server module layer responsible for Echo server initialization, startup, and DI management**.
 
 Built around three `fx.Module` functions, it provides HTTP server creation, middleware aggregation, and lifecycle hook registration.

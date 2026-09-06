@@ -1,0 +1,311 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>coupon - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package coupon
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/coupon&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package coupon は、クーポンの読み取りユースケースを提供します。
+</p><p>「いまのカートに使えるか」と「いくら引かれるか」は集約をまたぐ問いですが、判定そのものは
+クーポンのドメインが持ちます。そのため QueryService ではなく、Repository を束ねて
+ドメインへ渡す通常のユースケースとして組み立てます（docs/rules.md の Repository / QueryService Rules）。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#CartCouponView">type CartCouponView</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CouponView">type CouponView</a></dd>
+				
+				
+			
+				
+				<dd><a href="#Usecase">type Usecase</a></dd>
+				
+					
+					<dd>    <a href="#New">func New(couponRepo coupon.Repository, cartRepo cart.Repository, productRepo product.Repository, clk clock.Clock, tf observability.TracerFactory) Usecase</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html">coupon_usecase.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="CartCouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=1915:2128#L37">CartCouponView</a>
+				<a class="permalink" href="#CartCouponView">¶</a>
+				
+				
+			</h2>
+			<p>CartCouponView は、いまのカートに使えるクーポン 1 枚と、その値引き額の組です。
+
+			</p><pre>type CartCouponView struct {
+<span id="CartCouponView.Coupon"></span>    <span class="comment">// Coupon は、使えるクーポンです。</span>
+    Coupon <a href="#CouponView">CouponView</a>
+<span id="CartCouponView.DiscountAmount"></span>    <span class="comment">// DiscountAmount は、適用した場合に差し引かれる額（USD セント）です。</span>
+    DiscountAmount <a href="../../../../builtin/#int">int</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=1078:1801#L17">CouponView</a>
+				<a class="permalink" href="#CouponView">¶</a>
+				
+				
+			</h2>
+			<p>CouponView は、保有クーポン 1 枚の出力です。
+
+			</p><pre>type CouponView struct {
+<span id="CouponView.ID"></span>    <span class="comment">// ID は、クーポン ID です。</span>
+    ID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="CouponView.DiscountKind"></span>    <span class="comment">// DiscountKind は、値引きの決まり方の名前です。</span>
+    DiscountKind <a href="../../../../builtin/#string">string</a>
+<span id="CouponView.DiscountValue"></span>    <span class="comment">// DiscountValue は、種別における値です。定額なら金額、定率なら率です。</span>
+    DiscountValue <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+<span id="CouponView.ScopeKind"></span>    <span class="comment">// ScopeKind は、適用範囲の決まり方の名前です。</span>
+    ScopeKind <a href="../../../../builtin/#string">string</a>
+<span id="CouponView.ScopeTargetID"></span>    <span class="comment">// ScopeTargetID は、適用範囲が絞る対象の識別子です。全体では nil です。</span>
+    ScopeTargetID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="CouponView.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、有効期限です。</span>
+    ExpiresAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="CouponView.UsedAt"></span>    <span class="comment">// UsedAt は、使用日時です。未使用の場合は nil です。</span>
+    UsedAt *<a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="CouponView.IssuedAt"></span>    <span class="comment">// IssuedAt は、発行日時です。</span>
+    IssuedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=2214:2915#L45">Usecase</a>
+				<a class="permalink" href="#Usecase">¶</a>
+				
+				
+			</h2>
+			<p>Usecase は、クーポンの読み取りユースケースを定義します。
+
+			</p><pre>type Usecase interface {
+    <span class="comment">// ListMyCoupons は、認証主体が保有するクーポンを発行日時の新しい順で返します。</span>
+    <span class="comment">// 使用済み・失効済みも含みます。1 枚も持たない場合は空を返します。</span>
+    ListMyCoupons(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>) ([]<a href="#CouponView">CouponView</a>, <a href="../../../../builtin/#error">error</a>)
+    <span class="comment">// ListApplicableToMyCart は、認証主体のカートに対して使えるクーポンと、それぞれの値引き額を返します。</span>
+    <span class="comment">// 使用済み・失効済みと、値引きが 0 になるクーポンは含みません。</span>
+    <span class="comment">// カートを持たない場合も空を返します。</span>
+    ListApplicableToMyCart(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>) ([]<a href="#CartCouponView">CartCouponView</a>, <a href="../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=3187:3348#L64">New</a>
+					<a class="permalink" href="#New">¶</a>
+					
+					
+				</h3>
+				<pre>func New(
+    couponRepo <a href="../../../../go-boilerplate/internal/domain/coupon/">coupon</a>.<a href="../../../../go-boilerplate/internal/domain/coupon/#Repository">Repository</a>,
+    cartRepo <a href="../../../../go-boilerplate/internal/domain/cart/">cart</a>.<a href="../../../../go-boilerplate/internal/domain/cart/#Repository">Repository</a>,
+    productRepo <a href="../../../../go-boilerplate/internal/domain/product/">product</a>.<a href="../../../../go-boilerplate/internal/domain/product/#Repository">Repository</a>,
+    clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>,
+    tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
+) <a href="#Usecase">Usecase</a></pre>
+				<p>New は、クーポンの読み取りユースケースを生成して返します。
+
+				
+				
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		</p><h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

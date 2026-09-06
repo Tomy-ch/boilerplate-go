@@ -182,7 +182,7 @@
 <span id="L125" class="ln">   125  </span>		resp, err = c.attempt(ctx, req, profile)
 <span id="L126" class="ln">   126  </span>		<span class="comment">// retryable は retry 継続判定に加え breaker への計上も兼ねる（!retryable を成功として記録するため、</span>
 <span id="L127" class="ln">   127  </span>		<span class="comment">// 429 や応答未取得の transport 失敗は breaker 上の失敗、4xx は成功扱いになる）。</span>
-<span id="L128" class="ln">   128  </span>		retryable := isRetryableOutcome(resp, err)
+<span id="L128" class="ln">   128  </span>		retryable := RetryableOutcome(resp, err)
 <span id="L129" class="ln">   129  </span>		br.record(!retryable, c.clk.Now(), generation)
 <span id="L130" class="ln">   130  </span>
 <span id="L131" class="ln">   131  </span>		if !retrySafe || !retryable {
@@ -236,7 +236,7 @@
 <span id="L179" class="ln">   179  </span>
 <span id="L180" class="ln">   180  </span>	body, err := readBody(httpResp.Body, profile.MaxResponseBytes)
 <span id="L181" class="ln">   181  </span>	if err != nil {
-<span id="L182" class="ln">   182  </span>		<span class="comment">// 上限超過は決定的失敗なのでそのまま返す（非 retry 化は isRetryableOutcome が担う）。</span>
+<span id="L182" class="ln">   182  </span>		<span class="comment">// 上限超過は決定的失敗なのでそのまま返す（非 retry 化は RetryableOutcome が担う）。</span>
 <span id="L183" class="ln">   183  </span>		<span class="comment">// それ以外は応答未完了の transport 失敗として正規化する（Do 失敗経路と一貫）。</span>
 <span id="L184" class="ln">   184  </span>		if xerrors.Is(err, errResponseTooLarge) {
 <span id="L185" class="ln">   185  </span>			return nil, err

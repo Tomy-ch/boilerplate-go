@@ -64,61 +64,75 @@
 <span id="L7" class="ln">     7  </span>	&#34;encoding/json&#34;
 <span id="L8" class="ln">     8  </span>
 <span id="L9" class="ln">     9  </span>	&#34;go-boilerplate/internal/domain/purchase&#34;
-<span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
-<span id="L11" class="ln">    11  </span>)
-<span id="L12" class="ln">    12  </span>
-<span id="L13" class="ln">    13  </span><span class="comment">// TypeCreated は、購入作成の outbox イベント種別（version 込み）です。</span>
-<span id="L14" class="ln">    14  </span>const TypeCreated = &#34;purchase.created.v1&#34;
-<span id="L15" class="ln">    15  </span>
-<span id="L16" class="ln">    16  </span><span class="comment">// created は、purchase.created.v1 の自己完結 snapshot payload です。金額は決済スケール（整数セント）です。</span>
-<span id="L17" class="ln">    17  </span>type created struct {
-<span id="L18" class="ln">    18  </span>	PurchaseID     string          `json:&#34;purchaseId&#34;`
-<span id="L19" class="ln">    19  </span>	Code           string          `json:&#34;code&#34;`
-<span id="L20" class="ln">    20  </span>	UserID         string          `json:&#34;userId&#34;`
-<span id="L21" class="ln">    21  </span>	StatusCode     int             `json:&#34;statusCode&#34;`
-<span id="L22" class="ln">    22  </span>	SubtotalAmount int             `json:&#34;subtotalAmount&#34;`
-<span id="L23" class="ln">    23  </span>	TaxAmount      int             `json:&#34;taxAmount&#34;`
-<span id="L24" class="ln">    24  </span>	ShippingFee    int             `json:&#34;shippingFee&#34;`
-<span id="L25" class="ln">    25  </span>	TotalAmount    int             `json:&#34;totalAmount&#34;`
-<span id="L26" class="ln">    26  </span>	Details        []createdDetail `json:&#34;details&#34;`
-<span id="L27" class="ln">    27  </span>}
-<span id="L28" class="ln">    28  </span>
-<span id="L29" class="ln">    29  </span><span class="comment">// createdDetail は、購入明細の snapshot です。UnitPrice は価格スケール（ドル decimal）を可逆に保つため文字列で保持します。</span>
-<span id="L30" class="ln">    30  </span>type createdDetail struct {
-<span id="L31" class="ln">    31  </span>	ProductID string `json:&#34;productId&#34;`
-<span id="L32" class="ln">    32  </span>	Quantity  int    `json:&#34;quantity&#34;`
-<span id="L33" class="ln">    33  </span>	UnitPrice string `json:&#34;unitPrice&#34;`
+<span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/pkg/ptr&#34;
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L12" class="ln">    12  </span>)
+<span id="L13" class="ln">    13  </span>
+<span id="L14" class="ln">    14  </span><span class="comment">// TypeCreated は、購入作成の outbox イベント種別（version 込み）です。</span>
+<span id="L15" class="ln">    15  </span>const TypeCreated = &#34;purchase.created.v1&#34;
+<span id="L16" class="ln">    16  </span>
+<span id="L17" class="ln">    17  </span><span class="comment">// created は、purchase.created.v1 の自己完結 snapshot payload です。金額は決済スケール（整数セント）です。</span>
+<span id="L18" class="ln">    18  </span><span class="comment">//</span>
+<span id="L19" class="ln">    19  </span><span class="comment">// 値引き額を載せるのは、載せないと snapshot が自己完結しなくなるためです。課税の基礎は値引き後の額</span>
+<span id="L20" class="ln">    20  </span><span class="comment">// なので（docs/spec/domain/purchase.md の Cross-field Invariants）、値引き額が無いと購読側で</span>
+<span id="L21" class="ln">    21  </span><span class="comment">// subtotal + tax + shipping が total に一致しません。</span>
+<span id="L22" class="ln">    22  </span>type created struct {
+<span id="L23" class="ln">    23  </span>	PurchaseID     string          `json:&#34;purchaseId&#34;`
+<span id="L24" class="ln">    24  </span>	Code           string          `json:&#34;code&#34;`
+<span id="L25" class="ln">    25  </span>	UserID         string          `json:&#34;userId&#34;`
+<span id="L26" class="ln">    26  </span>	StatusCode     int             `json:&#34;statusCode&#34;`
+<span id="L27" class="ln">    27  </span>	SubtotalAmount int             `json:&#34;subtotalAmount&#34;`
+<span id="L28" class="ln">    28  </span>	DiscountAmount int             `json:&#34;discountAmount&#34;`
+<span id="L29" class="ln">    29  </span>	TaxAmount      int             `json:&#34;taxAmount&#34;`
+<span id="L30" class="ln">    30  </span>	ShippingFee    int             `json:&#34;shippingFee&#34;`
+<span id="L31" class="ln">    31  </span>	TotalAmount    int             `json:&#34;totalAmount&#34;`
+<span id="L32" class="ln">    32  </span>	CouponID       *string         `json:&#34;couponId&#34;`
+<span id="L33" class="ln">    33  </span>	Details        []createdDetail `json:&#34;details&#34;`
 <span id="L34" class="ln">    34  </span>}
 <span id="L35" class="ln">    35  </span>
-<span id="L36" class="ln">    36  </span><span class="comment">// BuildCreated は、購入集約から purchase.created.v1 の自己完結 snapshot payload を marshal します。</span>
-<span id="L37" class="ln">    37  </span>func BuildCreated(p *purchase.Purchase) ([]byte, error) {
-<span id="L38" class="ln">    38  </span>	src := p.Details()
-<span id="L39" class="ln">    39  </span>	details := make([]createdDetail, len(src))
-<span id="L40" class="ln">    40  </span>	for i, d := range src {
-<span id="L41" class="ln">    41  </span>		details[i] = createdDetail{
-<span id="L42" class="ln">    42  </span>			ProductID: d.ProductID().String(),
-<span id="L43" class="ln">    43  </span>			Quantity:  d.Quantity(),
-<span id="L44" class="ln">    44  </span>			UnitPrice: d.UnitPrice().String(),
-<span id="L45" class="ln">    45  </span>		}
-<span id="L46" class="ln">    46  </span>	}
-<span id="L47" class="ln">    47  </span>
-<span id="L48" class="ln">    48  </span>	payload, err := json.Marshal(created{
-<span id="L49" class="ln">    49  </span>		PurchaseID:     p.ID().String(),
-<span id="L50" class="ln">    50  </span>		Code:           p.Code(),
-<span id="L51" class="ln">    51  </span>		UserID:         p.UserID().String(),
-<span id="L52" class="ln">    52  </span>		StatusCode:     p.StatusCode(),
-<span id="L53" class="ln">    53  </span>		SubtotalAmount: p.SubtotalAmount(),
-<span id="L54" class="ln">    54  </span>		TaxAmount:      p.TaxAmount(),
-<span id="L55" class="ln">    55  </span>		ShippingFee:    p.ShippingFee(),
-<span id="L56" class="ln">    56  </span>		TotalAmount:    p.TotalAmount(),
-<span id="L57" class="ln">    57  </span>		Details:        details,
-<span id="L58" class="ln">    58  </span>	})
-<span id="L59" class="ln">    59  </span>	if err != nil {
-<span id="L60" class="ln">    60  </span>		return nil, xerrors.Wrap(err, &#34;failed to encode purchase.created payload&#34;)
-<span id="L61" class="ln">    61  </span>	}
-<span id="L62" class="ln">    62  </span>	return payload, nil
-<span id="L63" class="ln">    63  </span>}
-<span id="L64" class="ln">    64  </span>
+<span id="L36" class="ln">    36  </span><span class="comment">// createdDetail は、購入明細の snapshot です。UnitPrice は価格スケール（ドル decimal）を可逆に保つため文字列で保持します。</span>
+<span id="L37" class="ln">    37  </span>type createdDetail struct {
+<span id="L38" class="ln">    38  </span>	ProductID string `json:&#34;productId&#34;`
+<span id="L39" class="ln">    39  </span>	Quantity  int    `json:&#34;quantity&#34;`
+<span id="L40" class="ln">    40  </span>	UnitPrice string `json:&#34;unitPrice&#34;`
+<span id="L41" class="ln">    41  </span>}
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span><span class="comment">// BuildCreated は、購入集約から purchase.created.v1 の自己完結 snapshot payload を marshal します。</span>
+<span id="L44" class="ln">    44  </span>func BuildCreated(p *purchase.Purchase) ([]byte, error) {
+<span id="L45" class="ln">    45  </span>	src := p.Details()
+<span id="L46" class="ln">    46  </span>	details := make([]createdDetail, len(src))
+<span id="L47" class="ln">    47  </span>	for i, d := range src {
+<span id="L48" class="ln">    48  </span>		details[i] = createdDetail{
+<span id="L49" class="ln">    49  </span>			ProductID: d.ProductID().String(),
+<span id="L50" class="ln">    50  </span>			Quantity:  d.Quantity(),
+<span id="L51" class="ln">    51  </span>			UnitPrice: d.UnitPrice().String(),
+<span id="L52" class="ln">    52  </span>		}
+<span id="L53" class="ln">    53  </span>	}
+<span id="L54" class="ln">    54  </span>
+<span id="L55" class="ln">    55  </span>	var couponID *string
+<span id="L56" class="ln">    56  </span>	if id := p.CouponID(); id != nil {
+<span id="L57" class="ln">    57  </span>		couponID = ptr.To(id.String())
+<span id="L58" class="ln">    58  </span>	}
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>	payload, err := json.Marshal(created{
+<span id="L61" class="ln">    61  </span>		PurchaseID:     p.ID().String(),
+<span id="L62" class="ln">    62  </span>		Code:           p.Code(),
+<span id="L63" class="ln">    63  </span>		UserID:         p.UserID().String(),
+<span id="L64" class="ln">    64  </span>		StatusCode:     p.StatusCode(),
+<span id="L65" class="ln">    65  </span>		SubtotalAmount: p.SubtotalAmount(),
+<span id="L66" class="ln">    66  </span>		DiscountAmount: p.DiscountAmount(),
+<span id="L67" class="ln">    67  </span>		TaxAmount:      p.TaxAmount(),
+<span id="L68" class="ln">    68  </span>		ShippingFee:    p.ShippingFee(),
+<span id="L69" class="ln">    69  </span>		TotalAmount:    p.TotalAmount(),
+<span id="L70" class="ln">    70  </span>		CouponID:       couponID,
+<span id="L71" class="ln">    71  </span>		Details:        details,
+<span id="L72" class="ln">    72  </span>	})
+<span id="L73" class="ln">    73  </span>	if err != nil {
+<span id="L74" class="ln">    74  </span>		return nil, xerrors.Wrap(err, &#34;failed to encode purchase.created payload&#34;)
+<span id="L75" class="ln">    75  </span>	}
+<span id="L76" class="ln">    76  </span>	return payload, nil
+<span id="L77" class="ln">    77  </span>}
+<span id="L78" class="ln">    78  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/purchase/event/created.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

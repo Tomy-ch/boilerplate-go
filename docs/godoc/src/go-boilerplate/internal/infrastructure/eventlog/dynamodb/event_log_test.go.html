@@ -1,0 +1,684 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>dynamodb - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure">infrastructure</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure/eventlog">eventlog</a>/<a href="../../../../../../src/go-boilerplate/internal/infrastructure/eventlog/dynamodb">dynamodb</a>/<span class="text-muted">event_log_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../../go-boilerplate/internal/infrastructure/eventlog/dynamodb">go-boilerplate/internal/infrastructure/eventlog/dynamodb</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package dynamodb
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;encoding/json&#34;
+<span id="L5" class="ln">     5  </span>	&#34;strconv&#34;
+<span id="L6" class="ln">     6  </span>	&#34;testing&#34;
+<span id="L7" class="ln">     7  </span>	&#34;time&#34;
+<span id="L8" class="ln">     8  </span>
+<span id="L9" class="ln">     9  </span>	&#34;github.com/aws/aws-sdk-go-v2/aws&#34;
+<span id="L10" class="ln">    10  </span>	&#34;github.com/aws/aws-sdk-go-v2/service/dynamodb&#34;
+<span id="L11" class="ln">    11  </span>	&#34;github.com/aws/aws-sdk-go-v2/service/dynamodb/types&#34;
+<span id="L12" class="ln">    12  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L13" class="ln">    13  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L14" class="ln">    14  </span>
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/infrastructure/dynamodbclient&#34;
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/infrastructure/dynamodbclient/testkit&#34;
+<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/internal/usecase/boundary/realtime&#34;
+<span id="L20" class="ln">    20  </span>)
+<span id="L21" class="ln">    21  </span>
+<span id="L22" class="ln">    22  </span><span class="comment">// この table は expires_at（= OccurredAt + 保持期間）に TTL を張っている（TableSpec）。</span>
+<span id="L23" class="ln">    23  </span><span class="comment">// 固定日時を使うと保持期間の経過後に fixture が期限切れになり、DynamoDB Local の掃除が assert より</span>
+<span id="L24" class="ln">    24  </span><span class="comment">// 先に走るようになる。したがって OccurredAt は実行時刻を基準にする。</span>
+<span id="L25" class="ln">    25  </span>var occurredAt = time.Now().UTC().Truncate(time.Millisecond)
+<span id="L26" class="ln">    26  </span>
+<span id="L27" class="ln">    27  </span><span class="comment">// newStore は、実行ごとに一意な table を DynamoDB Local に作り、それを指す store を返します。</span>
+<span id="L28" class="ln">    28  </span>func newStore(t *testing.T) *store {
+<span id="L29" class="ln">    29  </span>	t.Helper()
+<span id="L30" class="ln">    30  </span>
+<span id="L31" class="ln">    31  </span>	c := testkit.NewTestClient(t)
+<span id="L32" class="ln">    32  </span>	table := testkit.TableName(t, &#34;event_log&#34;)
+<span id="L33" class="ln">    33  </span>	require.NoError(t, dynamodbclient.EnsureTable(t.Context(), c, TableSpec(table)))
+<span id="L34" class="ln">    34  </span>	testkit.DeleteOnCleanup(t, c, table)
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span>	return &amp;store{c: c, table: table, tracer: observability.NewNoopTracerFactory(t).Infra()}
+<span id="L37" class="ln">    37  </span>}
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span>func event(stream realtime.StreamID, seq realtime.Sequence, id string) realtime.DeliveryEvent {
+<span id="L40" class="ln">    40  </span>	return realtime.DeliveryEvent{
+<span id="L41" class="ln">    41  </span>		EventID:       id,
+<span id="L42" class="ln">    42  </span>		StreamID:      stream,
+<span id="L43" class="ln">    43  </span>		Sequence:      seq,
+<span id="L44" class="ln">    44  </span>		Type:          &#34;inquiry.message.appended.v1&#34;,
+<span id="L45" class="ln">    45  </span>		OccurredAt:    occurredAt,
+<span id="L46" class="ln">    46  </span>		SchemaVersion: 1,
+<span id="L47" class="ln">    47  </span>		Payload:       json.RawMessage(`{&#34;seq&#34;:` + seq.String() + `}`),
+<span id="L48" class="ln">    48  </span>	}
+<span id="L49" class="ln">    49  </span>}
+<span id="L50" class="ln">    50  </span>
+<span id="L51" class="ln">    51  </span>func seed(t *testing.T, s *store, stream realtime.StreamID, n int) {
+<span id="L52" class="ln">    52  </span>	t.Helper()
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span>	for i := 1; i &lt;= n; i++ {
+<span id="L55" class="ln">    55  </span>		require.NoError(t, s.Append(t.Context(), event(stream, realtime.Sequence(i), &#34;evt-&#34;+strconv.Itoa(i))))
+<span id="L56" class="ln">    56  </span>	}
+<span id="L57" class="ln">    57  </span>}
+<span id="L58" class="ln">    58  </span>
+<span id="L59" class="ln">    59  </span>func TestNew(t *testing.T) {
+<span id="L60" class="ln">    60  </span>	t.Parallel()
+<span id="L61" class="ln">    61  </span>
+<span id="L62" class="ln">    62  </span>	s := New(testkit.NewTestClient(t), &#34;realtime_event_log_test&#34;, observability.NewNoopTracerFactory(t))
+<span id="L63" class="ln">    63  </span>	assert.NotNil(t, s)
+<span id="L64" class="ln">    64  </span>}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span>func Test_store_Append(t *testing.T) {
+<span id="L67" class="ln">    67  </span>	t.Parallel()
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L70" class="ln">    70  </span>		t.Parallel()
+<span id="L71" class="ln">    71  </span>
+<span id="L72" class="ln">    72  </span>		t.Run(&#34;空いている位置へ書ける&#34;, func(t *testing.T) {
+<span id="L73" class="ln">    73  </span>			t.Parallel()
+<span id="L74" class="ln">    74  </span>
+<span id="L75" class="ln">    75  </span>			s := newStore(t)
+<span id="L76" class="ln">    76  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 1, &#34;evt-1&#34;)))
+<span id="L77" class="ln">    77  </span>
+<span id="L78" class="ln">    78  </span>			got, ok, err := s.Find(t.Context(), &#34;s&#34;, 1)
+<span id="L79" class="ln">    79  </span>			require.NoError(t, err)
+<span id="L80" class="ln">    80  </span>			require.True(t, ok)
+<span id="L81" class="ln">    81  </span>			assert.Equal(t, event(&#34;s&#34;, 1, &#34;evt-1&#34;), got)
+<span id="L82" class="ln">    82  </span>		})
+<span id="L83" class="ln">    83  </span>
+<span id="L84" class="ln">    84  </span>		t.Run(&#34;同じ EventID の再 append は成功する（outbox retry に対して冪等）&#34;, func(t *testing.T) {
+<span id="L85" class="ln">    85  </span>			t.Parallel()
+<span id="L86" class="ln">    86  </span>
+<span id="L87" class="ln">    87  </span>			s := newStore(t)
+<span id="L88" class="ln">    88  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 1, &#34;evt-1&#34;)))
+<span id="L89" class="ln">    89  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 1, &#34;evt-1&#34;)))
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>			res, err := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;s&#34;})
+<span id="L92" class="ln">    92  </span>			require.NoError(t, err)
+<span id="L93" class="ln">    93  </span>			assert.Len(t, res.Events, 1)
+<span id="L94" class="ln">    94  </span>		})
+<span id="L95" class="ln">    95  </span>	})
+<span id="L96" class="ln">    96  </span>
+<span id="L97" class="ln">    97  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L98" class="ln">    98  </span>		t.Parallel()
+<span id="L99" class="ln">    99  </span>
+<span id="L100" class="ln">   100  </span>		t.Run(&#34;同じ位置に別の EventID があれば ErrSequenceConflict を返す&#34;, func(t *testing.T) {
+<span id="L101" class="ln">   101  </span>			t.Parallel()
+<span id="L102" class="ln">   102  </span>
+<span id="L103" class="ln">   103  </span>			s := newStore(t)
+<span id="L104" class="ln">   104  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 1, &#34;evt-1&#34;)))
+<span id="L105" class="ln">   105  </span>
+<span id="L106" class="ln">   106  </span>			err := s.Append(t.Context(), event(&#34;s&#34;, 1, &#34;evt-other&#34;))
+<span id="L107" class="ln">   107  </span>			require.ErrorIs(t, err, realtime.ErrSequenceConflict)
+<span id="L108" class="ln">   108  </span>		})
+<span id="L109" class="ln">   109  </span>
+<span id="L110" class="ln">   110  </span>		t.Run(&#34;不正な封筒は書かずに拒否する&#34;, func(t *testing.T) {
+<span id="L111" class="ln">   111  </span>			t.Parallel()
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span>			s := newStore(t)
+<span id="L114" class="ln">   114  </span>			e := event(&#34;s&#34;, 1, &#34;&#34;)
+<span id="L115" class="ln">   115  </span>			require.ErrorIs(t, s.Append(t.Context(), e), realtime.ErrInvalidEvent)
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span>			_, ok, err := s.Find(t.Context(), &#34;s&#34;, 1)
+<span id="L118" class="ln">   118  </span>			require.NoError(t, err)
+<span id="L119" class="ln">   119  </span>			assert.False(t, ok)
+<span id="L120" class="ln">   120  </span>		})
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>		t.Run(&#34;table が無ければ ErrUnavailable を返す&#34;, func(t *testing.T) {
+<span id="L123" class="ln">   123  </span>			t.Parallel()
+<span id="L124" class="ln">   124  </span>
+<span id="L125" class="ln">   125  </span>			s := &amp;store{c: testkit.NewTestClient(t), table: &#34;test_missing_table&#34;, tracer: observability.NewNoopTracerFactory(t).Infra()}
+<span id="L126" class="ln">   126  </span>			require.ErrorIs(t, s.Append(t.Context(), event(&#34;s&#34;, 1, &#34;evt-1&#34;)), apperror.ErrUnavailable)
+<span id="L127" class="ln">   127  </span>		})
+<span id="L128" class="ln">   128  </span>	})
+<span id="L129" class="ln">   129  </span>}
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span>func Test_store_ReadAfter(t *testing.T) {
+<span id="L132" class="ln">   132  </span>	t.Parallel()
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L135" class="ln">   135  </span>		t.Parallel()
+<span id="L136" class="ln">   136  </span>
+<span id="L137" class="ln">   137  </span>		t.Run(&#34;cursor より後ろを昇順に返す&#34;, func(t *testing.T) {
+<span id="L138" class="ln">   138  </span>			t.Parallel()
+<span id="L139" class="ln">   139  </span>
+<span id="L140" class="ln">   140  </span>			s := newStore(t)
+<span id="L141" class="ln">   141  </span>			seed(t, s, &#34;s&#34;, 5)
+<span id="L142" class="ln">   142  </span>
+<span id="L143" class="ln">   143  </span>			res, err := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;s&#34;, After: 2})
+<span id="L144" class="ln">   144  </span>			require.NoError(t, err)
+<span id="L145" class="ln">   145  </span>			require.Len(t, res.Events, 3)
+<span id="L146" class="ln">   146  </span>			assert.Equal(t, realtime.Sequence(3), res.Events[0].Sequence)
+<span id="L147" class="ln">   147  </span>			assert.Equal(t, realtime.Sequence(5), res.Events[2].Sequence)
+<span id="L148" class="ln">   148  </span>			assert.False(t, res.HasMore)
+<span id="L149" class="ln">   149  </span>		})
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>		t.Run(&#34;Limit で打ち切られると HasMore が true になり、最後の sequence から続きが読める&#34;, func(t *testing.T) {
+<span id="L152" class="ln">   152  </span>			t.Parallel()
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span>			s := newStore(t)
+<span id="L155" class="ln">   155  </span>			seed(t, s, &#34;s&#34;, 5)
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>			first, err := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;s&#34;, Limit: 2})
+<span id="L158" class="ln">   158  </span>			require.NoError(t, err)
+<span id="L159" class="ln">   159  </span>			require.Len(t, first.Events, 2)
+<span id="L160" class="ln">   160  </span>			assert.True(t, first.HasMore)
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>			rest, err := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;s&#34;, After: first.Events[1].Sequence, Limit: 10})
+<span id="L163" class="ln">   163  </span>			require.NoError(t, err)
+<span id="L164" class="ln">   164  </span>			require.Len(t, rest.Events, 3)
+<span id="L165" class="ln">   165  </span>			assert.Equal(t, realtime.Sequence(3), rest.Events[0].Sequence)
+<span id="L166" class="ln">   166  </span>			assert.False(t, rest.HasMore)
+<span id="L167" class="ln">   167  </span>		})
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>		t.Run(&#34;After が 0 なら先頭から読む&#34;, func(t *testing.T) {
+<span id="L170" class="ln">   170  </span>			t.Parallel()
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>			s := newStore(t)
+<span id="L173" class="ln">   173  </span>			seed(t, s, &#34;s&#34;, 2)
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>			res, err := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;s&#34;})
+<span id="L176" class="ln">   176  </span>			require.NoError(t, err)
+<span id="L177" class="ln">   177  </span>			require.Len(t, res.Events, 2)
+<span id="L178" class="ln">   178  </span>			assert.Equal(t, realtime.Sequence(1), res.Events[0].Sequence)
+<span id="L179" class="ln">   179  </span>		})
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>		t.Run(&#34;別 stream の event は混ざらない&#34;, func(t *testing.T) {
+<span id="L182" class="ln">   182  </span>			t.Parallel()
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>			s := newStore(t)
+<span id="L185" class="ln">   185  </span>			seed(t, s, &#34;a&#34;, 2)
+<span id="L186" class="ln">   186  </span>			seed(t, s, &#34;b&#34;, 3)
+<span id="L187" class="ln">   187  </span>
+<span id="L188" class="ln">   188  </span>			res, err := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;a&#34;})
+<span id="L189" class="ln">   189  </span>			require.NoError(t, err)
+<span id="L190" class="ln">   190  </span>			assert.Len(t, res.Events, 2)
+<span id="L191" class="ln">   191  </span>		})
+<span id="L192" class="ln">   192  </span>
+<span id="L193" class="ln">   193  </span>		t.Run(&#34;保持期間より古い event も OccurredAt を保ったまま返す（失効の判定は usecase）&#34;, func(t *testing.T) {
+<span id="L194" class="ln">   194  </span>			t.Parallel()
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>			s := newStore(t)
+<span id="L197" class="ln">   197  </span>			old := event(&#34;s&#34;, 1, &#34;evt-old&#34;)
+<span id="L198" class="ln">   198  </span>			old.OccurredAt = time.Now().UTC().Add(-2 * realtime.EventLogRetention).Truncate(time.Millisecond)
+<span id="L199" class="ln">   199  </span>
+<span id="L200" class="ln">   200  </span>			<span class="comment">// toItem は expires_at を OccurredAt + 保持期間で決めるため、Append で書くと行が</span>
+<span id="L201" class="ln">   201  </span>			<span class="comment">// 期限切れのまま保存され、TTL の掃除が assert より先に走り得る。ここで確かめたいのは</span>
+<span id="L202" class="ln">   202  </span>			<span class="comment">// 「store が失効で絞り込まない」ことであって TTL の挙動ではないので、expires_at だけ</span>
+<span id="L203" class="ln">   203  </span>			<span class="comment">// 未来へ置き換えて直接書き込む。</span>
+<span id="L204" class="ln">   204  </span>			item := toItem(old)
+<span id="L205" class="ln">   205  </span>			item[attrExpiresAt] = &amp;types.AttributeValueMemberN{
+<span id="L206" class="ln">   206  </span>				Value: strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10),
+<span id="L207" class="ln">   207  </span>			}
+<span id="L208" class="ln">   208  </span>			_, err := s.c.PutItem(t.Context(), &amp;dynamodb.PutItemInput{
+<span id="L209" class="ln">   209  </span>				TableName: aws.String(s.table), Item: item,
+<span id="L210" class="ln">   210  </span>			})
+<span id="L211" class="ln">   211  </span>			require.NoError(t, err)
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>			res, rerr := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;s&#34;})
+<span id="L214" class="ln">   214  </span>			require.NoError(t, rerr)
+<span id="L215" class="ln">   215  </span>			require.Len(t, res.Events, 1)
+<span id="L216" class="ln">   216  </span>			assert.True(t, res.Events[0].OccurredAt.Equal(old.OccurredAt))
+<span id="L217" class="ln">   217  </span>		})
+<span id="L218" class="ln">   218  </span>	})
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L221" class="ln">   221  </span>		t.Parallel()
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>		t.Run(&#34;table が無ければ ErrUnavailable を返す&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>			s := &amp;store{c: testkit.NewTestClient(t), table: &#34;test_missing_table&#34;, tracer: observability.NewNoopTracerFactory(t).Infra()}
+<span id="L227" class="ln">   227  </span>			_, err := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;s&#34;})
+<span id="L228" class="ln">   228  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L229" class="ln">   229  </span>		})
+<span id="L230" class="ln">   230  </span>	})
+<span id="L231" class="ln">   231  </span>}
+<span id="L232" class="ln">   232  </span>
+<span id="L233" class="ln">   233  </span>func Test_store_Latest(t *testing.T) {
+<span id="L234" class="ln">   234  </span>	t.Parallel()
+<span id="L235" class="ln">   235  </span>
+<span id="L236" class="ln">   236  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L237" class="ln">   237  </span>		t.Parallel()
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>		t.Run(&#34;最後の event を返す&#34;, func(t *testing.T) {
+<span id="L240" class="ln">   240  </span>			t.Parallel()
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>			s := newStore(t)
+<span id="L243" class="ln">   243  </span>			seed(t, s, &#34;s&#34;, 3)
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>			got, ok, err := s.Latest(t.Context(), &#34;s&#34;)
+<span id="L246" class="ln">   246  </span>			require.NoError(t, err)
+<span id="L247" class="ln">   247  </span>			require.True(t, ok)
+<span id="L248" class="ln">   248  </span>			assert.Equal(t, realtime.Sequence(3), got.Sequence)
+<span id="L249" class="ln">   249  </span>		})
+<span id="L250" class="ln">   250  </span>
+<span id="L251" class="ln">   251  </span>		t.Run(&#34;event が無ければ ok=false&#34;, func(t *testing.T) {
+<span id="L252" class="ln">   252  </span>			t.Parallel()
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>			s := newStore(t)
+<span id="L255" class="ln">   255  </span>
+<span id="L256" class="ln">   256  </span>			_, ok, err := s.Latest(t.Context(), &#34;empty&#34;)
+<span id="L257" class="ln">   257  </span>			require.NoError(t, err)
+<span id="L258" class="ln">   258  </span>			assert.False(t, ok)
+<span id="L259" class="ln">   259  </span>		})
+<span id="L260" class="ln">   260  </span>	})
+<span id="L261" class="ln">   261  </span>
+<span id="L262" class="ln">   262  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L263" class="ln">   263  </span>		t.Parallel()
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>		t.Run(&#34;table が無ければ ErrUnavailable を返す&#34;, func(t *testing.T) {
+<span id="L266" class="ln">   266  </span>			t.Parallel()
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>			s := &amp;store{c: testkit.NewTestClient(t), table: &#34;test_missing_table&#34;, tracer: observability.NewNoopTracerFactory(t).Infra()}
+<span id="L269" class="ln">   269  </span>			_, _, err := s.Latest(t.Context(), &#34;s&#34;)
+<span id="L270" class="ln">   270  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L271" class="ln">   271  </span>		})
+<span id="L272" class="ln">   272  </span>	})
+<span id="L273" class="ln">   273  </span>}
+<span id="L274" class="ln">   274  </span>
+<span id="L275" class="ln">   275  </span>func Test_store_Find(t *testing.T) {
+<span id="L276" class="ln">   276  </span>	t.Parallel()
+<span id="L277" class="ln">   277  </span>
+<span id="L278" class="ln">   278  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L279" class="ln">   279  </span>		t.Parallel()
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span>		t.Run(&#34;指定位置の event を返す&#34;, func(t *testing.T) {
+<span id="L282" class="ln">   282  </span>			t.Parallel()
+<span id="L283" class="ln">   283  </span>
+<span id="L284" class="ln">   284  </span>			s := newStore(t)
+<span id="L285" class="ln">   285  </span>			seed(t, s, &#34;s&#34;, 3)
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>			got, ok, err := s.Find(t.Context(), &#34;s&#34;, 2)
+<span id="L288" class="ln">   288  </span>			require.NoError(t, err)
+<span id="L289" class="ln">   289  </span>			require.True(t, ok)
+<span id="L290" class="ln">   290  </span>			assert.Equal(t, &#34;evt-2&#34;, got.EventID)
+<span id="L291" class="ln">   291  </span>		})
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>		t.Run(&#34;無い位置は ok=false&#34;, func(t *testing.T) {
+<span id="L294" class="ln">   294  </span>			t.Parallel()
+<span id="L295" class="ln">   295  </span>
+<span id="L296" class="ln">   296  </span>			s := newStore(t)
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span>			_, ok, err := s.Find(t.Context(), &#34;s&#34;, 9)
+<span id="L299" class="ln">   299  </span>			require.NoError(t, err)
+<span id="L300" class="ln">   300  </span>			assert.False(t, ok)
+<span id="L301" class="ln">   301  </span>		})
+<span id="L302" class="ln">   302  </span>	})
+<span id="L303" class="ln">   303  </span>
+<span id="L304" class="ln">   304  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L305" class="ln">   305  </span>		t.Parallel()
+<span id="L306" class="ln">   306  </span>
+<span id="L307" class="ln">   307  </span>		t.Run(&#34;table が無ければ ErrUnavailable を返す&#34;, func(t *testing.T) {
+<span id="L308" class="ln">   308  </span>			t.Parallel()
+<span id="L309" class="ln">   309  </span>
+<span id="L310" class="ln">   310  </span>			s := &amp;store{c: testkit.NewTestClient(t), table: &#34;test_missing_table&#34;, tracer: observability.NewNoopTracerFactory(t).Infra()}
+<span id="L311" class="ln">   311  </span>			_, _, err := s.Find(t.Context(), &#34;s&#34;, 1)
+<span id="L312" class="ln">   312  </span>			require.ErrorIs(t, err, apperror.ErrUnavailable)
+<span id="L313" class="ln">   313  </span>		})
+<span id="L314" class="ln">   314  </span>	})
+<span id="L315" class="ln">   315  </span>}
+<span id="L316" class="ln">   316  </span>
+<span id="L317" class="ln">   317  </span>func Test_key(t *testing.T) {
+<span id="L318" class="ln">   318  </span>	t.Parallel()
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span>	k := key(&#34;s&#34;, 42)
+<span id="L321" class="ln">   321  </span>	assert.Equal(t, &amp;types.AttributeValueMemberS{Value: &#34;s&#34;}, k[attrStreamID])
+<span id="L322" class="ln">   322  </span>	assert.Equal(t, &amp;types.AttributeValueMemberN{Value: &#34;42&#34;}, k[attrSequence])
+<span id="L323" class="ln">   323  </span>}
+<span id="L324" class="ln">   324  </span>
+<span id="L325" class="ln">   325  </span>func Test_toItem(t *testing.T) {
+<span id="L326" class="ln">   326  </span>	t.Parallel()
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L329" class="ln">   329  </span>		t.Parallel()
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>		t.Run(&#34;全属性を写し、expires_at は OccurredAt + 保持期間の epoch 秒になる&#34;, func(t *testing.T) {
+<span id="L332" class="ln">   332  </span>			t.Parallel()
+<span id="L333" class="ln">   333  </span>
+<span id="L334" class="ln">   334  </span>			e := event(&#34;s&#34;, 7, &#34;evt-7&#34;)
+<span id="L335" class="ln">   335  </span>			<span class="comment">// 書式（RFC3339・ミリ秒・Z）を literal で固定したいので、ここだけ日時を据える。</span>
+<span id="L336" class="ln">   336  </span>			<span class="comment">// toItem は純粋関数で DynamoDB に触れないため、TTL の影響を受けない。</span>
+<span id="L337" class="ln">   337  </span>			e.OccurredAt = time.Date(2026, time.August, 29, 1, 2, 3, 456000000, time.UTC)
+<span id="L338" class="ln">   338  </span>			item := toItem(e)
+<span id="L339" class="ln">   339  </span>
+<span id="L340" class="ln">   340  </span>			assert.Equal(t, &amp;types.AttributeValueMemberS{Value: &#34;evt-7&#34;}, item[attrEventID])
+<span id="L341" class="ln">   341  </span>			assert.Equal(t, &amp;types.AttributeValueMemberS{Value: &#34;2026-08-29T01:02:03.456Z&#34;}, item[attrOccurredAt])
+<span id="L342" class="ln">   342  </span>			assert.Equal(t, &amp;types.AttributeValueMemberN{Value: &#34;1&#34;}, item[attrSchemaVersion])
+<span id="L343" class="ln">   343  </span>			assert.Equal(t, &amp;types.AttributeValueMemberB{Value: []byte(`{&#34;seq&#34;:7}`)}, item[attrPayload])
+<span id="L344" class="ln">   344  </span>			wantExpires := strconv.FormatInt(e.OccurredAt.Add(realtime.EventLogRetention).Unix(), 10)
+<span id="L345" class="ln">   345  </span>			assert.Equal(t, &amp;types.AttributeValueMemberN{Value: wantExpires}, item[attrExpiresAt])
+<span id="L346" class="ln">   346  </span>		})
+<span id="L347" class="ln">   347  </span>
+<span id="L348" class="ln">   348  </span>		t.Run(&#34;payload が空なら属性を持たない&#34;, func(t *testing.T) {
+<span id="L349" class="ln">   349  </span>			t.Parallel()
+<span id="L350" class="ln">   350  </span>
+<span id="L351" class="ln">   351  </span>			e := event(&#34;s&#34;, 1, &#34;evt-1&#34;)
+<span id="L352" class="ln">   352  </span>			e.Payload = nil
+<span id="L353" class="ln">   353  </span>			_, has := toItem(e)[attrPayload]
+<span id="L354" class="ln">   354  </span>			assert.False(t, has)
+<span id="L355" class="ln">   355  </span>		})
+<span id="L356" class="ln">   356  </span>	})
+<span id="L357" class="ln">   357  </span>}
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>func Test_fromItem(t *testing.T) {
+<span id="L360" class="ln">   360  </span>	t.Parallel()
+<span id="L361" class="ln">   361  </span>
+<span id="L362" class="ln">   362  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L363" class="ln">   363  </span>		t.Parallel()
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>		t.Run(&#34;toItem の結果を封筒に戻せる&#34;, func(t *testing.T) {
+<span id="L366" class="ln">   366  </span>			t.Parallel()
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>			e := event(&#34;s&#34;, 7, &#34;evt-7&#34;)
+<span id="L369" class="ln">   369  </span>			got, err := fromItem(toItem(e))
+<span id="L370" class="ln">   370  </span>			require.NoError(t, err)
+<span id="L371" class="ln">   371  </span>			assert.Equal(t, e, got)
+<span id="L372" class="ln">   372  </span>		})
+<span id="L373" class="ln">   373  </span>
+<span id="L374" class="ln">   374  </span>		t.Run(&#34;payload 属性が無ければ nil になる&#34;, func(t *testing.T) {
+<span id="L375" class="ln">   375  </span>			t.Parallel()
+<span id="L376" class="ln">   376  </span>
+<span id="L377" class="ln">   377  </span>			e := event(&#34;s&#34;, 1, &#34;evt-1&#34;)
+<span id="L378" class="ln">   378  </span>			e.Payload = nil
+<span id="L379" class="ln">   379  </span>			got, err := fromItem(toItem(e))
+<span id="L380" class="ln">   380  </span>			require.NoError(t, err)
+<span id="L381" class="ln">   381  </span>			assert.Nil(t, got.Payload)
+<span id="L382" class="ln">   382  </span>		})
+<span id="L383" class="ln">   383  </span>	})
+<span id="L384" class="ln">   384  </span>
+<span id="L385" class="ln">   385  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L386" class="ln">   386  </span>		t.Parallel()
+<span id="L387" class="ln">   387  </span>
+<span id="L388" class="ln">   388  </span>		t.Run(&#34;sequence が数値でなければ ErrInternal を返す&#34;, func(t *testing.T) {
+<span id="L389" class="ln">   389  </span>			t.Parallel()
+<span id="L390" class="ln">   390  </span>
+<span id="L391" class="ln">   391  </span>			item := toItem(event(&#34;s&#34;, 1, &#34;evt-1&#34;))
+<span id="L392" class="ln">   392  </span>			item[attrSequence] = &amp;types.AttributeValueMemberS{Value: &#34;x&#34;}
+<span id="L393" class="ln">   393  </span>			_, err := fromItem(item)
+<span id="L394" class="ln">   394  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L395" class="ln">   395  </span>		})
+<span id="L396" class="ln">   396  </span>
+<span id="L397" class="ln">   397  </span>		t.Run(&#34;schema_version が int の範囲外なら ErrInternal を返す&#34;, func(t *testing.T) {
+<span id="L398" class="ln">   398  </span>			t.Parallel()
+<span id="L399" class="ln">   399  </span>
+<span id="L400" class="ln">   400  </span>			item := toItem(event(&#34;s&#34;, 1, &#34;evt-1&#34;))
+<span id="L401" class="ln">   401  </span>			item[attrSchemaVersion] = &amp;types.AttributeValueMemberN{Value: &#34;4294967296&#34;}
+<span id="L402" class="ln">   402  </span>			_, err := fromItem(item)
+<span id="L403" class="ln">   403  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L404" class="ln">   404  </span>		})
+<span id="L405" class="ln">   405  </span>
+<span id="L406" class="ln">   406  </span>		t.Run(&#34;occurred_at が時刻でなければ ErrInternal を返す&#34;, func(t *testing.T) {
+<span id="L407" class="ln">   407  </span>			t.Parallel()
+<span id="L408" class="ln">   408  </span>
+<span id="L409" class="ln">   409  </span>			item := toItem(event(&#34;s&#34;, 1, &#34;evt-1&#34;))
+<span id="L410" class="ln">   410  </span>			item[attrOccurredAt] = &amp;types.AttributeValueMemberS{Value: &#34;yesterday&#34;}
+<span id="L411" class="ln">   411  </span>			_, err := fromItem(item)
+<span id="L412" class="ln">   412  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L413" class="ln">   413  </span>		})
+<span id="L414" class="ln">   414  </span>	})
+<span id="L415" class="ln">   415  </span>}
+<span id="L416" class="ln">   416  </span>
+<span id="L417" class="ln">   417  </span>func TestTableSpec(t *testing.T) {
+<span id="L418" class="ln">   418  </span>	t.Parallel()
+<span id="L419" class="ln">   419  </span>
+<span id="L420" class="ln">   420  </span>	spec := TableSpec(&#34;realtime_event_log_test&#34;)
+<span id="L421" class="ln">   421  </span>	assert.Equal(t, &#34;realtime_event_log_test&#34;, spec.Name)
+<span id="L422" class="ln">   422  </span>	assert.Equal(t, attrExpiresAt, spec.TTLAttribute)
+<span id="L423" class="ln">   423  </span>	assert.Equal(t, types.KeyTypeHash, spec.KeySchema[0].KeyType)
+<span id="L424" class="ln">   424  </span>	assert.Equal(t, attrStreamID, aws.ToString(spec.KeySchema[0].AttributeName))
+<span id="L425" class="ln">   425  </span>	assert.Equal(t, types.KeyTypeRange, spec.KeySchema[1].KeyType)
+<span id="L426" class="ln">   426  </span>	assert.Equal(t, attrSequence, aws.ToString(spec.KeySchema[1].AttributeName))
+<span id="L427" class="ln">   427  </span>}
+<span id="L428" class="ln">   428  </span>
+<span id="L429" class="ln">   429  </span>func Test_originAttr(t *testing.T) {
+<span id="L430" class="ln">   430  </span>	t.Parallel()
+<span id="L431" class="ln">   431  </span>
+<span id="L432" class="ln">   432  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L433" class="ln">   433  </span>		t.Parallel()
+<span id="L434" class="ln">   434  </span>
+<span id="L435" class="ln">   435  </span>		t.Run(&#34;Map 属性の文字列要素を carrier へ戻す&#34;, func(t *testing.T) {
+<span id="L436" class="ln">   436  </span>			t.Parallel()
+<span id="L437" class="ln">   437  </span>
+<span id="L438" class="ln">   438  </span>			got := originAttr(map[string]types.AttributeValue{
+<span id="L439" class="ln">   439  </span>				attrOrigin: &amp;types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
+<span id="L440" class="ln">   440  </span>					&#34;traceparent&#34;: &amp;types.AttributeValueMemberS{Value: &#34;00-t-s-01&#34;},
+<span id="L441" class="ln">   441  </span>				}},
+<span id="L442" class="ln">   442  </span>			})
+<span id="L443" class="ln">   443  </span>
+<span id="L444" class="ln">   444  </span>			assert.Equal(t, map[string]string{&#34;traceparent&#34;: &#34;00-t-s-01&#34;}, got)
+<span id="L445" class="ln">   445  </span>		})
+<span id="L446" class="ln">   446  </span>
+<span id="L447" class="ln">   447  </span>		t.Run(&#34;文字列でない要素は落とす&#34;, func(t *testing.T) {
+<span id="L448" class="ln">   448  </span>			t.Parallel()
+<span id="L449" class="ln">   449  </span>
+<span id="L450" class="ln">   450  </span>			<span class="comment">// item の形が契約と違っても復元を失敗させません。link が 1 本欠けるだけで、</span>
+<span id="L451" class="ln">   451  </span>			<span class="comment">// 配送そのものは続けるべきだからです。</span>
+<span id="L452" class="ln">   452  </span>			got := originAttr(map[string]types.AttributeValue{
+<span id="L453" class="ln">   453  </span>				attrOrigin: &amp;types.AttributeValueMemberM{Value: map[string]types.AttributeValue{
+<span id="L454" class="ln">   454  </span>					&#34;traceparent&#34;: &amp;types.AttributeValueMemberS{Value: &#34;00-t-s-01&#34;},
+<span id="L455" class="ln">   455  </span>					&#34;bogus&#34;:       &amp;types.AttributeValueMemberN{Value: &#34;1&#34;},
+<span id="L456" class="ln">   456  </span>				}},
+<span id="L457" class="ln">   457  </span>			})
+<span id="L458" class="ln">   458  </span>
+<span id="L459" class="ln">   459  </span>			assert.Equal(t, map[string]string{&#34;traceparent&#34;: &#34;00-t-s-01&#34;}, got)
+<span id="L460" class="ln">   460  </span>		})
+<span id="L461" class="ln">   461  </span>	})
+<span id="L462" class="ln">   462  </span>
+<span id="L463" class="ln">   463  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L464" class="ln">   464  </span>		t.Parallel()
+<span id="L465" class="ln">   465  </span>
+<span id="L466" class="ln">   466  </span>		t.Run(&#34;属性が無い・型が違う・空なら nil を返す&#34;, func(t *testing.T) {
+<span id="L467" class="ln">   467  </span>			t.Parallel()
+<span id="L468" class="ln">   468  </span>
+<span id="L469" class="ln">   469  </span>			assert.Nil(t, originAttr(map[string]types.AttributeValue{}))
+<span id="L470" class="ln">   470  </span>			assert.Nil(t, originAttr(map[string]types.AttributeValue{
+<span id="L471" class="ln">   471  </span>				attrOrigin: &amp;types.AttributeValueMemberS{Value: &#34;not a map&#34;},
+<span id="L472" class="ln">   472  </span>			}))
+<span id="L473" class="ln">   473  </span>			assert.Nil(t, originAttr(map[string]types.AttributeValue{
+<span id="L474" class="ln">   474  </span>				attrOrigin: &amp;types.AttributeValueMemberM{Value: map[string]types.AttributeValue{}},
+<span id="L475" class="ln">   475  </span>			}))
+<span id="L476" class="ln">   476  </span>		})
+<span id="L477" class="ln">   477  </span>	})
+<span id="L478" class="ln">   478  </span>}
+<span id="L479" class="ln">   479  </span>
+<span id="L480" class="ln">   480  </span>func Test_store_AppendedThrough(t *testing.T) {
+<span id="L481" class="ln">   481  </span>	t.Parallel()
+<span id="L482" class="ln">   482  </span>
+<span id="L483" class="ln">   483  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L484" class="ln">   484  </span>		t.Parallel()
+<span id="L485" class="ln">   485  </span>
+<span id="L486" class="ln">   486  </span>		t.Run(&#34;1 度も追記していなければ 0 を返す&#34;, func(t *testing.T) {
+<span id="L487" class="ln">   487  </span>			t.Parallel()
+<span id="L488" class="ln">   488  </span>
+<span id="L489" class="ln">   489  </span>			s := newStore(t)
+<span id="L490" class="ln">   490  </span>
+<span id="L491" class="ln">   491  </span>			got, err := s.AppendedThrough(t.Context(), &#34;s&#34;)
+<span id="L492" class="ln">   492  </span>			require.NoError(t, err)
+<span id="L493" class="ln">   493  </span>			assert.Equal(t, realtime.Sequence(0), got)
+<span id="L494" class="ln">   494  </span>		})
+<span id="L495" class="ln">   495  </span>
+<span id="L496" class="ln">   496  </span>		t.Run(&#34;追記した最大の位置を返す&#34;, func(t *testing.T) {
+<span id="L497" class="ln">   497  </span>			t.Parallel()
+<span id="L498" class="ln">   498  </span>
+<span id="L499" class="ln">   499  </span>			s := newStore(t)
+<span id="L500" class="ln">   500  </span>			seed(t, s, &#34;s&#34;, 3)
+<span id="L501" class="ln">   501  </span>
+<span id="L502" class="ln">   502  </span>			got, err := s.AppendedThrough(t.Context(), &#34;s&#34;)
+<span id="L503" class="ln">   503  </span>			require.NoError(t, err)
+<span id="L504" class="ln">   504  </span>			assert.Equal(t, realtime.Sequence(3), got)
+<span id="L505" class="ln">   505  </span>		})
+<span id="L506" class="ln">   506  </span>
+<span id="L507" class="ln">   507  </span>		t.Run(&#34;後ろの位置を書いた後に前の位置を書いても後戻りしない&#34;, func(t *testing.T) {
+<span id="L508" class="ln">   508  </span>			t.Parallel()
+<span id="L509" class="ln">   509  </span>
+<span id="L510" class="ln">   510  </span>			s := newStore(t)
+<span id="L511" class="ln">   511  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 5, &#34;evt-5&#34;)))
+<span id="L512" class="ln">   512  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 2, &#34;evt-2&#34;)))
+<span id="L513" class="ln">   513  </span>
+<span id="L514" class="ln">   514  </span>			got, err := s.AppendedThrough(t.Context(), &#34;s&#34;)
+<span id="L515" class="ln">   515  </span>			require.NoError(t, err)
+<span id="L516" class="ln">   516  </span>			assert.Equal(t, realtime.Sequence(5), got)
+<span id="L517" class="ln">   517  </span>		})
+<span id="L518" class="ln">   518  </span>
+<span id="L519" class="ln">   519  </span>		t.Run(&#34;同じ event の再 append でも位置は変わらない&#34;, func(t *testing.T) {
+<span id="L520" class="ln">   520  </span>			t.Parallel()
+<span id="L521" class="ln">   521  </span>
+<span id="L522" class="ln">   522  </span>			s := newStore(t)
+<span id="L523" class="ln">   523  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 4, &#34;evt-4&#34;)))
+<span id="L524" class="ln">   524  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 4, &#34;evt-4&#34;)))
+<span id="L525" class="ln">   525  </span>
+<span id="L526" class="ln">   526  </span>			got, err := s.AppendedThrough(t.Context(), &#34;s&#34;)
+<span id="L527" class="ln">   527  </span>			require.NoError(t, err)
+<span id="L528" class="ln">   528  </span>			assert.Equal(t, realtime.Sequence(4), got)
+<span id="L529" class="ln">   529  </span>		})
+<span id="L530" class="ln">   530  </span>
+<span id="L531" class="ln">   531  </span>		t.Run(&#34;stream ごとに独立している&#34;, func(t *testing.T) {
+<span id="L532" class="ln">   532  </span>			t.Parallel()
+<span id="L533" class="ln">   533  </span>
+<span id="L534" class="ln">   534  </span>			s := newStore(t)
+<span id="L535" class="ln">   535  </span>			seed(t, s, &#34;a&#34;, 2)
+<span id="L536" class="ln">   536  </span>
+<span id="L537" class="ln">   537  </span>			got, err := s.AppendedThrough(t.Context(), &#34;b&#34;)
+<span id="L538" class="ln">   538  </span>			require.NoError(t, err)
+<span id="L539" class="ln">   539  </span>			assert.Equal(t, realtime.Sequence(0), got)
+<span id="L540" class="ln">   540  </span>		})
+<span id="L541" class="ln">   541  </span>	})
+<span id="L542" class="ln">   542  </span>}
+<span id="L543" class="ln">   543  </span>
+<span id="L544" class="ln">   544  </span>func Test_store_watermarkIsNotAnEvent(t *testing.T) {
+<span id="L545" class="ln">   545  </span>	t.Parallel()
+<span id="L546" class="ln">   546  </span>
+<span id="L547" class="ln">   547  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L548" class="ln">   548  </span>		t.Parallel()
+<span id="L549" class="ln">   549  </span>
+<span id="L550" class="ln">   550  </span>		t.Run(&#34;event が無い stream の Latest は watermark を返さない&#34;, func(t *testing.T) {
+<span id="L551" class="ln">   551  </span>			t.Parallel()
+<span id="L552" class="ln">   552  </span>
+<span id="L553" class="ln">   553  </span>			s := newStore(t)
+<span id="L554" class="ln">   554  </span>			require.NoError(t, s.Append(t.Context(), event(&#34;s&#34;, 1, &#34;evt-1&#34;)))
+<span id="L555" class="ln">   555  </span>			require.NoError(t, s.deleteEventForTest(t.Context(), &#34;s&#34;, 1))
+<span id="L556" class="ln">   556  </span>
+<span id="L557" class="ln">   557  </span>			_, ok, err := s.Latest(t.Context(), &#34;s&#34;)
+<span id="L558" class="ln">   558  </span>			require.NoError(t, err)
+<span id="L559" class="ln">   559  </span>			assert.False(t, ok)
+<span id="L560" class="ln">   560  </span>		})
+<span id="L561" class="ln">   561  </span>
+<span id="L562" class="ln">   562  </span>		t.Run(&#34;初期位置からの ReadAfter は watermark を返さない&#34;, func(t *testing.T) {
+<span id="L563" class="ln">   563  </span>			t.Parallel()
+<span id="L564" class="ln">   564  </span>
+<span id="L565" class="ln">   565  </span>			s := newStore(t)
+<span id="L566" class="ln">   566  </span>			seed(t, s, &#34;s&#34;, 2)
+<span id="L567" class="ln">   567  </span>
+<span id="L568" class="ln">   568  </span>			res, err := s.ReadAfter(t.Context(), realtime.ReadAfterQuery{StreamID: &#34;s&#34;, After: 0, Limit: 10})
+<span id="L569" class="ln">   569  </span>			require.NoError(t, err)
+<span id="L570" class="ln">   570  </span>			require.Len(t, res.Events, 2)
+<span id="L571" class="ln">   571  </span>			assert.Equal(t, realtime.Sequence(1), res.Events[0].Sequence)
+<span id="L572" class="ln">   572  </span>		})
+<span id="L573" class="ln">   573  </span>	})
+<span id="L574" class="ln">   574  </span>}
+<span id="L575" class="ln">   575  </span>
+<span id="L576" class="ln">   576  </span>func Test_store_advanceWatermark(t *testing.T) {
+<span id="L577" class="ln">   577  </span>	t.Parallel()
+<span id="L578" class="ln">   578  </span>
+<span id="L579" class="ln">   579  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L580" class="ln">   580  </span>		t.Parallel()
+<span id="L581" class="ln">   581  </span>
+<span id="L582" class="ln">   582  </span>		t.Run(&#34;event が無くても位置を置ける&#34;, func(t *testing.T) {
+<span id="L583" class="ln">   583  </span>			t.Parallel()
+<span id="L584" class="ln">   584  </span>
+<span id="L585" class="ln">   585  </span>			s := newStore(t)
+<span id="L586" class="ln">   586  </span>			require.NoError(t, s.advanceWatermark(t.Context(), &#34;s&#34;, 4))
+<span id="L587" class="ln">   587  </span>
+<span id="L588" class="ln">   588  </span>			got, err := s.AppendedThrough(t.Context(), &#34;s&#34;)
+<span id="L589" class="ln">   589  </span>			require.NoError(t, err)
+<span id="L590" class="ln">   590  </span>			assert.Equal(t, realtime.Sequence(4), got)
+<span id="L591" class="ln">   591  </span>		})
+<span id="L592" class="ln">   592  </span>
+<span id="L593" class="ln">   593  </span>		t.Run(&#34;前の位置では後戻りしない&#34;, func(t *testing.T) {
+<span id="L594" class="ln">   594  </span>			t.Parallel()
+<span id="L595" class="ln">   595  </span>
+<span id="L596" class="ln">   596  </span>			s := newStore(t)
+<span id="L597" class="ln">   597  </span>			require.NoError(t, s.advanceWatermark(t.Context(), &#34;s&#34;, 6))
+<span id="L598" class="ln">   598  </span>			require.NoError(t, s.advanceWatermark(t.Context(), &#34;s&#34;, 2))
+<span id="L599" class="ln">   599  </span>
+<span id="L600" class="ln">   600  </span>			got, err := s.AppendedThrough(t.Context(), &#34;s&#34;)
+<span id="L601" class="ln">   601  </span>			require.NoError(t, err)
+<span id="L602" class="ln">   602  </span>			assert.Equal(t, realtime.Sequence(6), got)
+<span id="L603" class="ln">   603  </span>		})
+<span id="L604" class="ln">   604  </span>
+<span id="L605" class="ln">   605  </span>		t.Run(&#34;同じ位置を繰り返し呼んでも成功する&#34;, func(t *testing.T) {
+<span id="L606" class="ln">   606  </span>			t.Parallel()
+<span id="L607" class="ln">   607  </span>
+<span id="L608" class="ln">   608  </span>			s := newStore(t)
+<span id="L609" class="ln">   609  </span>			require.NoError(t, s.advanceWatermark(t.Context(), &#34;s&#34;, 3))
+<span id="L610" class="ln">   610  </span>			require.NoError(t, s.advanceWatermark(t.Context(), &#34;s&#34;, 3))
+<span id="L611" class="ln">   611  </span>
+<span id="L612" class="ln">   612  </span>			got, err := s.AppendedThrough(t.Context(), &#34;s&#34;)
+<span id="L613" class="ln">   613  </span>			require.NoError(t, err)
+<span id="L614" class="ln">   614  </span>			assert.Equal(t, realtime.Sequence(3), got)
+<span id="L615" class="ln">   615  </span>		})
+<span id="L616" class="ln">   616  </span>	})
+<span id="L617" class="ln">   617  </span>}
+<span id="L618" class="ln">   618  </span>
+</pre><p><a href="../../../../../../src/go-boilerplate/internal/infrastructure/eventlog/dynamodb/event_log_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

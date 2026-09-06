@@ -197,810 +197,823 @@
 <span id="L140" class="ln">   140  </span>					usePathStyle:    expectedObjectStorageUsePathStyle,
 <span id="L141" class="ln">   141  </span>					maxUploadBytes:  expectedObjectStorageMaxUploadBytes,
 <span id="L142" class="ln">   142  </span>				},
-<span id="L143" class="ln">   143  </span>				endpoint: EndpointConfig{
-<span id="L144" class="ln">   144  </span>					otlp:          expectedEndpointOTLP,
-<span id="L145" class="ln">   145  </span>					jwks:          expectedEndpointJWKS,
-<span id="L146" class="ln">   146  </span>					objectStorage: expectedEndpointObjectStorage,
-<span id="L147" class="ln">   147  </span>					outbox:        expectedEndpointOutbox,
-<span id="L148" class="ln">   148  </span>					outboxQueue:   expectedEndpointOutboxQueue,
-<span id="L149" class="ln">   149  </span>					consumerQueue: expectedEndpointConsumerQueue,
-<span id="L150" class="ln">   150  </span>					<span class="comment">// sample-api:begin</span>
-<span id="L151" class="ln">   151  </span>					exchangeRate: expectedEndpointExchangeRate,
-<span id="L152" class="ln">   152  </span>					<span class="comment">// sample-api:end</span>
+<span id="L143" class="ln">   143  </span>				realtime: RealtimeConfig{
+<span id="L144" class="ln">   144  </span>					region:            expectedRealtimeRegion,
+<span id="L145" class="ln">   145  </span>					tableSuffix:       expectedRealtimeTableSuffix,
+<span id="L146" class="ln">   146  </span>					topic:             expectedRealtimeTopic,
+<span id="L147" class="ln">   147  </span>					queuePrefix:       expectedRealtimeQueuePrefix,
+<span id="L148" class="ln">   148  </span>					dlq:               expectedRealtimeDLQ,
+<span id="L149" class="ln">   149  </span>					accessKeyID:       expectedRealtimeAccessKeyID,
+<span id="L150" class="ln">   150  </span>					secretAccessKey:   expectedRealtimeSecretAccessKey,
+<span id="L151" class="ln">   151  </span>					maxConnections:    expectedRealtimeMaxConnections,
+<span id="L152" class="ln">   152  </span>					replayConcurrency: expectedRealtimeReplayConcurrency,
 <span id="L153" class="ln">   153  </span>				},
-<span id="L154" class="ln">   154  </span>			}
-<span id="L155" class="ln">   155  </span>
-<span id="L156" class="ln">   156  </span>			actual, err := New()
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span>			require.NoError(t, err)
-<span id="L159" class="ln">   159  </span>			assert.Equal(t, expected, actual)
-<span id="L160" class="ln">   160  </span>		})
-<span id="L161" class="ln">   161  </span>	})
-<span id="L162" class="ln">   162  </span>
-<span id="L163" class="ln">   163  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L164" class="ln">   164  </span>		t.Run(&#34;configに必要な環境変数が不足している場合&#34;, func(t *testing.T) {
-<span id="L165" class="ln">   165  </span>			t.Setenv(&#34;SERVER_ENV&#34;, expectedApplicationEnv)
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>			actual, err := New()
-<span id="L168" class="ln">   168  </span>			assert.Nil(t, actual)
-<span id="L169" class="ln">   169  </span>			require.ErrorContains(t, err, &#34;APP_MODE&#34;)
-<span id="L170" class="ln">   170  </span>		})
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>		t.Run(&#34;バリデート結果がエラーの場合&#34;, func(t *testing.T) {
-<span id="L173" class="ln">   173  </span>			setEnvVarsForTesting(t)
-<span id="L174" class="ln">   174  </span>			t.Setenv(&#34;APP_MODE&#34;, &#34;invalid_env&#34;)
+<span id="L154" class="ln">   154  </span>				endpoint: EndpointConfig{
+<span id="L155" class="ln">   155  </span>					otlp:           expectedEndpointOTLP,
+<span id="L156" class="ln">   156  </span>					jwks:           expectedEndpointJWKS,
+<span id="L157" class="ln">   157  </span>					objectStorage:  expectedEndpointObjectStorage,
+<span id="L158" class="ln">   158  </span>					realtime:       expectedEndpointRealtime,
+<span id="L159" class="ln">   159  </span>					realtimePubSub: expectedEndpointRealtimePubSub,
+<span id="L160" class="ln">   160  </span>					outbox:         expectedEndpointOutbox,
+<span id="L161" class="ln">   161  </span>					outboxQueue:    expectedEndpointOutboxQueue,
+<span id="L162" class="ln">   162  </span>					consumerQueue:  expectedEndpointConsumerQueue,
+<span id="L163" class="ln">   163  </span>					<span class="comment">// sample-api:begin</span>
+<span id="L164" class="ln">   164  </span>					exchangeRate: expectedEndpointExchangeRate,
+<span id="L165" class="ln">   165  </span>					<span class="comment">// sample-api:end</span>
+<span id="L166" class="ln">   166  </span>				},
+<span id="L167" class="ln">   167  </span>			}
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>			actual, err := New()
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>			require.NoError(t, err)
+<span id="L172" class="ln">   172  </span>			assert.Equal(t, expected, actual)
+<span id="L173" class="ln">   173  </span>		})
+<span id="L174" class="ln">   174  </span>	})
 <span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span>			actual, err := New()
-<span id="L177" class="ln">   177  </span>			assert.Nil(t, actual)
-<span id="L178" class="ln">   178  </span>			require.ErrorIs(t, err, ErrInvalidAppMode)
-<span id="L179" class="ln">   179  </span>		})
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>		t.Run(&#34;CIDRのパースに失敗した場合&#34;, func(t *testing.T) {
-<span id="L182" class="ln">   182  </span>			setEnvVarsForTesting(t)
-<span id="L183" class="ln">   183  </span>			t.Setenv(&#34;SECURITY_CIDR&#34;, &#34;invalid_cidr&#34;) <span class="comment">// 無効なCIDR</span>
+<span id="L176" class="ln">   176  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L177" class="ln">   177  </span>		t.Run(&#34;configに必要な環境変数が不足している場合&#34;, func(t *testing.T) {
+<span id="L178" class="ln">   178  </span>			t.Setenv(&#34;SERVER_ENV&#34;, expectedApplicationEnv)
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span>			actual, err := New()
+<span id="L181" class="ln">   181  </span>			assert.Nil(t, actual)
+<span id="L182" class="ln">   182  </span>			require.ErrorContains(t, err, &#34;APP_MODE&#34;)
+<span id="L183" class="ln">   183  </span>		})
 <span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>			actual, err := New()
-<span id="L186" class="ln">   186  </span>			assert.Nil(t, actual)
-<span id="L187" class="ln">   187  </span>			require.ErrorIs(t, err, ErrFailedToParseCIDR)
-<span id="L188" class="ln">   188  </span>		})
-<span id="L189" class="ln">   189  </span>
-<span id="L190" class="ln">   190  </span>		t.Run(&#34;OS_TZが空文字の場合、notEmptyでエラーになること&#34;, func(t *testing.T) {
-<span id="L191" class="ln">   191  </span>			<span class="comment">// 空文字は required を通過するうえ、time.LoadLocation(&#34;&#34;) が UTC を返して</span>
-<span id="L192" class="ln">   192  </span>			<span class="comment">// 設定ミスが無警告で通るため、notEmpty で起動時に落とす。</span>
-<span id="L193" class="ln">   193  </span>			setEnvVarsForTesting(t)
-<span id="L194" class="ln">   194  </span>			t.Setenv(&#34;OS_TZ&#34;, &#34;&#34;)
-<span id="L195" class="ln">   195  </span>
-<span id="L196" class="ln">   196  </span>			actual, err := New()
-<span id="L197" class="ln">   197  </span>			assert.Nil(t, actual)
-<span id="L198" class="ln">   198  </span>			require.ErrorContains(t, err, &#34;OS_TZ&#34;)
-<span id="L199" class="ln">   199  </span>		})
-<span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>		t.Run(&#34;METRICS_USERNAMEが空文字の場合、notEmptyでエラーになること&#34;, func(t *testing.T) {
-<span id="L202" class="ln">   202  </span>			setEnvVarsForTesting(t)
-<span id="L203" class="ln">   203  </span>			t.Setenv(&#34;METRICS_USERNAME&#34;, &#34;&#34;) <span class="comment">// 空文字は required を通過するが notEmpty で弾く</span>
-<span id="L204" class="ln">   204  </span>
-<span id="L205" class="ln">   205  </span>			actual, err := New()
-<span id="L206" class="ln">   206  </span>			assert.Nil(t, actual)
-<span id="L207" class="ln">   207  </span>			require.ErrorContains(t, err, &#34;METRICS_USERNAME&#34;)
-<span id="L208" class="ln">   208  </span>		})
-<span id="L209" class="ln">   209  </span>
-<span id="L210" class="ln">   210  </span>		t.Run(&#34;METRICS_PASSWORDが空文字の場合、notEmptyでエラーになること&#34;, func(t *testing.T) {
-<span id="L211" class="ln">   211  </span>			setEnvVarsForTesting(t)
-<span id="L212" class="ln">   212  </span>			t.Setenv(&#34;METRICS_PASSWORD&#34;, &#34;&#34;) <span class="comment">// 空文字は required を通過するが notEmpty で弾く</span>
+<span id="L185" class="ln">   185  </span>		t.Run(&#34;バリデート結果がエラーの場合&#34;, func(t *testing.T) {
+<span id="L186" class="ln">   186  </span>			setEnvVarsForTesting(t)
+<span id="L187" class="ln">   187  </span>			t.Setenv(&#34;APP_MODE&#34;, &#34;invalid_env&#34;)
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>			actual, err := New()
+<span id="L190" class="ln">   190  </span>			assert.Nil(t, actual)
+<span id="L191" class="ln">   191  </span>			require.ErrorIs(t, err, ErrInvalidAppMode)
+<span id="L192" class="ln">   192  </span>		})
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span>		t.Run(&#34;CIDRのパースに失敗した場合&#34;, func(t *testing.T) {
+<span id="L195" class="ln">   195  </span>			setEnvVarsForTesting(t)
+<span id="L196" class="ln">   196  </span>			t.Setenv(&#34;SECURITY_CIDR&#34;, &#34;invalid_cidr&#34;) <span class="comment">// 無効なCIDR</span>
+<span id="L197" class="ln">   197  </span>
+<span id="L198" class="ln">   198  </span>			actual, err := New()
+<span id="L199" class="ln">   199  </span>			assert.Nil(t, actual)
+<span id="L200" class="ln">   200  </span>			require.ErrorIs(t, err, ErrFailedToParseCIDR)
+<span id="L201" class="ln">   201  </span>		})
+<span id="L202" class="ln">   202  </span>
+<span id="L203" class="ln">   203  </span>		t.Run(&#34;OS_TZが空文字の場合、notEmptyでエラーになること&#34;, func(t *testing.T) {
+<span id="L204" class="ln">   204  </span>			<span class="comment">// 空文字は required を通過するうえ、time.LoadLocation(&#34;&#34;) が UTC を返して</span>
+<span id="L205" class="ln">   205  </span>			<span class="comment">// 設定ミスが無警告で通るため、notEmpty で起動時に落とす。</span>
+<span id="L206" class="ln">   206  </span>			setEnvVarsForTesting(t)
+<span id="L207" class="ln">   207  </span>			t.Setenv(&#34;OS_TZ&#34;, &#34;&#34;)
+<span id="L208" class="ln">   208  </span>
+<span id="L209" class="ln">   209  </span>			actual, err := New()
+<span id="L210" class="ln">   210  </span>			assert.Nil(t, actual)
+<span id="L211" class="ln">   211  </span>			require.ErrorContains(t, err, &#34;OS_TZ&#34;)
+<span id="L212" class="ln">   212  </span>		})
 <span id="L213" class="ln">   213  </span>
-<span id="L214" class="ln">   214  </span>			actual, err := New()
-<span id="L215" class="ln">   215  </span>			assert.Nil(t, actual)
-<span id="L216" class="ln">   216  </span>			require.ErrorContains(t, err, &#34;METRICS_PASSWORD&#34;)
-<span id="L217" class="ln">   217  </span>		})
-<span id="L218" class="ln">   218  </span>	})
-<span id="L219" class="ln">   219  </span>}
-<span id="L220" class="ln">   220  </span>
-<span id="L221" class="ln">   221  </span>func Test_validateConfig(t *testing.T) {
-<span id="L222" class="ln">   222  </span>	t.Parallel()
-<span id="L223" class="ln">   223  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L224" class="ln">   224  </span>		t.Parallel()
-<span id="L225" class="ln">   225  </span>		cfg := mockLoader(t)
+<span id="L214" class="ln">   214  </span>		t.Run(&#34;METRICS_USERNAMEが空文字の場合、notEmptyでエラーになること&#34;, func(t *testing.T) {
+<span id="L215" class="ln">   215  </span>			setEnvVarsForTesting(t)
+<span id="L216" class="ln">   216  </span>			t.Setenv(&#34;METRICS_USERNAME&#34;, &#34;&#34;) <span class="comment">// 空文字は required を通過するが notEmpty で弾く</span>
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>			actual, err := New()
+<span id="L219" class="ln">   219  </span>			assert.Nil(t, actual)
+<span id="L220" class="ln">   220  </span>			require.ErrorContains(t, err, &#34;METRICS_USERNAME&#34;)
+<span id="L221" class="ln">   221  </span>		})
+<span id="L222" class="ln">   222  </span>
+<span id="L223" class="ln">   223  </span>		t.Run(&#34;METRICS_PASSWORDが空文字の場合、notEmptyでエラーになること&#34;, func(t *testing.T) {
+<span id="L224" class="ln">   224  </span>			setEnvVarsForTesting(t)
+<span id="L225" class="ln">   225  </span>			t.Setenv(&#34;METRICS_PASSWORD&#34;, &#34;&#34;) <span class="comment">// 空文字は required を通過するが notEmpty で弾く</span>
 <span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span>		err := validateConfig(cfg)
-<span id="L228" class="ln">   228  </span>		require.NoError(t, err)
-<span id="L229" class="ln">   229  </span>	})
-<span id="L230" class="ln">   230  </span>
-<span id="L231" class="ln">   231  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L232" class="ln">   232  </span>		t.Parallel()
+<span id="L227" class="ln">   227  </span>			actual, err := New()
+<span id="L228" class="ln">   228  </span>			assert.Nil(t, actual)
+<span id="L229" class="ln">   229  </span>			require.ErrorContains(t, err, &#34;METRICS_PASSWORD&#34;)
+<span id="L230" class="ln">   230  </span>		})
+<span id="L231" class="ln">   231  </span>	})
+<span id="L232" class="ln">   232  </span>}
 <span id="L233" class="ln">   233  </span>
-<span id="L234" class="ln">   234  </span>		t.Run(&#34;アプリケーション設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L235" class="ln">   235  </span>			t.Parallel()
-<span id="L236" class="ln">   236  </span>			cfg := mockLoader(t)
-<span id="L237" class="ln">   237  </span>			cfg.App.Mode = &#34;invalid_mode&#34; <span class="comment">// 無効なアプリケーションモード</span>
-<span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>			err := validateConfig(cfg)
-<span id="L240" class="ln">   240  </span>			require.ErrorIs(t, err, ErrInvalidAppMode)
-<span id="L241" class="ln">   241  </span>		})
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>		t.Run(&#34;サーバー設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L244" class="ln">   244  </span>			t.Parallel()
-<span id="L245" class="ln">   245  </span>			cfg := mockLoader(t)
-<span id="L246" class="ln">   246  </span>			cfg.Server.ReadHeaderTimeout = 0 <span class="comment">// 無効なReadHeaderTimeout</span>
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>			err := validateConfig(cfg)
-<span id="L249" class="ln">   249  </span>			require.ErrorIs(t, err, ErrInvalidReadHeaderTimeout)
-<span id="L250" class="ln">   250  </span>		})
+<span id="L234" class="ln">   234  </span>func Test_validateConfig(t *testing.T) {
+<span id="L235" class="ln">   235  </span>	t.Parallel()
+<span id="L236" class="ln">   236  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L237" class="ln">   237  </span>		t.Parallel()
+<span id="L238" class="ln">   238  </span>		cfg := mockLoader(t)
+<span id="L239" class="ln">   239  </span>
+<span id="L240" class="ln">   240  </span>		err := validateConfig(cfg)
+<span id="L241" class="ln">   241  </span>		require.NoError(t, err)
+<span id="L242" class="ln">   242  </span>	})
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L245" class="ln">   245  </span>		t.Parallel()
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>		t.Run(&#34;アプリケーション設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L248" class="ln">   248  </span>			t.Parallel()
+<span id="L249" class="ln">   249  </span>			cfg := mockLoader(t)
+<span id="L250" class="ln">   250  </span>			cfg.App.Mode = &#34;invalid_mode&#34; <span class="comment">// 無効なアプリケーションモード</span>
 <span id="L251" class="ln">   251  </span>
-<span id="L252" class="ln">   252  </span>		t.Run(&#34;DB設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L253" class="ln">   253  </span>			t.Parallel()
-<span id="L254" class="ln">   254  </span>			cfg := mockLoader(t)
-<span id="L255" class="ln">   255  </span>			cfg.Database.SlowQueryWarnThreshold = -1 <span class="comment">// 無効なスロークエリ警告閾値</span>
-<span id="L256" class="ln">   256  </span>
-<span id="L257" class="ln">   257  </span>			err := validateConfig(cfg)
-<span id="L258" class="ln">   258  </span>			require.ErrorIs(t, err, ErrInvalidSlowQueryWarnThreshold)
-<span id="L259" class="ln">   259  </span>		})
+<span id="L252" class="ln">   252  </span>			err := validateConfig(cfg)
+<span id="L253" class="ln">   253  </span>			require.ErrorIs(t, err, ErrInvalidAppMode)
+<span id="L254" class="ln">   254  </span>		})
+<span id="L255" class="ln">   255  </span>
+<span id="L256" class="ln">   256  </span>		t.Run(&#34;サーバー設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L257" class="ln">   257  </span>			t.Parallel()
+<span id="L258" class="ln">   258  </span>			cfg := mockLoader(t)
+<span id="L259" class="ln">   259  </span>			cfg.Server.ReadHeaderTimeout = 0 <span class="comment">// 無効なReadHeaderTimeout</span>
 <span id="L260" class="ln">   260  </span>
-<span id="L261" class="ln">   261  </span>		t.Run(&#34;DBコネクション設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L262" class="ln">   262  </span>			t.Parallel()
-<span id="L263" class="ln">   263  </span>			cfg := mockLoader(t)
-<span id="L264" class="ln">   264  </span>			cfg.DBConnection.MinConns = cfg.DBConnection.MaxConns + 1 <span class="comment">// MinConnsがMaxConnsを超える</span>
-<span id="L265" class="ln">   265  </span>
-<span id="L266" class="ln">   266  </span>			err := validateConfig(cfg)
-<span id="L267" class="ln">   267  </span>			require.ErrorIs(t, err, ErrInvalidExceedMaxConns)
-<span id="L268" class="ln">   268  </span>		})
+<span id="L261" class="ln">   261  </span>			err := validateConfig(cfg)
+<span id="L262" class="ln">   262  </span>			require.ErrorIs(t, err, ErrInvalidReadHeaderTimeout)
+<span id="L263" class="ln">   263  </span>		})
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>		t.Run(&#34;DB設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L266" class="ln">   266  </span>			t.Parallel()
+<span id="L267" class="ln">   267  </span>			cfg := mockLoader(t)
+<span id="L268" class="ln">   268  </span>			cfg.Database.SlowQueryWarnThreshold = -1 <span class="comment">// 無効なスロークエリ警告閾値</span>
 <span id="L269" class="ln">   269  </span>
-<span id="L270" class="ln">   270  </span>		t.Run(&#34;セキュリティ設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L271" class="ln">   271  </span>			t.Parallel()
-<span id="L272" class="ln">   272  </span>			cfg := mockLoader(t)
-<span id="L273" class="ln">   273  </span>			cfg.Security.AllowedOrigins = []string{} <span class="comment">// 空のAllowedOrigins</span>
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>			err := validateConfig(cfg)
-<span id="L276" class="ln">   276  </span>			require.ErrorIs(t, err, ErrEmptyAllowedOrigins)
-<span id="L277" class="ln">   277  </span>		})
+<span id="L270" class="ln">   270  </span>			err := validateConfig(cfg)
+<span id="L271" class="ln">   271  </span>			require.ErrorIs(t, err, ErrInvalidSlowQueryWarnThreshold)
+<span id="L272" class="ln">   272  </span>		})
+<span id="L273" class="ln">   273  </span>
+<span id="L274" class="ln">   274  </span>		t.Run(&#34;DBコネクション設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L275" class="ln">   275  </span>			t.Parallel()
+<span id="L276" class="ln">   276  </span>			cfg := mockLoader(t)
+<span id="L277" class="ln">   277  </span>			cfg.DBConnection.MinConns = cfg.DBConnection.MaxConns + 1 <span class="comment">// MinConnsがMaxConnsを超える</span>
 <span id="L278" class="ln">   278  </span>
-<span id="L279" class="ln">   279  </span>		t.Run(&#34;メトリクス設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L280" class="ln">   280  </span>			t.Parallel()
-<span id="L281" class="ln">   281  </span>			cfg := mockLoader(t)
-<span id="L282" class="ln">   282  </span>			cfg.Metrics.Port = MinPort - 1 <span class="comment">// 無効なポート番号</span>
-<span id="L283" class="ln">   283  </span>
-<span id="L284" class="ln">   284  </span>			err := validateConfig(cfg)
-<span id="L285" class="ln">   285  </span>			require.ErrorIs(t, err, ErrInvalidMetricsPortRange)
-<span id="L286" class="ln">   286  </span>		})
-<span id="L287" class="ln">   287  </span>	})
-<span id="L288" class="ln">   288  </span>}
-<span id="L289" class="ln">   289  </span>
-<span id="L290" class="ln">   290  </span><span class="comment">//nolint:paralleltest // embeddedAppEnv パッケージ変数を操作するため並列化不可</span>
-<span id="L291" class="ln">   291  </span>func Test_validateEmbeddedEnv(t *testing.T) {
-<span id="L292" class="ln">   292  </span>	restore := func() func() {
-<span id="L293" class="ln">   293  </span>		saved := embeddedAppEnv
-<span id="L294" class="ln">   294  </span>		return func() { embeddedAppEnv = saved }
-<span id="L295" class="ln">   295  </span>	}
+<span id="L279" class="ln">   279  </span>			err := validateConfig(cfg)
+<span id="L280" class="ln">   280  </span>			require.ErrorIs(t, err, ErrInvalidExceedMaxConns)
+<span id="L281" class="ln">   281  </span>		})
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span>		t.Run(&#34;セキュリティ設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L284" class="ln">   284  </span>			t.Parallel()
+<span id="L285" class="ln">   285  </span>			cfg := mockLoader(t)
+<span id="L286" class="ln">   286  </span>			cfg.Security.AllowedOrigins = []string{} <span class="comment">// 空のAllowedOrigins</span>
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>			err := validateConfig(cfg)
+<span id="L289" class="ln">   289  </span>			require.ErrorIs(t, err, ErrEmptyAllowedOrigins)
+<span id="L290" class="ln">   290  </span>		})
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span>		t.Run(&#34;メトリクス設定でエラーが発生する場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L293" class="ln">   293  </span>			t.Parallel()
+<span id="L294" class="ln">   294  </span>			cfg := mockLoader(t)
+<span id="L295" class="ln">   295  </span>			cfg.Metrics.Port = MinPort - 1 <span class="comment">// 無効なポート番号</span>
 <span id="L296" class="ln">   296  </span>
-<span id="L297" class="ln">   297  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L298" class="ln">   298  </span>		t.Run(&#34;productionモードで本番素性(prd)の埋め込みenvの場合、エラーが返されないこと&#34;, func(t *testing.T) {
-<span id="L299" class="ln">   299  </span>			defer restore()()
-<span id="L300" class="ln">   300  </span>			embeddedAppEnv = EnvProduction
-<span id="L301" class="ln">   301  </span>
-<span id="L302" class="ln">   302  </span>			cfg := mockLoader(t)
-<span id="L303" class="ln">   303  </span>			cfg.App.Mode = ProductionMode
-<span id="L304" class="ln">   304  </span>
-<span id="L305" class="ln">   305  </span>			require.NoError(t, validateConfig(cfg))
-<span id="L306" class="ln">   306  </span>		})
-<span id="L307" class="ln">   307  </span>
-<span id="L308" class="ln">   308  </span>		t.Run(&#34;productionモードで未知の環境素性の場合はdeny-listにないため許容されること&#34;, func(t *testing.T) {
-<span id="L309" class="ln">   309  </span>			defer restore()()
-<span id="L310" class="ln">   310  </span>			embeddedAppEnv = &#34;unknown-future-env&#34;
-<span id="L311" class="ln">   311  </span>
-<span id="L312" class="ln">   312  </span>			cfg := mockLoader(t)
-<span id="L313" class="ln">   313  </span>			cfg.App.Mode = ProductionMode
+<span id="L297" class="ln">   297  </span>			err := validateConfig(cfg)
+<span id="L298" class="ln">   298  </span>			require.ErrorIs(t, err, ErrInvalidMetricsPortRange)
+<span id="L299" class="ln">   299  </span>		})
+<span id="L300" class="ln">   300  </span>	})
+<span id="L301" class="ln">   301  </span>}
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span><span class="comment">//nolint:paralleltest // embeddedAppEnv パッケージ変数を操作するため並列化不可</span>
+<span id="L304" class="ln">   304  </span>func Test_validateEmbeddedEnv(t *testing.T) {
+<span id="L305" class="ln">   305  </span>	restore := func() func() {
+<span id="L306" class="ln">   306  </span>		saved := embeddedAppEnv
+<span id="L307" class="ln">   307  </span>		return func() { embeddedAppEnv = saved }
+<span id="L308" class="ln">   308  </span>	}
+<span id="L309" class="ln">   309  </span>
+<span id="L310" class="ln">   310  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L311" class="ln">   311  </span>		t.Run(&#34;productionモードで本番素性(prd)の埋め込みenvの場合、エラーが返されないこと&#34;, func(t *testing.T) {
+<span id="L312" class="ln">   312  </span>			defer restore()()
+<span id="L313" class="ln">   313  </span>			embeddedAppEnv = EnvProduction
 <span id="L314" class="ln">   314  </span>
-<span id="L315" class="ln">   315  </span>			require.NoError(t, validateConfig(cfg))
-<span id="L316" class="ln">   316  </span>		})
+<span id="L315" class="ln">   315  </span>			cfg := mockLoader(t)
+<span id="L316" class="ln">   316  </span>			cfg.App.Mode = ProductionMode
 <span id="L317" class="ln">   317  </span>
-<span id="L318" class="ln">   318  </span>		t.Run(&#34;developmentモードでは非本番素性の埋め込みenvでも許容されること&#34;, func(t *testing.T) {
-<span id="L319" class="ln">   319  </span>			defer restore()()
-<span id="L320" class="ln">   320  </span>			embeddedAppEnv = EnvLocal
-<span id="L321" class="ln">   321  </span>
-<span id="L322" class="ln">   322  </span>			cfg := mockLoader(t)
-<span id="L323" class="ln">   323  </span>			cfg.App.Mode = DevelopmentMode
+<span id="L318" class="ln">   318  </span>			require.NoError(t, validateConfig(cfg))
+<span id="L319" class="ln">   319  </span>		})
+<span id="L320" class="ln">   320  </span>
+<span id="L321" class="ln">   321  </span>		t.Run(&#34;productionモードで未知の環境素性の場合はdeny-listにないため許容されること&#34;, func(t *testing.T) {
+<span id="L322" class="ln">   322  </span>			defer restore()()
+<span id="L323" class="ln">   323  </span>			embeddedAppEnv = &#34;unknown-future-env&#34;
 <span id="L324" class="ln">   324  </span>
-<span id="L325" class="ln">   325  </span>			require.NoError(t, validateConfig(cfg))
-<span id="L326" class="ln">   326  </span>		})
-<span id="L327" class="ln">   327  </span>	})
-<span id="L328" class="ln">   328  </span>
-<span id="L329" class="ln">   329  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L330" class="ln">   330  </span>		t.Run(&#34;productionモードでlocal素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L331" class="ln">   331  </span>			defer restore()()
-<span id="L332" class="ln">   332  </span>			embeddedAppEnv = EnvLocal
-<span id="L333" class="ln">   333  </span>
-<span id="L334" class="ln">   334  </span>			cfg := mockLoader(t)
-<span id="L335" class="ln">   335  </span>			cfg.App.Mode = ProductionMode
-<span id="L336" class="ln">   336  </span>
-<span id="L337" class="ln">   337  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
-<span id="L338" class="ln">   338  </span>		})
-<span id="L339" class="ln">   339  </span>
-<span id="L340" class="ln">   340  </span>		t.Run(&#34;productionモードでci素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L341" class="ln">   341  </span>			defer restore()()
-<span id="L342" class="ln">   342  </span>			embeddedAppEnv = EnvCI
-<span id="L343" class="ln">   343  </span>
-<span id="L344" class="ln">   344  </span>			cfg := mockLoader(t)
-<span id="L345" class="ln">   345  </span>			cfg.App.Mode = ProductionMode
+<span id="L325" class="ln">   325  </span>			cfg := mockLoader(t)
+<span id="L326" class="ln">   326  </span>			cfg.App.Mode = ProductionMode
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>			require.NoError(t, validateConfig(cfg))
+<span id="L329" class="ln">   329  </span>		})
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>		t.Run(&#34;developmentモードでは非本番素性の埋め込みenvでも許容されること&#34;, func(t *testing.T) {
+<span id="L332" class="ln">   332  </span>			defer restore()()
+<span id="L333" class="ln">   333  </span>			embeddedAppEnv = EnvLocal
+<span id="L334" class="ln">   334  </span>
+<span id="L335" class="ln">   335  </span>			cfg := mockLoader(t)
+<span id="L336" class="ln">   336  </span>			cfg.App.Mode = DevelopmentMode
+<span id="L337" class="ln">   337  </span>
+<span id="L338" class="ln">   338  </span>			require.NoError(t, validateConfig(cfg))
+<span id="L339" class="ln">   339  </span>		})
+<span id="L340" class="ln">   340  </span>	})
+<span id="L341" class="ln">   341  </span>
+<span id="L342" class="ln">   342  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L343" class="ln">   343  </span>		t.Run(&#34;productionモードでlocal素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L344" class="ln">   344  </span>			defer restore()()
+<span id="L345" class="ln">   345  </span>			embeddedAppEnv = EnvLocal
 <span id="L346" class="ln">   346  </span>
-<span id="L347" class="ln">   347  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
-<span id="L348" class="ln">   348  </span>		})
+<span id="L347" class="ln">   347  </span>			cfg := mockLoader(t)
+<span id="L348" class="ln">   348  </span>			cfg.App.Mode = ProductionMode
 <span id="L349" class="ln">   349  </span>
-<span id="L350" class="ln">   350  </span>		t.Run(&#34;productionモードでtest素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L351" class="ln">   351  </span>			defer restore()()
-<span id="L352" class="ln">   352  </span>			embeddedAppEnv = EnvTest
-<span id="L353" class="ln">   353  </span>
-<span id="L354" class="ln">   354  </span>			cfg := mockLoader(t)
-<span id="L355" class="ln">   355  </span>			cfg.App.Mode = ProductionMode
+<span id="L350" class="ln">   350  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
+<span id="L351" class="ln">   351  </span>		})
+<span id="L352" class="ln">   352  </span>
+<span id="L353" class="ln">   353  </span>		t.Run(&#34;productionモードでci素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L354" class="ln">   354  </span>			defer restore()()
+<span id="L355" class="ln">   355  </span>			embeddedAppEnv = EnvCI
 <span id="L356" class="ln">   356  </span>
-<span id="L357" class="ln">   357  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
-<span id="L358" class="ln">   358  </span>		})
+<span id="L357" class="ln">   357  </span>			cfg := mockLoader(t)
+<span id="L358" class="ln">   358  </span>			cfg.App.Mode = ProductionMode
 <span id="L359" class="ln">   359  </span>
-<span id="L360" class="ln">   360  </span>		t.Run(&#34;productionモードでdast素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L361" class="ln">   361  </span>			defer restore()()
-<span id="L362" class="ln">   362  </span>			embeddedAppEnv = EnvDast
-<span id="L363" class="ln">   363  </span>
-<span id="L364" class="ln">   364  </span>			cfg := mockLoader(t)
-<span id="L365" class="ln">   365  </span>			cfg.App.Mode = ProductionMode
+<span id="L360" class="ln">   360  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
+<span id="L361" class="ln">   361  </span>		})
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span>		t.Run(&#34;productionモードでtest素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L364" class="ln">   364  </span>			defer restore()()
+<span id="L365" class="ln">   365  </span>			embeddedAppEnv = EnvTest
 <span id="L366" class="ln">   366  </span>
-<span id="L367" class="ln">   367  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
-<span id="L368" class="ln">   368  </span>		})
+<span id="L367" class="ln">   367  </span>			cfg := mockLoader(t)
+<span id="L368" class="ln">   368  </span>			cfg.App.Mode = ProductionMode
 <span id="L369" class="ln">   369  </span>
-<span id="L370" class="ln">   370  </span>		t.Run(&#34;productionモードでdevelopment素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L371" class="ln">   371  </span>			defer restore()()
-<span id="L372" class="ln">   372  </span>			embeddedAppEnv = EnvDevelopment
-<span id="L373" class="ln">   373  </span>
-<span id="L374" class="ln">   374  </span>			cfg := mockLoader(t)
-<span id="L375" class="ln">   375  </span>			cfg.App.Mode = ProductionMode
+<span id="L370" class="ln">   370  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
+<span id="L371" class="ln">   371  </span>		})
+<span id="L372" class="ln">   372  </span>
+<span id="L373" class="ln">   373  </span>		t.Run(&#34;productionモードでdast素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L374" class="ln">   374  </span>			defer restore()()
+<span id="L375" class="ln">   375  </span>			embeddedAppEnv = EnvDast
 <span id="L376" class="ln">   376  </span>
-<span id="L377" class="ln">   377  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
-<span id="L378" class="ln">   378  </span>		})
+<span id="L377" class="ln">   377  </span>			cfg := mockLoader(t)
+<span id="L378" class="ln">   378  </span>			cfg.App.Mode = ProductionMode
 <span id="L379" class="ln">   379  </span>
-<span id="L380" class="ln">   380  </span>		t.Run(&#34;productionモードで埋め込みenvが空の場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L381" class="ln">   381  </span>			defer restore()()
-<span id="L382" class="ln">   382  </span>			embeddedAppEnv = &#34;&#34;
-<span id="L383" class="ln">   383  </span>
-<span id="L384" class="ln">   384  </span>			cfg := mockLoader(t)
-<span id="L385" class="ln">   385  </span>			cfg.App.Mode = ProductionMode
+<span id="L380" class="ln">   380  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
+<span id="L381" class="ln">   381  </span>		})
+<span id="L382" class="ln">   382  </span>
+<span id="L383" class="ln">   383  </span>		t.Run(&#34;productionモードでdevelopment素性の埋め込みenvの場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L384" class="ln">   384  </span>			defer restore()()
+<span id="L385" class="ln">   385  </span>			embeddedAppEnv = EnvDevelopment
 <span id="L386" class="ln">   386  </span>
-<span id="L387" class="ln">   387  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
-<span id="L388" class="ln">   388  </span>		})
-<span id="L389" class="ln">   389  </span>	})
-<span id="L390" class="ln">   390  </span>}
-<span id="L391" class="ln">   391  </span>
-<span id="L392" class="ln">   392  </span>func Test_validateApplicationConfig(t *testing.T) {
-<span id="L393" class="ln">   393  </span>	t.Parallel()
-<span id="L394" class="ln">   394  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L395" class="ln">   395  </span>		t.Parallel()
-<span id="L396" class="ln">   396  </span>		cfg := mockLoader(t)
-<span id="L397" class="ln">   397  </span>		err := validateApplicationConfig(cfg.App)
-<span id="L398" class="ln">   398  </span>		require.NoError(t, err)
-<span id="L399" class="ln">   399  </span>	})
-<span id="L400" class="ln">   400  </span>
-<span id="L401" class="ln">   401  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L402" class="ln">   402  </span>		t.Parallel()
-<span id="L403" class="ln">   403  </span>		t.Run(&#34;無効なアプリケーションモード&#34;, func(t *testing.T) {
-<span id="L404" class="ln">   404  </span>			t.Parallel()
-<span id="L405" class="ln">   405  </span>			cfg := mockLoader(t)
-<span id="L406" class="ln">   406  </span>			cfg.App.Mode = &#34;invalid_mode&#34; <span class="comment">// 無効なアプリケーションモード</span>
-<span id="L407" class="ln">   407  </span>
-<span id="L408" class="ln">   408  </span>			err := validateApplicationConfig(cfg.App)
-<span id="L409" class="ln">   409  </span>			require.ErrorIs(t, err, ErrInvalidAppMode)
-<span id="L410" class="ln">   410  </span>		})
-<span id="L411" class="ln">   411  </span>
-<span id="L412" class="ln">   412  </span>		t.Run(&#34;無効なログレベル&#34;, func(t *testing.T) {
-<span id="L413" class="ln">   413  </span>			t.Parallel()
-<span id="L414" class="ln">   414  </span>			cfg := mockLoader(t)
-<span id="L415" class="ln">   415  </span>			cfg.App.LogLevel = &#34;invalid_level&#34;
-<span id="L416" class="ln">   416  </span>
-<span id="L417" class="ln">   417  </span>			err := validateApplicationConfig(cfg.App)
-<span id="L418" class="ln">   418  </span>			require.ErrorIs(t, err, ErrInvalidLogLevel)
-<span id="L419" class="ln">   419  </span>		})
-<span id="L420" class="ln">   420  </span>	})
-<span id="L421" class="ln">   421  </span>}
-<span id="L422" class="ln">   422  </span>
-<span id="L423" class="ln">   423  </span>func Test_validateServerConfig(t *testing.T) {
-<span id="L424" class="ln">   424  </span>	t.Parallel()
-<span id="L425" class="ln">   425  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L426" class="ln">   426  </span>		t.Parallel()
-<span id="L427" class="ln">   427  </span>		cfg := mockLoader(t)
-<span id="L428" class="ln">   428  </span>		err := validateServerConfig(cfg.Server)
-<span id="L429" class="ln">   429  </span>		require.NoError(t, err)
-<span id="L430" class="ln">   430  </span>	})
-<span id="L431" class="ln">   431  </span>
-<span id="L432" class="ln">   432  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L433" class="ln">   433  </span>		t.Parallel()
-<span id="L434" class="ln">   434  </span>		t.Run(&#34;無効なポート番号&#34;, func(t *testing.T) {
-<span id="L435" class="ln">   435  </span>			t.Parallel()
-<span id="L436" class="ln">   436  </span>
-<span id="L437" class="ln">   437  </span>			t.Run(&#34;ポート番号がMinPort未満の場合&#34;, func(t *testing.T) {
-<span id="L438" class="ln">   438  </span>				t.Parallel()
-<span id="L439" class="ln">   439  </span>				cfg := mockLoader(t)
-<span id="L440" class="ln">   440  </span>				cfg.Server.Port = MinPort - 1 <span class="comment">// 無効なポート番号（下限境界）</span>
-<span id="L441" class="ln">   441  </span>
-<span id="L442" class="ln">   442  </span>				err := validateServerConfig(cfg.Server)
-<span id="L443" class="ln">   443  </span>				require.ErrorIs(t, err, ErrInvalidPortRange)
-<span id="L444" class="ln">   444  </span>			})
-<span id="L445" class="ln">   445  </span>
-<span id="L446" class="ln">   446  </span>			t.Run(&#34;ポート番号がMaxPortを超えている場合&#34;, func(t *testing.T) {
-<span id="L447" class="ln">   447  </span>				t.Parallel()
-<span id="L448" class="ln">   448  </span>				cfg := mockLoader(t)
-<span id="L449" class="ln">   449  </span>				cfg.Server.Port = MaxPort + 1 <span class="comment">// 無効なポート番号（上限境界）</span>
-<span id="L450" class="ln">   450  </span>
-<span id="L451" class="ln">   451  </span>				err := validateServerConfig(cfg.Server)
-<span id="L452" class="ln">   452  </span>				require.ErrorIs(t, err, ErrInvalidPortRange)
-<span id="L453" class="ln">   453  </span>			})
-<span id="L454" class="ln">   454  </span>		})
-<span id="L455" class="ln">   455  </span>
-<span id="L456" class="ln">   456  </span>		t.Run(&#34;ReadHeaderTimeoutが無効な場合&#34;, func(t *testing.T) {
-<span id="L457" class="ln">   457  </span>			t.Parallel()
-<span id="L458" class="ln">   458  </span>			cfg := mockLoader(t)
-<span id="L459" class="ln">   459  </span>			cfg.Server.ReadHeaderTimeout = 0 <span class="comment">// 無効なReadHeaderTimeout</span>
-<span id="L460" class="ln">   460  </span>
-<span id="L461" class="ln">   461  </span>			err := validateServerConfig(cfg.Server)
-<span id="L462" class="ln">   462  </span>			require.ErrorIs(t, err, ErrInvalidReadHeaderTimeout)
-<span id="L463" class="ln">   463  </span>		})
-<span id="L464" class="ln">   464  </span>
-<span id="L465" class="ln">   465  </span>		t.Run(&#34;ReadTimeoutが無効な場合&#34;, func(t *testing.T) {
-<span id="L466" class="ln">   466  </span>			t.Parallel()
-<span id="L467" class="ln">   467  </span>			cfg := mockLoader(t)
-<span id="L468" class="ln">   468  </span>			cfg.Server.ReadTimeout = 0 <span class="comment">// 無効なReadTimeout</span>
-<span id="L469" class="ln">   469  </span>
-<span id="L470" class="ln">   470  </span>			err := validateServerConfig(cfg.Server)
-<span id="L471" class="ln">   471  </span>			require.ErrorIs(t, err, ErrInvalidReadTimeout)
-<span id="L472" class="ln">   472  </span>		})
+<span id="L387" class="ln">   387  </span>			cfg := mockLoader(t)
+<span id="L388" class="ln">   388  </span>			cfg.App.Mode = ProductionMode
+<span id="L389" class="ln">   389  </span>
+<span id="L390" class="ln">   390  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
+<span id="L391" class="ln">   391  </span>		})
+<span id="L392" class="ln">   392  </span>
+<span id="L393" class="ln">   393  </span>		t.Run(&#34;productionモードで埋め込みenvが空の場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L394" class="ln">   394  </span>			defer restore()()
+<span id="L395" class="ln">   395  </span>			embeddedAppEnv = &#34;&#34;
+<span id="L396" class="ln">   396  </span>
+<span id="L397" class="ln">   397  </span>			cfg := mockLoader(t)
+<span id="L398" class="ln">   398  </span>			cfg.App.Mode = ProductionMode
+<span id="L399" class="ln">   399  </span>
+<span id="L400" class="ln">   400  </span>			require.ErrorIs(t, validateConfig(cfg), ErrEmbeddedEnvMismatch)
+<span id="L401" class="ln">   401  </span>		})
+<span id="L402" class="ln">   402  </span>	})
+<span id="L403" class="ln">   403  </span>}
+<span id="L404" class="ln">   404  </span>
+<span id="L405" class="ln">   405  </span>func Test_validateApplicationConfig(t *testing.T) {
+<span id="L406" class="ln">   406  </span>	t.Parallel()
+<span id="L407" class="ln">   407  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L408" class="ln">   408  </span>		t.Parallel()
+<span id="L409" class="ln">   409  </span>		cfg := mockLoader(t)
+<span id="L410" class="ln">   410  </span>		err := validateApplicationConfig(cfg.App)
+<span id="L411" class="ln">   411  </span>		require.NoError(t, err)
+<span id="L412" class="ln">   412  </span>	})
+<span id="L413" class="ln">   413  </span>
+<span id="L414" class="ln">   414  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L415" class="ln">   415  </span>		t.Parallel()
+<span id="L416" class="ln">   416  </span>		t.Run(&#34;無効なアプリケーションモード&#34;, func(t *testing.T) {
+<span id="L417" class="ln">   417  </span>			t.Parallel()
+<span id="L418" class="ln">   418  </span>			cfg := mockLoader(t)
+<span id="L419" class="ln">   419  </span>			cfg.App.Mode = &#34;invalid_mode&#34; <span class="comment">// 無効なアプリケーションモード</span>
+<span id="L420" class="ln">   420  </span>
+<span id="L421" class="ln">   421  </span>			err := validateApplicationConfig(cfg.App)
+<span id="L422" class="ln">   422  </span>			require.ErrorIs(t, err, ErrInvalidAppMode)
+<span id="L423" class="ln">   423  </span>		})
+<span id="L424" class="ln">   424  </span>
+<span id="L425" class="ln">   425  </span>		t.Run(&#34;無効なログレベル&#34;, func(t *testing.T) {
+<span id="L426" class="ln">   426  </span>			t.Parallel()
+<span id="L427" class="ln">   427  </span>			cfg := mockLoader(t)
+<span id="L428" class="ln">   428  </span>			cfg.App.LogLevel = &#34;invalid_level&#34;
+<span id="L429" class="ln">   429  </span>
+<span id="L430" class="ln">   430  </span>			err := validateApplicationConfig(cfg.App)
+<span id="L431" class="ln">   431  </span>			require.ErrorIs(t, err, ErrInvalidLogLevel)
+<span id="L432" class="ln">   432  </span>		})
+<span id="L433" class="ln">   433  </span>	})
+<span id="L434" class="ln">   434  </span>}
+<span id="L435" class="ln">   435  </span>
+<span id="L436" class="ln">   436  </span>func Test_validateServerConfig(t *testing.T) {
+<span id="L437" class="ln">   437  </span>	t.Parallel()
+<span id="L438" class="ln">   438  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L439" class="ln">   439  </span>		t.Parallel()
+<span id="L440" class="ln">   440  </span>		cfg := mockLoader(t)
+<span id="L441" class="ln">   441  </span>		err := validateServerConfig(cfg.Server)
+<span id="L442" class="ln">   442  </span>		require.NoError(t, err)
+<span id="L443" class="ln">   443  </span>	})
+<span id="L444" class="ln">   444  </span>
+<span id="L445" class="ln">   445  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L446" class="ln">   446  </span>		t.Parallel()
+<span id="L447" class="ln">   447  </span>		t.Run(&#34;無効なポート番号&#34;, func(t *testing.T) {
+<span id="L448" class="ln">   448  </span>			t.Parallel()
+<span id="L449" class="ln">   449  </span>
+<span id="L450" class="ln">   450  </span>			t.Run(&#34;ポート番号がMinPort未満の場合&#34;, func(t *testing.T) {
+<span id="L451" class="ln">   451  </span>				t.Parallel()
+<span id="L452" class="ln">   452  </span>				cfg := mockLoader(t)
+<span id="L453" class="ln">   453  </span>				cfg.Server.Port = MinPort - 1 <span class="comment">// 無効なポート番号（下限境界）</span>
+<span id="L454" class="ln">   454  </span>
+<span id="L455" class="ln">   455  </span>				err := validateServerConfig(cfg.Server)
+<span id="L456" class="ln">   456  </span>				require.ErrorIs(t, err, ErrInvalidPortRange)
+<span id="L457" class="ln">   457  </span>			})
+<span id="L458" class="ln">   458  </span>
+<span id="L459" class="ln">   459  </span>			t.Run(&#34;ポート番号がMaxPortを超えている場合&#34;, func(t *testing.T) {
+<span id="L460" class="ln">   460  </span>				t.Parallel()
+<span id="L461" class="ln">   461  </span>				cfg := mockLoader(t)
+<span id="L462" class="ln">   462  </span>				cfg.Server.Port = MaxPort + 1 <span class="comment">// 無効なポート番号（上限境界）</span>
+<span id="L463" class="ln">   463  </span>
+<span id="L464" class="ln">   464  </span>				err := validateServerConfig(cfg.Server)
+<span id="L465" class="ln">   465  </span>				require.ErrorIs(t, err, ErrInvalidPortRange)
+<span id="L466" class="ln">   466  </span>			})
+<span id="L467" class="ln">   467  </span>		})
+<span id="L468" class="ln">   468  </span>
+<span id="L469" class="ln">   469  </span>		t.Run(&#34;ReadHeaderTimeoutが無効な場合&#34;, func(t *testing.T) {
+<span id="L470" class="ln">   470  </span>			t.Parallel()
+<span id="L471" class="ln">   471  </span>			cfg := mockLoader(t)
+<span id="L472" class="ln">   472  </span>			cfg.Server.ReadHeaderTimeout = 0 <span class="comment">// 無効なReadHeaderTimeout</span>
 <span id="L473" class="ln">   473  </span>
-<span id="L474" class="ln">   474  </span>		t.Run(&#34;WriteTimeoutが無効な場合&#34;, func(t *testing.T) {
-<span id="L475" class="ln">   475  </span>			t.Parallel()
-<span id="L476" class="ln">   476  </span>			cfg := mockLoader(t)
-<span id="L477" class="ln">   477  </span>			cfg.Server.WriteTimeout = 0 <span class="comment">// 無効なWriteTimeout</span>
-<span id="L478" class="ln">   478  </span>
-<span id="L479" class="ln">   479  </span>			err := validateServerConfig(cfg.Server)
-<span id="L480" class="ln">   480  </span>			require.ErrorIs(t, err, ErrInvalidWriteTimeout)
-<span id="L481" class="ln">   481  </span>		})
+<span id="L474" class="ln">   474  </span>			err := validateServerConfig(cfg.Server)
+<span id="L475" class="ln">   475  </span>			require.ErrorIs(t, err, ErrInvalidReadHeaderTimeout)
+<span id="L476" class="ln">   476  </span>		})
+<span id="L477" class="ln">   477  </span>
+<span id="L478" class="ln">   478  </span>		t.Run(&#34;ReadTimeoutが無効な場合&#34;, func(t *testing.T) {
+<span id="L479" class="ln">   479  </span>			t.Parallel()
+<span id="L480" class="ln">   480  </span>			cfg := mockLoader(t)
+<span id="L481" class="ln">   481  </span>			cfg.Server.ReadTimeout = 0 <span class="comment">// 無効なReadTimeout</span>
 <span id="L482" class="ln">   482  </span>
-<span id="L483" class="ln">   483  </span>		t.Run(&#34;IdleTimeoutが無効な場合&#34;, func(t *testing.T) {
-<span id="L484" class="ln">   484  </span>			t.Parallel()
-<span id="L485" class="ln">   485  </span>			cfg := mockLoader(t)
-<span id="L486" class="ln">   486  </span>			cfg.Server.IdleTimeout = 0 <span class="comment">// 無効なIdleTimeout</span>
-<span id="L487" class="ln">   487  </span>
-<span id="L488" class="ln">   488  </span>			err := validateServerConfig(cfg.Server)
-<span id="L489" class="ln">   489  </span>			require.ErrorIs(t, err, ErrInvalidIdleTimeout)
-<span id="L490" class="ln">   490  </span>		})
+<span id="L483" class="ln">   483  </span>			err := validateServerConfig(cfg.Server)
+<span id="L484" class="ln">   484  </span>			require.ErrorIs(t, err, ErrInvalidReadTimeout)
+<span id="L485" class="ln">   485  </span>		})
+<span id="L486" class="ln">   486  </span>
+<span id="L487" class="ln">   487  </span>		t.Run(&#34;WriteTimeoutが無効な場合&#34;, func(t *testing.T) {
+<span id="L488" class="ln">   488  </span>			t.Parallel()
+<span id="L489" class="ln">   489  </span>			cfg := mockLoader(t)
+<span id="L490" class="ln">   490  </span>			cfg.Server.WriteTimeout = 0 <span class="comment">// 無効なWriteTimeout</span>
 <span id="L491" class="ln">   491  </span>
-<span id="L492" class="ln">   492  </span>		t.Run(&#34;ReadHeaderTimeoutがReadTimeoutを超えている場合&#34;, func(t *testing.T) {
-<span id="L493" class="ln">   493  </span>			t.Parallel()
-<span id="L494" class="ln">   494  </span>			cfg := mockLoader(t)
-<span id="L495" class="ln">   495  </span>			cfg.Server.ReadHeaderTimeout = cfg.Server.ReadTimeout + cfg.Server.ReadTimeout
-<span id="L496" class="ln">   496  </span>
-<span id="L497" class="ln">   497  </span>			err := validateServerConfig(cfg.Server)
-<span id="L498" class="ln">   498  </span>			require.ErrorIs(t, err, ErrReadHeaderTimeoutExceedsReadTimeout)
-<span id="L499" class="ln">   499  </span>		})
+<span id="L492" class="ln">   492  </span>			err := validateServerConfig(cfg.Server)
+<span id="L493" class="ln">   493  </span>			require.ErrorIs(t, err, ErrInvalidWriteTimeout)
+<span id="L494" class="ln">   494  </span>		})
+<span id="L495" class="ln">   495  </span>
+<span id="L496" class="ln">   496  </span>		t.Run(&#34;IdleTimeoutが無効な場合&#34;, func(t *testing.T) {
+<span id="L497" class="ln">   497  </span>			t.Parallel()
+<span id="L498" class="ln">   498  </span>			cfg := mockLoader(t)
+<span id="L499" class="ln">   499  </span>			cfg.Server.IdleTimeout = 0 <span class="comment">// 無効なIdleTimeout</span>
 <span id="L500" class="ln">   500  </span>
-<span id="L501" class="ln">   501  </span>		t.Run(&#34;WriteTimeoutがRequestTimeout未満の場合&#34;, func(t *testing.T) {
-<span id="L502" class="ln">   502  </span>			t.Parallel()
-<span id="L503" class="ln">   503  </span>			cfg := mockLoader(t)
-<span id="L504" class="ln">   504  </span>			cfg.Server.WriteTimeout = cfg.Server.RequestTimeout - time.Second <span class="comment">// RequestTimeout より 1s 短い</span>
-<span id="L505" class="ln">   505  </span>
-<span id="L506" class="ln">   506  </span>			err := validateServerConfig(cfg.Server)
-<span id="L507" class="ln">   507  </span>			require.ErrorIs(t, err, ErrWriteTimeoutBelowRequestTimeout)
-<span id="L508" class="ln">   508  </span>		})
+<span id="L501" class="ln">   501  </span>			err := validateServerConfig(cfg.Server)
+<span id="L502" class="ln">   502  </span>			require.ErrorIs(t, err, ErrInvalidIdleTimeout)
+<span id="L503" class="ln">   503  </span>		})
+<span id="L504" class="ln">   504  </span>
+<span id="L505" class="ln">   505  </span>		t.Run(&#34;ReadHeaderTimeoutがReadTimeoutを超えている場合&#34;, func(t *testing.T) {
+<span id="L506" class="ln">   506  </span>			t.Parallel()
+<span id="L507" class="ln">   507  </span>			cfg := mockLoader(t)
+<span id="L508" class="ln">   508  </span>			cfg.Server.ReadHeaderTimeout = cfg.Server.ReadTimeout + cfg.Server.ReadTimeout
 <span id="L509" class="ln">   509  </span>
-<span id="L510" class="ln">   510  </span>		t.Run(&#34;WriteTimeoutがRequestTimeoutと同値の場合は許容されること&#34;, func(t *testing.T) {
-<span id="L511" class="ln">   511  </span>			t.Parallel()
-<span id="L512" class="ln">   512  </span>			cfg := mockLoader(t)
-<span id="L513" class="ln">   513  </span>			cfg.Server.WriteTimeout = cfg.Server.RequestTimeout <span class="comment">// 境界値: 等値は有効</span>
-<span id="L514" class="ln">   514  </span>
-<span id="L515" class="ln">   515  </span>			err := validateServerConfig(cfg.Server)
-<span id="L516" class="ln">   516  </span>			require.NoError(t, err)
-<span id="L517" class="ln">   517  </span>		})
-<span id="L518" class="ln">   518  </span>	})
-<span id="L519" class="ln">   519  </span>}
-<span id="L520" class="ln">   520  </span>
-<span id="L521" class="ln">   521  </span>func Test_validateMetricsConfig(t *testing.T) {
-<span id="L522" class="ln">   522  </span>	t.Parallel()
-<span id="L523" class="ln">   523  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L524" class="ln">   524  </span>		t.Parallel()
-<span id="L525" class="ln">   525  </span>
-<span id="L526" class="ln">   526  </span>		t.Run(&#34;デフォルトのポート番号は許容されること&#34;, func(t *testing.T) {
-<span id="L527" class="ln">   527  </span>			t.Parallel()
-<span id="L528" class="ln">   528  </span>			cfg := mockLoader(t)
-<span id="L529" class="ln">   529  </span>			err := validateMetricsConfig(cfg.Metrics)
-<span id="L530" class="ln">   530  </span>			require.NoError(t, err)
-<span id="L531" class="ln">   531  </span>		})
-<span id="L532" class="ln">   532  </span>
-<span id="L533" class="ln">   533  </span>		t.Run(&#34;ポート番号がMinPortの場合は許容されること&#34;, func(t *testing.T) {
-<span id="L534" class="ln">   534  </span>			t.Parallel()
-<span id="L535" class="ln">   535  </span>			cfg := mockLoader(t)
-<span id="L536" class="ln">   536  </span>			cfg.Metrics.Port = MinPort <span class="comment">// 有効範囲の下限境界</span>
-<span id="L537" class="ln">   537  </span>			err := validateMetricsConfig(cfg.Metrics)
-<span id="L538" class="ln">   538  </span>			require.NoError(t, err)
-<span id="L539" class="ln">   539  </span>		})
-<span id="L540" class="ln">   540  </span>
-<span id="L541" class="ln">   541  </span>		t.Run(&#34;ポート番号がMaxPortの場合は許容されること&#34;, func(t *testing.T) {
-<span id="L542" class="ln">   542  </span>			t.Parallel()
-<span id="L543" class="ln">   543  </span>			cfg := mockLoader(t)
-<span id="L544" class="ln">   544  </span>			cfg.Metrics.Port = MaxPort <span class="comment">// 有効範囲の上限境界</span>
-<span id="L545" class="ln">   545  </span>			err := validateMetricsConfig(cfg.Metrics)
-<span id="L546" class="ln">   546  </span>			require.NoError(t, err)
-<span id="L547" class="ln">   547  </span>		})
-<span id="L548" class="ln">   548  </span>	})
-<span id="L549" class="ln">   549  </span>
-<span id="L550" class="ln">   550  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L551" class="ln">   551  </span>		t.Parallel()
-<span id="L552" class="ln">   552  </span>
-<span id="L553" class="ln">   553  </span>		t.Run(&#34;ポート番号がMinPort未満の場合&#34;, func(t *testing.T) {
-<span id="L554" class="ln">   554  </span>			t.Parallel()
-<span id="L555" class="ln">   555  </span>			cfg := mockLoader(t)
-<span id="L556" class="ln">   556  </span>			cfg.Metrics.Port = MinPort - 1 <span class="comment">// 無効なポート番号（下限境界）</span>
-<span id="L557" class="ln">   557  </span>			err := validateMetricsConfig(cfg.Metrics)
-<span id="L558" class="ln">   558  </span>			require.ErrorIs(t, err, ErrInvalidMetricsPortRange)
-<span id="L559" class="ln">   559  </span>		})
-<span id="L560" class="ln">   560  </span>
-<span id="L561" class="ln">   561  </span>		t.Run(&#34;ポート番号がMaxPortを超えている場合&#34;, func(t *testing.T) {
-<span id="L562" class="ln">   562  </span>			t.Parallel()
-<span id="L563" class="ln">   563  </span>			cfg := mockLoader(t)
-<span id="L564" class="ln">   564  </span>			cfg.Metrics.Port = MaxPort + 1 <span class="comment">// 無効なポート番号（上限境界）</span>
-<span id="L565" class="ln">   565  </span>			err := validateMetricsConfig(cfg.Metrics)
-<span id="L566" class="ln">   566  </span>			require.ErrorIs(t, err, ErrInvalidMetricsPortRange)
-<span id="L567" class="ln">   567  </span>		})
-<span id="L568" class="ln">   568  </span>	})
-<span id="L569" class="ln">   569  </span>}
-<span id="L570" class="ln">   570  </span>
-<span id="L571" class="ln">   571  </span>func Test_validateServerShutdown(t *testing.T) {
-<span id="L572" class="ln">   572  </span>	t.Parallel()
+<span id="L510" class="ln">   510  </span>			err := validateServerConfig(cfg.Server)
+<span id="L511" class="ln">   511  </span>			require.ErrorIs(t, err, ErrReadHeaderTimeoutExceedsReadTimeout)
+<span id="L512" class="ln">   512  </span>		})
+<span id="L513" class="ln">   513  </span>
+<span id="L514" class="ln">   514  </span>		t.Run(&#34;WriteTimeoutがRequestTimeout未満の場合&#34;, func(t *testing.T) {
+<span id="L515" class="ln">   515  </span>			t.Parallel()
+<span id="L516" class="ln">   516  </span>			cfg := mockLoader(t)
+<span id="L517" class="ln">   517  </span>			cfg.Server.WriteTimeout = cfg.Server.RequestTimeout - time.Second <span class="comment">// RequestTimeout より 1s 短い</span>
+<span id="L518" class="ln">   518  </span>
+<span id="L519" class="ln">   519  </span>			err := validateServerConfig(cfg.Server)
+<span id="L520" class="ln">   520  </span>			require.ErrorIs(t, err, ErrWriteTimeoutBelowRequestTimeout)
+<span id="L521" class="ln">   521  </span>		})
+<span id="L522" class="ln">   522  </span>
+<span id="L523" class="ln">   523  </span>		t.Run(&#34;WriteTimeoutがRequestTimeoutと同値の場合は許容されること&#34;, func(t *testing.T) {
+<span id="L524" class="ln">   524  </span>			t.Parallel()
+<span id="L525" class="ln">   525  </span>			cfg := mockLoader(t)
+<span id="L526" class="ln">   526  </span>			cfg.Server.WriteTimeout = cfg.Server.RequestTimeout <span class="comment">// 境界値: 等値は有効</span>
+<span id="L527" class="ln">   527  </span>
+<span id="L528" class="ln">   528  </span>			err := validateServerConfig(cfg.Server)
+<span id="L529" class="ln">   529  </span>			require.NoError(t, err)
+<span id="L530" class="ln">   530  </span>		})
+<span id="L531" class="ln">   531  </span>	})
+<span id="L532" class="ln">   532  </span>}
+<span id="L533" class="ln">   533  </span>
+<span id="L534" class="ln">   534  </span>func Test_validateMetricsConfig(t *testing.T) {
+<span id="L535" class="ln">   535  </span>	t.Parallel()
+<span id="L536" class="ln">   536  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L537" class="ln">   537  </span>		t.Parallel()
+<span id="L538" class="ln">   538  </span>
+<span id="L539" class="ln">   539  </span>		t.Run(&#34;デフォルトのポート番号は許容されること&#34;, func(t *testing.T) {
+<span id="L540" class="ln">   540  </span>			t.Parallel()
+<span id="L541" class="ln">   541  </span>			cfg := mockLoader(t)
+<span id="L542" class="ln">   542  </span>			err := validateMetricsConfig(cfg.Metrics)
+<span id="L543" class="ln">   543  </span>			require.NoError(t, err)
+<span id="L544" class="ln">   544  </span>		})
+<span id="L545" class="ln">   545  </span>
+<span id="L546" class="ln">   546  </span>		t.Run(&#34;ポート番号がMinPortの場合は許容されること&#34;, func(t *testing.T) {
+<span id="L547" class="ln">   547  </span>			t.Parallel()
+<span id="L548" class="ln">   548  </span>			cfg := mockLoader(t)
+<span id="L549" class="ln">   549  </span>			cfg.Metrics.Port = MinPort <span class="comment">// 有効範囲の下限境界</span>
+<span id="L550" class="ln">   550  </span>			err := validateMetricsConfig(cfg.Metrics)
+<span id="L551" class="ln">   551  </span>			require.NoError(t, err)
+<span id="L552" class="ln">   552  </span>		})
+<span id="L553" class="ln">   553  </span>
+<span id="L554" class="ln">   554  </span>		t.Run(&#34;ポート番号がMaxPortの場合は許容されること&#34;, func(t *testing.T) {
+<span id="L555" class="ln">   555  </span>			t.Parallel()
+<span id="L556" class="ln">   556  </span>			cfg := mockLoader(t)
+<span id="L557" class="ln">   557  </span>			cfg.Metrics.Port = MaxPort <span class="comment">// 有効範囲の上限境界</span>
+<span id="L558" class="ln">   558  </span>			err := validateMetricsConfig(cfg.Metrics)
+<span id="L559" class="ln">   559  </span>			require.NoError(t, err)
+<span id="L560" class="ln">   560  </span>		})
+<span id="L561" class="ln">   561  </span>	})
+<span id="L562" class="ln">   562  </span>
+<span id="L563" class="ln">   563  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L564" class="ln">   564  </span>		t.Parallel()
+<span id="L565" class="ln">   565  </span>
+<span id="L566" class="ln">   566  </span>		t.Run(&#34;ポート番号がMinPort未満の場合&#34;, func(t *testing.T) {
+<span id="L567" class="ln">   567  </span>			t.Parallel()
+<span id="L568" class="ln">   568  </span>			cfg := mockLoader(t)
+<span id="L569" class="ln">   569  </span>			cfg.Metrics.Port = MinPort - 1 <span class="comment">// 無効なポート番号（下限境界）</span>
+<span id="L570" class="ln">   570  </span>			err := validateMetricsConfig(cfg.Metrics)
+<span id="L571" class="ln">   571  </span>			require.ErrorIs(t, err, ErrInvalidMetricsPortRange)
+<span id="L572" class="ln">   572  </span>		})
 <span id="L573" class="ln">   573  </span>
-<span id="L574" class="ln">   574  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L575" class="ln">   575  </span>		t.Parallel()
-<span id="L576" class="ln">   576  </span>
-<span id="L577" class="ln">   577  </span>		t.Run(&#34;shutdownがrequestを上回る場合は成功する&#34;, func(t *testing.T) {
-<span id="L578" class="ln">   578  </span>			t.Parallel()
-<span id="L579" class="ln">   579  </span>			require.NoError(t, validateServerShutdown(90*time.Second, 60*time.Second))
+<span id="L574" class="ln">   574  </span>		t.Run(&#34;ポート番号がMaxPortを超えている場合&#34;, func(t *testing.T) {
+<span id="L575" class="ln">   575  </span>			t.Parallel()
+<span id="L576" class="ln">   576  </span>			cfg := mockLoader(t)
+<span id="L577" class="ln">   577  </span>			cfg.Metrics.Port = MaxPort + 1 <span class="comment">// 無効なポート番号（上限境界）</span>
+<span id="L578" class="ln">   578  </span>			err := validateMetricsConfig(cfg.Metrics)
+<span id="L579" class="ln">   579  </span>			require.ErrorIs(t, err, ErrInvalidMetricsPortRange)
 <span id="L580" class="ln">   580  </span>		})
-<span id="L581" class="ln">   581  </span>
-<span id="L582" class="ln">   582  </span>		t.Run(&#34;shutdownがrequestと同値の場合は許容される&#34;, func(t *testing.T) {
-<span id="L583" class="ln">   583  </span>			t.Parallel()
-<span id="L584" class="ln">   584  </span>			require.NoError(t, validateServerShutdown(60*time.Second, 60*time.Second)) <span class="comment">// 境界値: 等値は有効</span>
-<span id="L585" class="ln">   585  </span>		})
-<span id="L586" class="ln">   586  </span>	})
-<span id="L587" class="ln">   587  </span>
-<span id="L588" class="ln">   588  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L589" class="ln">   589  </span>		t.Parallel()
-<span id="L590" class="ln">   590  </span>
-<span id="L591" class="ln">   591  </span>		t.Run(&#34;shutdownがrequest未満の場合はErrShutdownTimeoutBelowRequestTimeoutを返す&#34;, func(t *testing.T) {
-<span id="L592" class="ln">   592  </span>			t.Parallel()
-<span id="L593" class="ln">   593  </span>			err := validateServerShutdown(60*time.Second-time.Second, 60*time.Second)
-<span id="L594" class="ln">   594  </span>			require.ErrorIs(t, err, ErrShutdownTimeoutBelowRequestTimeout)
-<span id="L595" class="ln">   595  </span>		})
-<span id="L596" class="ln">   596  </span>	})
-<span id="L597" class="ln">   597  </span>}
-<span id="L598" class="ln">   598  </span>
-<span id="L599" class="ln">   599  </span>func Test_validateUploadBodyLimit(t *testing.T) {
-<span id="L600" class="ln">   600  </span>	t.Parallel()
-<span id="L601" class="ln">   601  </span>
-<span id="L602" class="ln">   602  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L603" class="ln">   603  </span>		t.Parallel()
-<span id="L604" class="ln">   604  </span>
-<span id="L605" class="ln">   605  </span>		t.Run(&#34;ボディ上限がアップロード上限を上回る場合は成功する&#34;, func(t *testing.T) {
-<span id="L606" class="ln">   606  </span>			t.Parallel()
-<span id="L607" class="ln">   607  </span>			require.NoError(t, validateUploadBodyLimit(6, 5_242_880))
+<span id="L581" class="ln">   581  </span>	})
+<span id="L582" class="ln">   582  </span>}
+<span id="L583" class="ln">   583  </span>
+<span id="L584" class="ln">   584  </span>func Test_validateServerShutdown(t *testing.T) {
+<span id="L585" class="ln">   585  </span>	t.Parallel()
+<span id="L586" class="ln">   586  </span>
+<span id="L587" class="ln">   587  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L588" class="ln">   588  </span>		t.Parallel()
+<span id="L589" class="ln">   589  </span>
+<span id="L590" class="ln">   590  </span>		t.Run(&#34;shutdownがrequestを上回る場合は成功する&#34;, func(t *testing.T) {
+<span id="L591" class="ln">   591  </span>			t.Parallel()
+<span id="L592" class="ln">   592  </span>			require.NoError(t, validateServerShutdown(90*time.Second, 60*time.Second))
+<span id="L593" class="ln">   593  </span>		})
+<span id="L594" class="ln">   594  </span>
+<span id="L595" class="ln">   595  </span>		t.Run(&#34;shutdownがrequestと同値の場合は許容される&#34;, func(t *testing.T) {
+<span id="L596" class="ln">   596  </span>			t.Parallel()
+<span id="L597" class="ln">   597  </span>			require.NoError(t, validateServerShutdown(60*time.Second, 60*time.Second)) <span class="comment">// 境界値: 等値は有効</span>
+<span id="L598" class="ln">   598  </span>		})
+<span id="L599" class="ln">   599  </span>	})
+<span id="L600" class="ln">   600  </span>
+<span id="L601" class="ln">   601  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L602" class="ln">   602  </span>		t.Parallel()
+<span id="L603" class="ln">   603  </span>
+<span id="L604" class="ln">   604  </span>		t.Run(&#34;shutdownがrequest未満の場合はErrShutdownTimeoutBelowRequestTimeoutを返す&#34;, func(t *testing.T) {
+<span id="L605" class="ln">   605  </span>			t.Parallel()
+<span id="L606" class="ln">   606  </span>			err := validateServerShutdown(60*time.Second-time.Second, 60*time.Second)
+<span id="L607" class="ln">   607  </span>			require.ErrorIs(t, err, ErrShutdownTimeoutBelowRequestTimeout)
 <span id="L608" class="ln">   608  </span>		})
-<span id="L609" class="ln">   609  </span>
-<span id="L610" class="ln">   610  </span>		t.Run(&#34;ボディ上限がアップロード上限を1バイト上回る場合は成功する&#34;, func(t *testing.T) {
-<span id="L611" class="ln">   611  </span>			t.Parallel()
-<span id="L612" class="ln">   612  </span>			require.NoError(t, validateUploadBodyLimit(1, BytesPerMB-1)) <span class="comment">// 境界値: 上回れば可</span>
-<span id="L613" class="ln">   613  </span>		})
-<span id="L614" class="ln">   614  </span>	})
-<span id="L615" class="ln">   615  </span>
-<span id="L616" class="ln">   616  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L617" class="ln">   617  </span>		t.Parallel()
-<span id="L618" class="ln">   618  </span>
-<span id="L619" class="ln">   619  </span>		t.Run(&#34;ボディ上限がアップロード上限と同値の場合はErrBodyLimitBelowMaxUploadBytesを返す&#34;, func(t *testing.T) {
-<span id="L620" class="ln">   620  </span>			t.Parallel()
-<span id="L621" class="ln">   621  </span>			err := validateUploadBodyLimit(1, BytesPerMB) <span class="comment">// 境界値: 等値はマルチパート分の余裕が無く不可</span>
-<span id="L622" class="ln">   622  </span>			require.ErrorIs(t, err, ErrBodyLimitBelowMaxUploadBytes)
-<span id="L623" class="ln">   623  </span>		})
-<span id="L624" class="ln">   624  </span>
-<span id="L625" class="ln">   625  </span>		t.Run(&#34;ボディ上限がアップロード上限を下回る場合はErrBodyLimitBelowMaxUploadBytesを返す&#34;, func(t *testing.T) {
-<span id="L626" class="ln">   626  </span>			t.Parallel()
-<span id="L627" class="ln">   627  </span>			err := validateUploadBodyLimit(5, 5_242_880)
-<span id="L628" class="ln">   628  </span>			require.ErrorIs(t, err, ErrBodyLimitBelowMaxUploadBytes)
-<span id="L629" class="ln">   629  </span>		})
-<span id="L630" class="ln">   630  </span>	})
-<span id="L631" class="ln">   631  </span>}
-<span id="L632" class="ln">   632  </span>
-<span id="L633" class="ln">   633  </span>func Test_validateDatabaseConfig(t *testing.T) {
-<span id="L634" class="ln">   634  </span>	t.Parallel()
-<span id="L635" class="ln">   635  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L636" class="ln">   636  </span>		t.Parallel()
-<span id="L637" class="ln">   637  </span>		cfg := mockLoader(t)
-<span id="L638" class="ln">   638  </span>		err := validateDatabaseConfig(cfg.Database)
-<span id="L639" class="ln">   639  </span>		require.NoError(t, err)
-<span id="L640" class="ln">   640  </span>	})
-<span id="L641" class="ln">   641  </span>
-<span id="L642" class="ln">   642  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L643" class="ln">   643  </span>		t.Parallel()
-<span id="L644" class="ln">   644  </span>		t.Run(&#34;無効なデータベースポート番号&#34;, func(t *testing.T) {
-<span id="L645" class="ln">   645  </span>			t.Parallel()
-<span id="L646" class="ln">   646  </span>
-<span id="L647" class="ln">   647  </span>			t.Run(&#34;ポート番号がMinPort未満の場合&#34;, func(t *testing.T) {
-<span id="L648" class="ln">   648  </span>				t.Parallel()
-<span id="L649" class="ln">   649  </span>				cfg := mockLoader(t)
-<span id="L650" class="ln">   650  </span>				cfg.Database.Port = MinPort - 1 <span class="comment">// 無効なデータベースポート番号</span>
-<span id="L651" class="ln">   651  </span>
-<span id="L652" class="ln">   652  </span>				err := validateDatabaseConfig(cfg.Database)
-<span id="L653" class="ln">   653  </span>				require.ErrorIs(t, err, ErrInvalidDBPortRange)
-<span id="L654" class="ln">   654  </span>			})
-<span id="L655" class="ln">   655  </span>
-<span id="L656" class="ln">   656  </span>			t.Run(&#34;ポート番号がMaxPortを超えている場合&#34;, func(t *testing.T) {
-<span id="L657" class="ln">   657  </span>				t.Parallel()
-<span id="L658" class="ln">   658  </span>				cfg := mockLoader(t)
-<span id="L659" class="ln">   659  </span>				cfg.Database.Port = MaxPort + 1 <span class="comment">// 無効なデータベースポート番号</span>
-<span id="L660" class="ln">   660  </span>
-<span id="L661" class="ln">   661  </span>				err := validateDatabaseConfig(cfg.Database)
-<span id="L662" class="ln">   662  </span>				require.ErrorIs(t, err, ErrInvalidDBPortRange)
-<span id="L663" class="ln">   663  </span>			})
-<span id="L664" class="ln">   664  </span>		})
-<span id="L665" class="ln">   665  </span>
-<span id="L666" class="ln">   666  </span>		t.Run(&#34;無効なデータベースPingタイムアウト&#34;, func(t *testing.T) {
-<span id="L667" class="ln">   667  </span>			t.Parallel()
-<span id="L668" class="ln">   668  </span>			cfg := mockLoader(t)
-<span id="L669" class="ln">   669  </span>			cfg.Database.PingTimeout = 0 <span class="comment">// 無効なデータベースPingタイムアウト</span>
-<span id="L670" class="ln">   670  </span>
-<span id="L671" class="ln">   671  </span>			err := validateDatabaseConfig(cfg.Database)
-<span id="L672" class="ln">   672  </span>			require.ErrorIs(t, err, ErrInvalidDBPingTimeout)
-<span id="L673" class="ln">   673  </span>		})
-<span id="L674" class="ln">   674  </span>
-<span id="L675" class="ln">   675  </span>		t.Run(&#34;無効なスロークエリ警告閾値&#34;, func(t *testing.T) {
-<span id="L676" class="ln">   676  </span>			t.Parallel()
-<span id="L677" class="ln">   677  </span>			cfg := mockLoader(t)
-<span id="L678" class="ln">   678  </span>			cfg.Database.SlowQueryWarnThreshold = -1 <span class="comment">// 無効なスロークエリ警告閾値</span>
-<span id="L679" class="ln">   679  </span>
-<span id="L680" class="ln">   680  </span>			err := validateDatabaseConfig(cfg.Database)
-<span id="L681" class="ln">   681  </span>			require.ErrorIs(t, err, ErrInvalidSlowQueryWarnThreshold)
-<span id="L682" class="ln">   682  </span>		})
-<span id="L683" class="ln">   683  </span>	})
-<span id="L684" class="ln">   684  </span>}
-<span id="L685" class="ln">   685  </span>
-<span id="L686" class="ln">   686  </span>func Test_validateDBConnectionConfig(t *testing.T) {
-<span id="L687" class="ln">   687  </span>	t.Parallel()
-<span id="L688" class="ln">   688  </span>
-<span id="L689" class="ln">   689  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L690" class="ln">   690  </span>		t.Parallel()
-<span id="L691" class="ln">   691  </span>		cfg := mockLoader(t)
-<span id="L692" class="ln">   692  </span>		err := validateDBConnectionConfig(cfg.DBConnection)
-<span id="L693" class="ln">   693  </span>		require.NoError(t, err)
-<span id="L694" class="ln">   694  </span>	})
-<span id="L695" class="ln">   695  </span>
-<span id="L696" class="ln">   696  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L697" class="ln">   697  </span>		t.Parallel()
-<span id="L698" class="ln">   698  </span>		t.Run(&#34;MinConnsがMaxConnsを超えている場合、エラーが返されること&#34;, func(t *testing.T) {
-<span id="L699" class="ln">   699  </span>			t.Parallel()
-<span id="L700" class="ln">   700  </span>			cfg := mockLoader(t)
-<span id="L701" class="ln">   701  </span>			cfg.DBConnection.MinConns = cfg.DBConnection.MaxConns + 1 <span class="comment">// MinConnsがMaxConnsを超える</span>
-<span id="L702" class="ln">   702  </span>
-<span id="L703" class="ln">   703  </span>			err := validateDBConnectionConfig(cfg.DBConnection)
-<span id="L704" class="ln">   704  </span>			require.ErrorIs(t, err, ErrInvalidExceedMaxConns)
-<span id="L705" class="ln">   705  </span>		})
-<span id="L706" class="ln">   706  </span>	})
-<span id="L707" class="ln">   707  </span>}
+<span id="L609" class="ln">   609  </span>	})
+<span id="L610" class="ln">   610  </span>}
+<span id="L611" class="ln">   611  </span>
+<span id="L612" class="ln">   612  </span>func Test_validateUploadBodyLimit(t *testing.T) {
+<span id="L613" class="ln">   613  </span>	t.Parallel()
+<span id="L614" class="ln">   614  </span>
+<span id="L615" class="ln">   615  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L616" class="ln">   616  </span>		t.Parallel()
+<span id="L617" class="ln">   617  </span>
+<span id="L618" class="ln">   618  </span>		t.Run(&#34;ボディ上限がアップロード上限を上回る場合は成功する&#34;, func(t *testing.T) {
+<span id="L619" class="ln">   619  </span>			t.Parallel()
+<span id="L620" class="ln">   620  </span>			require.NoError(t, validateUploadBodyLimit(6, 5_242_880))
+<span id="L621" class="ln">   621  </span>		})
+<span id="L622" class="ln">   622  </span>
+<span id="L623" class="ln">   623  </span>		t.Run(&#34;ボディ上限がアップロード上限を1バイト上回る場合は成功する&#34;, func(t *testing.T) {
+<span id="L624" class="ln">   624  </span>			t.Parallel()
+<span id="L625" class="ln">   625  </span>			require.NoError(t, validateUploadBodyLimit(1, BytesPerMB-1)) <span class="comment">// 境界値: 上回れば可</span>
+<span id="L626" class="ln">   626  </span>		})
+<span id="L627" class="ln">   627  </span>	})
+<span id="L628" class="ln">   628  </span>
+<span id="L629" class="ln">   629  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L630" class="ln">   630  </span>		t.Parallel()
+<span id="L631" class="ln">   631  </span>
+<span id="L632" class="ln">   632  </span>		t.Run(&#34;ボディ上限がアップロード上限と同値の場合はErrBodyLimitBelowMaxUploadBytesを返す&#34;, func(t *testing.T) {
+<span id="L633" class="ln">   633  </span>			t.Parallel()
+<span id="L634" class="ln">   634  </span>			err := validateUploadBodyLimit(1, BytesPerMB) <span class="comment">// 境界値: 等値はマルチパート分の余裕が無く不可</span>
+<span id="L635" class="ln">   635  </span>			require.ErrorIs(t, err, ErrBodyLimitBelowMaxUploadBytes)
+<span id="L636" class="ln">   636  </span>		})
+<span id="L637" class="ln">   637  </span>
+<span id="L638" class="ln">   638  </span>		t.Run(&#34;ボディ上限がアップロード上限を下回る場合はErrBodyLimitBelowMaxUploadBytesを返す&#34;, func(t *testing.T) {
+<span id="L639" class="ln">   639  </span>			t.Parallel()
+<span id="L640" class="ln">   640  </span>			err := validateUploadBodyLimit(5, 5_242_880)
+<span id="L641" class="ln">   641  </span>			require.ErrorIs(t, err, ErrBodyLimitBelowMaxUploadBytes)
+<span id="L642" class="ln">   642  </span>		})
+<span id="L643" class="ln">   643  </span>	})
+<span id="L644" class="ln">   644  </span>}
+<span id="L645" class="ln">   645  </span>
+<span id="L646" class="ln">   646  </span>func Test_validateDatabaseConfig(t *testing.T) {
+<span id="L647" class="ln">   647  </span>	t.Parallel()
+<span id="L648" class="ln">   648  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L649" class="ln">   649  </span>		t.Parallel()
+<span id="L650" class="ln">   650  </span>		cfg := mockLoader(t)
+<span id="L651" class="ln">   651  </span>		err := validateDatabaseConfig(cfg.Database)
+<span id="L652" class="ln">   652  </span>		require.NoError(t, err)
+<span id="L653" class="ln">   653  </span>	})
+<span id="L654" class="ln">   654  </span>
+<span id="L655" class="ln">   655  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L656" class="ln">   656  </span>		t.Parallel()
+<span id="L657" class="ln">   657  </span>		t.Run(&#34;無効なデータベースポート番号&#34;, func(t *testing.T) {
+<span id="L658" class="ln">   658  </span>			t.Parallel()
+<span id="L659" class="ln">   659  </span>
+<span id="L660" class="ln">   660  </span>			t.Run(&#34;ポート番号がMinPort未満の場合&#34;, func(t *testing.T) {
+<span id="L661" class="ln">   661  </span>				t.Parallel()
+<span id="L662" class="ln">   662  </span>				cfg := mockLoader(t)
+<span id="L663" class="ln">   663  </span>				cfg.Database.Port = MinPort - 1 <span class="comment">// 無効なデータベースポート番号</span>
+<span id="L664" class="ln">   664  </span>
+<span id="L665" class="ln">   665  </span>				err := validateDatabaseConfig(cfg.Database)
+<span id="L666" class="ln">   666  </span>				require.ErrorIs(t, err, ErrInvalidDBPortRange)
+<span id="L667" class="ln">   667  </span>			})
+<span id="L668" class="ln">   668  </span>
+<span id="L669" class="ln">   669  </span>			t.Run(&#34;ポート番号がMaxPortを超えている場合&#34;, func(t *testing.T) {
+<span id="L670" class="ln">   670  </span>				t.Parallel()
+<span id="L671" class="ln">   671  </span>				cfg := mockLoader(t)
+<span id="L672" class="ln">   672  </span>				cfg.Database.Port = MaxPort + 1 <span class="comment">// 無効なデータベースポート番号</span>
+<span id="L673" class="ln">   673  </span>
+<span id="L674" class="ln">   674  </span>				err := validateDatabaseConfig(cfg.Database)
+<span id="L675" class="ln">   675  </span>				require.ErrorIs(t, err, ErrInvalidDBPortRange)
+<span id="L676" class="ln">   676  </span>			})
+<span id="L677" class="ln">   677  </span>		})
+<span id="L678" class="ln">   678  </span>
+<span id="L679" class="ln">   679  </span>		t.Run(&#34;無効なデータベースPingタイムアウト&#34;, func(t *testing.T) {
+<span id="L680" class="ln">   680  </span>			t.Parallel()
+<span id="L681" class="ln">   681  </span>			cfg := mockLoader(t)
+<span id="L682" class="ln">   682  </span>			cfg.Database.PingTimeout = 0 <span class="comment">// 無効なデータベースPingタイムアウト</span>
+<span id="L683" class="ln">   683  </span>
+<span id="L684" class="ln">   684  </span>			err := validateDatabaseConfig(cfg.Database)
+<span id="L685" class="ln">   685  </span>			require.ErrorIs(t, err, ErrInvalidDBPingTimeout)
+<span id="L686" class="ln">   686  </span>		})
+<span id="L687" class="ln">   687  </span>
+<span id="L688" class="ln">   688  </span>		t.Run(&#34;無効なスロークエリ警告閾値&#34;, func(t *testing.T) {
+<span id="L689" class="ln">   689  </span>			t.Parallel()
+<span id="L690" class="ln">   690  </span>			cfg := mockLoader(t)
+<span id="L691" class="ln">   691  </span>			cfg.Database.SlowQueryWarnThreshold = -1 <span class="comment">// 無効なスロークエリ警告閾値</span>
+<span id="L692" class="ln">   692  </span>
+<span id="L693" class="ln">   693  </span>			err := validateDatabaseConfig(cfg.Database)
+<span id="L694" class="ln">   694  </span>			require.ErrorIs(t, err, ErrInvalidSlowQueryWarnThreshold)
+<span id="L695" class="ln">   695  </span>		})
+<span id="L696" class="ln">   696  </span>	})
+<span id="L697" class="ln">   697  </span>}
+<span id="L698" class="ln">   698  </span>
+<span id="L699" class="ln">   699  </span>func Test_validateDBConnectionConfig(t *testing.T) {
+<span id="L700" class="ln">   700  </span>	t.Parallel()
+<span id="L701" class="ln">   701  </span>
+<span id="L702" class="ln">   702  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L703" class="ln">   703  </span>		t.Parallel()
+<span id="L704" class="ln">   704  </span>		cfg := mockLoader(t)
+<span id="L705" class="ln">   705  </span>		err := validateDBConnectionConfig(cfg.DBConnection)
+<span id="L706" class="ln">   706  </span>		require.NoError(t, err)
+<span id="L707" class="ln">   707  </span>	})
 <span id="L708" class="ln">   708  </span>
-<span id="L709" class="ln">   709  </span>func Test_validateSecurityConfig(t *testing.T) {
-<span id="L710" class="ln">   710  </span>	t.Parallel()
-<span id="L711" class="ln">   711  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L712" class="ln">   712  </span>		t.Parallel()
-<span id="L713" class="ln">   713  </span>
-<span id="L714" class="ln">   714  </span>		t.Run(&#34;既定の許可オリジンの場合、エラーが返されないこと&#34;, func(t *testing.T) {
-<span id="L715" class="ln">   715  </span>			t.Parallel()
-<span id="L716" class="ln">   716  </span>			cfg := mockLoader(t)
-<span id="L717" class="ln">   717  </span>			err := validateSecurityConfig(cfg.Security)
-<span id="L718" class="ln">   718  </span>			require.NoError(t, err)
-<span id="L719" class="ln">   719  </span>		})
-<span id="L720" class="ln">   720  </span>
-<span id="L721" class="ln">   721  </span>		t.Run(&#34;127.0.0.1へのHTTPは許可されること&#34;, func(t *testing.T) {
-<span id="L722" class="ln">   722  </span>			t.Parallel()
-<span id="L723" class="ln">   723  </span>			cfg := mockLoader(t)
-<span id="L724" class="ln">   724  </span>			cfg.Security.AllowedOrigins = []string{&#34;http://127.0.0.1&#34;} <span class="comment">// localhost 同等のループバック</span>
-<span id="L725" class="ln">   725  </span>
-<span id="L726" class="ln">   726  </span>			err := validateSecurityConfig(cfg.Security)
-<span id="L727" class="ln">   727  </span>			require.NoError(t, err)
-<span id="L728" class="ln">   728  </span>		})
-<span id="L729" class="ln">   729  </span>
-<span id="L730" class="ln">   730  </span>		t.Run(&#34;localhost以外でもHTTPSは許可されること&#34;, func(t *testing.T) {
-<span id="L731" class="ln">   731  </span>			t.Parallel()
-<span id="L732" class="ln">   732  </span>			cfg := mockLoader(t)
-<span id="L733" class="ln">   733  </span>			cfg.Security.AllowedOrigins = []string{&#34;https://example.com&#34;} <span class="comment">// 非ループバックでも HTTPS なら許可</span>
-<span id="L734" class="ln">   734  </span>
-<span id="L735" class="ln">   735  </span>			err := validateSecurityConfig(cfg.Security)
-<span id="L736" class="ln">   736  </span>			require.NoError(t, err)
-<span id="L737" class="ln">   737  </span>		})
-<span id="L738" class="ln">   738  </span>	})
-<span id="L739" class="ln">   739  </span>
-<span id="L740" class="ln">   740  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L741" class="ln">   741  </span>		t.Parallel()
-<span id="L742" class="ln">   742  </span>		t.Run(&#34;AllowedOriginsが空の場合&#34;, func(t *testing.T) {
-<span id="L743" class="ln">   743  </span>			t.Parallel()
-<span id="L744" class="ln">   744  </span>			cfg := mockLoader(t)
-<span id="L745" class="ln">   745  </span>			cfg.Security.AllowedOrigins = []string{} <span class="comment">// 空のAllowedOrigins</span>
-<span id="L746" class="ln">   746  </span>
-<span id="L747" class="ln">   747  </span>			err := validateSecurityConfig(cfg.Security)
-<span id="L748" class="ln">   748  </span>			require.ErrorIs(t, err, ErrEmptyAllowedOrigins)
-<span id="L749" class="ln">   749  </span>		})
-<span id="L750" class="ln">   750  </span>
-<span id="L751" class="ln">   751  </span>		t.Run(&#34;localhost以外でHTTPが許可されている場合&#34;, func(t *testing.T) {
-<span id="L752" class="ln">   752  </span>			t.Parallel()
-<span id="L753" class="ln">   753  </span>			cfg := mockLoader(t)
-<span id="L754" class="ln">   754  </span>			cfg.Security.AllowedOrigins = []string{&#34;http://example.com&#34;} <span class="comment">// localhost以外のHTTP</span>
-<span id="L755" class="ln">   755  </span>
-<span id="L756" class="ln">   756  </span>			err := validateSecurityConfig(cfg.Security)
-<span id="L757" class="ln">   757  </span>			require.ErrorIs(t, err, ErrHTTPOnlyAllowedForLocalhost)
-<span id="L758" class="ln">   758  </span>		})
+<span id="L709" class="ln">   709  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L710" class="ln">   710  </span>		t.Parallel()
+<span id="L711" class="ln">   711  </span>		t.Run(&#34;MinConnsがMaxConnsを超えている場合、エラーが返されること&#34;, func(t *testing.T) {
+<span id="L712" class="ln">   712  </span>			t.Parallel()
+<span id="L713" class="ln">   713  </span>			cfg := mockLoader(t)
+<span id="L714" class="ln">   714  </span>			cfg.DBConnection.MinConns = cfg.DBConnection.MaxConns + 1 <span class="comment">// MinConnsがMaxConnsを超える</span>
+<span id="L715" class="ln">   715  </span>
+<span id="L716" class="ln">   716  </span>			err := validateDBConnectionConfig(cfg.DBConnection)
+<span id="L717" class="ln">   717  </span>			require.ErrorIs(t, err, ErrInvalidExceedMaxConns)
+<span id="L718" class="ln">   718  </span>		})
+<span id="L719" class="ln">   719  </span>	})
+<span id="L720" class="ln">   720  </span>}
+<span id="L721" class="ln">   721  </span>
+<span id="L722" class="ln">   722  </span>func Test_validateSecurityConfig(t *testing.T) {
+<span id="L723" class="ln">   723  </span>	t.Parallel()
+<span id="L724" class="ln">   724  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L725" class="ln">   725  </span>		t.Parallel()
+<span id="L726" class="ln">   726  </span>
+<span id="L727" class="ln">   727  </span>		t.Run(&#34;既定の許可オリジンの場合、エラーが返されないこと&#34;, func(t *testing.T) {
+<span id="L728" class="ln">   728  </span>			t.Parallel()
+<span id="L729" class="ln">   729  </span>			cfg := mockLoader(t)
+<span id="L730" class="ln">   730  </span>			err := validateSecurityConfig(cfg.Security)
+<span id="L731" class="ln">   731  </span>			require.NoError(t, err)
+<span id="L732" class="ln">   732  </span>		})
+<span id="L733" class="ln">   733  </span>
+<span id="L734" class="ln">   734  </span>		t.Run(&#34;127.0.0.1へのHTTPは許可されること&#34;, func(t *testing.T) {
+<span id="L735" class="ln">   735  </span>			t.Parallel()
+<span id="L736" class="ln">   736  </span>			cfg := mockLoader(t)
+<span id="L737" class="ln">   737  </span>			cfg.Security.AllowedOrigins = []string{&#34;http://127.0.0.1&#34;} <span class="comment">// localhost 同等のループバック</span>
+<span id="L738" class="ln">   738  </span>
+<span id="L739" class="ln">   739  </span>			err := validateSecurityConfig(cfg.Security)
+<span id="L740" class="ln">   740  </span>			require.NoError(t, err)
+<span id="L741" class="ln">   741  </span>		})
+<span id="L742" class="ln">   742  </span>
+<span id="L743" class="ln">   743  </span>		t.Run(&#34;localhost以外でもHTTPSは許可されること&#34;, func(t *testing.T) {
+<span id="L744" class="ln">   744  </span>			t.Parallel()
+<span id="L745" class="ln">   745  </span>			cfg := mockLoader(t)
+<span id="L746" class="ln">   746  </span>			cfg.Security.AllowedOrigins = []string{&#34;https://example.com&#34;} <span class="comment">// 非ループバックでも HTTPS なら許可</span>
+<span id="L747" class="ln">   747  </span>
+<span id="L748" class="ln">   748  </span>			err := validateSecurityConfig(cfg.Security)
+<span id="L749" class="ln">   749  </span>			require.NoError(t, err)
+<span id="L750" class="ln">   750  </span>		})
+<span id="L751" class="ln">   751  </span>	})
+<span id="L752" class="ln">   752  </span>
+<span id="L753" class="ln">   753  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L754" class="ln">   754  </span>		t.Parallel()
+<span id="L755" class="ln">   755  </span>		t.Run(&#34;AllowedOriginsが空の場合&#34;, func(t *testing.T) {
+<span id="L756" class="ln">   756  </span>			t.Parallel()
+<span id="L757" class="ln">   757  </span>			cfg := mockLoader(t)
+<span id="L758" class="ln">   758  </span>			cfg.Security.AllowedOrigins = []string{} <span class="comment">// 空のAllowedOrigins</span>
 <span id="L759" class="ln">   759  </span>
-<span id="L760" class="ln">   760  </span>		t.Run(&#34;オリジンのURLパースに失敗した場合&#34;, func(t *testing.T) {
-<span id="L761" class="ln">   761  </span>			t.Parallel()
-<span id="L762" class="ln">   762  </span>			cfg := mockLoader(t)
-<span id="L763" class="ln">   763  </span>			<span class="comment">// 制御文字を含む URL は url.Parse がエラーを返す。</span>
-<span id="L764" class="ln">   764  </span>			cfg.Security.AllowedOrigins = []string{&#34;http://example.com/\x7f&#34;}
-<span id="L765" class="ln">   765  </span>
-<span id="L766" class="ln">   766  </span>			err := validateSecurityConfig(cfg.Security)
-<span id="L767" class="ln">   767  </span>			require.ErrorIs(t, err, ErrHTTPOnlyAllowedForLocalhost)
-<span id="L768" class="ln">   768  </span>		})
-<span id="L769" class="ln">   769  </span>	})
-<span id="L770" class="ln">   770  </span>}
-<span id="L771" class="ln">   771  </span>
-<span id="L772" class="ln">   772  </span>func Test_buildStatusCodeSet(t *testing.T) {
-<span id="L773" class="ln">   773  </span>	t.Parallel()
-<span id="L774" class="ln">   774  </span>
-<span id="L775" class="ln">   775  </span>	codes := []int{200, 400, 500}
-<span id="L776" class="ln">   776  </span>	expected := map[int]bool{
-<span id="L777" class="ln">   777  </span>		200: true,
-<span id="L778" class="ln">   778  </span>		400: true,
-<span id="L779" class="ln">   779  </span>		500: true,
-<span id="L780" class="ln">   780  </span>	}
-<span id="L781" class="ln">   781  </span>
-<span id="L782" class="ln">   782  </span>	actual := buildStatusCodeSet(codes)
-<span id="L783" class="ln">   783  </span>	assert.Equal(t, expected, actual)
-<span id="L784" class="ln">   784  </span>}
-<span id="L785" class="ln">   785  </span>
-<span id="L786" class="ln">   786  </span>func Test_parseCIDR(t *testing.T) {
-<span id="L787" class="ln">   787  </span>	t.Parallel()
-<span id="L788" class="ln">   788  </span>
-<span id="L789" class="ln">   789  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L790" class="ln">   790  </span>		t.Parallel()
-<span id="L791" class="ln">   791  </span>
-<span id="L792" class="ln">   792  </span>		t.Run(&#34;有効な CIDR の場合、解析済みの *net.IPNet を返す&#34;, func(t *testing.T) {
-<span id="L793" class="ln">   793  </span>			t.Parallel()
+<span id="L760" class="ln">   760  </span>			err := validateSecurityConfig(cfg.Security)
+<span id="L761" class="ln">   761  </span>			require.ErrorIs(t, err, ErrEmptyAllowedOrigins)
+<span id="L762" class="ln">   762  </span>		})
+<span id="L763" class="ln">   763  </span>
+<span id="L764" class="ln">   764  </span>		t.Run(&#34;localhost以外でHTTPが許可されている場合&#34;, func(t *testing.T) {
+<span id="L765" class="ln">   765  </span>			t.Parallel()
+<span id="L766" class="ln">   766  </span>			cfg := mockLoader(t)
+<span id="L767" class="ln">   767  </span>			cfg.Security.AllowedOrigins = []string{&#34;http://example.com&#34;} <span class="comment">// localhost以外のHTTP</span>
+<span id="L768" class="ln">   768  </span>
+<span id="L769" class="ln">   769  </span>			err := validateSecurityConfig(cfg.Security)
+<span id="L770" class="ln">   770  </span>			require.ErrorIs(t, err, ErrHTTPOnlyAllowedForLocalhost)
+<span id="L771" class="ln">   771  </span>		})
+<span id="L772" class="ln">   772  </span>
+<span id="L773" class="ln">   773  </span>		t.Run(&#34;オリジンのURLパースに失敗した場合&#34;, func(t *testing.T) {
+<span id="L774" class="ln">   774  </span>			t.Parallel()
+<span id="L775" class="ln">   775  </span>			cfg := mockLoader(t)
+<span id="L776" class="ln">   776  </span>			<span class="comment">// 制御文字を含む URL は url.Parse がエラーを返す。</span>
+<span id="L777" class="ln">   777  </span>			cfg.Security.AllowedOrigins = []string{&#34;http://example.com/\x7f&#34;}
+<span id="L778" class="ln">   778  </span>
+<span id="L779" class="ln">   779  </span>			err := validateSecurityConfig(cfg.Security)
+<span id="L780" class="ln">   780  </span>			require.ErrorIs(t, err, ErrHTTPOnlyAllowedForLocalhost)
+<span id="L781" class="ln">   781  </span>		})
+<span id="L782" class="ln">   782  </span>	})
+<span id="L783" class="ln">   783  </span>}
+<span id="L784" class="ln">   784  </span>
+<span id="L785" class="ln">   785  </span>func Test_buildStatusCodeSet(t *testing.T) {
+<span id="L786" class="ln">   786  </span>	t.Parallel()
+<span id="L787" class="ln">   787  </span>
+<span id="L788" class="ln">   788  </span>	codes := []int{200, 400, 500}
+<span id="L789" class="ln">   789  </span>	expected := map[int]bool{
+<span id="L790" class="ln">   790  </span>		200: true,
+<span id="L791" class="ln">   791  </span>		400: true,
+<span id="L792" class="ln">   792  </span>		500: true,
+<span id="L793" class="ln">   793  </span>	}
 <span id="L794" class="ln">   794  </span>
-<span id="L795" class="ln">   795  </span>			actual, err := parseCIDR(&#34;192.168.0.0/16&#34;)
-<span id="L796" class="ln">   796  </span>			require.NoError(t, err)
-<span id="L797" class="ln">   797  </span>			require.NotNil(t, actual)
-<span id="L798" class="ln">   798  </span>			assert.Equal(t, &#34;192.168.0.0/16&#34;, actual.String())
-<span id="L799" class="ln">   799  </span>		})
-<span id="L800" class="ln">   800  </span>	})
+<span id="L795" class="ln">   795  </span>	actual := buildStatusCodeSet(codes)
+<span id="L796" class="ln">   796  </span>	assert.Equal(t, expected, actual)
+<span id="L797" class="ln">   797  </span>}
+<span id="L798" class="ln">   798  </span>
+<span id="L799" class="ln">   799  </span>func Test_parseCIDR(t *testing.T) {
+<span id="L800" class="ln">   800  </span>	t.Parallel()
 <span id="L801" class="ln">   801  </span>
-<span id="L802" class="ln">   802  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L802" class="ln">   802  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
 <span id="L803" class="ln">   803  </span>		t.Parallel()
 <span id="L804" class="ln">   804  </span>
-<span id="L805" class="ln">   805  </span>		t.Run(&#34;不正な CIDR の場合、ErrFailedToParseCIDR を返す&#34;, func(t *testing.T) {
+<span id="L805" class="ln">   805  </span>		t.Run(&#34;有効な CIDR の場合、解析済みの *net.IPNet を返す&#34;, func(t *testing.T) {
 <span id="L806" class="ln">   806  </span>			t.Parallel()
 <span id="L807" class="ln">   807  </span>
-<span id="L808" class="ln">   808  </span>			actual, err := parseCIDR(&#34;invalid_cidr&#34;)
-<span id="L809" class="ln">   809  </span>			assert.Nil(t, actual)
-<span id="L810" class="ln">   810  </span>			require.ErrorIs(t, err, ErrFailedToParseCIDR)
-<span id="L811" class="ln">   811  </span>		})
-<span id="L812" class="ln">   812  </span>	})
-<span id="L813" class="ln">   813  </span>}
+<span id="L808" class="ln">   808  </span>			actual, err := parseCIDR(&#34;192.168.0.0/16&#34;)
+<span id="L809" class="ln">   809  </span>			require.NoError(t, err)
+<span id="L810" class="ln">   810  </span>			require.NotNil(t, actual)
+<span id="L811" class="ln">   811  </span>			assert.Equal(t, &#34;192.168.0.0/16&#34;, actual.String())
+<span id="L812" class="ln">   812  </span>		})
+<span id="L813" class="ln">   813  </span>	})
 <span id="L814" class="ln">   814  </span>
-<span id="L815" class="ln">   815  </span>func Test_validatePortRange(t *testing.T) {
-<span id="L816" class="ln">   816  </span>	t.Parallel()
+<span id="L815" class="ln">   815  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L816" class="ln">   816  </span>		t.Parallel()
 <span id="L817" class="ln">   817  </span>
-<span id="L818" class="ln">   818  </span>	sentinel := ErrInvalidPortRange
-<span id="L819" class="ln">   819  </span>
-<span id="L820" class="ln">   820  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L821" class="ln">   821  </span>		t.Parallel()
-<span id="L822" class="ln">   822  </span>
-<span id="L823" class="ln">   823  </span>		t.Run(&#34;最小ポートの場合、nil を返す&#34;, func(t *testing.T) {
-<span id="L824" class="ln">   824  </span>			t.Parallel()
-<span id="L825" class="ln">   825  </span>
-<span id="L826" class="ln">   826  </span>			require.NoError(t, validatePortRange(MinPort, sentinel))
-<span id="L827" class="ln">   827  </span>		})
-<span id="L828" class="ln">   828  </span>
-<span id="L829" class="ln">   829  </span>		t.Run(&#34;最大ポートの場合、nil を返す&#34;, func(t *testing.T) {
-<span id="L830" class="ln">   830  </span>			t.Parallel()
-<span id="L831" class="ln">   831  </span>
-<span id="L832" class="ln">   832  </span>			require.NoError(t, validatePortRange(MaxPort, sentinel))
-<span id="L833" class="ln">   833  </span>		})
-<span id="L834" class="ln">   834  </span>	})
+<span id="L818" class="ln">   818  </span>		t.Run(&#34;不正な CIDR の場合、ErrFailedToParseCIDR を返す&#34;, func(t *testing.T) {
+<span id="L819" class="ln">   819  </span>			t.Parallel()
+<span id="L820" class="ln">   820  </span>
+<span id="L821" class="ln">   821  </span>			actual, err := parseCIDR(&#34;invalid_cidr&#34;)
+<span id="L822" class="ln">   822  </span>			assert.Nil(t, actual)
+<span id="L823" class="ln">   823  </span>			require.ErrorIs(t, err, ErrFailedToParseCIDR)
+<span id="L824" class="ln">   824  </span>		})
+<span id="L825" class="ln">   825  </span>	})
+<span id="L826" class="ln">   826  </span>}
+<span id="L827" class="ln">   827  </span>
+<span id="L828" class="ln">   828  </span>func Test_validatePortRange(t *testing.T) {
+<span id="L829" class="ln">   829  </span>	t.Parallel()
+<span id="L830" class="ln">   830  </span>
+<span id="L831" class="ln">   831  </span>	sentinel := ErrInvalidPortRange
+<span id="L832" class="ln">   832  </span>
+<span id="L833" class="ln">   833  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L834" class="ln">   834  </span>		t.Parallel()
 <span id="L835" class="ln">   835  </span>
-<span id="L836" class="ln">   836  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L837" class="ln">   837  </span>		t.Parallel()
+<span id="L836" class="ln">   836  </span>		t.Run(&#34;最小ポートの場合、nil を返す&#34;, func(t *testing.T) {
+<span id="L837" class="ln">   837  </span>			t.Parallel()
 <span id="L838" class="ln">   838  </span>
-<span id="L839" class="ln">   839  </span>		t.Run(&#34;最小ポート未満の場合、渡したエラーを返す&#34;, func(t *testing.T) {
-<span id="L840" class="ln">   840  </span>			t.Parallel()
+<span id="L839" class="ln">   839  </span>			require.NoError(t, validatePortRange(MinPort, sentinel))
+<span id="L840" class="ln">   840  </span>		})
 <span id="L841" class="ln">   841  </span>
-<span id="L842" class="ln">   842  </span>			require.ErrorIs(t, validatePortRange(MinPort-1, sentinel), sentinel)
-<span id="L843" class="ln">   843  </span>		})
+<span id="L842" class="ln">   842  </span>		t.Run(&#34;最大ポートの場合、nil を返す&#34;, func(t *testing.T) {
+<span id="L843" class="ln">   843  </span>			t.Parallel()
 <span id="L844" class="ln">   844  </span>
-<span id="L845" class="ln">   845  </span>		t.Run(&#34;最大ポート超過の場合、渡したエラーを返す&#34;, func(t *testing.T) {
-<span id="L846" class="ln">   846  </span>			t.Parallel()
-<span id="L847" class="ln">   847  </span>
-<span id="L848" class="ln">   848  </span>			require.ErrorIs(t, validatePortRange(MaxPort+1, sentinel), sentinel)
-<span id="L849" class="ln">   849  </span>		})
-<span id="L850" class="ln">   850  </span>	})
-<span id="L851" class="ln">   851  </span>}
-<span id="L852" class="ln">   852  </span>
-<span id="L853" class="ln">   853  </span>func TestValidateServerShutdown(t *testing.T) {
-<span id="L854" class="ln">   854  </span>	t.Parallel()
-<span id="L855" class="ln">   855  </span>
-<span id="L856" class="ln">   856  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L857" class="ln">   857  </span>		t.Parallel()
-<span id="L858" class="ln">   858  </span>
-<span id="L859" class="ln">   859  </span>		t.Run(&#34;シャットダウン猶予がリクエスト予算を上回る場合、nilを返す&#34;, func(t *testing.T) {
-<span id="L860" class="ln">   860  </span>			t.Parallel()
-<span id="L861" class="ln">   861  </span>
-<span id="L862" class="ln">   862  </span>			appCfg := &amp;ApplicationConfig{shutdownTimeout: 90 * time.Second}
-<span id="L863" class="ln">   863  </span>			srvCfg := &amp;ServerConfig{requestTimeout: 60 * time.Second}
-<span id="L864" class="ln">   864  </span>
-<span id="L865" class="ln">   865  </span>			require.NoError(t, ValidateServerShutdown(appCfg, srvCfg))
-<span id="L866" class="ln">   866  </span>		})
-<span id="L867" class="ln">   867  </span>	})
+<span id="L845" class="ln">   845  </span>			require.NoError(t, validatePortRange(MaxPort, sentinel))
+<span id="L846" class="ln">   846  </span>		})
+<span id="L847" class="ln">   847  </span>	})
+<span id="L848" class="ln">   848  </span>
+<span id="L849" class="ln">   849  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L850" class="ln">   850  </span>		t.Parallel()
+<span id="L851" class="ln">   851  </span>
+<span id="L852" class="ln">   852  </span>		t.Run(&#34;最小ポート未満の場合、渡したエラーを返す&#34;, func(t *testing.T) {
+<span id="L853" class="ln">   853  </span>			t.Parallel()
+<span id="L854" class="ln">   854  </span>
+<span id="L855" class="ln">   855  </span>			require.ErrorIs(t, validatePortRange(MinPort-1, sentinel), sentinel)
+<span id="L856" class="ln">   856  </span>		})
+<span id="L857" class="ln">   857  </span>
+<span id="L858" class="ln">   858  </span>		t.Run(&#34;最大ポート超過の場合、渡したエラーを返す&#34;, func(t *testing.T) {
+<span id="L859" class="ln">   859  </span>			t.Parallel()
+<span id="L860" class="ln">   860  </span>
+<span id="L861" class="ln">   861  </span>			require.ErrorIs(t, validatePortRange(MaxPort+1, sentinel), sentinel)
+<span id="L862" class="ln">   862  </span>		})
+<span id="L863" class="ln">   863  </span>	})
+<span id="L864" class="ln">   864  </span>}
+<span id="L865" class="ln">   865  </span>
+<span id="L866" class="ln">   866  </span>func TestValidateServerShutdown(t *testing.T) {
+<span id="L867" class="ln">   867  </span>	t.Parallel()
 <span id="L868" class="ln">   868  </span>
-<span id="L869" class="ln">   869  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L869" class="ln">   869  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
 <span id="L870" class="ln">   870  </span>		t.Parallel()
 <span id="L871" class="ln">   871  </span>
-<span id="L872" class="ln">   872  </span>		t.Run(&#34;シャットダウン猶予がリクエスト予算を下回る場合、ErrShutdownTimeoutBelowRequestTimeoutを返す&#34;, func(t *testing.T) {
+<span id="L872" class="ln">   872  </span>		t.Run(&#34;シャットダウン猶予がリクエスト予算を上回る場合、nilを返す&#34;, func(t *testing.T) {
 <span id="L873" class="ln">   873  </span>			t.Parallel()
 <span id="L874" class="ln">   874  </span>
-<span id="L875" class="ln">   875  </span>			appCfg := &amp;ApplicationConfig{shutdownTimeout: 60*time.Second - time.Second}
+<span id="L875" class="ln">   875  </span>			appCfg := &amp;ApplicationConfig{shutdownTimeout: 90 * time.Second}
 <span id="L876" class="ln">   876  </span>			srvCfg := &amp;ServerConfig{requestTimeout: 60 * time.Second}
 <span id="L877" class="ln">   877  </span>
-<span id="L878" class="ln">   878  </span>			err := ValidateServerShutdown(appCfg, srvCfg)
-<span id="L879" class="ln">   879  </span>			require.ErrorIs(t, err, ErrShutdownTimeoutBelowRequestTimeout)
-<span id="L880" class="ln">   880  </span>		})
-<span id="L881" class="ln">   881  </span>	})
-<span id="L882" class="ln">   882  </span>}
-<span id="L883" class="ln">   883  </span>
-<span id="L884" class="ln">   884  </span>func TestValidateUploadBodyLimit(t *testing.T) {
-<span id="L885" class="ln">   885  </span>	t.Parallel()
-<span id="L886" class="ln">   886  </span>
-<span id="L887" class="ln">   887  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L888" class="ln">   888  </span>		t.Parallel()
-<span id="L889" class="ln">   889  </span>
-<span id="L890" class="ln">   890  </span>		t.Run(&#34;ボディ上限がアップロード上限を上回る場合、nilを返す&#34;, func(t *testing.T) {
-<span id="L891" class="ln">   891  </span>			t.Parallel()
-<span id="L892" class="ln">   892  </span>
-<span id="L893" class="ln">   893  </span>			srvCfg := &amp;ServerConfig{bodyLimitMB: 6}
-<span id="L894" class="ln">   894  </span>			objCfg := &amp;ObjectStorageConfig{maxUploadBytes: 5 * BytesPerMB}
-<span id="L895" class="ln">   895  </span>
-<span id="L896" class="ln">   896  </span>			require.NoError(t, ValidateUploadBodyLimit(srvCfg, objCfg))
-<span id="L897" class="ln">   897  </span>		})
-<span id="L898" class="ln">   898  </span>	})
+<span id="L878" class="ln">   878  </span>			require.NoError(t, ValidateServerShutdown(appCfg, srvCfg))
+<span id="L879" class="ln">   879  </span>		})
+<span id="L880" class="ln">   880  </span>	})
+<span id="L881" class="ln">   881  </span>
+<span id="L882" class="ln">   882  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L883" class="ln">   883  </span>		t.Parallel()
+<span id="L884" class="ln">   884  </span>
+<span id="L885" class="ln">   885  </span>		t.Run(&#34;シャットダウン猶予がリクエスト予算を下回る場合、ErrShutdownTimeoutBelowRequestTimeoutを返す&#34;, func(t *testing.T) {
+<span id="L886" class="ln">   886  </span>			t.Parallel()
+<span id="L887" class="ln">   887  </span>
+<span id="L888" class="ln">   888  </span>			appCfg := &amp;ApplicationConfig{shutdownTimeout: 60*time.Second - time.Second}
+<span id="L889" class="ln">   889  </span>			srvCfg := &amp;ServerConfig{requestTimeout: 60 * time.Second}
+<span id="L890" class="ln">   890  </span>
+<span id="L891" class="ln">   891  </span>			err := ValidateServerShutdown(appCfg, srvCfg)
+<span id="L892" class="ln">   892  </span>			require.ErrorIs(t, err, ErrShutdownTimeoutBelowRequestTimeout)
+<span id="L893" class="ln">   893  </span>		})
+<span id="L894" class="ln">   894  </span>	})
+<span id="L895" class="ln">   895  </span>}
+<span id="L896" class="ln">   896  </span>
+<span id="L897" class="ln">   897  </span>func TestValidateUploadBodyLimit(t *testing.T) {
+<span id="L898" class="ln">   898  </span>	t.Parallel()
 <span id="L899" class="ln">   899  </span>
-<span id="L900" class="ln">   900  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L900" class="ln">   900  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
 <span id="L901" class="ln">   901  </span>		t.Parallel()
 <span id="L902" class="ln">   902  </span>
-<span id="L903" class="ln">   903  </span>		t.Run(&#34;ボディ上限がアップロード上限と同値の場合、ErrBodyLimitBelowMaxUploadBytesを返す&#34;, func(t *testing.T) {
+<span id="L903" class="ln">   903  </span>		t.Run(&#34;ボディ上限がアップロード上限を上回る場合、nilを返す&#34;, func(t *testing.T) {
 <span id="L904" class="ln">   904  </span>			t.Parallel()
 <span id="L905" class="ln">   905  </span>
-<span id="L906" class="ln">   906  </span>			srvCfg := &amp;ServerConfig{bodyLimitMB: 5}
+<span id="L906" class="ln">   906  </span>			srvCfg := &amp;ServerConfig{bodyLimitMB: 6}
 <span id="L907" class="ln">   907  </span>			objCfg := &amp;ObjectStorageConfig{maxUploadBytes: 5 * BytesPerMB}
 <span id="L908" class="ln">   908  </span>
-<span id="L909" class="ln">   909  </span>			err := ValidateUploadBodyLimit(srvCfg, objCfg)
-<span id="L910" class="ln">   910  </span>			require.ErrorIs(t, err, ErrBodyLimitBelowMaxUploadBytes)
-<span id="L911" class="ln">   911  </span>		})
-<span id="L912" class="ln">   912  </span>	})
-<span id="L913" class="ln">   913  </span>}
-<span id="L914" class="ln">   914  </span>
-<span id="L915" class="ln">   915  </span>func Test_isActiveExporter(t *testing.T) {
-<span id="L916" class="ln">   916  </span>	t.Parallel()
-<span id="L917" class="ln">   917  </span>
-<span id="L918" class="ln">   918  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L919" class="ln">   919  </span>		t.Parallel()
-<span id="L920" class="ln">   920  </span>
-<span id="L921" class="ln">   921  </span>		t.Run(&#34;exporter名が指定されている場合、trueを返す&#34;, func(t *testing.T) {
-<span id="L922" class="ln">   922  </span>			t.Parallel()
-<span id="L923" class="ln">   923  </span>
-<span id="L924" class="ln">   924  </span>			assert.True(t, isActiveExporter(&#34;otlp&#34;))
-<span id="L925" class="ln">   925  </span>		})
-<span id="L926" class="ln">   926  </span>
-<span id="L927" class="ln">   927  </span>		t.Run(&#34;未設定を表す空文字の場合、falseを返す&#34;, func(t *testing.T) {
-<span id="L928" class="ln">   928  </span>			t.Parallel()
-<span id="L929" class="ln">   929  </span>
-<span id="L930" class="ln">   930  </span>			assert.False(t, isActiveExporter(&#34;&#34;))
-<span id="L931" class="ln">   931  </span>		})
-<span id="L932" class="ln">   932  </span>
-<span id="L933" class="ln">   933  </span>		t.Run(&#34;明示的な無効化を表すnoneの場合、falseを返す&#34;, func(t *testing.T) {
-<span id="L934" class="ln">   934  </span>			t.Parallel()
-<span id="L935" class="ln">   935  </span>
-<span id="L936" class="ln">   936  </span>			assert.False(t, isActiveExporter(exporterNone))
-<span id="L937" class="ln">   937  </span>		})
-<span id="L938" class="ln">   938  </span>
-<span id="L939" class="ln">   939  </span>		t.Run(&#34;noneと大文字小文字だけが異なる場合、falseを返す&#34;, func(t *testing.T) {
-<span id="L940" class="ln">   940  </span>			t.Parallel()
-<span id="L941" class="ln">   941  </span>
-<span id="L942" class="ln">   942  </span>			assert.False(t, isActiveExporter(&#34;NoNe&#34;))
-<span id="L943" class="ln">   943  </span>		})
-<span id="L944" class="ln">   944  </span>	})
-<span id="L945" class="ln">   945  </span>}
-<span id="L946" class="ln">   946  </span>
+<span id="L909" class="ln">   909  </span>			require.NoError(t, ValidateUploadBodyLimit(srvCfg, objCfg))
+<span id="L910" class="ln">   910  </span>		})
+<span id="L911" class="ln">   911  </span>	})
+<span id="L912" class="ln">   912  </span>
+<span id="L913" class="ln">   913  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L914" class="ln">   914  </span>		t.Parallel()
+<span id="L915" class="ln">   915  </span>
+<span id="L916" class="ln">   916  </span>		t.Run(&#34;ボディ上限がアップロード上限と同値の場合、ErrBodyLimitBelowMaxUploadBytesを返す&#34;, func(t *testing.T) {
+<span id="L917" class="ln">   917  </span>			t.Parallel()
+<span id="L918" class="ln">   918  </span>
+<span id="L919" class="ln">   919  </span>			srvCfg := &amp;ServerConfig{bodyLimitMB: 5}
+<span id="L920" class="ln">   920  </span>			objCfg := &amp;ObjectStorageConfig{maxUploadBytes: 5 * BytesPerMB}
+<span id="L921" class="ln">   921  </span>
+<span id="L922" class="ln">   922  </span>			err := ValidateUploadBodyLimit(srvCfg, objCfg)
+<span id="L923" class="ln">   923  </span>			require.ErrorIs(t, err, ErrBodyLimitBelowMaxUploadBytes)
+<span id="L924" class="ln">   924  </span>		})
+<span id="L925" class="ln">   925  </span>	})
+<span id="L926" class="ln">   926  </span>}
+<span id="L927" class="ln">   927  </span>
+<span id="L928" class="ln">   928  </span>func Test_isActiveExporter(t *testing.T) {
+<span id="L929" class="ln">   929  </span>	t.Parallel()
+<span id="L930" class="ln">   930  </span>
+<span id="L931" class="ln">   931  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L932" class="ln">   932  </span>		t.Parallel()
+<span id="L933" class="ln">   933  </span>
+<span id="L934" class="ln">   934  </span>		t.Run(&#34;exporter名が指定されている場合、trueを返す&#34;, func(t *testing.T) {
+<span id="L935" class="ln">   935  </span>			t.Parallel()
+<span id="L936" class="ln">   936  </span>
+<span id="L937" class="ln">   937  </span>			assert.True(t, isActiveExporter(&#34;otlp&#34;))
+<span id="L938" class="ln">   938  </span>		})
+<span id="L939" class="ln">   939  </span>
+<span id="L940" class="ln">   940  </span>		t.Run(&#34;未設定を表す空文字の場合、falseを返す&#34;, func(t *testing.T) {
+<span id="L941" class="ln">   941  </span>			t.Parallel()
+<span id="L942" class="ln">   942  </span>
+<span id="L943" class="ln">   943  </span>			assert.False(t, isActiveExporter(&#34;&#34;))
+<span id="L944" class="ln">   944  </span>		})
+<span id="L945" class="ln">   945  </span>
+<span id="L946" class="ln">   946  </span>		t.Run(&#34;明示的な無効化を表すnoneの場合、falseを返す&#34;, func(t *testing.T) {
+<span id="L947" class="ln">   947  </span>			t.Parallel()
+<span id="L948" class="ln">   948  </span>
+<span id="L949" class="ln">   949  </span>			assert.False(t, isActiveExporter(exporterNone))
+<span id="L950" class="ln">   950  </span>		})
+<span id="L951" class="ln">   951  </span>
+<span id="L952" class="ln">   952  </span>		t.Run(&#34;noneと大文字小文字だけが異なる場合、falseを返す&#34;, func(t *testing.T) {
+<span id="L953" class="ln">   953  </span>			t.Parallel()
+<span id="L954" class="ln">   954  </span>
+<span id="L955" class="ln">   955  </span>			assert.False(t, isActiveExporter(&#34;NoNe&#34;))
+<span id="L956" class="ln">   956  </span>		})
+<span id="L957" class="ln">   957  </span>	})
+<span id="L958" class="ln">   958  </span>}
+<span id="L959" class="ln">   959  </span>
 </pre><p><a href="../../../../src/go-boilerplate/internal/config/config_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

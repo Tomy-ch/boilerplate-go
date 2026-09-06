@@ -209,418 +209,420 @@
 <span id="L152" class="ln">   152  </span><span class="comment">// 一意インデックス（carts_user_id_unique）が単一文の中で裁定するため、同一ユーザーへの並行した</span>
 <span id="L153" class="ln">   153  </span><span class="comment">// 作成が競合しても一意制約違反を上げない。存在確認と作成を分けると、その間に他の要求が作った場合に</span>
 <span id="L154" class="ln">   154  </span><span class="comment">// 23505 でトランザクションごと中断してしまい、同じトランザクションの中では続けられなくなる。</span>
-<span id="L155" class="ln">   155  </span><span class="comment">// 衝突時に user_id を同じ値で書き戻すのは、DO NOTHING では RETURNING が行を返さないため。</span>
-<span id="L156" class="ln">   156  </span><span class="comment">//</span>
-<span id="L157" class="ln">   157  </span><span class="comment">//	INSERT INTO carts (</span>
-<span id="L158" class="ln">   158  </span><span class="comment">//	    id,</span>
-<span id="L159" class="ln">   159  </span><span class="comment">//	    user_id,</span>
-<span id="L160" class="ln">   160  </span><span class="comment">//	    session_token,</span>
-<span id="L161" class="ln">   161  </span><span class="comment">//	    expires_at</span>
-<span id="L162" class="ln">   162  </span><span class="comment">//	) VALUES</span>
-<span id="L163" class="ln">   163  </span><span class="comment">//	(</span>
-<span id="L164" class="ln">   164  </span><span class="comment">//	    $1,</span>
-<span id="L165" class="ln">   165  </span><span class="comment">//	    $2,</span>
-<span id="L166" class="ln">   166  </span><span class="comment">//	    NULL,</span>
-<span id="L167" class="ln">   167  </span><span class="comment">//	    $3</span>
-<span id="L168" class="ln">   168  </span><span class="comment">//	)</span>
-<span id="L169" class="ln">   169  </span><span class="comment">//	ON CONFLICT ON CONSTRAINT carts_user_id_unique DO UPDATE</span>
-<span id="L170" class="ln">   170  </span><span class="comment">//	    SET</span>
-<span id="L171" class="ln">   171  </span><span class="comment">//	        user_id = excluded.user_id</span>
-<span id="L172" class="ln">   172  </span><span class="comment">//	RETURNING carts.id, carts.user_id, carts.session_token, carts.expires_at, carts.created_at, carts.updated_at</span>
-<span id="L173" class="ln">   173  </span>func (q *Queries) CreateOwnerCartIfAbsent(ctx context.Context, arg *CreateOwnerCartIfAbsentParams) (*CreateOwnerCartIfAbsentRow, error) {
-<span id="L174" class="ln">   174  </span>	row := q.db.QueryRow(ctx, createOwnerCartIfAbsent, arg.ID, arg.UserID, arg.ExpiresAt)
-<span id="L175" class="ln">   175  </span>	var i CreateOwnerCartIfAbsentRow
-<span id="L176" class="ln">   176  </span>	err := row.Scan(
-<span id="L177" class="ln">   177  </span>		&amp;i.Carts.ID,
-<span id="L178" class="ln">   178  </span>		&amp;i.Carts.UserID,
-<span id="L179" class="ln">   179  </span>		&amp;i.Carts.SessionToken,
-<span id="L180" class="ln">   180  </span>		&amp;i.Carts.ExpiresAt,
-<span id="L181" class="ln">   181  </span>		&amp;i.Carts.CreatedAt,
-<span id="L182" class="ln">   182  </span>		&amp;i.Carts.UpdatedAt,
-<span id="L183" class="ln">   183  </span>	)
-<span id="L184" class="ln">   184  </span>	return &amp;i, err
-<span id="L185" class="ln">   185  </span>}
-<span id="L186" class="ln">   186  </span>
-<span id="L187" class="ln">   187  </span>const deleteCart = `-- name: DeleteCart :exec
-<span id="L188" class="ln">   188  </span>DELETE FROM carts
-<span id="L189" class="ln">   189  </span>WHERE carts.id = $1
-<span id="L190" class="ln">   190  </span>`
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span><span class="comment">// === source: database/dml/repository/cart/delete_cart.sql ===</span>
-<span id="L193" class="ln">   193  </span><span class="comment">// カートを削除する。明細は外部キーの連鎖削除で除かれる。存在しない場合もエラーとしない。</span>
-<span id="L194" class="ln">   194  </span><span class="comment">//</span>
-<span id="L195" class="ln">   195  </span><span class="comment">//	DELETE FROM carts</span>
-<span id="L196" class="ln">   196  </span><span class="comment">//	WHERE carts.id = $1</span>
-<span id="L197" class="ln">   197  </span>func (q *Queries) DeleteCart(ctx context.Context, id uuid.UUID) error {
-<span id="L198" class="ln">   198  </span>	_, err := q.db.Exec(ctx, deleteCart, id)
-<span id="L199" class="ln">   199  </span>	return err
-<span id="L200" class="ln">   200  </span>}
-<span id="L201" class="ln">   201  </span>
-<span id="L202" class="ln">   202  </span>const deleteCartItemsNotIn = `-- name: DeleteCartItemsNotIn :exec
-<span id="L203" class="ln">   203  </span>DELETE FROM cart_items
-<span id="L204" class="ln">   204  </span>WHERE cart_items.cart_id = $1
-<span id="L205" class="ln">   205  </span>    AND NOT (cart_items.product_id = ANY($2::UUID[]))
-<span id="L206" class="ln">   206  </span>`
-<span id="L207" class="ln">   207  </span>
-<span id="L208" class="ln">   208  </span>type DeleteCartItemsNotInParams struct {
-<span id="L209" class="ln">   209  </span>	CartID     uuid.UUID
-<span id="L210" class="ln">   210  </span>	ProductIds []uuid.UUID
-<span id="L211" class="ln">   211  </span>}
-<span id="L212" class="ln">   212  </span>
-<span id="L213" class="ln">   213  </span><span class="comment">// 指定した商品の集合に含まれない明細を取り除く。集約が保持しなくなった明細を落とすためのもので、</span>
-<span id="L214" class="ln">   214  </span><span class="comment">// 空の集合を渡した場合はそのカートの明細をすべて削除する。</span>
-<span id="L215" class="ln">   215  </span><span class="comment">//</span>
-<span id="L216" class="ln">   216  </span><span class="comment">//	DELETE FROM cart_items</span>
-<span id="L217" class="ln">   217  </span><span class="comment">//	WHERE cart_items.cart_id = $1</span>
-<span id="L218" class="ln">   218  </span><span class="comment">//	    AND NOT (cart_items.product_id = ANY($2::UUID[]))</span>
-<span id="L219" class="ln">   219  </span>func (q *Queries) DeleteCartItemsNotIn(ctx context.Context, arg *DeleteCartItemsNotInParams) error {
-<span id="L220" class="ln">   220  </span>	_, err := q.db.Exec(ctx, deleteCartItemsNotIn, arg.CartID, arg.ProductIds)
-<span id="L221" class="ln">   221  </span>	return err
-<span id="L222" class="ln">   222  </span>}
-<span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span>const deleteExpiredCarts = `-- name: DeleteExpiredCarts :execrows
-<span id="L225" class="ln">   225  </span>DELETE FROM carts
-<span id="L226" class="ln">   226  </span>WHERE carts.id IN (
-<span id="L227" class="ln">   227  </span>        SELECT c.id
-<span id="L228" class="ln">   228  </span>        FROM carts AS c
-<span id="L229" class="ln">   229  </span>        WHERE c.expires_at &lt; $1
-<span id="L230" class="ln">   230  </span>        ORDER BY c.expires_at, c.id
-<span id="L231" class="ln">   231  </span>        LIMIT $2
-<span id="L232" class="ln">   232  </span>    )
-<span id="L233" class="ln">   233  </span>`
-<span id="L234" class="ln">   234  </span>
-<span id="L235" class="ln">   235  </span>type DeleteExpiredCartsParams struct {
-<span id="L236" class="ln">   236  </span>	Now      time.Time
-<span id="L237" class="ln">   237  </span>	RowLimit int32
-<span id="L238" class="ln">   238  </span>}
-<span id="L239" class="ln">   239  </span>
-<span id="L240" class="ln">   240  </span><span class="comment">// === source: database/dml/repository/cart/delete_expired_carts.sql ===</span>
-<span id="L241" class="ln">   241  </span><span class="comment">// 削除の対象を決める述語の定義はドメインの Cart.IsExpired が持ち、この WHERE はその実行形である。</span>
-<span id="L242" class="ln">   242  </span><span class="comment">// 有効期限ちょうどの時点は期限切れではない（&lt; であって &lt;= ではない）。片方だけを変更してはならない。</span>
-<span id="L243" class="ln">   243  </span><span class="comment">//</span>
-<span id="L244" class="ln">   244  </span><span class="comment">//	DELETE FROM carts</span>
-<span id="L245" class="ln">   245  </span><span class="comment">//	WHERE carts.id IN (</span>
-<span id="L246" class="ln">   246  </span><span class="comment">//	        SELECT c.id</span>
-<span id="L247" class="ln">   247  </span><span class="comment">//	        FROM carts AS c</span>
-<span id="L248" class="ln">   248  </span><span class="comment">//	        WHERE c.expires_at &lt; $1</span>
-<span id="L249" class="ln">   249  </span><span class="comment">//	        ORDER BY c.expires_at, c.id</span>
-<span id="L250" class="ln">   250  </span><span class="comment">//	        LIMIT $2</span>
-<span id="L251" class="ln">   251  </span><span class="comment">//	    )</span>
-<span id="L252" class="ln">   252  </span>func (q *Queries) DeleteExpiredCarts(ctx context.Context, arg *DeleteExpiredCartsParams) (int64, error) {
-<span id="L253" class="ln">   253  </span>	result, err := q.db.Exec(ctx, deleteExpiredCarts, arg.Now, arg.RowLimit)
-<span id="L254" class="ln">   254  </span>	if err != nil {
-<span id="L255" class="ln">   255  </span>		return 0, err
-<span id="L256" class="ln">   256  </span>	}
-<span id="L257" class="ln">   257  </span>	return result.RowsAffected(), nil
-<span id="L258" class="ln">   258  </span>}
-<span id="L259" class="ln">   259  </span>
-<span id="L260" class="ln">   260  </span>const getCartByOwnerID = `-- name: GetCartByOwnerID :one
-<span id="L261" class="ln">   261  </span>SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at
-<span id="L262" class="ln">   262  </span>FROM carts AS c
-<span id="L263" class="ln">   263  </span>WHERE c.user_id = $1
-<span id="L264" class="ln">   264  </span>`
-<span id="L265" class="ln">   265  </span>
-<span id="L266" class="ln">   266  </span>type GetCartByOwnerIDRow struct {
-<span id="L267" class="ln">   267  </span>	Carts Carts
-<span id="L268" class="ln">   268  </span>}
-<span id="L269" class="ln">   269  </span>
-<span id="L270" class="ln">   270  </span><span class="comment">// === source: database/dml/repository/cart/select_cart_by_owner_id.sql ===</span>
-<span id="L271" class="ln">   271  </span><span class="comment">// 所有者からカートを 1 件取得する。ユーザー 1 人につきカートは高々 1 件（carts_user_id_unique）。</span>
-<span id="L272" class="ln">   272  </span><span class="comment">// 存在しない場合は 0 行（NotFound）。</span>
-<span id="L273" class="ln">   273  </span><span class="comment">// 有効期限で絞らないのは意図的で、期限切れかどうかの判定はドメインの述語が持つ。ここで取り除くと</span>
-<span id="L274" class="ln">   274  </span><span class="comment">// 取り除かれた行は結果に現れず、不在を観測できないため、突き合わせ検証の余地が消える。</span>
-<span id="L275" class="ln">   275  </span><span class="comment">//</span>
-<span id="L276" class="ln">   276  </span><span class="comment">//	SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at</span>
-<span id="L277" class="ln">   277  </span><span class="comment">//	FROM carts AS c</span>
-<span id="L278" class="ln">   278  </span><span class="comment">//	WHERE c.user_id = $1</span>
-<span id="L279" class="ln">   279  </span>func (q *Queries) GetCartByOwnerID(ctx context.Context, userID *uuid.UUID) (*GetCartByOwnerIDRow, error) {
-<span id="L280" class="ln">   280  </span>	row := q.db.QueryRow(ctx, getCartByOwnerID, userID)
-<span id="L281" class="ln">   281  </span>	var i GetCartByOwnerIDRow
-<span id="L282" class="ln">   282  </span>	err := row.Scan(
-<span id="L283" class="ln">   283  </span>		&amp;i.Carts.ID,
-<span id="L284" class="ln">   284  </span>		&amp;i.Carts.UserID,
-<span id="L285" class="ln">   285  </span>		&amp;i.Carts.SessionToken,
-<span id="L286" class="ln">   286  </span>		&amp;i.Carts.ExpiresAt,
-<span id="L287" class="ln">   287  </span>		&amp;i.Carts.CreatedAt,
-<span id="L288" class="ln">   288  </span>		&amp;i.Carts.UpdatedAt,
-<span id="L289" class="ln">   289  </span>	)
-<span id="L290" class="ln">   290  </span>	return &amp;i, err
-<span id="L291" class="ln">   291  </span>}
-<span id="L292" class="ln">   292  </span>
-<span id="L293" class="ln">   293  </span>const getCartBySessionToken = `-- name: GetCartBySessionToken :one
-<span id="L294" class="ln">   294  </span>SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at
-<span id="L295" class="ln">   295  </span>FROM carts AS c
-<span id="L296" class="ln">   296  </span>WHERE c.session_token = $1
-<span id="L297" class="ln">   297  </span>`
-<span id="L298" class="ln">   298  </span>
-<span id="L299" class="ln">   299  </span>type GetCartBySessionTokenRow struct {
-<span id="L300" class="ln">   300  </span>	Carts Carts
-<span id="L301" class="ln">   301  </span>}
-<span id="L302" class="ln">   302  </span>
-<span id="L303" class="ln">   303  </span><span class="comment">// === source: database/dml/repository/cart/select_cart_by_session_token.sql ===</span>
-<span id="L304" class="ln">   304  </span><span class="comment">// セッショントークンからカートを 1 件取得する。存在しない場合は 0 行（NotFound）。</span>
-<span id="L305" class="ln">   305  </span><span class="comment">// 所有者が確定したカートは session_token を持たない（carts_owner_exclusive）ため、この経路では引けない。</span>
-<span id="L306" class="ln">   306  </span><span class="comment">// 有効期限で絞らない理由は GetCartByOwnerID と同じ。</span>
-<span id="L307" class="ln">   307  </span><span class="comment">//</span>
-<span id="L308" class="ln">   308  </span><span class="comment">//	SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at</span>
-<span id="L309" class="ln">   309  </span><span class="comment">//	FROM carts AS c</span>
-<span id="L310" class="ln">   310  </span><span class="comment">//	WHERE c.session_token = $1</span>
-<span id="L311" class="ln">   311  </span>func (q *Queries) GetCartBySessionToken(ctx context.Context, sessionToken *string) (*GetCartBySessionTokenRow, error) {
-<span id="L312" class="ln">   312  </span>	row := q.db.QueryRow(ctx, getCartBySessionToken, sessionToken)
-<span id="L313" class="ln">   313  </span>	var i GetCartBySessionTokenRow
-<span id="L314" class="ln">   314  </span>	err := row.Scan(
-<span id="L315" class="ln">   315  </span>		&amp;i.Carts.ID,
-<span id="L316" class="ln">   316  </span>		&amp;i.Carts.UserID,
-<span id="L317" class="ln">   317  </span>		&amp;i.Carts.SessionToken,
-<span id="L318" class="ln">   318  </span>		&amp;i.Carts.ExpiresAt,
-<span id="L319" class="ln">   319  </span>		&amp;i.Carts.CreatedAt,
-<span id="L320" class="ln">   320  </span>		&amp;i.Carts.UpdatedAt,
-<span id="L321" class="ln">   321  </span>	)
-<span id="L322" class="ln">   322  </span>	return &amp;i, err
-<span id="L323" class="ln">   323  </span>}
-<span id="L324" class="ln">   324  </span>
-<span id="L325" class="ln">   325  </span>const listCartItemsByCartID = `-- name: ListCartItemsByCartID :many
-<span id="L326" class="ln">   326  </span>SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, ci.last_seen_price, ci.added_at, ci.created_at, ci.updated_at
-<span id="L327" class="ln">   327  </span>FROM cart_items AS ci
-<span id="L328" class="ln">   328  </span>WHERE ci.cart_id = $1
-<span id="L329" class="ln">   329  </span>ORDER BY ci.added_at, ci.id
-<span id="L330" class="ln">   330  </span>`
-<span id="L331" class="ln">   331  </span>
-<span id="L332" class="ln">   332  </span>type ListCartItemsByCartIDRow struct {
-<span id="L333" class="ln">   333  </span>	CartItems CartItems
-<span id="L334" class="ln">   334  </span>}
-<span id="L335" class="ln">   335  </span>
-<span id="L336" class="ln">   336  </span><span class="comment">// === source: database/dml/repository/cart/select_cart_items_by_cart_id.sql ===</span>
-<span id="L337" class="ln">   337  </span><span class="comment">// カート ID から明細を取得する。並びは追加日時の昇順、同時刻は ID 昇順で決着させる。</span>
-<span id="L338" class="ln">   338  </span><span class="comment">// 切り捨ての順序をこの並びに依存させてはならない（その判定は追加日時の値から集約が行う）。</span>
-<span id="L339" class="ln">   339  </span><span class="comment">//</span>
-<span id="L340" class="ln">   340  </span><span class="comment">//	SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, ci.last_seen_price, ci.added_at, ci.created_at, ci.updated_at</span>
-<span id="L341" class="ln">   341  </span><span class="comment">//	FROM cart_items AS ci</span>
-<span id="L342" class="ln">   342  </span><span class="comment">//	WHERE ci.cart_id = $1</span>
-<span id="L343" class="ln">   343  </span><span class="comment">//	ORDER BY ci.added_at, ci.id</span>
-<span id="L344" class="ln">   344  </span>func (q *Queries) ListCartItemsByCartID(ctx context.Context, cartID uuid.UUID) ([]*ListCartItemsByCartIDRow, error) {
-<span id="L345" class="ln">   345  </span>	rows, err := q.db.Query(ctx, listCartItemsByCartID, cartID)
-<span id="L346" class="ln">   346  </span>	if err != nil {
-<span id="L347" class="ln">   347  </span>		return nil, err
-<span id="L348" class="ln">   348  </span>	}
-<span id="L349" class="ln">   349  </span>	defer rows.Close()
-<span id="L350" class="ln">   350  </span>	var items []*ListCartItemsByCartIDRow
-<span id="L351" class="ln">   351  </span>	for rows.Next() {
-<span id="L352" class="ln">   352  </span>		var i ListCartItemsByCartIDRow
-<span id="L353" class="ln">   353  </span>		if err := rows.Scan(
-<span id="L354" class="ln">   354  </span>			&amp;i.CartItems.ID,
-<span id="L355" class="ln">   355  </span>			&amp;i.CartItems.CartID,
-<span id="L356" class="ln">   356  </span>			&amp;i.CartItems.ProductID,
-<span id="L357" class="ln">   357  </span>			&amp;i.CartItems.Quantity,
-<span id="L358" class="ln">   358  </span>			&amp;i.CartItems.LastSeenPrice,
-<span id="L359" class="ln">   359  </span>			&amp;i.CartItems.AddedAt,
-<span id="L360" class="ln">   360  </span>			&amp;i.CartItems.CreatedAt,
-<span id="L361" class="ln">   361  </span>			&amp;i.CartItems.UpdatedAt,
-<span id="L362" class="ln">   362  </span>		); err != nil {
-<span id="L363" class="ln">   363  </span>			return nil, err
-<span id="L364" class="ln">   364  </span>		}
-<span id="L365" class="ln">   365  </span>		items = append(items, &amp;i)
-<span id="L366" class="ln">   366  </span>	}
-<span id="L367" class="ln">   367  </span>	if err := rows.Err(); err != nil {
-<span id="L368" class="ln">   368  </span>		return nil, err
-<span id="L369" class="ln">   369  </span>	}
-<span id="L370" class="ln">   370  </span>	return items, nil
-<span id="L371" class="ln">   371  </span>}
-<span id="L372" class="ln">   372  </span>
-<span id="L373" class="ln">   373  </span>const lockCartByID = `-- name: LockCartByID :one
-<span id="L374" class="ln">   374  </span>SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at
-<span id="L375" class="ln">   375  </span>FROM carts AS c
-<span id="L376" class="ln">   376  </span>WHERE c.id = $1
-<span id="L377" class="ln">   377  </span>FOR UPDATE
-<span id="L378" class="ln">   378  </span>`
-<span id="L379" class="ln">   379  </span>
-<span id="L380" class="ln">   380  </span>type LockCartByIDRow struct {
-<span id="L381" class="ln">   381  </span>	Carts Carts
-<span id="L382" class="ln">   382  </span>}
-<span id="L383" class="ln">   383  </span>
-<span id="L384" class="ln">   384  </span><span class="comment">// === source: database/dml/repository/cart/lock_cart_by_id.sql ===</span>
-<span id="L385" class="ln">   385  </span><span class="comment">// ID からカートを 1 件、悲観ロック（FOR UPDATE）して取得する。同一カートへの並行更新を、取得から</span>
-<span id="L386" class="ln">   386  </span><span class="comment">// commit まで直列化する。複数件をロックする場合の順序は呼び出し側が ID 昇順で固定する。</span>
-<span id="L387" class="ln">   387  </span><span class="comment">// 存在しない場合は 0 行（NotFound）。</span>
-<span id="L388" class="ln">   388  </span><span class="comment">//</span>
-<span id="L389" class="ln">   389  </span><span class="comment">//	SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at</span>
-<span id="L390" class="ln">   390  </span><span class="comment">//	FROM carts AS c</span>
-<span id="L391" class="ln">   391  </span><span class="comment">//	WHERE c.id = $1</span>
-<span id="L392" class="ln">   392  </span><span class="comment">//	FOR UPDATE</span>
-<span id="L393" class="ln">   393  </span>func (q *Queries) LockCartByID(ctx context.Context, id uuid.UUID) (*LockCartByIDRow, error) {
-<span id="L394" class="ln">   394  </span>	row := q.db.QueryRow(ctx, lockCartByID, id)
-<span id="L395" class="ln">   395  </span>	var i LockCartByIDRow
-<span id="L396" class="ln">   396  </span>	err := row.Scan(
-<span id="L397" class="ln">   397  </span>		&amp;i.Carts.ID,
-<span id="L398" class="ln">   398  </span>		&amp;i.Carts.UserID,
-<span id="L399" class="ln">   399  </span>		&amp;i.Carts.SessionToken,
-<span id="L400" class="ln">   400  </span>		&amp;i.Carts.ExpiresAt,
-<span id="L401" class="ln">   401  </span>		&amp;i.Carts.CreatedAt,
-<span id="L402" class="ln">   402  </span>		&amp;i.Carts.UpdatedAt,
-<span id="L403" class="ln">   403  </span>	)
-<span id="L404" class="ln">   404  </span>	return &amp;i, err
-<span id="L405" class="ln">   405  </span>}
-<span id="L406" class="ln">   406  </span>
-<span id="L407" class="ln">   407  </span>const lockCartsByIDs = `-- name: LockCartsByIDs :many
-<span id="L408" class="ln">   408  </span>SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at
-<span id="L409" class="ln">   409  </span>FROM carts AS c
-<span id="L410" class="ln">   410  </span>WHERE c.id = ANY($1::UUID[])
-<span id="L411" class="ln">   411  </span>ORDER BY c.id
-<span id="L412" class="ln">   412  </span>FOR UPDATE
-<span id="L413" class="ln">   413  </span>`
-<span id="L414" class="ln">   414  </span>
-<span id="L415" class="ln">   415  </span>type LockCartsByIDsRow struct {
-<span id="L416" class="ln">   416  </span>	Carts Carts
-<span id="L417" class="ln">   417  </span>}
-<span id="L418" class="ln">   418  </span>
-<span id="L419" class="ln">   419  </span><span class="comment">// === source: database/dml/repository/cart/lock_carts_by_ids.sql ===</span>
-<span id="L420" class="ln">   420  </span><span class="comment">// ID の集合からカート群を、更新のために悲観ロック（FOR UPDATE）して取得する。</span>
-<span id="L421" class="ln">   421  </span><span class="comment">// id 昇順の ORDER BY を外さないこと。複数件のロックをこの単一文の外へ分割しないこと</span>
-<span id="L422" class="ln">   422  </span><span class="comment">// （ADR-0036 (ordered-pessimistic-row-locks)）。</span>
-<span id="L423" class="ln">   423  </span><span class="comment">// 不存在の ID は結果に現れないため、返る件数は引数より少なくなり得る。</span>
-<span id="L424" class="ln">   424  </span><span class="comment">//</span>
-<span id="L425" class="ln">   425  </span><span class="comment">//	SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at</span>
-<span id="L426" class="ln">   426  </span><span class="comment">//	FROM carts AS c</span>
-<span id="L427" class="ln">   427  </span><span class="comment">//	WHERE c.id = ANY($1::UUID[])</span>
-<span id="L428" class="ln">   428  </span><span class="comment">//	ORDER BY c.id</span>
-<span id="L429" class="ln">   429  </span><span class="comment">//	FOR UPDATE</span>
-<span id="L430" class="ln">   430  </span>func (q *Queries) LockCartsByIDs(ctx context.Context, cartIdsParam []uuid.UUID) ([]*LockCartsByIDsRow, error) {
-<span id="L431" class="ln">   431  </span>	rows, err := q.db.Query(ctx, lockCartsByIDs, cartIdsParam)
-<span id="L432" class="ln">   432  </span>	if err != nil {
-<span id="L433" class="ln">   433  </span>		return nil, err
-<span id="L434" class="ln">   434  </span>	}
-<span id="L435" class="ln">   435  </span>	defer rows.Close()
-<span id="L436" class="ln">   436  </span>	var items []*LockCartsByIDsRow
-<span id="L437" class="ln">   437  </span>	for rows.Next() {
-<span id="L438" class="ln">   438  </span>		var i LockCartsByIDsRow
-<span id="L439" class="ln">   439  </span>		if err := rows.Scan(
-<span id="L440" class="ln">   440  </span>			&amp;i.Carts.ID,
-<span id="L441" class="ln">   441  </span>			&amp;i.Carts.UserID,
-<span id="L442" class="ln">   442  </span>			&amp;i.Carts.SessionToken,
-<span id="L443" class="ln">   443  </span>			&amp;i.Carts.ExpiresAt,
-<span id="L444" class="ln">   444  </span>			&amp;i.Carts.CreatedAt,
-<span id="L445" class="ln">   445  </span>			&amp;i.Carts.UpdatedAt,
-<span id="L446" class="ln">   446  </span>		); err != nil {
-<span id="L447" class="ln">   447  </span>			return nil, err
-<span id="L448" class="ln">   448  </span>		}
-<span id="L449" class="ln">   449  </span>		items = append(items, &amp;i)
-<span id="L450" class="ln">   450  </span>	}
-<span id="L451" class="ln">   451  </span>	if err := rows.Err(); err != nil {
-<span id="L452" class="ln">   452  </span>		return nil, err
-<span id="L453" class="ln">   453  </span>	}
-<span id="L454" class="ln">   454  </span>	return items, nil
-<span id="L455" class="ln">   455  </span>}
-<span id="L456" class="ln">   456  </span>
-<span id="L457" class="ln">   457  </span>const updateCart = `-- name: UpdateCart :execrows
-<span id="L458" class="ln">   458  </span>UPDATE carts
-<span id="L459" class="ln">   459  </span>SET
-<span id="L460" class="ln">   460  </span>    user_id = $1,
-<span id="L461" class="ln">   461  </span>    session_token = $2,
-<span id="L462" class="ln">   462  </span>    expires_at = $3,
-<span id="L463" class="ln">   463  </span>    updated_at = NOW()
-<span id="L464" class="ln">   464  </span>WHERE carts.id = $4
-<span id="L465" class="ln">   465  </span>`
-<span id="L466" class="ln">   466  </span>
-<span id="L467" class="ln">   467  </span>type UpdateCartParams struct {
-<span id="L468" class="ln">   468  </span>	UserID       *uuid.UUID
-<span id="L469" class="ln">   469  </span>	SessionToken *string
-<span id="L470" class="ln">   470  </span>	ExpiresAt    time.Time
-<span id="L471" class="ln">   471  </span>	ID           uuid.UUID
-<span id="L472" class="ln">   472  </span>}
-<span id="L473" class="ln">   473  </span>
-<span id="L474" class="ln">   474  </span><span class="comment">// === source: database/dml/repository/cart/update_cart.sql ===</span>
-<span id="L475" class="ln">   475  </span><span class="comment">// カートの親行を更新し、更新件数を返す。0 件は対象が存在しないことを意味し、呼び出し側が NotFound</span>
-<span id="L476" class="ln">   476  </span><span class="comment">// として扱う。所有者の確定（user_id のセットと session_token の NULL 化）もこの 1 本で反映される。</span>
-<span id="L477" class="ln">   477  </span><span class="comment">//</span>
-<span id="L478" class="ln">   478  </span><span class="comment">//	UPDATE carts</span>
-<span id="L479" class="ln">   479  </span><span class="comment">//	SET</span>
-<span id="L480" class="ln">   480  </span><span class="comment">//	    user_id = $1,</span>
-<span id="L481" class="ln">   481  </span><span class="comment">//	    session_token = $2,</span>
-<span id="L482" class="ln">   482  </span><span class="comment">//	    expires_at = $3,</span>
-<span id="L483" class="ln">   483  </span><span class="comment">//	    updated_at = NOW()</span>
-<span id="L484" class="ln">   484  </span><span class="comment">//	WHERE carts.id = $4</span>
-<span id="L485" class="ln">   485  </span>func (q *Queries) UpdateCart(ctx context.Context, arg *UpdateCartParams) (int64, error) {
-<span id="L486" class="ln">   486  </span>	result, err := q.db.Exec(ctx, updateCart,
-<span id="L487" class="ln">   487  </span>		arg.UserID,
-<span id="L488" class="ln">   488  </span>		arg.SessionToken,
-<span id="L489" class="ln">   489  </span>		arg.ExpiresAt,
-<span id="L490" class="ln">   490  </span>		arg.ID,
-<span id="L491" class="ln">   491  </span>	)
-<span id="L492" class="ln">   492  </span>	if err != nil {
-<span id="L493" class="ln">   493  </span>		return 0, err
-<span id="L494" class="ln">   494  </span>	}
-<span id="L495" class="ln">   495  </span>	return result.RowsAffected(), nil
-<span id="L496" class="ln">   496  </span>}
-<span id="L497" class="ln">   497  </span>
-<span id="L498" class="ln">   498  </span>const upsertCartItem = `-- name: UpsertCartItem :exec
-<span id="L499" class="ln">   499  </span>INSERT INTO cart_items (
-<span id="L500" class="ln">   500  </span>    id,
-<span id="L501" class="ln">   501  </span>    cart_id,
-<span id="L502" class="ln">   502  </span>    product_id,
-<span id="L503" class="ln">   503  </span>    quantity,
-<span id="L504" class="ln">   504  </span>    last_seen_price,
-<span id="L505" class="ln">   505  </span>    added_at
-<span id="L506" class="ln">   506  </span>) VALUES
-<span id="L507" class="ln">   507  </span>(
-<span id="L508" class="ln">   508  </span>    $1,
-<span id="L509" class="ln">   509  </span>    $2,
-<span id="L510" class="ln">   510  </span>    $3,
-<span id="L511" class="ln">   511  </span>    $4,
-<span id="L512" class="ln">   512  </span>    $5,
-<span id="L513" class="ln">   513  </span>    $6
-<span id="L514" class="ln">   514  </span>)
-<span id="L515" class="ln">   515  </span>ON CONFLICT ON CONSTRAINT cart_items_cart_id_product_id_unique DO UPDATE
-<span id="L516" class="ln">   516  </span>    SET
-<span id="L517" class="ln">   517  </span>        quantity = excluded.quantity,
-<span id="L518" class="ln">   518  </span>        last_seen_price = excluded.last_seen_price,
-<span id="L519" class="ln">   519  </span>        updated_at = NOW()
-<span id="L520" class="ln">   520  </span>`
-<span id="L521" class="ln">   521  </span>
-<span id="L522" class="ln">   522  </span>type UpsertCartItemParams struct {
-<span id="L523" class="ln">   523  </span>	ID            uuid.UUID
-<span id="L524" class="ln">   524  </span>	CartID        uuid.UUID
-<span id="L525" class="ln">   525  </span>	ProductID     uuid.UUID
-<span id="L526" class="ln">   526  </span>	Quantity      int32
-<span id="L527" class="ln">   527  </span>	LastSeenPrice *decimal.Decimal
-<span id="L528" class="ln">   528  </span>	AddedAt       time.Time
-<span id="L529" class="ln">   529  </span>}
-<span id="L530" class="ln">   530  </span>
-<span id="L531" class="ln">   531  </span><span class="comment">// 明細を商品ごとに登録または置換する。added_at は SET の対象に含めない。置換のたびに更新すると</span>
-<span id="L532" class="ln">   532  </span><span class="comment">// 「いつカートへ入ったか」が失われ、切り捨ての順序を決める基準が壊れるため。</span>
-<span id="L533" class="ln">   533  </span><span class="comment">//</span>
-<span id="L534" class="ln">   534  </span><span class="comment">//	INSERT INTO cart_items (</span>
-<span id="L535" class="ln">   535  </span><span class="comment">//	    id,</span>
-<span id="L536" class="ln">   536  </span><span class="comment">//	    cart_id,</span>
-<span id="L537" class="ln">   537  </span><span class="comment">//	    product_id,</span>
-<span id="L538" class="ln">   538  </span><span class="comment">//	    quantity,</span>
-<span id="L539" class="ln">   539  </span><span class="comment">//	    last_seen_price,</span>
-<span id="L540" class="ln">   540  </span><span class="comment">//	    added_at</span>
-<span id="L541" class="ln">   541  </span><span class="comment">//	) VALUES</span>
-<span id="L542" class="ln">   542  </span><span class="comment">//	(</span>
-<span id="L543" class="ln">   543  </span><span class="comment">//	    $1,</span>
-<span id="L544" class="ln">   544  </span><span class="comment">//	    $2,</span>
-<span id="L545" class="ln">   545  </span><span class="comment">//	    $3,</span>
-<span id="L546" class="ln">   546  </span><span class="comment">//	    $4,</span>
-<span id="L547" class="ln">   547  </span><span class="comment">//	    $5,</span>
-<span id="L548" class="ln">   548  </span><span class="comment">//	    $6</span>
-<span id="L549" class="ln">   549  </span><span class="comment">//	)</span>
-<span id="L550" class="ln">   550  </span><span class="comment">//	ON CONFLICT ON CONSTRAINT cart_items_cart_id_product_id_unique DO UPDATE</span>
-<span id="L551" class="ln">   551  </span><span class="comment">//	    SET</span>
-<span id="L552" class="ln">   552  </span><span class="comment">//	        quantity = excluded.quantity,</span>
-<span id="L553" class="ln">   553  </span><span class="comment">//	        last_seen_price = excluded.last_seen_price,</span>
-<span id="L554" class="ln">   554  </span><span class="comment">//	        updated_at = NOW()</span>
-<span id="L555" class="ln">   555  </span>func (q *Queries) UpsertCartItem(ctx context.Context, arg *UpsertCartItemParams) error {
-<span id="L556" class="ln">   556  </span>	_, err := q.db.Exec(ctx, upsertCartItem,
-<span id="L557" class="ln">   557  </span>		arg.ID,
-<span id="L558" class="ln">   558  </span>		arg.CartID,
-<span id="L559" class="ln">   559  </span>		arg.ProductID,
-<span id="L560" class="ln">   560  </span>		arg.Quantity,
-<span id="L561" class="ln">   561  </span>		arg.LastSeenPrice,
-<span id="L562" class="ln">   562  </span>		arg.AddedAt,
-<span id="L563" class="ln">   563  </span>	)
-<span id="L564" class="ln">   564  </span>	return err
-<span id="L565" class="ln">   565  </span>}
-<span id="L566" class="ln">   566  </span>
+<span id="L155" class="ln">   155  </span><span class="comment">// 衝突時に user_id を同じ値で書き戻すのは、DO NOTHING では RETURNING が行を返さないためであり、</span>
+<span id="L156" class="ln">   156  </span><span class="comment">// あわせて DO UPDATE が衝突した行にロックを取る。返ったカートはこのトランザクションが握っているので、</span>
+<span id="L157" class="ln">   157  </span><span class="comment">// 呼び出し側は別途ロックを取らずに触ってよい（DO NOTHING へ変えるとこの保証は失われる）。</span>
+<span id="L158" class="ln">   158  </span><span class="comment">//</span>
+<span id="L159" class="ln">   159  </span><span class="comment">//	INSERT INTO carts (</span>
+<span id="L160" class="ln">   160  </span><span class="comment">//	    id,</span>
+<span id="L161" class="ln">   161  </span><span class="comment">//	    user_id,</span>
+<span id="L162" class="ln">   162  </span><span class="comment">//	    session_token,</span>
+<span id="L163" class="ln">   163  </span><span class="comment">//	    expires_at</span>
+<span id="L164" class="ln">   164  </span><span class="comment">//	) VALUES</span>
+<span id="L165" class="ln">   165  </span><span class="comment">//	(</span>
+<span id="L166" class="ln">   166  </span><span class="comment">//	    $1,</span>
+<span id="L167" class="ln">   167  </span><span class="comment">//	    $2,</span>
+<span id="L168" class="ln">   168  </span><span class="comment">//	    NULL,</span>
+<span id="L169" class="ln">   169  </span><span class="comment">//	    $3</span>
+<span id="L170" class="ln">   170  </span><span class="comment">//	)</span>
+<span id="L171" class="ln">   171  </span><span class="comment">//	ON CONFLICT ON CONSTRAINT carts_user_id_unique DO UPDATE</span>
+<span id="L172" class="ln">   172  </span><span class="comment">//	    SET</span>
+<span id="L173" class="ln">   173  </span><span class="comment">//	        user_id = excluded.user_id</span>
+<span id="L174" class="ln">   174  </span><span class="comment">//	RETURNING carts.id, carts.user_id, carts.session_token, carts.expires_at, carts.created_at, carts.updated_at</span>
+<span id="L175" class="ln">   175  </span>func (q *Queries) CreateOwnerCartIfAbsent(ctx context.Context, arg *CreateOwnerCartIfAbsentParams) (*CreateOwnerCartIfAbsentRow, error) {
+<span id="L176" class="ln">   176  </span>	row := q.db.QueryRow(ctx, createOwnerCartIfAbsent, arg.ID, arg.UserID, arg.ExpiresAt)
+<span id="L177" class="ln">   177  </span>	var i CreateOwnerCartIfAbsentRow
+<span id="L178" class="ln">   178  </span>	err := row.Scan(
+<span id="L179" class="ln">   179  </span>		&amp;i.Carts.ID,
+<span id="L180" class="ln">   180  </span>		&amp;i.Carts.UserID,
+<span id="L181" class="ln">   181  </span>		&amp;i.Carts.SessionToken,
+<span id="L182" class="ln">   182  </span>		&amp;i.Carts.ExpiresAt,
+<span id="L183" class="ln">   183  </span>		&amp;i.Carts.CreatedAt,
+<span id="L184" class="ln">   184  </span>		&amp;i.Carts.UpdatedAt,
+<span id="L185" class="ln">   185  </span>	)
+<span id="L186" class="ln">   186  </span>	return &amp;i, err
+<span id="L187" class="ln">   187  </span>}
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>const deleteCart = `-- name: DeleteCart :exec
+<span id="L190" class="ln">   190  </span>DELETE FROM carts
+<span id="L191" class="ln">   191  </span>WHERE carts.id = $1
+<span id="L192" class="ln">   192  </span>`
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span><span class="comment">// === source: database/dml/repository/cart/delete_cart.sql ===</span>
+<span id="L195" class="ln">   195  </span><span class="comment">// カートを削除する。明細は外部キーの連鎖削除で除かれる。存在しない場合もエラーとしない。</span>
+<span id="L196" class="ln">   196  </span><span class="comment">//</span>
+<span id="L197" class="ln">   197  </span><span class="comment">//	DELETE FROM carts</span>
+<span id="L198" class="ln">   198  </span><span class="comment">//	WHERE carts.id = $1</span>
+<span id="L199" class="ln">   199  </span>func (q *Queries) DeleteCart(ctx context.Context, id uuid.UUID) error {
+<span id="L200" class="ln">   200  </span>	_, err := q.db.Exec(ctx, deleteCart, id)
+<span id="L201" class="ln">   201  </span>	return err
+<span id="L202" class="ln">   202  </span>}
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>const deleteCartItemsNotIn = `-- name: DeleteCartItemsNotIn :exec
+<span id="L205" class="ln">   205  </span>DELETE FROM cart_items
+<span id="L206" class="ln">   206  </span>WHERE cart_items.cart_id = $1
+<span id="L207" class="ln">   207  </span>    AND NOT (cart_items.product_id = ANY($2::UUID[]))
+<span id="L208" class="ln">   208  </span>`
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>type DeleteCartItemsNotInParams struct {
+<span id="L211" class="ln">   211  </span>	CartID     uuid.UUID
+<span id="L212" class="ln">   212  </span>	ProductIds []uuid.UUID
+<span id="L213" class="ln">   213  </span>}
+<span id="L214" class="ln">   214  </span>
+<span id="L215" class="ln">   215  </span><span class="comment">// 指定した商品の集合に含まれない明細を取り除く。集約が保持しなくなった明細を落とすためのもので、</span>
+<span id="L216" class="ln">   216  </span><span class="comment">// 空の集合を渡した場合はそのカートの明細をすべて削除する。</span>
+<span id="L217" class="ln">   217  </span><span class="comment">//</span>
+<span id="L218" class="ln">   218  </span><span class="comment">//	DELETE FROM cart_items</span>
+<span id="L219" class="ln">   219  </span><span class="comment">//	WHERE cart_items.cart_id = $1</span>
+<span id="L220" class="ln">   220  </span><span class="comment">//	    AND NOT (cart_items.product_id = ANY($2::UUID[]))</span>
+<span id="L221" class="ln">   221  </span>func (q *Queries) DeleteCartItemsNotIn(ctx context.Context, arg *DeleteCartItemsNotInParams) error {
+<span id="L222" class="ln">   222  </span>	_, err := q.db.Exec(ctx, deleteCartItemsNotIn, arg.CartID, arg.ProductIds)
+<span id="L223" class="ln">   223  </span>	return err
+<span id="L224" class="ln">   224  </span>}
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>const deleteExpiredCarts = `-- name: DeleteExpiredCarts :execrows
+<span id="L227" class="ln">   227  </span>DELETE FROM carts
+<span id="L228" class="ln">   228  </span>WHERE carts.id IN (
+<span id="L229" class="ln">   229  </span>        SELECT c.id
+<span id="L230" class="ln">   230  </span>        FROM carts AS c
+<span id="L231" class="ln">   231  </span>        WHERE c.expires_at &lt; $1
+<span id="L232" class="ln">   232  </span>        ORDER BY c.expires_at, c.id
+<span id="L233" class="ln">   233  </span>        LIMIT $2
+<span id="L234" class="ln">   234  </span>    )
+<span id="L235" class="ln">   235  </span>`
+<span id="L236" class="ln">   236  </span>
+<span id="L237" class="ln">   237  </span>type DeleteExpiredCartsParams struct {
+<span id="L238" class="ln">   238  </span>	Now      time.Time
+<span id="L239" class="ln">   239  </span>	RowLimit int32
+<span id="L240" class="ln">   240  </span>}
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span><span class="comment">// === source: database/dml/repository/cart/delete_expired_carts.sql ===</span>
+<span id="L243" class="ln">   243  </span><span class="comment">// 削除の対象を決める述語の定義はドメインの Cart.IsExpired が持ち、この WHERE はその実行形である。</span>
+<span id="L244" class="ln">   244  </span><span class="comment">// 有効期限ちょうどの時点は期限切れではない（&lt; であって &lt;= ではない）。片方だけを変更してはならない。</span>
+<span id="L245" class="ln">   245  </span><span class="comment">//</span>
+<span id="L246" class="ln">   246  </span><span class="comment">//	DELETE FROM carts</span>
+<span id="L247" class="ln">   247  </span><span class="comment">//	WHERE carts.id IN (</span>
+<span id="L248" class="ln">   248  </span><span class="comment">//	        SELECT c.id</span>
+<span id="L249" class="ln">   249  </span><span class="comment">//	        FROM carts AS c</span>
+<span id="L250" class="ln">   250  </span><span class="comment">//	        WHERE c.expires_at &lt; $1</span>
+<span id="L251" class="ln">   251  </span><span class="comment">//	        ORDER BY c.expires_at, c.id</span>
+<span id="L252" class="ln">   252  </span><span class="comment">//	        LIMIT $2</span>
+<span id="L253" class="ln">   253  </span><span class="comment">//	    )</span>
+<span id="L254" class="ln">   254  </span>func (q *Queries) DeleteExpiredCarts(ctx context.Context, arg *DeleteExpiredCartsParams) (int64, error) {
+<span id="L255" class="ln">   255  </span>	result, err := q.db.Exec(ctx, deleteExpiredCarts, arg.Now, arg.RowLimit)
+<span id="L256" class="ln">   256  </span>	if err != nil {
+<span id="L257" class="ln">   257  </span>		return 0, err
+<span id="L258" class="ln">   258  </span>	}
+<span id="L259" class="ln">   259  </span>	return result.RowsAffected(), nil
+<span id="L260" class="ln">   260  </span>}
+<span id="L261" class="ln">   261  </span>
+<span id="L262" class="ln">   262  </span>const getCartByOwnerID = `-- name: GetCartByOwnerID :one
+<span id="L263" class="ln">   263  </span>SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at
+<span id="L264" class="ln">   264  </span>FROM carts AS c
+<span id="L265" class="ln">   265  </span>WHERE c.user_id = $1
+<span id="L266" class="ln">   266  </span>`
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>type GetCartByOwnerIDRow struct {
+<span id="L269" class="ln">   269  </span>	Carts Carts
+<span id="L270" class="ln">   270  </span>}
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span><span class="comment">// === source: database/dml/repository/cart/select_cart_by_owner_id.sql ===</span>
+<span id="L273" class="ln">   273  </span><span class="comment">// 所有者からカートを 1 件取得する。ユーザー 1 人につきカートは高々 1 件（carts_user_id_unique）。</span>
+<span id="L274" class="ln">   274  </span><span class="comment">// 存在しない場合は 0 行（NotFound）。</span>
+<span id="L275" class="ln">   275  </span><span class="comment">// 有効期限で絞らないのは意図的で、期限切れかどうかの判定はドメインの述語が持つ。ここで取り除くと</span>
+<span id="L276" class="ln">   276  </span><span class="comment">// 取り除かれた行は結果に現れず、不在を観測できないため、突き合わせ検証の余地が消える。</span>
+<span id="L277" class="ln">   277  </span><span class="comment">//</span>
+<span id="L278" class="ln">   278  </span><span class="comment">//	SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at</span>
+<span id="L279" class="ln">   279  </span><span class="comment">//	FROM carts AS c</span>
+<span id="L280" class="ln">   280  </span><span class="comment">//	WHERE c.user_id = $1</span>
+<span id="L281" class="ln">   281  </span>func (q *Queries) GetCartByOwnerID(ctx context.Context, userID *uuid.UUID) (*GetCartByOwnerIDRow, error) {
+<span id="L282" class="ln">   282  </span>	row := q.db.QueryRow(ctx, getCartByOwnerID, userID)
+<span id="L283" class="ln">   283  </span>	var i GetCartByOwnerIDRow
+<span id="L284" class="ln">   284  </span>	err := row.Scan(
+<span id="L285" class="ln">   285  </span>		&amp;i.Carts.ID,
+<span id="L286" class="ln">   286  </span>		&amp;i.Carts.UserID,
+<span id="L287" class="ln">   287  </span>		&amp;i.Carts.SessionToken,
+<span id="L288" class="ln">   288  </span>		&amp;i.Carts.ExpiresAt,
+<span id="L289" class="ln">   289  </span>		&amp;i.Carts.CreatedAt,
+<span id="L290" class="ln">   290  </span>		&amp;i.Carts.UpdatedAt,
+<span id="L291" class="ln">   291  </span>	)
+<span id="L292" class="ln">   292  </span>	return &amp;i, err
+<span id="L293" class="ln">   293  </span>}
+<span id="L294" class="ln">   294  </span>
+<span id="L295" class="ln">   295  </span>const getCartBySessionToken = `-- name: GetCartBySessionToken :one
+<span id="L296" class="ln">   296  </span>SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at
+<span id="L297" class="ln">   297  </span>FROM carts AS c
+<span id="L298" class="ln">   298  </span>WHERE c.session_token = $1
+<span id="L299" class="ln">   299  </span>`
+<span id="L300" class="ln">   300  </span>
+<span id="L301" class="ln">   301  </span>type GetCartBySessionTokenRow struct {
+<span id="L302" class="ln">   302  </span>	Carts Carts
+<span id="L303" class="ln">   303  </span>}
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span><span class="comment">// === source: database/dml/repository/cart/select_cart_by_session_token.sql ===</span>
+<span id="L306" class="ln">   306  </span><span class="comment">// セッショントークンからカートを 1 件取得する。存在しない場合は 0 行（NotFound）。</span>
+<span id="L307" class="ln">   307  </span><span class="comment">// 所有者が確定したカートは session_token を持たない（carts_owner_exclusive）ため、この経路では引けない。</span>
+<span id="L308" class="ln">   308  </span><span class="comment">// 有効期限で絞らない理由は GetCartByOwnerID と同じ。</span>
+<span id="L309" class="ln">   309  </span><span class="comment">//</span>
+<span id="L310" class="ln">   310  </span><span class="comment">//	SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at</span>
+<span id="L311" class="ln">   311  </span><span class="comment">//	FROM carts AS c</span>
+<span id="L312" class="ln">   312  </span><span class="comment">//	WHERE c.session_token = $1</span>
+<span id="L313" class="ln">   313  </span>func (q *Queries) GetCartBySessionToken(ctx context.Context, sessionToken *string) (*GetCartBySessionTokenRow, error) {
+<span id="L314" class="ln">   314  </span>	row := q.db.QueryRow(ctx, getCartBySessionToken, sessionToken)
+<span id="L315" class="ln">   315  </span>	var i GetCartBySessionTokenRow
+<span id="L316" class="ln">   316  </span>	err := row.Scan(
+<span id="L317" class="ln">   317  </span>		&amp;i.Carts.ID,
+<span id="L318" class="ln">   318  </span>		&amp;i.Carts.UserID,
+<span id="L319" class="ln">   319  </span>		&amp;i.Carts.SessionToken,
+<span id="L320" class="ln">   320  </span>		&amp;i.Carts.ExpiresAt,
+<span id="L321" class="ln">   321  </span>		&amp;i.Carts.CreatedAt,
+<span id="L322" class="ln">   322  </span>		&amp;i.Carts.UpdatedAt,
+<span id="L323" class="ln">   323  </span>	)
+<span id="L324" class="ln">   324  </span>	return &amp;i, err
+<span id="L325" class="ln">   325  </span>}
+<span id="L326" class="ln">   326  </span>
+<span id="L327" class="ln">   327  </span>const listCartItemsByCartID = `-- name: ListCartItemsByCartID :many
+<span id="L328" class="ln">   328  </span>SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, ci.last_seen_price, ci.added_at, ci.created_at, ci.updated_at
+<span id="L329" class="ln">   329  </span>FROM cart_items AS ci
+<span id="L330" class="ln">   330  </span>WHERE ci.cart_id = $1
+<span id="L331" class="ln">   331  </span>ORDER BY ci.added_at, ci.id
+<span id="L332" class="ln">   332  </span>`
+<span id="L333" class="ln">   333  </span>
+<span id="L334" class="ln">   334  </span>type ListCartItemsByCartIDRow struct {
+<span id="L335" class="ln">   335  </span>	CartItems CartItems
+<span id="L336" class="ln">   336  </span>}
+<span id="L337" class="ln">   337  </span>
+<span id="L338" class="ln">   338  </span><span class="comment">// === source: database/dml/repository/cart/select_cart_items_by_cart_id.sql ===</span>
+<span id="L339" class="ln">   339  </span><span class="comment">// カート ID から明細を取得する。並びは追加日時の昇順、同時刻は ID 昇順で決着させる。</span>
+<span id="L340" class="ln">   340  </span><span class="comment">// 切り捨ての順序をこの並びに依存させてはならない（その判定は追加日時の値から集約が行う）。</span>
+<span id="L341" class="ln">   341  </span><span class="comment">//</span>
+<span id="L342" class="ln">   342  </span><span class="comment">//	SELECT ci.id, ci.cart_id, ci.product_id, ci.quantity, ci.last_seen_price, ci.added_at, ci.created_at, ci.updated_at</span>
+<span id="L343" class="ln">   343  </span><span class="comment">//	FROM cart_items AS ci</span>
+<span id="L344" class="ln">   344  </span><span class="comment">//	WHERE ci.cart_id = $1</span>
+<span id="L345" class="ln">   345  </span><span class="comment">//	ORDER BY ci.added_at, ci.id</span>
+<span id="L346" class="ln">   346  </span>func (q *Queries) ListCartItemsByCartID(ctx context.Context, cartID uuid.UUID) ([]*ListCartItemsByCartIDRow, error) {
+<span id="L347" class="ln">   347  </span>	rows, err := q.db.Query(ctx, listCartItemsByCartID, cartID)
+<span id="L348" class="ln">   348  </span>	if err != nil {
+<span id="L349" class="ln">   349  </span>		return nil, err
+<span id="L350" class="ln">   350  </span>	}
+<span id="L351" class="ln">   351  </span>	defer rows.Close()
+<span id="L352" class="ln">   352  </span>	var items []*ListCartItemsByCartIDRow
+<span id="L353" class="ln">   353  </span>	for rows.Next() {
+<span id="L354" class="ln">   354  </span>		var i ListCartItemsByCartIDRow
+<span id="L355" class="ln">   355  </span>		if err := rows.Scan(
+<span id="L356" class="ln">   356  </span>			&amp;i.CartItems.ID,
+<span id="L357" class="ln">   357  </span>			&amp;i.CartItems.CartID,
+<span id="L358" class="ln">   358  </span>			&amp;i.CartItems.ProductID,
+<span id="L359" class="ln">   359  </span>			&amp;i.CartItems.Quantity,
+<span id="L360" class="ln">   360  </span>			&amp;i.CartItems.LastSeenPrice,
+<span id="L361" class="ln">   361  </span>			&amp;i.CartItems.AddedAt,
+<span id="L362" class="ln">   362  </span>			&amp;i.CartItems.CreatedAt,
+<span id="L363" class="ln">   363  </span>			&amp;i.CartItems.UpdatedAt,
+<span id="L364" class="ln">   364  </span>		); err != nil {
+<span id="L365" class="ln">   365  </span>			return nil, err
+<span id="L366" class="ln">   366  </span>		}
+<span id="L367" class="ln">   367  </span>		items = append(items, &amp;i)
+<span id="L368" class="ln">   368  </span>	}
+<span id="L369" class="ln">   369  </span>	if err := rows.Err(); err != nil {
+<span id="L370" class="ln">   370  </span>		return nil, err
+<span id="L371" class="ln">   371  </span>	}
+<span id="L372" class="ln">   372  </span>	return items, nil
+<span id="L373" class="ln">   373  </span>}
+<span id="L374" class="ln">   374  </span>
+<span id="L375" class="ln">   375  </span>const lockCartByID = `-- name: LockCartByID :one
+<span id="L376" class="ln">   376  </span>SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at
+<span id="L377" class="ln">   377  </span>FROM carts AS c
+<span id="L378" class="ln">   378  </span>WHERE c.id = $1
+<span id="L379" class="ln">   379  </span>FOR UPDATE
+<span id="L380" class="ln">   380  </span>`
+<span id="L381" class="ln">   381  </span>
+<span id="L382" class="ln">   382  </span>type LockCartByIDRow struct {
+<span id="L383" class="ln">   383  </span>	Carts Carts
+<span id="L384" class="ln">   384  </span>}
+<span id="L385" class="ln">   385  </span>
+<span id="L386" class="ln">   386  </span><span class="comment">// === source: database/dml/repository/cart/lock_cart_by_id.sql ===</span>
+<span id="L387" class="ln">   387  </span><span class="comment">// ID からカートを 1 件、悲観ロック（FOR UPDATE）して取得する。同一カートへの並行更新を、取得から</span>
+<span id="L388" class="ln">   388  </span><span class="comment">// commit まで直列化する。複数件をロックする場合の順序は呼び出し側が ID 昇順で固定する。</span>
+<span id="L389" class="ln">   389  </span><span class="comment">// 存在しない場合は 0 行（NotFound）。</span>
+<span id="L390" class="ln">   390  </span><span class="comment">//</span>
+<span id="L391" class="ln">   391  </span><span class="comment">//	SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at</span>
+<span id="L392" class="ln">   392  </span><span class="comment">//	FROM carts AS c</span>
+<span id="L393" class="ln">   393  </span><span class="comment">//	WHERE c.id = $1</span>
+<span id="L394" class="ln">   394  </span><span class="comment">//	FOR UPDATE</span>
+<span id="L395" class="ln">   395  </span>func (q *Queries) LockCartByID(ctx context.Context, id uuid.UUID) (*LockCartByIDRow, error) {
+<span id="L396" class="ln">   396  </span>	row := q.db.QueryRow(ctx, lockCartByID, id)
+<span id="L397" class="ln">   397  </span>	var i LockCartByIDRow
+<span id="L398" class="ln">   398  </span>	err := row.Scan(
+<span id="L399" class="ln">   399  </span>		&amp;i.Carts.ID,
+<span id="L400" class="ln">   400  </span>		&amp;i.Carts.UserID,
+<span id="L401" class="ln">   401  </span>		&amp;i.Carts.SessionToken,
+<span id="L402" class="ln">   402  </span>		&amp;i.Carts.ExpiresAt,
+<span id="L403" class="ln">   403  </span>		&amp;i.Carts.CreatedAt,
+<span id="L404" class="ln">   404  </span>		&amp;i.Carts.UpdatedAt,
+<span id="L405" class="ln">   405  </span>	)
+<span id="L406" class="ln">   406  </span>	return &amp;i, err
+<span id="L407" class="ln">   407  </span>}
+<span id="L408" class="ln">   408  </span>
+<span id="L409" class="ln">   409  </span>const lockCartsByIDs = `-- name: LockCartsByIDs :many
+<span id="L410" class="ln">   410  </span>SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at
+<span id="L411" class="ln">   411  </span>FROM carts AS c
+<span id="L412" class="ln">   412  </span>WHERE c.id = ANY($1::UUID[])
+<span id="L413" class="ln">   413  </span>ORDER BY c.id
+<span id="L414" class="ln">   414  </span>FOR UPDATE
+<span id="L415" class="ln">   415  </span>`
+<span id="L416" class="ln">   416  </span>
+<span id="L417" class="ln">   417  </span>type LockCartsByIDsRow struct {
+<span id="L418" class="ln">   418  </span>	Carts Carts
+<span id="L419" class="ln">   419  </span>}
+<span id="L420" class="ln">   420  </span>
+<span id="L421" class="ln">   421  </span><span class="comment">// === source: database/dml/repository/cart/lock_carts_by_ids.sql ===</span>
+<span id="L422" class="ln">   422  </span><span class="comment">// ID の集合からカート群を、更新のために悲観ロック（FOR UPDATE）して取得する。</span>
+<span id="L423" class="ln">   423  </span><span class="comment">// id 昇順の ORDER BY を外さないこと。複数件のロックをこの単一文の外へ分割しないこと</span>
+<span id="L424" class="ln">   424  </span><span class="comment">// （ADR-0036 (ordered-pessimistic-row-locks)）。</span>
+<span id="L425" class="ln">   425  </span><span class="comment">// 不存在の ID は結果に現れないため、返る件数は引数より少なくなり得る。</span>
+<span id="L426" class="ln">   426  </span><span class="comment">//</span>
+<span id="L427" class="ln">   427  </span><span class="comment">//	SELECT c.id, c.user_id, c.session_token, c.expires_at, c.created_at, c.updated_at</span>
+<span id="L428" class="ln">   428  </span><span class="comment">//	FROM carts AS c</span>
+<span id="L429" class="ln">   429  </span><span class="comment">//	WHERE c.id = ANY($1::UUID[])</span>
+<span id="L430" class="ln">   430  </span><span class="comment">//	ORDER BY c.id</span>
+<span id="L431" class="ln">   431  </span><span class="comment">//	FOR UPDATE</span>
+<span id="L432" class="ln">   432  </span>func (q *Queries) LockCartsByIDs(ctx context.Context, cartIdsParam []uuid.UUID) ([]*LockCartsByIDsRow, error) {
+<span id="L433" class="ln">   433  </span>	rows, err := q.db.Query(ctx, lockCartsByIDs, cartIdsParam)
+<span id="L434" class="ln">   434  </span>	if err != nil {
+<span id="L435" class="ln">   435  </span>		return nil, err
+<span id="L436" class="ln">   436  </span>	}
+<span id="L437" class="ln">   437  </span>	defer rows.Close()
+<span id="L438" class="ln">   438  </span>	var items []*LockCartsByIDsRow
+<span id="L439" class="ln">   439  </span>	for rows.Next() {
+<span id="L440" class="ln">   440  </span>		var i LockCartsByIDsRow
+<span id="L441" class="ln">   441  </span>		if err := rows.Scan(
+<span id="L442" class="ln">   442  </span>			&amp;i.Carts.ID,
+<span id="L443" class="ln">   443  </span>			&amp;i.Carts.UserID,
+<span id="L444" class="ln">   444  </span>			&amp;i.Carts.SessionToken,
+<span id="L445" class="ln">   445  </span>			&amp;i.Carts.ExpiresAt,
+<span id="L446" class="ln">   446  </span>			&amp;i.Carts.CreatedAt,
+<span id="L447" class="ln">   447  </span>			&amp;i.Carts.UpdatedAt,
+<span id="L448" class="ln">   448  </span>		); err != nil {
+<span id="L449" class="ln">   449  </span>			return nil, err
+<span id="L450" class="ln">   450  </span>		}
+<span id="L451" class="ln">   451  </span>		items = append(items, &amp;i)
+<span id="L452" class="ln">   452  </span>	}
+<span id="L453" class="ln">   453  </span>	if err := rows.Err(); err != nil {
+<span id="L454" class="ln">   454  </span>		return nil, err
+<span id="L455" class="ln">   455  </span>	}
+<span id="L456" class="ln">   456  </span>	return items, nil
+<span id="L457" class="ln">   457  </span>}
+<span id="L458" class="ln">   458  </span>
+<span id="L459" class="ln">   459  </span>const updateCart = `-- name: UpdateCart :execrows
+<span id="L460" class="ln">   460  </span>UPDATE carts
+<span id="L461" class="ln">   461  </span>SET
+<span id="L462" class="ln">   462  </span>    user_id = $1,
+<span id="L463" class="ln">   463  </span>    session_token = $2,
+<span id="L464" class="ln">   464  </span>    expires_at = $3,
+<span id="L465" class="ln">   465  </span>    updated_at = NOW()
+<span id="L466" class="ln">   466  </span>WHERE carts.id = $4
+<span id="L467" class="ln">   467  </span>`
+<span id="L468" class="ln">   468  </span>
+<span id="L469" class="ln">   469  </span>type UpdateCartParams struct {
+<span id="L470" class="ln">   470  </span>	UserID       *uuid.UUID
+<span id="L471" class="ln">   471  </span>	SessionToken *string
+<span id="L472" class="ln">   472  </span>	ExpiresAt    time.Time
+<span id="L473" class="ln">   473  </span>	ID           uuid.UUID
+<span id="L474" class="ln">   474  </span>}
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span><span class="comment">// === source: database/dml/repository/cart/update_cart.sql ===</span>
+<span id="L477" class="ln">   477  </span><span class="comment">// カートの親行を更新し、更新件数を返す。0 件は対象が存在しないことを意味し、呼び出し側が NotFound</span>
+<span id="L478" class="ln">   478  </span><span class="comment">// として扱う。所有者の確定（user_id のセットと session_token の NULL 化）もこの 1 本で反映される。</span>
+<span id="L479" class="ln">   479  </span><span class="comment">//</span>
+<span id="L480" class="ln">   480  </span><span class="comment">//	UPDATE carts</span>
+<span id="L481" class="ln">   481  </span><span class="comment">//	SET</span>
+<span id="L482" class="ln">   482  </span><span class="comment">//	    user_id = $1,</span>
+<span id="L483" class="ln">   483  </span><span class="comment">//	    session_token = $2,</span>
+<span id="L484" class="ln">   484  </span><span class="comment">//	    expires_at = $3,</span>
+<span id="L485" class="ln">   485  </span><span class="comment">//	    updated_at = NOW()</span>
+<span id="L486" class="ln">   486  </span><span class="comment">//	WHERE carts.id = $4</span>
+<span id="L487" class="ln">   487  </span>func (q *Queries) UpdateCart(ctx context.Context, arg *UpdateCartParams) (int64, error) {
+<span id="L488" class="ln">   488  </span>	result, err := q.db.Exec(ctx, updateCart,
+<span id="L489" class="ln">   489  </span>		arg.UserID,
+<span id="L490" class="ln">   490  </span>		arg.SessionToken,
+<span id="L491" class="ln">   491  </span>		arg.ExpiresAt,
+<span id="L492" class="ln">   492  </span>		arg.ID,
+<span id="L493" class="ln">   493  </span>	)
+<span id="L494" class="ln">   494  </span>	if err != nil {
+<span id="L495" class="ln">   495  </span>		return 0, err
+<span id="L496" class="ln">   496  </span>	}
+<span id="L497" class="ln">   497  </span>	return result.RowsAffected(), nil
+<span id="L498" class="ln">   498  </span>}
+<span id="L499" class="ln">   499  </span>
+<span id="L500" class="ln">   500  </span>const upsertCartItem = `-- name: UpsertCartItem :exec
+<span id="L501" class="ln">   501  </span>INSERT INTO cart_items (
+<span id="L502" class="ln">   502  </span>    id,
+<span id="L503" class="ln">   503  </span>    cart_id,
+<span id="L504" class="ln">   504  </span>    product_id,
+<span id="L505" class="ln">   505  </span>    quantity,
+<span id="L506" class="ln">   506  </span>    last_seen_price,
+<span id="L507" class="ln">   507  </span>    added_at
+<span id="L508" class="ln">   508  </span>) VALUES
+<span id="L509" class="ln">   509  </span>(
+<span id="L510" class="ln">   510  </span>    $1,
+<span id="L511" class="ln">   511  </span>    $2,
+<span id="L512" class="ln">   512  </span>    $3,
+<span id="L513" class="ln">   513  </span>    $4,
+<span id="L514" class="ln">   514  </span>    $5,
+<span id="L515" class="ln">   515  </span>    $6
+<span id="L516" class="ln">   516  </span>)
+<span id="L517" class="ln">   517  </span>ON CONFLICT ON CONSTRAINT cart_items_cart_id_product_id_unique DO UPDATE
+<span id="L518" class="ln">   518  </span>    SET
+<span id="L519" class="ln">   519  </span>        quantity = excluded.quantity,
+<span id="L520" class="ln">   520  </span>        last_seen_price = excluded.last_seen_price,
+<span id="L521" class="ln">   521  </span>        updated_at = NOW()
+<span id="L522" class="ln">   522  </span>`
+<span id="L523" class="ln">   523  </span>
+<span id="L524" class="ln">   524  </span>type UpsertCartItemParams struct {
+<span id="L525" class="ln">   525  </span>	ID            uuid.UUID
+<span id="L526" class="ln">   526  </span>	CartID        uuid.UUID
+<span id="L527" class="ln">   527  </span>	ProductID     uuid.UUID
+<span id="L528" class="ln">   528  </span>	Quantity      int32
+<span id="L529" class="ln">   529  </span>	LastSeenPrice *decimal.Decimal
+<span id="L530" class="ln">   530  </span>	AddedAt       time.Time
+<span id="L531" class="ln">   531  </span>}
+<span id="L532" class="ln">   532  </span>
+<span id="L533" class="ln">   533  </span><span class="comment">// 明細を商品ごとに登録または置換する。added_at は SET の対象に含めない。置換のたびに更新すると</span>
+<span id="L534" class="ln">   534  </span><span class="comment">// 「いつカートへ入ったか」が失われ、切り捨ての順序を決める基準が壊れるため。</span>
+<span id="L535" class="ln">   535  </span><span class="comment">//</span>
+<span id="L536" class="ln">   536  </span><span class="comment">//	INSERT INTO cart_items (</span>
+<span id="L537" class="ln">   537  </span><span class="comment">//	    id,</span>
+<span id="L538" class="ln">   538  </span><span class="comment">//	    cart_id,</span>
+<span id="L539" class="ln">   539  </span><span class="comment">//	    product_id,</span>
+<span id="L540" class="ln">   540  </span><span class="comment">//	    quantity,</span>
+<span id="L541" class="ln">   541  </span><span class="comment">//	    last_seen_price,</span>
+<span id="L542" class="ln">   542  </span><span class="comment">//	    added_at</span>
+<span id="L543" class="ln">   543  </span><span class="comment">//	) VALUES</span>
+<span id="L544" class="ln">   544  </span><span class="comment">//	(</span>
+<span id="L545" class="ln">   545  </span><span class="comment">//	    $1,</span>
+<span id="L546" class="ln">   546  </span><span class="comment">//	    $2,</span>
+<span id="L547" class="ln">   547  </span><span class="comment">//	    $3,</span>
+<span id="L548" class="ln">   548  </span><span class="comment">//	    $4,</span>
+<span id="L549" class="ln">   549  </span><span class="comment">//	    $5,</span>
+<span id="L550" class="ln">   550  </span><span class="comment">//	    $6</span>
+<span id="L551" class="ln">   551  </span><span class="comment">//	)</span>
+<span id="L552" class="ln">   552  </span><span class="comment">//	ON CONFLICT ON CONSTRAINT cart_items_cart_id_product_id_unique DO UPDATE</span>
+<span id="L553" class="ln">   553  </span><span class="comment">//	    SET</span>
+<span id="L554" class="ln">   554  </span><span class="comment">//	        quantity = excluded.quantity,</span>
+<span id="L555" class="ln">   555  </span><span class="comment">//	        last_seen_price = excluded.last_seen_price,</span>
+<span id="L556" class="ln">   556  </span><span class="comment">//	        updated_at = NOW()</span>
+<span id="L557" class="ln">   557  </span>func (q *Queries) UpsertCartItem(ctx context.Context, arg *UpsertCartItemParams) error {
+<span id="L558" class="ln">   558  </span>	_, err := q.db.Exec(ctx, upsertCartItem,
+<span id="L559" class="ln">   559  </span>		arg.ID,
+<span id="L560" class="ln">   560  </span>		arg.CartID,
+<span id="L561" class="ln">   561  </span>		arg.ProductID,
+<span id="L562" class="ln">   562  </span>		arg.Quantity,
+<span id="L563" class="ln">   563  </span>		arg.LastSeenPrice,
+<span id="L564" class="ln">   564  </span>		arg.AddedAt,
+<span id="L565" class="ln">   565  </span>	)
+<span id="L566" class="ln">   566  </span>	return err
+<span id="L567" class="ln">   567  </span>}
+<span id="L568" class="ln">   568  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/cart_repository.gen.sql.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

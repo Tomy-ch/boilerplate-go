@@ -89,7 +89,7 @@
 <span id="L32" class="ln">    32  </span>
 <span id="L33" class="ln">    33  </span>	<span class="comment">// errResponseTooLarge は、レスポンスボディが上限を超過したことを表します。下流起因の応答異常なので</span>
 <span id="L34" class="ln">    34  </span>	<span class="comment">// HTTP 語彙は transport 失敗と同じ ErrUnavailable(503) を保ちます（400 にすると下流障害がクライアント</span>
-<span id="L35" class="ln">    35  </span>	<span class="comment">// 過失として誤帰属する）。決定的失敗としての非 retry 化は retry.go の isRetryableOutcome が担います。</span>
+<span id="L35" class="ln">    35  </span>	<span class="comment">// 過失として誤帰属する）。決定的失敗としての非 retry 化は retry.go の RetryableOutcome が担います。</span>
 <span id="L36" class="ln">    36  </span>	errResponseTooLarge = xerrors.Wrap(apperror.ErrUnavailable, &#34;response body exceeds max bytes&#34;)
 <span id="L37" class="ln">    37  </span>)
 <span id="L38" class="ln">    38  </span>

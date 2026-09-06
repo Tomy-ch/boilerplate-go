@@ -1,7 +1,5 @@
 # shutdowner DI ラッパー
 
-[English](README.md) | 日本語
-
 `go.uber.org/fx` の `fx.Shutdowner` を抽象化した `Shutdowner` インターフェースを提供するパッケージです。
 
 DI コンテナから取得した `fx.Shutdowner` をラップし、アプリケーションコードやテストから利用しやすくします。

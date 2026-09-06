@@ -1,7 +1,5 @@
 # DI Layer (`internal/di`)
 
-English | [日本語](README.ja.md)
-
 `internal/di` is the **central layer for Dependency Injection (DI)** in this application.
 
 This layer builds a DI container based on **Uber Fx**,  
@@ -109,7 +107,7 @@ top-level entrypoint (a separate `cmd/*` subcommand) that assembles its own
 |Server|`serve`|`internal/di/server.go`|`NewApplicationCore()` + `NewApplicationServer(app)`|HTTP / Web API (long-running)|
 |Job|`job`|`internal/di/job.go`|`NewJobCore()` / `RunJob(grace)`|CLI / batch (one-shot)|
 |Worker|`worker`|`internal/di/worker.go`|`NewWorkerCore()` / `RunWorker(grace)`|Queue consumer engine (long-running)|
-|Outbox Relay|`outbox-relay`|`internal/di/outboxrelay.go`|`NewOutboxRelayApp(grace)` + `NewApplicationServer(app)`; `RunOutboxReplay()` for one-shot replay|Transactional-outbox relay (long-running) + dead-row replay|
+|Outbox Relay|`outbox-relay`|`internal/di/outboxrelay.go`|`NewOutboxRelayApp(grace, channel)` + `NewApplicationServer(app)`; `RunOutboxReplay()` for one-shot replay|Transactional-outbox relay (long-running) + dead-row replay|
 
 All four share the **same architecture** and the same inner layers (domain /
 usecase / infrastructure); they differ only in which outer modules the DI graph
@@ -195,7 +193,7 @@ outer module and several expose explicit seams for adding constructors.
 |---|---|---|
 |`module.JobModule()`|Job|`group:"jobs"` registration + Runner + State + hook|
 |`module.WorkerModule()`|Worker|Engine + State + queue-stats collector; registers **zero workers by default** (`provideWorkers` / `provideQueueStatsTargets` are the seams); `ValidateShutdownGrace` fails startup if `WORKER_DRAIN_TIMEOUT >= APP_SHUTDOWN_TIMEOUT`|
-|`module.OutboxRelayModule()`|Outbox Relay|Relay usecase + engine + hook; also pulls in `outboxPublisherModule()`|
+|`module.OutboxRelayModule(channel)`|Outbox Relay|Relay usecase + engine + hook for one delivery channel; pulls in the publisher module that channel needs (`outboxPublisherModule()` for `http`, `realtimePublisherModule()` for `realtime`) and refuses to build (`fx.Error`) for a channel no publisher module serves|
 |`shutdowner.Module()`|Job, Worker|Self-stop for one-shot / signalled drives (not needed by Server / Relay)|
 
 `outboxPublisherModule()` is deliberately **not** part of the shared

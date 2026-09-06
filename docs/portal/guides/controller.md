@@ -1,7 +1,5 @@
 # Controller Layer Guide (`internal/controller`)
 
-English | [日本語](README.ja.md)
-
 ## Role in Onion Architecture
 
 - Acts as the **boundary between the external world (HTTP/CLI) and the application**
@@ -22,6 +20,10 @@ nothing else may be one:
 - `worker/` — a message on a queue
 - `outbox/` — the relay that polls the outbox and publishes
 
+`stream/` is the HTTP entry point of one mechanism (the SSE transport of Realtime Delivery) rather
+than a fifth kind: it is still an HTTP request, kept beside `handler/` because it is feature-neutral,
+non-strict, and wired by the mechanism's own DI module (`docs/design/realtime-delivery.md` §3.1).
+
 The remaining directories exist to serve those four: `server/` builds the Echo instance,
 `httpstack/` the middleware stack, `error/response/` the error body, `conv/` the
 generated-type ↔ domain-type boundary, and `ctxhelper/` the Echo context accessors.
@@ -31,9 +33,11 @@ generated-type ↔ domain-type boundary, and `ctxhelper/` the Echo context acces
 |Directory|Description|Details|
 |---|---|---|
 |`handler/`|Handlers that receive HTTP requests and delegate to Usecase|[README](handler/README.md)|
+|`stream/`|The SSE endpoint of Realtime Delivery: pre-commit verification (ticket, cursor) and the `Streamer` seam|[README](stream/README.md)|
 |`job/`|Job controllers invoked from CLI|[README](job/README.md)|
 |`worker/`|Worker engine consuming a pull-ack message queue and dispatching to Usecase|[README](worker/README.md)|
 |`outbox/`|Relay engine that periodically polls the outbox and publishes pending messages|[README](outbox/README.md)|
+|`realtime/`|Consumer engine that receives Realtime Delivery wakeups / revocations from the instance's own queue and hands them to the connection side; the instance-lease heartbeat loop|[README](realtime/README.md)|
 |`server/`|Echo instance initialization and DI lifecycle integration|[README](server/README.md)|
 |`httpstack/`|Middleware stack (CORS, security, logging, auth, etc.)|[README](httpstack/README.md)|
 |`error/response/`|Unified HTTP error response generation and apperror mapping|[README](error/response/README.md)|
@@ -69,7 +73,7 @@ no HTTP-level detail worth adding, omit it rather than restating.
 
 ## Test Strategy
 
-This is the layer baseline. A controller is any inbound adapter, and they do not all speak HTTP, so read the sub-section that matches the driver before applying anything below. Sub-trees with their own section own their viewpoints outright: [`handler/`](handler/README.md), [`job/`](job/README.md), [`httpstack/`](httpstack/README.md), [`server/`](server/README.md).
+This is the layer baseline. A controller is any inbound adapter, and they do not all speak HTTP, so read the sub-section that matches the driver before applying anything below. Sub-trees with their own section own their viewpoints outright: [`handler/`](handler/README.md), [`stream/`](stream/README.md), [`job/`](job/README.md), [`httpstack/`](httpstack/README.md), [`server/`](server/README.md).
 
 ### HTTP handlers
 
@@ -82,9 +86,9 @@ Handler tests mock the usecase and drive the handler through Echo (`testkit/test
 
 Boundary-level HTTP wiring (Router → Middleware → Handler → Presenter) is covered separately by the `internal/integration` HTTP-boundary tests.
 
-### Loop-driven controllers (`outbox/`, `worker/`)
+### Loop-driven controllers (`outbox/`, `worker/`, `realtime/`)
 
-These adapters are driven by a poll / consume loop rather than a request, so nothing above about Echo, binding, or HTTP status applies to them. The usecase and the boundary ports (`usecase/boundary/clock`, `usecase/boundary/worker`) are mocked, the logger is `logging.NewTestLogger`, the tracer is `observability.NewNoopTracerFactory`, and the in-memory fakes under `usecase/boundary/worker/testkit` stand in for a real broker. The loop is what is under test, so exercise it as a loop:
+These adapters are driven by a poll / consume loop rather than a request, so nothing above about Echo, binding, or HTTP status applies to them. The usecase and the boundary ports (`usecase/boundary/clock`, `usecase/boundary/worker`, `usecase/boundary/realtime`) are mocked, the logger is `logging.NewTestLogger`, the tracer is `observability.NewNoopTracerFactory`, and the in-memory fakes under `usecase/boundary/worker/testkit` stand in for a real broker. The loop is what is under test, so exercise it as a loop:
 
 - **One iteration's effect** — a poll that finds work dispatches it; a poll that finds none backs off by the configured interval. Assert through the mocked sleeper, never by sleeping in the test.
 - **Stop semantics** — cancelling the context ends the loop and returns, and an in-flight item finishes or is abandoned according to the drain contract the package documents. This is the branch a `SupervisedRunner`-driven shutdown depends on.

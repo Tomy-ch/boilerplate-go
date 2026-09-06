@@ -1,7 +1,5 @@
 # core モジュール
 
-[English](README.md) | 日本語
-
 `internal/di/module/core` は、HTTP スタックで共通利用される **コアコンポーネントの DI モジュール群**を提供するパッケージです。
 
 各モジュールは `fx.Option` を返し、対応するコンポーネントを DI コンテナに登録します。
@@ -15,6 +13,7 @@
 |`SecurityCookieModule()`|`security_cookie.go`|Cookie セキュリティ属性の設定|
 |`SkipperModule()`|`skipper.go`|OpenAPI バリデーションの ops エンドポイントスキップ|
 |`ValidatorModule()`|`validator.go`|OpenAPI スキーマバリデータ|
+|`RedactionModule()`|`redaction.go`|OpenAPI の securityScheme から導出する、query 資格情報のログ秘匿|
 
 ## 設計方針
 
@@ -31,7 +30,7 @@
 
 2 段目が成立するのは、**ここのモジュールが起動に実インフラを必要としないから**です。基準はディレクトリではなくこの性質にあります。クロージャが実 DB やネットワーク接続を要求するモジュールは上位に置き、そこでは `fx.ValidateApp` だけが戦略になります。
 
-5 つのうち 4 つは `internal/controller/httpstack` 等のコンストラクタを薄くラップするだけです。`AuthnModule` だけが例外で、`provideAuthenticator` は環境ごとに分岐し `httpclient.Client` を受け取ります。固有のロジックを持つ provider 本体（`provideAuthenticator` / `provideJWKSAuthenticator`）は、[`../../README.md`](../../README.ja.md) の DI 層ベースラインに従って直接ユニットテストします。グラフ検証はどちらにも到達せず、環境ゲートの拒否ケースこそが要点だからです。
+6 つのうち 5 つは `internal/controller/httpstack` 等のコンストラクタを薄くラップするだけです。`AuthnModule` だけが例外で、`provideAuthenticator` は環境ごとに分岐し `httpclient.Client` を受け取ります。固有のロジックを持つ provider 本体（`provideAuthenticator` / `provideJWKSAuthenticator`）は、[`../../README.md`](../../README.ja.md) の DI 層ベースラインに従って直接ユニットテストします。グラフ検証はどちらにも到達せず、環境ゲートの拒否ケースこそが要点だからです。
 
 ## 注意点
 
