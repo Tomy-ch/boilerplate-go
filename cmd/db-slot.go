@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go-boilerplate/internal/cli/dbslot"
+	"go-boilerplate/internal/config"
 
 	"github.com/spf13/cobra"
 )
@@ -133,7 +134,7 @@ func newSlotResolver(out io.Writer) (*dbslot.Resolver, error) {
 }
 
 func slotConfig(root string) dbslot.Config {
-	return dbslot.Config{
+	cfg := dbslot.Config{
 		Root:          root,
 		SharedProject: envStr("GOBP_DB_SHARED_PROJECT", "gobp-shared"),
 		APIBasePort:   envInt("GOBP_API_POOL_BASE", defaultPoolAPIBasePort),
@@ -142,6 +143,21 @@ func slotConfig(root string) dbslot.Config {
 		PprofBase:     envInt("GOBP_PPROF_POOL_BASE", defaultPoolPprofBasePort),
 		APPEnv:        os.Getenv("APP_ENV"),
 	}
+
+	// Realtime の資源名の基底は埋め込み env が正本。読めない場合は空のまま返し、
+	// スロットを継ぐ側（Resolver）が空の名前を出す — 空は config の notEmpty が起動時に弾くので、
+	// 誤った名前で共有の emulator を触るより、その場で止まるほうが安全である。
+	loaded, err := config.SetUpConfig()
+	if err != nil {
+		return cfg
+	}
+
+	rt := config.NewRealtimeConfig(loaded)
+	cfg.RealtimeTableSuffix = rt.TableSuffix()
+	cfg.RealtimeQueuePrefix = rt.QueuePrefix()
+	cfg.RealtimeTopic = rt.Topic()
+
+	return cfg
 }
 
 func poolDir() string {

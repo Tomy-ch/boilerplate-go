@@ -29,6 +29,13 @@ type Config struct {
 	DlvBase       int    // DLV_HOST_PORT のベース
 	PprofBase     int    // PPROF_HOST_PORT のベース
 	APPEnv        string // 実行環境ラベル（deploy 系ガードに使用）
+
+	// Realtime Delivery の資源名の基底。スロットを保持しない checkout ではこれがそのまま使われます。
+	// 値の出所は埋め込み env（env/.env の REALTIME_*）で、組み立ては合成の根が行います。
+	// ここが持つのは「スロット番号をどう継ぐか」だけで、名前そのものは持ちません。
+	RealtimeTableSuffix string // REALTIME_TABLE_SUFFIX
+	RealtimeQueuePrefix string // REALTIME_QUEUE_PREFIX
+	RealtimeTopic       string // REALTIME_TOPIC（fan-out topic の ARN）
 }
 
 // Pool は、リース・DB 管理・compose 起動を統合するオーケストレータです。

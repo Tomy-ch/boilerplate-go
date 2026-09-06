@@ -43,7 +43,12 @@ func newResolver(t *testing.T, root string, stub probeStub) (*Resolver, *bytes.B
 
 	var out bytes.Buffer
 
-	cfg := Config{Root: root, SharedProject: "gobp-shared", APIBasePort: 8080, MockAuthBase: 2010}
+	cfg := Config{
+		Root: root, SharedProject: "gobp-shared", APIBasePort: 8080, MockAuthBase: 2010,
+		RealtimeTableSuffix: "local",
+		RealtimeQueuePrefix: "realtime-local",
+		RealtimeTopic:       "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local",
+	}
 
 	return NewResolver(cfg, stub.probe(), &out), &out
 }
@@ -128,7 +133,7 @@ func TestResolver_Resolve(t *testing.T) {
 			assert.Equal(t, "test", got.DBTest)
 			assert.Equal(t, "gobp-app-go-boilerplate", got.AppProject)
 			assert.Equal(t, "http://localhost:2010/default", got.AuthIssuer)
-			assert.Equal(t, "local", got.RealtimeTableSuffix, "env/.env の REALTIME_* と一致させる")
+			assert.Equal(t, "local", got.RealtimeTableSuffix, "スロットが無ければ埋め込み env の基底名のまま")
 			assert.Equal(t, "realtime-local", got.RealtimeQueuePrefix)
 			assert.Equal(t, "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local", got.RealtimeTopic)
 		})
@@ -762,15 +767,15 @@ func Test_realtimeName(t *testing.T) {
 		t.Run("スロットがあれば区切りとスロット番号を継ぐ", func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, "local_wt3", realtimeName("3", "_wt"))
-			assert.Equal(t, "local-wt3", realtimeName("3", "-wt"))
+			assert.Equal(t, "local_wt3", realtimeName("local", "3", slotInfixTable))
+			assert.Equal(t, "realtime-local-wt3", realtimeName("realtime-local", "3", slotInfixName))
 		})
 
-		t.Run("スロットが無ければ環境名のままにする", func(t *testing.T) {
+		t.Run("スロットが無ければ基底名のままにする", func(t *testing.T) {
 			t.Parallel()
 
-			assert.Equal(t, realtimeEnvName, realtimeName("", "_wt"),
-				"スロット未取得の checkout は env/.env の既定名を使う")
+			assert.Equal(t, "local", realtimeName("local", "", slotInfixTable),
+				"スロット未取得の checkout は埋め込み env の名前をそのまま使う")
 		})
 	})
 }

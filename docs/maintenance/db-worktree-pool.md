@@ -253,11 +253,13 @@ not passed. Run by mistake in the main checkout, it exits with an error without 
   PostgreSQL and keeps the delivered events in the DynamoDB EventLog, so rebuilding one without the
   other leaves the allocator issuing numbers the log already holds. `Append` refuses that position —
   correctly, since a different event ID at the same sequence is a real conflict — and the relay's
-  head-of-line blocking then stops that stream. `slot-acquire` therefore runs `make realtime-reset`
-  after re-creating the databases, dropping the slot's three tables; `realtime-provision` creates them
-  again on the next `make serve`. Only streams with a fixed identifier can collide at all (a
-  per-subject stream gets a fresh UUID from the reseed), which is what makes the failure rare enough
-  to be confusing rather than obvious.
+  head-of-line blocking then stops that stream. Every path that rebuilds a **local** database
+  therefore ends in `make realtime-reset`, which drops that checkout's three tables — `slot-acquire`,
+  `db-local-reinit` and `db-init-local` alike, since the hazard follows the database rather than the
+  slot. `realtime-provision` creates them again on the next `make serve`; the test database has no
+  paired store, so its rebuild does not carry the reset. Only streams with a fixed identifier can
+  collide at all (a per-subject stream gets a fresh UUID from the reseed), which is what makes the
+  failure rare enough to be confusing rather than obvious.
 - `sql_editor` / `docs_server` / `er_diagram_generator` / `mock_auth_server` sit in the `2000` range
   because none of them has a de-facto port of its own. The rule, and why that range is safe, are in
   [`local-environment.md`](local-environment.md).

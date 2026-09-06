@@ -40,16 +40,11 @@ const (
 	// docker/mock-auth-server/config.json の issuerId と一致していなければなりません。
 	mockAuthIssuerPath = "/default"
 
-	// realtimeEnvName は、Realtime Delivery の資源名に入る環境識別子です。スロットを保持しない
-	// checkout ではこれがそのまま使われ、env/.env の REALTIME_* と一致します。
-	realtimeEnvName = "local"
-
-	// realtimeTopicARNPrefix は、fan-out topic の ARN のうち topic 名より前の部分です。
-	// region / account は docker/goaws/goaws.yaml と一致していなければなりません。
-	realtimeTopicARNPrefix = "arn:aws:sns:us-east-1:000000000000:realtime-fanout-"
-
-	// realtimeQueueNamePrefix は、serve instance ごとの queue 名の先頭です。
-	realtimeQueueNamePrefix = "realtime-"
+	// slotInfixTable / slotInfixName は、基底名とスロット番号の間に入る区切りです。
+	// table だけ `_` なのは REALTIME_TABLE_SUFFIX の使用可能文字に合わせるためで、
+	// queue と topic は `-` です。
+	slotInfixTable = "_wt"
+	slotInfixName  = "-wt"
 )
 
 var (
@@ -146,9 +141,9 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 		AppProject: orDefault(slot["SERVE_PROJECT"], "gobp-app-"+filepath.Base(r.cfg.Root)),
 		AuthIssuer: "http://localhost:" + orDefault(slot["MOCK_AUTH_HOST_PORT"], strconv.Itoa(r.cfg.MockAuthBase)) + mockAuthIssuerPath,
 
-		RealtimeTableSuffix: realtimeName(slot["SLOT"], "_wt"),
-		RealtimeQueuePrefix: realtimeQueueNamePrefix + realtimeName(slot["SLOT"], "-wt"),
-		RealtimeTopic:       realtimeTopicARNPrefix + realtimeName(slot["SLOT"], "-wt"),
+		RealtimeTableSuffix: realtimeName(r.cfg.RealtimeTableSuffix, slot["SLOT"], slotInfixTable),
+		RealtimeQueuePrefix: realtimeName(r.cfg.RealtimeQueuePrefix, slot["SLOT"], slotInfixName),
+		RealtimeTopic:       realtimeName(r.cfg.RealtimeTopic, slot["SLOT"], slotInfixName),
 	}
 
 	// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。
@@ -344,16 +339,14 @@ func readSlotFile(path string) map[string]string {
 	return values
 }
 
-// realtimeName は、Realtime Delivery の資源名に入る環境識別子を返します。スロットを保持していれば
-// 環境名にスロット番号を separator で継ぎ、保持していなければ環境名のままです。
-// separator が table だけ `_` なのは REALTIME_TABLE_SUFFIX の使用可能文字に合わせるためで、
-// queue と topic は `-` です。
-func realtimeName(slot, separator string) string {
+// realtimeName は、基底名にスロット番号を継いだ資源名を返します。スロットを保持していなければ
+// 基底名のままで、埋め込み env の REALTIME_* と一致します。
+func realtimeName(base, slot, infix string) string {
 	if slot == "" {
-		return realtimeEnvName
+		return base
 	}
 
-	return realtimeEnvName + separator + slot
+	return base + infix + slot
 }
 
 // orDefault は、value が空なら def を返します。

@@ -227,10 +227,12 @@ make slot-release    # app 停止+イメージ削除 → スロット解放 → 
   配送済みの event を DynamoDB EventLog に置くため、片方だけ作り直すと採番が EventLog に既にある番号を
   発行することになる。`Append` はその位置を拒否する — 同じ sequence に別の event ID があるのは本物の
   衝突なので、それが正しい — が、そのあと relay の head-of-line blocking がその stream を止める。
-  そこで `slot-acquire` はデータベースを作り直したあとに `make realtime-reset` を実行してスロットの
-  3 table を落とし、`realtime-provision` が次の `make serve` で作り直す。衝突し得るのは固定の識別子を
-  持つ stream だけで（subject ごとの stream は再 seed で新しい UUID になる）、この失敗が当たり前ではなく
-  紛らわしいものになっているのはそのためである。
+  そこで **local** データベースを作り直す経路はすべて `make realtime-reset` で終わり、その checkout の
+  3 table を落とす — 危険はスロットではなくデータベースに付いて回るので、`slot-acquire` も
+  `db-local-reinit` も `db-init-local` も同じである。`realtime-provision` が次の `make serve` で
+  作り直す。test データベースには対になる store が無いため、その再作成に reset は付かない。
+  衝突し得るのは固定の識別子を持つ stream だけで（subject ごとの stream は再 seed で新しい UUID に
+  なる）、この失敗が当たり前ではなく紛らわしいものになっているのはそのためである。
 - `sql_editor` / `docs_server` / `er_diagram_generator` / `mock_auth_server` は、いずれも自前のデファクト
   ポートを持たないため `2000` 番台に置いている。規則とその帯が安全な理由は
   [`local-environment.ja.md`](local-environment.ja.md) にある。

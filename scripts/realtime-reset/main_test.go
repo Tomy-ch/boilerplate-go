@@ -213,6 +213,13 @@ func Test_validateEndpoint(t *testing.T) {
 
 			require.NoError(t, validateEndpoint("https://dynamodb.example.test"))
 		})
+
+		t.Run("自前ホストのemulatorを受け入れる", func(t *testing.T) {
+			t.Parallel()
+
+			require.NoError(t, validateEndpoint("http://dynamo.internal.example:8000"),
+				"loopback に限定すると遠隔の emulator を使う構成が壊れる")
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
@@ -252,6 +259,20 @@ func Test_validateEndpoint(t *testing.T) {
 			t.Parallel()
 
 			require.ErrorIs(t, validateEndpoint("http://local host:8000"), errEndpoint)
+		})
+
+		t.Run("実AWSのhostを拒否する", func(t *testing.T) {
+			t.Parallel()
+
+			require.ErrorIs(t,
+				validateEndpoint("https://dynamodb.ap-northeast-1.amazonaws.com"), errRealAWS,
+				"静的資格情報が将来外れても二重に止まる")
+		})
+
+		t.Run("大文字で書いた実AWSのhostも拒否する", func(t *testing.T) {
+			t.Parallel()
+
+			require.ErrorIs(t, validateEndpoint("https://DynamoDB.AmazonAWS.CoM"), errRealAWS)
 		})
 	})
 }
