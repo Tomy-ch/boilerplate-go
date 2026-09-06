@@ -149,8 +149,8 @@ func Test_realtimeOverlayEnv(t *testing.T) {
 			_, err := realtimeOverlayEnv("services:\n  api_server:\n   - broken\n")
 
 			require.Error(t, err)
-			assert.NotErrorIs(t, err, errOverlayService)
-			assert.NotErrorIs(t, err, errOverlayEnv)
+			require.NotErrorIs(t, err, errOverlayService)
+			require.NotErrorIs(t, err, errOverlayEnv)
 		})
 	})
 }
