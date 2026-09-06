@@ -1,0 +1,52 @@
+# outbox payload と集約の対応宣言。internal/architest/outbox_payload_parity_test.go が読みます。
+#
+# payloads.<Go の payload 型名>:
+#   kind: snapshot | notification
+#     snapshot     — 事実が起きた時点の集約の状態を運び、購読側が問い合わせ返さずに済むことを約束する。
+#                    of の struct の全フィールドを fields で分類する（未分類は検査が落ちる）。
+#     notification — 「何が・いつ起きたか」と識別子だけを運ぶ。集約の状態追随を約束しないので fields は書かない。
+#   of: <domain パッケージ名>.<struct 名>   写し元の集約 struct
+#   fields.<集約のフィールド名>: <payload の JSON 名>   … 運ぶ
+#   fields.<集約のフィールド名>:
+#     omit: <理由>                                     … 運ばない（理由は必須）
+#
+# 判別式と、この宣言が何を強制するかは ADR-0113 (outbox-payload-kinds-and-parity-declaration) を参照。
+payloads:
+  created:
+    kind: snapshot
+    of: purchase.Purchase
+    fields:
+      id: purchaseId
+      code: code
+      userID: userId
+      statusID:
+        omit: 内部 FK。購読側が解釈できる業務キーは statusCode で運ぶ
+      status: statusCode
+      subtotalAmount: subtotalAmount
+      couponID: couponId
+      discountAmount: discountAmount
+      taxAmount: taxAmount
+      shippingFee: shippingFee
+      totalAmount: totalAmount
+      details: details
+      orderedAt: orderedAt
+      paidAt:
+        omit: 作成時点では常に未設定。事実は purchase.paid.v1 が運ぶ
+      canceledAt:
+        omit: 作成時点では常に未設定。事実は purchase.canceled.v1 が運ぶ
+      shippedAt:
+        omit: 作成時点では常に未設定。事実は purchase.shipped.v1 が運ぶ
+      deliveredAt:
+        omit: 作成時点では常に未設定。事実は purchase.delivered.v1 が運ぶ
+  paid:
+    kind: notification
+    of: purchase.Purchase
+  canceled:
+    kind: notification
+    of: purchase.Purchase
+  shipped:
+    kind: notification
+    of: purchase.Purchase
+  delivered:
+    kind: notification
+    of: purchase.Purchase
