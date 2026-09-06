@@ -75,7 +75,7 @@ worktrees can `make serve` at the same time. The variables below are defined in
 
 | Service | Layer | Origin | Host port | Role |
 | --- | --- | --- | --- | --- |
-| `api_server` | app | build `docker/server/Dockerfile` | `${API_HOST_PORT:-8080}:8080` / dlv `${DLV_HOST_PORT:-2345}:2345` / pprof `${PPROF_HOST_PORT:-6060}:6060` (internal ports fixed) | The app itself. The dev target starts via **air** for hot reload + delve debugging |
+| `api_server` | app | build `docker/server/Dockerfile` | `${API_HOST_PORT:-8080}:8080` / dlv `${DLV_HOST_PORT:-2345}:2345` / pprof `${PPROF_HOST_PORT:-6060}:6060` (internal ports fixed) | The app itself. The dev target starts via **air** for hot reload + delve debugging, and carries its own compose healthcheck (`/health`) — the dev `tooling` stage is a separate `FROM`, so the `HEALTHCHECK` in the Dockerfile's `runtime` stage does not reach it |
 | `mock_auth_server` | app | image `ghcr.io/navikt/mock-oauth2-server` (config: `docker/mock-auth-server/config.json`) | `${MOCK_AUTH_HOST_PORT:-2010}:4000` (internal 4000) | Mock OIDC provider; the JWKS-verification counterpart of the RS side |
 | `database` | infra | `postgres:18.4-trixie` | `5432` fixed | A **single** instance shared by all checkouts (parallelism is by DB name — see the slot ring below) |
 | `observability` | infra | `grafana/otel-lgtm` | `3000` (Grafana UI) / `4317` (OTLP gRPC) / `4318` (OTLP HTTP) / `3200` (Tempo API) | Sink for traces / metrics / logs of every checkout. profile: `development` |
@@ -198,6 +198,17 @@ watches `.go` changes under `internal` / `cmd` / `pkg`, runs `go build` (`-gcfla
 to keep debug info) → produces `tmp/main` → launches `serve` under **delve**
 (`dlv --listen=:2345 --headless … exec --continue`). Saving a source file auto-rebuilds and
 restarts, and you can attach an IDE remote debugger to the published dlv port (`2345+N`).
+
+air keeps the container alive when the app inside it dies, so a container that exists says nothing
+about whether the API is up. That is what the `api_server` healthcheck is for: `make serve` waits on
+it (`up --wait`) and its success message means the API answers. When the binary cannot start — a
+build error, an unreachable dependency at startup — `docker ps` shows `unhealthy`, and `make serve`
+prints the tail of the `api_server` log and fails instead of reporting success.
+
+The healthcheck belongs to the service, so the one-off containers that reuse it (`make job` /
+`worker` / `outbox-relay`, which run `docker compose run api_server`) are probed too. They serve no
+HTTP, so a long-running one shows `(unhealthy)` in `docker ps` after roughly two minutes. Nothing
+waits on that verdict — it is a label on the wrong kind of container, not a failure.
 
 ## Code-generation runners (tool-runner)
 

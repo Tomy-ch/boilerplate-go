@@ -10,8 +10,8 @@ services:
       secrets:
         - github_token
     ports:
-      # ホスト公開ポートは DB スロットプール（cmd/db-slot）が worktree 毎に割り当てる（既定 8080/2345/6060）。
-      # 複数 worktree で同時に make serve するための分離。コンテナ内部は常に固定。
+      # 採番は docs/maintenance/local-environment.md「Host port allocation」。スロット毎にずらすのは
+      # 複数 worktree で同時に make serve するためで、コンテナ内部は動かさない。
       - "${API_HOST_PORT:-8080}:8080"   # APIポート
       - "${DLV_HOST_PORT:-2345}:2345"   # デバッグ(dlv)ポート
       - "${PPROF_HOST_PORT:-6060}:6060" # メトリクス(pprof)ポート
@@ -38,6 +38,17 @@ services:
         condition: service_healthy
       garage_init:
         condition: service_completed_successfully
+    healthcheck:
+      # パスは runtime ステージの HEALTHCHECK（docker/server/Dockerfile）と同じ /health に揃える。
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 2s
+      timeout: 2s
+      # ホットリロードの再ビルド中は /health が落ちるため、短くすると保存のたびに unhealthy へ振れる。
+      # retries × interval は make serve が起動失敗を報告するまでの上限でもある（.makefiles/app/server.mk）。
+      retries: 10
+      # air の初回ビルドを吸収する。Go のビルドキャッシュはコンテナ寿命なので、コンテナを
+      # 作り直すたびコールドビルドになる。
+      start_period: 90s
     profiles:
       - development
 
@@ -85,12 +96,11 @@ services:
   mock_auth_server: # 疑似 OIDC 認証サーバー（開発用。実 IdP の差し替え先）
     image: ghcr.io/navikt/mock-oauth2-server:6.0.0@sha256:b9fa251aefee22a97c32534d23a1c400f01dbd483ab263b013d89f6d60d96691
     ports:
-      # 独自サービスの帯（2000 番台）。ホスト公開ポートはスロット毎に割り当てる（既定 2010、内部は常に 4000）。
+      # 採番は docs/maintenance/local-environment.md「Host port allocation」。スロット毎にずれる。
       - "${MOCK_AUTH_HOST_PORT:-2010}:4000"
     environment:
-      # iss はトークンを取得したリクエストの Host から導出されるため、ホスト公開 URL でトークンを取れば
-      # AUTH_ISSUER と一致する（issuer を env で固定する必要が無い）。JWKS 取得だけはコンテナ名で
-      # 内部解決する（Go 側 ENDPOINT_JWKS=http://mock_auth_server:4000/default/jwks）。
+      # iss はトークン取得時の Host から導出されるため env で固定しない（docker/README.md の
+      # mock-auth-server 節）。JWKS 取得だけは Go 側が ENDPOINT_JWKS でコンテナ名を内部解決する。
       SERVER_PORT: "4000"
       JSON_CONFIG_PATH: /etc/mock-oauth2-server/config.json
       LOG_LEVEL: INFO
@@ -171,7 +181,7 @@ services:
     image: amazon/dynamodb-local:3.3.1@sha256:ff89bd48ff32cd8d9be5fee8873b65b8854dc408f1afe881be6eb00247bc0dab
     # image は非 root（dynamodblocal）で動くが /home/dynamodblocal/data を持たないため、named volume は
     # root 所有で作られて java が書けない。本体を root で動かす代わりに、所有者合わせだけをここへ切り出す
-    # （garage_init と同じ形。同じ compose project 内なので depends_on で順序が付き、make 側の細工は要らない）。
+    # （garage_init と同じ形）。
     user: root
     entrypoint: ["sh", "-c", "chown dynamodblocal:dynamodblocal /home/dynamodblocal/data"]
     volumes:
@@ -236,7 +246,7 @@ services:
       dockerfile: docker/document/Dockerfile
       target: document_viewer
     ports:
-      # 独自サービスの帯（2000 番台）。採番規則は docs/maintenance/local-environment.md（内部は常に 80）。
+      # 採番は docs/maintenance/local-environment.md「Host port allocation」。
       - "2001:80"
     volumes:
       - ./docs:/usr/share/nginx/html:ro
@@ -246,8 +256,7 @@ services:
   sql_editor:
     image: sosedoff/pgweb:0.17.0@sha256:a5256d416e2e8b92d69a4459058e3eca33a9f075d8325491644411d0bc3bd70b
     ports:
-      # 独自サービスの帯（2000 番台）。pgweb 既定の 8081 は API スロット帯（8080+N）と重なるので
-      # ホスト側では採らない（内部は常に 8081）。
+      # pgweb 既定の 8081 は API スロット帯と重なるためホスト側では採らない（採番は上記リンク先）。
       - "2000:8081"
     environment:
       DATABASE_URL: postgres://postgres:postgres-password@database:5432/local?sslmode=disable
@@ -262,7 +271,7 @@ services:
     image: schemaspy/schemaspy:7.0.2@sha256:c8f98116a5cfe4b00b379eeb23b2022cdea4c9192cbccb843a75049e752479b7
     user: "${UID:-1000}:${GID:-1000}"
     ports:
-      # 独自サービスの帯（2000 番台）。内部は常に 3000。
+      # 採番は docs/maintenance/local-environment.md「Host port allocation」。
       - "2002:3000"
     volumes:
       - ./docker/database/schemaspy/schemaspy.properties:/schemaspy.properties
