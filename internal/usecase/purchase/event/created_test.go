@@ -173,4 +173,29 @@ func TestBuildCreated(t *testing.T) {
 			assert.Nil(t, decoded.CouponID)
 		})
 	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("注文日時を持たない集約はエラーにする", func(t *testing.T) {
+			t.Parallel()
+
+			// 生成直後の集約をそのまま渡すと 0001-01-01 が snapshot に載る。
+			// 型では読み直し済みかどうかを区別できないので、ここが唯一の歯止めになる。
+			productA := uuidtestkit.NewTestFromSalt(t, "bpz_product")
+			entity, err := domainpurchase.New(
+				uuidtestkit.NewTestFromSalt(t, "bpz_id"),
+				"bpz-code",
+				uuidtestkit.NewTestFromSalt(t, "bpz_user"),
+				[]domainpurchase.DetailInput{{ID: uuidtestkit.NewTestFromSalt(t, "bpz_d"), ProductID: productA, Quantity: 1}},
+				[]domainpurchase.LockedProduct{domainpurchase.NewLockedProduct(productA, mustPrice(t, "800"), 20)},
+			)
+			require.NoError(t, err)
+			require.True(t, entity.OrderedAt().IsZero())
+
+			_, perr := event.BuildCreated(entity)
+
+			require.Error(t, perr)
+		})
+	})
 }

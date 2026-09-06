@@ -40,9 +40,18 @@ type createdDetail struct {
 	UnitPrice string `json:"unitPrice"`
 }
 
+// errOrderedAtUnset は、注文日時を持たない集約から snapshot を組もうとした場合のエラーです。
+var errOrderedAtUnset = xerrors.New("purchase.created payload requires a persisted orderedAt")
+
 // BuildCreated は、購入集約から purchase.created.v1 の snapshot payload を marshal します。
-// 注文日時は DB 採番なので、書き込み後に読み直した集約を渡してください。
+//
+// 注文日時は DB 採番なので、書き込み後に読み直した集約を渡してください。生成直後の集約はまだ
+// 持っておらず、そのまま組むとゼロ値が snapshot に載ります。型では区別できないため、ここで弾きます。
 func BuildCreated(p *purchase.Purchase) ([]byte, error) {
+	if p.OrderedAt().IsZero() {
+		return nil, errOrderedAtUnset
+	}
+
 	src := p.Details()
 	details := make([]createdDetail, len(src))
 	for i, d := range src {
