@@ -2389,7 +2389,14 @@ func Test_usecase_createPurchaseInTx(t *testing.T) {
 			reread := rereadPurchase(t)
 			repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(reread, nil)
 			emit := mock_outbox.NewMockEmitUsecase(ctrl)
-			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
+			// payload の注文日時が読み直した集約のものであることを見ることで、
+			// emit が読み直しのあとに走っていることを固定する（順序を戻す退行を赤にする）。
+			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(_ context.Context, in outbox.EmitInput) (uuid.UUID, error) {
+					assertPayloadOrderedAt(t, in.Payload, reread.OrderedAt())
+
+					return uuid.UUID{}, nil
+				})
 
 			u := &usecase{
 				tracer:      observability.NewNoopTracerFactory(t).Usecase(),
@@ -2448,6 +2455,18 @@ func Test_usecase_createPurchaseInTx(t *testing.T) {
 			require.Error(t, cerr)
 		})
 	})
+}
+
+// assertPayloadOrderedAt は、outbox payload の注文日時が期待どおりであることを確かめます。
+// 生成直後の集約から組まれていればゼロ値になるため、これが読み直し後であることの証拠になります。
+func assertPayloadOrderedAt(t *testing.T, payload []byte, want time.Time) {
+	t.Helper()
+
+	var decoded struct {
+		OrderedAt string `json:"orderedAt"`
+	}
+	require.NoError(t, json.Unmarshal(payload, &decoded))
+	assert.Equal(t, want.Format(time.RFC3339Nano), decoded.OrderedAt)
 }
 
 func Test_usecase_emitCreated(t *testing.T) {
