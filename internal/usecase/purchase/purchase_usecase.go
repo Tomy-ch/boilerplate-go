@@ -56,7 +56,7 @@ type PurchaseDetailView struct {
 	UnitPrice decimal.Decimal
 }
 
-// PurchaseView は、購入 1 件分のユースケース出力 DTO です。金額はすべて USD セント単位の整数です。
+// PurchaseView は、購入 1 件分のユースケース出力 DTO です。金額の表現は CancelPurchaseView を参照。
 type PurchaseView struct {
 	Code           string
 	UserID         uuid.UUID
@@ -189,9 +189,8 @@ type Usecase interface {
 	// 状態遷移とイベント発行は単一 tx で原子的に成立します。管理者でない場合は 403、不存在は 404、
 	// 二重発送・不正遷移は 409 を返します。
 	ShipPurchase(ctx context.Context, authn *auth.Authn, purchaseCode string) (ShipPurchaseView, error)
-	// DeliverPurchase は、購入を配達済みへ遷移させます。管理者専用・所有者不問の扱いは ShipPurchase を参照。
-	// 状態遷移とイベント発行は単一 tx で原子的に成立します。管理者でない場合は 403、不存在は 404、
-	// 二重配達・不正遷移は 409 を返します。
+	// DeliverPurchase は、購入を配達済みへ遷移させます。管理者専用・所有者不問の扱い、単一 tx の原子性、
+	// 403 / 404 の契約は ShipPurchase を参照。二重配達・不正遷移は 409 を返します。
 	DeliverPurchase(ctx context.Context, authn *auth.Authn, purchaseCode string) (DeliverPurchaseView, error)
 	// GetPurchaseDetail は、本人の購入 1 件を明細（商品名込み）とともに取得します。
 	// 他ユーザーの購入・不存在はいずれも NotFound（404）です（存在秘匿の理由は CancelPurchase を参照）。
@@ -578,8 +577,8 @@ func (u *usecase) DeliverPurchase(
 }
 
 // ensurePurchaserActive は、購入者を共有ロック付きで読み出し、購入してよい状態かの判定を
-// ドメインサービスへ委ねます。退会（排他ロック）と直列化されるため、確認を通った購入者は
-// tx の終了まで退会できません。エラー方針は docs/spec/usecase/purchase.md の Workflow を参照。
+// ドメインサービスへ委ねます。退会との直列化・エラー方針は docs/spec/usecase/purchase.md の
+// Workflow を参照。
 func (u *usecase) ensurePurchaserActive(ctx context.Context, userID uuid.UUID) error {
 	purchaser, err := u.userLock.LockShareByID(ctx, userID)
 	if err != nil {

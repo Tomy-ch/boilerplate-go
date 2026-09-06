@@ -15,11 +15,16 @@ import (
 	"go-boilerplate/internal/usecase/boundary/tx"
 	"go-boilerplate/pkg/xerrors"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // raceBlockedGracePeriod は、後続役が先行役のロック解放を待たされていることを確認するために待つ時間です。
 // 高負荷でこの時間内に問い合わせが届かない場合も「まだ完了していない」側に倒れるため、負荷は偽陽性を生みません。
+// 待たされた事実は、後続役がロックを取れた時刻が先行役の解放より後であることでも確かめます。
+// 最終状態の一致だけを見ると、ロックが外れていても後続役の往復がこの時間を超えれば同じ観測になり、
+// 退行を見逃します。所要時間そのものを閾値と比べないのは、後続役の計測開始が先行役の待機開始より
+// 遅れるぶん、ロックが効いていても閾値を下回るためです。
 const raceBlockedGracePeriod = 300 * time.Millisecond
 
 // errRollbackRaceTx は、後続役の tx を成否に関わらずロールバックさせるための番兵です。
@@ -59,6 +64,8 @@ func Test_lockSerializesConcurrentCartUpdates(t *testing.T) {
 	firstLocked := make(chan struct{})
 	secondDone := make(chan struct{})
 	secondResult := make(chan *domaincart.Cart, 1)
+	secondAcquiredAt := make(chan time.Time, 1)
+	var firstReleasedAt time.Time
 
 	// 後続役: 先行役がカート行を押さえている間にロックを取りに行き、確定まで待たされる。
 	go func() {
@@ -66,6 +73,7 @@ func Test_lockSerializesConcurrentCartUpdates(t *testing.T) {
 		<-firstLocked
 		_ = newTxManager().Do(ctx, func(txCtx context.Context) error {
 			locked, lockErr := repo.LockByID(txCtx, target.ID())
+			secondAcquiredAt <- time.Now()
 			if lockErr != nil {
 				return xerrors.Join(errRollbackRaceTx, lockErr)
 			}
@@ -89,6 +97,7 @@ func Test_lockSerializesConcurrentCartUpdates(t *testing.T) {
 			t.Error("後続役が先行役のロックを待たずに完了した")
 		case <-time.After(raceBlockedGracePeriod):
 		}
+		firstReleasedAt = time.Now()
 
 		locked.Touch(extended, 0)
 		return repo.Update(txCtx, locked)
@@ -97,4 +106,6 @@ func Test_lockSerializesConcurrentCartUpdates(t *testing.T) {
 	<-secondDone
 	// 先行役が確定した以上、待たされていた後続役が読み出すのは延長後のカートになる。
 	require.Equal(t, extended.UTC(), (<-secondResult).ExpiresAt().UTC())
+	// 延長後を観測できたのがロック待ちの結果であることを、取得時刻の前後で裏づける。
+	assert.True(t, (<-secondAcquiredAt).After(firstReleasedAt))
 }
