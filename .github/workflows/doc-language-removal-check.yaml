@@ -60,6 +60,22 @@ jobs:
     permissions:
       contents: read
 
+    env:
+      # 残存検査から外す生成物。撤去ツールが走査から外しているもの（`doc-language.ts` の
+      # `EXCLUDED_PREFIXES`）と同じ集合で、そこに portal の配信物を足したものである。
+      # 検査の主題は「畳んだ結果ツリーが辻褄の合う状態か」で、生成物は正本ではない。
+      # 外さないと、生成物が正本に追いついた瞬間だけ赤くなる —— 実際
+      # `e6c6eb2c1 Chore: auto update docs` が `docs/portal/guides` と `docs/godoc` の双方で
+      # それを踏んだ。これらは畳んだあと `make gen-docs` が正本から作り直す。
+      GENERATED_EXCLUDES: >-
+        :!docs/portal/dist
+        :!docs/portal/guides
+        :!docs/godoc
+        :!docs/coverage
+        :!docs/db-schema
+        :!docs/openapi
+        :!graphify-out
+
     strategy:
       fail-fast: false
       matrix:
@@ -187,7 +203,10 @@ jobs:
             echo "::error::両方を残す選択なのに対訳が 1 つも残っていません"
             exit 1
           fi
-          LEFTOVER=$(git grep -nE '(//|#|%%|<!--) ?doc-pair:(begin|end|line|replace-)' -- . || true)
+          # 改行込みで渡っても壊れないよう空白へ均してから配列にする。
+          read -ra EXCLUDES <<< "$(tr '\n' ' ' <<< "${GENERATED_EXCLUDES}")"
+          LEFTOVER=$(git grep -nE '(//|#|%%|<!--) ?doc-pair:(begin|end|line|replace-)' -- . \
+            "${EXCLUDES[@]}" || true)
           if [ -n "${LEFTOVER}" ]; then
             echo "::error::言語選択のマーカーが解決されずに残っています"
             echo "${LEFTOVER}"
@@ -215,17 +234,21 @@ jobs:
       #
       # `docs/adr` を外すのは、ADR-0011 の言及が `boilerplate-only` ブロックの中に在るためである。
       # あれは Phase 12 のボイラープレート撤去で先に落ちるが、ここではこのツールしか走らせない。
+      # 生成物を外す理由は job の `GENERATED_EXCLUDES` に書いてある。
       - name: Nothing still declares the retired tool
         run: |
           set -euo pipefail
+          # 改行込みで渡っても壊れないよう空白へ均してから配列にする。
+          read -ra EXCLUDES <<< "$(tr '\n' ' ' <<< "${GENERATED_EXCLUDES}")"
           LEFTOVER=$(git grep -nE 'setup-remove-doc-language|remove-doc-language|LANG_CHOICE' -- . \
-            ':!docs/portal/dist' ':!docs/adr' ':!graphify-out' || true)
+            ':!docs/adr' "${EXCLUDES[@]}" || true)
           if [ -n "${LEFTOVER}" ]; then
             echo "::error::自消滅したツールへの言及が残っています"
             echo "${LEFTOVER}"
             exit 1
           fi
-          LEFTOVER=$(git grep -nE '(//|#|%%|<!--) ?lang-choice:(begin|end|line|replace-)' -- . || true)
+          LEFTOVER=$(git grep -nE '(//|#|%%|<!--) ?lang-choice:(begin|end|line|replace-)' -- . \
+            "${EXCLUDES[@]}" || true)
           if [ -n "${LEFTOVER}" ]; then
             echo "::error::ツールに紐づくマーカーが解決されずに残っています"
             echo "${LEFTOVER}"
