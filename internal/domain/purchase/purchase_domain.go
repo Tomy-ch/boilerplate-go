@@ -99,6 +99,15 @@ type Attributes struct {
 	DeliveredAt    *time.Time
 }
 
+// settlementBasis は、税・送料・合計を決める材料です。
+// どちらも同じ尺度の金額なので、位置ではなく名前で渡します（docs/rules.md の Function Signature Rules）。
+type settlementBasis struct {
+	// Subtotal は、明細の小計（USD セント）です。
+	Subtotal int
+	// Discount は、クーポンによる値引き額（USD セント）です。
+	Discount int
+}
+
 // NewLockedProduct は、ロック済み商品スナップショットを生成します。price は価格スケール（ドル decimal）です。
 func NewLockedProduct(id uuid.UUID, price money.Price, quantity int) LockedProduct {
 	return LockedProduct{id: id, price: price, quantity: quantity}
@@ -263,15 +272,6 @@ func New(
 		totalAmount:    total,
 		details:        details,
 	}, nil
-}
-
-// settlementBasis は、税・送料・合計を決める材料です。
-// どちらも同じ尺度の金額なので、位置ではなく名前で渡します（docs/rules.md の Function Signature Rules）。
-type settlementBasis struct {
-	// Subtotal は、明細の小計（USD セント）です。
-	Subtotal int
-	// Discount は、クーポンによる値引き額（USD セント）です。
-	Discount int
 }
 
 // settle は、小計と値引き額から税・送料・合計を決めます。
