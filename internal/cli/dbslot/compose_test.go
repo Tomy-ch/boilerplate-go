@@ -50,7 +50,7 @@ func TestExecCompose_UpSharedDB(t *testing.T) { //nolint:paralleltest // stubDoc
 
 func TestExecCompose_DownServe(t *testing.T) { //nolint:paralleltest // stubDocker が t.Setenv を使うため並列化不可
 	t.Run("正常系", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
-		t.Run("app 層の profile と attach override を付けて down する", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
+		t.Run("app 層の profile を付け attach override は重ねずに down する", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
 			out := stubDocker(t, 0)
 
 			require.NoError(t, ExecCompose{}.DownServe(context.Background(), "gobp-wt-1"))
@@ -59,8 +59,9 @@ func TestExecCompose_DownServe(t *testing.T) { //nolint:paralleltest // stubDock
 			require.NoError(t, err)
 			assert.Contains(t, string(b), "proj=gobp-wt-1")
 			// profile を落とすと down は対象ゼロのまま exit 0 で返り、コンテナが残る。
-			assert.Contains(t, string(b),
-				"--profile development -f docker-compose.yaml -f docker-compose.attach.yaml down")
+			assert.Contains(t, string(b), "--profile development -f docker-compose.yaml down")
+			// override は down が参照しない。重ねると片付け経路が compose の補間の癖に依存する。
+			assert.NotContains(t, string(b), "docker-compose.attach.yaml")
 		})
 	})
 

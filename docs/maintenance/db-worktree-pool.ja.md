@@ -212,8 +212,14 @@ make slot-release    # app 停止+イメージ削除 → スロット解放 → 
   `REALTIME_QUEUE_PREFIX`・`REALTIME_TABLE_SUFFIX` にスロットを付けて 3 つとも `db-slot env` から出すため、
   各 worktree の serve は自分の topic を購読し、自分の table を読む（`realtime_event_log_local_wt<N>` と
   その他 2 つの table。`make realtime-init` が同じ値から作成する）。`docker-compose.attach.yaml` は導出を
-  二度書かずにその値を読むだけで、ホスト公開ポートと同じくスロット未取得のときの既定値だけを持つ。
-  したがってスロットを持たない checkout は suffix なしの名前のままで、メイン checkout は影響を受けない。
+  二度書かずにその値を読むだけで、ホスト公開ポートとは違って自前の既定値を持たない——値を要求する
+  （`${REALTIME_TOPIC:?…}` と他 2 つ）。スロット未取得のときの名前は `LoadRealtimeBase` が読む埋め込み
+  `env/.env` に既に所有者が居り、`db-slot env` はスロットの有無に関わらず 3 つとも出すため、ここに既定値を
+  置けば `env/.env` を直した日にずれる複製になる。値を要求することは、`:-` の既定値が何であるかを
+  同時に塞ぐ——空文字の受け皿であり、compose がそれをスロット未取得のときの名前へ置き換えて、この
+  worktree にメイン checkout の資源を渡してしまう。したがって `make` を迂回した `docker compose` の
+  呼び出しは、黙ってメイン checkout の名前空間へ合流せず補間段で止まる。スロットを持たない checkout は
+  従来どおり suffix なしの名前のままで、メイン checkout は影響を受けない。
   table の suffix だけ topic / queue が使う `-` でなく `_` で結合されるのは、`REALTIME_TABLE_SUFFIX` が
   小文字・数字・アンダースコアしか受け付けないためである。
 

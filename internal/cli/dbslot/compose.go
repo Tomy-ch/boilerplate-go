@@ -40,9 +40,9 @@ func (c ExecCompose) UpSharedDB(ctx context.Context, project string) error {
 
 // DownServe は、app 層の compose プロジェクトを down します。
 // docker compose down はコンテナ不在でも exit 0 のため、返るエラーは docker 未起動・権限不足などの実失敗のみです。
+// app 層の override（docker-compose.attach.yaml）は重ねません（理由は README.md「Compose」）。
 func (c ExecCompose) DownServe(ctx context.Context, project string) error {
-	return c.run(ctx, project,
-		"--profile", appProfile, "-f", "docker-compose.yaml", "-f", "docker-compose.attach.yaml", "down")
+	return c.run(ctx, project, "--profile", appProfile, "-f", "docker-compose.yaml", "down")
 }
 
 // RunningContainers は `docker compose ps -q --status running` の出力行数を返します。

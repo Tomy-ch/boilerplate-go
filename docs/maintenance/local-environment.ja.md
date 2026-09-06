@@ -57,7 +57,10 @@ compose のサービスは 2 層に分かれており、主 checkout と任意�
   [`docker-compose.attach.yaml`](../../docker-compose.attach.yaml) はスロット保持時だけでなく**常に**重ねられ、
   `DB_HOST` / `ENDPOINT_OTLP` / `ENDPOINT_OBJECT_STORAGE` / `AUTH_ISSUER` を実行時 env で上書きして
   共有インフラを `host.docker.internal` 経由で参照させる（`internal/config` の loader は実行時 env を
-  `env/.env` より優先する）。
+  `env/.env` より優先する）。`REALTIME_*` は既定値でなく要求の形（`${VAR:?…}`）で、撒くのは
+  `COMPOSE_APP` だけなので、app 層は手打ちではなく `make` のターゲットから起動する。重ねない `down` は
+  `db-slot release` のものだけで、そこは override を読まない
+  （[`internal/cli/dbslot/README.md`](../../internal/cli/dbslot/README.md)）。
 - app 層のホスト公開ポートは全てスロット番号 `N` で相対化される: API `8080+N` / mock 認証 `2010+N` /
   dlv `2345+N` / pprof `6060+N`（スロット未取得なら `8080` / `2010` / `2345` / `6060`）。
   コンテナ内部のポートは動かない。

@@ -238,9 +238,15 @@ not passed. Run by mistake in the main checkout, it exits with an error without 
   `REALTIME_TABLE_SUFFIX` with the slot and emits all three from `db-slot env`, so each worktree's
   serve subscribes to its own topic and reads its own tables (`realtime_event_log_local_wt<N>` and its
   two siblings, created by `make realtime-init` from the same value). `docker-compose.attach.yaml`
-  reads those values instead of deriving them a second time, and keeps only the no-slot default, the
-  way it does for the host ports. A checkout holding no slot therefore keeps the unsuffixed names, so
-  the main checkout is unaffected. The table suffix is joined with `_` rather than the `-` the topic
+  reads those values instead of deriving them a second time, and — unlike the host ports — keeps no
+  default of its own: it demands a value (`${REALTIME_TOPIC:?…}` and its two siblings). The no-slot
+  name already has an owner in the embedded `env/.env` that `LoadRealtimeBase` reads, and `db-slot env`
+  emits all three whether or not a slot is held, so a default here would be a copy that drifts the day
+  `env/.env` is edited. Demanding the value also closes what a `:-` default is: a sink for the empty
+  string, which compose would replace with the no-slot name and hand this worktree the main checkout's
+  resource. A `docker compose` invocation that bypasses `make` therefore stops at interpolation instead
+  of joining the main checkout's namespace in silence. A checkout holding no slot still keeps the
+  unsuffixed names, so the main checkout is unaffected. The table suffix is joined with `_` rather than the `-` the topic
   and queue use, because `REALTIME_TABLE_SUFFIX` admits only lowercase letters, digits and underscores.
 
   Both halves matter, and they fail differently when absent. Unsuffixed **tables** let one worktree
