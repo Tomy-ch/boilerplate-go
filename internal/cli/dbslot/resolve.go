@@ -39,6 +39,17 @@ const (
 	// mockAuthIssuerPath は、mock 認証サーバーが issuer を生やすパスです。値は
 	// docker/mock-auth-server/config.json の issuerId と一致していなければなりません。
 	mockAuthIssuerPath = "/default"
+
+	// realtimeEnvName は、Realtime Delivery の資源名に入る環境識別子です。スロットを保持しない
+	// checkout ではこれがそのまま使われ、env/.env の REALTIME_* と一致します。
+	realtimeEnvName = "local"
+
+	// realtimeTopicARNPrefix は、fan-out topic の ARN のうち topic 名より前の部分です。
+	// region / account は docker/goaws/goaws.yaml と一致していなければなりません。
+	realtimeTopicARNPrefix = "arn:aws:sns:us-east-1:000000000000:realtime-fanout-"
+
+	// realtimeQueueNamePrefix は、serve instance ごとの queue 名の先頭です。
+	realtimeQueueNamePrefix = "realtime-"
 )
 
 var (
@@ -75,6 +86,12 @@ type Values struct {
 	AppProject      string // app 層の compose プロジェクト名
 	AuthIssuer      string // mock 認証サーバーのホスト公開 URL（トークンの iss）
 	InfraNoRecreate string // 共有インフラへ渡す --no-recreate（不要なら空）
+
+	// Realtime Delivery の資源名。DynamoDB / GoAWS は共有インスタンスを名前で分けるため、
+	// スロットごとに別の名前空間へ落とす必要があります。
+	RealtimeTableSuffix string // table 名の末尾（realtime_event_log_<suffix> の suffix）
+	RealtimeQueuePrefix string // serve instance ごとの queue 名の先頭
+	RealtimeTopic       string // fan-out topic の ARN
 }
 
 // Resolver は、スロットから導かれる値の解決と所有者判定を担います。
@@ -128,6 +145,10 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 		DBTest:     orDefault(slot["DB_NAME_TEST"], defaultDBTest),
 		AppProject: orDefault(slot["SERVE_PROJECT"], "gobp-app-"+filepath.Base(r.cfg.Root)),
 		AuthIssuer: "http://localhost:" + orDefault(slot["MOCK_AUTH_HOST_PORT"], strconv.Itoa(r.cfg.MockAuthBase)) + mockAuthIssuerPath,
+
+		RealtimeTableSuffix: realtimeName(slot["SLOT"], "_wt"),
+		RealtimeQueuePrefix: realtimeQueueNamePrefix + realtimeName(slot["SLOT"], "-wt"),
+		RealtimeTopic:       realtimeTopicARNPrefix + realtimeName(slot["SLOT"], "-wt"),
 	}
 
 	// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。
@@ -233,6 +254,9 @@ func RenderEnv(v Values) string {
 		{"APP_PROJECT", v.AppProject},
 		{"AUTH_ISSUER", v.AuthIssuer},
 		{"INFRA_NO_RECREATE", v.InfraNoRecreate},
+		{"REALTIME_TABLE_SUFFIX", v.RealtimeTableSuffix},
+		{"REALTIME_QUEUE_PREFIX", v.RealtimeQueuePrefix},
+		{"REALTIME_TOPIC", v.RealtimeTopic},
 	}
 
 	var sb strings.Builder
@@ -255,6 +279,9 @@ func RenderValues(v Values) string {
 	fmt.Fprintf(&sb, "APP_PROJECT       : %s\n", v.AppProject)
 	fmt.Fprintf(&sb, "AUTH_ISSUER       : %s\n", v.AuthIssuer)
 	fmt.Fprintf(&sb, "INFRA_NO_RECREATE : %s\n", orDefault(v.InfraNoRecreate, "（渡さない）"))
+	fmt.Fprintf(&sb, "REALTIME_TABLE    : %s\n", v.RealtimeTableSuffix)
+	fmt.Fprintf(&sb, "REALTIME_QUEUE    : %s\n", v.RealtimeQueuePrefix)
+	fmt.Fprintf(&sb, "REALTIME_TOPIC    : %s\n", v.RealtimeTopic)
 
 	return sb.String()
 }
@@ -315,6 +342,19 @@ func readSlotFile(path string) map[string]string {
 	}
 
 	return values
+}
+
+// realtimeName は、Realtime Delivery の資源名に入る環境識別子を返します。スロットを保持していれば
+// 環境名にスロット番号を継ぎ、保持していなければ環境名のままです。
+//
+// 区切りは呼び出し側が渡します。table の suffix だけ `_` なのは DynamoDB の table 名が
+// `-` を許す一方で suffix の使用可能文字を `[a-z0-9_]` に揃えているためで、queue と topic は `-` です。
+func realtimeName(slot, separator string) string {
+	if slot == "" {
+		return realtimeEnvName
+	}
+
+	return realtimeEnvName + separator + slot
 }
 
 // orDefault は、value が空なら def を返します。

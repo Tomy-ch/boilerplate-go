@@ -128,6 +128,9 @@ func TestResolver_Resolve(t *testing.T) {
 			assert.Equal(t, "test", got.DBTest)
 			assert.Equal(t, "gobp-app-go-boilerplate", got.AppProject)
 			assert.Equal(t, "http://localhost:2010/default", got.AuthIssuer)
+			assert.Equal(t, "local", got.RealtimeTableSuffix, "env/.env の REALTIME_* と一致させる")
+			assert.Equal(t, "realtime-local", got.RealtimeQueuePrefix)
+			assert.Equal(t, "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local", got.RealtimeTopic)
 		})
 
 		t.Run("スロット取得済みならスロットの値を所有データベース・プロジェクトとする", func(t *testing.T) {
@@ -144,6 +147,20 @@ func TestResolver_Resolve(t *testing.T) {
 			assert.Equal(t, "wt3_test", got.DBTest)
 			assert.Equal(t, "gobp-wt-3", got.AppProject)
 			assert.Equal(t, "http://localhost:2013/default", got.AuthIssuer)
+		})
+
+		t.Run("Realtime の資源名をスロットごとの名前空間へ落とす", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeSlot(t, root, slotFileContent)
+			r, _ := newResolver(t, root, probeStub{dirs: "/repo/.git/worktrees/wt3\n/repo/.git\n"})
+
+			got, err := r.Resolve(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, "local_wt3", got.RealtimeTableSuffix, "table の suffix だけ区切りが `_`")
+			assert.Equal(t, "realtime-local-wt3", got.RealtimeQueuePrefix)
+			assert.Equal(t, "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3", got.RealtimeTopic)
 		})
 	})
 
@@ -434,12 +451,15 @@ func TestRenderEnv(t *testing.T) {
 			t.Parallel()
 
 			got := RenderEnv(Values{
-				Git:             GitLinkedWorktree,
-				DBLocal:         "wt3_local",
-				DBTest:          "wt3_test",
-				AppProject:      "gobp-wt-3",
-				AuthIssuer:      "http://localhost:2013/default",
-				InfraNoRecreate: noRecreateFlag,
+				Git:                 GitLinkedWorktree,
+				DBLocal:             "wt3_local",
+				DBTest:              "wt3_test",
+				AppProject:          "gobp-wt-3",
+				AuthIssuer:          "http://localhost:2013/default",
+				InfraNoRecreate:     noRecreateFlag,
+				RealtimeTableSuffix: "local_wt3",
+				RealtimeQueuePrefix: "realtime-local-wt3",
+				RealtimeTopic:       "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3",
 			})
 
 			assert.Equal(t, "GOBP_GIT_CONTEXT='linked-worktree'\n"+
@@ -447,7 +467,10 @@ func TestRenderEnv(t *testing.T) {
 				"DB_TEST='wt3_test'\n"+
 				"APP_PROJECT='gobp-wt-3'\n"+
 				"AUTH_ISSUER='http://localhost:2013/default'\n"+
-				"INFRA_NO_RECREATE='--no-recreate'\n", got)
+				"INFRA_NO_RECREATE='--no-recreate'\n"+
+				"REALTIME_TABLE_SUFFIX='local_wt3'\n"+
+				"REALTIME_QUEUE_PREFIX='realtime-local-wt3'\n"+
+				"REALTIME_TOPIC='arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3'\n", got)
 		})
 
 		t.Run("空の値もキーごと出力し、変数の欠落にしない", func(t *testing.T) {
@@ -720,6 +743,28 @@ func Test_readSlotFile(t *testing.T) {
 
 			assert.Empty(t, got)
 			assert.NotNil(t, got)
+		})
+	})
+}
+
+func Test_realtimeName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("スロットがあれば区切りとスロット番号を継ぐ", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, "local_wt3", realtimeName("3", "_wt"))
+			assert.Equal(t, "local-wt3", realtimeName("3", "-wt"))
+		})
+
+		t.Run("スロットが無ければ環境名のままにする", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, realtimeEnvName, realtimeName("", "_wt"),
+				"スロット未取得の checkout は env/.env の既定名を使う")
 		})
 	})
 }
