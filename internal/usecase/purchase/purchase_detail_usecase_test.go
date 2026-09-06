@@ -194,6 +194,45 @@ func Test_toPurchaseGetDetailView(t *testing.T) {
 			assert.Equal(t, "800", view.Details[0].UnitPrice.String())
 		})
 
+		t.Run("クーポン適用済み読み取りモデルは値引き額と適用クーポンを写像する", func(t *testing.T) {
+			t.Parallel()
+
+			value, verr := decimal.Parse("0.10")
+			require.NoError(t, verr)
+			couponID := uuidtestkit.NewTestFromSalt(t, "tvd_coupon")
+			rm := &query.PurchaseDetailReadModel{
+				ID:             uuidtestkit.NewTestFromSalt(t, "tvd_id"),
+				Code:           "tvd-code",
+				UserID:         uuidtestkit.NewTestFromSalt(t, "tvd_user"),
+				StatusID:       uuidtestkit.NewTestFromSalt(t, "tvd_status"),
+				StatusCode:     domainpurchase.StatusUnprocessed.Code(),
+				StatusName:     "未処理",
+				SubtotalAmount: 160000,
+				DiscountAmount: 16000,
+				AppliedCoupon: &query.AppliedCouponReadModel{
+					ID:            couponID,
+					DiscountKind:  domaincoupon.DiscountKindRate.Code(),
+					DiscountValue: value,
+					ScopeKind:     domaincoupon.ScopeKindAll.Code(),
+				},
+				TaxAmount:   14400,
+				ShippingFee: 500,
+				TotalAmount: 158900,
+				Items: []query.PurchaseDetailItem{
+					{ProductID: uuidtestkit.NewTestFromSalt(t, "tvd_prod"), ProductName: "商品D", Quantity: 2, UnitPrice: mustPrice(t, "800")},
+				},
+				OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
+			}
+
+			view := toPurchaseGetDetailView(rm)
+
+			assert.Equal(t, int64(16000), view.DiscountAmount)
+			require.NotNil(t, view.AppliedCoupon)
+			assert.Equal(t, couponID, view.AppliedCoupon.ID)
+			assert.Equal(t, "rate", view.AppliedCoupon.DiscountKind)
+			assert.Equal(t, "all", view.AppliedCoupon.ScopeKind)
+		})
+
 		t.Run("キャンセル済み読み取りモデルはcanceledAtを写像しpaidAtはnilになる", func(t *testing.T) {
 			t.Parallel()
 

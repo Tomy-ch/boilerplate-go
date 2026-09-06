@@ -514,6 +514,24 @@ func Test_toPurchaseView(t *testing.T) {
 			assert.Equal(t, entity.Details()[0].Quantity(), view.Details[0].Quantity)
 			assert.True(t, entity.Details()[0].UnitPrice().Decimal().Equal(view.Details[0].UnitPrice))
 		})
+
+		t.Run("クーポン適用済みの購入は値引き額と適用クーポンを写す", func(t *testing.T) {
+			t.Parallel()
+
+			entity, err := newPurchaseForCoupon(t)
+			require.NoError(t, err)
+			userID := uuidtestkit.NewTestFromSalt(t, "view_coupon_user")
+			c := newRedemptionCoupon(t, "view_coupon", userID, domaincoupon.NewAllScope())
+			require.NoError(t, entity.ApplyCoupon(c.ID(), 1000))
+
+			view := toPurchaseView(entity, c)
+
+			assert.Equal(t, 1000, view.DiscountAmount)
+			require.NotNil(t, view.AppliedCoupon)
+			assert.Equal(t, c.ID(), view.AppliedCoupon.ID)
+			assert.Equal(t, c.Discount().Kind().Name(), view.AppliedCoupon.DiscountKind)
+			assert.Equal(t, c.Scope().Kind().Name(), view.AppliedCoupon.ScopeKind)
+		})
 	})
 }
 
@@ -2081,6 +2099,26 @@ func Test_applyRedeemedCoupon(t *testing.T) {
 			require.NoError(t, applyRedeemedCoupon(entity, nil, nil))
 			assert.Nil(t, entity.CouponID())
 		})
+
+		t.Run("対象の明細がある場合、値引きを購入へ反映する", func(t *testing.T) {
+			t.Parallel()
+
+			entity, err := newPurchaseForCoupon(t)
+			require.NoError(t, err)
+			userID := uuidtestkit.NewTestFromSalt(t, "apply_ok_user")
+			// カテゴリ限定にすることで、商品 ID からカテゴリ ID を引く写像が正しいことまで確かめる。
+			products := lockedProducts(t, uuidtestkit.NewTestFromSalt(t, "apply_product"), 10)
+			scope, serr := domaincoupon.NewCategoryScope(products[0].Category().ID())
+			require.NoError(t, serr)
+			c := newRedemptionCoupon(t, "apply_ok_coupon", userID, scope)
+
+			require.NoError(t, applyRedeemedCoupon(entity, c, products))
+
+			require.NotNil(t, entity.CouponID())
+			assert.Equal(t, c.ID(), *entity.CouponID())
+			// 単価 100.00 × 数量 1 の 10% で 1000 セント。
+			assert.Equal(t, 1000, entity.DiscountAmount())
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
@@ -2151,6 +2189,32 @@ func Test_usecase_redeemRequestedCoupon(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, got)
 			assert.True(t, got.IsUsed())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("指定があるが引き換えに失敗した場合、エラーをそのまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			repo := mock_coupon.NewMockRepository(ctrl)
+			couponID := uuidtestkit.NewTestFromSalt(t, "req_missing_coupon")
+			repo.EXPECT().LockByID(gomock.Any(), couponID).Return(nil, apperror.ErrNotFound)
+
+			u := newCouponUsecase(t, repo)
+			got, err := u.redeemRequestedCoupon(
+				context.Background(),
+				CreatePurchaseParams{
+					UserID:   uuidtestkit.NewTestFromSalt(t, "req_missing_user"),
+					CouponID: ptr.To(couponID),
+				},
+				now,
+			)
+
+			require.ErrorIs(t, err, domaincoupon.ErrNotHeld)
+			assert.Nil(t, got)
 		})
 	})
 }
@@ -2297,6 +2361,59 @@ func Test_usecase_markCouponUsed(t *testing.T) {
 
 func Test_usecase_createPurchaseInTx(t *testing.T) {
 	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("クーポン指定ありのとき引き換えから使用済み確定まで通して購入を返す", func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			userID := uuidtestkit.NewTestFromSalt(t, "txok_user")
+			productID := uuidtestkit.NewTestFromSalt(t, "txok_product")
+			c := newRedemptionCoupon(t, "txok_coupon", userID, domaincoupon.NewAllScope())
+			now := time.Date(2026, time.September, 6, 0, 0, 0, 0, time.UTC)
+
+			userLock := mock_user.NewMockLockRepository(ctrl)
+			userLock.EXPECT().LockShareByID(gomock.Any(), userID).Return(activePurchaser(t, userID), nil)
+			couponRepo := mock_coupon.NewMockRepository(ctrl)
+			couponRepo.EXPECT().LockByID(gomock.Any(), c.ID()).Return(c, nil)
+			couponRepo.EXPECT().UpdateUsed(gomock.Any(), c.ID(), now).Return(nil)
+			productRepo := mock_product.NewMockRepository(ctrl)
+			productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).Return(lockedProducts(t, productID, 20), nil)
+			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
+			repo := mock_purchase.NewMockRepository(ctrl)
+			repo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+			reread := rereadPurchase(t)
+			repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(reread, nil)
+			emit := mock_outbox.NewMockEmitUsecase(ctrl)
+			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
+
+			u := &usecase{
+				tracer:      observability.NewNoopTracerFactory(t).Usecase(),
+				repo:        repo,
+				productRepo: productRepo,
+				userLock:    userLock,
+				couponRepo:  couponRepo,
+				emit:        emit,
+			}
+			draft, err := newPurchaseDraft([]DetailParam{{ProductID: productID, Quantity: 2}})
+			require.NoError(t, err)
+
+			entity, redeemed, cerr := u.createPurchaseInTx(
+				context.Background(),
+				CreatePurchaseParams{UserID: userID, CouponID: ptr.To(c.ID())},
+				draft,
+				now,
+			)
+
+			require.NoError(t, cerr)
+			assert.Equal(t, reread, entity)
+			require.NotNil(t, redeemed)
+			assert.Equal(t, c.ID(), redeemed.ID())
+			assert.True(t, redeemed.IsUsed())
+		})
+	})
 
 	t.Run("異常系", func(t *testing.T) {
 		t.Parallel()

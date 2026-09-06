@@ -14,7 +14,6 @@ import (
 	purchaseuc "go-boilerplate/internal/usecase/purchase"
 	mock_purchaseuc "go-boilerplate/internal/usecase/purchase/mock"
 	"go-boilerplate/internal/usecase/tools/timewindow"
-	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/safecast"
 	uuidtestkit "go-boilerplate/pkg/uuid/testkit"
 
@@ -309,63 +308,6 @@ func Test_server_GetPurchases(t *testing.T) {
 			resp, err := s.GetPurchases(authnContext(t, userID), gen.GetPurchasesRequestObject{Params: gen.GetPurchasesParams{}})
 			assert.Nil(t, resp)
 			require.ErrorIs(t, err, apperror.ErrInternal)
-		})
-	})
-}
-
-func Test_toAppliedCouponResponse(t *testing.T) {
-	t.Parallel()
-
-	t.Run("正常系", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("値引きと適用範囲を2軸のまま写す", func(t *testing.T) {
-			t.Parallel()
-
-			value, err := decimal.Parse("0.10")
-			require.NoError(t, err)
-			target := uuidtestkit.NewTestFromSalt(t, "applied_category")
-			view := &purchaseuc.AppliedCouponView{
-				ID:            uuidtestkit.NewTestFromSalt(t, "applied_coupon"),
-				DiscountKind:  "rate",
-				DiscountValue: value,
-				ScopeKind:     "category",
-				ScopeTargetID: &target,
-			}
-
-			got := toAppliedCouponResponse(view)
-
-			require.NotNil(t, got)
-			assert.Equal(t, view.ID.ToPrimitive(), got.Id)
-			assert.Equal(t, gen.CouponDiscountKind("rate"), got.Discount.Kind)
-			assert.Equal(t, "0.1", got.Discount.Value)
-			assert.Equal(t, gen.CouponScopeKind("category"), got.Scope.Kind)
-			require.NotNil(t, got.Scope.TargetId)
-			assert.Equal(t, target.ToPrimitive(), *got.Scope.TargetId)
-		})
-
-		t.Run("全体の適用範囲は対象IDをnilで返す", func(t *testing.T) {
-			t.Parallel()
-
-			value, err := decimal.Parse("5")
-			require.NoError(t, err)
-			view := &purchaseuc.AppliedCouponView{
-				ID:            uuidtestkit.NewTestFromSalt(t, "applied_all"),
-				DiscountKind:  "flat",
-				DiscountValue: value,
-				ScopeKind:     "all",
-			}
-
-			got := toAppliedCouponResponse(view)
-
-			require.NotNil(t, got)
-			assert.Nil(t, got.Scope.TargetId)
-		})
-
-		t.Run("未適用の場合はnilを返す", func(t *testing.T) {
-			t.Parallel()
-
-			assert.Nil(t, toAppliedCouponResponse(nil))
 		})
 	})
 }

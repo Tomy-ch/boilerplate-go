@@ -200,6 +200,29 @@ func Test_toPurchaseGetDetailResponse(t *testing.T) {
 			assert.EqualValues(t, 2, r.Details[0].Quantity)
 		})
 
+		t.Run("クーポン適用済みビューは値引き額と適用クーポンをレスポンスへ写す", func(t *testing.T) {
+			t.Parallel()
+
+			couponID := uuidtestkit.NewTestFromSalt(t, "hd_coupon")
+			view := detailViewFixture(t)
+			view.DiscountAmount = 16000
+			view.AppliedCoupon = &purchaseuc.AppliedCouponView{
+				ID:            couponID,
+				DiscountKind:  "rate",
+				DiscountValue: decimaltestkit.MustParse(t, "0.10"),
+				ScopeKind:     "all",
+			}
+
+			r, err := toPurchaseGetDetailResponse(view)
+
+			require.NoError(t, err)
+			assert.Equal(t, int64(16000), r.DiscountAmount)
+			require.NotNil(t, r.AppliedCoupon)
+			assert.Equal(t, couponID.ToPrimitive(), r.AppliedCoupon.Id)
+			assert.Equal(t, gen.CouponDiscountKind("rate"), r.AppliedCoupon.Discount.Kind)
+			assert.Equal(t, gen.CouponScopeKind("all"), r.AppliedCoupon.Scope.Kind)
+		})
+
 		t.Run("キャンセル済みビューはcanceledAtを写像しpaidAtはnilになる", func(t *testing.T) {
 			t.Parallel()
 

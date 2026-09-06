@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go-boilerplate/internal/apperror"
+	domaincoupon "go-boilerplate/internal/domain/coupon"
 	domainpurchase "go-boilerplate/internal/domain/purchase"
 	"go-boilerplate/internal/infrastructure/rdb/driver"
 	"go-boilerplate/internal/infrastructure/rdb/sqlc/gen"
@@ -72,6 +73,32 @@ func insertPurchase(
 	return purchaseID
 }
 
+// insertCoupon は、全体スコープ・定率のクーポンを 1 件挿入し ID を返します。
+func insertCoupon(ctx context.Context, t *testing.T, db driver.DBTX, seed string, userID uuid.UUID) uuid.UUID {
+	t.Helper()
+	couponID := mustParse(t, seed)
+	_, err := db.Exec(ctx,
+		"INSERT INTO coupons (id, user_id, discount_kind, discount_value, scope_kind, scope_target_id, expires_at, issued_at) "+
+			"VALUES ($1,$2,$3,$4,$5,NULL,NOW() + INTERVAL '30 days',NOW() - INTERVAL '1 days')",
+		couponID, userID,
+		domaincoupon.DiscountKindRate.Code(), "0.10", domaincoupon.ScopeKindAll.Code(),
+	)
+	require.NoError(t, err)
+	return couponID
+}
+
+// applyCouponToPurchase は、挿入済みの購入へクーポンの適用結果を書き込みます。
+func applyCouponToPurchase(
+	ctx context.Context, t *testing.T, db driver.DBTX, purchaseID, couponID uuid.UUID, discount int,
+) {
+	t.Helper()
+	_, err := db.Exec(ctx,
+		"UPDATE purchases SET coupon_id = $2, discount_amount = $3, tax_amount = $4, total_amount = $5 WHERE id = $1",
+		purchaseID, couponID, discount, 14400, 158900,
+	)
+	require.NoError(t, err)
+}
+
 // insertDetail は、購入明細を 1 件挿入します。
 func insertDetail(ctx context.Context, t *testing.T, db driver.DBTX, purchaseID, productID uuid.UUID, quantity, unitPrice int) {
 	t.Helper()
@@ -122,6 +149,9 @@ func Test_service_FindDetailByUserAndCode(t *testing.T) {
 				assert.Equal(t, int64(176500), got.TotalAmount)
 				assert.Nil(t, got.PaidAt)
 				assert.Nil(t, got.CanceledAt)
+				// クーポン未適用の行では LEFT JOIN が全列 NULL を返す。
+				assert.Zero(t, got.DiscountAmount)
+				assert.Nil(t, got.AppliedCoupon)
 
 				require.Len(t, got.Items, 2)
 				assert.Equal(t, productA, got.Items[0].ProductID)
@@ -131,6 +161,32 @@ func Test_service_FindDetailByUserAndCode(t *testing.T) {
 				assert.Equal(t, productB, got.Items[1].ProductID)
 				assert.Equal(t, "商品B", got.Items[1].ProductName)
 				assert.Equal(t, "1500", got.Items[1].UnitPrice.String())
+			})
+		})
+
+		t.Run("クーポン適用済み購入は値引き額と適用クーポンを結合込みで返す", func(t *testing.T) {
+			t.Parallel()
+
+			txm.WithinTx(func(ctx context.Context) {
+				drv := driver.New(ctx, testDB)
+				userA := mustParse(t, seedUserA)
+				productA := insertProduct(ctx, t, drv, "e5000000-0000-4000-8000-000000000001", "商品K", 80000)
+				const purchaseCode = "qs-code-coupon"
+				purchaseID := insertPurchase(ctx, t, drv, userA, mustParse(t, seedUnprocessedSID), purchaseCode, nil, nil)
+				insertDetail(ctx, t, drv, purchaseID, productA, 2, 800)
+				couponID := insertCoupon(ctx, t, drv, "e5000000-0000-4000-8000-0000000000c1", userA)
+				applyCouponToPurchase(ctx, t, drv, purchaseID, couponID, 16000)
+
+				got, err := svc.FindDetailByUserAndCode(ctx, userA, purchaseCode)
+
+				require.NoError(t, err)
+				assert.Equal(t, int64(16000), got.DiscountAmount)
+				require.NotNil(t, got.AppliedCoupon)
+				assert.Equal(t, couponID, got.AppliedCoupon.ID)
+				assert.Equal(t, domaincoupon.DiscountKindRate.Code(), got.AppliedCoupon.DiscountKind)
+				assert.Equal(t, "0.1", got.AppliedCoupon.DiscountValue.String())
+				assert.Equal(t, domaincoupon.ScopeKindAll.Code(), got.AppliedCoupon.ScopeKind)
+				assert.Nil(t, got.AppliedCoupon.ScopeTargetID)
 			})
 		})
 

@@ -577,6 +577,24 @@ func TestCoupon_DiscountFor(t *testing.T) {
 			assert.Equal(t, 1, got)
 		})
 	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("値引き額が決済スケールの整数に収まらない場合、ErrInvalidDiscountValueを返す", func(t *testing.T) {
+			t.Parallel()
+
+			// Line.Subtotal は観測値であって検証を持たないため、決済スケールへ落とすと
+			// int64 を超える小計がドメインへ届き得る。
+			c := newScopedCoupon(t, rate(t, "1"), NewAllScope())
+			line, _ := newTestLine(t, "100000000000000000000")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.ErrorIs(t, err, ErrInvalidDiscountValue)
+			assert.Zero(t, got)
+		})
+	})
 }
 
 func TestCoupon_Redeem(t *testing.T) {

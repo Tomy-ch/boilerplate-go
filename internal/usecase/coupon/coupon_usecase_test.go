@@ -372,6 +372,7 @@ func Test_usecase_ListApplicableToMyCart(t *testing.T) {
 			p := newTestProduct(t, "oos_product", "100.00", 0)
 			c := newCoupon(t, "oos_coupon", userID, rateDiscount(t, "0.10"), domaincoupon.NewAllScope())
 
+			deps.clock.EXPECT().Now().Return(testNow)
 			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
 			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
 			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
@@ -402,6 +403,7 @@ func Test_usecase_ListApplicableToMyCart(t *testing.T) {
 			u, deps := newTestUsecase(t)
 			authn, userID := newTestAuthn(t)
 			c := newCoupon(t, "nocart_coupon", userID, rateDiscount(t, "0.10"), domaincoupon.NewAllScope())
+			deps.clock.EXPECT().Now().Return(testNow)
 			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
 			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrNotFound)
 
@@ -419,6 +421,7 @@ func Test_usecase_ListApplicableToMyCart(t *testing.T) {
 			c := newCoupon(t, "missing_coupon", userID, rateDiscount(t, "0.10"), domaincoupon.NewAllScope())
 			missing := uuidtestkit.NewTestFromSalt(t, "missing_product")
 
+			deps.clock.EXPECT().Now().Return(testNow)
 			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
 			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, missing), nil)
 			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{}, nil)
@@ -449,12 +452,36 @@ func Test_usecase_ListApplicableToMyCart(t *testing.T) {
 			u, deps := newTestUsecase(t)
 			authn, userID := newTestAuthn(t)
 			c := newCoupon(t, "carterr_coupon", userID, rateDiscount(t, "0.10"), domaincoupon.NewAllScope())
+			deps.clock.EXPECT().Now().Return(testNow)
 			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
 			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrCanceled)
 
 			_, err := u.ListApplicableToMyCart(t.Context(), authn)
 
 			require.ErrorIs(t, err, apperror.ErrCanceled)
+		})
+
+		t.Run("値引き額の計算が失敗した場合、エラーを伝播する", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+			authn, userID := newTestAuthn(t)
+			// Line.Subtotal はドメインでは検証しない観測値なので、決済スケールへ落とすと
+			// int64 を超える対象小計が DiscountFor へ届き得る。
+			a := newTestProduct(t, "overflow_a", "90000000000000000", 10)
+			b := newTestProduct(t, "overflow_b", "90000000000000000", 10)
+			c := newCoupon(t, "overflow_coupon", userID, rateDiscount(t, "1"), domaincoupon.NewAllScope())
+
+			deps.clock.EXPECT().Now().Return(testNow)
+			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+			deps.cartRepo.EXPECT().
+				FindByOwnerID(gomock.Any(), userID).
+				Return(newTestCart(t, userID, a.ID(), b.ID()), nil)
+			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{a, b}, nil)
+
+			_, err := u.ListApplicableToMyCart(t.Context(), authn)
+
+			require.ErrorIs(t, err, domaincoupon.ErrInvalidDiscountValue)
 		})
 
 		t.Run("商品の取得に失敗した場合、エラーを伝播する", func(t *testing.T) {
@@ -464,6 +491,7 @@ func Test_usecase_ListApplicableToMyCart(t *testing.T) {
 			authn, userID := newTestAuthn(t)
 			c := newCoupon(t, "producterr_coupon", userID, rateDiscount(t, "0.10"), domaincoupon.NewAllScope())
 			p := newTestProduct(t, "producterr_product", "100.00", 10)
+			deps.clock.EXPECT().Now().Return(testNow)
 			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
 			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
 			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(nil, apperror.ErrCanceled)
@@ -620,6 +648,17 @@ func Test_requireUserID(t *testing.T) {
 			_, err := requireUserID(nil)
 
 			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+		})
+
+		t.Run("内部ユーザーIDが未解決の場合はErrUserIDUnresolvedを返す", func(t *testing.T) {
+			t.Parallel()
+
+			a, err := auth.New("subject-unresolved", auth.IssuerMock, nil, nil)
+			require.NoError(t, err)
+
+			_, uerr := requireUserID(a)
+
+			require.ErrorIs(t, uerr, auth.ErrUserIDUnresolved)
 		})
 	})
 }

@@ -429,6 +429,32 @@ func TestReconstruct(t *testing.T) {
 			assert.True(t, details[0].UnitPrice().Decimal().Equal(actual.Details()[0].UnitPrice().Decimal()))
 		})
 
+		t.Run("クーポン適用済みの購入を再構築する", func(t *testing.T) {
+			t.Parallel()
+			id, code, userID, statusID, details, orderedAt := valid(t)
+			couponID := uuidtestkit.NewTestFromSalt(t, "rc_coupon")
+			// 課税の基礎は値引き後の額なので tax は (160000-16000)*10/100。
+			actual, err := Reconstruct(id, Attributes{
+				Code:           code,
+				UserID:         userID,
+				StatusID:       statusID,
+				StatusCode:     StatusUnprocessed.Code(),
+				SubtotalAmount: 160000,
+				DiscountAmount: 16000,
+				CouponID:       &couponID,
+				TaxAmount:      14400,
+				ShippingFee:    500,
+				TotalAmount:    158900,
+				Details:        details,
+				OrderedAt:      orderedAt,
+			})
+			require.NoError(t, err)
+			require.NotNil(t, actual.CouponID())
+			assert.Equal(t, couponID, *actual.CouponID())
+			assert.Equal(t, 16000, actual.DiscountAmount())
+			assert.Equal(t, 160000, actual.SubtotalAmount())
+		})
+
 		t.Run("支払い後にキャンセルされた購入（paidAtとcanceledAtの両方セット）を再構築できる", func(t *testing.T) {
 			t.Parallel()
 			id, code, userID, statusID, details, orderedAt := valid(t)
@@ -489,6 +515,50 @@ func TestReconstruct(t *testing.T) {
 
 	t.Run("異常系", func(t *testing.T) {
 		t.Parallel()
+
+		t.Run("クーポンIDはあるが値引きが0の場合、ErrZeroDiscountを返す", func(t *testing.T) {
+			t.Parallel()
+			id, code, userID, statusID, details, orderedAt := valid(t)
+			couponID := uuidtestkit.NewTestFromSalt(t, "rc_zero_coupon")
+			actual, err := Reconstruct(id, Attributes{
+				Code:           code,
+				UserID:         userID,
+				StatusID:       statusID,
+				StatusCode:     StatusUnprocessed.Code(),
+				SubtotalAmount: 160000,
+				DiscountAmount: 0,
+				CouponID:       &couponID,
+				TaxAmount:      16000,
+				ShippingFee:    500,
+				TotalAmount:    176500,
+				Details:        details,
+				OrderedAt:      orderedAt,
+			})
+			require.ErrorIs(t, err, ErrZeroDiscount)
+			assert.Nil(t, actual)
+		})
+
+		t.Run("値引きが小計を超える場合、ErrInvalidAmountを返す", func(t *testing.T) {
+			t.Parallel()
+			id, code, userID, statusID, details, orderedAt := valid(t)
+			couponID := uuidtestkit.NewTestFromSalt(t, "rc_over_coupon")
+			actual, err := Reconstruct(id, Attributes{
+				Code:           code,
+				UserID:         userID,
+				StatusID:       statusID,
+				StatusCode:     StatusUnprocessed.Code(),
+				SubtotalAmount: 160000,
+				DiscountAmount: 160001,
+				CouponID:       &couponID,
+				TaxAmount:      0,
+				ShippingFee:    500,
+				TotalAmount:    500,
+				Details:        details,
+				OrderedAt:      orderedAt,
+			})
+			require.ErrorIs(t, err, ErrInvalidAmount)
+			assert.Nil(t, actual)
+		})
 
 		t.Run("statusIDがゼロ値の場合、ErrInvalidStatusIDを返す", func(t *testing.T) {
 			t.Parallel()
@@ -2614,6 +2684,39 @@ func TestPurchase_CouponID(t *testing.T) {
 			*got = uuidtestkit.NewTestFromSalt(t, "coupon_mutated")
 
 			assert.Equal(t, couponID, *p.CouponID())
+		})
+
+		t.Run("再構築時に渡したポインタを書き換えてもエンティティは変わらない", func(t *testing.T) {
+			t.Parallel()
+
+			original := uuidtestkit.NewTestFromSalt(t, "cid_coupon")
+			couponID := original
+			p, err := Reconstruct(uuidtestkit.NewTestFromSalt(t, "cid_id"), Attributes{
+				Code:           "cid-code",
+				UserID:         uuidtestkit.NewTestFromSalt(t, "cid_user"),
+				StatusID:       uuidtestkit.NewTestFromSalt(t, "cid_status"),
+				StatusCode:     StatusUnprocessed.Code(),
+				SubtotalAmount: 160000,
+				DiscountAmount: 16000,
+				CouponID:       &couponID,
+				TaxAmount:      14400,
+				ShippingFee:    500,
+				TotalAmount:    158900,
+				Details: []PurchaseDetail{
+					NewPurchaseDetail(uuidtestkit.NewTestFromSalt(t, "cid_d1"), PurchaseDetailAttributes{
+						ProductID: uuidtestkit.NewTestFromSalt(t, "cid_p1"),
+						Quantity:  2,
+						UnitPrice: mustPrice(t, "800"),
+					}),
+				},
+				OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
+			})
+			require.NoError(t, err)
+
+			couponID = uuidtestkit.NewTestFromSalt(t, "cid_mutated")
+
+			require.NotNil(t, p.CouponID())
+			assert.Equal(t, original, *p.CouponID())
 		})
 	})
 }
