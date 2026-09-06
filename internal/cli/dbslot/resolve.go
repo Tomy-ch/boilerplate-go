@@ -141,9 +141,9 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 		AppProject: orDefault(slot["SERVE_PROJECT"], "gobp-app-"+filepath.Base(r.cfg.Root)),
 		AuthIssuer: "http://localhost:" + orDefault(slot["MOCK_AUTH_HOST_PORT"], strconv.Itoa(r.cfg.MockAuthBase)) + mockAuthIssuerPath,
 
-		RealtimeTableSuffix: realtimeName(r.cfg.RealtimeTableSuffix, slot["SLOT"], slotInfixTable),
-		RealtimeQueuePrefix: realtimeName(r.cfg.RealtimeQueuePrefix, slot["SLOT"], slotInfixName),
-		RealtimeTopic:       realtimeName(r.cfg.RealtimeTopic, slot["SLOT"], slotInfixName),
+		RealtimeTableSuffix: realtimeName(r.cfg.Realtime.TableSuffix, slot["SLOT"], slotInfixTable),
+		RealtimeQueuePrefix: realtimeName(r.cfg.Realtime.QueuePrefix, slot["SLOT"], slotInfixName),
+		RealtimeTopic:       realtimeName(r.cfg.Realtime.Topic, slot["SLOT"], slotInfixName),
 	}
 
 	// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。
@@ -339,10 +339,12 @@ func readSlotFile(path string) map[string]string {
 	return values
 }
 
-// realtimeName は、基底名にスロット番号を継いだ資源名を返します。スロットを保持していなければ
-// 基底名のままで、埋め込み env の REALTIME_* と一致します。
+// realtimeName は、基底名にスロット番号を継いだ資源名を返します（基底の出所は Config.Realtime）。
+//
+// 基底が空なら継ぎません。空の topic は「fan-out を配線すると起動に失敗する」という env の契約で、
+// そこへスロット番号だけを継ぐと `-wt2` のような、契約でも正しい名前でもない値になります。
 func realtimeName(base, slot, infix string) string {
-	if slot == "" {
+	if base == "" || slot == "" {
 		return base
 	}
 

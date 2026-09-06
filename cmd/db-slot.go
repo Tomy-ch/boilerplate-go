@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"go-boilerplate/internal/cli/dbslot"
-	"go-boilerplate/internal/config"
-	"go-boilerplate/pkg/xerrors"
 
 	"github.com/spf13/cobra"
 )
@@ -155,19 +153,14 @@ func slotConfig(root string) (dbslot.Config, error) {
 		APPEnv:        os.Getenv("APP_ENV"),
 	}
 
-	// Realtime の資源名の基底は埋め込み env が正本。読めなければここで止める。
-	// 空のまま進ませてはならない: compose 側の既定値は `${VAR:-local}` なので、空は
-	// エラーではなく主 checkout の名前空間へ黙って落ち、worktree 間の混線を生む
-	// （この機構が防いでいるものそのもの）。
-	loaded, err := config.SetUpConfig()
+	// 読めなければここで止める。空のまま渡すと compose の既定値 `${VAR:-local}` が主 checkout の
+	// 名前へ黙って置き換え、worktree 間で混線する。
+	base, err := dbslot.LoadRealtimeBase()
 	if err != nil {
-		return dbslot.Config{}, xerrors.Wrap(err, "load embedded env for the realtime names")
+		return dbslot.Config{}, err
 	}
 
-	rt := config.NewRealtimeConfig(loaded)
-	cfg.RealtimeTableSuffix = rt.TableSuffix()
-	cfg.RealtimeQueuePrefix = rt.QueuePrefix()
-	cfg.RealtimeTopic = rt.Topic()
+	cfg.Realtime = base
 
 	return cfg, nil
 }

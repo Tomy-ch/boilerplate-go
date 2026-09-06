@@ -45,9 +45,11 @@ func newResolver(t *testing.T, root string, stub probeStub) (*Resolver, *bytes.B
 
 	cfg := Config{
 		Root: root, SharedProject: "gobp-shared", APIBasePort: 8080, MockAuthBase: 2010,
-		RealtimeTableSuffix: "local",
-		RealtimeQueuePrefix: "realtime-local",
-		RealtimeTopic:       "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local",
+		Realtime: RealtimeBase{
+			TableSuffix: "local",
+			QueuePrefix: "realtime-local",
+			Topic:       "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local",
+		},
 	}
 
 	return NewResolver(cfg, stub.probe(), &out), &out
@@ -776,6 +778,13 @@ func Test_realtimeName(t *testing.T) {
 
 			assert.Equal(t, "local", realtimeName("local", "", slotInfixTable),
 				"スロット未取得の checkout は埋め込み env の名前をそのまま使う")
+		})
+
+		t.Run("基底が空ならスロット番号を継がない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Empty(t, realtimeName("", "3", slotInfixName),
+				"空の topic は env の契約。継ぐと `-wt3` という契約でも名前でもない値になる")
 		})
 	})
 }
