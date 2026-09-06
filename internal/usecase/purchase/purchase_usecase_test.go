@@ -2506,5 +2506,30 @@ func Test_usecase_emitCreated(t *testing.T) {
 
 			require.ErrorIs(t, err, apperror.ErrCanceled)
 		})
+
+		t.Run("注文日時を持たない集約は組み立てで弾き、outboxへ積まない", func(t *testing.T) {
+			t.Parallel()
+
+			// emit に EXPECT を張らないことで、payload の組み立てに失敗したら
+			// outbox 行を作らずに戻ることを担保する。
+			ctrl := gomock.NewController(t)
+			emit := mock_outbox.NewMockEmitUsecase(ctrl)
+
+			u := &usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), emit: emit}
+			productA := uuidtestkit.NewTestFromSalt(t, "emit_zero_product")
+			entity, nerr := domainpurchase.New(
+				uuidtestkit.NewTestFromSalt(t, "emit_zero_id"),
+				"emit-zero-code",
+				uuidtestkit.NewTestFromSalt(t, "emit_zero_user"),
+				[]domainpurchase.DetailInput{{ID: uuidtestkit.NewTestFromSalt(t, "emit_zero_d"), ProductID: productA, Quantity: 1}},
+				[]domainpurchase.LockedProduct{domainpurchase.NewLockedProduct(productA, mustPrice(t, "800"), 20)},
+			)
+			require.NoError(t, nerr)
+			require.True(t, entity.OrderedAt().IsZero())
+
+			err := u.emitCreated(context.Background(), entity)
+
+			require.ErrorIs(t, err, apperror.ErrInternal)
+		})
 	})
 }

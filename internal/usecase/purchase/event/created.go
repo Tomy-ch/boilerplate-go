@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"go-boilerplate/internal/apperror"
 	"go-boilerplate/internal/domain/purchase"
 	"go-boilerplate/pkg/ptr"
 	"go-boilerplate/pkg/xerrors"
@@ -15,6 +16,9 @@ import (
 
 // TypeCreated は、購入作成の outbox イベント種別（version 込み）です。
 const TypeCreated = "purchase.created.v1"
+
+// errOrderedAtUnset は、注文日時を持たない集約から snapshot を組もうとした場合のエラーです。
+var errOrderedAtUnset = xerrors.Wrap(apperror.ErrInternal, "purchase.created payload requires a persisted orderedAt")
 
 // created は、purchase.created.v1 の snapshot payload です。金額は決済スケール（整数セント）です。
 // 運ぶ項目と落とす項目の対応は payload_parity.yaml が宣言します。
@@ -39,9 +43,6 @@ type createdDetail struct {
 	Quantity  int    `json:"quantity"`
 	UnitPrice string `json:"unitPrice"`
 }
-
-// errOrderedAtUnset は、注文日時を持たない集約から snapshot を組もうとした場合のエラーです。
-var errOrderedAtUnset = xerrors.New("purchase.created payload requires a persisted orderedAt")
 
 // BuildCreated は、購入集約から purchase.created.v1 の snapshot payload を marshal します。
 //

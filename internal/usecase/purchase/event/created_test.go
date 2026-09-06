@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"go-boilerplate/internal/apperror"
 	"go-boilerplate/internal/domain/lexicon/money"
 	domainpurchase "go-boilerplate/internal/domain/purchase"
 	"go-boilerplate/internal/usecase/purchase/event"
@@ -142,6 +143,9 @@ func TestBuildCreated(t *testing.T) {
 			assert.Equal(t, 500, decoded.ShippingFee)
 			assert.Equal(t, 158900, decoded.TotalAmount)
 			// 購読側が snapshot だけで合計を組み立て直せることを固定する。
+			// 直前のリテラル群から算術的に導けるので単独で赤くなることは無いが、
+			// ADR-0113 が「内訳を運ぶ snapshot は算術を全項非 0 で固定する」を規約に
+			// しているため、規約を満たしている証拠としてここに置く。
 			assert.Equal(t,
 				decoded.TotalAmount,
 				decoded.SubtotalAmount-decoded.DiscountAmount+decoded.TaxAmount+decoded.ShippingFee,
@@ -195,7 +199,7 @@ func TestBuildCreated(t *testing.T) {
 
 			_, perr := event.BuildCreated(entity)
 
-			require.Error(t, perr)
+			require.ErrorIs(t, perr, apperror.ErrInternal)
 		})
 	})
 }
