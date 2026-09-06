@@ -37,15 +37,27 @@ func (s probeStub) probe() *GitProbe {
 	}
 }
 
-// newResolver は、root を持つ Resolver と出力バッファを返します。
+// leaseStub は、リース所有権の判定を固定値で返します。
+type leaseStub struct{ owned bool }
+
+func (s leaseStub) OwnedBySelf(int) bool { return s.owned }
+
+// newResolver は、宣言どおりのスロットをリースしている Resolver と出力バッファを返します。
 func newResolver(t *testing.T, root string, stub probeStub) (*Resolver, *bytes.Buffer) {
+	t.Helper()
+
+	return newResolverWithLease(t, root, stub, leaseStub{owned: true})
+}
+
+// newResolverWithLease は、リース所有権の判定点を差し替えた Resolver と出力バッファを返します。
+func newResolverWithLease(t *testing.T, root string, stub probeStub, lease LeaseOwnership) (*Resolver, *bytes.Buffer) {
 	t.Helper()
 
 	var out bytes.Buffer
 
 	cfg := Config{Root: root, SharedProject: "gobp-shared", APIBasePort: 8080, MockAuthBase: 2010}
 
-	return NewResolver(cfg, stub.probe(), &out), &out
+	return NewResolver(cfg, stub.probe(), lease, &out), &out
 }
 
 // writeSlot は、root に .gobp-db-slot を書き出します。
@@ -145,6 +157,24 @@ func TestResolver_Resolve(t *testing.T) {
 			assert.Equal(t, "gobp-wt-3", got.AppProject)
 			assert.Equal(t, "http://localhost:2013/default", got.AuthIssuer)
 		})
+
+		t.Run("リースを他 worktree に回収されていればスロット定義を無視して既定へ落とす", func(t *testing.T) {
+			t.Parallel()
+
+			root := filepath.Join(t.TempDir(), "go-boilerplate")
+			require.NoError(t, os.Mkdir(root, dirPerm))
+			writeSlot(t, root, slotFileContent)
+			r, _ := newResolverWithLease(t, root, probeStub{dirs: "/repo/.git/worktrees/wt3\n/repo/.git\n"},
+				leaseStub{owned: false})
+
+			got, err := r.Resolve(t.Context())
+			require.NoError(t, err)
+			assert.False(t, got.SlotHeld)
+			assert.Equal(t, "local", got.DBLocal)
+			assert.Equal(t, "test", got.DBTest)
+			assert.Equal(t, "gobp-app-go-boilerplate", got.AppProject)
+			assert.Equal(t, "http://localhost:2010/default", got.AuthIssuer)
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
@@ -214,6 +244,28 @@ func TestResolver_RequireOwner(t *testing.T) {
 			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
 			assert.Contains(t, out.String(), "所有するデータベースがありません")
 			assert.Contains(t, out.String(), "make slot-acquire")
+		})
+
+		t.Run("回収済みのスロット定義が残っていても所有者とみなさない", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeSlot(t, root, slotFileContent)
+			r, out := newResolverWithLease(t, root, probeStub{dirs: "/repo/.git/worktrees/wt3\n/repo/.git\n"},
+				leaseStub{owned: false})
+
+			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
+			assert.Contains(t, out.String(), "回収されている")
+		})
+
+		t.Run("リースの判定点が無ければ所有者とみなさない", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeSlot(t, root, slotFileContent)
+			r, _ := newResolverWithLease(t, root, probeStub{dirs: "/repo/.git/worktrees/wt3\n/repo/.git\n"}, nil)
+
+			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
 		})
 
 		t.Run("スロット定義に DB 名が無ければ所有者とみなさない", func(t *testing.T) {
@@ -338,7 +390,7 @@ func TestNewResolver(t *testing.T) {
 		t.Run("probe を渡さなければホストの git を使う実依存で組み立てる", func(t *testing.T) {
 			t.Parallel()
 
-			r := NewResolver(Config{Root: t.TempDir()}, nil, io.Discard)
+			r := NewResolver(Config{Root: t.TempDir()}, nil, leaseStub{owned: true}, io.Discard)
 
 			assert.NotNil(t, r.probe.LookGit)
 			assert.NotNil(t, r.probe.GitDirs)
