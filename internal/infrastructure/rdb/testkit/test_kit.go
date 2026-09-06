@@ -131,17 +131,35 @@ func (t *testTxRunner) WithinTxE(fn func(ctx context.Context) error) {
 func HoldSuiteSerialization(t *testing.T, db driver.DatabaseDriver) {
 	t.Helper()
 
+	release, err := holdSuiteSerialization(context.Background(), db)
+	require.NoError(t, err)
+	t.Cleanup(release)
+}
+
+// holdSuiteSerialization は、直列化を占有し、解放する関数を返します。
+// 占有に失敗した場合は何も保持せずにエラーだけを返します。
+//
+// 取得と解放をここへ閉じてください。呼び出し側で占有と後始末の登録が別々の文に分かれると、
+// その間で失敗したときに解放されない経路ができます。
+func holdSuiteSerialization(ctx context.Context, db driver.DatabaseDriver) (func(), error) {
 	txLock.Lock()
-	ctx := context.Background()
 
 	holder, err := db.Begin(ctx)
-	require.NoError(t, err)
-	t.Cleanup(func() {
+	if err != nil {
+		txLock.Unlock()
+		return nil, err
+	}
+
+	if err := lockSuiteSerialization(ctx, holder); err != nil {
 		_ = holder.Rollback(ctx)
 		txLock.Unlock()
-	})
+		return nil, err
+	}
 
-	require.NoError(t, lockSuiteSerialization(ctx, holder))
+	return func() {
+		_ = holder.Rollback(ctx)
+		txLock.Unlock()
+	}, nil
 }
 
 // lockSuiteSerialization は、q が属するトランザクションでスイート直列化用の advisory lock を取ります。
