@@ -39,14 +39,18 @@ const (
 
 	// resetCredential は、emulator へ渡す静的資格情報です。emulator は認証しませんが、
 	// SDK は署名のために非空の資格情報を要求します。実 AWS が拒む鍵であることが本番到達を止める
-	// 防御の一部なので、app の資格情報（config の REALTIME_*）へ寄せないこと（scripts/README.md の
-	// realtime-reset）。別の鍵でも app の table が見えるのは dynamodb_local が -sharedDb で動くためで
-	// （docker-compose.yaml）、外すと削除が「既にありません」で空振りします。
+	// 防御の一部なので、app の資格情報（config の REALTIME_*）へ寄せないこと（この鍵で app の table が
+	// 見える前提も含め scripts/README.md の realtime-reset）。
 	resetCredential = "reset"
 
-	// awsHostSuffixes は、実 AWS の endpoint を見分ける host の末尾です。
-	// 中国パーティション（.amazonaws.com.cn）と dual-stack（.api.aws）は別の末尾を持つので個別に挙げます。
-	awsHostSuffixes = ".amazonaws.com,.amazonaws.com.cn,.api.aws"
+	// awsHostSuffixes は、実 AWS の endpoint を見分ける host の末尾です。partition と dual-stack ごとに
+	// 末尾が違うので、SDK の endpoint 表
+	// （vendor/github.com/aws/aws-sdk-go-v2/service/dynamodb/internal/endpoints/endpoints.go）が
+	// 使う DNS suffix を全て挙げます。
+	awsHostSuffixes = ".amazonaws.com,.api.aws," +
+		".amazonaws.com.cn,.api.amazonwebservices.com.cn," +
+		".amazonaws.eu,.api.amazonwebservices.eu," +
+		".c2s.ic.gov,.sc2s.sgov.gov,.cloud.adc-e.uk,.csp.hci.ic.gov"
 )
 
 var (
@@ -169,7 +173,7 @@ func validateEndpoint(endpoint string) error {
 	}
 
 	// 末尾のドットは FQDN の書き方の違いでしかなく、TLS 検証も剥がして通す。落としてから比べる。
-	host := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
+	host := strings.TrimRight(strings.ToLower(u.Hostname()), ".")
 	for suffix := range strings.SplitSeq(awsHostSuffixes, ",") {
 		if host == strings.TrimPrefix(suffix, ".") || strings.HasSuffix(host, suffix) {
 			return xerrors.Wrap(errRealAWS, endpoint)

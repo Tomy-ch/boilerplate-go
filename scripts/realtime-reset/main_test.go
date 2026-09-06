@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"context"
 	"flag"
-	"strings"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	root "go-boilerplate"
 	"go-boilerplate/internal/config"
 )
 
@@ -112,24 +114,30 @@ func Test_run(t *testing.T) {
 //nolint:paralleltest // SetUpConfig は os.Setenv でグローバル環境を変更するため並列化不可
 func Test_configuredTables(t *testing.T) {
 	t.Run("正常系", func(t *testing.T) {
-		t.Run("この checkout の suffix を付けた 3 つの table 名を返す", func(t *testing.T) {
-			cfg, err := config.SetUpConfig()
+		t.Run("埋め込みenvのsuffixを付けた3つのtable名を返す", func(t *testing.T) {
+			// 被験体が設定を通らず OS env を読むだけの退行を捉えるため、期待値は埋め込み
+			// ファイルから直に作り、プロセス側の同名変数を外してから呼ぶ。
+			// t.Setenv では未設定へ戻せない。空文字にすると config.Load が「設定済み」と見て
+			// 埋め込みの値で上書きせず、正しい被験体まで空 suffix になってしまう。
+			if v, ok := os.LookupEnv("REALTIME_TABLE_SUFFIX"); ok {
+				t.Cleanup(func() { _ = os.Setenv("REALTIME_TABLE_SUFFIX", v) }) //nolint:usetesting // 復元のため
+				require.NoError(t, os.Unsetenv("REALTIME_TABLE_SUFFIX"))
+			}
+
+			b, err := root.FS.ReadFile("env/.env")
 			require.NoError(t, err)
-			suffix := config.NewRealtimeConfig(cfg).TableSuffix()
+			kv, err := godotenv.Parse(bytes.NewReader(b))
+			require.NoError(t, err)
+			suffix := kv["REALTIME_TABLE_SUFFIX"]
 			require.NotEmpty(t, suffix)
 
 			got, err := configuredTables()
 			require.NoError(t, err)
-			require.Len(t, got, 3, "EventLog / StreamTicket / InstanceLease の 3 つ")
-			for _, name := range got {
-				assert.True(t, strings.HasSuffix(name, "_"+suffix),
-					"別の checkout の table を消さないことが、このツールの存在理由そのもの")
-			}
-			distinct := make(map[string]struct{}, len(got))
-			for _, name := range got {
-				distinct[name] = struct{}{}
-			}
-			assert.Len(t, distinct, 3, "3 つが同じ table を指してはならない")
+			assert.Equal(t, []string{
+				"realtime_event_log_" + suffix,
+				"realtime_stream_ticket_" + suffix,
+				"realtime_instance_lease_" + suffix,
+			}, got, "別の checkout の table や Realtime 以外の table を消さない")
 		})
 	})
 
@@ -138,7 +146,7 @@ func Test_configuredTables(t *testing.T) {
 			t.Setenv("APP_MODE", "invalid-mode")
 
 			got, err := configuredTables()
-			require.Error(t, err)
+			require.ErrorIs(t, err, config.ErrInvalidAppMode)
 			assert.Nil(t, got, "対象が定まらないまま削除へ進ませない")
 		})
 	})
@@ -252,7 +260,7 @@ func Test_validateEndpoint(t *testing.T) {
 			t.Parallel()
 
 			require.NoError(t, validateEndpoint("http://notamazonaws.com:8000"),
-				"境界の受理側。部分一致で拒むと自前ホストを巻き込む")
+				"ラベル境界を無視した末尾一致は自前ホストを巻き込む")
 		})
 	})
 

@@ -160,8 +160,6 @@ func slotConfig(root string) (dbslot.Config, error) {
 		APPEnv:        os.Getenv("APP_ENV"),
 	}
 
-	// 読めなければここで止める。空のまま渡すと compose の既定値 `${VAR:-local}` が主 checkout の
-	// 名前へ黙って置き換え、worktree 間で混線する。
 	base, err := dbslot.LoadRealtimeBase()
 	if err != nil {
 		return dbslot.Config{}, err

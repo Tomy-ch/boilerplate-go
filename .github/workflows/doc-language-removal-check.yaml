@@ -62,7 +62,8 @@ jobs:
 
     env:
       # 残存検査から外す生成物。検査の主題は「畳んだ結果ツリーが辻褄の合う状態か」で、生成物は
-      # 正本ではなく、畳んだあと `make gen-docs` が正本から作り直す。撤去ツールが走査から外す
+      # 正本ではなく、畳んだあと各生成ターゲット（`gen-docs` / `gen-portal-build` / `gen-godoc` /
+      # `gen-api-docs` / `graphify-update` など）が正本から作り直す。撤去ツールが走査から外す
       # `doc-language.ts` の `EXCLUDED_PREFIXES` の生成物に、portal の配信物と OpenAPI の出力を
       # 足した集合である。
       GENERATED_EXCLUDES: >-
