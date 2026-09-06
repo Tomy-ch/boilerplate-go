@@ -76,8 +76,8 @@ func (p *Pool) Acquire(ctx context.Context) error {
 		switch {
 		case p.reg.TryAcquireFresh(slot):
 		case p.reg.IsStale(slot):
-			// heartbeat は make serve 時にしか打たれないため、起動しっぱなしの app を持つスロットも
-			// TTL 超過で stale になる。DB を作り直す前に serve 中でないことを確かめる。
+			// DB を作り直す前に serve 中でないことを確かめる
+			// （起動中でも stale になる理由は docs/maintenance/db-worktree-pool.md）。
 			busy, err := p.slotInUse(ctx, slot)
 			if err != nil {
 				return err
@@ -105,14 +105,33 @@ func (p *Pool) Release(ctx context.Context) error {
 		p.logf("no slot held by this worktree")
 		return nil
 	}
+	// 確認から down までを acquire の走査と直列化し、他 worktree の stale 回収と競合して
+	// 現保持者のコンテナを落とすことを防ぐ。ロックを取れなくても、孤児を残さないため実行する。
+	if unlock, err := p.reg.Lock(); err != nil {
+		p.logf("failed to take the scan lock for slot %d; releasing without it: %v", slot, err)
+	} else {
+		defer unlock()
+	}
+	// リースが stale 回収で他 worktree へ渡っていれば、そのスロットの app コンテナは現保持者のもの。
+	// down すれば他人の serve を落とすため compose には触れず、失効した .gobp-db-slot だけを片付ける。
+	if p.reg.HeldByOther(slot) {
+		_ = os.Remove(p.slotFilePath())
+		p.logf("slot %d is held by another worktree; dropped the stale slot file only", slot)
+		return nil
+	}
 	// serve した app コンテナを停止する（放置すると再割当て・reinit 後の DB を孤児が掴む）。
 	// 停止失敗（docker 未起動・権限不足など）は孤児コンテナ検知のためログへ可視化し、リース解放自体は続行する。
 	if err := p.comp.DownServe(ctx, serveProject(slot)); err != nil {
 		p.logf("failed to stop serve containers for slot %d: %v", slot, err)
 	}
-	p.reg.Release(slot)
+	released := p.reg.Release(slot)
 	_ = os.Remove(p.slotFilePath())
+	if !released {
+		p.logf("slot %d lease could not be confirmed as ours; left it for stale reclaim", slot)
+		return nil
+	}
 	p.logf("released slot %d (databases left warm for reuse)", slot)
+
 	return nil
 }
 
@@ -159,8 +178,8 @@ func (p *Pool) logf(format string, a ...any) {
 
 func (p *Pool) slotFilePath() string { return filepath.Join(p.cfg.Root, ".gobp-db-slot") }
 
-// ensureLocalEnv は、deploy 系 env（dev/stg/prd）での実行を拒否します（DB を作成/破棄する dev/test 専用
-// ツールのため。APP_ENV 未設定はローカル開発とみなし許可）。
+// ensureLocalEnv は、deploy 系 env（dev/stg/prd）での実行を拒否します
+// （理由は README.md「Env guard」。APP_ENV 未設定はローカル開発とみなし許可）。
 func (p *Pool) ensureLocalEnv() error {
 	if p.cfg.APPEnv != "" && !config.IsLocalClassEnv(p.cfg.APPEnv) {
 		return xerrors.Wrap(errDeployEnvRefused, fmt.Sprintf("APP_ENV=%q", p.cfg.APPEnv))
@@ -168,9 +187,8 @@ func (p *Pool) ensureLocalEnv() error {
 	return nil
 }
 
-// slotInUse は、stale なスロットが実際にはまだ使われているかを返します。
-// app コンテナの稼働と DB への接続をそれぞれ確認します。接続プールはアイドルで空になるため、
-// 接続数だけでは serve 中の worktree を見落とします。
+// slotInUse は、stale なスロットが実際にはまだ使われているかを返します
+// （稼働と接続の両方を見る理由は README.md「In-use detection」）。
 func (p *Pool) slotInUse(ctx context.Context, slot int) (bool, error) {
 	running, err := p.comp.RunningContainers(ctx, serveProject(slot))
 	if err != nil {

@@ -45,6 +45,24 @@ func newMockPool(t *testing.T, root, appEnv string) (*Pool, *mock_dbslot.MockDBA
 	return NewPool(reg, admin, comp, cfg, io.Discard, io.Discard), admin, comp
 }
 
+// newMockPoolWithRegistry は、レジストリとログ出力を呼び出し側へ渡す Pool を返す
+// （リースの状態やログ文言を検証するケース用）。
+func newMockPoolWithRegistry(t *testing.T, root, poolDir string,
+) (*Pool, *Registry, *mock_dbslot.MockDBAdmin, *mock_dbslot.MockCompose, *bytes.Buffer) {
+	t.Helper()
+	ctrl := gomock.NewController(t)
+	admin := mock_dbslot.NewMockDBAdmin(ctrl)
+	comp := mock_dbslot.NewMockCompose(ctrl)
+	reg := NewRegistry(poolDir, root, "branch", 30*time.Minute, 8, func() time.Time { return time.Unix(1_000_000, 0) })
+	cfg := Config{
+		Root: root, SharedProject: "gobp-shared",
+		APIBasePort: 8080, MockAuthBase: 4000, DlvBase: 2345, PprofBase: 6060,
+	}
+	logbuf := &bytes.Buffer{}
+
+	return NewPool(reg, admin, comp, cfg, io.Discard, logbuf), reg, admin, comp, logbuf
+}
+
 // expectSlotDBs は、指定スロットの DB 作成/設定呼び出しを期待に登録する。
 func expectSlotDBs(admin *mock_dbslot.MockDBAdmin, slot string) {
 	admin.EXPECT().EnsureDatabase(gomock.Any(), "wt"+slot+"_local").Return(nil)
@@ -300,25 +318,88 @@ func TestPool_Release(t *testing.T) {
 		t.Run("スロット未保持なら何もしない", func(t *testing.T) {
 			t.Parallel()
 
-			pool, _, _ := newMockPool(t, t.TempDir(), "")
+			pool, _, _, _, logbuf := newMockPoolWithRegistry(t, t.TempDir(), t.TempDir())
+
 			require.NoError(t, pool.Release(context.Background()))
+
+			assert.Contains(t, logbuf.String(), "no slot held by this worktree")
+		})
+
+		t.Run("リースを他 worktree に回収されていれば compose を触らず slot ファイルだけ捨てる", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			poolDir := t.TempDir()
+			pool, _, admin, comp, logbuf := newMockPoolWithRegistry(t, root, poolDir)
+
+			comp.EXPECT().UpSharedDB(gomock.Any(), "gobp-shared").Return(nil)
+			expectSlotDBs(admin, "1")
+			require.NoError(t, pool.Acquire(context.Background()))
+
+			// stale 回収で他 worktree がスロット 1 を持って行った状態にする。
+			other := NewRegistry(poolDir, "/w/other", "b", 30*time.Minute, 8,
+				func() time.Time { return time.Unix(1_000_000, 0) })
+			require.NoError(t, other.WriteMeta(1))
+
+			require.NoError(t, pool.Release(context.Background()))
+
+			assert.True(t, other.OwnedBySelf(1), "現保持者のリースを奪ってはならない")
+			_, err := os.Stat(filepath.Join(root, ".gobp-db-slot"))
+			assert.True(t, os.IsNotExist(err))
+			assert.Contains(t, logbuf.String(), "slot 1 is held by another worktree")
+		})
+
+		t.Run("リースの meta を読めないだけなら自分の後始末を取り下げない", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			pool, reg, admin, comp, logbuf := newMockPoolWithRegistry(t, root, t.TempDir())
+
+			comp.EXPECT().UpSharedDB(gomock.Any(), "gobp-shared").Return(nil)
+			expectSlotDBs(admin, "1")
+			require.NoError(t, pool.Acquire(context.Background()))
+
+			// meta だけを失う（他 worktree が保持しているわけではない）。
+			require.NoError(t, os.Remove(reg.metaPath(1)))
+			comp.EXPECT().DownServe(gomock.Any(), "gobp-wt-1").Return(nil)
+
+			require.NoError(t, pool.Release(context.Background()))
+
+			_, err := os.Stat(filepath.Join(root, ".gobp-db-slot"))
+			assert.True(t, os.IsNotExist(err))
+			// 保持を確認できないロックは残す（meta を書く前の取得直後と区別できないため）。
+			assert.DirExists(t, reg.lockDir(1))
+			assert.Contains(t, logbuf.String(), "left it for stale reclaim")
+		})
+
+		t.Run("scan lock を取れなくても後始末は続行する", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			poolDir := t.TempDir()
+			pool, _, admin, comp, logbuf := newMockPoolWithRegistry(t, root, poolDir)
+
+			comp.EXPECT().UpSharedDB(gomock.Any(), "gobp-shared").Return(nil)
+			expectSlotDBs(admin, "1")
+			require.NoError(t, pool.Acquire(context.Background()))
+
+			// .scan.lock を同名ディレクトリで塞ぎ、flock 用の open を確実に失敗させる。
+			require.NoError(t, os.Remove(filepath.Join(poolDir, ".scan.lock")))
+			require.NoError(t, os.Mkdir(filepath.Join(poolDir, ".scan.lock"), dirPerm))
+			comp.EXPECT().DownServe(gomock.Any(), "gobp-wt-1").Return(nil)
+
+			require.NoError(t, pool.Release(context.Background()))
+
+			_, err := os.Stat(filepath.Join(root, ".gobp-db-slot"))
+			assert.True(t, os.IsNotExist(err))
+			assert.Contains(t, logbuf.String(), "releasing without it")
 		})
 
 		t.Run("serve 停止が失敗してもリースは解放しログへ可視化する", func(t *testing.T) {
 			t.Parallel()
 
 			root := t.TempDir()
-			ctrl := gomock.NewController(t)
-			admin := mock_dbslot.NewMockDBAdmin(ctrl)
-			comp := mock_dbslot.NewMockCompose(ctrl)
-			reg := NewRegistry(t.TempDir(), root, "branch", 30*time.Minute, 8,
-				func() time.Time { return time.Unix(1_000_000, 0) })
-			cfg := Config{
-				Root: root, SharedProject: "gobp-shared",
-				APIBasePort: 8080, MockAuthBase: 4000, DlvBase: 2345, PprofBase: 6060,
-			}
-			var logbuf bytes.Buffer
-			pool := NewPool(reg, admin, comp, cfg, io.Discard, &logbuf)
+			pool, _, admin, comp, logbuf := newMockPoolWithRegistry(t, root, t.TempDir())
 
 			comp.EXPECT().UpSharedDB(gomock.Any(), "gobp-shared").Return(nil)
 			expectSlotDBs(admin, "1")
