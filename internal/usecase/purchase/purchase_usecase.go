@@ -176,8 +176,9 @@ type Usecase interface {
 	// params.Window で注文日時の対象期間を、params.StatusCodes でステータスを絞り込めます
 	// （いずれもゼロ値は絞り込みなし）。
 	GetPurchases(ctx context.Context, authn *auth.Authn, params ListPurchasesParams) (*PurchaseListView, error)
-	// CancelPurchase は、本人の購入をキャンセルし、明細分の在庫を復元します。キャンセル・在庫復元・
-	// イベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも存在秘匿のため
+	// CancelPurchase は、本人の購入をキャンセルし、明細分の在庫を復元します。適用していたクーポンは
+	// 有効期限内なら未使用へ戻し、失効していれば使用済みのまま残します。キャンセル・クーポンの返却・
+	// 在庫復元・イベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも存在秘匿のため
 	// NotFound（404）、不正遷移は 409 を返します。
 	CancelPurchase(ctx context.Context, params CancelPurchaseParams) (CancelPurchaseView, error)
 	// PayPurchase は、本人の購入を支払い済みへ遷移させます。決済 SDK / PSP 連携は行わない擬似決済です。
@@ -368,52 +369,12 @@ func (u *usecase) CancelPurchase(ctx context.Context, params CancelPurchaseParam
 	// tx 境界は PayPurchase のコメントを参照。二重キャンセル対策は
 	// docs/spec/usecase/purchase.md § PATCH キャンセル を参照。
 	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
-		locked, lerr := u.repo.LockByCode(ctx, params.PurchaseCode)
-		if lerr != nil {
-			return lerr
-		}
-
-		// 存在秘匿のため NotFound へ畳む理由は CancelPurchase の doc コメントを参照。
-		if locked.UserID() != params.UserID {
-			return xerrors.Wrap(apperror.ErrNotFound, "purchase not found")
-		}
-
-		domainEvent, cerr := locked.Cancel(now)
+		reread, cerr := u.cancelPurchaseInTx(ctx, params, now)
 		if cerr != nil {
 			return cerr
 		}
-
-		if serr := u.restoreStock(ctx, locked.Details()); serr != nil {
-			return serr
-		}
-
-		if perr := u.repo.UpdateCancelled(ctx, locked); perr != nil {
-			return perr
-		}
-
-		payload, berr := event.BuildCanceled(locked)
-		if berr != nil {
-			return berr
-		}
-		eventType, terr := event.WireType(domainEvent.Type())
-		if terr != nil {
-			return terr
-		}
-		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
-			AggregateType: aggregateType,
-			AggregateID:   locked.ID().String(),
-			EventType:     eventType,
-			Payload:       payload,
-			Channel:       outboxbndry.ChannelHTTP,
-		}); eerr != nil {
-			return eerr
-		}
-
-		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
-		if rerr != nil {
-			return rerr
-		}
 		detail = reread
+
 		return nil
 	}); txErr != nil {
 		return CancelPurchaseView{}, txErr
@@ -770,6 +731,30 @@ func toPayPurchaseView(d *purchase.Detail) PayPurchaseView {
 	}
 }
 
+// restoreCoupon は、キャンセルした購入が適用していたクーポンを未使用へ戻します。
+// クーポンを適用していない購入では何もしません。失効したクーポンは戻さず、それは失敗ではありません
+// （規則は docs/spec/usecase/purchase.md の § クーポンの返却（CancelPurchase））。
+func (u *usecase) restoreCoupon(ctx context.Context, couponID *uuid.UUID, now time.Time) error {
+	if couponID == nil {
+		return nil
+	}
+
+	c, err := u.couponRepo.LockByID(ctx, *couponID)
+	if err != nil {
+		return err
+	}
+
+	restored, rerr := c.Restore(now)
+	if rerr != nil {
+		return rerr
+	}
+	if !restored {
+		return nil
+	}
+
+	return u.couponRepo.UpdateUnused(ctx, c.ID())
+}
+
 // restoreStock は、キャンセルした明細ぶんの在庫を対象商品へ戻します。
 // 対象商品をロックしてからドメインで適用します。順序（id 昇順）は LockByIDs が担保します
 // （ADR-0036 (ordered-pessimistic-row-locks)）。
@@ -780,6 +765,62 @@ func (u *usecase) restoreStock(ctx context.Context, details []purchase.PurchaseD
 	}
 
 	return u.applyStockDelta(ctx, products, details, 1)
+}
+
+// cancelPurchaseInTx は、購入キャンセルのトランザクション本体です。
+//
+// ロック順序（購入行 → クーポン行 → 商品行、id 昇順）は docs/spec/usecase/purchase.md の
+// § クーポンの返却（CancelPurchase）を参照。書き込み後は Repository 経由で再検証します
+// （internal/usecase/README.md の Verifying infrastructure against the domain）。
+func (u *usecase) cancelPurchaseInTx(
+	ctx context.Context, params CancelPurchaseParams, now time.Time,
+) (*purchase.Detail, error) {
+	locked, lerr := u.repo.LockByCode(ctx, params.PurchaseCode)
+	if lerr != nil {
+		return nil, lerr
+	}
+
+	// 存在秘匿のため NotFound へ畳む理由は CancelPurchase の doc コメントを参照。
+	if locked.UserID() != params.UserID {
+		return nil, xerrors.Wrap(apperror.ErrNotFound, "purchase not found")
+	}
+
+	domainEvent, cerr := locked.Cancel(now)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	if rerr := u.restoreCoupon(ctx, locked.CouponID(), now); rerr != nil {
+		return nil, rerr
+	}
+
+	if serr := u.restoreStock(ctx, locked.Details()); serr != nil {
+		return nil, serr
+	}
+
+	if perr := u.repo.UpdateCancelled(ctx, locked); perr != nil {
+		return nil, perr
+	}
+
+	payload, berr := event.BuildCanceled(locked)
+	if berr != nil {
+		return nil, berr
+	}
+	eventType, terr := event.WireType(domainEvent.Type())
+	if terr != nil {
+		return nil, terr
+	}
+	if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
+		AggregateType: aggregateType,
+		AggregateID:   locked.ID().String(),
+		EventType:     eventType,
+		Payload:       payload,
+		Channel:       outboxbndry.ChannelHTTP,
+	}); eerr != nil {
+		return nil, eerr
+	}
+
+	return u.repo.FindDetailByID(ctx, locked.ID())
 }
 
 // createPurchaseInTx は、購入作成のトランザクション本体です。

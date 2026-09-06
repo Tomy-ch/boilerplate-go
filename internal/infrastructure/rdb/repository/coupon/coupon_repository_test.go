@@ -298,6 +298,70 @@ func Test_repository_UpdateUsed(t *testing.T) {
 	})
 }
 
+func Test_repository_UpdateUnused(t *testing.T) {
+	t.Parallel()
+
+	testDB := testkit.NewTestDB(t)
+	txm := testkit.NewTestTransactionRunner(t)
+	repo := &repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+
+	usedAt := time.Date(2026, time.September, 6, 0, 0, 0, 0, time.UTC)
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("使用済みのクーポンを未使用へ戻す", func(t *testing.T) {
+			t.Parallel()
+
+			txm.WithinTx(func(ctx context.Context) {
+				require.NoError(t, repo.UpdateUsed(ctx, mustParse(t, seedBobFlatAll), usedAt))
+
+				require.NoError(t, repo.UpdateUnused(ctx, mustParse(t, seedBobFlatAll)))
+
+				got, err := repo.LockByID(ctx, mustParse(t, seedBobFlatAll))
+				require.NoError(t, err)
+				assert.Nil(t, got.UsedAt())
+			})
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("未使用の場合、ErrNotUsedを返す", func(t *testing.T) {
+			t.Parallel()
+
+			txm.WithinTx(func(ctx context.Context) {
+				err := repo.UpdateUnused(ctx, mustParse(t, seedBobRateAll))
+
+				require.ErrorIs(t, err, domaincoupon.ErrNotUsed)
+				require.ErrorIs(t, err, apperror.ErrConflict)
+			})
+		})
+
+		t.Run("存在しないIDもErrNotUsedを返す", func(t *testing.T) {
+			t.Parallel()
+
+			txm.WithinTx(func(ctx context.Context) {
+				err := repo.UpdateUnused(ctx, mustParse(t, "44444444-4444-4444-8444-444444444444"))
+
+				require.ErrorIs(t, err, domaincoupon.ErrNotUsed)
+			})
+		})
+
+		t.Run("キャンセル済みコンテキストではErrCanceledへ正規化して返す", func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+
+			err := repo.UpdateUnused(ctx, mustParse(t, seedBobFlatAll))
+
+			require.ErrorIs(t, err, apperror.ErrCanceled)
+		})
+	})
+}
+
 func Test_rowToCoupon(t *testing.T) {
 	t.Parallel()
 

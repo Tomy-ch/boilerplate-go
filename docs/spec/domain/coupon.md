@@ -49,7 +49,7 @@ fields:
     type: time.Time
     required: true          # ゼロ値は ErrInvalidExpiresAt
   - name: usedAt
-    type: "*time.Time"      # nil 許容（未使用）。使用済みへの遷移は引き換え（#1473）が持つ
+    type: "*time.Time"      # nil 許容（未使用）。使用済みへの遷移は Redeem、未使用への逆遷移は Restore が持つ
   - name: issuedAt
     type: time.Time
     required: true          # ゼロ値は ErrInvalidIssuedAt
@@ -89,10 +89,18 @@ fields:
 - name: Redeem
   signature: Redeem(now time.Time) error
   behavior: |
-    使用済みにする。一度きりの遷移で、取り消せない。
+    使用済みにする。未使用へ戻すのは Restore だけで、他に逆遷移は無い。
     既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えない。
     使用済みと失効が同時に成り立つ場合は使用済みを先に返す。
     日時は引数で受け取る（ドメインは時刻へ直接依存しない）。
+- name: Restore
+  signature: Restore(now time.Time) (bool, error)
+  behavior: |
+    使用済みを未使用へ戻し、戻したかどうかを返す。購入のキャンセルが呼ぶ
+    （[`docs/spec/usecase/purchase.md`](../usecase/purchase.md) の クーポンの返却）。
+    渡された時点で失効していれば状態を変えず false を返す。戻しても使えないクーポンを未使用として
+    並べないためで、失効は返却の失敗ではない。未使用なら ErrNotUsed（409）を返す。
+    判定順は Redeem と同じく使用状態が先で、日時は引数で受け取る。
 ```
 
 ## Value Objects
@@ -187,7 +195,7 @@ fields:
 - name: LockByID
   signature: LockByID(ctx context.Context, id uuid.UUID) (*Coupon, error)
   behavior: |
-    引き換えのために ID からクーポンを悲観ロックして取得する。存在しない場合は NotFound。
+    引き換え・返却のために ID からクーポンを悲観ロックして取得する。存在しない場合は NotFound。
     使用済み・失効・受給者では絞らない。いずれもドメインが述語を持つ条件であり、SQL 側へ書き写すと
     業務条件の著作権が infra へ移る。
 - name: UpdateUsed
@@ -196,6 +204,12 @@ fields:
     使用済みにする。対象は LockByID で取得し Redeem で検証済み。
     条件付き更新（used_at IS NULL）の 0 行は ErrUsedConcurrently（409）へ写す。
     行ロックの下では通常到達せず、ロックを取らずに呼ばれた場合の二重防御として立つ。
+- name: UpdateUnused
+  signature: UpdateUnused(ctx context.Context, id uuid.UUID) error
+  behavior: |
+    使用済みを未使用へ戻す。対象は LockByID で取得し Restore が戻せると判定済み。
+    条件付き更新（used_at IS NOT NULL）の 0 行は ErrNotUsed（409）へ写す。
+    UpdateUsed と同じく、行ロックの下では通常到達しない二重防御として立つ。
 ```
 
 **廃番に伴う一括発行は Repository に持たない。** 発行対象が述語でしか決まらず件数に上限も無いため、

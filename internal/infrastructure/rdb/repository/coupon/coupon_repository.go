@@ -87,6 +87,24 @@ func (r *repository) UpdateUsed(ctx context.Context, id uuid.UUID, usedAt time.T
 	return nil
 }
 
+// UpdateUnused は、used_at IS NOT NULL を条件に更新し、0 行を ErrNotUsed へ写します。
+// 0 行を NotFound へ正規化しない理由は docs/spec/domain/coupon.md の Repository Methods > UpdateUnused を参照。
+func (r *repository) UpdateUnused(ctx context.Context, id uuid.UUID) error {
+	ctx, endSpan := r.tracer.Start(ctx)
+	defer endSpan()
+
+	db := gen.New(driver.New(ctx, r.db))
+	affected, err := db.UpdateCouponUnused(ctx, id)
+	if err != nil {
+		return pgerror.NormalizeError(err)
+	}
+	if affected == 0 {
+		return coupon.ErrNotUsed
+	}
+
+	return nil
+}
+
 // rowToCoupon は、永続化された行からクーポンを再構築します。
 func rowToCoupon(row gen.Coupons) (*coupon.Coupon, error) {
 	discountKind, err := coupon.NewDiscountKind(int(row.DiscountKind))
