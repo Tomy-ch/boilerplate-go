@@ -16,8 +16,7 @@ const TypeCanceled = "purchase.canceled.v1"
 // エラーです。イベントは起きた事実であり、事実でないものを発行すれば購読側はそれを取り消せません。
 var errNotCanceled = xerrors.Wrap(apperror.ErrInternal, "purchase is not canceled")
 
-// canceled は、purchase.canceled.v1 の通知 payload です。識別子と、起きた事実の時刻だけを運びます
-// （payload_parity.yaml の kind: notification）。
+// canceled は、purchase.canceled.v1 の通知 payload です（payload_parity.yaml の kind: notification）。
 type canceled struct {
 	PurchaseID string `json:"purchaseId"`
 	Code       string `json:"code"`

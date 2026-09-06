@@ -11,8 +11,7 @@ import (
 // TypePaid は、購入支払いの outbox イベント種別（version 込み）です。
 const TypePaid = "purchase.paid.v1"
 
-// paid は、purchase.paid.v1 の通知 payload です。識別子と、起きた事実の時刻だけを運びます
-// （payload_parity.yaml の kind: notification）。
+// paid は、purchase.paid.v1 の通知 payload です（payload_parity.yaml の kind: notification）。
 type paid struct {
 	PurchaseID string `json:"purchaseId"`
 	Code       string `json:"code"`

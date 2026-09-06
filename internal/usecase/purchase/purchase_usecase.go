@@ -839,11 +839,8 @@ func (u *usecase) createPurchaseInTx(
 	return reread, redeemed, nil
 }
 
-// emitCreated は、購入作成のイベントを outbox へ積みます。
-//
-// 受け取るのは書き込み後に読み直した集約です。注文日時は DB が採番するため、生成直後の集約は
-// まだ持っておらず、そこから組むと snapshot に届かない値が載ります。読み直しと同じ
-// トランザクションに居るので、この順序でも outbox 行の原子性は変わりません。
+// emitCreated は、購入作成のイベントを outbox へ積みます。受け取るのは書き込み後に読み直した集約です
+// （順序の理由は docs/spec/usecase/purchase.md の Workflow ⑥ を参照）。
 func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase) error {
 	payload, err := event.BuildCreated(entity)
 	if err != nil {

@@ -357,7 +357,18 @@ outbox イベントを発行するパッケージ（`<集約>/event/`。各 payl
 意図であって置き忘れではない。
 
 内容は payload ごとに、その payload が集約の `snapshot` なのか、集約についての `notification` なのか、
-そして `snapshot` なら写し元 struct の各フィールドをどう扱うかである。宣言がこの層に属するのは
+そして `snapshot` なら写し元 struct の各フィールドをどう扱うかである。
+
+```yaml
+payloads:
+  <Go の payload 型名>:
+    kind: snapshot | notification
+    of: <domain パッケージ>.<集約 struct>
+    fields:                     # snapshot のみ。notification は書かない
+      <集約のフィールド名>: <payload の JSON 名>   # 運ぶ
+      <集約のフィールド名>:
+        omit: <理由>                              # 運ばない。理由は必須
+```宣言がこの層に属するのは
 ワイヤ表現がこの層に属するからで、事象の**名前**はドメインの語彙だが表現はそうではない
 （`internal/domain/README.md` の Domain events）。`TestOutboxPayloadParity` が宣言とコードを突き合わせる
 ので、集約にフィールドを足すと payload での扱いを書き下すまで落ちる。

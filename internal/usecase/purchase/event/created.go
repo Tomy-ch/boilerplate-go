@@ -46,8 +46,8 @@ type createdDetail struct {
 
 // BuildCreated は、購入集約から purchase.created.v1 の snapshot payload を marshal します。
 //
-// 注文日時は DB 採番なので、書き込み後に読み直した集約を渡してください。生成直後の集約はまだ
-// 持っておらず、そのまま組むとゼロ値が snapshot に載ります。型では区別できないため、ここで弾きます。
+// 書き込み後に読み直した集約を渡してください（理由は docs/spec/usecase/purchase.md の Workflow ⑥）。
+// 生成直後の集約かどうかは型では区別できないため、注文日時が未採番ならここで弾きます。
 func BuildCreated(p *purchase.Purchase) ([]byte, error) {
 	if p.OrderedAt().IsZero() {
 		return nil, errOrderedAtUnset

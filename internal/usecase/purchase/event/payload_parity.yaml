@@ -1,16 +1,6 @@
 # outbox payload と集約の対応宣言。internal/architest/outbox_payload_parity_test.go が読みます。
-#
-# payloads.<Go の payload 型名>:
-#   kind: snapshot | notification
-#     snapshot     — 事実が起きた時点の集約の状態を運び、購読側が問い合わせ返さずに済むことを約束する。
-#                    of の struct の全フィールドを fields で分類する（未分類は検査が落ちる）。
-#     notification — 「何が・いつ起きたか」と識別子だけを運ぶ。集約の状態追随を約束しないので fields は書かない。
-#   of: <domain パッケージ名>.<struct 名>   写し元の集約 struct
-#   fields.<集約のフィールド名>: <payload の JSON 名>   … 運ぶ
-#   fields.<集約のフィールド名>:
-#     omit: <理由>                                     … 運ばない（理由は必須）
-#
-# 判別式と、この宣言が何を強制するかは ADR-0113 (outbox-payload-kinds-and-parity-declaration) を参照。
+# 書き方は internal/usecase/README.md の event/payload_parity.yaml、各 kind が何を約束するかは
+# ADR-0113 (outbox-payload-kinds-and-parity-declaration) を参照。
 payloads:
   created:
     kind: snapshot

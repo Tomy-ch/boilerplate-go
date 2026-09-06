@@ -343,7 +343,18 @@ payload) also carries a `payload_parity.yaml` beside them. It is the only non-Go
 declares, so its presence is deliberate rather than a stray artifact.
 
 It states, per payload, whether that payload is a `snapshot` of its aggregate or a `notification`
-about it, and for a `snapshot` how every field of the source struct is treated. The declaration
+about it, and for a `snapshot` how every field of the source struct is treated:
+
+```yaml
+payloads:
+  <Go payload type name>:
+    kind: snapshot | notification
+    of: <domain package>.<aggregate struct>
+    fields:                     # snapshot only; a notification writes none
+      <aggregate field>: <payload JSON name>   # carried
+      <aggregate field>:
+        omit: <reason>                          # not carried; the reason is required
+``` The declaration
 belongs to this layer because the wire format does: the event's *name* is domain vocabulary, its
 representation is not (`internal/domain/README.md` § Domain events). `TestOutboxPayloadParity`
 reconciles the declaration with the code, so adding a field to an aggregate fails until the payload's

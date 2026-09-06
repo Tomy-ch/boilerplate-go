@@ -11,8 +11,7 @@ import (
 // TypeShipped は、購入発送の outbox イベント種別（version 込み）です。
 const TypeShipped = "purchase.shipped.v1"
 
-// shipped は、purchase.shipped.v1 の通知 payload です。識別子と、起きた事実の時刻だけを運びます
-// （payload_parity.yaml の kind: notification）。
+// shipped は、purchase.shipped.v1 の通知 payload です（payload_parity.yaml の kind: notification）。
 type shipped struct {
 	PurchaseID string `json:"purchaseId"`
 	Code       string `json:"code"`
