@@ -1,7 +1,6 @@
 package architest
 
 import (
-	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"testing"
 
 	pkgfs "go-boilerplate/pkg/fs"
+	"go-boilerplate/pkg/xerrors"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -168,7 +168,9 @@ func TestOutboxPayloadParity(t *testing.T) {
 			root := t.TempDir()
 			writeEventPackage(t, root, "gamma",
 				"package event\n\ntype opened struct {\n\tID string `json:\"id\"`\n}\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
-			writeParityYAML(t, root, "gamma", "payloads:\n  opened:\n    kind: snapshot\n    of: gamma.Thing\n    fields:\n      id: id\n      name: fullName\n")
+			writeParityYAML(t, root, "gamma",
+				"payloads:\n  opened:\n    kind: snapshot\n    of: gamma.Thing\n"+
+					"    fields:\n      id: id\n      name: fullName\n")
 			writeDomainStruct(t, root, "gamma", "Thing", "\tid   string\n\tname string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
@@ -277,7 +279,7 @@ func isPlainGoFile(path string) bool {
 
 // isNotExist は、対象が存在しないだけのエラーかどうかを返します。
 func isNotExist(err error) bool {
-	return errors.Is(err, fs.ErrNotExist)
+	return xerrors.Is(err, fs.ErrNotExist)
 }
 
 // collectBuildPayloadNames は、ファイルを読んで payloadNamesFromLines へ渡します。
@@ -471,7 +473,9 @@ func verifyPayloadEntry(root, dir, name string, entry payloadParityEntry) ([]str
 
 		return verifySnapshotFields(rel, name, entry, fields, tags), nil
 	default:
-		return []string{fmt.Sprintf("%s: %s: kind は snapshot か notification のどちらかにすること（実際: %q）", rel, name, entry.Kind)}, nil
+		msg := fmt.Sprintf("%s: %s: kind は snapshot か notification のどちらかにすること（実際: %q）", rel, name, entry.Kind)
+
+		return []string{msg}, nil
 	}
 }
 
