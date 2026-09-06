@@ -33,9 +33,9 @@ infra-down:
 	@$(COMPOSE_INFRA) down
 	@echo "✅ 共有インフラを停止しました（データボリュームは保持されます）。"
 
-# app コンテナは DB_NAME_LOCAL の指すデータベースへ接続する（docker-compose.attach.yaml）。
-# 未設定なら共有 local へ落ちるため、スロット未取得の worktree では require-db-owner で止める
-# （不変条件は .makefiles/database/pool.mk）。serve-stop / infra-* はデータベース名を要さないため対象外。
+# app コンテナは db-slot env が撒く DB_LOCAL の指すデータベースへ接続する（docker-compose.attach.yaml）。
+# require-db-owner が前提（詳細: docs/maintenance/db-worktree-pool.md「The invariant」）。
+# serve-stop / infra-* はデータベース名を要さないため対象外。
 serve: require-db-owner
 	@echo "🔄 開発環境を起動します。"
 	@$(MAKE) infra-up
