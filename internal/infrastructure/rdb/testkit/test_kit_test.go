@@ -28,8 +28,11 @@ const (
 	waiterLockTimeout    = 50 * time.Millisecond
 )
 
-// errBeginFailed は、db.Begin を失敗させるモックが返すエラーです。
-var errBeginFailed = xerrors.New("begin failed")
+// errBeginFailed は db.Begin を、errExecFailed は Exec を、それぞれ失敗させるモックが返すエラーです。
+var (
+	errBeginFailed = xerrors.New("begin failed")
+	errExecFailed  = xerrors.New("exec failed")
+)
 
 func TestNewTestDB(t *testing.T) {
 	t.Parallel()
@@ -178,23 +181,28 @@ func Test_holdSuiteSerialization(t *testing.T) {
 			requireTxLockAvailable(t, "占有に失敗したのに txLock を保持したままになっている")
 		})
 
-		t.Run("advisory lockを取得できない場合、txLockを保持したままにしない", func(t *testing.T) {
+		t.Run("直列化の文を実行できない場合、holderを終了しtxLockを保持したままにしない", func(t *testing.T) {
 			t.Parallel()
 			requireTxLockAvailable(t, "先行するテストが txLock を解放していない")
 
-			ctx := context.Background()
-
-			// 手書き mock は使えないため、閉じた実 tx を返させて Exec を ErrTxClosed で失敗させる。
-			closed, err := db.Begin(ctx)
+			// holder は開いたまま渡す。閉じた tx を渡すと Rollback の有無が観測できず、
+			// 後始末を落とす退行を見逃す。文の失敗はキャンセル済み context で決定的に起こす。
+			holder, err := db.Begin(context.Background())
 			require.NoError(t, err)
-			require.NoError(t, closed.Rollback(ctx))
+			t.Cleanup(func() { _ = holder.Rollback(context.Background()) })
+
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
 
 			mockDB := mock_driver.NewMockDatabaseDriver(gomock.NewController(t))
-			mockDB.EXPECT().Begin(gomock.Any()).Return(closed, nil)
+			mockDB.EXPECT().Begin(gomock.Any()).Return(holder, nil)
 
 			release, err := holdSuiteSerialization(ctx, mockDB)
-			require.ErrorIs(t, err, pgx.ErrTxClosed)
+			require.ErrorIs(t, err, context.Canceled)
 			assert.Nil(t, release)
+
+			_, execErr := holder.Exec(context.Background(), "SELECT 1")
+			require.ErrorIs(t, execErr, pgx.ErrTxClosed, "holder が終了しておらず、トランザクションが開いたまま残る")
 
 			requireTxLockAvailable(t, "占有に失敗したのに txLock を保持したままになっている")
 		})
@@ -205,8 +213,11 @@ func Test_holdSuiteSerialization(t *testing.T) {
 // 同居する並列テストが一時的に握るため即時とは限らず、解放漏れだけが時間切れになります。
 //
 // 占有の前後どちらでも呼んでください。前で呼ばないと、解放漏れが起きたとき後続が
-// txLock.Lock() で止まり、並列サブテストの出力は親が終わるまで出ないため、
-// 失敗の内容がタイムアウトに巻き込まれて消えます。
+// txLock.Lock() で止まる窓が広がります。並列サブテストの出力は親が終わるまで出ないため、
+// 止まった側に巻き込まれると失敗の内容が消えます。
+//
+// ロックの強制解除はしません。解放漏れが再発すれば掴みに行った側は止まったままで、
+// パッケージは go test のタイムアウトを待ちます。
 func requireTxLockAvailable(t *testing.T, msg string) {
 	t.Helper()
 
@@ -349,6 +360,31 @@ func Test_lockSuiteSerialization(t *testing.T) {
 			got := <-waiterDone
 			require.NoError(t, got.err, "無効化されていなければ lock_timeout(50ms) で 55P03 になる")
 			assert.Greater(t, got.elapsed, waiterLockTimeout, "解放を待たずに取得しており、待ち合わせを検証できていない")
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("lock_timeoutの無効化に失敗した場合、advisory lockを取りに行かない", func(t *testing.T) {
+			t.Parallel()
+
+			q := mock_driver.NewMockDBTX(gomock.NewController(t))
+			// 1 文目が失敗したら 2 文目は発行しない。EXPECT を 1 つだけ置くことがその検証になる。
+			q.EXPECT().Exec(gomock.Any(), "SET LOCAL lock_timeout = 0").Return(pgconn.CommandTag{}, errExecFailed)
+
+			require.ErrorIs(t, lockSuiteSerialization(context.Background(), q), errExecFailed)
+		})
+
+		t.Run("advisory lockの取得に失敗した場合、そのエラーを返す", func(t *testing.T) {
+			t.Parallel()
+
+			q := mock_driver.NewMockDBTX(gomock.NewController(t))
+			q.EXPECT().Exec(gomock.Any(), "SET LOCAL lock_timeout = 0").Return(pgconn.CommandTag{}, nil)
+			q.EXPECT().Exec(gomock.Any(), "SELECT pg_advisory_xact_lock($1)", txAdvisoryLockKey).
+				Return(pgconn.CommandTag{}, errExecFailed)
+
+			require.ErrorIs(t, lockSuiteSerialization(context.Background(), q), errExecFailed)
 		})
 	})
 }
