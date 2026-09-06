@@ -181,11 +181,16 @@ func (r *Registry) IsStale(slot int) bool {
 	return r.now().Sub(m.Heartbeat) > r.ttl
 }
 
-// Release は、スロットのロックを解放します（自分の保持のときのみ）。
-func (r *Registry) Release(slot int) {
-	if r.OwnedBySelf(slot) {
-		_ = os.RemoveAll(r.lockDir(slot))
+// Release は、スロットのロックを解放します（自分の保持のときのみ）。解放したかを返します。
+// 保持を確認できないロックは残します。meta を書く前の取得直後と区別できず、消せば他 worktree の
+// 取得を壊すためです。残っても meta の無いロックは stale として次の走査が回収します。
+func (r *Registry) Release(slot int) bool {
+	if !r.OwnedBySelf(slot) {
+		return false
 	}
+	_ = os.RemoveAll(r.lockDir(slot))
+
+	return true
 }
 
 // AgeSeconds は、スロットの heartbeat からの経過秒数を返します（meta 無しは -1）。

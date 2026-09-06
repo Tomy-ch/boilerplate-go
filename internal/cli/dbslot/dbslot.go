@@ -125,9 +125,14 @@ func (p *Pool) Release(ctx context.Context) error {
 	if err := p.comp.DownServe(ctx, serveProject(slot)); err != nil {
 		p.logf("failed to stop serve containers for slot %d: %v", slot, err)
 	}
-	p.reg.Release(slot)
+	released := p.reg.Release(slot)
 	_ = os.Remove(p.slotFilePath())
+	if !released {
+		p.logf("slot %d lease could not be confirmed as ours; left it for stale reclaim", slot)
+		return nil
+	}
 	p.logf("released slot %d (databases left warm for reuse)", slot)
+
 	return nil
 }
 
