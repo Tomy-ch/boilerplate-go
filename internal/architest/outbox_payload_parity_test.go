@@ -155,7 +155,7 @@ func TestOutboxPayloadParity(t *testing.T) {
 				"package event\n\ntype opened struct {\n\tID string `json:\"id\"`\n}\n\n"+
 					"func BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
 			writeParityYAML(t, root, "beta", "payloads:\n  opened:\n    kind: snapshot\n    of: beta.Thing\n    fields:\n      id: id\n")
-			writeDomainStruct(t, root, "beta", "Thing", "\tid   string\n\tname string\n")
+			writeDomainStruct(t, root, "beta", "\tid   string\n\tname string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
 			require.NoError(t, err)
@@ -174,7 +174,7 @@ func TestOutboxPayloadParity(t *testing.T) {
 				"package event\n\ntype closed struct {\n\tID string `json:\"id\"`\n}\n\n"+
 					"func BuildClosed(x int) ([]byte, error) { return nil, nil }\n")
 			writeParityYAML(t, root, "delta", "payloads:\n  closed:\n    kind: notification\n    of: delta.Thing\n")
-			writeDomainStruct(t, root, "delta", "Thing", "\tid   string\n\tname string\n")
+			writeDomainStruct(t, root, "delta", "\tid   string\n\tname string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
 			require.NoError(t, err)
@@ -191,7 +191,7 @@ func TestOutboxPayloadParity(t *testing.T) {
 				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n"+
 					"\nfunc BuildClosed(x int) ([]byte, error) { return nil, nil }\n")
 			writeParityYAML(t, root, "epsilon", "payloads:\n  Opened:\n    kind: notification\n    of: epsilon.Thing\n")
-			writeDomainStruct(t, root, "epsilon", "Thing", "\tid string\n")
+			writeDomainStruct(t, root, "epsilon", "\tid string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
 			require.NoError(t, err)
@@ -210,7 +210,7 @@ func TestOutboxPayloadParity(t *testing.T) {
 			writeParityYAML(t, root, "zeta",
 				"payloads:\n  Opened:\n    kind: notification\n    of: zeta.Thing\n"+
 					"  Removed:\n    kind: notification\n    of: zeta.Thing\n")
-			writeDomainStruct(t, root, "zeta", "Thing", "\tid string\n")
+			writeDomainStruct(t, root, "zeta", "\tid string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
 			require.NoError(t, err)
@@ -229,7 +229,7 @@ func TestOutboxPayloadParity(t *testing.T) {
 			writeParityYAML(t, root, "eta",
 				"payloads:\n  opened:\n    kind: snapshot\n    of: eta.Thing\n"+
 					"    fields:\n      id: id\n      gone:\n        omit: 使われていない\n")
-			writeDomainStruct(t, root, "eta", "Thing", "\tid string\n")
+			writeDomainStruct(t, root, "eta", "\tid string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
 			require.NoError(t, err)
@@ -280,7 +280,7 @@ func TestOutboxPayloadParity(t *testing.T) {
 			writeEventPackage(t, root, "lambda",
 				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
 			writeParityYAML(t, root, "lambda", "payloads:\n  Opened:\n    kind: notification\n    of: lambda.Missing\n")
-			writeDomainStruct(t, root, "lambda", "Thing", "\tid string\n")
+			writeDomainStruct(t, root, "lambda", "\tid string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
 			require.NoError(t, err)
@@ -296,7 +296,7 @@ func TestOutboxPayloadParity(t *testing.T) {
 			writeEventPackage(t, root, "mu",
 				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
 			writeParityYAML(t, root, "mu", "payloads:\n  Opened:\n    kind: shapshot\n    of: mu.Thing\n")
-			writeDomainStruct(t, root, "mu", "Thing", "\tid string\n")
+			writeDomainStruct(t, root, "mu", "\tid string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
 			require.NoError(t, err)
@@ -328,7 +328,7 @@ func TestOutboxPayloadParity(t *testing.T) {
 			writeParityYAML(t, root, "gamma",
 				"payloads:\n  opened:\n    kind: snapshot\n    of: gamma.Thing\n"+
 					"    fields:\n      id: id\n      name: fullName\n")
-			writeDomainStruct(t, root, "gamma", "Thing", "\tid   string\n\tname string\n")
+			writeDomainStruct(t, root, "gamma", "\tid   string\n\tname string\n")
 
 			violations, err := collectOutboxPayloadParityViolations(root)
 			require.NoError(t, err)
@@ -356,13 +356,17 @@ func writeParityYAML(t *testing.T, root, agg, src string) {
 	require.NoError(t, pkgfs.OS{}.WriteFile(path, []byte(src), 0o600))
 }
 
-// writeDomainStruct は、陽性対照用に internal/domain/<pkg>/<pkg>.go へ struct を書きます。
-func writeDomainStruct(t *testing.T, root, pkg, name, fields string) {
+// domainStructName は、陽性対照が書く集約 struct の名前です。
+// 宣言の `of:` が指す先を 1 つに固定しておくと、テストの読み手は名前ではなく形に集中できます。
+const domainStructName = "Thing"
+
+// writeDomainStruct は、陽性対照用に internal/domain/<pkg>/<pkg>.go へ集約 struct を書きます。
+func writeDomainStruct(t *testing.T, root, pkg, fields string) {
 	t.Helper()
 
 	dir := filepath.Join(root, "internal", "domain", pkg)
 	require.NoError(t, pkgfs.OS{}.MkdirAll(dir, 0o750))
-	src := "package " + pkg + "\n\ntype " + name + " struct {\n" + fields + "}\n"
+	src := "package " + pkg + "\n\ntype " + domainStructName + " struct {\n" + fields + "}\n"
 	require.NoError(t, pkgfs.OS{}.WriteFile(filepath.Join(dir, pkg+".go"), []byte(src), 0o600))
 }
 
@@ -1080,7 +1084,7 @@ func Test_lookupAggregateFields(t *testing.T) {
 			t.Parallel()
 
 			root := t.TempDir()
-			writeDomainStruct(t, root, "omicron", "Thing", "\tid   string\n\tname string\n")
+			writeDomainStruct(t, root, "omicron", "\tid   string\n\tname string\n")
 
 			fields, ok, err := lookupAggregateFields(root, "omicron.Thing")
 
@@ -1111,7 +1115,7 @@ func Test_lookupAggregateFields(t *testing.T) {
 			t.Parallel()
 
 			root := t.TempDir()
-			writeDomainStruct(t, root, "pi", "Thing", "\tid string\n")
+			writeDomainStruct(t, root, "pi", "\tid string\n")
 
 			_, ok, err := lookupAggregateFields(root, "pi.Missing")
 
