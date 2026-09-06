@@ -77,8 +77,7 @@ WHERE p.id = @id;
 -- ID から購入詳細（読み取りモデル）を 1 件取得する。ステータス名は購入ステータスマスタとの結合で
 -- 解決済み（JOIN の許容範囲は internal/infrastructure/rdb/repository/README.md の
 -- Reference-master exception）。
--- 支払い日時（paid_at）は未支払いなら NULL、キャンセル日時（canceled_at）は未キャンセルなら NULL、
--- 発送日時（shipped_at）は未発送なら NULL、配達日時（delivered_at）は未配達なら NULL。
+-- NULL 列の意味は docs/spec/domain/purchase.md の FindDetailByID を参照。
 -- 存在しない場合は 0 行（NotFound）。
 SELECT
     p.id,

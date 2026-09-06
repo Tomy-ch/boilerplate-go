@@ -181,8 +181,8 @@ func (r *repository) UpdatePaid(ctx context.Context, p *purchase.Purchase) error
 
 // UpdateShipped は、購入の状態更新（status_id / shipped_at）を渡された tx 内で実行します。
 // status_id は seed の UUID を焼き込まず purchase_statuses.code から解決します（FindShippable の絞り込みも同じ方針）。
-// 遷移可否のガードは持たず、対象行が呼び出し側で FOR UPDATE 取得・検証済みであること
-// （ドメインが遷移の source of truth）に依存します（UpdateDelivered も同じ）。
+// 遷移ガードを持たない理由は docs/spec/domain/purchase.md の Repository Methods > UpdateShipped を参照
+// （UpdateDelivered / UpdateCancelled も同じ）。
 func (r *repository) UpdateShipped(ctx context.Context, p *purchase.Purchase) error {
 	ctx, endSpan := r.tracer.Start(ctx)
 	defer endSpan()
@@ -247,10 +247,8 @@ func (r *repository) UpdateCancelled(ctx context.Context, p *purchase.Purchase) 
 	return nil
 }
 
-// FindShippable は、発送可能な購入を注文日時の古い順（同時刻は ID 昇順）で最大 limit 件、
-// 明細込みで再構築して返します。
-//
-// status_id の絞り込み方針は UpdateShipped を参照。
+// FindShippable は、ListShippablePurchases と明細の一括取得（ListPurchaseDetailsByPurchaseIDs）の
+// 2 クエリで構成し、件数分の往復を避けます。status_id の絞り込み方針は UpdateShipped を参照。
 func (r *repository) FindShippable(ctx context.Context, limit int32) (purchase.Purchases, error) {
 	ctx, endSpan := r.tracer.Start(ctx)
 	defer endSpan()
@@ -404,8 +402,8 @@ func toPurchaseDetails(detailRows []*gen.ListPurchaseDetailsByPurchaseIDRow) ([]
 	return details, nil
 }
 
-// FindStatusesByUserID は、指定ユーザーの購入が取っているステータスを重複なく取得します。
-// 進行中かどうかでは絞り込まず、code は purchase_statuses との結合で解決してドメインの値へ復元します。
+// FindStatusesByUserID は、code を purchase_statuses との結合で解決してドメインの値へ復元します。
+// 絞り込み方針は internal/domain/purchase.Repository の FindStatusesByUserID を参照。
 func (r *repository) FindStatusesByUserID(ctx context.Context, userID uuid.UUID) ([]purchase.Status, error) {
 	ctx, endSpan := r.tracer.Start(ctx)
 	defer endSpan()
@@ -428,7 +426,7 @@ func (r *repository) FindStatusesByUserID(ctx context.Context, userID uuid.UUID)
 }
 
 // FindUserIDsWithPurchases は、purchases に 1 件以上の行を持つ user_id を重複排除して返します。
-// ステータスでは絞り込まず、users とは結合しません（集約をまたぐ結合を避けるため ID 群の照会に切り出しています）。
+// users とは結合しません（理由は docs/spec/domain/purchase.md の FindUserIDsWithPurchases）。
 func (r *repository) FindUserIDsWithPurchases(ctx context.Context, userIDs []uuid.UUID) ([]uuid.UUID, error) {
 	ctx, endSpan := r.tracer.Start(ctx)
 	defer endSpan()

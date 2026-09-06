@@ -27,10 +27,8 @@ type LineAttributes struct {
 	Subtotal decimal.Decimal
 }
 
-// NewLine は、明細の観測値を組み立てます。
-//
-// 検証を持たないのは、観測した事実をそのまま運ぶ値であり、正しさの責務が観測元にあるためです
-// （カートの [cart.ProductSnapshot] と同じ形）。
+// NewLine は、明細の観測値を組み立てます。検証は持ちません
+// （理由は docs/spec/domain/coupon.md の Value Objects > Line を参照）。
 func NewLine(attrs LineAttributes) Line {
 	return Line{
 		productID:  attrs.ProductID,

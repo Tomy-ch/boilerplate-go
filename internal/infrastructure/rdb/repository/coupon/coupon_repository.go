@@ -67,9 +67,7 @@ func (r *repository) LockByID(ctx context.Context, id uuid.UUID) (*coupon.Coupon
 }
 
 // UpdateUsed は、used_at IS NULL を条件に更新し、0 行を ErrUsedConcurrently へ写します。
-//
-// 0 行を NotFound へ正規化しないのは、この経路では対象の存在が LockByID で確認済みだからです。
-// ここで 0 行になるのは他の書き手が先に消費した場合だけなので、競合として返します。
+// 0 行を NotFound へ正規化しない理由は docs/spec/domain/coupon.md の Repository Methods > UpdateUsed を参照。
 func (r *repository) UpdateUsed(ctx context.Context, id uuid.UUID, usedAt time.Time) error {
 	ctx, endSpan := r.tracer.Start(ctx)
 	defer endSpan()
@@ -90,7 +88,6 @@ func (r *repository) UpdateUsed(ctx context.Context, id uuid.UUID, usedAt time.T
 }
 
 // rowToCoupon は、永続化された行からクーポンを再構築します。
-// 種別は業務キーからドメインが解決するため、既知でない code は再構築エラーになります。
 func rowToCoupon(row gen.Coupons) (*coupon.Coupon, error) {
 	discountKind, err := coupon.NewDiscountKind(int(row.DiscountKind))
 	if err != nil {

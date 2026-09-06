@@ -274,11 +274,9 @@ func New(
 	}, nil
 }
 
-// settle は、小計と値引き額から税・送料・合計を決めます。
-//
-// 課税の基礎は値引き後の額です。値引いた分にまで課税しないためで、この規則の所在はここ 1 箇所です
-// （docs/spec/domain/purchase.md の Cross-field Invariants）。
-// 生成時と値引きの適用時が同じ関数を通るので、両者で式がずれません。
+// settle は、小計と値引き額から税・送料・合計を決めます。課税の基礎は値引き後の額です
+// （docs/spec/domain/purchase.md の Cross-field Invariants）。生成時と値引きの適用時が同じ関数を
+// 通るので、両者で式がずれません。
 func settle(basis settlementBasis) (int, int, int) {
 	taxable := basis.Subtotal - basis.Discount
 	tax := taxable * taxRatePercent / percentDivisor
@@ -355,12 +353,8 @@ func Reconstruct(id uuid.UUID, attrs Attributes) (*Purchase, error) {
 
 // validateDiscount は、クーポンの適用と値引き額の対応を検証します。
 //
-// クーポンを適用したことと値引きが立っていることは常に一致します。片方だけの状態を作ると、
-// 「クーポンは使ったが説明が付かない」控えと「値引きの理由が無い」控えのどちらかが生まれ、
-// 表現層が値引き行を出すかどうかを金額だけで決められなくなります
-// （docs/spec/domain/purchase.md の Cross-field Invariants）。
-//
-// 値引きは小計を超えません。超えると請求額が負になります。
+// クーポンを適用したことと値引きが立っていることは常に一致します
+// （docs/spec/domain/purchase.md の Cross-field Invariants）。値引きは小計を超えません。
 func validateDiscount(couponID *uuid.UUID, basis settlementBasis) error {
 	if basis.Discount < 0 {
 		return xerrors.Wrap(ErrInvalidAmount, "discountAmount must not be negative")

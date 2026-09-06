@@ -48,7 +48,7 @@ func allDiscountKinds() []DiscountKind {
 }
 
 // NewDiscountKind は、永続化されている code から値引き種別を解決します。
-// 既知でない code は ErrInvalidDiscountKind を返します（永続化状態の破損を再構築時に弾くため）。
+// 既知でない code は ErrInvalidDiscountKind を返します。
 func NewDiscountKind(code int) (DiscountKind, error) {
 	for _, k := range allDiscountKinds() {
 		if k.code == code {
@@ -77,8 +77,7 @@ func NewFlatDiscount(amount decimal.Decimal) (Discount, error) {
 }
 
 // NewRateDiscount は、定率の値引きを生成します。rate は 0 より大きく 1 以下である必要があります。
-// 範囲外は ErrInvalidDiscountValue を返します。1 を超える率は対象額より多く差し引くことになり、
-// 値引きの意味を失うため許しません。
+// 範囲外は ErrInvalidDiscountValue を返します（上限の根拠は docs/spec/domain/coupon.md の Discount）。
 func NewRateDiscount(rate decimal.Decimal) (Discount, error) {
 	if rate.Sign() <= 0 || rate.Cmp(maxDiscountRate) > 0 {
 		return Discount{}, xerrors.Wrap(ErrInvalidDiscountValue, "rate discount must be within (0, 1]")

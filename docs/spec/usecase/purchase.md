@@ -217,6 +217,9 @@ JOIN でサーバー解決した現在名（live・非スナップショット�
 `WHERE p.code = @code AND p.user_id = @user_id` で担保し、他人の購入・不存在はいずれも 0 行 → NotFound（404）で存在を秘匿する（403 は用いない）。
 固定 2 クエリ（本体 + 明細 JOIN products）で N+1 を避ける。書き込みを伴わないため tx / authorizer は不要。
 
+適用したクーポンの値引き・適用範囲（`AppliedCoupon`）も商品名と同じ扱いで、控えへは写さず `coupons` との JOIN で解決した現在値を返す。
+発行済みのクーポンは値引き・適用範囲を書き換える口を持たないため、結合で解決しても内容がぶれない。未適用の購入は結合先が無く NULL になる。
+
 ```yaml
 input:
   - authn: "*auth.Authn"       # 認証主体。nil は Unauthenticated（401）。UserID() を QS の所有権述語へ渡す

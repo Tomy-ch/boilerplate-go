@@ -43,9 +43,7 @@ type PurchaseDetailReadModel struct {
 }
 
 // AppliedCouponReadModel は、購入に適用したクーポンの読み取りモデルです。
-//
-// 値引きと適用範囲は控えへ写さず結合で解決した現在値です。発行済みクーポンを書き換える口が無いため
-// 内容がぶれません（ProductName と同じ扱い。docs/spec/usecase/purchase.md の GET 詳細）。
+// 商品名と同じく結合で解決した現在値です（docs/spec/usecase/purchase.md の GET 詳細）。
 type AppliedCouponReadModel struct {
 	ID            uuid.UUID
 	DiscountKind  int

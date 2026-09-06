@@ -36,7 +36,7 @@ var (
 	// 存在しないクーポンもこのエラーに畳みます。区別できると保有していないクーポンの存在が漏れるためです
 	// （docs/spec/usecase/purchase.md の CreatePurchase）。
 	ErrNotHeld = xerrors.Wrap(errInvalid, "coupon is not held by the user")
-	// ErrUsedConcurrently は、引き換えの最中に他の書き手が同じクーポンを消費した場合のエラーです。
-	// 行ロックの下では通常到達せず、ロックを取らずに呼ばれた場合の二重防御として立ちます。
+	// ErrUsedConcurrently は、引き換えの最中に他の書き手が同じクーポンを消費した場合のエラーです
+	// （到達条件は docs/spec/domain/coupon.md の Repository Methods > UpdateUsed を参照）。
 	ErrUsedConcurrently = xerrors.Wrap(apperror.ErrConflict, "coupon was used concurrently")
 )

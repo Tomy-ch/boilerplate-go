@@ -29,10 +29,8 @@ func New(
 	}
 }
 
-// FindDetailByUserAndCode は、認証主体（userID）が所有する購入 1 件を購入コードで引き、
-// 明細（商品名込み）とともに取得します。
-// 所有権は本体クエリの WHERE 述語（user_id 一致）で担保し、他人の購入・不存在はいずれも 0 行 →
-// NotFound で秘匿します。明細は products との結合で商品名を解決する固定 2 クエリ構成で N+1 を避けます。
+// FindDetailByUserAndCode は、GetPurchaseDetailForUser と ListPurchaseDetailItemsForUser の
+// 固定 2 クエリで構成します。所有権と 0 行の扱いは docs/spec/usecase/purchase.md の GET 詳細を参照。
 func (s *service) FindDetailByUserAndCode(ctx context.Context, userID uuid.UUID, code string) (*query.PurchaseDetailReadModel, error) {
 	ctx, endSpan := s.tracer.Start(ctx)
 	defer endSpan()

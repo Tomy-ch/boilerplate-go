@@ -123,15 +123,14 @@ func (c *Coupon) UsedAt() *time.Time { return ptr.Copy(c.usedAt) }
 func (c *Coupon) IsUsed() bool { return c.usedAt != nil }
 
 // IsHeldBy は、そのユーザーがこのクーポンの受給者かどうかを返します。
-// 受給者は発行時に確定し以後移らないため、判定は等値比較だけで足ります。
+// 受給者は変わらないため（[Coupon] を参照）、判定は等値比較だけで足ります。
 func (c *Coupon) IsHeldBy(userID uuid.UUID) bool { return c.userID == userID }
 
 // DiscountFor は、渡された明細のうち適用範囲に入るものを対象として、差し引く額を決済スケールの
 // 整数（USD セント）で返します。対象が 1 件も無い場合と、差し引く額が最小単位に満たない場合は 0 です。
 //
-// **値引き額の丸めはここが唯一の点です。** 対象小計は価格スケールのまま合算し、差し引く額を求めてから
-// 一度だけ切り捨てます（ADR-0038 (two-scale-quantity-model)）。事前確認と購入確定の双方がこの
-// メソッドを通るため、見せた額と引かれる額が同じ規則で決まります。
+// 丸めはこのメソッドでのみ行います（[Discount.Apply] は丸めません。ADR-0038 (two-scale-quantity-model)）。
+// 根拠は docs/spec/domain/coupon.md の Behavior Methods > DiscountFor を参照してください。
 func (c *Coupon) DiscountFor(lines []Line) (int, error) {
 	eligible := decimal.FromInt(0)
 	for _, line := range lines {
@@ -151,7 +150,7 @@ func (c *Coupon) DiscountFor(lines []Line) (int, error) {
 // Redeem は、クーポンを使用済みにします。使用済みへの遷移は一度きりで、取り消せません。
 //
 // 既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えません。
-// 日時は引数で受け取ります。ドメインは時刻へ直接依存せず、時刻境界から供給された now を使うためです。
+// 日時は引数で受け取ります（internal/domain/README.md の Handling time and ID を参照）。
 func (c *Coupon) Redeem(now time.Time) error {
 	if c.IsUsed() {
 		return ErrAlreadyUsed

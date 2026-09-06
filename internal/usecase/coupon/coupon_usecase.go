@@ -111,9 +111,7 @@ func (u *usecase) ListMyCoupons(ctx context.Context, authn *auth.Authn) ([]Coupo
 }
 
 // ListApplicableToMyCart は、カートの明細を対象にクーポンごとの値引き額を求め、0 になるものを落とします。
-//
-// 対象にするのは、いま購入できる明細だけです。カートの再評価が issue を立てた明細は購入へ進めないため、
-// 値引きの対象にもしません。判定と計算はクーポンのドメインが行い、ここは材料を集めて渡すだけです。
+// 対象明細の絞り込みは docs/spec/usecase/coupon.md の Workflow を参照。
 func (u *usecase) ListApplicableToMyCart(ctx context.Context, authn *auth.Authn) ([]CartCouponView, error) {
 	ctx, endSpan := u.tracer.Start(ctx)
 	defer endSpan()
