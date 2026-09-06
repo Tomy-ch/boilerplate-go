@@ -106,26 +106,46 @@ func newProduct(id uuid.UUID, attrs Attributes, version int, createdAt time.Time
 }
 
 // validateAttributes は、商品属性の不変条件を検証します。生成時と更新時で同一の条件を課します。
+// 最初の違反で打ち切らず、利用者が直せる項目をすべて検証してから束ねて返します
+// （internal/domain/README.md の Validation を参照）。
 func validateAttributes(attrs Attributes) error {
+	var errs []error
+	var fields []string
+
 	if ok, msg := stringkit.ValidateInRange(attrs.Name, minNameLength, maxNameLength); !ok {
-		return xerrors.Wrap(ErrInvalidName, msg)
+		errs = append(errs, xerrors.Wrap(ErrInvalidName, msg))
+		fields = append(fields, FieldName)
 	}
 	if err := validateQuantity(int64(attrs.Quantity)); err != nil {
-		return err
+		errs = append(errs, err)
+		fields = append(fields, FieldQuantity)
 	}
 	if err := validateStockWarningThreshold(attrs.StockWarningThreshold); err != nil {
-		return err
+		errs = append(errs, err)
+		fields = append(fields, FieldStockWarningThreshold)
 	}
 	if attrs.Status.id.IsNil() {
-		return xerrors.Wrap(ErrInvalidStatusID, "status is required")
+		errs = append(errs, xerrors.Wrap(ErrInvalidStatusID, "status is required"))
+		fields = append(fields, FieldStatusID)
 	}
 	if attrs.Category.id.IsNil() {
-		return xerrors.Wrap(ErrInvalidCategoryID, "category is required")
+		errs = append(errs, xerrors.Wrap(ErrInvalidCategoryID, "category is required"))
+		fields = append(fields, FieldCategoryID)
 	}
+	// 廃番と公開の同時成立だけは自分で識別子を付けます。違反しているのは片方の項目ではなく
+	// 組み合わせで、名指しすべき項目がここからしか決まらないためです。
 	if err := validateDiscontinuedAt(attrs.DiscontinuedAt, attrs.PublishedAt); err != nil {
 		return err
 	}
-	return validateImages(attrs.Images)
+	if err := validateImages(attrs.Images); err != nil {
+		errs = append(errs, err)
+		fields = append(fields, FieldImages)
+	}
+
+	if len(errs) > 0 {
+		return apperror.WithDetails(xerrors.Join(errs...), fields...)
+	}
+	return nil
 }
 
 // Update は、商品の属性を更新します。生成時と同一の不変条件を課し、違反する場合はエンティティを
@@ -161,7 +181,7 @@ func (p *Product) AdjustStock(delta int) error {
 	// 増減の途中結果は在庫の表現範囲を超えうるため、検証を通すまでは広い幅で保持します。
 	adjusted := int64(p.quantity) + int64(delta)
 	if err := validateQuantity(adjusted); err != nil {
-		return err
+		return apperror.WithDetails(err, FieldDelta)
 	}
 
 	p.quantity = int(adjusted)

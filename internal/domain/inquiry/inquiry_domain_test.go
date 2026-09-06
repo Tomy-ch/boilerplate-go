@@ -1,12 +1,14 @@
 package inquiry
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go-boilerplate/internal/apperror"
 	"go-boilerplate/pkg/uuid"
 	uuidtestkit "go-boilerplate/pkg/uuid/testkit"
 )
@@ -353,6 +355,36 @@ func TestInquiry_AppendMessage(t *testing.T) {
 				time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
 			)
 			require.ErrorIs(t, err, ErrInvalidMessageID)
+		})
+
+		t.Run("本文が不正なら body を名指しする", func(t *testing.T) {
+			t.Parallel()
+			for _, tc := range []struct {
+				name string
+				body string
+				want error
+			}{
+				{"空", "", ErrEmptyBody},
+				{"長すぎる", strings.Repeat("あ", maxBodyLength+1), ErrBodyTooLong},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					t.Parallel()
+					i := newTestInquiry(t)
+					attrs := newTestMessageAttributes(t)
+					attrs.Body = tc.body
+
+					_, err := i.AppendMessage(
+						uuidtestkit.NewTestFromSalt(t, "message"),
+						attrs,
+						time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
+					)
+
+					require.ErrorIs(t, err, tc.want)
+					meta, ok := apperror.MetaFrom(err)
+					require.True(t, ok)
+					assert.Equal(t, []string{FieldBody}, meta.Details())
+				})
+			}
 		})
 	})
 }

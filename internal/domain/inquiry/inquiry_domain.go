@@ -13,6 +13,7 @@ package inquiry
 import (
 	"time"
 
+	"go-boilerplate/internal/apperror"
 	"go-boilerplate/pkg/uuid"
 	"go-boilerplate/pkg/xerrors"
 )
@@ -112,9 +113,11 @@ func (i *Inquiry) AppendMessage(id uuid.UUID, attrs MessageAttributes, now time.
 	if now.Before(i.updatedAt) {
 		return nil, xerrors.Wrap(ErrInvalidTime, "now must be at or after updatedAt")
 	}
+	// 識別子はここで付けます。newMessage は再構築とも共有する検証ゲートで、そちらの本文は
+	// クライアントが送った項目ではありません。
 	m, err := newMessage(id, attrs)
 	if err != nil {
-		return nil, err
+		return nil, apperror.WithDetails(err, FieldBody)
 	}
 	i.updatedAt = now
 	return m, nil

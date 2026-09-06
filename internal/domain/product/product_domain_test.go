@@ -673,6 +673,58 @@ func Test_validateAttributes(t *testing.T) {
 			attrs.Images = []Image{mustImage(t, "out_of_range_image", "products/a.png", maxImageDisplaySort+1)}
 			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidImageDisplaySort)
 		})
+
+		t.Run("項目ごとに不正な項目の識別子が付く", func(t *testing.T) {
+			t.Parallel()
+			for _, tc := range []struct {
+				name   string
+				mutate func(*Attributes)
+				want   string
+			}{
+				{"name", func(a *Attributes) { a.Name = "" }, FieldName},
+				{"quantity", func(a *Attributes) { a.Quantity = -1 }, FieldQuantity},
+				{"stockWarningThreshold", func(a *Attributes) { a.StockWarningThreshold = ptr.To(-1) }, FieldStockWarningThreshold},
+				{"statusId", func(a *Attributes) { a.Status = StatusRef{} }, FieldStatusID},
+				{"categoryId", func(a *Attributes) { a.Category = CategoryRef{} }, FieldCategoryID},
+			} {
+				t.Run(tc.name, func(t *testing.T) {
+					t.Parallel()
+					attrs := valid
+					tc.mutate(&attrs)
+
+					meta, ok := apperror.MetaFrom(validateAttributes(attrs))
+					require.True(t, ok)
+					assert.Equal(t, []string{tc.want}, meta.Details())
+				})
+			}
+		})
+
+		t.Run("複数項目が同時に不正な場合、最初の違反で打ち切らず全項目を名指しする", func(t *testing.T) {
+			t.Parallel()
+			attrs := valid
+			attrs.Name = ""
+			attrs.Quantity = -1
+			attrs.Status = StatusRef{}
+
+			err := validateAttributes(attrs)
+			require.ErrorIs(t, err, ErrInvalidName)
+			require.ErrorIs(t, err, ErrInvalidQuantity)
+			require.ErrorIs(t, err, ErrInvalidStatusID)
+
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldName, FieldQuantity, FieldStatusID}, meta.Details())
+		})
+
+		t.Run("画像の違反は集合として images を名指しする", func(t *testing.T) {
+			t.Parallel()
+			attrs := valid
+			attrs.Images = []Image{mustImage(t, "out_of_range_image", "products/a.png", maxImageDisplaySort+1)}
+
+			meta, ok := apperror.MetaFrom(validateAttributes(attrs))
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldImages}, meta.Details())
+		})
 	})
 }
 
@@ -928,6 +980,16 @@ func TestProduct_AdjustStock(t *testing.T) {
 			require.ErrorIs(t, err, ErrInvalidQuantity)
 			require.ErrorIs(t, err, apperror.ErrValidation)
 			assert.Equal(t, snapshot, *p)
+		})
+
+		t.Run("検証するのは増減後の在庫だが、名指しするのはクライアントが送るdeltaである", func(t *testing.T) {
+			t.Parallel()
+
+			p := newTestProduct(t)
+
+			meta, ok := apperror.MetaFrom(p.AdjustStock(-p.Quantity() - 1))
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldDelta}, meta.Details())
 		})
 	})
 }

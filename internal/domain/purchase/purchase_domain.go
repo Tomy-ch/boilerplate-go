@@ -238,13 +238,16 @@ func New(
 	if userID.IsNil() {
 		return nil, xerrors.Wrap(ErrInvalidUserID, "userID is required")
 	}
+	// 明細に由来する検証エラーはここで名指しします。buildDetails の下で起きる違反は
+	// 数量・重複・対象商品の不在のいずれも明細 1 件の中の話で、クライアントから見れば
+	// 送った details が悪い、という 1 つの事実になります。
 	if len(inputs) == 0 {
-		return nil, ErrEmptyDetails
+		return nil, apperror.WithDetails(ErrEmptyDetails, FieldDetails)
 	}
 
 	details, subtotalDollars, err := buildDetails(inputs, locked)
 	if err != nil {
-		return nil, err
+		return nil, apperror.WithDetails(err, FieldDetails)
 	}
 
 	// 価格スケール→決済スケールの丸め（切り捨て）。以降は整数セントで計算する（ADR-0038 (two-scale-quantity-model)）。

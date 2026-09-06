@@ -11,6 +11,7 @@ import (
 	"slices"
 	"time"
 
+	"go-boilerplate/internal/apperror"
 	"go-boilerplate/internal/domain/lexicon/money"
 	"go-boilerplate/pkg/ptr"
 	"go-boilerplate/pkg/uuid"
@@ -213,8 +214,10 @@ func (c *Cart) SetItem(attrs SetItemAttributes, now time.Time) error {
 	if attrs.ProductID.IsNil() {
 		return xerrors.Wrap(ErrInvalidProductID, "productID is required")
 	}
+	// 識別子はここで付けます。validateQuantity は明細の再構築からも呼ばれ、そちらの数量は
+	// クライアントが送った項目ではありません。
 	if err := validateQuantity(attrs.Quantity); err != nil {
-		return err
+		return apperror.WithDetails(err, FieldQuantity)
 	}
 
 	if idx := c.indexOf(attrs.ProductID); idx >= 0 {

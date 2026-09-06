@@ -19,6 +19,11 @@ const (
 	// FieldCouponID は、クーポン ID フィールドの識別子です。
 	FieldCouponID = "couponId"
 
+	// FieldDetails は、購入明細フィールドの識別子です。API のリクエストプロパティ名がそのまま
+	// details であり、エラーレスポンスの details 枠と同名になりますが、指しているのは
+	// リクエストの項目です。明細は集合ごと送られるため、要素ではなく集合を指します。
+	FieldDetails = "details"
+
 	// minQuantity は、明細 1 件あたりの最小購入数量です。
 	minQuantity = 1
 
