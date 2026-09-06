@@ -97,7 +97,12 @@ Apply the following repository rules whether or not an optional external methodo
   (state what it does AND concrete when-to-use contexts, plus explicit *when NOT* to trigger). Study
   the descriptions of `commit` / `new-env` for the density and tone this repo uses — match it.
 - Optional: `argument-hint` and `allowed-tools` when the skill is a `/command` that takes args or runs
-  a fixed tool set (see `commit` for the pattern). Omit them when not needed (most skills do).
+  a fixed tool set (see `tool-map` for the narrow per-command form). Omit them when not needed (most
+  skills do). **Codex reads `allowed-tools` as prompt guidance, not as an enforced allowlist** — it
+  documents which tools a skill expects to reach for, and restricts nothing. Never present it as a
+  permission boundary, and never narrow it here on the theory that doing so contains the skill. The
+  Claude side of this repository is the opposite: there the field is an auto-approval list, so a bare
+  `Bash` grant really does widen what runs without a prompt.
 
 ### 3. Language rules (`AGENTS.md`)
 
