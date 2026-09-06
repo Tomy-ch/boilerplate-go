@@ -17,7 +17,7 @@ realtime-init: require-db-owner
 # どちらも資源が無ければ起動に失敗するので、garage のバケットと同じく「消費者が触る前」に用意する。
 # 冪等なので毎回走ってよい。infra-up 側に置かないのは、realtime-smoke など app イメージを要さない
 # 呼び出しにビルド待ちを持ち込まないため。
-realtime-provision:
+realtime-provision: require-db-owner
 	@$(COMPOSE_APP) run --rm api_server go run ./cmd/ realtime-init > /dev/null
 
 # slot-acquire が PostgreSQL を作り直すのと対で EventLog を空にする
