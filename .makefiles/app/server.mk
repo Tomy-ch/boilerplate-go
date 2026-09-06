@@ -66,15 +66,15 @@ serve-build-clean: require-db-owner
 	@$(LOAD_SLOT); echo "✅ 開発環境の起動が完了しました。API: http://localhost:$${API_HOST_PORT:-8080}"
 
 # 失敗時に出す api_server ログの行数。fx の起動ログは Provided 行が数十行続き、失敗本体と
-# dlv の終了理由はその末尾に集中する。全文が要るときは make serve APP_LOG_TAIL=200 と上書きする。
+# dlv の終了理由はその末尾に集中する。
 APP_LOG_TAIL ?= 50
 
-# air はアプリが落ちてもコンテナを生かしたままにするため、up -d の終了コードに起動の成否は現れない。
-# api_server の healthcheck（docker-compose.yaml）を --wait で待って初めて成否になる。
-# --wait-timeout は付けない。待ちの上限は healthcheck の start_period + retries × interval が既に
-# 持っており、ここにも持つと片方だけ伸ばしたとき compose が先に切れ、まだビルド中のログを失敗として
-# 見せることになる。compose の失敗メッセージは "container ... is unhealthy" までしか言わないので、
-# 次に読むログをここで出す。$$APP_PROJECT は直前の $(COMPOSE_APP) が同じシェルで eval した値。
+# up -d の終了コードに API の起動成否は現れないため、healthcheck（docker-compose.yaml）を --wait で
+# 待つ（docs/maintenance/local-environment.md「Hot reload (air + delve)」参照）。--wait-timeout は
+# 付けない。待ちの上限は healthcheck の start_period + retries × interval が既に持っており、ここにも
+# 持つと片方だけ伸ばしたとき compose が先に切れ、まだビルド中のログを失敗として見せることになる。
+# compose の失敗メッセージは "container ... is unhealthy" までしか言わないので、次に読むログをここで
+# 出す。$$APP_PROJECT は直前の $(COMPOSE_APP) が同じシェルで eval した値。
 app-up: require-db-owner
 	@$(COMPOSE_APP) up -d --wait $(APP_SERVICES) || { \
 		echo "❌ API の起動に失敗しました。api_server のログ末尾 $(APP_LOG_TAIL) 行:"; \
