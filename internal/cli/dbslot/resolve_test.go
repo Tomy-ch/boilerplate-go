@@ -194,6 +194,21 @@ func TestResolver_Resolve(t *testing.T) {
 			assert.Equal(t, "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3", got.RealtimeTopic)
 		})
 
+		t.Run("スロット番号が壊れていれば既定へ落とす", func(t *testing.T) {
+			t.Parallel()
+
+			root := filepath.Join(t.TempDir(), "go-boilerplate")
+			require.NoError(t, os.Mkdir(root, dirPerm))
+			writeSlot(t, root, "SLOT=abc\nDB_NAME_LOCAL=wt3_local\nDB_NAME_TEST=wt3_test\n")
+			r, _ := newResolver(t, root, probeStub{dirs: "/repo/.git/worktrees/wt3\n/repo/.git\n"})
+
+			got, err := r.Resolve(t.Context())
+			require.NoError(t, err)
+			assert.False(t, got.SlotHeld)
+			assert.Equal(t, "local", got.DBLocal)
+			assert.Equal(t, "gobp-app-go-boilerplate", got.AppProject)
+		})
+
 		t.Run("リースを他 worktree に回収されていればスロット定義を無視して既定へ落とす", func(t *testing.T) {
 			t.Parallel()
 
@@ -413,6 +428,92 @@ func TestResolver_PrintValues(t *testing.T) {
 
 			require.ErrorIs(t, r.PrintValues(t.Context()), errGitLayoutUnreadable)
 			assert.Empty(t, out.String())
+		})
+	})
+}
+
+func TestResolver_heldSlot(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("宣言されたスロットのリースを保持していればその番号を返す", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeSlot(t, root, slotFileContent)
+			r, _ := newResolver(t, root, probeStub{dirs: ".git\n.git\n"})
+
+			slot, held := r.heldSlot()
+
+			assert.True(t, held)
+			assert.Equal(t, 3, slot)
+		})
+
+		t.Run("リースを保持していなければ番号を返さない", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeSlot(t, root, slotFileContent)
+			r, _ := newResolverWithLease(t, root, probeStub{dirs: ".git\n.git\n"},
+				&LeaseProbe{OwnedBySelf: func(int) bool { return false }})
+
+			_, held := r.heldSlot()
+
+			assert.False(t, held)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("スロット定義が無ければ保持なしとする", func(t *testing.T) {
+			t.Parallel()
+
+			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: ".git\n.git\n"})
+
+			_, held := r.heldSlot()
+
+			assert.False(t, held)
+		})
+
+		t.Run("スロット番号が数値でなければ壊れた宣言として保持なしとする", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeSlot(t, root, "SLOT=abc\nDB_NAME_LOCAL=wt3_local\nDB_NAME_TEST=wt3_test\n")
+			r, _ := newResolver(t, root, probeStub{dirs: ".git\n.git\n"})
+
+			_, held := r.heldSlot()
+
+			assert.False(t, held)
+		})
+
+		t.Run("リースの判定点が無ければ保持なしとする", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeSlot(t, root, slotFileContent)
+			r, _ := newResolverWithLease(t, root, probeStub{dirs: ".git\n.git\n"}, nil)
+
+			_, held := r.heldSlot()
+
+			assert.False(t, held)
+		})
+	})
+}
+
+func Test_mockAuthIssuer(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("ホスト公開ポートから issuer URL を組み立てる", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, "http://localhost:2013/default", mockAuthIssuer(2013))
 		})
 	})
 }

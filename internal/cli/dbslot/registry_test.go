@@ -195,11 +195,11 @@ func TestRegistry_Release(t *testing.T) {
 
 			// 別 owner からは解放されない。
 			other := NewRegistry(r.dir, "/w/other", "b", 30*time.Minute, 8, func() time.Time { return now })
-			other.Release(1)
+			assert.False(t, other.Release(1))
 			assert.True(t, r.Exists(1))
 
 			// 自分なら解放される。
-			r.Release(1)
+			assert.True(t, r.Release(1))
 			assert.False(t, r.Exists(1))
 		})
 	})
@@ -227,7 +227,7 @@ func TestRegistry_Exists(t *testing.T) {
 			r := newTestRegistry(t, "/w/a", time.Unix(1000, 0))
 			require.True(t, r.TryAcquireFresh(1))
 			require.NoError(t, r.WriteMeta(1))
-			r.Release(1)
+			require.True(t, r.Release(1))
 
 			assert.False(t, r.Exists(1))
 		})
