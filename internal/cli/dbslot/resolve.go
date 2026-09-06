@@ -340,9 +340,8 @@ func readSlotFile(path string) map[string]string {
 }
 
 // realtimeName は、基底名にスロット番号を継いだ資源名を返します（基底の出所は Config.Realtime）。
-//
-// 基底が空なら継ぎません。空の topic は「fan-out を配線すると起動に失敗する」という env の契約で、
-// そこへスロット番号だけを継ぐと `-wt2` のような、契約でも正しい名前でもない値になります。
+// 基底が空なら継ぎません。LoadRealtimeBase が空を弾くので今は届きませんが、継ぐと `-wt2` のような
+// 名前でない値になるため、基底の検査が緩んだときにここで止めます。
 func realtimeName(base, slot, infix string) string {
 	if base == "" || slot == "" {
 		return base

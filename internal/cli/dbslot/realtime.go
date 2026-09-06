@@ -29,11 +29,8 @@ type RealtimeBase struct {
 	Topic       string // REALTIME_TOPIC（fan-out topic の ARN）
 }
 
-// LoadRealtimeBase は、埋め込み env が宣言する基底を返します。
-//
-// OS の環境変数をマージしません。db-slot 自身が同じ名前を撒くため、マージすると自分の出力を
-// 入力として読み直し、スロット番号を二重に継ぎます（local_wt2 を基底として local_wt2_wt2）。
-// application の設定読み込み（config.Load）が実行時 env を優先するのは正しく、ここだけが違います。
+// LoadRealtimeBase は、埋め込み env が宣言する基底を返します。OS の環境変数はマージしません —
+// db-slot env が撒く同名の変数を読み戻さないためです（README「Resolved values」）。
 func LoadRealtimeBase() (RealtimeBase, error) {
 	b, err := root.FS.ReadFile(embeddedEnvFile)
 	if err != nil {
@@ -48,10 +45,10 @@ func LoadRealtimeBase() (RealtimeBase, error) {
 	return realtimeBaseFrom(kv)
 }
 
-// realtimeBaseFrom は、env の key-value から基底を取り出します。
-//
-// topic だけは空を許します。空の topic で fan-out を配線すると application が起動時に落ちる、
-// というのが env の宣言する契約で（env/README.md）、ここで先に止めるとその契約を狭めます。
+// realtimeBaseFrom は、env の key-value から基底を取り出します。3 つのいずれかが空なら
+// ErrRealtimeBaseMissing です。空を compose へ渡すと既定値（スロットを持たないときの名前）へ
+// 置き換わり、その資源だけ主 checkout と共有してしまいます
+// （docs/maintenance/db-worktree-pool.md「The Realtime Delivery emulators are shared instances」）。
 func realtimeBaseFrom(kv map[string]string) (RealtimeBase, error) {
 	base := RealtimeBase{
 		TableSuffix: kv[realtimeTableSuffixKey],
@@ -59,12 +56,15 @@ func realtimeBaseFrom(kv map[string]string) (RealtimeBase, error) {
 		Topic:       kv[realtimeTopicKey],
 	}
 
-	if base.TableSuffix == "" {
-		return RealtimeBase{}, xerrors.Wrap(ErrRealtimeBaseMissing, realtimeTableSuffixKey)
-	}
-
-	if base.QueuePrefix == "" {
-		return RealtimeBase{}, xerrors.Wrap(ErrRealtimeBaseMissing, realtimeQueuePrefixKey)
+	// 複数欠けたときに報告するキーが揺れないよう、順序を固定して見る。
+	for _, declared := range [][2]string{
+		{realtimeTableSuffixKey, base.TableSuffix},
+		{realtimeQueuePrefixKey, base.QueuePrefix},
+		{realtimeTopicKey, base.Topic},
+	} {
+		if declared[1] == "" {
+			return RealtimeBase{}, xerrors.Wrap(ErrRealtimeBaseMissing, declared[0])
+		}
 	}
 
 	return base, nil
