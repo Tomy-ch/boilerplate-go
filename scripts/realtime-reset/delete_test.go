@@ -22,17 +22,6 @@ const eventLogTable = "realtime_event_log_local_wt3"
 
 var errAPI = xerrors.New("api failed")
 
-// notFound は、SDK が返すのと同じ包み方で ResourceNotFoundException を返します。
-// 実際の呼び出しでは smithy が例外を OperationError の中へ入れて返すため、裸で返す fake では
-// 判定を `xerrors.As` から型アサーションへ落とす退行を見逃します。
-func notFound(op string) error {
-	return &smithy.OperationError{
-		ServiceID:     "DynamoDB",
-		OperationName: op,
-		Err:           &dynamodbtypes.ResourceNotFoundException{},
-	}
-}
-
 // fakeTableAPI は、削除済みの table を集合として持つ tableAPI です。
 // describeLeft は「DeleteTable が返った後もしばらく引ける」非同期の削除を再現します。
 type fakeTableAPI struct {
@@ -42,6 +31,17 @@ type fakeTableAPI struct {
 	deleteErr    error
 	describeErr  error
 	describeLeft int
+}
+
+// notFound は、SDK が返すのと同じ包み方で ResourceNotFoundException を返します。
+// 実際の呼び出しでは smithy が例外を OperationError の中へ入れて返すため、裸で返す fake では
+// 判定を `xerrors.As` から型アサーションへ落とす退行を見逃します。
+func notFound(op string) error {
+	return &smithy.OperationError{
+		ServiceID:     "DynamoDB",
+		OperationName: op,
+		Err:           &dynamodbtypes.ResourceNotFoundException{},
+	}
 }
 
 func newFakeTableAPI(existing ...string) *fakeTableAPI {
