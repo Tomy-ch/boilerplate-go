@@ -4,7 +4,7 @@
 -- ID からクーポンを 1 件、悲観ロック（FOR UPDATE）して取得する。不存在は 0 行（NotFound）。
 -- 使用済み・失効・受給者では絞らない理由は docs/spec/domain/coupon.md の
 -- Repository Methods > LockByID を参照。
--- 取得位置の不変条件は docs/spec/usecase/purchase.md の CreatePurchase を参照
+-- 取得位置の不変条件は docs/spec/usecase/purchase.md の CreatePurchase / CancelPurchase を参照
 -- （ADR-0036 (ordered-pessimistic-row-locks)）。
 SELECT sqlc.embed(c)
 FROM coupons AS c
@@ -20,6 +20,19 @@ SELECT sqlc.embed(c)
 FROM coupons AS c
 WHERE c.user_id = sqlc.arg('user_id')
 ORDER BY c.issued_at DESC, c.id DESC;
+
+-- === source: database/dml/repository/coupon/update_coupon_unused.sql ===
+-- name: UpdateCouponUnused :execrows
+-- 使用済みのクーポンを未使用へ戻す。更新件数を返す。
+-- WHERE の used_at IS NOT NULL は、行ロックを取らずに呼ばれた場合に備える二重防御
+-- （該当行なしは呼び出し側が未使用として扱う）。詳細は docs/spec/domain/coupon.md の
+-- Repository Methods > UpdateUnused を参照。
+UPDATE coupons
+SET
+    used_at = NULL,
+    updated_at = NOW()
+WHERE coupons.id = sqlc.arg('id')
+    AND coupons.used_at IS NOT NULL;
 
 -- === source: database/dml/repository/coupon/update_coupon_used.sql ===
 -- name: UpdateCouponUsed :execrows

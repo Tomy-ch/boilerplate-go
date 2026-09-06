@@ -176,8 +176,9 @@ type Usecase interface {
 	// params.Window で注文日時の対象期間を、params.StatusCodes でステータスを絞り込めます
 	// （いずれもゼロ値は絞り込みなし）。
 	GetPurchases(ctx context.Context, authn *auth.Authn, params ListPurchasesParams) (*PurchaseListView, error)
-	// CancelPurchase は、本人の購入をキャンセルし、明細分の在庫を復元します。キャンセル・在庫復元・
-	// イベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも存在秘匿のため
+	// CancelPurchase は、本人の購入をキャンセルし、明細分の在庫を復元します。適用していたクーポンは
+	// 有効期限内なら未使用へ戻し、失効していれば使用済みのまま残します。キャンセル・クーポンの返却・
+	// 在庫復元・イベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも存在秘匿のため
 	// NotFound（404）、不正遷移は 409 を返します。
 	CancelPurchase(ctx context.Context, params CancelPurchaseParams) (CancelPurchaseView, error)
 	// PayPurchase は、本人の購入を支払い済みへ遷移させます。決済 SDK / PSP 連携は行わない擬似決済です。
@@ -380,6 +381,12 @@ func (u *usecase) CancelPurchase(ctx context.Context, params CancelPurchaseParam
 
 		domainEvent, cerr := locked.Cancel(now)
 		if cerr != nil {
+			return cerr
+		}
+
+		// クーポン行は商品行より先に押さえます（ロック順序は docs/spec/usecase/purchase.md の
+		// § クーポンの返却（CancelPurchase）。ADR-0036 (ordered-pessimistic-row-locks)）。
+		if cerr := u.restoreCoupon(ctx, locked.CouponID(), now); cerr != nil {
 			return cerr
 		}
 
@@ -768,6 +775,30 @@ func toPayPurchaseView(d *purchase.Detail) PayPurchaseView {
 		OrderedAt:      d.OrderedAt,
 		PaidAt:         d.PaidAt,
 	}
+}
+
+// restoreCoupon は、キャンセルした購入が適用していたクーポンを未使用へ戻します。
+// クーポンを適用していない購入では何もしません。失効したクーポンは戻さず、それは失敗ではありません
+// （規則は docs/spec/usecase/purchase.md の § クーポンの返却（CancelPurchase））。
+func (u *usecase) restoreCoupon(ctx context.Context, couponID *uuid.UUID, now time.Time) error {
+	if couponID == nil {
+		return nil
+	}
+
+	c, err := u.couponRepo.LockByID(ctx, *couponID)
+	if err != nil {
+		return err
+	}
+
+	restored, rerr := c.Restore(now)
+	if rerr != nil {
+		return rerr
+	}
+	if !restored {
+		return nil
+	}
+
+	return u.couponRepo.UpdateUnused(ctx, c.ID())
 }
 
 // restoreStock は、キャンセルした明細ぶんの在庫を対象商品へ戻します。

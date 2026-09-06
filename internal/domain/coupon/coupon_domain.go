@@ -147,10 +147,9 @@ func (c *Coupon) DiscountFor(lines []Line) (int, error) {
 	return int(cents), nil
 }
 
-// Redeem は、クーポンを使用済みにします。使用済みへの遷移は一度きりで、取り消せません。
+// Redeem は、クーポンを使用済みにします。使用済みから未使用へ戻すのは [Coupon.Restore] だけです。
 //
 // 既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えません。
-// 日時は引数で受け取ります（internal/domain/README.md の Handling time and ID を参照）。
 func (c *Coupon) Redeem(now time.Time) error {
 	if c.IsUsed() {
 		return ErrAlreadyUsed
@@ -162,6 +161,24 @@ func (c *Coupon) Redeem(now time.Time) error {
 	c.usedAt = &now
 
 	return nil
+}
+
+// Restore は、使用済みのクーポンを未使用へ戻し、戻したかどうかを返します。
+//
+// 渡された時点で失効している場合は状態を変えず false を返します（理由は
+// docs/spec/domain/coupon.md の Behavior Methods > Restore を参照）。
+// 未使用のクーポンには ErrNotUsed を返します。
+func (c *Coupon) Restore(now time.Time) (bool, error) {
+	if !c.IsUsed() {
+		return false, ErrNotUsed
+	}
+	if c.IsExpired(now) {
+		return false, nil
+	}
+
+	c.usedAt = nil
+
+	return true, nil
 }
 
 // IsExpired は、渡された時点でクーポンが失効しているかどうかを返します。有効期限ちょうども

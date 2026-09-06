@@ -73,6 +73,20 @@ func (mr *MockRepositoryMockRecorder) LockByID(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LockByID", reflect.TypeOf((*MockRepository)(nil).LockByID), ctx, id)
 }
 
+// UpdateUnused mocks base method.
+func (m *MockRepository) UpdateUnused(ctx context.Context, id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUnused", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUnused indicates an expected call of UpdateUnused.
+func (mr *MockRepositoryMockRecorder) UpdateUnused(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUnused", reflect.TypeOf((*MockRepository)(nil).UpdateUnused), ctx, id)
+}
+
 // UpdateUsed mocks base method.
 func (m *MockRepository) UpdateUsed(ctx context.Context, id uuid.UUID, usedAt time.Time) error {
 	m.ctrl.T.Helper()

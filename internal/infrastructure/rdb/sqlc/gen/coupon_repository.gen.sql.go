@@ -79,7 +79,7 @@ type LockCouponByIDRow struct {
 // ID からクーポンを 1 件、悲観ロック（FOR UPDATE）して取得する。不存在は 0 行（NotFound）。
 // 使用済み・失効・受給者では絞らない理由は docs/spec/domain/coupon.md の
 // Repository Methods > LockByID を参照。
-// 取得位置の不変条件は docs/spec/usecase/purchase.md の CreatePurchase を参照
+// 取得位置の不変条件は docs/spec/usecase/purchase.md の CreatePurchase / CancelPurchase を参照
 // （ADR-0036 (ordered-pessimistic-row-locks)）。
 //
 //	SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at
@@ -103,6 +103,35 @@ func (q *Queries) LockCouponByID(ctx context.Context, id uuid.UUID) (*LockCoupon
 		&i.Coupons.UpdatedAt,
 	)
 	return &i, err
+}
+
+const updateCouponUnused = `-- name: UpdateCouponUnused :execrows
+UPDATE coupons
+SET
+    used_at = NULL,
+    updated_at = NOW()
+WHERE coupons.id = $1
+    AND coupons.used_at IS NOT NULL
+`
+
+// === source: database/dml/repository/coupon/update_coupon_unused.sql ===
+// 使用済みのクーポンを未使用へ戻す。更新件数を返す。
+// WHERE の used_at IS NOT NULL は、行ロックを取らずに呼ばれた場合に備える二重防御
+// （該当行なしは呼び出し側が未使用として扱う）。詳細は docs/spec/domain/coupon.md の
+// Repository Methods > UpdateUnused を参照。
+//
+//	UPDATE coupons
+//	SET
+//	    used_at = NULL,
+//	    updated_at = NOW()
+//	WHERE coupons.id = $1
+//	    AND coupons.used_at IS NOT NULL
+func (q *Queries) UpdateCouponUnused(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, updateCouponUnused, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const updateCouponUsed = `-- name: UpdateCouponUsed :execrows
