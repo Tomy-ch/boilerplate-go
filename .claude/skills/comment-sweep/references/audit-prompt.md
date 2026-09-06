@@ -35,16 +35,19 @@ Not "is this Why non-obvious?" — it usually is, and that question always resol
 which is exactly why the stock grew. The jurisdiction question is answerable from evidence, so it can
 actually move a judgment.
 
-### Pass 2 — per file: which single site owns this content
+### Pass 2 — per package: which single site owns this content
 
-Then read each file's comments **as one body** and ask:
+Then read **every comment in the package you were assigned as one body** — across all its files, not
+one file at a time — and ask:
 
-> Is this content already carried somewhere else in this file, and if so, which single site owns it?
+> Is this content already carried at another declaration in this package, and if so, which single
+> site owns it?
 
 Pass 1 cannot answer this, and not for lack of care. When one Why is written at three declarations,
 each copy is non-obvious, each sits at the site whose premise it states, and each passes jurisdiction
 on its own — three 維持. The redundancy exists only in the relation between them, so it is visible only
-when the file is judged as a unit.
+when the package is judged as a unit. Asking it per file leaves the same hole one level in: a Why
+copied from `foo.go` into `bar.go` passes every per-file reading of both.
 
 Three shapes qualify:
 
@@ -54,8 +57,13 @@ Three shapes qualify:
 - **総量過多** — each comment is individually correct, yet the file's total commentary costs more to
   read than the code it explains.
 
-Run this pass on every file, including ones where Pass 1 found nothing: a file whose comments are all
-individually fine is exactly where duplication hides.
+Run this pass over every file you were given, including ones where Pass 1 found nothing: a file whose
+comments are all individually fine is exactly where duplication hides.
+
+**Repetition beyond your scope is not yours to find.** The integrator scans for it mechanically and
+hands you any cluster that touches your files. When it does, judge those comments knowing they are
+repeated elsewhere: the usual answer is 移設 / 短縮 at each site rather than a consolidation, because
+no declaration in your package owns a concept that also lives in another one.
 
 ## Verdicts
 
@@ -71,8 +79,8 @@ Return exactly one of five per finding.
   or narration of a mechanism the reader already knows. Quote the code that makes it redundant.
 - **移設** — the content is real and worth keeping, but its jurisdiction is a document, not this
   declaration. Name the destination concretely and show the landing form (below).
-- **集約** — the Pass 2 verdict, and the only one whose subject is a **set** of comments in one file
-  rather than a single comment. One site keeps the content; the rest shrink to a pointer. It is one
+- **集約** — the Pass 2 verdict, and the only one whose subject is a **set** of comments rather than a
+  single comment. One site keeps the content; the rest shrink to a pointer. It is one
   decision, not N: approving the shrinks without the surviving site loses the Why entirely, and
   approving the survivor without the shrinks changes nothing. Never split it into per-comment findings.
 
@@ -108,28 +116,31 @@ finding wastes the reviewer's turn:
 
 Everything here is what makes the set decidable as one unit. A 集約 missing any of it is not
 reviewable, because the reviewer cannot see what they would be agreeing to:
-
 1. **The shape** — 重複 / 分散 / 総量過多. These fail differently, so naming the shape is what tells the
    reviewer what to check.
-2. **Every member** — each `path:line` and its comment in full. Not just the site you propose to keep:
+2. **The span** — whether every member sits in one file, or the set reaches across files. This decides
+   whether the integrator may apply it unattended, so it is not a descriptive detail: omit it and the
+   finding is treated as the riskier case.
+3. **Every member** — each `path:line` and its comment in full. Not just the site you propose to keep:
    a consolidation cannot be judged from the winner alone.
-3. **The owning site, with evidence** — which declaration keeps the content, and *why that one*. The
+4. **The owning site, with evidence** — which declaration keeps the content, and *why that one*. The
    test is ownership of the concept, not comment length or file order: the site a reader arrives at
    first when they ask the question the comment answers. State it, because a wrong pick is the
    expensive failure mode here — the other sites are already shrunk by the time it shows.
-4. **The consolidated wording** — the full text the owning site will carry. It must cover what the
+5. **The consolidated wording** — the full text the owning site will carry. It must cover what the
    shrunk sites gave up; a consolidation that quietly drops one member's distinct fact is a deletion
    wearing another verdict's name.
-5. **Each pointer** — the exact residue left at every other site. A bare `// 詳細は上記参照` is not a
+6. **Each pointer** — the exact residue left at every other site. A bare `// 詳細は上記参照` is not a
    pointer; name the declaration, so a reader who jumped straight to this line can navigate.
-6. **確度: high / medium / low** — this one is load-bearing rather than decorative. The integrator
+7. **確度: high / medium / low** — this one is load-bearing rather than decorative. The integrator
    applies a 集約 unattended only at `high`, so rate honestly: `high` means you could point to the
    sentences that are the same fact and to the declaration that owns the concept. Uncertainty about
    which site should win is `medium` at best.
 
-A 集約 never writes to a document — it only moves content between comments inside one file. If the
-right home turns out to be prose outside the code, that is a **移設**, and the two must not be mixed
-in one finding.
+A 集約 never writes to a document — it only moves content between comments. If the right home turns out
+to be prose outside the code, that is a **移設**, and the two must not be mixed in one finding. State
+whether the members share one file: the integrator applies a same-file 集約 unattended at `high`, and
+withholds one whose members span files for per-item approval.
 
 **Do not consolidate into a package overview.** `// Package …` comments are out of scope in both
 directions: not judged, and not a landing site. When the fragments really do add up to a package-level
@@ -184,7 +195,7 @@ Your final message **is** the data the orchestrator consumes. No preamble.
 ````text
 ## comment-sweep 監査結果: <package path>
 
-対象 <n> ファイル / 判定内訳: 維持 <a> / 短縮 <b> / 削除 <c> / 移設 <d> / 集約 <e>
+対象 <n> ファイル / 判定内訳: 維持 <a> / 短縮 <b> / 削除 <c> / 移設 <d> / 集約 <e>（うちファイル横断 <f>）
 
 ### [判定] 短いタイトル
 - 場所: path/to/file:行
