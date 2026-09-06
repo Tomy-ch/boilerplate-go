@@ -46,9 +46,7 @@ func LoadRealtimeBase() (RealtimeBase, error) {
 }
 
 // realtimeBaseFrom は、env の key-value から基底を取り出します。3 つのいずれかが空なら
-// ErrRealtimeBaseMissing です。空を compose へ渡すと既定値（スロットを持たないときの名前）へ
-// 置き換わり、その資源だけ主 checkout と共有してしまいます
-// （docs/maintenance/db-worktree-pool.md「The Realtime Delivery emulators are shared instances」）。
+// ErrRealtimeBaseMissing です（空を拒む理由は README.md「Resolved values」）。
 func realtimeBaseFrom(kv map[string]string) (RealtimeBase, error) {
 	base := RealtimeBase{
 		TableSuffix: kv[realtimeTableSuffixKey],

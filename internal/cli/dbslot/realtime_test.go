@@ -95,7 +95,7 @@ func Test_realtimeBaseFrom(t *testing.T) {
 				realtimeQueuePrefixKey: "realtime-local",
 			})
 			require.ErrorIs(t, err, ErrRealtimeBaseMissing,
-				"空の topic だけ既定値へ落ちると、table は分離されたまま topic だけ主 checkout と共有する")
+				"空の topic だけ素通しすると、table は分離されたまま topic だけ主 checkout と共有する")
 			assert.ErrorContains(t, err, realtimeTopicKey)
 		})
 
@@ -108,7 +108,7 @@ func Test_realtimeBaseFrom(t *testing.T) {
 				realtimeTopicKey:       "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local",
 			})
 			require.ErrorIs(t, err, ErrRealtimeBaseMissing,
-				"空を通すと compose の `${VAR:-local}` が主 checkout の名前へ置き換える")
+				"空を通すと realtimeName がスロットを継がず、主 checkout の資源名のまま撒かれる")
 		})
 	})
 }
