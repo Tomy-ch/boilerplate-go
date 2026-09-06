@@ -337,6 +337,36 @@ func TestPool_Release(t *testing.T) {
 			assert.Contains(t, logbuf.String(), "slot 1 is held by another worktree")
 		})
 
+		t.Run("リースの meta を読めないだけなら自分の後始末を取り下げない", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			poolDir := t.TempDir()
+			ctrl := gomock.NewController(t)
+			admin := mock_dbslot.NewMockDBAdmin(ctrl)
+			comp := mock_dbslot.NewMockCompose(ctrl)
+			reg := NewRegistry(poolDir, root, "branch", 30*time.Minute, 8,
+				func() time.Time { return time.Unix(1_000_000, 0) })
+			cfg := Config{
+				Root: root, SharedProject: "gobp-shared",
+				APIBasePort: 8080, MockAuthBase: 4000, DlvBase: 2345, PprofBase: 6060,
+			}
+			pool := NewPool(reg, admin, comp, cfg, io.Discard, io.Discard)
+
+			comp.EXPECT().UpSharedDB(gomock.Any(), "gobp-shared").Return(nil)
+			expectSlotDBs(admin, "1")
+			require.NoError(t, pool.Acquire(context.Background()))
+
+			// meta だけを失う（他 worktree が保持しているわけではない）。
+			require.NoError(t, os.Remove(filepath.Join(poolDir, "slot-1.lock", "meta")))
+			comp.EXPECT().DownServe(gomock.Any(), "gobp-wt-1").Return(nil)
+
+			require.NoError(t, pool.Release(context.Background()))
+
+			_, err := os.Stat(filepath.Join(root, ".gobp-db-slot"))
+			assert.True(t, os.IsNotExist(err))
+		})
+
 		t.Run("serve 停止が失敗してもリースは解放しログへ可視化する", func(t *testing.T) {
 			t.Parallel()
 

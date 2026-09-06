@@ -21,6 +21,9 @@ const slotFileContent = "SLOT=3\nDB_NAME_LOCAL=wt3_local\nDB_NAME_TEST=wt3_test\
 // errGitFailed は、git コマンドが失敗したことを表すテスト用のエラー。
 var errGitFailed = xerrors.New("exit status 128")
 
+// leaseStub は、リース所有権の判定を固定値で返します。
+type leaseStub struct{ owned bool }
+
 // probeStub は、git の 4 通りの応答（不在 / 非リポジトリ / 主 checkout / リンク worktree）を作ります。
 type probeStub struct {
 	lookErr     error
@@ -36,9 +39,6 @@ func (s probeStub) probe() *GitProbe {
 		HasGitEntry: func(string) bool { return s.hasGitEntry },
 	}
 }
-
-// leaseStub は、リース所有権の判定を固定値で返します。
-type leaseStub struct{ owned bool }
 
 func (s leaseStub) OwnedBySelf(int) bool { return s.owned }
 
@@ -147,6 +147,23 @@ func TestResolver_Resolve(t *testing.T) {
 
 			root := t.TempDir()
 			writeSlot(t, root, slotFileContent)
+			r, _ := newResolver(t, root, probeStub{dirs: "/repo/.git/worktrees/wt3\n/repo/.git\n"})
+
+			got, err := r.Resolve(t.Context())
+			require.NoError(t, err)
+			assert.True(t, got.SlotHeld)
+			assert.Equal(t, "wt3_local", got.DBLocal)
+			assert.Equal(t, "wt3_test", got.DBTest)
+			assert.Equal(t, "gobp-wt-3", got.AppProject)
+			assert.Equal(t, "http://localhost:2013/default", got.AuthIssuer)
+		})
+
+		t.Run("値はスロット番号から導き、スロット定義が並べる DB 名やポートは採用しない", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeSlot(t, root, "SLOT=3\nDB_NAME_LOCAL=wt9_local\nDB_NAME_TEST=wt9_test\n"+
+				"MOCK_AUTH_HOST_PORT=2019\nSERVE_PROJECT=gobp-wt-9\n")
 			r, _ := newResolver(t, root, probeStub{dirs: "/repo/.git/worktrees/wt3\n/repo/.git\n"})
 
 			got, err := r.Resolve(t.Context())

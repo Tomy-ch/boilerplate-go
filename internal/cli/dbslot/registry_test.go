@@ -306,6 +306,49 @@ func TestRegistry_OwnedBySelf(t *testing.T) {
 	})
 }
 
+func TestRegistry_HeldByOther(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("別 worktree が meta を書いたスロットは true", func(t *testing.T) {
+			t.Parallel()
+
+			now := time.Unix(1000, 0)
+			owner := newTestRegistry(t, "/w/other", now)
+			require.True(t, owner.TryAcquireFresh(1))
+			require.NoError(t, owner.WriteMeta(1))
+
+			viewer := NewRegistry(owner.dir, "/w/me", "b", 30*time.Minute, 8, func() time.Time { return now })
+			assert.True(t, viewer.HeldByOther(1))
+		})
+
+		t.Run("自分が meta を書いたスロットは false", func(t *testing.T) {
+			t.Parallel()
+
+			r := newTestRegistry(t, "/w/self", time.Unix(1000, 0))
+			require.True(t, r.TryAcquireFresh(1))
+			require.NoError(t, r.WriteMeta(1))
+
+			assert.False(t, r.HeldByOther(1))
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("meta を読めないスロットは他 worktree の保持とみなさない", func(t *testing.T) {
+			t.Parallel()
+
+			r := newTestRegistry(t, "/w/self", time.Unix(1000, 0))
+			require.True(t, r.TryAcquireFresh(1))
+
+			assert.False(t, r.HeldByOther(1))
+		})
+	})
+}
+
 func TestRegistry_lockDir(t *testing.T) {
 	t.Parallel()
 
