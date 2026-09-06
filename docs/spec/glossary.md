@@ -61,7 +61,8 @@ findings** — 業務が使っていてモデルが使っていない語は、�
 | クーポン | 利用者に生じた事情への補償として発行される値引きの権利。受給者は発行時に確定し移らない | coupon / Coupon | `coupon.Coupon` | — |
 | 値引き | クーポンがいくら引くかの決まり方と、その値の組。定額と定率がある | coupon / Coupon | `coupon.Discount` | — |
 | 適用範囲 | クーポンがどの明細を対象にするか。全体・カテゴリ限定・商品限定がある | coupon / Coupon | `coupon.Scope` | — |
-| 引き換え | 保有するクーポンを購入へ適用し、使用済みにする行為。一度きりで取り消せない | coupon / Coupon | `coupon.Coupon.Redeem` | `usedAt` |
+| 引き換え | 保有するクーポンを購入へ適用し、使用済みにする行為 | coupon / Coupon | `coupon.Coupon.Redeem` | `usedAt` |
+| 返却 | 購入のキャンセルに伴い、有効期限内のクーポンを未使用へ戻す行為。失効していれば戻さない | coupon / Coupon | `coupon.Coupon.Restore` | `usedAt` |
 | 対象明細 | クーポンの適用範囲に入る明細。値引き額はこの小計から決まる | coupon / Coupon | `coupon.Line` | — |
 | 値引き額 | 引き換えによって請求から差し引かれる額。決済スケールの整数 | purchase / Purchase | `purchase.Purchase.DiscountAmount` | `discount_amount` |
 | 在庫僅少 | 補充しなければ品切れが近い水準まで在庫が減っている状態 | product / Product | `product.Product.IsLowStock` | — |

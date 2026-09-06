@@ -335,6 +335,7 @@ workflow:
 `status_id`（現在状態）で、timestamps（`canceled_at` / `shipped_at` / `delivered_at`）はイベント発生の監査記録として併用する。
 在庫復元は `POST /v1/purchases` の在庫減算と対称な同一 tx 強整合で、対象商品を悲観ロックしてから商品集約の振る舞いで適用する（置き場の判定は [ADR-0034 (commandservice-atomicity-criterion)]）。
 キャンセル後の状態名解決は詳細読み取りモデル（`purchase.Detail`、GET 詳細で再利用可能な Repository read）で JOIN 解決する。
+適用していたクーポンは、有効期限内なら未使用へ戻す（詳細は「## クーポンの返却（CancelPurchase）」）。
 
 ```yaml
 input:
@@ -365,6 +366,8 @@ dependencies:
   - clock.Clock                     # Cancel(now) へ供給する時刻境界（ドメインの時刻直依存を避ける）
   - tx.Manager                      # 最外 tx（本経路は Idempotency-Key 冪等化を配線しない）
   - purchase.Repository             # LockByCode（FOR UPDATE）/ UpdateCancelled（status/canceled_at 更新）/ FindDetailByID（書き込み後の状態名解決・DTO 取得元）
+  - coupon.Repository               # LockByID（FOR UPDATE）/ UpdateUnused（適用があるときだけ）
+  - product.Repository              # LockByIDs（FOR UPDATE・id 昇順）/ UpdateStock（在庫復元）
   - outbox.EmitUsecase              # purchase.canceled.v1 の emit（同一 tx）
 
 workflow:
@@ -374,14 +377,16 @@ workflow:
     - "  ① repo.LockByCode で購入行を FOR UPDATE ロックし明細込みで再構築（並行キャンセルを直列化）"
     - "  ② purchase.UserID() != params.UserID なら NotFound へ畳む（存在秘匿）"
     - "  ③ purchase.Cancel(now) で遷移可否検証 + status/canceled_at を同時更新（ドメイン不変条件）"
-    - "  ④ productRepo.LockByIDs で対象商品をロックし product.AdjustStock + productRepo.UpdateStock で在庫を戻す"
-    - "  ⑤ repo.UpdateCancelled で purchases の status_id/canceled_at を更新する"
-    - "  ⑥ emit.Emit(purchase.canceled.v1) を同一 tx で発行する"
-    - "  ⑦ repo.FindDetailByID で状態名を解決しレスポンスの取得元とする"
+    - "  ④ 適用クーポンがあれば couponRepo.LockByID で行ロックし coupon.Restore(now) で判定、戻せた場合だけ couponRepo.UpdateUnused"
+    - "  ⑤ productRepo.LockByIDs で対象商品をロックし product.AdjustStock + productRepo.UpdateStock で在庫を戻す"
+    - "  ⑥ repo.UpdateCancelled で purchases の status_id/canceled_at を更新する"
+    - "  ⑦ emit.Emit(purchase.canceled.v1) を同一 tx で発行する"
+    - "  ⑧ repo.FindDetailByID で状態名を解決しレスポンスの取得元とする"
     - CancelPurchaseView へ写像して返す（ドメインエンティティを外へ出さない）
   errors:
     - ErrAlreadyCanceled → 409（二重キャンセル）
     - ErrCancelNotAllowed → 409（完了・発送済み・配達済みからの不正遷移）
+    - coupon.ErrNotUsed → 409（適用済みの購入が指すクーポンが未使用。行ロック下では到達しない二重防御）
     - ErrNotFound → 404（不存在・他人の購入の存在秘匿）
     - 未認証は controller で 401（Authn 不在）
 ```
@@ -677,3 +682,28 @@ notes:
     違う鍵での押し直しは、クーポン自身の使用済み状態を行ロック下で遷移させて弾く。2 つの別々の機構であり、
     片方だけでは足りない
 ```
+
+## クーポンの返却（CancelPurchase）
+
+```yaml
+lock_order: [purchases（排他）, coupons（排他）, products（排他・id 昇順）]
+calls:
+  - coupon.Repository.LockByID       # 適用があるときだけ
+  - coupon.Coupon.Restore            # 使用状態・失効の判定と未使用への遷移
+  - coupon.Repository.UpdateUnused   # 戻せた場合だけ
+behavior: |
+  キャンセルする購入がクーポンを適用していれば、遷移を確定させたあと商品行より先にクーポン行をロックする。
+  失効の判定はロックの下で行うため、判定から commit まで条件が覆らない。
+
+  戻すのは有効期限内のものだけで、失効していれば使用済みのまま残す。戻しても使えないクーポンを
+  未使用として一覧に並べないためであり、失効は返却の失敗ではない。
+
+  ロック順序が引き換え（users → coupons → products）と揃うのは、クーポン行を商品行より先に置いた結果である。
+  逆に置くと、使用済みクーポンを指した購入確定が Redeem で 422 になる前にその行を押さえる
+  （LockByID は使用済みで絞らない）ため、キャンセルとの間に循環ができる。
+invariants:
+  - 適用していない購入（couponId が NULL）ではクーポン行を引かない
+  - 二重キャンセルは purchases の行ロックで直列化され、後続は ErrAlreadyCanceled でクーポンへ到達しない
+  - coupon_id / discount_amount はキャンセル後も控えとして残る（購入の控えは値引きの理由をこの結合で解決する）
+```
+
