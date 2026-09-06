@@ -240,11 +240,9 @@ jobs:
 
           # The list is fenced, never put in an inline span: a path may carry a backtick. See README.md § PR comment fencing.
           list=/tmp/gen-oapi-filelist.txt
-          # The action's length cap slices a body without regard for fences and does not re-fence on
-          # this path, so a list trimmed there would lose the closing fence. Trimming here, before
-          # the fence is sized, keeps the block closed and stays under the 45000 character default.
-          # The fence cannot outgrow that budget either: a backtick run never spans a `/`, so the
-          # longest one a path can hold is bounded by NAME_MAX — 255 bytes — and the fence by 256.
+          # Trimmed before the fence is sized, so the action's length cap cannot cut an already-fenced
+          # body (README.md § PR comment fencing). A backtick run never spans a `/`, so a path bounds
+          # the fence at 256 and it cannot crowd out the 45000 default.
           list_limit=40000
           head -c "$list_limit" /tmp/changed_files.txt > "$list"
           if [ "$(wc -c < /tmp/changed_files.txt)" -gt "$list_limit" ]; then

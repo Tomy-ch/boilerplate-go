@@ -275,11 +275,8 @@ jobs:
         id: comment
         if: always() && github.event_name == 'pull_request'
         shell: bash
-        # Handed over as environment rather than interpolated into the script. All four values are
-        # this job's own and hold a number or a fixed word, so none can carry shell today — but an
-        # expression is substituted into the script text before bash parses it, so what makes that
-        # safe is a property of the producer, not of this step, and it stops holding the moment one
-        # of them carries something richer. Reading them as variables removes the question.
+        # Read as variables rather than interpolated: these four values look safe today, but that is
+        # a property of their producers, not of this step. README.md § Notes.
         env:
           SCRIPTS_CODE: ${{ steps.scripts-test.outputs.exit_code }}
           COVER_CODE: ${{ steps.cover-test.outputs.exit_code }}
