@@ -34,6 +34,11 @@ jobs:
     permissions:
       contents: read
       issues: write
+      # `claude-code-action` reaches GitHub through a token it mints itself, by exchanging this
+      # workflow's OIDC identity with the Claude GitHub App. Without the permission the exchange
+      # fails and the action stops before the model runs. It grants no repository access of its
+      # own — only the right to request a JWT that names this workflow.
+      id-token: write
     steps:
       - name: Harden the runner
         uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
