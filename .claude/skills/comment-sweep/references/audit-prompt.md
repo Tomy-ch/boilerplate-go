@@ -116,6 +116,7 @@ finding wastes the reviewer's turn:
 
 Everything here is what makes the set decidable as one unit. A 集約 missing any of it is not
 reviewable, because the reviewer cannot see what they would be agreeing to:
+
 1. **The shape** — 重複 / 分散 / 総量過多. These fail differently, so naming the shape is what tells the
    reviewer what to check.
 2. **The span** — whether every member sits in one file, or the set reaches across files. This decides
