@@ -29,6 +29,7 @@ type fakeTableAPI struct {
 	deleted      []string
 	described    []string
 	deleteErr    error
+	deleteErrOn  string
 	describeErr  error
 	describeLeft int
 }
@@ -56,11 +57,11 @@ func newFakeTableAPI(existing ...string) *fakeTableAPI {
 func (f *fakeTableAPI) DeleteTable(
 	_ context.Context, in *dynamodb.DeleteTableInput, _ ...func(*dynamodb.Options),
 ) (*dynamodb.DeleteTableOutput, error) {
-	if f.deleteErr != nil {
+	name := aws.ToString(in.TableName)
+	if f.deleteErr != nil && (f.deleteErrOn == "" || f.deleteErrOn == name) {
 		return nil, f.deleteErr
 	}
 
-	name := aws.ToString(in.TableName)
 	if !f.existing[name] {
 		return nil, notFound("DeleteTable")
 	}
@@ -155,9 +156,10 @@ func Test_deleteTables(t *testing.T) {
 
 			api := newFakeTableAPI("a", "b")
 			api.deleteErr = errAPI
+			api.deleteErrOn = "a"
 
 			require.ErrorIs(t, deleteTables(context.Background(), api, []string{"a", "b"}, &bytes.Buffer{}), errAPI)
-			assert.NotContains(t, api.described, "b", "1 つ目で止まらなければ 2 つ目にも触れてしまう")
+			assert.NotContains(t, api.deleted, "b", "1 つ目で止まらなければ 2 つ目を消してしまう")
 		})
 	})
 }
@@ -273,6 +275,7 @@ func Test_waitGone(t *testing.T) {
 			err := waitGone(ctx, api, eventLogTable)
 			require.ErrorIs(t, err, errGone)
 			require.ErrorIs(t, err, context.DeadlineExceeded)
+			assert.Len(t, api.described, 1, "待ちの腕が無いと次の問い合わせへ回ってしまう")
 		})
 	})
 }

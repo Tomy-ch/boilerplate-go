@@ -7,7 +7,7 @@
 
 # table と topic は application の起動時に作らない（docs/design/realtime-delivery.md）。app コンテナ内で実行するので
 # env/.env の ENDPOINT_REALTIME / ENDPOINT_REALTIME_PUBSUB（compose のサービス名）がそのまま使える。
-realtime-init:
+realtime-init: require-db-owner
 	@echo "🔄 Realtime Delivery の table と topic を作成します..."
 	@$(MAKE) infra-up
 	@$(MAKE) realtime-provision

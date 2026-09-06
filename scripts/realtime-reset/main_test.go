@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"flag"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go-boilerplate/internal/config"
 )
 
 func Test_run(t *testing.T) {
@@ -37,19 +40,6 @@ func Test_run(t *testing.T) {
 			require.NoError(t, run(context.Background(), []string{"-help"}, &bytes.Buffer{}, tablesOf("x"), apiOf(api)))
 			assert.Empty(t, api.deleted, "使い方を表示しただけで table を消してはならない")
 		})
-
-		t.Run("timeoutの指定がdeleteTablesへ届く", func(t *testing.T) {
-			t.Parallel()
-
-			api := newFakeTableAPI("x")
-			api.describeLeft = 1 << 30
-
-			err := run(
-				context.Background(), []string{"-timeout", "10ms"}, &bytes.Buffer{}, tablesOf("x"), apiOf(api),
-			)
-			require.ErrorIs(t, err, errGone)
-			require.ErrorIs(t, err, context.DeadlineExceeded, "打ち切ったのは -timeout であって呼び出し側の cancel ではない")
-		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
@@ -74,7 +64,7 @@ func Test_run(t *testing.T) {
 			t.Parallel()
 
 			err := run(context.Background(), []string{"-nope"}, &bytes.Buffer{}, tablesOf("x"), apiOf(newFakeTableAPI()))
-			require.Error(t, err)
+			require.ErrorIs(t, err, errFlags)
 			require.NotErrorIs(t, err, flag.ErrHelp)
 		})
 
@@ -100,24 +90,56 @@ func Test_run(t *testing.T) {
 
 			require.ErrorIs(t, run(context.Background(), nil, &bytes.Buffer{}, tablesOf("x"), factory), errAPI)
 		})
+
+		t.Run("指定したtimeoutで打ち切る", func(t *testing.T) {
+			t.Parallel()
+
+			api := newFakeTableAPI("x")
+			api.describeLeft = 1 << 30
+			start := time.Now()
+
+			err := run(
+				context.Background(), []string{"-timeout", "10ms"}, &bytes.Buffer{}, tablesOf("x"), apiOf(api),
+			)
+			require.ErrorIs(t, err, errGone)
+			require.ErrorIs(t, err, context.DeadlineExceeded)
+			assert.Less(t, time.Since(start), time.Second,
+				"-timeout を無視して既定の 60 秒を使う退行も、同じ sentinel で返ってくる")
+		})
 	})
 }
 
+//nolint:paralleltest // SetUpConfig は os.Setenv でグローバル環境を変更するため並列化不可
 func Test_configuredTables(t *testing.T) {
-	t.Parallel()
-
 	t.Run("正常系", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("設定のsuffixから3つのtable名を組み立てる", func(t *testing.T) {
-			t.Parallel()
+		t.Run("この checkout の suffix を付けた 3 つの table 名を返す", func(t *testing.T) {
+			cfg, err := config.SetUpConfig()
+			require.NoError(t, err)
+			suffix := config.NewRealtimeConfig(cfg).TableSuffix()
+			require.NotEmpty(t, suffix)
 
 			got, err := configuredTables()
 			require.NoError(t, err)
 			require.Len(t, got, 3, "EventLog / StreamTicket / InstanceLease の 3 つ")
 			for _, name := range got {
-				assert.Contains(t, name, "realtime_", "Realtime Delivery の table だけを対象にする")
+				assert.True(t, strings.HasSuffix(name, "_"+suffix),
+					"別の checkout の table を消さないことが、このツールの存在理由そのもの")
 			}
+			distinct := make(map[string]struct{}, len(got))
+			for _, name := range got {
+				distinct[name] = struct{}{}
+			}
+			assert.Len(t, distinct, 3, "3 つが同じ table を指してはならない")
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Run("設定を読めなければ削除対象を返さない", func(t *testing.T) {
+			t.Setenv("APP_MODE", "invalid-mode")
+
+			got, err := configuredTables()
+			require.Error(t, err)
+			assert.Nil(t, got, "対象が定まらないまま削除へ進ませない")
 		})
 	})
 }
@@ -136,6 +158,11 @@ func Test_newClient(t *testing.T) {
 			assert.Equal(t, "http://localhost:8000", aws.ToString(c.Options().BaseEndpoint),
 				"endpoint が届かないと SDK 既定の解決で本番 DynamoDB を指す")
 			assert.Equal(t, "ap-northeast-1", c.Options().Region)
+
+			creds, err := c.Options().Credentials.Retrieve(t.Context())
+			require.NoError(t, err)
+			assert.Equal(t, resetCredential, creds.AccessKeyID,
+				"実 AWS が拒む鍵であることが本番到達を止める防御の一部（app の鍵へ寄せない）")
 		})
 	})
 }
@@ -190,7 +217,7 @@ func Test_parseOptions(t *testing.T) {
 			t.Parallel()
 
 			_, err := parseOptions([]string{"-nope"})
-			require.Error(t, err)
+			require.ErrorIs(t, err, errFlags)
 			require.NotErrorIs(t, err, flag.ErrHelp)
 		})
 	})
@@ -219,6 +246,13 @@ func Test_validateEndpoint(t *testing.T) {
 
 			require.NoError(t, validateEndpoint("http://dynamo.internal.example:8000"),
 				"loopback に限定すると遠隔の emulator を使う構成が壊れる")
+		})
+
+		t.Run("AWSに似た別ドメインは拒まない", func(t *testing.T) {
+			t.Parallel()
+
+			require.NoError(t, validateEndpoint("http://notamazonaws.com:8000"),
+				"境界の受理側。部分一致で拒むと自前ホストを巻き込む")
 		})
 	})
 
@@ -273,6 +307,31 @@ func Test_validateEndpoint(t *testing.T) {
 			t.Parallel()
 
 			require.ErrorIs(t, validateEndpoint("https://DynamoDB.AmazonAWS.CoM"), errRealAWS)
+		})
+
+		t.Run("apex そのものを拒否する", func(t *testing.T) {
+			t.Parallel()
+
+			require.ErrorIs(t, validateEndpoint("https://amazonaws.com"), errRealAWS,
+				"末尾一致だけでは apex を取りこぼす")
+		})
+
+		t.Run("末尾ドット付きのFQDNを拒否する", func(t *testing.T) {
+			t.Parallel()
+
+			require.ErrorIs(t, validateEndpoint("https://dynamodb.us-east-1.amazonaws.com."), errRealAWS)
+		})
+
+		t.Run("中国パーティションを拒否する", func(t *testing.T) {
+			t.Parallel()
+
+			require.ErrorIs(t, validateEndpoint("https://dynamodb.cn-north-1.amazonaws.com.cn"), errRealAWS)
+		})
+
+		t.Run("dual-stackのendpointを拒否する", func(t *testing.T) {
+			t.Parallel()
+
+			require.ErrorIs(t, validateEndpoint("https://dynamodb.us-east-1.api.aws"), errRealAWS)
 		})
 	})
 }

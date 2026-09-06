@@ -6,8 +6,7 @@
 // 条件付き書き込みが ErrSequenceConflict を返して stream が止まります。
 //
 // table の作成は realtime-init（make realtime-provision）の担当なので、ここは削除だけを行います。
-// 削除は emulator を相手にする前提で、endpoint を省略すると SDK 既定の解決で本番 DynamoDB を
-// 指し得るため、空の endpoint は拒否します。
+// 相手は emulator に限る前提で、実 AWS の host と、host を持たない endpoint は拒否します。
 package main
 
 import (
@@ -39,22 +38,19 @@ const (
 	gonePollInterval = 200 * time.Millisecond
 
 	// resetCredential は、emulator へ渡す静的資格情報です。emulator は認証しませんが、
-	// SDK は署名のために非空の資格情報を要求します。
-	//
-	// これは本番到達を止める防御の一部でもあります。ダミーの鍵では実 AWS の署名検証を通らないため、
-	// endpoint の検査をすり抜けても削除には至りません。app の資格情報（config の REALTIME_*）へ
-	// 寄せないでください。寄せた瞬間、endpoint の検査だけが最後の防御になります。
-	//
-	// なお DynamoDB Local が -sharedDb で動いていること（docker-compose.yaml）に依存します。
-	// 外すと access key ごとに名前空間が分かれ、app が作った table がこの資格情報では見えず、
-	// 削除が「既にありません」で黙って空振りします。
+	// SDK は署名のために非空の資格情報を要求します。実 AWS が拒む鍵であることが本番到達を止める
+	// 防御の一部なので、app の資格情報（config の REALTIME_*）へ寄せないこと（scripts/README.md の
+	// realtime-reset）。別の鍵でも app の table が見えるのは dynamodb_local が -sharedDb で動くためで
+	// （docker-compose.yaml）、外すと削除が「既にありません」で空振りします。
 	resetCredential = "reset"
 
-	// awsHostSuffix は、実 AWS の endpoint を見分ける host の末尾です。
-	awsHostSuffix = ".amazonaws.com"
+	// awsHostSuffixes は、実 AWS の endpoint を見分ける host の末尾です。
+	// 中国パーティション（.amazonaws.com.cn）と dual-stack（.api.aws）は別の末尾を持つので個別に挙げます。
+	awsHostSuffixes = ".amazonaws.com,.amazonaws.com.cn,.api.aws"
 )
 
 var (
+	errFlags    = xerrors.New("コマンドラインの解釈に失敗しました")
 	errEndpoint = xerrors.New("-endpoint は scheme 付きの URL（scheme://host:port）で指定してください")
 	errRealAWS  = xerrors.New("-endpoint に実 AWS を指定できません（このツールは emulator 専用です）")
 	errGone     = xerrors.New("table の削除が制限時間内に終わりませんでした")
@@ -97,9 +93,8 @@ func main() {
 	}
 }
 
-// run は、flag を解釈し、削除対象を解決して削除します。設定の読み取りとクライアントの生成は
-// 引数で受けます。削除は取り消せないので、endpoint の拒否が実際に削除より先に効くことを
-// テストから確かめられる形にしています（scripts/README.md の Test Strategy）。
+// run は、flag を解釈し、削除対象を解決して削除します。削除は取り消せないので、endpoint の拒否は
+// 接続先の生成より先に効かせます。
 func run(ctx context.Context, args []string, out io.Writer, tables tableResolver, newAPI apiFactory) error {
 	opts, err := parseOptions(args)
 	if err != nil {
@@ -149,7 +144,7 @@ func parseOptions(args []string) (options, error) {
 			return opts, err
 		}
 
-		return opts, xerrors.Wrap(err, "parse flags")
+		return opts, xerrors.Join(errFlags, err)
 	}
 
 	if err := validateEndpoint(opts.endpoint); err != nil {
@@ -159,10 +154,9 @@ func parseOptions(args []string) (options, error) {
 	return opts, nil
 }
 
-// validateEndpoint は、endpoint が emulator を指す形であることを確かめます。空の endpoint は
-// SDK 既定の解決へ落ちて本番 DynamoDB を消し得るため、ここで止めます。
-//
-// 自前ホストの emulator を使う構成があるので loopback には限定せず、実 AWS の host だけを拒みます。
+// validateEndpoint は、endpoint が emulator を指す形であることを確かめます。空や host の無い
+// endpoint は入力ミスとして止め、実 AWS の host は拒みます。自前ホストの emulator を使う構成が
+// あるので loopback には限定しません。
 func validateEndpoint(endpoint string) error {
 	u, err := url.Parse(endpoint)
 	if err != nil {
@@ -174,9 +168,12 @@ func validateEndpoint(endpoint string) error {
 		return xerrors.Wrap(errEndpoint, endpoint)
 	}
 
-	host := strings.ToLower(u.Hostname())
-	if host == strings.TrimPrefix(awsHostSuffix, ".") || strings.HasSuffix(host, awsHostSuffix) {
-		return xerrors.Wrap(errRealAWS, endpoint)
+	// 末尾のドットは FQDN の書き方の違いでしかなく、TLS 検証も剥がして通す。落としてから比べる。
+	host := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
+	for suffix := range strings.SplitSeq(awsHostSuffixes, ",") {
+		if host == strings.TrimPrefix(suffix, ".") || strings.HasSuffix(host, suffix) {
+			return xerrors.Wrap(errRealAWS, endpoint)
+		}
 	}
 
 	return nil
