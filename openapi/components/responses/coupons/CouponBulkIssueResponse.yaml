@@ -1,0 +1,35 @@
+type: object
+description: |
+  販促クーポン一括発行の実行結果。その実行が起こしたことを件数で返します。
+  **過去の発行実績ではありません。** 配布の記録を持たないため、同じ条件で二度実行すれば
+  同じ利用者へ 2 枚発行されます（Idempotency-Key による再送は除く）。
+required:
+  - issuedAt
+  - expiresAt
+  - recipientCount
+  - issuedCouponCount
+properties:
+  issuedAt:
+    type: string
+    format: date-time
+    description: 発行が確定した日時。サーバーの時刻で決まるため、要求では指定できません。
+    example: "2026-09-07T00:00:00Z"
+  expiresAt:
+    type: string
+    format: date-time
+    description: 発行したクーポンの有効期限。要求で指定した値をそのまま返します。
+    example: "2026-12-31T14:59:59Z"
+  recipientCount:
+    type: integer
+    format: int64
+    description: >-
+      この実行で受給対象になった利用者数。退会済みユーザーは含みません。
+      受給者が 0 人の場合は 0 を返し、クーポンは 1 枚も発行されません。
+    example: 1204
+  issuedCouponCount:
+    type: integer
+    format: int64
+    description: >-
+      この実行で発行したクーポンの枚数。受給者 1 人につき 1 枚なので recipientCount と一致します。
+      一致しない場合はトランザクションが巻き戻り、この応答は返りません。
+    example: 1204

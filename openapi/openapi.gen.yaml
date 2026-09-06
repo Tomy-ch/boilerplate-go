@@ -103,6 +103,8 @@ tags:
     description: ログイン時のカート引き継ぎ（認証必須・所有権の遷移サンプル・Idempotency-Key を採る）。
   - name: v1/carts/me/coupons
     description: いまのカートに使えるクーポンと値引き額（認証必須・適用可否の判定を表現層へ漏らさないための読み）。
+  - name: v1/coupons/bulk-issue
+    description: 販促クーポンの一括発行（admin のみ・述語で決まる集合書き込み / CommandService サンプル・非 admin は 403）。
   - name: v1/inquiries
     description: 問い合わせ一覧（admin のみ・keyset ページング・本文を持たない要約）。
   - name: v1/inquiries/me/messages
@@ -2058,6 +2060,65 @@ paths:
           $ref: '#/components/responses/Unauthorized401'
         '405':
           $ref: '#/components/responses/MethodNotAllowed405'
+        '500':
+          $ref: '#/components/responses/InternalServerError500'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable503'
+  /v1/coupons/bulk-issue:
+    post:
+      operationId: PostCouponsBulkIssue
+      tags:
+        - v1/coupons/bulk-issue
+      summary: 販促クーポンの一括発行
+      description: |
+        退会していないすべての利用者へ、同一条件の販促クーポンを 1 枚ずつ発行します。認証必須で、
+        管理者（admin）のみ実行できます（非 admin は 403）。
+        **受給者は指定できません。** 不特定多数への配布がこの操作の形です。受給者を名指しして配る発行は
+        別の操作であり、この API を「全員を列挙する」用途に使うことは想定していません。
+        書き込むのはクーポンだけで、他の集約は変更しません。往復は受給者数に比例せず、発行枚数によらず
+        一定です。
+        **配布の記録は残りません。** 同じ条件で二度実行すれば、同じ利用者へ 2 枚発行されます。
+        同じ配布を二度走らせない責務は呼び出し側にあり、**Idempotency-Key を受け付けます**。同一キーの
+        再送は初回の結果をそのまま返し、クーポンが二重に発行されることはありません。キーを付けずに、
+        あるいは別のキーで再実行した場合は、別の配布として全員へ改めて発行されます。
+        適用範囲に `category` / `product` を指定した場合、その対象が存在しなければ 404 を返します。
+        存在しない対象を範囲にしたクーポンは誰にも使えないため、発行してから気づくことを避けます。
+        受給対象の人数が上限を超える場合は 409 を返します。409 はこの一義で、要求の形が原因になることは
+        ありません（形の誤りは 400 / 422 です）。
+        発行されたクーポンは GET /v1/users/me/coupons に並び、他の発行経路のクーポンと区別されません。
+        本 op は DB の SELECT / INSERT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+        一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponBulkIssuePostRequest'
+      responses:
+        '200':
+          description: 販促クーポンの一括発行に成功しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponBulkIssueResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest400'
+        '401':
+          $ref: '#/components/responses/Unauthorized401'
+        '403':
+          $ref: '#/components/responses/Forbidden403'
+        '404':
+          $ref: '#/components/responses/NotFound404'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed405'
+        '409':
+          $ref: '#/components/responses/Conflict409'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity422'
         '500':
           $ref: '#/components/responses/InternalServerError500'
         '503':
@@ -5308,6 +5369,109 @@ components:
           description: 使えるクーポンと値引き額の配列。1 枚も使えない場合は空配列です。
           items:
             $ref: '#/components/schemas/CartCouponResponse'
+    CouponDiscountInput:
+      type: object
+      description: |
+        発行するクーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。
+        応答側の CouponDiscount と同じ形ですが、要求として受け取る側は宣言に無いフィールドを拒むため別に持ちます。
+      additionalProperties: false
+      required:
+        - kind
+        - value
+      properties:
+        kind:
+          type: string
+          enum:
+            - flat
+            - rate
+          description: |
+            値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。
+          example: rate
+        value:
+          type: string
+          pattern: ^\d+(\.\d+)?$
+          description: 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、 正確な十進量を保つ decimal 文字列で表します（例 `"0.15"` は 15% 引き）。 ドメインの検証に落ちる値（定率で 0 以下または 1 超など）は 422 を返します。 JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
+          example: '0.15'
+    CouponScopeInput:
+      type: object
+      description: |
+        発行するクーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+        応答側の CouponScope と同じ形ですが、要求として受け取る側は宣言に無いフィールドを拒むため別に持ちます。
+      additionalProperties: false
+      required:
+        - kind
+        - targetId
+      properties:
+        kind:
+          type: string
+          enum:
+            - all
+            - category
+            - product
+          description: |
+            適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+            `product` は特定の商品の明細だけを対象とします。
+          example: category
+        targetId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 範囲を絞る対象の識別子。`category` なら商品カテゴリ ID、`product` なら商品 ID です。 `all` では対象を持たないため null を送ります。 `category` / `product` で存在しない識別子を指した場合は 404 を返します。誰にも使えないクーポンを 発行してから気づくことになるためです。
+          example: 5dd52d84-78eb-4a52-ba0b-2e11c95c2af2
+    CouponBulkIssuePostRequest:
+      type: object
+      description: |
+        販促クーポン一括発行のリクエスト（application/json）。admin のみ実行できます（非 admin は 403）。
+        値引き・適用範囲・有効期限を指定すると、退会していないすべての利用者へ同一条件のクーポンが
+        1 枚ずつ発行されます。**受給者は指定できません。** 不特定多数への配布がこの API の形であり、
+        受給者を名指しする発行は別の操作です。
+      additionalProperties: false
+      required:
+        - discount
+        - scope
+        - expiresAt
+      properties:
+        discount:
+          $ref: '#/components/schemas/CouponDiscountInput'
+        scope:
+          $ref: '#/components/schemas/CouponScopeInput'
+        expiresAt:
+          type: string
+          format: date-time
+          description: 発行するクーポンの有効期限。キャンペーンの終了日を名指しする操作なので、日数ではなく絶対時刻で 受け取ります。現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
+          example: '2026-12-31T14:59:59Z'
+    CouponBulkIssueResponse:
+      type: object
+      description: |
+        販促クーポン一括発行の実行結果。その実行が起こしたことを件数で返します。
+        **過去の発行実績ではありません。** 配布の記録を持たないため、同じ条件で二度実行すれば
+        同じ利用者へ 2 枚発行されます（Idempotency-Key による再送は除く）。
+      required:
+        - issuedAt
+        - expiresAt
+        - recipientCount
+        - issuedCouponCount
+      properties:
+        issuedAt:
+          type: string
+          format: date-time
+          description: 発行が確定した日時。サーバーの時刻で決まるため、要求では指定できません。
+          example: '2026-09-07T00:00:00Z'
+        expiresAt:
+          type: string
+          format: date-time
+          description: 発行したクーポンの有効期限。要求で指定した値をそのまま返します。
+          example: '2026-12-31T14:59:59Z'
+        recipientCount:
+          type: integer
+          format: int64
+          description: この実行で受給対象になった利用者数。退会済みユーザーは含みません。 受給者が 0 人の場合は 0 を返し、クーポンは 1 枚も発行されません。
+          example: 1204
+        issuedCouponCount:
+          type: integer
+          format: int64
+          description: この実行で発行したクーポンの枚数。受給者 1 人につき 1 枚なので recipientCount と一致します。 一致しない場合はトランザクションが巻き戻り、この応答は返りません。
+          example: 1204
     InquirySummary:
       type: object
       description: |
