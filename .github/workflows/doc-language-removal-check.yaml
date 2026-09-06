@@ -25,14 +25,24 @@ on:
       - '.github/workflows/doc-language-removal-check.yaml'
       - 'scripts/setup/remove-doc-language/**'
       - 'scripts/setup/lib/**'
-      - '.makefiles/github/operation/setup-repository.mk'
+      - 'scripts/package.json'
+      - 'scripts/pnpm-lock.yaml'
+      - 'docs-viewer/package.json'
+      - 'docs-viewer/pnpm-lock.yaml'
+      - '.makefiles/**'
+      - 'makefile'
       - 'docs/portal/manifest.yaml'
   pull_request:
     paths:
       - '.github/workflows/doc-language-removal-check.yaml'
       - 'scripts/setup/remove-doc-language/**'
       - 'scripts/setup/lib/**'
-      - '.makefiles/github/operation/setup-repository.mk'
+      - 'scripts/package.json'
+      - 'scripts/pnpm-lock.yaml'
+      - 'docs-viewer/package.json'
+      - 'docs-viewer/pnpm-lock.yaml'
+      - '.makefiles/**'
+      - 'makefile'
       - 'docs/portal/manifest.yaml'
   workflow_dispatch:
 
@@ -209,7 +219,7 @@ jobs:
         run: |
           set -euo pipefail
           LEFTOVER=$(git grep -nE 'setup-remove-doc-language|remove-doc-language|LANG_CHOICE' -- . \
-            ':!docs/portal/dist' ':!docs/adr' || true)
+            ':!docs/portal/dist' ':!docs/adr' ':!graphify-out' || true)
           if [ -n "${LEFTOVER}" ]; then
             echo "::error::自消滅したツールへの言及が残っています"
             echo "${LEFTOVER}"

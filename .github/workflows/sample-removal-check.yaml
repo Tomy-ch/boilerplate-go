@@ -2,7 +2,23 @@ name: Sample Removal Check
 
 on:
   workflow_dispatch:
+  # Mirrors scripts/setup/remove-sample-api/sample-manifest.ts, plus what the rebuild reads.
   pull_request:
+    paths:
+      - '.github/workflows/sample-removal-check.yaml'
+      - 'internal/**'
+      - 'database/**'
+      - 'openapi/**'
+      - 'docs/**'
+      - 'scripts/**'
+      - '.makefiles/**'
+      - 'makefile'
+      - 'go.mod'
+      - 'go.sum'
+      - 'sqlc.yaml'
+      - 'mise.toml'
+      - 'env/.env'
+      - 'env/.env.ci'
 
 permissions:
   contents: read

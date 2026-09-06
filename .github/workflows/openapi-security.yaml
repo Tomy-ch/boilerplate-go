@@ -24,6 +24,9 @@ on:
       - '.github/workflows/openapi-security.yaml'
       - '.spectral.yaml'
       - 'openapi/**'
+      - '.makefiles/**'
+      - 'makefile'
+      - 'mise.toml'
   workflow_dispatch:
 
 permissions:
@@ -84,6 +87,9 @@ jobs:
               - 'scripts/package.json'
               - 'scripts/pnpm-lock.yaml'
               - 'scripts/pnpm-workspace.yaml'
+              - '.makefiles/**'
+              - 'makefile'
+              - 'mise.toml'
 
   openapi-security:
     needs: changes

@@ -60,6 +60,10 @@ jobs:
               - 'go.mod'
               - 'go.sum'
               - '**/*.sql'
+              - 'env/.env'
+              - 'env/.env.ci'
+              - '.makefiles/**'
+              - 'makefile'
 
   go-test:
     needs: changes

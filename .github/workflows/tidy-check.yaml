@@ -59,6 +59,10 @@ jobs:
           token: ''
           filters: |
             relevant:
+              - '.github/workflows/tidy-check.yaml'
+              # `go mod tidy` derives the required set from every import in the tree: dropping
+              # a module's last use leaves go.mod stale while touching no manifest.
+              - '**/*.go'
               - 'go.mod'
               - 'go.sum'
 
