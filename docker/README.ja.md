@@ -23,7 +23,7 @@ infra 層には固定ポートでしか動けないサービスだけが属し�
 |`docker-compose.yaml`|全サービスの定義|
 |`docker-compose.attach.yaml`|app 層の override。`COMPOSE_APP` を通る app 層の呼び出しには常に重ねて適用する（`docker compose -f docker-compose.yaml -f docker-compose.attach.yaml`）。唯一の例外は `db-slot release` の `down` で、理由は [`internal/cli/dbslot/README.md`](../internal/cli/dbslot/README.md)|
 
-`docker-compose.attach.yaml` は `api_server` のホスト公開ポートを `${API_HOST_PORT:-8080}` / `${DLV_HOST_PORT:-2345}` / `${PPROF_HOST_PORT:-6060}` にし、`depends_on` を `mock_auth_server` だけに絞り（infra 層は起動済みのため）、`DB_HOST=host.docker.internal` / `DB_NAME=${DB_LOCAL:?…}` / `ENDPOINT_OTLP=http://host.docker.internal:4318` / `ENDPOINT_OBJECT_STORAGE=http://host.docker.internal:3900` / `AUTH_ISSUER=http://localhost:${MOCK_AUTH_HOST_PORT:-2010}/default` の上書きで共有インフラを参照させます。プロバイダ側に対応する上書きは要りません——issuer は到達した `Host` から導出されるためです。`DB_NAME` と Realtime Delivery の名前（`REALTIME_TOPIC` / `REALTIME_QUEUE_PREFIX` / `REALTIME_TABLE_SUFFIX`）は既定値を置かず値を必須にします（`${VAR:?…}`）。スロットの有無に関わらず、これらの値は `db-slot env` が所有するためです——[`docs/maintenance/db-worktree-pool.md`](../docs/maintenance/db-worktree-pool.md) 参照。
+`docker-compose.attach.yaml` は `api_server` のホスト公開ポートを `${API_HOST_PORT:-8080}` / `${DLV_HOST_PORT:-2345}` / `${PPROF_HOST_PORT:-6060}` にし、`depends_on` を `mock_auth_server` だけに絞り（infra 層は起動済みのため）、`DB_HOST=host.docker.internal` / `DB_NAME=${DB_LOCAL:?…}` / `ENDPOINT_OTLP=http://host.docker.internal:4318` / `ENDPOINT_OBJECT_STORAGE=http://host.docker.internal:3900` / `AUTH_ISSUER=${AUTH_ISSUER:?…}` の上書きで共有インフラを参照させます。プロバイダ側に対応する上書きは要りません——issuer は到達した `Host` から導出されるためです。`AUTH_ISSUER` と `DB_NAME` と Realtime Delivery の名前（`REALTIME_TOPIC` / `REALTIME_QUEUE_PREFIX` / `REALTIME_TABLE_SUFFIX`）は既定値を置かず値を必須にします（`${VAR:?…}`）。スロットの有無に関わらず、これらの値は `db-slot env` が所有するためです——[`docs/maintenance/db-worktree-pool.md`](../docs/maintenance/db-worktree-pool.md) 参照。
 
 |目的|参照先|
 |---|---|
@@ -120,7 +120,7 @@ Web API（`3902`、Garage の `[s3_web]`）はバケットのオブジェクト�
 
 - `config.json` は `/etc/mock-oauth2-server/config.json` へ read-only でマウントし、`JSON_CONFIG_PATH` で渡します。トークンの契約はすべてここが宣言します——`issuerId`（issuer のパス要素と JWKS の `kid` を兼ねる）、リソースサーバーが要求する `at+jwt` 型ヘッダ（RFC 9068）、1 つの claim 集合でリソースサーバーと OIDC クライアントの双方を満たすための `aud` / `azp`（[`docs/design/auth.ja.md`](../docs/design/auth.ja.md) の 3.3.1 節）、そしてログインフォーム（または password grant）の `username` に解決され `sub` になる `${subject}`
 - コンテナ内部のポートは常に `4000`（`SERVER_PORT`）。プロセスは上流イメージの非 root UID で動く
-- issuer はトークンを取得したリクエストの `Host` から導出されるため、ここで宣言する必要はありません——ホスト公開ポート経由で取ったトークンは `AUTH_ISSUER` と一致する `iss` を持ちます。`docker-compose.attach.yaml` は API 側の `AUTH_ISSUER` をスロットのポートに追従させるだけで済みます
+- issuer はトークンを取得したリクエストの `Host` から導出されるため、ここで宣言する必要はありません——ホスト公開ポート経由で取ったトークンは `AUTH_ISSUER` と一致する `iss` を持ちます。`docker-compose.attach.yaml` は `db-slot env` がスロットのポートから解決した `AUTH_ISSUER` を API へ渡すだけで済みます
 - 署名鍵は起動時に生成され、コミットしません。したがってトークンは再起動をまたいで再現しません。再現性に依存しているものはありません——リソースサーバーは実行時に JWKS から鍵を解決し、JWKS ローテーションテストが必要とする固定鍵はそのテスト自身が持ちます（`internal/integration/testdata/`）
 
 ## database

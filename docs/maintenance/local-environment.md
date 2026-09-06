@@ -59,7 +59,7 @@ worktrees can `make serve` at the same time. The variables below are defined in
   [`docker-compose.attach.yaml`](../../docker-compose.attach.yaml) is **always** overlaid (not only when a slot is held), and it repoints
   the app at the shared infra via `host.docker.internal` by overriding `DB_HOST` / `ENDPOINT_OTLP` /
   `ENDPOINT_OBJECT_STORAGE` / `AUTH_ISSUER` as runtime env — `internal/config`'s loader gives runtime env
-  priority over `env/.env`. Its `DB_NAME` and `REALTIME_*` are demanded rather than defaulted
+  priority over `env/.env`. Its `AUTH_ISSUER`, `DB_NAME` and `REALTIME_*` are demanded rather than defaulted
   (`${VAR:?…}`), and only `COMPOSE_APP` emits the values they name, so the app layer is started through a
   `make` target rather than by hand. The
   one `down` that does not overlay it is `db-slot release`'s, which does not read the override

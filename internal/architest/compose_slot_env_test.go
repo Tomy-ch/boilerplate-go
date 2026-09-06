@@ -39,6 +39,7 @@ const (
 // 出していなければならず（陳腐化した項目が落ちる）、override はそのすべてを必須形で宣言して
 // いなければなりません。
 var containerBound = map[string]string{
+	"AUTH_ISSUER":           "AUTH_ISSUER",
 	"DB_LOCAL":              "DB_NAME",
 	"REALTIME_TOPIC":        "REALTIME_TOPIC",
 	"REALTIME_QUEUE_PREFIX": "REALTIME_QUEUE_PREFIX",
@@ -492,7 +493,9 @@ func interpolations(value string) []interpolation {
 
 // classifyOverlayEnv は、解決値の集合 produced・コンテナへ渡す宣言 bound・override の宣言 declared を
 // 突き合わせ、3 方向の違反を宣言箇所つき・安定順で返します。
-func classifyOverlayEnv(produced []string, bound, declared map[string]string) (optional, missing, unbound []string) {
+func classifyOverlayEnv(produced []string, bound, declared map[string]string) ([]string, []string, []string) {
+	var optional, missing, unbound []string
+
 	for key, value := range declared {
 		for _, ref := range interpolations(value) {
 			switch {

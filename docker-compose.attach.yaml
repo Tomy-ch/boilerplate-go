@@ -32,6 +32,5 @@ services:
       REALTIME_TOPIC: ${REALTIME_TOPIC:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
       REALTIME_QUEUE_PREFIX: ${REALTIME_QUEUE_PREFIX:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
       REALTIME_TABLE_SUFFIX: ${REALTIME_TABLE_SUFFIX:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
-      # AUTH_ISSUER はスロット毎にずれる mock 認証サーバーのポートへ追従させる。
       # 詳細: docker/README.md「mock-auth-server」。
-      AUTH_ISSUER: http://localhost:${MOCK_AUTH_HOST_PORT:-2010}/default
+      AUTH_ISSUER: ${AUTH_ISSUER:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
