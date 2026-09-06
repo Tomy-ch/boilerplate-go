@@ -341,6 +341,8 @@ func Test_usecase_CreatePurchase(t *testing.T) {
 			productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).Return(lockedProducts(t, productA, 20), nil)
 			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
 			repo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
+			// 注文日時は DB 採番なので、emit は再検証の読み直しのあとに走る。
+			repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(rereadPurchase(t), nil)
 			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, apperror.ErrInternal)
 
 			u := newUsecase(t, activeUserLock(ctrl), repo, productRepo, emit)
@@ -359,8 +361,8 @@ func Test_usecase_CreatePurchase(t *testing.T) {
 			productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).Return(lockedProducts(t, productA, 20), nil)
 			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
 			repo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil)
-			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
 			repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(nil, apperror.ErrNotFound)
+			// emit に EXPECT を張らないことで、読み直しに失敗したら発行へ進まないことを担保する。
 
 			u := newUsecase(t, activeUserLock(ctrl), repo, productRepo, emit)
 
@@ -2464,7 +2466,7 @@ func Test_usecase_emitCreated(t *testing.T) {
 			u := &usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), emit: emit}
 			entity := rereadPurchase(t)
 
-			require.NoError(t, u.emitCreated(context.Background(), entity, entity.ID()))
+			require.NoError(t, u.emitCreated(context.Background(), entity))
 		})
 	})
 
@@ -2481,7 +2483,7 @@ func Test_usecase_emitCreated(t *testing.T) {
 			u := &usecase{tracer: observability.NewNoopTracerFactory(t).Usecase(), emit: emit}
 			entity := rereadPurchase(t)
 
-			err := u.emitCreated(context.Background(), entity, entity.ID())
+			err := u.emitCreated(context.Background(), entity)
 
 			require.ErrorIs(t, err, apperror.ErrCanceled)
 		})

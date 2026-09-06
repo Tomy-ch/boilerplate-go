@@ -3,6 +3,7 @@ package event_test
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"go-boilerplate/internal/domain/lexicon/money"
 	domainpurchase "go-boilerplate/internal/domain/purchase"
@@ -13,6 +14,32 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// testOrderedAt は、書き込み後に読み直した集約が持つ注文日時です（DB が採番する値の代役）。
+var testOrderedAt = time.Date(2026, time.July, 23, 9, 30, 0, 0, time.UTC)
+
+// asReread は、New で組み立てた集約を「書き込み後に読み直した」形へ写します。
+// 注文日時は DB 採番なので New 直後の集約には載っておらず、BuildCreated は読み直した集約を受け取ります。
+func asReread(t *testing.T, p *domainpurchase.Purchase) *domainpurchase.Purchase {
+	t.Helper()
+	r, err := domainpurchase.Reconstruct(p.ID(), domainpurchase.Attributes{
+		Code:           p.Code(),
+		UserID:         p.UserID(),
+		StatusID:       uuidtestkit.NewTestFromSalt(t, "reread_status"),
+		StatusCode:     p.StatusCode(),
+		SubtotalAmount: p.SubtotalAmount(),
+		DiscountAmount: p.DiscountAmount(),
+		CouponID:       p.CouponID(),
+		TaxAmount:      p.TaxAmount(),
+		ShippingFee:    p.ShippingFee(),
+		TotalAmount:    p.TotalAmount(),
+		Details:        p.Details(),
+		OrderedAt:      testOrderedAt,
+	})
+	require.NoError(t, err)
+
+	return r
+}
 
 // mustPrice は、テスト用に十進文字列（ドル）から非負の money.Price を構築します。
 //
@@ -43,7 +70,7 @@ func TestBuildCreated(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			payload, perr := event.BuildCreated(entity)
+			payload, perr := event.BuildCreated(asReread(t, entity))
 			require.NoError(t, perr)
 
 			var decoded struct {
@@ -55,6 +82,7 @@ func TestBuildCreated(t *testing.T) {
 				TaxAmount      int    `json:"taxAmount"`
 				ShippingFee    int    `json:"shippingFee"`
 				TotalAmount    int    `json:"totalAmount"`
+				OrderedAt      string `json:"orderedAt"`
 				Details        []struct {
 					ProductID string `json:"productId"`
 					Quantity  int    `json:"quantity"`
@@ -71,6 +99,7 @@ func TestBuildCreated(t *testing.T) {
 			assert.Equal(t, 16000, decoded.TaxAmount)
 			assert.Equal(t, 500, decoded.ShippingFee)
 			assert.Equal(t, 176500, decoded.TotalAmount)
+			assert.Equal(t, testOrderedAt.Format(time.RFC3339Nano), decoded.OrderedAt)
 			require.Len(t, decoded.Details, 1)
 			assert.Equal(t, productA.String(), decoded.Details[0].ProductID)
 			assert.Equal(t, 2, decoded.Details[0].Quantity)
@@ -92,7 +121,7 @@ func TestBuildCreated(t *testing.T) {
 			couponID := uuidtestkit.NewTestFromSalt(t, "bpc_coupon")
 			require.NoError(t, entity.ApplyCoupon(couponID, 16000))
 
-			payload, perr := event.BuildCreated(entity)
+			payload, perr := event.BuildCreated(asReread(t, entity))
 			require.NoError(t, perr)
 
 			var decoded struct {
@@ -132,7 +161,7 @@ func TestBuildCreated(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			payload, perr := event.BuildCreated(entity)
+			payload, perr := event.BuildCreated(asReread(t, entity))
 			require.NoError(t, perr)
 
 			var decoded struct {

@@ -827,20 +827,24 @@ func (u *usecase) createPurchaseInTx(
 		return nil, nil, uerr
 	}
 
-	if eerr := u.emitCreated(ctx, entity, draft.purchaseID); eerr != nil {
-		return nil, nil, eerr
-	}
-
 	reread, frerr := u.repo.FindByID(ctx, draft.purchaseID)
 	if frerr != nil {
 		return nil, nil, frerr
+	}
+
+	if eerr := u.emitCreated(ctx, reread); eerr != nil {
+		return nil, nil, eerr
 	}
 
 	return reread, redeemed, nil
 }
 
 // emitCreated は、購入作成のイベントを outbox へ積みます。
-func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase, purchaseID uuid.UUID) error {
+//
+// 受け取るのは書き込み後に読み直した集約です。注文日時は DB が採番するため、生成直後の集約は
+// まだ持っておらず、そこから組むと snapshot に届かない値が載ります。読み直しと同じ
+// トランザクションに居るので、この順序でも outbox 行の原子性は変わりません。
+func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase) error {
 	payload, err := event.BuildCreated(entity)
 	if err != nil {
 		return err
@@ -848,7 +852,7 @@ func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase, pu
 
 	if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
 		AggregateType: aggregateType,
-		AggregateID:   purchaseID.String(),
+		AggregateID:   entity.ID().String(),
 		EventType:     event.TypeCreated,
 		Payload:       payload,
 		Channel:       outboxbndry.ChannelHTTP,
