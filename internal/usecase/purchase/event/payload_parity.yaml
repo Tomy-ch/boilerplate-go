@@ -1,0 +1,42 @@
+# outbox payload と集約の対応宣言。internal/architest/outbox_payload_parity_test.go が読みます。
+# 書き方は internal/usecase/README.md の event/payload_parity.yaml、各 kind が何を約束するかは
+# ADR-0113 (outbox-payload-kinds-and-parity-declaration) を参照。
+payloads:
+  created:
+    kind: snapshot
+    of: purchase.Purchase
+    fields:
+      id: purchaseId
+      code: code
+      userID: userId
+      statusID:
+        omit: 内部 FK。購読側が解釈できる業務キーは statusCode で運ぶ
+      status: statusCode
+      subtotalAmount: subtotalAmount
+      couponID: couponId
+      discountAmount: discountAmount
+      taxAmount: taxAmount
+      shippingFee: shippingFee
+      totalAmount: totalAmount
+      details: details
+      orderedAt: orderedAt
+      paidAt:
+        omit: 作成時点では常に未設定。事実は purchase.paid.v1 が運ぶ
+      canceledAt:
+        omit: 作成時点では常に未設定。事実は purchase.canceled.v1 が運ぶ
+      shippedAt:
+        omit: 作成時点では常に未設定。事実は purchase.shipped.v1 が運ぶ
+      deliveredAt:
+        omit: 作成時点では常に未設定。事実は purchase.delivered.v1 が運ぶ
+  paid:
+    kind: notification
+    of: purchase.Purchase
+  canceled:
+    kind: notification
+    of: purchase.Purchase
+  shipped:
+    kind: notification
+    of: purchase.Purchase
+  delivered:
+    kind: notification
+    of: purchase.Purchase

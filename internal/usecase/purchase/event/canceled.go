@@ -16,7 +16,7 @@ const TypeCanceled = "purchase.canceled.v1"
 // エラーです。イベントは起きた事実であり、事実でないものを発行すれば購読側はそれを取り消せません。
 var errNotCanceled = xerrors.Wrap(apperror.ErrInternal, "purchase is not canceled")
 
-// canceled は、purchase.canceled.v1 の自己完結 snapshot payload です。
+// canceled は、purchase.canceled.v1 の通知 payload です（payload_parity.yaml の kind: notification）。
 type canceled struct {
 	PurchaseID string `json:"purchaseId"`
 	Code       string `json:"code"`
@@ -25,7 +25,7 @@ type canceled struct {
 	CanceledAt string `json:"canceledAt"`
 }
 
-// BuildCanceled は、購入集約から purchase.canceled.v1 の自己完結 snapshot payload を marshal します。
+// BuildCanceled は、購入集約から purchase.canceled.v1 の通知 payload を marshal します。
 // キャンセルされていない購入を渡された場合は payload を生成せず errNotCanceled を返します。
 func BuildCanceled(p *purchase.Purchase) ([]byte, error) {
 	if !p.IsCanceled() {

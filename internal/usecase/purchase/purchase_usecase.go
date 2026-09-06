@@ -827,20 +827,21 @@ func (u *usecase) createPurchaseInTx(
 		return nil, nil, uerr
 	}
 
-	if eerr := u.emitCreated(ctx, entity, draft.purchaseID); eerr != nil {
-		return nil, nil, eerr
-	}
-
 	reread, frerr := u.repo.FindByID(ctx, draft.purchaseID)
 	if frerr != nil {
 		return nil, nil, frerr
 	}
 
+	if eerr := u.emitCreated(ctx, reread); eerr != nil {
+		return nil, nil, eerr
+	}
+
 	return reread, redeemed, nil
 }
 
-// emitCreated は、購入作成のイベントを outbox へ積みます。
-func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase, purchaseID uuid.UUID) error {
+// emitCreated は、購入作成のイベントを outbox へ積みます。受け取るのは書き込み後に読み直した集約です
+// （順序の理由は docs/spec/usecase/purchase.md の Workflow ⑥ を参照）。
+func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase) error {
 	payload, err := event.BuildCreated(entity)
 	if err != nil {
 		return err
@@ -848,7 +849,7 @@ func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase, pu
 
 	if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
 		AggregateType: aggregateType,
-		AggregateID:   purchaseID.String(),
+		AggregateID:   entity.ID().String(),
 		EventType:     event.TypeCreated,
 		Payload:       payload,
 		Channel:       outboxbndry.ChannelHTTP,

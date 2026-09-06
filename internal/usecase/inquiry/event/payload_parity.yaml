@@ -1,0 +1,15 @@
+# outbox payload と集約の対応宣言。書き方は internal/usecase/README.md の
+# event/payload_parity.yaml、判別式は ADR-0113 (outbox-payload-kinds-and-parity-declaration) を参照。
+payloads:
+  messageCreated:
+    kind: snapshot
+    of: inquiry.Message
+    fields:
+      id: messageId
+      author: author
+      body: body
+      sequence: sequence
+      createdAt: createdAt
+  threadUpdated:
+    kind: notification
+    of: inquiry.Inquiry

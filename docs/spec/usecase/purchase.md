@@ -95,8 +95,8 @@ output:
     - "  ② purchase.New で入力検証・売り越し検証・金額計算・snapshot・未処理ステータスを行う"
     - "  ③ ロック済み商品へ product.AdjustStock で在庫を減算し productRepo.UpdateStock で永続化する"
     - "  ④ repo.Create で purchases + purchase_details を書き込む"
-    - "  ⑤ emit.Emit(purchase.created.v1) を同一 tx で発行する（自己完結 snapshot payload）"
-    - "  ⑥ repo.FindByID で再検証しレスポンスの取得元とする"
+    - "  ⑤ repo.FindByID で再検証しレスポンスの取得元とする"
+    - "  ⑥ emit.Emit(purchase.created.v1) を同一 tx で発行する（snapshot payload。注文日時が DB 採番のため、読み直した集約から組む）"
     - tx 外で DisplayCurrency 指定時のみ referenceAmount を付与（xr.Convert / 障害時 nil degrade）
     - PurchaseView へ写像して返す（ドメインエンティティを外へ出さない）
   errors:
