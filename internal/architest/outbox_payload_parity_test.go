@@ -87,8 +87,25 @@ func (r *payloadFieldRule) UnmarshalYAML(value *yaml.Node) error {
 // 種別を宣言させ、snapshot に限って集約の全フィールドが「運ぶ / 運ばない（理由つき）」に
 // 分類されていることを課します（ADR-0113 (outbox-payload-kinds-and-parity-declaration)）。
 //
-// 対象 0 件は許容します（sample API 撤去後は event パッケージごと消えます）。走査が黙って
-// 空になる縮退は、下の陽性対照と Test_collect* が受け持ちます。
+// 突き合わせる集合と、各方向が捕まえる間違いは次のとおりです。
+//
+//	X: internal/usecase/**/event/ で Build* を持つディレクトリ
+//	Y: payload_parity.yaml を持つディレクトリ
+//	  X ⊆ Y … event パッケージを書いたが宣言していない（この検査が在る理由）
+//	  Y ⊆ X … 宣言だけが孤立している（走査が黙って縮んだときに落ちる側）
+//	P: Build* から導く payload 型名 / D: 宣言のキー
+//	  P ⊆ D … payload を足したが宣言していない
+//	  D ⊆ P … 消えた payload の宣言が残っている
+//	F: snapshot の写し元 struct のフィールド / K: 宣言の分類キー
+//	  F ⊆ K … 集約が増えたのに分類されていない（#1473 の形）
+//	  K ⊆ F … 集約から消えたフィールドの宣言が残っている
+//
+// 対象 0 件は許容します（sample API 撤去後は event パッケージごと消えるため、
+// ここに canary は置けません。internal/architest/README.md の Notes を参照）。
+// この許容の代償として、**実ツリーの走査が縮退して 0 件になった場合と、本当に
+// 対象が無い場合を、このテストは区別しません。** 下の陽性対照と Test_collect* が
+// 固定するのは走査ロジックであって、実ツリーを歩く経路そのものではありません
+// （README はその walk を「認識すべき構文の形を持たない」として viewpoint の外に置いています）。
 func TestOutboxPayloadParity(t *testing.T) {
 	t.Parallel()
 
@@ -135,7 +152,8 @@ func TestOutboxPayloadParity(t *testing.T) {
 
 			root := t.TempDir()
 			writeEventPackage(t, root, "beta",
-				"package event\n\ntype opened struct {\n\tID string `json:\"id\"`\n}\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+				"package event\n\ntype opened struct {\n\tID string `json:\"id\"`\n}\n\n"+
+					"func BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
 			writeParityYAML(t, root, "beta", "payloads:\n  opened:\n    kind: snapshot\n    of: beta.Thing\n    fields:\n      id: id\n")
 			writeDomainStruct(t, root, "beta", "Thing", "\tid   string\n\tname string\n")
 
@@ -153,7 +171,8 @@ func TestOutboxPayloadParity(t *testing.T) {
 			// フィールド並列の対象から外れることを carve-out として固定する。
 			root := t.TempDir()
 			writeEventPackage(t, root, "delta",
-				"package event\n\ntype closed struct {\n\tID string `json:\"id\"`\n}\n\nfunc BuildClosed(x int) ([]byte, error) { return nil, nil }\n")
+				"package event\n\ntype closed struct {\n\tID string `json:\"id\"`\n}\n\n"+
+					"func BuildClosed(x int) ([]byte, error) { return nil, nil }\n")
 			writeParityYAML(t, root, "delta", "payloads:\n  closed:\n    kind: notification\n    of: delta.Thing\n")
 			writeDomainStruct(t, root, "delta", "Thing", "\tid   string\n\tname string\n")
 
@@ -162,12 +181,150 @@ func TestOutboxPayloadParity(t *testing.T) {
 			assert.Empty(t, violations)
 		})
 
+		t.Run("複数 payload のうち一部の宣言漏れを検出する", func(t *testing.T) {
+			t.Parallel()
+
+			// 宣言ファイルごと欠けている場合は readParityDoc が早期に返すため、
+			// 集合の差分そのものはこのケースでしか通らない。
+			root := t.TempDir()
+			writeEventPackage(t, root, "epsilon",
+				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n"+
+					"\nfunc BuildClosed(x int) ([]byte, error) { return nil, nil }\n")
+			writeParityYAML(t, root, "epsilon", "payloads:\n  Opened:\n    kind: notification\n    of: epsilon.Thing\n")
+			writeDomainStruct(t, root, "epsilon", "Thing", "\tid string\n")
+
+			violations, err := collectOutboxPayloadParityViolations(root)
+			require.NoError(t, err)
+			assert.Equal(t, []string{
+				"internal/usecase/epsilon/event/payload_parity.yaml: payload Closed が宣言されていない",
+			}, violations)
+		})
+
+		t.Run("Build 関数の無い宣言を検出する", func(t *testing.T) {
+			t.Parallel()
+
+			// 走査が黙って縮んだときに loud に落ちるのはこの向き。
+			root := t.TempDir()
+			writeEventPackage(t, root, "zeta",
+				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+			writeParityYAML(t, root, "zeta",
+				"payloads:\n  Opened:\n    kind: notification\n    of: zeta.Thing\n"+
+					"  Removed:\n    kind: notification\n    of: zeta.Thing\n")
+			writeDomainStruct(t, root, "zeta", "Thing", "\tid string\n")
+
+			violations, err := collectOutboxPayloadParityViolations(root)
+			require.NoError(t, err)
+			assert.Equal(t, []string{
+				"internal/usecase/zeta/event/payload_parity.yaml: 宣言 Removed に対応する Build 関数が無い",
+			}, violations)
+		})
+
+		t.Run("集約から消えたフィールドの宣言が残っていることを検出する", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeEventPackage(t, root, "eta",
+				"package event\n\ntype opened struct {\n\tID string `json:\"id\"`\n}\n\n"+
+					"func BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+			writeParityYAML(t, root, "eta",
+				"payloads:\n  opened:\n    kind: snapshot\n    of: eta.Thing\n"+
+					"    fields:\n      id: id\n      gone:\n        omit: 使われていない\n")
+			writeDomainStruct(t, root, "eta", "Thing", "\tid string\n")
+
+			violations, err := collectOutboxPayloadParityViolations(root)
+			require.NoError(t, err)
+			assert.Equal(t, []string{
+				"internal/usecase/eta/event/payload_parity.yaml: opened: 宣言 gone は集約 eta.Thing に無い",
+			}, violations)
+		})
+
+		t.Run("テストファイルに書かれた Build 関数は走査対象にしない", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			dir := filepath.Join(root, usecaseRoot, "theta", "event")
+			require.NoError(t, pkgfs.OS{}.MkdirAll(dir, 0o750))
+			require.NoError(t, pkgfs.OS{}.WriteFile(
+				filepath.Join(dir, "theta_event_test.go"),
+				[]byte("package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n"),
+				0o600,
+			))
+
+			violations, err := collectOutboxPayloadParityViolations(root)
+			require.NoError(t, err)
+			assert.Empty(t, violations)
+		})
+
+		t.Run("複数の違反が安定した順序でまとめて返る", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeEventPackage(t, root, "iota",
+				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+			writeEventPackage(t, root, "kappa",
+				"package event\n\nfunc BuildClosed(x int) ([]byte, error) { return nil, nil }\n")
+
+			violations, err := collectOutboxPayloadParityViolations(root)
+			require.NoError(t, err)
+			assert.Equal(t, []string{
+				"internal/usecase/iota/event: payload_parity.yaml が無い（payload: Opened）",
+				"internal/usecase/kappa/event: payload_parity.yaml が無い（payload: Closed）",
+			}, violations)
+		})
+
+		t.Run("写し元の集約が見つからない宣言を検出する", func(t *testing.T) {
+			t.Parallel()
+
+			// of: のタイプミスを黙って通すと、そのフィールド分類は誰にも突き合わされない。
+			root := t.TempDir()
+			writeEventPackage(t, root, "lambda",
+				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+			writeParityYAML(t, root, "lambda", "payloads:\n  Opened:\n    kind: notification\n    of: lambda.Missing\n")
+			writeDomainStruct(t, root, "lambda", "Thing", "\tid string\n")
+
+			violations, err := collectOutboxPayloadParityViolations(root)
+			require.NoError(t, err)
+			assert.Equal(t, []string{
+				"internal/usecase/lambda/event/payload_parity.yaml: Opened: 写し元 lambda.Missing が見つからない",
+			}, violations)
+		})
+
+		t.Run("既知でない kind を検出する", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeEventPackage(t, root, "mu",
+				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+			writeParityYAML(t, root, "mu", "payloads:\n  Opened:\n    kind: shapshot\n    of: mu.Thing\n")
+			writeDomainStruct(t, root, "mu", "Thing", "\tid string\n")
+
+			violations, err := collectOutboxPayloadParityViolations(root)
+			require.NoError(t, err)
+			assert.Equal(t, []string{
+				`internal/usecase/mu/event/payload_parity.yaml: Opened: kind は snapshot か notification のどちらかにすること（実際: "shapshot"）`,
+			}, violations)
+		})
+
+		t.Run("壊れた宣言ファイルはエラーとして返す", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeEventPackage(t, root, "nu",
+				"package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+			writeParityYAML(t, root, "nu", "payloads:\n  Opened:\n   - これは対応表ではない\n")
+
+			_, err := collectOutboxPayloadParityViolations(root)
+
+			require.Error(t, err)
+		})
+
 		t.Run("宣言が運ぶと言う JSON 名が payload に無いことを検出する", func(t *testing.T) {
 			t.Parallel()
 
 			root := t.TempDir()
 			writeEventPackage(t, root, "gamma",
-				"package event\n\ntype opened struct {\n\tID string `json:\"id\"`\n}\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+				"package event\n\ntype opened struct {\n\tID string `json:\"id\"`\n}\n\n"+
+					"func BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
 			writeParityYAML(t, root, "gamma",
 				"payloads:\n  opened:\n    kind: snapshot\n    of: gamma.Thing\n"+
 					"    fields:\n      id: id\n      name: fullName\n")
@@ -769,6 +926,25 @@ func Test_extractJSONTags(t *testing.T) {
 			assert.Equal(t, []string{"purchaseId", "couponId"}, tags)
 		})
 
+		t.Run("名前を持たないタグは JSON 名として拾わない", func(t *testing.T) {
+			t.Parallel()
+
+			// `json:",omitempty"` はフィールド名をそのまま使う慣用形で、名前は書かれていない。
+			// `json:"-"` は出力しない宣言。どちらも「運ぶと宣言できる名前」ではない。
+			lines := []string{
+				"type created struct {",
+				"\tKept    string `json:\"kept\"`",
+				"\tImplied string `json:\",omitempty\"`",
+				"\tHidden  string `json:\"-\"`",
+				"}",
+			}
+
+			tags, found := extractJSONTags(lines, "created")
+
+			assert.True(t, found)
+			assert.Equal(t, []string{"kept", "-"}, tags)
+		})
+
 		t.Run("目当ての struct が無ければ見つからないと返す", func(t *testing.T) {
 			t.Parallel()
 
@@ -825,6 +1001,205 @@ func Test_verifyFieldRule(t *testing.T) {
 			assert.Equal(t, []string{
 				"f: created: paidAt は運ぶ JSON 名か omit の理由のどちらかを書くこと",
 			}, verifyFieldRule("f", "created", "paidAt", rule, tags))
+		})
+	})
+}
+
+func Test_isPlainGoFile(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("通常の Go ファイルは走査する", func(t *testing.T) {
+			t.Parallel()
+
+			assert.True(t, isPlainGoFile("internal/usecase/purchase/event/created.go"))
+		})
+
+		t.Run("テストファイルは走査しない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, isPlainGoFile("internal/usecase/purchase/event/created_test.go"))
+		})
+
+		t.Run("生成物は走査しない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, isPlainGoFile("internal/usecase/purchase/event/created.gen.go"))
+		})
+
+		t.Run("Go ファイルでないものは走査しない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, isPlainGoFile("internal/usecase/purchase/event/payload_parity.yaml"))
+		})
+	})
+}
+
+func Test_diffPayloadNames(t *testing.T) {
+	t.Parallel()
+
+	doc := payloadParityDoc{Payloads: map[string]payloadParityEntry{"created": {Kind: "snapshot"}}}
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("実在と宣言が一致していれば違反にしない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Empty(t, diffPayloadNames("e", []string{"created"}, doc))
+		})
+
+		t.Run("宣言に無い payload を検出する", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, []string{
+				"e/payload_parity.yaml: payload paid が宣言されていない",
+			}, diffPayloadNames("e", []string{"created", "paid"}, doc))
+		})
+
+		t.Run("実体の無い宣言を検出する", func(t *testing.T) {
+			t.Parallel()
+
+			// 走査が黙って縮んだときに loud に落ちるのはこの向き。
+			assert.Equal(t, []string{
+				"e/payload_parity.yaml: 宣言 created に対応する Build 関数が無い",
+			}, diffPayloadNames("e", nil, doc))
+		})
+	})
+}
+
+func Test_lookupAggregateFields(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("集約 struct のフィールドを宣言順で返す", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeDomainStruct(t, root, "omicron", "Thing", "\tid   string\n\tname string\n")
+
+			fields, ok, err := lookupAggregateFields(root, "omicron.Thing")
+
+			require.NoError(t, err)
+			assert.True(t, ok)
+			assert.Equal(t, []string{"id", "name"}, fields)
+		})
+
+		t.Run("パッケージ名と struct 名に割れない指定は見つからないと返す", func(t *testing.T) {
+			t.Parallel()
+
+			_, ok, err := lookupAggregateFields(t.TempDir(), "Thing")
+
+			require.NoError(t, err)
+			assert.False(t, ok)
+		})
+
+		t.Run("domain パッケージが無ければ見つからないと返す", func(t *testing.T) {
+			t.Parallel()
+
+			_, ok, err := lookupAggregateFields(t.TempDir(), "nosuchpkg.Thing")
+
+			require.NoError(t, err)
+			assert.False(t, ok)
+		})
+
+		t.Run("パッケージはあるが struct が無ければ見つからないと返す", func(t *testing.T) {
+			t.Parallel()
+
+			root := t.TempDir()
+			writeDomainStruct(t, root, "pi", "Thing", "\tid string\n")
+
+			_, ok, err := lookupAggregateFields(root, "pi.Missing")
+
+			require.NoError(t, err)
+			assert.False(t, ok)
+		})
+	})
+}
+
+func Test_collectEventPackages(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("event ディレクトリの Build 関数だけを拾う", func(t *testing.T) {
+			t.Parallel()
+
+			// event 以外にも Build* を持つ関数は在る（例: usecase 直下の BuildReferenceAmount）ので、
+			// ディレクトリ名での絞り込みが効いていることを単独で固定する。
+			root := t.TempDir()
+			writeEventPackage(t, root, "rho", "package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n")
+			other := filepath.Join(root, usecaseRoot, "rho")
+			require.NoError(t, pkgfs.OS{}.WriteFile(
+				filepath.Join(other, "rho_usecase.go"),
+				[]byte("package rho\n\nfunc BuildSomething(x int) ([]byte, error) { return nil, nil }\n"),
+				0o600,
+			))
+
+			dirs, err := collectEventPackages(root)
+
+			require.NoError(t, err)
+			assert.Equal(t, []string{filepath.Join(root, usecaseRoot, "rho", "event")}, dirs)
+		})
+
+		t.Run("走査の起点が無いツリーは空で返す", func(t *testing.T) {
+			t.Parallel()
+
+			dirs, err := collectEventPackages(t.TempDir())
+
+			require.NoError(t, err)
+			assert.Empty(t, dirs)
+		})
+	})
+}
+
+func Test_payloadFieldRule_UnmarshalYAML(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("スカラは運ぶ JSON 名として読む", func(t *testing.T) {
+			t.Parallel()
+
+			var doc payloadParityDoc
+			require.NoError(t, yaml.Unmarshal([]byte(
+				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      id: purchaseId\n"), &doc))
+
+			rule := doc.Payloads["created"].Fields["id"]
+			assert.Equal(t, "purchaseId", rule.Carried)
+			assert.Empty(t, rule.Omit)
+		})
+
+		t.Run("マッピングは omit の理由として読む", func(t *testing.T) {
+			t.Parallel()
+
+			var doc payloadParityDoc
+			require.NoError(t, yaml.Unmarshal([]byte(
+				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      statusID:\n        omit: 内部 FK\n"), &doc))
+
+			rule := doc.Payloads["created"].Fields["statusID"]
+			assert.Empty(t, rule.Carried)
+			assert.Equal(t, "内部 FK", rule.Omit)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("スカラでもマッピングでもない値はエラーにする", func(t *testing.T) {
+			t.Parallel()
+
+			var doc payloadParityDoc
+			err := yaml.Unmarshal([]byte(
+				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      id:\n        - a\n        - b\n"), &doc)
+
+			require.Error(t, err)
 		})
 	})
 }
