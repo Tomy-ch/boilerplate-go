@@ -205,14 +205,15 @@ func Test_lockSuiteSerialization(t *testing.T) {
 			ctx := context.Background()
 
 			// 保持側。WithinTx はこの直列化に参加するため使えず、専用の tx で握る。
+			// 解放済みの tx への Rollback は ErrTxClosed を返すだけなので、後始末は無条件で行う。
 			holder, err := db.Begin(ctx)
 			require.NoError(t, err)
-			released := false
-			t.Cleanup(func() {
-				if !released {
-					_ = holder.Rollback(ctx)
-				}
-			})
+			t.Cleanup(func() { _ = holder.Rollback(ctx) })
+
+			// このキーは全パッケージが共有するため、保持側自身も接続既定の lock_timeout(10s)
+			// で打ち切られうる。検証対象と同じ理由でここでも無効化する。
+			_, err = holder.Exec(ctx, "SET LOCAL lock_timeout = 0")
+			require.NoError(t, err)
 			_, err = holder.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", txAdvisoryLockKey)
 			require.NoError(t, err)
 
@@ -220,6 +221,7 @@ func Test_lockSuiteSerialization(t *testing.T) {
 				err     error
 				elapsed time.Duration
 			}
+			waiterPID := make(chan int32, 1)
 			waiterDone := make(chan waitResult, 1)
 			go func() {
 				waiter, beginErr := db.Begin(ctx)
@@ -229,19 +231,32 @@ func Test_lockSuiteSerialization(t *testing.T) {
 				}
 				defer func() { _ = waiter.Rollback(ctx) }()
 
+				var pid int32
+				if scanErr := waiter.QueryRow(ctx, "SELECT pg_backend_pid()").Scan(&pid); scanErr != nil {
+					waiterDone <- waitResult{err: scanErr}
+					return
+				}
 				if _, execErr := waiter.Exec(ctx, "SET LOCAL lock_timeout = '50ms'"); execErr != nil {
 					waiterDone <- waitResult{err: execErr}
 					return
 				}
+
+				waiterPID <- pid
 				startedAt := time.Now()
 				waiterDone <- waitResult{err: lockSuiteSerialization(ctx, waiter), elapsed: time.Since(startedAt)}
 			}()
 
+			var pid int32
+			select {
+			case pid = <-waiterPID:
+			case got := <-waiterDone:
+				require.NoError(t, got.err, "待機側がロック待ちへ入る前に失敗した")
+			}
+
 			// 待機側がロック待ちへ入る前に解放すると、lock_timeout が効いたままでも
 			// 素通りして偽陽性で通る。待ちに入ったことを確認してから解放する。
-			requireAdvisoryLockWait(t, db)
+			requireAdvisoryLockWait(t, db, pid)
 			time.Sleep(lockTimeoutProbeHold)
-			released = true
 			require.NoError(t, holder.Rollback(ctx))
 
 			got := <-waiterDone
@@ -251,8 +266,10 @@ func Test_lockSuiteSerialization(t *testing.T) {
 	})
 }
 
-// requireAdvisoryLockWait は、スイート直列化キーの advisory lock 待ちが発生するまで待ちます。
-func requireAdvisoryLockWait(t *testing.T, db driver.DatabaseDriver) {
+// requireAdvisoryLockWait は、pid のセッションがスイート直列化キーの advisory lock 待ちへ
+// 入るまで待ちます。このキーは全パッケージが共有するため、pid で絞らないと無関係な
+// セッションの待ちを自分のものと取り違えます。
+func requireAdvisoryLockWait(t *testing.T, db driver.DatabaseDriver, pid int32) {
 	t.Helper()
 
 	ctx := context.Background()
@@ -260,8 +277,8 @@ func requireAdvisoryLockWait(t *testing.T, db driver.DatabaseDriver) {
 		var waiting bool
 		if err := driver.New(ctx, db).QueryRow(ctx,
 			`SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND NOT granted
-				AND (classid::bigint << 32) + objid::bigint = $1 AND objsubid = 1)`,
-			txAdvisoryLockKey).Scan(&waiting); err != nil {
+				AND pid = $1 AND (classid::bigint << 32) + objid::bigint = $2 AND objsubid = 1)`,
+			pid, txAdvisoryLockKey).Scan(&waiting); err != nil {
 			return false
 		}
 		return waiting
