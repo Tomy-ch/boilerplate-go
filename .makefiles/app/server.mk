@@ -17,9 +17,8 @@
 # garage_init の CLI は garage server と RPC バージョンが一致しないと接続できないため、server の
 # image 更新に取り残された古いイメージで走らないよう --build を付ける（キャッシュは効く）。
 #
-# INFRA_NO_RECREATE: worktree では他 checkout が使用中のインフラを毎回作り直してしまうため、
-# 既存インスタンスを優先する（判定と根拠は compose.mk）。この状態では定義変更の反映は
-# infra-down → infra-up の明示操作になる。単一 checkout では空で、compose の既定どおり再収束する。
+# INFRA_NO_RECREATE の意味と判定は compose.mk。稼働中の共有インフラを優先するため、この状態では
+# 定義変更の反映が infra-down → infra-up の明示操作になる。
 # --no-deps: run は依存サービスも converge するため、直前の up で残した garage を
 # ここで作り直してしまう（garage_init の depends_on は garage のみ）。稼働は直前行の --wait が
 # 保証済み。
