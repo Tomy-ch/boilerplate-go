@@ -1,6 +1,7 @@
 ## Realtime Delivery 関連
 .PHONY: realtime-init ## Realtime Delivery の table（EventLog / StreamTicket / InstanceLease）と fan-out の topic を作る（冪等 one-shot）
 .PHONY: realtime-provision ## 共有インフラ起動済みを前提に Realtime Delivery の資源だけを用意する（serve から呼ぶ内部用）
+.PHONY: realtime-reset ## この checkout が使う Realtime Delivery の table を削除する（作成は realtime-provision）
 .PHONY: realtime-smoke ## DynamoDB Local / GoAWS へ AWS SDK v2 で native 接続できるかを smoke で確認する
 .PHONY: realtime-contract-test ## Realtime Delivery の contract test を実行する（既定は DynamoDB Local / GoAWS。REALTIME_TEST_* で本番 AWS へ向け直す）
 
@@ -18,6 +19,15 @@ realtime-init:
 # 呼び出しにビルド待ちを持ち込まないため。
 realtime-provision:
 	@$(COMPOSE_APP) run --rm api_server go run ./cmd/ realtime-init > /dev/null
+
+# 採番は PostgreSQL、配送済み event は EventLog にあり、片方だけ巻き戻すと採番が既存 item の位置へ
+# 届いて stream が止まる。slot-acquire が PostgreSQL を作り直すときは EventLog も一緒に空にする。
+# host から実行するのは、接続先が公開ポートで足り、slot-acquire に app イメージのビルドを
+# 持ち込まないため（table の作成は realtime-provision の担当なので、ここは削除だけ）。
+realtime-reset:
+	@echo "🧹 この checkout の Realtime Delivery の table を削除します..."
+	@$(DB_SLOT_ENV); $(COMPOSE_INFRA) --profile development up -d --wait $(INFRA_NO_RECREATE_SH) dynamodb_local
+	@$(DB_SLOT_ENV); go run ./scripts/realtime-reset $(ARGS)
 
 # 共有インフラ上で走るため、資源は実行ごとに一意な名前で作り終了時に消す（scripts/realtime-smoke）。
 realtime-smoke:

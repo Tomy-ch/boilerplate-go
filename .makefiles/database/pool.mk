@@ -48,6 +48,10 @@ slot-acquire:
 	@# db-reinit が 1 度しか実行されない。個別の make 呼び出しに分け、各 worktree DB を作り直す。
 	@set -a; . ./.gobp-db-slot; set +a; \
 		$(MAKE) db-reinit DB=$$DB_NAME_LOCAL && $(MAKE) db-reinit DB=$$DB_NAME_TEST
+	@# Realtime Delivery は採番を PostgreSQL に、配送済み event を DynamoDB EventLog に置く。
+	@# 片方だけ巻き戻すと採番が 1 へ戻る一方 EventLog に旧 item が残り、採番がその位置へ届いた
+	@# ところで条件付き書き込みが衝突して stream が止まる。2 つの store の寿命をここで揃える。
+	@$(MAKE) realtime-reset
 	@go run ./cmd/ db-slot heartbeat
 	@echo "✅ DB スロットを取得しました。make test は自 worktree DB(wt<N>_test)、make serve は共有 DB の wt<N>_local を使います。"
 

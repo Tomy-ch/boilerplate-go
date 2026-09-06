@@ -233,13 +233,15 @@ not passed. Run by mistake in the main checkout, it exits with an error without 
   conf change or an `infra-down` to separate two checkouts, which is what distinguishes them from
   `elasticmq` above: `dynamodb_local` runs `-sharedDb`, so a single table namespace serves everyone,
   and `goaws` creates topics and queues at runtime (`docker/goaws/goaws.yaml` declares none). In both
-  cases a branch isolates itself by choosing different names, and `docker-compose.attach.yaml` chooses
-  them: it suffixes `REALTIME_TOPIC`, `REALTIME_QUEUE_PREFIX` and `REALTIME_TABLE_SUFFIX` with the
-  slot, so each worktree's serve subscribes to its own topic and reads its own tables
-  (`realtime_event_log_local_wt<N>` and its two siblings, created by `make realtime-init` from the same
-  value). A checkout holding no slot keeps the unsuffixed names, so the main checkout is unaffected.
-  The table suffix is joined with `_` rather than the `-` the topic and queue use, because
-  `REALTIME_TABLE_SUFFIX` admits only lowercase letters, digits and underscores.
+  cases a branch isolates itself by choosing different names, and the `Resolver` in
+  `internal/cli/dbslot` chooses them: it suffixes `REALTIME_TOPIC`, `REALTIME_QUEUE_PREFIX` and
+  `REALTIME_TABLE_SUFFIX` with the slot and emits all three from `db-slot env`, so each worktree's
+  serve subscribes to its own topic and reads its own tables (`realtime_event_log_local_wt<N>` and its
+  two siblings, created by `make realtime-init` from the same value). `docker-compose.attach.yaml`
+  reads those values instead of deriving them a second time, and keeps only the no-slot default, the
+  way it does for the host ports. A checkout holding no slot therefore keeps the unsuffixed names, so
+  the main checkout is unaffected. The table suffix is joined with `_` rather than the `-` the topic
+  and queue use, because `REALTIME_TABLE_SUFFIX` admits only lowercase letters, digits and underscores.
 
   Both halves matter, and they fail differently when absent. Unsuffixed **tables** let one worktree
   read a stream another wrote. An unsuffixed **topic** fails more narrowly but more surprisingly: a
@@ -247,6 +249,15 @@ not passed. Run by mistake in the main checkout, it exits with an error without 
   and every worktree's database is seeded from the same fixtures, so revoking a ticket in one window
   would close another window's connection for the same subject. `make realtime-smoke` isolates itself
   the same way, under a per-run random name it deletes on exit.
+- **A slot's two stores are reset together.** Realtime Delivery allocates stream sequences in
+  PostgreSQL and keeps the delivered events in the DynamoDB EventLog, so rebuilding one without the
+  other leaves the allocator issuing numbers the log already holds. `Append` refuses that position —
+  correctly, since a different event ID at the same sequence is a real conflict — and the relay's
+  head-of-line blocking then stops that stream. `slot-acquire` therefore runs `make realtime-reset`
+  after re-creating the databases, dropping the slot's three tables; `realtime-provision` creates them
+  again on the next `make serve`. Only streams with a fixed identifier can collide at all (a
+  per-subject stream gets a fresh UUID from the reseed), which is what makes the failure rare enough
+  to be confusing rather than obvious.
 - `sql_editor` / `docs_server` / `er_diagram_generator` / `mock_auth_server` sit in the `2000` range
   because none of them has a de-facto port of its own. The rule, and why that range is safe, are in
   [`local-environment.md`](local-environment.md).

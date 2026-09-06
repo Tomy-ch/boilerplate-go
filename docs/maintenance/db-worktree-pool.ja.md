@@ -208,10 +208,12 @@ make slot-release    # app 停止+イメージ削除 → スロット解放 → 
   分けるのに conf の変更も `infra-down` も要らない点で、上の `elasticmq` とは異なる。`dynamodb_local` は
   `-sharedDb` で動くため単一の table namespace を全員が使い、`goaws` は topic / queue を実行時に作る
   （`docker/goaws/goaws.yaml` は何も宣言しない）。どちらの場合もブランチは別々の名前を選ぶことで自分を
-  隔離でき、`docker-compose.attach.yaml` がその名前を選ぶ役を担う。`REALTIME_TOPIC`・`REALTIME_QUEUE_PREFIX`・
-  `REALTIME_TABLE_SUFFIX` にスロットを付けるため、各 worktree の serve は自分の topic を購読し、自分の
-  table を読む（`realtime_event_log_local_wt<N>` とその他 2 つの table。`make realtime-init` が同じ値から
-  作成する）。スロットを持たない checkout は suffix なしの名前のままなので、メイン checkout は影響を受けない。
+  隔離でき、`internal/cli/dbslot` の `Resolver` がその名前を選ぶ役を担う。`REALTIME_TOPIC`・
+  `REALTIME_QUEUE_PREFIX`・`REALTIME_TABLE_SUFFIX` にスロットを付けて 3 つとも `db-slot env` から出すため、
+  各 worktree の serve は自分の topic を購読し、自分の table を読む（`realtime_event_log_local_wt<N>` と
+  その他 2 つの table。`make realtime-init` が同じ値から作成する）。`docker-compose.attach.yaml` は導出を
+  二度書かずにその値を読むだけで、ホスト公開ポートと同じくスロット未取得のときの既定値だけを持つ。
+  したがってスロットを持たない checkout は suffix なしの名前のままで、メイン checkout は影響を受けない。
   table の suffix だけ topic / queue が使う `-` でなく `_` で結合されるのは、`REALTIME_TABLE_SUFFIX` が
   小文字・数字・アンダースコアしか受け付けないためである。
 
@@ -221,6 +223,14 @@ make slot-release    # app 停止+イメージ削除 → スロット解放 → 
   の DB も同じ fixture から seed されて subject が一致するので、ある窓で ticket を失効させると別の窓の
   同じ subject の接続が閉じてしまう。`make realtime-smoke` も同じ形で、実行ごとの乱数名で resource を作り
   終了時に削除する。
+- **スロットの 2 つの store は一緒に作り直す。** Realtime Delivery は stream の採番を PostgreSQL で行い、
+  配送済みの event を DynamoDB EventLog に置くため、片方だけ作り直すと採番が EventLog に既にある番号を
+  発行することになる。`Append` はその位置を拒否する — 同じ sequence に別の event ID があるのは本物の
+  衝突なので、それが正しい — が、そのあと relay の head-of-line blocking がその stream を止める。
+  そこで `slot-acquire` はデータベースを作り直したあとに `make realtime-reset` を実行してスロットの
+  3 table を落とし、`realtime-provision` が次の `make serve` で作り直す。衝突し得るのは固定の識別子を
+  持つ stream だけで（subject ごとの stream は再 seed で新しい UUID になる）、この失敗が当たり前ではなく
+  紛らわしいものになっているのはそのためである。
 - `sql_editor` / `docs_server` / `er_diagram_generator` / `mock_auth_server` は、いずれも自前のデファクト
   ポートを持たないため `2000` 番台に置いている。規則とその帯が安全な理由は
   [`local-environment.ja.md`](local-environment.ja.md) にある。
