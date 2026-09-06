@@ -62,7 +62,11 @@ func run(args []string, out io.Writer) error {
 	}
 
 	if report == "" {
-		fmt.Fprintf(out, "✅ app 層の %d サービスすべてが healthcheck を宣言しています。\n", len(appServices))
+		const format = "✅ app 層の %d サービスすべてが healthcheck を宣言しています。\n"
+
+		if _, err := fmt.Fprintf(out, format, len(appServices)); err != nil {
+			return xerrors.Wrap(err, "failed to write the result")
+		}
 
 		return nil
 	}

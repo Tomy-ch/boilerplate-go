@@ -45,7 +45,7 @@ type composeFile struct {
 // サービスが 0 件のときエラーにするのは、この検査が「何も見ていない」状態を成功と
 // 報告しないためです。ファイルの場所を間違えても YAML としては正しく読めてしまいます。
 func loadServices(path string) (map[string]service, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //nolint:gosec // path は -compose フラグ。既定はリポジトリ内のリテラル
 	if err != nil {
 		return nil, xerrors.Wrap(err, "failed to read "+path)
 	}
@@ -67,7 +67,7 @@ func loadServices(path string) (map[string]service, error) {
 // 対象の一覧をこのツールに持たないのは、両方に置くと片方だけを直したときに黙ってずれるためです。
 // 宣言が見つからなければエラーにします。空の一覧で走らせると、検査対象ゼロのまま成功します。
 func loadAppServices(path string) ([]string, error) {
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //nolint:gosec // path は -makefile フラグ。既定はリポジトリ内のリテラル
 	if err != nil {
 		return nil, xerrors.Wrap(err, "failed to read "+path)
 	}
