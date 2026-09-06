@@ -64,12 +64,19 @@ type GitProbe struct {
 	HasGitEntry func(root string) bool
 }
 
+// LeaseOwnership は、レジストリのリース所有権の判定点です（*Registry が実装。テストで差し替えます）。
+// .gobp-db-slot は解放されないまま残ることがあるので、ファイルの存在だけでは所有を名乗れません。
+type LeaseOwnership interface {
+	// OwnedBySelf は、そのスロットのリースを自 worktree が保持しているかを返します。
+	OwnedBySelf(slot int) bool
+}
+
 // Values は、スロットから導かれる解決済みの値です。
 // 一箇所で導いて env（make が eval する KEY=VALUE）と status（人間向けの表示）の両方へ流すため、
 // 「make が使う値」と「デバッグで読む値」が食い違いません。
 type Values struct {
 	Git             GitContext
-	SlotHeld        bool   // .gobp-db-slot が所有データベースを宣言しているか
+	SlotHeld        bool   // .gobp-db-slot が宣言するスロットのリースを実際に保持しているか
 	DBLocal         string // 所有する local 系データベース
 	DBTest          string // 所有する test 系データベース
 	AppProject      string // app 層の compose プロジェクト名
@@ -82,6 +89,7 @@ type Values struct {
 type Resolver struct {
 	cfg   Config
 	probe GitProbe
+	lease LeaseOwnership
 	out   io.Writer
 }
 
@@ -102,13 +110,15 @@ func (c GitContext) String() string {
 }
 
 // NewResolver は Resolver を生成します。probe が nil の場合はホストの git を使います。
-func NewResolver(cfg Config, probe *GitProbe, out io.Writer) *Resolver {
+// lease が nil のときはリースを確認できないため、どのスロットも保持していないものとして解決します
+// （所有を騙るより、スロットの取り直しを案内して止まるほうが安全なため）。
+func NewResolver(cfg Config, probe *GitProbe, lease LeaseOwnership, out io.Writer) *Resolver {
 	p := realGitProbe()
 	if probe != nil {
 		p = *probe
 	}
 
-	return &Resolver{cfg: cfg, probe: p, out: out}
+	return &Resolver{cfg: cfg, probe: p, lease: lease, out: out}
 }
 
 // Resolve は、git 文脈と .gobp-db-slot から解決済みの値を組み立てます。
@@ -121,9 +131,16 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 
 	slot := readSlotFile(filepath.Join(r.cfg.Root, ".gobp-db-slot"))
 
+	// リースを持たないスロット定義は失効している。そこから値を導くと他 worktree が所有する
+	// データベースとホスト公開ポートを指すため、ファイルが無いときと同じ既定へ落とす。
+	held := r.holdsLease(slot)
+	if !held {
+		slot = nil
+	}
+
 	values := Values{
 		Git:        gitCtx,
-		SlotHeld:   slot["DB_NAME_LOCAL"] != "",
+		SlotHeld:   held,
 		DBLocal:    orDefault(slot["DB_NAME_LOCAL"], defaultDBLocal),
 		DBTest:     orDefault(slot["DB_NAME_TEST"], defaultDBTest),
 		AppProject: orDefault(slot["SERVE_PROJECT"], "gobp-app-"+filepath.Base(r.cfg.Root)),
@@ -136,6 +153,21 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 	}
 
 	return values, nil
+}
+
+// holdsLease は、スロット定義が宣言するスロットのリースを自 worktree が保持しているかを返します。
+// 宣言が壊れている（スロット番号や DB 名が読めない）場合も保持していないものとして扱います。
+func (r *Resolver) holdsLease(slot map[string]string) bool {
+	if slot["DB_NAME_LOCAL"] == "" || r.lease == nil {
+		return false
+	}
+
+	n, err := strconv.Atoi(slot["SLOT"])
+	if err != nil {
+		return false
+	}
+
+	return r.lease.OwnedBySelf(n)
 }
 
 // RequireOwner は、所有データベースを持たない状態（リンク worktree かつスロット未取得）を
@@ -153,7 +185,8 @@ func (r *Resolver) RequireOwner(ctx context.Context) error {
 		return nil
 	}
 
-	_, _ = fmt.Fprint(r.out, "❌ この worktree は DB スロットを取得していないため、所有するデータベースがありません。\n"+
+	_, _ = fmt.Fprint(r.out, "❌ この worktree は DB スロットを取得していない（または取得したスロットが\n"+
+		"   他 worktree に回収されている）ため、所有するデータベースがありません。\n"+
 		"   1 つのデータベースを複数の checkout から触らないよう、既定の local / test へは\n"+
 		"   フォールバックしません。\n"+
 		"   → make slot-acquire でスロットを取得してください（make slot-status で空きを確認）。\n")

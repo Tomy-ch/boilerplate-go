@@ -103,6 +103,13 @@ func (p *Pool) Release(ctx context.Context) error {
 		p.logf("no slot held by this worktree")
 		return nil
 	}
+	// リースが stale 回収で他 worktree へ渡っていれば、そのスロットの app コンテナは現保持者のもの。
+	// down すれば他人の serve を落とすため compose には触れず、失効した .gobp-db-slot だけを片付ける。
+	if !p.reg.OwnedBySelf(slot) {
+		_ = os.Remove(p.slotFilePath())
+		p.logf("slot %d is held by another worktree; dropped the stale slot file only", slot)
+		return nil
+	}
 	// serve した app コンテナを停止する（放置すると再割当て・reinit 後の DB を孤児が掴む）。
 	// 停止失敗（docker 未起動・権限不足など）は孤児コンテナ検知のためログへ可視化し、リース解放自体は続行する。
 	if err := p.comp.DownServe(ctx, serveProject(slot)); err != nil {

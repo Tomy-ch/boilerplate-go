@@ -105,14 +105,6 @@ func newSlotPool() (*dbslot.Pool, error) {
 		return nil, err
 	}
 
-	reg := dbslot.NewRegistry(
-		poolDir(),
-		root,
-		gitBranch(),
-		time.Duration(envInt("GOBP_DB_POOL_TTL", defaultPoolTTLSeconds))*time.Second,
-		envInt("GOBP_DB_POOL_MAX", defaultPoolMaxSlots),
-		nil,
-	)
 	admin := dbslot.NewPgxAdmin(
 		envStr("GOBP_DB_POOL_PGHOST", "localhost"),
 		envInt("GOBP_DB_POOL_PGPORT", defaultPoolPGPort),
@@ -120,7 +112,19 @@ func newSlotPool() (*dbslot.Pool, error) {
 		envStr("GOBP_DB_POOL_PGPASSWORD", "postgres-password"),
 		envStr("GOBP_DB_POOL_PGMAINTDB", "postgres"),
 	)
-	return dbslot.NewPool(reg, admin, dbslot.ExecCompose{}, slotConfig(root), os.Stdout, os.Stderr), nil
+	return dbslot.NewPool(newSlotRegistry(root), admin, dbslot.ExecCompose{}, slotConfig(root), os.Stdout, os.Stderr), nil
+}
+
+// newSlotRegistry は、ホスト上のリースレジストリを配線して生成します。
+func newSlotRegistry(root string) *dbslot.Registry {
+	return dbslot.NewRegistry(
+		poolDir(),
+		root,
+		gitBranch(),
+		time.Duration(envInt("GOBP_DB_POOL_TTL", defaultPoolTTLSeconds))*time.Second,
+		envInt("GOBP_DB_POOL_MAX", defaultPoolMaxSlots),
+		nil,
+	)
 }
 
 // newSlotResolver は、スロットから導かれる値の解決器を実依存（ホストの git）で配線して生成します。
@@ -129,7 +133,8 @@ func newSlotResolver(out io.Writer) (*dbslot.Resolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	return dbslot.NewResolver(slotConfig(root), nil, out), nil
+	// スロットの保持はレジストリのリースで判定する（.gobp-db-slot は解放されず残ることがある）。
+	return dbslot.NewResolver(slotConfig(root), nil, newSlotRegistry(root), out), nil
 }
 
 func slotConfig(root string) dbslot.Config {
