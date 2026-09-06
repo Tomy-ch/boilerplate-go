@@ -20,6 +20,10 @@ import (
 // usecaseRoot は、event パッケージを探す起点です。
 const usecaseRoot = "internal/usecase"
 
+// domainStructName は、陽性対照が書く集約 struct の名前です。
+// 宣言の `of:` が指す先を 1 つに固定しておくと、テストの読み手は名前ではなく形に集中できます。
+const domainStructName = "Thing"
+
 // parityFileName は、各 event パッケージが置く対応宣言のファイル名です。
 const parityFileName = "payload_parity.yaml"
 
@@ -355,10 +359,6 @@ func writeParityYAML(t *testing.T, root, agg, src string) {
 	path := filepath.Join(root, usecaseRoot, agg, "event", parityFileName)
 	require.NoError(t, pkgfs.OS{}.WriteFile(path, []byte(src), 0o600))
 }
-
-// domainStructName は、陽性対照が書く集約 struct の名前です。
-// 宣言の `of:` が指す先を 1 つに固定しておくと、テストの読み手は名前ではなく形に集中できます。
-const domainStructName = "Thing"
 
 // writeDomainStruct は、陽性対照用に internal/domain/<pkg>/<pkg>.go へ集約 struct を書きます。
 func writeDomainStruct(t *testing.T, root, pkg, fields string) {
@@ -1173,7 +1173,8 @@ func Test_payloadFieldRule_UnmarshalYAML(t *testing.T) {
 
 			var doc payloadParityDoc
 			require.NoError(t, yaml.Unmarshal([]byte(
-				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      id: purchaseId\n"), &doc))
+				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      id: purchaseId\n",
+			), &doc))
 
 			rule := doc.Payloads["created"].Fields["id"]
 			assert.Equal(t, "purchaseId", rule.Carried)
@@ -1185,7 +1186,8 @@ func Test_payloadFieldRule_UnmarshalYAML(t *testing.T) {
 
 			var doc payloadParityDoc
 			require.NoError(t, yaml.Unmarshal([]byte(
-				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      statusID:\n        omit: 内部 FK\n"), &doc))
+				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      statusID:\n        omit: 内部 FK\n",
+			), &doc))
 
 			rule := doc.Payloads["created"].Fields["statusID"]
 			assert.Empty(t, rule.Carried)
@@ -1201,7 +1203,8 @@ func Test_payloadFieldRule_UnmarshalYAML(t *testing.T) {
 
 			var doc payloadParityDoc
 			err := yaml.Unmarshal([]byte(
-				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      id:\n        - a\n        - b\n"), &doc)
+				"payloads:\n  created:\n    kind: snapshot\n    fields:\n      id:\n        - a\n        - b\n",
+			), &doc)
 
 			require.Error(t, err)
 		})
