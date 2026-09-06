@@ -79,12 +79,18 @@ both:
    the second question never reaches it.
 2. **Does the multi-aggregate write require single-transaction atomicity?** Immediacy — all effects
    being visible at API response time — is the typical reason this requirement arises.
+3. **Can the rows to be written be named by identity?** A write whose targets are fixed only by a
+   predicate cannot be enumerated or locked and has no upper bound, so decomposing it would issue one
+   round trip per row. Added by
+   [ADR-0114](0114-predicate-defined-set-writes-on-commandservice.md); this ADR did not reach it
+   because it is asked of every write, not only of one that crosses a boundary.
 
 ### Decision procedure
 
 The default is decomposition. A guard that must hold until commit takes a synchronous row lock and
 stays a regular usecase; CommandService is reached only when single-transaction atomicity of the
-multi-aggregate *write* remains as a requirement. Two justifications are not acceptable: "it spans
+multi-aggregate *write* remains as a requirement (branch 3a) — or, per ADR-0114, when the rows to be
+written are named only by a predicate (branch 3b). Two justifications are not acceptable: "it spans
 multiple aggregates, therefore CommandService", and — the failure mode branch 2 exists to close —
 "it is only a read, therefore nothing is needed".
 
@@ -93,7 +99,7 @@ The procedure itself, and the eligibility gate it composes with, are stated once
 
 ### Departure from "1 Aggregate = 1 Transaction Boundary"
 
-Branches 2 and 3 both put rows belonging to more than one aggregate inside a single transaction, so
+Branches 2 and 3a both put rows belonging to more than one aggregate inside a single transaction, so
 both depart from the principle [`internal/domain/README.md`](../../internal/domain/README.md)
 (§ Aggregate Boundary) states as "1 Aggregate = 1 Transaction Boundary" — Vernon's formulation of
 Evans's argument that the aggregate is the unit of consistency. The departure is stated here rather
@@ -104,12 +110,16 @@ than left implicit:
   whenever it is convenient constrains nothing, so the discipline is the point of the pattern.
 - **What this repository does instead.** Two named widenings, and only these two. A guard locks a row
   belonging to another aggregate and holds it until commit (branch 2). A write that must be atomic
-  across aggregates runs in one transaction through a CommandService (branch 3).
+  across aggregates runs in one transaction through a CommandService (branch 3a). The second path into
+  a CommandService — branch 3b, a write whose target rows are named only by a predicate
+  ([ADR-0114](0114-predicate-defined-set-writes-on-commandservice.md)) — is **not** a third widening:
+  the write it admits may stay inside one aggregate. The consequence for a reader is that the presence
+  of a CommandService no longer signals which boundary was crossed; branch 3a does.
 - **Why.** Evans's argument is about *change*: the hazard in a wide boundary is mutating several
   aggregates through one loaded graph until no one can say which invariant belongs to which root.
   Branch 2 does not mutate the other aggregate at all — it observes one row and blocks the writer
   that would invalidate the observation, so that aggregate's root keeps sole authority over its own
-  changes. Branch 3 does mutate more than one, which is why it is the narrow exception: it is
+  changes. Branch 3a does mutate more than one, which is why it is the narrow exception: it is
   admitted only where the requirements say the intermediate state must never be observable, and the
   condition it enforces is still authored by the domain
   ([ADR-0032](0032-lightweight-cqrs.md) § Derivation). What both branches refuse is the option a
@@ -140,7 +150,7 @@ than left implicit:
 - **User withdrawal — branch 2 for the guard, branch 1 for the cascade.** The core of withdrawal is
   a single-aggregate write to `users.deleted_at`. The cascade — cancelling pending purchases and
   restoring stock — requires no immediacy and is eventually consistent via outbox events (branch 1).
-  The check "cannot withdraw with purchases in progress" spans aggregates and is a read, so branch 3
+  The check "cannot withdraw with purchases in progress" spans aggregates and is a read, so branch 3a
   does not apply and the operation stays a usecase; but a concurrent purchase creation would
   invalidate it, so branch 2 does apply and the user row is locked exclusively before the check.
   This is the shape the two-way procedure could not describe: a usecase that nonetheless takes a
@@ -153,7 +163,7 @@ than left implicit:
   is therefore allowed to go stale, and the update takes no lock on any purchase row. This is the
   contrasting instance to the withdrawal guard: same shape (one aggregate's write, another
   aggregate's state), opposite answer to question 1. Specified in `docs/spec/usecase/purchase.md`.
-- **Product discontinuation — branch 3, and the only instance that reaches it.** Discontinuing a
+- **Product discontinuation — branch 3a, and the instance that reaches it by atomicity.** Discontinuing a
   product unpublishes it and issues a compensating coupon to everyone who was holding it in a cart.
   The recipients are defined by a predicate — a join through `cart_items` to `carts`, excluding
   withdrawn users — so they cannot be named by identity, cannot be locked, and have no upper bound.
@@ -171,6 +181,30 @@ than left implicit:
   a set operation is that round trips do not grow with the population, not that there is exactly one
   statement. Splitting is forced by [ADR-0037](0037-uuidv7-identifiers.md), which puts key generation
   in the domain. Specified in `docs/spec/usecase/product.md`.
+  **This instance answers both questions yes,** which is why one branch could carry it alone for so
+  long. Its rows are named by a predicate, so branch 3b would admit it on its own; the product write is
+  what makes branch 3a the settling reason. Read it against the promotional issuance below, which
+  answers only 3b.
+
+- **Promotional bulk issuance — branch 3b, and the instance that reaches it without atomicity.**
+  Issuing one promotional coupon to every user who has not withdrawn writes `coupons` and nothing else.
+  No second aggregate is written, so branch 3a never triggers: there is no intermediate state spanning
+  two aggregates for an observer to catch, and no part of this operation must be immediate. It still
+  cannot decompose. The recipients are defined by a predicate over `users`, so they cannot be named by
+  identity, cannot be locked, and have no upper bound; expressing the write as load-mutate-save would
+  mean constructing one `Coupon` per recipient and issuing one round trip per recipient. That is branch
+  3b, and it is the whole reason this operation is a CommandService.
+  **Read this against the discontinuation above:** both issue coupons in bulk by predicate, and only one
+  of them widens a transaction boundary. The pair is what separates the two questions — "must these
+  writes commit together" and "can these rows be named" — that a single branch 3 used to answer at once.
+  Two things this instance is deliberately *not*. It does **not** record the distribution: nothing marks
+  that a campaign ran, so running the operation twice issues to everyone twice. Where discontinuation
+  has `IsDiscontinued` as a natural re-entry guard, this has none, and the duplicate-run defence is the
+  caller's `Idempotency-Key` alone. And the recipient cap is **not** a domain invariant — it is an
+  application policy checked in the usecase before the write, so the CommandService still enforces no
+  condition the domain did not author ([ADR-0032](0032-lightweight-cqrs.md) § Derivation). Decided in
+  [ADR-0114](0114-predicate-defined-set-writes-on-commandservice.md); specified in
+  `docs/spec/usecase/coupon.md`.
 
 - **Coupon redemption — branch 1, and the lock is on a row this transaction writes.** Applying one
   coupon at checkout writes both `purchases` and `coupons`, and a state where the purchase is

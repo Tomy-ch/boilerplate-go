@@ -168,6 +168,7 @@ can enumerate them. The tag has no reader once setup is done.
 | [0111](0111-outbox-relay-hardening-delegated.md) | Ship a balanced outbox relay; delegate hardening (multi-layer lease redesign) to operational evidence | accepted (exclusion) |
 | [0112](0112-pnpm-as-the-only-node-resolver.md) | Resolve every Node package with pnpm; do not use npm | accepted |
 | [0113](0113-outbox-payload-kinds-and-parity-declaration.md) | Declare each outbox payload's kind; check a snapshot's field correspondence against its aggregate | accepted |
+| [0114](0114-predicate-defined-set-writes-on-commandservice.md) | Admit a write whose target rows are named only by a predicate to CommandService | accepted |
 
 Frontmatter fields: `status`, `date`, `deciders`, `supersedes` / `superseded-by`, `tags`.
 Consequences follow the MADR standard (`Positive` / `Negative`; optional `Neutral`).
