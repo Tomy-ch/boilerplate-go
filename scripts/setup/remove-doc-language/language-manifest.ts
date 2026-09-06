@@ -385,7 +385,6 @@ export const DOC_REPLACEMENTS: readonly DocReplacement[] = [
   ...forFile(".gitleaksignore", [
     ["env/README.ja.md:generic-api-key:258\n"],
     ["env/README.ja.md:generic-api-key:217\n"],
-    // 過去の版の行番号なので畳んでも動かない。落とすのは名指す対訳がその名前で存在しなくなるため。
     ["env/README.ja.md:generic-api-key:219\n"],
     ["env/README.ja.md:generic-api-key:245\n"],
   ]),
