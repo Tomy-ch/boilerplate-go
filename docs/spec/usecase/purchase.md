@@ -706,4 +706,3 @@ invariants:
   - 二重キャンセルは purchases の行ロックで直列化され、後続は ErrAlreadyCanceled でクーポンへ到達しない
   - coupon_id / discount_amount はキャンセル後も控えとして残る（購入の控えは値引きの理由をこの結合で解決する）
 ```
-
