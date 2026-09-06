@@ -641,7 +641,6 @@ func Test_usecase_CancelPurchase(t *testing.T) {
 			assert.Equal(t, canceledAt, *view.CanceledAt)
 			require.Len(t, view.Details, 1)
 		})
-
 	})
 
 	t.Run("異常系", func(t *testing.T) {
