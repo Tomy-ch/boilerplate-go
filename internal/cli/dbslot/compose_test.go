@@ -60,7 +60,7 @@ func TestExecCompose_DownServe(t *testing.T) { //nolint:paralleltest // stubDock
 			assert.Contains(t, string(b), "proj=gobp-wt-1")
 			// profile を落とすと down は対象ゼロのまま exit 0 で返り、コンテナが残る。
 			assert.Contains(t, string(b), "--profile development -f docker-compose.yaml down")
-			// override を重ねると、値を撒けないこのプロセスでは REALTIME_* の補間で落ちる。
+			// override は down が参照しない。重ねると片付け経路が compose の補間の癖に依存する。
 			assert.NotContains(t, string(b), "docker-compose.attach.yaml")
 		})
 	})

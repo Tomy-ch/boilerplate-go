@@ -61,7 +61,7 @@ worktrees can `make serve` at the same time. The variables below are defined in
   `ENDPOINT_OBJECT_STORAGE` / `AUTH_ISSUER` as runtime env — `internal/config`'s loader gives runtime env
   priority over `env/.env`. Its `REALTIME_*` are demanded rather than defaulted (`${VAR:?…}`), and only
   `COMPOSE_APP` emits them, so the app layer is started through a `make` target rather than by hand. The
-  one `down` that does not overlay it is `db-slot release`'s, which cannot emit those values
+  one `down` that does not overlay it is `db-slot release`'s, which does not read the override
   ([`internal/cli/dbslot/README.md`](../../internal/cli/dbslot/README.md)).
 - Every app-layer host port is relative to the slot number `N`: API `8080+N` / mock auth `2010+N` /
   dlv `2345+N` / pprof `6060+N` (plain `8080` / `2010` / `2345` / `6060` when no slot is held). The
