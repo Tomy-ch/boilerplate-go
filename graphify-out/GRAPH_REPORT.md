@@ -1,42 +1,42 @@
-# Graph Report - go-boilerplate  (2026-08-25)
+# Graph Report - go-boilerplate  (2026-09-06)
 
 ## Corpus Check
-- 1903 files · ~1,247,282 words
+- 2243 files · ~1,462,490 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 16615 nodes · 34276 edges · 1162 communities (1051 shown, 111 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 2789 edges (avg confidence: 0.8)
+- 19427 nodes · 42782 edges · 1241 communities (1126 shown, 115 thin omitted)
+- Extraction: 91% EXTRACTED · 9% INFERRED · 0% AMBIGUOUS · INFERRED: 3653 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `88f82cd4`
+- Built from commit: `53806655`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - NewNoopTracerFactory
-- PurchaseDetail
+- Inquiry
 - allow
 - time.Location
 - testing.T
-- NewFake
+- New
 - actions-shellcheck/main_test.go
 - NewMockUsecaseLayerTracer
-- env_consistency_test.go
+- moduleRoot
 - cart_domain_test.go
-- DatabaseDriver
+- NewDatabaseConfig
 - fx_populate_guard_test.go
-- New
-- newTestCartItem
+- NewTestDB
+- .fn
 - pin-actions/main_test.go
 - pin-images/main_test.go
-- Purchase
+- NewTestFromSalt
 - Loader
 - rules.md
-- repository
+- Registry
 - repo-setup/main_test.go
-- TracerFactory
+- Clock
 - v1_products_detail_handler_test.go
 - Repository
 - repo-setup/main.go
@@ -47,15 +47,15 @@
 - deny
 - RunMerge
 - one-to-one.gate.test.ts
-- New
+- product_domain_test.go
 - time.Duration
-- TestJWKSRotationIntegration
+- sync.Mutex
 - graphify-export/main.go
-- clockModule
+- NewApplicationConfig
 - openapi/README.md
 - time.Time
 - PurchaseFeedReadModel
-- NewTestFromSalt
+- Authn
 - devDependencies
 - Field
 - newCookieRewriteWriter
@@ -64,23 +64,23 @@
 - adr/README.md
 - pin-images/main.go
 - testing.TB
-- ObjectStorageConfig
+- provideOutboundHTTPClient
 - TestNewMetricsServer
 - New
 - 新機能・改善
 - MethodPost
 - commonDeps
-- sync-versions/main.go
+- sync-versions/main_test.go
 - http_client_transport.go
 - httpstack
 - infrastructure/README.md
 - Message
 - load-band/main_test.go
-- seed
-- Engine
+- migrations
+- WorkerMetrics
 - sanitized-document.ts
-- NewOperatingSystemConfig
-- ADR-0013: Author the spec in modular Redocly files, bundle, then generate
+- NewTimeLocation
+- module/realtime_test.go
 - NewRequest
 - extension.go
 - New
@@ -88,28 +88,28 @@
 - Repository Implementation Guide
 - cn
 - input-group.tsx
-- newServer
-- propagation_test.go
+- authnContext
+- extractFromCarrier
 - closed-loop/index.ts
-- Wrap
+- ProductView
 - go-cooldown/main_test.go
 - New
 - remove-licensed-scanners/index.ts
 - PrometheusRecorder
 - sqlc.yaml Options Affecting Go Code Generation (sqlc / PostgreSQL — pinned version in `mise.toml`)
 - Go Boilerplate OpenAPI Specification
-- NewMeta
-- pin-actions/main.go
+- MetaFrom
+- InstanceID
 - RunFix
-- remove-boilerplate-identity/index.ts
+- markers.ts
 - route_spec_parity_test.go
 - AssertEchoRouterMethods
-- LogFieldBuilder
+- New
 - RuneCount
 - verify-sample-removal/index.ts
 - checks.ts
 - Decimal
-- NormalizeError
+- context.Context
 - server hook
 - RelayUsecase
 - send/index.ts
@@ -122,37 +122,37 @@
 - NewMockClock
 - Job Controller Layer (`internal/controller/job`) Guide
 - premise-lint/rules.ts
-- tool-cooldown/main.go
-- net/http.Header
+- github.com/aws/aws-sdk-go-v2/service/dynamodb.Client
+- cookieRewriteWriter
 - Outbox Subsystem Design Reference
 - workflow.ts
 - NewRole
 - internal/observability
 - DI Layer (`internal/di`)
 - MakeAvailableAuthn
-- newTestStore
-- sync-versions/main_test.go
+- outbox_system_cqrs_test.go
+- Sequence
 - doc-ref-lint/index.ts
-- BindHandler
+- NewTestClient
 - unit_test_mapping_completeness_test.go
 - queryTracer
-- HTTPClientMetrics
-- Middleware
+- .attempt
+- NewAuthenticator
 - weekly/index.ts
-- toCartItemResponses
+- Cart
 - dependencies
-- New
+- NewLimit
 - query_metric.go
-- NewApplicationConfig
-- context.Context
+- NewCollector
+- Wrap
 - Codex CLI Operational Safeguards
 - Query Service Implementation Guide
-- newEvalItem
+- NewProductSnapshot
 - compilerOptions
-- newShippablePurchase
-- skill-lint/rules.ts
+- newPurchaseWithStatus
+- skill-lint/rules.test.ts
 - Downstream
-- applicationCoreOptions
+- serveBaseOptions
 - Distributed Ready Architecture (v3 requirements)
 - graphify-check/main_test.go
 - verify-setup/index.ts
@@ -161,57 +161,57 @@
 - graphify-pending/main_test.go
 - .claude/skills/full-verify/scripts/run.sh
 - .codex/skills/full-verify/scripts/run.sh
-- Product — Domain Spec
+- ADR-0099: CLI humble-object split (thin cmd/ shell + testable internal/cli core)
 - devDependencies
 - portal-app.tsx
 - NewHTTP
 - address_gateway.go
 - base-branch/main_test.go
-- WorkerMetrics
+- .GetStream
 - Pool
 - decimal_test.go
 - skill-lint/index.ts
-- OperatingSystemConfig
-- tool
-- day
-- sqs_test.go
+- NewServerConfig
+- remove-doc-language/index.ts
+- newEngine
+- classify
 - UUID
 - fence.ts
 - Repo Ops Runbook
-- BindHandler
+- newFanoutFixture
 - Architecture Rules
 - resolve_test.go
 - users
-- Run
-- newWorkerUnderTest
+- Deps
+- API
 - net/http.Request
 - integration/README.md
-- NewOpenAPIDetailPolicy
+- newRevocationServer
 - paging
 - user_domain_test.go
 - mermaid-lint/index.ts
 - Storage
-- ADR-0014: Generate per tag/handler with oapi-codegen in strict-server mode
+- newTestUsecase
 - cookieAttrs
 - docs-viewer
-- serveRun
+- ADR-0088: Two-layer golangci config: minimal default vs full authoritative gate
 - Architecture Decision Records
 - CLI core
-- github.com/getkin/kin-openapi/openapi3.T
-- ADR-0029: Treat migrations as append-only and immutable
+- plan.ts
+- sseClient
 - NewEchoTestClient
 - Lifecycle Registrar and Supervised Runner
 - jwksResolver
-- normalizeError
+- pubSubSmoke
 - usecase
 - New Spec Integrator
 - Registry
 - Repo Ops Runbook
-- Test_jobImpl_Execute
-- ArchiveUsecase
+- runJobAndShutdown
+- newArchiveUsecase
 - 新機能・改善
 - Execution Steps
-- Prefecture
+- pnpm-cooldown/main_test.go
 - NewPgxAdmin
 - Execution Steps
 - Tutorial: Build the User Feature From Zero
@@ -219,10 +219,10 @@
 - integration/helper_test.go
 - RDB Infrastructure Guide (`internal/infrastructure/rdb`)
 - EchoTestClient
-- dialog.tsx
+- newSubscription
 - logging
 - http_client_transport_internal_test.go
-- deps
+- discontinueTestDeps
 - purchase_summary_usecase.go
 - compilerOptions
 - DDD Audit
@@ -231,62 +231,62 @@
 - Package Details
 - NewStepClock
 - Middleware
-- Test_service_FindDetailByUserAndCode
+- DBTX
 - Scaffold Endpoint
-- RequireProvidesOne
-- runJobAndShutdown
-- NewSecurityCookie
+- go.uber.org/fx.Option
+- run
+- newRequestIDStackServer
 - required-checks.ts
-- replace-module/index.ts
-- LevelError
+- file-utils.ts
+- runRealtimeInit
 - Submit PR
 - cutoff.ts
 - Broker-Agnostic Worker Scaffold
 - rdb/testkit/README.md
-- authenticatorParams
-- API
+- .stop
+- NewQueueStatsProvider
 - Comment Sweep
 - NewRegistry
 - migrate_test.go
 - Impl Issue
-- EnsureRepoRootAndEnv
+- NewJobCore
 - ImageGCUsecase
 - metricNamesOf
 - Scaffold Lifecycle
 - Commit
-- New
+- RequireAuthn
 - ADR-0014 oapi-codegen Strict Server
 - Usecase
-- newOwnerCart
+- Discount
 - Sync README
-- Job
-- useDockerStub
+- user_purge_job.go
+- Scope
 - Status
 - bytes.Buffer
 - newWorkerCommand
 - buildinfo_test.go
-- go.opentelemetry.io/otel/metric.Meter
+- HTTPClientMetrics
 - ADR-0034: Reserve CommandService for multi-aggregate writes that require single-transaction atomicity
 - events.ts
 - report.ts
 - scan.ts
-- ADR-0098: Use a hardened-alpine runtime base; do NOT use distroless/scratch
+- RunWithSpan
 - Canonicalize Doc
 - GitHub Pages
 - Variables by Subsystem
 - 新機能・改善
 - 設定値一覧と意味
-- worker/health_test.go
-- NewEndpointConfig
-- handleHTTPError
+- newDDB
+- Config
+- NewObservabilityConfig
 - v1_users_me_purchases_summary_handler_test.go
 - ApplicationConfig
-- BindHandler
+- Usecase
 - DatabaseConfig
 - registerOrExisting
 - logger_test.go
 - IdempotencyMetrics
-- observability/test_kit.go
+- observability/test_kit_test.go
 - CommandService Implementation Guide
 - Infrastructure Layer (`internal/infrastructure`) Guide
 - OpenAPI Guide (`openapi/`)
@@ -308,9 +308,9 @@
 - Domain Spec Format
 - Scaffold Domain
 - graph-affected.ts
-- ParseSearchTokens
-- Local Hooks Mirror CI
-- mermaid-diagram.tsx
+- report_test.go
+- Usecase
+- newMockPool
 - ADR-0043: Subsystem-scoped envPrefix typed config loaders
 - Agents Documentation
 - security_declaration_test.go
@@ -326,22 +326,22 @@
 - toggle-group-native.tsx
 - usecase
 - Scaffold Integration Test
-- ObservabilityConfig
+- EndpointConfig
 - Scaffold Usecase
-- redmetrics/status.go
+- report.go
 - Reusable OpenAPI Schemas
 - Full Verify
 - Impl Review
 - marks.sh
 - Glossary — Business Vocabulary Spec
-- Spec Validator — Usecase
+- Verify-Spec Rules
 - Docker Base Image Pin Refresh
-- github.com/spf13/cobra.Command
-- skip_reason_policy_test.go
+- io.Writer
+- Usecase
 - Execution Steps
 - Scaffold Controller
 - Docker Base Image Pin Refresh
-- New
+- newNoopMeterBuilder
 - Go Version Upgrade
 - Targeted Dependency Vulnerability Upgrade
 - Full Verify
@@ -360,20 +360,20 @@
 - Scaffold Domain
 - Documentation Drift Review
 - doc-router.sh
-- At-Least-Once Outbox Polling
-- NewPublisher
-- keyedDispatcher
+- Single-Transaction At-Most-Once Idempotency
+- OutboxConfig
+- observability/realtime_metrics_test.go
 - handler
 - Scaffold Infra DB
 - oapi
-- Evaluation
+- As
 - Scaffold Integration Test
 - Scaffold Usecase
 - state
 - like.go
 - Controller Layer Guide (`internal/controller`)
 - ADR-0030: Use sequential 6-digit migration IDs with CI-enforced gap and pair checks
-- newEvent
+- newTestUUID
 - Tool Map
 - semver.ts
 - version.ts
@@ -381,20 +381,20 @@
 - Execution Steps
 - Path-scoped Security Exceptions
 - database/dml
-- SecurityConfig
+- Middleware
 - ADR-0036: Serialize contended writes with ordered pessimistic row locks taken before the guarded condition
-- driver_test.go
+- newTestMessage
 - Alternatives Considered
-- template.md
-- Workflow
-- Prefecture — Domain Spec
-- Purchase — Usecase Spec
+- ADR-NNNN: imperative decision title
+- fake_test.go
+- NewNoopRealtimeMetrics
+- go.opentelemetry.io/otel/sdk/metric/metricdata.ResourceMetrics
 - Testing Conventions
 - Product
 - Resolve
 - Database Driver
 - actions-cutoff-lint/index.ts
-- bindPurchaseCodeRoutes
+- MustParse
 - Scaffold Endpoint
 - Scaffold Test
 - StatsCollector
@@ -404,11 +404,11 @@
 - ADR-0026 SQL-first Data Access
 - document-content.tsx
 - portal-sidebar.tsx
-- codeowners.ts
-- ADR-0089: Multi-layer security scanning, splitting reporting from gating, on hardened runners
-- ADR-0107: Ship a balanced outbox relay; delegate hardening to operational evidence
+- Alternatives Considered
+- sseWriter
+- getCallerFullName
 - Job Subsystem Design Reference
-- Subdirectory List
+- circuit
 - JWT Authenticator
 - Design Policy
 - Script Categories
@@ -420,43 +420,43 @@
 - session-start-env.sh
 - Contributing
 - ADR-0031 Master Data via Migration
-- Usecase
+- net/http.Header
 - Arch Check
-- newJobCommand
+- 2. State transitions
 - Comment Sweep — auditor instructions
 - Engine
 - newContext
-- WithRequest
-- GetValidator
+- ticket_test.go
+- Repo Truth
 - Context Map
 - Scaffold Test
 - Repository DML
 - Database Initialization SQL
-- Product Image GC Job Guide (`internal/controller/job/productimagegc`)
+- Repo Truth
 - Paging Tool
-- replace-license-copyright/index.ts
+- Usecase
 - Supply-chain Triage
 - Supply-chain Triage
 - Feature Proposal
 - ADR-0025: Adopt an egress SSRF / dial-guard security posture for outbound HTTP
 - Pragmatic Onion Architecture
-- ADR-0080: mise.toml is the single source of truth for mise-resolved versions; versions propagate downstream with a CI drift gate
-- ADR-0088: Generated-artifact drift gate + release-branch-centralized auto-generation bot
-- ADR-0093: Use multi-model adversarial review with finder and verifier subagents
+- ddbSmoke
+- BindHandler
+- Purchase — Usecase Spec
 - Local Development Environment
 - Security
 - app error
 - auth Directory
-- OpenAPI Paths
+- Workflow
 - sqlc/README.md
 - system_cqrs
-- User Purge Job Guide (`internal/controller/job/userpurge`)
+- ProviderShutdowner
 - index-store.ts
 - Back-Prop
 - Input Boundary Value Ownership
 - Portal Manifest Sync
 - Notify
-- Config-Driven Observability Gating
+- BuildInfo
 - Post-Repository Clone Task List
 - Documentation Structure Rules
 - New Spec — Domain
@@ -472,27 +472,27 @@
 - ADR-0037: Use UUIDv7 (time-ordered) identifiers for all entity primary keys
 - ADR-0039: Cross-aggregate value objects live in a curated domain lexicon
 - ADR-0053: Measure broker-SDK isolation as coupling, not as linkage
-- Outbox Relay Engine Guide (`internal/controller/outbox`)
+- Sleeper
 - Unpaginated Product Category Master List
 - Cursor Pagination Metadata
 - Get User Detail
-- ADR-0075: Observability providers are lifecycle-independent (ProviderShutdowner)
+- provider_test.go
 - Test Review
 - Verify Spec
 - DAST
-- ADR-0082: Operational scripts live in scripts/ as TypeScript or Go; shell scripting is not used
+- Research
 - Agent Environment Alignment
-- Containerized Pinned Toolchain
+- Resolve Merge
 - Security Posture
 - Logger
-- Design References
+- Agent Environment
 - Ready Handler (`internal/controller/handler/ready`)
 - Data Access Pattern
 - Observability Subsystem Design Reference
 - Authorization Infrastructure
 - REST Subsystem Design Reference
 - OpenTelemetry Observability
-- Cart — Usecase Spec
+- Resolve Merge
 - error response
 - Idempotency-Key Processing
 - recordingQueryTracer
@@ -513,7 +513,7 @@
 - ADR-0024 Outbound HTTP Resilience
 - basicauth
 - Handler Testkit
-- stripMarkers
+- NewTextMapPropagator
 - full-verify
 - AWS Client Configuration
 - Procedure
@@ -524,7 +524,7 @@
 - Purchase Status Reference
 - Ship Purchase
 - Get Users
-- error_handler_di_test.go
+- ADR-0071: Adopt Realtime Delivery as an independent driving mechanism for server-to-client event delivery
 - Skill Usage Metadata
 - Controller Architecture Auditor
 - Manage Skill
@@ -589,12 +589,12 @@
 - ADR-0011 Docs as Canonical Source
 - Two-Scale Quantity Model
 - Fixed Idempotency TTL
-- Single-Responsibility Library Selection
+- .GetExchangeRates
 - Go Version Upgrade Procedure
 - Exported API Comment Contract
 - README.md
 - Versioning Policy
-- Direct Dependency Inventory
+- infrastructure/queue
 - hast-util-sanitize
 - zod
 - tailwindcss
@@ -617,7 +617,7 @@
 - ADR-0048: Protocol-neutral error metadata (code / message / details) on top of apperror
 - ADR-0049: Opt-in gate for error-response details via schema split
 - ADR-0056: Single-transaction relay using SELECT FOR UPDATE SKIP LOCKED (safe across instances)
-- ADR-0058: MaxAttempts = 10, then the message is dead (terminal until manual replay)
+- .add
 - ADR-0059: 7-day retention GC of published rows (batches of 10,000)
 - Database Health Probe
 - Optional Cart Session Parameter
@@ -638,7 +638,7 @@
 - Base Error Response
 - Product Image Input
 - Object Path Based Image Delivery
-- Idempotency GC Job Guide (`internal/controller/job/idempotencygc`)
+- coupon_usecase_test.go
 - Get Product Categories
 - Get Products Count
 - Version Endpoint
@@ -651,12 +651,12 @@
 - Licensed Scanners Removal Check
 - Markdown Lint
 - Migration Check
-- ObservabilityMiddleware
+- ParseCustomLayout
 - Sample Removal Check
 - OpenSSF Scorecard
 - SQL Lint
 - UUIDv7 Identifiers
-- Healthcheck Usecase Spec
+- Research
 - Dialog
 - HTTP Observability Middleware
 - Panic Recovery Middleware
@@ -680,26 +680,26 @@
 - ADR-0068: Each job launch constructs a fresh fx.App (one-shot lifecycle)
 - ADR-0069: Jobs deliberately have no broker, circuit breaker, drain, or health machinery
 - ADR-0070: Jobs are explicitly registered (no auto-discovery)
-- ADR-0071: Config-driven observability gating
-- ADR-0072: Vendor-neutral OTLP-only export (delegate backend to the Collector)
-- ADR-0074: Metrics travel two paths — OTLP push and Prometheus scrape
-- ADR-0079: Use a containerized toolchain pinned by mise for reproducibility
-- ADR-0081: Make is the single tool entrypoint with .mk registration and self-documenting help
-- ADR-0083: Local dev environment is provided via Docker Compose with profile-separated services
-- ADR-0086: Total coverage 90% is a CI hard gate, with an exception-governance path
-- ADR-0087: CI boots the real fx graph against real Postgres (startup verification)
-- ADR-0090: Pin GitHub Actions by SHA with a supply-chain quarantine
-- ADR-0091: Accept a publication cooldown as the primary defence against malicious packages, without a dedicated detector
-- ADR-0092: Run infrastructure integration tests against a real DB with sentinel-error rollback
-- ADR-0095: CLI humble-object split (thin cmd/ shell + testable internal/cli core)
-- go.uber.org/fx.Option
-- ADR-0103: Publish static docs/ via GitHub Pages (released on production push)
+- ADR-0074: Authenticate SSE streams with an opaque query ticket bound to subject, destination, scope, and expiry
+- ADR-0093: Multi-layer security scanning, splitting reporting from gating, on hardened runners
+- ADR-0097: Use multi-model adversarial review with finder and verifier subagents
+- ADR-0111: Ship a balanced outbox relay; delegate hardening to operational evidence
+- Workflow
+- newOrphanSweeper
+- How To
+- Question
+- How To
+- Question
+- ADR-0058: An outbox row dies on a permanent error; transient failures retry with per-message backoff
+- ADR-0073: Fan out realtime wakeups to serve instances with SNS to per-instance SQS queues
+- Channel
+- ADR-0084: mise.toml is the single source of truth for mise-resolved versions; versions propagate downstream with a CI drift gate
 - Architecture
 - Authentication Subsystem Design Reference
 - Worker Subsystem Design Reference
 - Go Doc-Comment Conventions (Condensed)
-- Purchase — Domain Spec
-- NewEmail
+- Business Glossary
+- ADR-0092: Generated-artifact drift gate + release-branch-centralized auto-generation bot
 - `Config` Package
 - Metrics Handler (`internal/controller/handler/metrics`)
 - Test Strategy
@@ -707,7 +707,7 @@
 - lifecycle
 - Domain Layer (`internal/domain`) Guide
 - Design Intent
-- NewPostalCode
+- .PostInquiriesMeMessages
 - Context Map Audit
 - server Dockerfile
 - ADR-0000: Record architecture decisions as ADRs
@@ -722,7 +722,7 @@
 - ADR-0027: Generate type-safe SQL access with sqlc
 - ADR-0040: Adopt Uber Fx for dependency injection and lifecycle
 - ADR-0041: Contain fx behind a neutral DI abstraction (Registrar / Shutdowner)
-- openSeedObjectStorage
+- NewRealtimeTestConnection
 - ADR-0044: Governance: default-in-code (immutable) vs required-in-file (variable)
 - ADR-0045: Config is immutable, loaded once at startup, fail-fast
 - ADR-0046: go:embed bundles config (.env) and migrations for a self-contained binary
@@ -739,29 +739,29 @@
 - ADR-0064: Fix idempotency key TTL at 24 hours with no per-route configuration
 - ADR-0066: Run idempotency key garbage collection as a separate one-shot CLI job
 - ADR-0067: Keep idempotency orthogonal to optimistic locking and rate limiting
-- ADR-0073: Use only official OpenTelemetry semantic conventions; do not invent custom semconv or put vendor keys in typed config
-- ADR-0076: Fix the SDK default sampling; do not expose sampling as an env knob
-- ADR-0077: Single-responsibility library selection policy
-- ADR-0078: Bridge / instrumentation libraries as bounded SRP exceptions
-- 0084-two-layer-golangci-config.md
-- ADR-0085: Local git hooks duplicate the CI contract (local == CI, glob-scoped, bypass-then-verify-once)
-- ADR-0094: Scaffold only domain and usecase from spec files; derive controller and infra from generated code
-- ADR-0096: All roles are one multi-command binary
-- ADR-0097: A single runtime image with command override (no purpose-specific images)
-- ADR-0099: Per-environment images (.env matrix x APP_ENV build-arg, fixed at build time)
-- ADR-0100: Migrations run as a pre-deploy one-shot; do NOT auto-migrate at application startup
-- ADR-0101: Release-image supply-chain integrity (cosign signing + provenance + SBOM)
-- ADR-0102: Deploy is a vendor-neutral skeleton (build/sign implemented; cloud CD is a stub; registry not fixed)
-- ADR-0104: Do not provide an in-application rate limiter
-- ADR-0105: Do not control scheduled-job concurrency in-app; delegate to the scheduler
-- ADR-0106: Do not provide a generic Cache abstraction
+- openapi-client-check/index.ts
+- ADR-0078: Metrics travel two paths — OTLP push and Prometheus scrape
+- ADR-0079: Observability providers are lifecycle-independent (ProviderShutdowner)
+- ADR-0086: Operational scripts live in scripts/ as TypeScript or Go; shell scripting is not used
+- ADR-0091: CI boots the real fx graph against real Postgres (startup verification)
+- ADR-0096: Run infrastructure integration tests against a real DB with sentinel-error rollback
+- Cart — Usecase Spec
+- Inquiry — Usecase Spec
+- attributeOf
+- ADR-0075: Config-driven observability gating
+- ADR-0076: Vendor-neutral OTLP-only export (delegate backend to the Collector)
+- ADR-0080: Fix the SDK default sampling; do not expose sampling as an env knob
+- ADR-0083: Use a containerized toolchain pinned by mise for reproducibility
+- ADR-0085: Make is the single tool entrypoint with .mk registration and self-documenting help
+- ADR-0087: Local dev environment is provided via Docker Compose with profile-separated services
+- ADR-0090: Total coverage 90% is a CI hard gate, with an exception-governance path
 - Idempotency Subsystem Design Reference
 - Boilerplate-only Conventions
 - Troubleshooting
-- Workflow
-- User — Usecase Spec
+- ADR-0094: Pin GitHub Actions by SHA with a supply-chain quarantine
+- Job CLI
 - ctxhelper
-- outbox
+- withdrawal-archive worker (sample)
 - Testing Strategy
 - New
 - Dependency Vulnerability Upgrade
@@ -770,10 +770,10 @@
 - Arch Auditor — Pkg
 - Drift Detector — Business Glossary
 - Tools Container
-- Dashboard — Usecase Spec
-- Exchange Rate — Usecase Spec
-- User Search — Usecase Spec
-- SetUpConfig
+- ADR-0102: Use a hardened-alpine runtime base; do NOT use distroless/scratch
+- ADR-0107: Publish static docs/ via GitHub Pages (released on production push)
+- Run
+- Join
 - idempotency
 - Implementation notes
 - `.makefiles/github` group
@@ -782,14 +782,14 @@
 - Doc Reviewer
 - Spec Validator — Domain
 - Execution Steps
-- GCUsecase
-- ADR-0108: Resolve every Node package with pnpm; do not use npm
-- Address — Usecase Spec
-- User — Domain Spec
-- expandBraces
+- stream
+- ADR-0012: Define the API contract OpenAPI-first
+- ADR-0077: Use only official OpenTelemetry semantic conventions; do not invent custom semconv or put vendor keys in typed config
+- ADR-0081: Single-responsibility library selection policy
+- ADR-0082: Bridge / instrumentation libraries as bounded SRP exceptions
 - bindhandler_di_parity_test.go
 - Controller Layer Handler (`internal/controller/handler`) Guide
-- Outbox GC Job Guide (`internal/controller/job/outboxgc`)
+- design/README.md
 - NewCredential
 - Idempotency (Idempotency-Key)
 - strings.Builder
@@ -799,18 +799,18 @@
 - Evidence collection — npm
 - Alternatives Considered
 - Context Map
-- Cart — Domain Spec
-- Health Check — Usecase Spec
-- ProductCategory — Domain Spec
-- ProductCategory — Usecase Spec
-- ProductRanking — Usecase Spec
-- ProductStatus — Domain Spec
-- ProductStatus — Usecase Spec
+- ADR-0089: Local git hooks duplicate the CI contract (local == CI, glob-scoped, bypass-then-verify-once)
+- ADR-0098: Scaffold only domain and usecase from spec files; derive controller and infra from generated code
+- ADR-0103: Per-environment images (.env matrix x APP_ENV build-arg, fixed at build time)
+- ADR-0105: Release-image supply-chain integrity (cosign signing + provenance + SBOM)
+- ADR-0106: Deploy is a vendor-neutral skeleton (build/sign implemented; cloud CD is a stub; registry not fixed)
+- ADR-0108: Do not provide an in-application rate limiter
+- ADR-0109: Do not control scheduled-job concurrency in-app; delegate to the scheduler
 - Toggle
 - db-slot
 - Do not leak HTTP into Usecase
 - newActiveUser
-- runPruneReleaseNotes
+- ADR-0110: Do not provide a generic Cache abstraction
 - Testing strategy
 - metrics
 - queue
@@ -821,7 +821,7 @@
 - Drift Detector — Domain
 - Drift Detector — Infra
 - errMetricExporter
-- Drift Detector — Usecase
+- Middleware
 - Type Design Reviewer
 - `.claude/` — Agent configuration for this repository
 - Evidence collection — Docker images
@@ -856,7 +856,7 @@
 - .codex/skills/full-verify/prompts/verify-impl.md
 - Evidence collection — Go modules
 - Architectural Principles
-- Layer Dependency Rules
+- pubsub.go
 - Workflow List
 - dump-schema
 - job
@@ -866,12 +866,12 @@
 - worker
 - Integration with OpenAPI
 - Test Kit (testkit)
-- NewEndpoint
+- Architecture Compliance Check
 - job hook
 - DI Module Groups
 - Server Extension Layer
 - worker hook
-- lexicon
+- Usecase Spec Format
 - Where a rule goes
 - local (Simple Authentication for Local Development)
 - allowall (Allow-All Authorizer for Local Development)
@@ -880,12 +880,12 @@
 - `.makefiles/database` group
 - Arch Verifier (full-verify worker)
 - Impl Verifier (full-verify worker)
-- miseRegistry
+- Exchange Rate — Usecase Spec
 - Upstream design phases (Mode A only) — Phases 1–4
 - Layer Responsibilities
 - ADR conventions that apply only upstream
 - Gates and generated artifacts
-- verifyLocks
+- User Search — Usecase Spec
 - Importance
 - Observability
 - Sub-package List
@@ -895,7 +895,7 @@
 - security
 - testkit
 - Validation
-- openAPIAllowPolicy
+- button.tsx
 - worker
 - Boundary Concept
 - CQRS Policy
@@ -907,10 +907,10 @@
 - 0. Finding the authoritative source
 - Step 0 — Confirm Scope
 - Core (both modes) — Phases 5–7
-- 3. Read side: when is decomposition forbidden
+- naming_test.go
 - Arguments that rest on there being no adopter yet
 - Setup
-- Layer Responsibility Rules
+- Verify-Spec Rules
 - 概要
 - Notes
 - Test Support
@@ -959,44 +959,81 @@
 - Application Policy
 - Do / Don’t
 - Observability (Tracing)
-- ContentLines
+- Inquiry — Domain Spec
 - fnmeta
 - stringkit
 - Deploy App
 - 000001_create_idempotency_keys.up.sql
 - 000002_create_outbox.up.sql
+- Product — Domain Spec
+- Purchase — Domain Spec
+- User — Domain Spec
+- Dashboard — Usecase Spec
+- ProductRanking — Usecase Spec
+- newUsecase
+- setAllowHeader
 - Full
-- .fn
+- Cart — Domain Spec
 - Closed Loop
-- checkReferences
+- skill-lint/rules.ts
 - compose_test.go
-- code-fence.test.ts
-- collectSubtestGroupViolations
-- BuildWithdrawn
-- outbox-relay
-- NewDisabledTracerFactory
-- Test_emitUsecase_Emit
-- withdrawal-archive worker (sample)
-- NewNoopSleeper
+- Coupon — Domain Spec
+- Prefecture — Domain Spec
+- ProductCategory — Domain Spec
+- ProductStatus — Domain Spec
+- PurchaseStatus — Domain Spec
+- TracerFactory
+- Address — Usecase Spec
+- clock/testkit/test_kit_test.go
 - run
-- fenced
-- .RoundTrip
+- Health Check — Usecase Spec
+- Prefecture — Usecase Spec
 - Handler
+- ProductCategory — Usecase Spec
+- ProductStatus — Usecase Spec
+- PurchaseStatus — Usecase Spec
+- lookupErrorMetaByAppError
+- Orphan Cleanup Job Guide (`internal/controller/job/orphancleanup`)
+- queuePolicyDocument
 - Parse
+- Drift Detector — Pkg
+- Design References
+- Email
+- BindHandler
+- HTTPClientTransport
+- redaction
+- New
+- Coupon — Usecase Spec
+- TestStreamTicketRedaction_Integration
 - TestAppErrorsCompleteness
-- captureHooks
+- newLogExporter
+- go.opentelemetry.io/otel/propagation.TextMapPropagator
+- newTestLine
+- .PostInquiriesMeStreamTicket
+- realtime/testkit
+- 規約逸脱への対処（lean A の trade-off）
+- Test Perspectives Subagent
+- 4. Write side
+- markdown-document.test.ts
+- streampath
+- 10. Semantic quality bar (anti-patterns)
+- TestResolve
+- 000020_add_outbox_delivery_channel_and_stream_sequences.up.sql
+- StreamID
+- Test_dockerfileExemptTagless
+- GitHub Pages Operations
 
 ## God Nodes (most connected - your core abstractions)
-1. `Wrap()` - 413 edges
-2. `NewTestFromSalt()` - 347 edges
-3. `NewNoopTracerFactory()` - 207 edges
-4. `New()` - 160 edges
-5. `New()` - 150 edges
-6. `allow` - 120 edges
-7. `NewTestDB()` - 117 edges
-8. `TracerFactory` - 110 edges
-9. `Logger` - 108 edges
-10. `NewTestLogger()` - 107 edges
+1. `Wrap()` - 527 edges
+2. `NewTestFromSalt()` - 453 edges
+3. `NewNoopTracerFactory()` - 317 edges
+4. `New()` - 188 edges
+5. `New()` - 177 edges
+6. `TracerFactory` - 172 edges
+7. `NewTestDB()` - 143 edges
+8. `LayerTracer` - 143 edges
+9. `Logger` - 129 edges
+10. `NewTestLogger()` - 127 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `Domain Spec Format` --semantically_similar_to--> `Scaffold Domain`  [INFERRED] [semantically similar]
@@ -1032,7 +1069,6 @@
 - **Dependency Vulnerability Double Gates** — _github_workflows_osv_scanner_osv_scan, _github_workflows_osv_release_gate_release_osv_scan, _github_workflows_trivy_fs_dependency_scan, _github_workflows_trivy_release_gate_release_dependency_scan [EXTRACTED 1.00]
 - **Deployment and Documentation Automation** — _github_workflows_auto_generate_docs_auto_generate_docs, _github_workflows_deploy_app_deploy_app, _github_workflows_deploy_docs_deploy_docs [EXTRACTED 1.00]
 - **Layered Docker Compose Environment** — docker_readme_docker_configuration, docker_compose_docker_compose, docker_compose_attach_docker_compose_attach, docker_server_readme_server_dockerfile, docker_tools_readme_tools_container, docker_database_sql_readme_database_initialization_sql [EXTRACTED 1.00]
-- **Domain and Usecase Spec Pairs** — docs_spec_cart_domain_cart_domain_spec, docs_spec_cart_usecase_cart_usecase_spec, docs_spec_prefecture_domain_prefecture_domain_spec, docs_spec_prefecture_usecase_prefecture_usecase_spec, docs_spec_product_category_domain_product_category_domain_spec, docs_spec_product_category_usecase_product_category_usecase_spec, docs_spec_product_status_domain_product_status_domain_spec, docs_spec_product_status_usecase_product_status_usecase_spec, docs_spec_product_domain_product_domain_spec, docs_spec_product_usecase_product_usecase_spec, docs_spec_purchase_domain_purchase_domain_spec, docs_spec_purchase_usecase_purchase_usecase_spec [EXTRACTED 1.00]
 - **Endpoint Response Contracts** — openapi_components_responses_addresses_addresscandidatesresponse_address_candidates_response, openapi_components_responses_carts_cartresponse_cart_response, openapi_components_responses_dashboard_dashboardsummaryresponse_dashboard_summary_response, openapi_components_responses_exchange_rates_exchangerateresponse_exchange_rate_response, openapi_components_responses_health_check_readyresponse_readiness_response [EXTRACTED 1.00]
 - **Endpoint Scaffold Core** — codex_skills_scaffold_endpoint_skill_scaffold_endpoint, codex_skills_scaffold_domain_skill_scaffold_domain, codex_skills_scaffold_controller_skill_scaffold_controller [EXTRACTED 1.00]
 - **Endpoint Scaffold Pipeline** — claude_skills_verify_spec_skill_verify_spec, claude_skills_scaffold_endpoint_skill_scaffold_endpoint, claude_skills_scaffold_domain_skill_scaffold_domain, claude_skills_scaffold_infra_db_skill_scaffold_infra_db, claude_skills_scaffold_usecase_skill_scaffold_usecase, claude_skills_scaffold_controller_skill_scaffold_controller, claude_skills_scaffold_integration_test_skill_scaffold_integration_test [EXTRACTED 1.00]
@@ -1049,7 +1085,6 @@
 - **One-Shot Job Adapters** — internal_controller_job_readme_job_controller_layer, internal_controller_job_idempotencygc_readme_idempotency_gc_job, internal_controller_job_outboxgc_readme_outbox_gc_job, internal_controller_job_productimagegc_readme_product_image_gc_job, internal_controller_job_userpurge_readme_user_purge_job [EXTRACTED 1.00]
 - **OpenAPI Contract Pipeline Decisions** — docs_adr_0012_openapi_first_adr_0012, docs_adr_0013_redocly_modular_spec_pipeline_adr_0013, docs_adr_0014_oapi_codegen_strict_server_adr_0014, docs_adr_0015_retain_generated_openapi_adr_0015, docs_adr_0016_spec_driven_request_validation_adr_0016 [EXTRACTED 1.00]
 - **Operational Endpoint Set** — openapi_paths_health_health_endpoint, openapi_paths_healthz_kubernetes_liveness_endpoint, openapi_paths_ready_readiness_endpoint, openapi_paths_metrics_metrics_endpoint [EXTRACTED 1.00]
-- **Operational Responsibility Delegation** — docs_adr_0104_no_in_app_rate_limiter_no_in_app_rate_limiter, docs_adr_0105_scheduled_job_concurrency_delegated_scheduled_job_concurrency_delegated, docs_adr_0107_outbox_relay_hardening_delegated_outbox_relay_hardening_delegated [EXTRACTED 1.00]
 - **Pagination Parameter Contract** — openapi_components_parameters_pagination_cursorafterparam_cursor_after_parameter, openapi_components_parameters_pagination_cursorfirstparam_cursor_first_parameter, openapi_components_parameters_pagination_pageparam_page_parameter, openapi_components_parameters_readme_pagination_strategies [EXTRACTED 1.00]
 - **Portal Curation Flow** — codex_skills_portal_manifest_sync_skill_portal_manifest_sync, _codex_skills_portal_manifest_sync_skill_curated_reading_list, _codex_skills_readme_review_skill_readme_review, _codex_skills_readme_review_skill_manual_worthiness [EXTRACTED 1.00]
 - **Product Reference Models** — openapi_components_schemas_productresponse_product_response, openapi_components_schemas_productcategoryref_product_category_reference, openapi_components_schemas_productstatusref_product_status_reference [EXTRACTED 1.00]
@@ -1063,7 +1098,6 @@
 - **Shared generic utility catalog** — pkg_readme_shared_utility_packages, pkg_backoff_readme_exponential_backoff, pkg_datetime_readme_datetime_parsing, pkg_decimal_readme_exact_decimal, pkg_envutil_readme_environment_override, pkg_exec_readme_process_execution, pkg_fnmeta_readme_function_metadata, pkg_fs_readme_filesystem_abstraction, pkg_httpheader_readme_sensitive_http_headers, pkg_patch_readme_three_state_patch_fields, pkg_ptr_readme_pointer_utilities, pkg_retry_readme_bounded_retry, pkg_safecast_readme_safe_type_conversion, pkg_stringkit_readme_string_length_validation, pkg_uuid_readme_uuid_utility, pkg_xerrors_readme_stack_trace_errors [EXTRACTED 1.00]
 - **Shared Usecase Tool Family** — internal_usecase_tools_money_readme_money_rounding_tool, internal_usecase_tools_paging_readme_paging_tool, internal_usecase_tools_search_readme_search_tokenization_tool [EXTRACTED 1.00]
 - **Shippable Purchase Response Composition** — openapi_components_responses_purchases_shippable_purchaseshippableresponse_shippable_purchase_response, openapi_components_responses_purchases_shippable_purchasedispatchgroupresponse_dispatch_group_response, openapi_components_responses_purchases_shippable_purchaseshippableitemresponse_shippable_item_response [EXTRACTED 1.00]
-- **Software Supply-Chain Controls** — docs_adr_0089_multi_layer_security_scanning_multi_layer_security_scanning, docs_adr_0090_sha_pinned_actions_sha_pinned_actions, docs_adr_0091_malicious_package_detection_via_cooldown_package_publication_cooldown [EXTRACTED 1.00]
 - **Supervised application lifecycle hooks** — internal_di_lifecycle_readme_lifecycle_registrar, internal_di_job_hook_readme_job_lifecycle_hook, internal_di_worker_hook_readme_worker_lifecycle_hook, internal_di_outboxrelay_hook_readme_outbox_relay_hook [EXTRACTED 1.00]
 - **Supply-chain Evidence Procedures** — claude_skills_supply_chain_triage_skill_supply_chain_triage, _claude_skills_supply_chain_triage_references_docker_images_evidence_collection_docker_images, _claude_skills_supply_chain_triage_references_github_actions_evidence_collection_github_actions, _claude_skills_supply_chain_triage_references_go_modules_evidence_collection_go_modules, _claude_skills_supply_chain_triage_references_npm_evidence_collection_npm, _claude_skills_supply_chain_triage_references_pypi_evidence_collection_pypi [EXTRACTED 1.00]
 - **Transaction Consistency Decisions** — docs_adr_0034_commandservice_atomicity_criterion_commandservice_atomicity_criterion, docs_adr_0035_transaction_retry_idempotent_callers_transaction_retry_idempotent_callers, docs_adr_0036_ordered_pessimistic_row_locks_ordered_pessimistic_row_locks, docs_adr_0054_transactional_outbox_transactional_outbox [EXTRACTED 1.00]
@@ -1089,19 +1123,14 @@
 - **Product Request Contracts** — openapi_components_requests_products_productimagepostrequest_product_image_upload_request, openapi_components_requests_products_productpatchrequest_product_patch_request, openapi_components_requests_products_productstockpatchrequest_product_stock_delta_request, openapi_components_requests_products_productspostrequest_product_creation_request [INFERRED 0.85]
 - **Purchase Detail Schema Family** — openapi_components_schemas_purchasedetailinput_purchase_detail_input, openapi_components_schemas_purchasedetailresponse_purchase_detail_response, openapi_components_schemas_purchasedetailitemresponse_purchase_detail_item_response [INFERRED 0.85]
 - **Reasoned Security Exception Policies** — _github_zizmor_scoped_exception_policy, _grype_evidence_scoped_false_positive, _trivyignore_path_scoped_security_exceptions, _hadolint_unpinned_os_package_exception [INFERRED 0.85]
-- **Release and Deployment Pipeline** — docs_adr_0099_per_environment_images_per_environment_images, docs_adr_0100_predeploy_oneshot_migration_predeploy_oneshot_migration, docs_adr_0101_release_image_supply_chain_release_image_supply_chain, docs_adr_0102_vendor_neutral_deploy_skeleton_vendor_neutral_deploy_skeleton [INFERRED 0.85]
 - **Repository Operational Authority** — agents_agents_documentation, codex_codex_cli_operational_safeguards, contributing_contributing, readme_documentation_map [INFERRED 0.85]
 - **Repository Quality Gate Stack** — _lefthook_change_scoped_git_gates, _golangci_golangci_lint_configuration, _octocov_octocov_configuration, _spectral_spectral_owasp_api_configuration [INFERRED 0.85]
-- **Reproducible Toolchain and CI Contract** — docs_adr_0079_containerized_pinned_toolchain_containerized_pinned_toolchain, docs_adr_0080_mise_ssot_drift_gate_mise_ssot_drift_gate, docs_adr_0081_make_single_entrypoint_make_single_entrypoint, docs_adr_0082_scripts_in_node_go_scripts_in_node_go, docs_adr_0083_docker_compose_dev_environment_docker_compose_dev_environment, docs_adr_0084_two_layer_golangci_config_two_layer_golangci_config, docs_adr_0085_local_hooks_mirror_ci_local_hooks_mirror_ci, docs_adr_0086_coverage_hard_gate_coverage_hard_gate, docs_adr_0087_ci_real_graph_boot_check_ci_real_graph_boot_check, docs_adr_0088_generated_artifact_drift_gate_generated_artifact_drift_gate [INFERRED 0.85]
 - **Security Scanning Workflows** — _github_workflows_grype_grype_scan, _github_workflows_image_scan_image_scan, _github_workflows_openapi_security_openapi_security, _github_workflows_opengrep_sast [INFERRED 0.85]
 - **Tool Supply-chain Controls** — _codex_skills_tools_upgrade_skill_supply_chain_quarantine, _github_dependabot_ecosystem_update_cooldowns, _github_actions_setup_mise_action_pinned_binary_digest_verification [INFERRED 0.85]
-- **Usecase-Only Lean Specifications** — docs_spec_address_usecase_address_usecase_spec, docs_spec_dashboard_usecase_dashboard_usecase_spec, docs_spec_exchange_rate_usecase_exchange_rate_usecase_spec, docs_spec_healthcheck_usecase_healthcheck_usecase_spec, docs_spec_product_ranking_usecase_product_ranking_usecase_spec [INFERRED 0.85]
 - **Worker Broker and Outbox Decisions** — docs_adr_0050_broker_agnostic_worker_scaffold_broker_agnostic_worker_scaffold, docs_adr_0051_out_of_scope_push_streaming_brokers_push_and_streaming_broker_exclusion, docs_adr_0052_sqs_adapter_opt_in_sqs_adapter_opt_in, docs_adr_0053_broker_sdk_isolation_measured_as_coupling_broker_sdk_coupling_isolation, docs_adr_0054_transactional_outbox_transactional_outbox [INFERRED 0.85]
 - **Cart Subject and Ownership Workflow** — openapi_paths_v1_carts_me_cart_endpoint, openapi_paths_v1_carts_me_items_productid_cart_item_endpoint, openapi_paths_v1_carts_me_merge_cart_merge_endpoint [INFERRED 0.95]
-- **CLI and Runtime Packaging Decisions** — docs_adr_0095_cli_humble_object_split_cli_humble_object_split, docs_adr_0096_single_multi_command_binary_single_multi_command_binary, docs_adr_0097_single_runtime_image_single_runtime_image, docs_adr_0098_hardened_alpine_runtime_hardened_alpine_runtime [INFERRED 0.95]
 - **Codex Skill Interface Metadata** — _codex_skills_scaffold_endpoint_agents_openai_scaffold_endpoint_interface, _codex_skills_scaffold_infra_db_agents_openai_scaffold_infra_db_interface, _codex_skills_scaffold_integration_test_agents_openai_scaffold_integration_test_interface, _codex_skills_scaffold_test_agents_openai_scaffold_test_interface, _codex_skills_scaffold_usecase_agents_openai_scaffold_usecase_interface, _codex_skills_submit_pr_agents_openai_submit_pr_interface, _codex_skills_supply_chain_triage_agents_openai_supply_chain_triage_interface, _codex_skills_sync_ai_agents_openai_sync_ai_skills_interface, _codex_skills_sync_readme_agents_openai_sync_readme_interface [INFERRED 0.95]
 - **Codex Skill and Agent Interface Pairs** — codex_skills_actions_pin_skill_github_actions_pin_update, _codex_skills_actions_pin_agents_openai_actions_pin_interface, codex_skills_arch_check_skill_architecture_compliance_check, _codex_skills_arch_check_agents_openai_arch_check_interface, codex_skills_back_prop_skill_documentation_drift_review, _codex_skills_back_prop_agents_openai_back_prop_interface, codex_skills_canonicalize_doc_skill_canonical_document_sync, _codex_skills_canonicalize_doc_agents_openai_canonicalize_doc_interface, codex_skills_comment_sweep_skill_comment_sweep, _codex_skills_comment_sweep_agents_openai_comment_sweep_interface, codex_skills_commit_skill_scoped_git_commit, _codex_skills_commit_agents_openai_commit_interface, codex_skills_context_map_audit_skill_context_map_audit, _codex_skills_context_map_audit_agents_openai_context_map_audit_interface, codex_skills_context_map_skill_context_map, _codex_skills_context_map_agents_openai_context_map_interface [INFERRED 0.95]
-- **Commerce Domain Flow** — docs_spec_cart_domain_cart_domain_spec, docs_spec_product_domain_product_domain_spec, docs_spec_purchase_domain_purchase_domain_spec, docs_spec_purchase_usecase_purchase_usecase_spec [INFERRED 0.95]
 - **Driving Adapter Entry Points** — docs_design_rest_request_in_driving_adapter, docs_design_worker_message_in_driving_adapter, docs_design_job_command_in_driving_adapter [INFERRED 0.95]
 - **Foundational Architecture Decisions** — docs_adr_0001_avoid_lock_in_lock_in_avoidance, docs_adr_0002_onion_architecture_pragmatic_onion_architecture, docs_adr_0003_interface_based_decoupling_interface_based_decoupling, docs_adr_0004_modular_monolith_modular_monolith, docs_adr_0005_driving_adapters_not_split_axis_driving_adapters_not_split_axis, docs_adr_0006_structural_safety_via_tooling_structural_safety_via_tooling [INFERRED 0.95]
 - **Generated Artifact Drift Checks** — _github_workflows_gen_db_artifacts_check_generated_database_artifacts_check, _github_workflows_gen_go_artifacts_check_generated_go_artifacts_check, _github_workflows_gen_oapi_artifacts_check_generated_openapi_artifacts_check [INFERRED 0.95]
@@ -1109,118 +1138,115 @@
 - **HTTP Middleware Stack** — internal_controller_httpstack_logging_readme_http_logging, internal_controller_httpstack_oapi_readme_openapi_integration, internal_controller_httpstack_observability_readme_http_observability, internal_controller_httpstack_recovery_readme_panic_recovery, internal_controller_httpstack_redmetrics_readme_http_red_metrics, internal_controller_httpstack_requestid_readme_request_id, internal_controller_httpstack_security_readme_security_headers, internal_controller_httpstack_timeout_readme_request_timeout_budget, internal_controller_httpstack_uri_readme_uri_middleware [INFERRED 0.95]
 - **Idempotency Subsystem Decisions** — docs_adr_0062_single_tx_at_most_once_idempotency_single_tx_at_most_once_idempotency, docs_adr_0063_idempotency_scope_required_idempotency_scope_required, docs_adr_0064_idempotency_fixed_ttl_idempotency_fixed_ttl, docs_adr_0065_idempotency_response_persistence_idempotency_response_persistence, docs_adr_0066_idempotency_gc_separate_job_idempotency_gc_separate_job, docs_adr_0067_idempotency_orthogonal_concerns_idempotency_orthogonal_concerns [INFERRED 0.95]
 - **Non-HTTP Driving Adapters** — internal_controller_job_readme_job_controller_layer, internal_controller_outbox_readme_outbox_relay_engine, internal_controller_worker_readme_worker_engine [INFERRED 0.95]
-- **Observability Subsystem Decisions** — docs_adr_0071_config_driven_observability_gating_config_driven_observability_gating, docs_adr_0072_vendor_neutral_otlp_export_vendor_neutral_otlp_export, docs_adr_0073_official_otel_semconv_official_otel_semconv, docs_adr_0074_dual_path_metrics_dual_path_metrics, docs_adr_0075_lifecycle_independent_provider_lifecycle_independent_provider, docs_adr_0076_fixed_default_sampling_fixed_default_sampling [INFERRED 0.95]
 - **Pre-resolved purchase status views** — openapi_components_schemas_purchasestatusref_purchase_status_reference, openapi_components_schemas_purchasesummaryresponse_purchase_summary_response, openapi_components_schemas_dashboard_dashboardpurchasestatuscountresponse_dashboard_purchase_status_count [INFERRED 0.95]
 - **Product numeric range filters** — openapi_components_parameters_product_minpriceparam_min_price, openapi_components_parameters_product_maxpriceparam_max_price, openapi_components_parameters_product_minquantityparam_min_quantity, openapi_components_parameters_product_maxquantityparam_max_quantity [INFERRED 0.95]
 - **Purchase Lifecycle Responses** — openapi_components_schemas_purchasecancelresponse_purchase_cancel_response, openapi_components_schemas_purchasepayresponse_purchase_pay_response, openapi_components_schemas_purchaseshipresponse_purchase_ship_response, openapi_components_schemas_purchasedeliverresponse_purchase_deliver_response [INFERRED 0.95]
 - **Reusable HTTP error response objects** — openapi_components_schemas_readme_reusable_openapi_schemas, openapi_components_schemas_errors_badrequest400_bad_request_400_response, openapi_components_schemas_errors_clientclosedrequest499_client_closed_request_499_response, openapi_components_schemas_errors_conflict409_conflict_409_response, openapi_components_schemas_errors_forbidden403_forbidden_403_response, openapi_components_schemas_errors_internalservererror500_internal_server_error_500_response, openapi_components_schemas_errors_methodnotallowed405_method_not_allowed_405_response, openapi_components_schemas_errors_notfound404_not_found_404_response, openapi_components_schemas_errors_notimplemented501_not_implemented_501_response, openapi_components_schemas_errors_payloadtoolarge413_payload_too_large_413_response, openapi_components_schemas_errors_serviceunavailable503_service_unavailable_503_response, openapi_components_schemas_errors_toomanyrequests429_too_many_requests_429_response [INFERRED 0.95]
 - **Script Dependency Supply-Chain Controls** — scripts_readme_supply_chain_automation, scripts_pnpm_workspace_dependency_cooldown, scripts_pnpm_workspace_dependency_execution_controls [INFERRED 0.95]
 - **SQL and Migration Contract Chain** — docs_adr_0026_sql_first_data_access_adr_0026, docs_adr_0027_sqlc_type_safe_sql_adr_0027, docs_adr_0028_merged_dml_schema_as_sqlc_input_adr_0028, docs_adr_0029_append_only_immutable_migrations_adr_0029, docs_adr_0030_sequential_migration_ids_adr_0030, docs_adr_0031_master_data_via_migration_adr_0031 [INFERRED 0.95]
-- **Transactional Outbox Reliability Decisions** — docs_adr_0055_at_least_once_outbox_poll_at_least_once_outbox_poll, docs_adr_0056_skip_locked_outbox_relay_skip_locked_outbox_relay, docs_adr_0057_message_id_idempotency_propagation_message_id_idempotency_propagation, docs_adr_0058_outbox_dead_after_max_attempts_outbox_dead_after_max_attempts, docs_adr_0059_outbox_retention_gc_outbox_retention_gc, docs_adr_0060_publisher_http_profile_isolation_publisher_http_profile_isolation, docs_adr_0061_relay_resident_gc_oneshot_relay_resident_gc_oneshot [INFERRED 0.95]
 - **Unpaginated Ordered Master Responses** — openapi_components_responses_prefecture_prefecturesresponse_prefecture_list_response, openapi_components_responses_products_category_productscategoriesresponse_product_categories_response, openapi_components_responses_products_status_productsstatusesresponse_product_statuses_response [INFERRED 0.95]
-- **User Feature Specification Flow** — docs_spec_user_search_usecase_user_search_usecase_spec, docs_spec_user_domain_user_domain_spec, docs_spec_user_usecase_user_usecase_spec, docs_tutorial_build_user_feature_build_user_feature_tutorial [INFERRED 0.95]
 
-## Communities (1162 total, 111 thin omitted)
+## Communities (1241 total, 115 thin omitted)
 
 ### Community 0 - "NewNoopTracerFactory"
 Cohesion: 0.04
-Nodes (95): go-boilerplate/internal/controller/error/response/gen.ErrorResponseWithDetails, go-boilerplate/internal/controller/handler/v1/purchases/gen.PostPurchasesJSONRequestBody, go-boilerplate/internal/usecase/cart/mock.MockUsecase, net/http.Response, Server, BindHandler(), echo.Echo, BindHandler() (+87 more)
+Nodes (91): go-boilerplate/internal/controller/error/response/gen.ErrorResponseWithDetails, go-boilerplate/internal/controller/handler/v1/purchases/gen.PostPurchasesJSONRequestBody, go-boilerplate/internal/usecase/cart/mock.MockUsecase, net/http.Response, Server, BindHandler(), echo.Echo, TestBindHandler() (+83 more)
 
-### Community 1 - "PurchaseDetail"
-Cohesion: 0.10
-Nodes (15): go-boilerplate/internal/infrastructure/rdb/sqlc/gen.GetUserRolesByUserIDRow, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.ListPurchaseDetailsByPurchaseIDRow, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.ListPurchaseDetailsByPurchaseIDsRow, PurchaseDetail, NormalizeReconstructError(), repository, groupPurchaseDetails(), New() (+7 more)
+### Community 1 - "Inquiry"
+Cohesion: 0.03
+Nodes (76): messageAuthor, messageCreated, threadUpdated, go-boilerplate/internal/controller/handler/v1/inquiries/detail/messages/gen.GetInquiriesDetailMessagesRequestObject, go-boilerplate/internal/controller/handler/v1/inquiries/detail/messages/gen.GetInquiriesDetailMessagesResponseObject, go-boilerplate/internal/controller/handler/v1/inquiries/detail/messages/gen.InquiryHistoryResponse, go-boilerplate/internal/controller/handler/v1/inquiries/detail/messages/gen.InquiryMessage, go-boilerplate/internal/controller/handler/v1/inquiries/detail/messages/gen.InquiryMessageResponse (+68 more)
 
 ### Community 2 - "allow"
 Cohesion: 0.02
 Nodes (120): allow, Bash(awk *), Bash(basename *), Bash(cat *), Bash(comm *), Bash(cp /private/tmp/*), Bash(cp /tmp/*), Bash(cut *) (+112 more)
 
 ### Community 3 - "time.Location"
-Cohesion: 0.09
-Nodes (35): go-boilerplate/internal/controller/handler/version/gen.GetVersionRequestObject, go-boilerplate/internal/controller/handler/version/gen.GetVersionResponseObject, time.Location, ParseCustomLayout(), ParseDateOnly(), ParseDateTime(), ParseISO8601(), ParseRFC3339() (+27 more)
+Cohesion: 0.20
+Nodes (18): time.Location, ParseCustomLayoutToLocation(), ParseDateOnlyToLocation(), ParseDateTimeToLocation(), ParseISO8601ToLocation(), ParseRFC3339NanoToLocation(), ParseRFC3339ToLocation(), ParseRFC3339UTCToLocation() (+10 more)
 
 ### Community 4 - "testing.T"
 Cohesion: 0.01
-Nodes (236): testing.T, Test_mockLoader(), Test_setEnv(), TestMockConfigForTest(), TestApplicationConfig_SetApplicationEnv(), TestApplicationConfig_SetApplicationLogLevel(), TestApplicationConfig_SetApplicationMode(), TestAuthConfig_SetAuthAudience() (+228 more)
+Nodes (270): testing.T, Test_mockLoader(), Test_setEnvVarsForTesting(), TestMockConfigForTest(), TestApplicationConfig_SetApplicationEnv(), TestApplicationConfig_SetApplicationLogLevel(), TestApplicationConfig_SetApplicationMode(), TestAuthConfig_SetAuthAudience() (+262 more)
 
-### Community 5 - "NewFake"
-Cohesion: 0.13
-Nodes (64): baseSettings(), engineRunAckErrorLogged(), engineRunAcksOnSuccess(), engineRunAcquireInterruptedByCancel(), engineRunCircuitOpenAndRecover(), engineRunConcurrencyBounded(), engineRunCtxCancelReturnsNil(), engineRunDuplicateDeliveryReachesHandler() (+56 more)
+### Community 5 - "New"
+Cohesion: 0.06
+Nodes (111): go.uber.org/fx/fxevent.Logger, go.uber.org/zap/zaptest/observer.ObservedLogs, Test_jobImpl_Execute(), Test_jobImpl_Execute(), Test_jobImpl_Execute(), Test_jobImpl_Execute(), Test_jobImpl_Execute(), TestEngine_repairIfGone() (+103 more)
 
 ### Community 6 - "actions-shellcheck/main_test.go"
 Cohesion: 0.06
 Nodes (68): failOpenFS, result, step, io/fs.File, io/fs.FS, testing/fstest.MapFS, actionFiles(), appendSymlink() (+60 more)
 
 ### Community 7 - "NewMockUsecaseLayerTracer"
-Cohesion: 0.09
-Nodes (57): go-boilerplate/internal/usecase/boundary/authz/mock.MockAuthorizer, go-boilerplate/internal/usecase/product/ranking/query/mock.MockProductRankingQueryService, go.uber.org/mock/gomock.Controller, New(), TestNew(), TestPrefecture_Code(), TestPrefecture_ID(), TestPrefecture_Name() (+49 more)
+Cohesion: 0.07
+Nodes (63): Withdrawn, go-boilerplate/internal/usecase/boundary/authz/mock.MockAuthorizer, go.uber.org/mock/gomock.Controller, New(), TestNew(), TestPrefecture_Code(), TestPrefecture_ID(), TestPrefecture_Name() (+55 more)
 
-### Community 8 - "env_consistency_test.go"
-Cohesion: 0.17
-Nodes (25): dockerfileStage, statusCodeTier, excludeStatusCodes(), moduleRoot(), parseEnvContent(), parseEnvFile(), policyEnvFiles(), readCommittedFile() (+17 more)
+### Community 8 - "moduleRoot"
+Cohesion: 0.07
+Nodes (56): dockerfileStage, statusCodeTier, aggregateOfDomainPath(), collectDomainAggregateViolations(), domainImportViolation(), Test_aggregateOfDomainPath(), Test_domainImportViolation(), TestDomainAggregateImportIsolation() (+48 more)
 
 ### Community 9 - "cart_domain_test.go"
 Cohesion: 0.07
-Nodes (56): CartItemAttributes, fillItems(), Cart, CartItem, mergeIntoNearFullCart(), newDatedItems(), newMergeSource(), newTestGuestCart() (+48 more)
+Nodes (54): fillItems(), Cart, CartItem, mergeIntoNearFullCart(), newDatedItems(), newMergeSource(), newTestGuestCart(), newTestOwnedCart() (+46 more)
 
-### Community 10 - "DatabaseDriver"
+### Community 10 - "NewDatabaseConfig"
 Cohesion: 0.06
-Nodes (51): openSeedDB(), txManager, github.com/jackc/pgx/v5/pgxpool.Config, systemQuery, NewDatabaseConfig(), NewDBConnectionConfig(), New(), TestNew() (+43 more)
+Nodes (57): buildMigrateInstance(), openSeedDB(), txManager, NewDatabaseConfig(), NewDBConnectionConfig(), NewOperatingSystemConfig(), TestDSNWithTimeZone(), TestDSNWithTimeZoneString() (+49 more)
 
 ### Community 11 - "fx_populate_guard_test.go"
 Cohesion: 0.14
 Nodes (28): collectUnguardedFxPopulate(), containsIdentifier(), enclosingClosure(), funcEndLine(), funcStartLine(), fxNewSite(), hasGuardBefore(), indentWidth() (+20 more)
 
-### Community 12 - "New"
-Cohesion: 0.04
-Nodes (144): txKey, Test_server_GetProductsCount(), NewPrice(), TestNewPrice(), NewCategoryRef(), NewStatusRef(), Test_resolver_Resolve(), DBTX (+136 more)
+### Community 12 - "NewTestDB"
+Cohesion: 0.03
+Nodes (163): go-boilerplate/internal/infrastructure/rdb/sqlc/gen.Products, go-boilerplate/internal/usecase/product/ranking/mock.MockUsecase, Test_server_GetProductsCount(), server, newServer(), Test_limitParam(), Test_server_GetProductsRankingAmount(), Test_server_GetProductsRankingQuantity() (+155 more)
 
-### Community 13 - "newTestCartItem"
-Cohesion: 0.12
-Nodes (34): go-boilerplate/internal/domain/cart/mock.MockRepository, usecase, newClearUsecase(), Test_usecase_ClearCart(), newPassthroughTx(), Test_usecase_GetCart(), expectEnsureOwner(), usecase (+26 more)
+### Community 13 - ".fn"
+Cohesion: 0.09
+Nodes (50): StartFunc, StopFunc, makeStart(), Test_gracefulStop(), Test_runJob(), TestRunJobWith(), usecase, newClearUsecase() (+42 more)
 
 ### Community 14 - "pin-actions/main_test.go"
-Cohesion: 0.08
-Nodes (43): globFiles(), readLock(), agoRFC3339(), githubAPIStub(), githubTimesStub(), stubWD(), Test_applyOrCheck(), Test_collectKeys() (+35 more)
+Cohesion: 0.06
+Nodes (74): ref, rewritePlan, Collect(), ContentLines(), lines(), Test_ContentLines(), applyOrCheck(), collectKeys() (+66 more)
 
 ### Community 15 - "pin-images/main_test.go"
-Cohesion: 0.11
-Nodes (33): dockerfileExemptTagless(), readLock(), captureLog(), composeTarget(), dockerfileTarget(), dockerStubBody(), readAll(), stubWD() (+25 more)
+Cohesion: 0.09
+Nodes (41): readLock(), captureLog(), composeTarget(), dockerfileTarget(), dockerStubBody(), readAll(), stubWD(), Test_applyOrCheck() (+33 more)
 
-### Community 16 - "Purchase"
+### Community 16 - "NewTestFromSalt"
 Cohesion: 0.04
-Nodes (87): canceled, created, createdDetail, delivered, paid, shipped, go-boilerplate/internal/domain/purchase/mock.MockRepository, allEventTypes() (+79 more)
+Nodes (119): paid, shipped, NewAllScope(), TestCategoryRef_ID(), TestCategoryRef_Name(), TestNewCategoryRef(), TestNewStatusRef(), TestStatusRef_ID() (+111 more)
 
 ### Community 17 - "Loader"
 Cohesion: 0.06
-Nodes (56): Application, Auth, ConsumerQueue, Database, DBConnection, Endpoint, Loader, Metrics (+48 more)
+Nodes (58): Application, Auth, ConsumerQueue, Database, DBConnection, Endpoint, Loader, Metrics (+50 more)
 
 ### Community 18 - "rules.md"
 Cohesion: 0.06
-Nodes (19): clock, Implementation, Why Abstract?, exchangerate, Implementation, Why Abstract?, Implementation, token (+11 more)
+Nodes (22): Admission bar, Enforcement, lexicon, Packages, Where a type goes, Why this exists, clock, Implementation (+14 more)
 
-### Community 19 - "repository"
-Cohesion: 0.13
-Nodes (15): go-boilerplate/internal/infrastructure/rdb/sqlc/gen.Products, Products, AllListParams, Counts, ListParams, SearchFilter, SearchFilter, repository (+7 more)
+### Community 19 - "Registry"
+Cohesion: 0.04
+Nodes (85): fakeSleeper, bufio.Reader, go-boilerplate/internal/controller/stream/gen.ControlEvent, go-boilerplate/internal/usecase/realtime/mock.MockReplayer, golang.org/x/sync/semaphore.Weighted, sync/atomic.Bool, stubStreamer, jitteredCatchUp() (+77 more)
 
 ### Community 20 - "repo-setup/main_test.go"
 Cohesion: 0.11
 Nodes (31): fakeRunner, bootstrappableRunner(), captureLog(), commands(), git(), runner, step, initRepo() (+23 more)
 
-### Community 21 - "TracerFactory"
-Cohesion: 0.02
-Nodes (106): server, server, server, service, StatusCountView, SummaryView, Usecase, server (+98 more)
+### Community 21 - "Clock"
+Cohesion: 0.06
+Nodes (53): streamTicket, provideTicketVerifier(), provideTicketIssuer(), provideProductUsecase(), Test_provideProductUsecase(), Repository, HistoryParams, Repository (+45 more)
 
 ### Community 22 - "v1_products_detail_handler_test.go"
 Cohesion: 0.12
-Nodes (31): github.com/oapi-codegen/nullable.Nullable, go-boilerplate/internal/controller/handler/v1/products/detail/gen.PatchProductsDetailRequestObject, go-boilerplate/internal/controller/handler/v1/products/detail/gen.ProductImageInput, go-boilerplate/internal/controller/handler/v1/products/detail/gen.ProductImageItem, go-boilerplate/internal/controller/handler/v1/products/detail/gen.ProductResponse, T, authnContext(), expectedImageItems() (+23 more)
+Nodes (33): github.com/oapi-codegen/nullable.Nullable, go-boilerplate/internal/controller/handler/v1/products/detail/gen.PatchProductsDetailRequestObject, go-boilerplate/internal/controller/handler/v1/products/detail/gen.ProductImageInput, go-boilerplate/internal/controller/handler/v1/products/detail/gen.ProductImageItem, go-boilerplate/internal/controller/handler/v1/products/detail/gen.ProductResponse, T, authnContext(), expectedImageItems() (+25 more)
 
 ### Community 23 - "Repository"
-Cohesion: 0.06
-Nodes (32): Candidate, CandidateView, Result, Usecase, server, go-boilerplate/internal/controller/handler/v1/addresses/gen.AddressCandidate, go-boilerplate/internal/controller/handler/v1/addresses/gen.GetAddressesRequestObject, go-boilerplate/internal/controller/handler/v1/addresses/gen.GetAddressesResponseObject (+24 more)
+Cohesion: 0.10
+Nodes (22): go-boilerplate/internal/controller/handler/v1/prefectures/gen.GetPrefecturesRequestObject, go-boilerplate/internal/controller/handler/v1/prefectures/gen.GetPrefecturesResponseObject, go-boilerplate/internal/controller/handler/v1/prefectures/gen.PrefectureResponse, go-boilerplate/internal/usecase/prefecture/mock.MockUsecase, BindHandler(), echo.Echo, server, newServer() (+14 more)
 
 ### Community 24 - "repo-setup/main.go"
-Cohesion: 0.21
-Nodes (22): runner, step, branchCreationSteps(), branchExists(), branchPushStep(), createBranches(), defaultBranchStep(), execute() (+14 more)
+Cohesion: 0.17
+Nodes (26): runner, step, branchCreationSteps(), branchExists(), branchPushStep(), createBranches(), defaultBranchStep(), execute() (+18 more)
 
 ### Community 25 - "portal/docs-json.ts"
 Cohesion: 0.07
@@ -1235,8 +1261,8 @@ Cohesion: 0.08
 Nodes (48): flag.FlagSet, fakeRunner, runner, step, version, branchSteps(), bump(), execute() (+40 more)
 
 ### Community 28 - "tool-cooldown/main_test.go"
-Cohesion: 0.15
-Nodes (28): net/http.HandlerFunc, captureLog(), fakeUpstream(), offlineClient(), releasedOn(), requestedPath(), respondJSON(), respondStatus() (+20 more)
+Cohesion: 0.05
+Nodes (101): net/http.Client, net/http.HandlerFunc, added(), addedFrom(), appendOutput(), backendKind(), baseDeclarations(), classify() (+93 more)
 
 ### Community 29 - "deny"
 Cohesion: 0.04
@@ -1248,87 +1274,87 @@ Nodes (10): OS, os.FileMode, NewGenerator(), resolveConcurrency(), resolveConcur
 
 ### Community 31 - "one-to-one.gate.test.ts"
 Cohesion: 0.08
-Nodes (33): callbackBody(), checkFile(), checkGroups(), collectDescribeTree(), collectTestableExports(), DescribeNode, exportedNames(), ExportedSymbol (+25 more)
+Nodes (32): callbackBody(), checkFile(), checkGroups(), collectDescribeTree(), collectTestableExports(), DescribeNode, exportedNames(), ExportedSymbol (+24 more)
 
-### Community 32 - "New"
-Cohesion: 0.08
-Nodes (56): Attributes, Attributes, New(), newProduct(), Reconstruct(), mustCategoryRef(), mustImage(), mustPrice() (+48 more)
+### Community 32 - "product_domain_test.go"
+Cohesion: 0.11
+Nodes (45): New(), Attributes, imagesOfCount(), mustCategoryRef(), mustImage(), mustPrice(), mustStatusRef(), newTestProduct() (+37 more)
 
 ### Community 33 - "time.Duration"
-Cohesion: 0.03
-Nodes (19): time.Duration, AuthConfig, DBConnectionConfig, OutboxConfig, ServerConfig, WorkerConfig, NewAuthConfig(), echo.MiddlewareFunc (+11 more)
+Cohesion: 0.06
+Nodes (8): time.Duration, RunRelay(), TestRunRelay(), AuthConfig, DBConnectionConfig, ServerConfig, WorkerConfig, StepClock
 
-### Community 34 - "TestJWKSRotationIntegration"
-Cohesion: 0.12
-Nodes (23): crypto/rsa.PrivateKey, github.com/golang-jwt/jwt/v5.MapClaims, github.com/golang-jwt/jwt/v5.SigningMethod, blockingJWKS, rotatingJWKS, rotClock, signTokenWithTestKID(), Server (+15 more)
+### Community 34 - "sync.Mutex"
+Cohesion: 0.11
+Nodes (25): crypto/rsa.PrivateKey, github.com/golang-jwt/jwt/v5.MapClaims, github.com/golang-jwt/jwt/v5.SigningMethod, sync.Mutex, blockingJWKS, rotatingJWKS, rotClock, signTokenWithTestKID() (+17 more)
 
 ### Community 35 - "graphify-export/main.go"
 Cohesion: 0.12
 Nodes (38): encoding/json.Number, counts, documents, edge, edgeDocument, generator, location, metadata (+30 more)
 
-### Community 36 - "clockModule"
-Cohesion: 0.11
-Nodes (25): authModule(), Test_authModule(), Test_authModule_ProvidesJWKSProfile(), clockModule(), Test_clockModule(), Test_clockModule_GraphIsValid(), collectGroup(), T (+17 more)
+### Community 36 - "NewApplicationConfig"
+Cohesion: 0.09
+Nodes (26): RunServer(), StartMetricsAndResolveStop(), TestRunServer(), TestStartMetricsAndResolveStop(), NewApplicationConfig(), authModule(), provideJWKSDownstreamProfile(), Test_authModule() (+18 more)
 
 ### Community 37 - "openapi/README.md"
-Cohesion: 0.05
-Nodes (37): CI Check, File Generation, File Naming Convention, migrations, Notes, Reference-master table shape, Rules, Running Migrations (+29 more)
+Cohesion: 0.04
+Nodes (50): ADR-0013: Author the spec in modular Redocly files, bundle, then generate, Alternatives Considered, Consequences, Context, Decision, Inline `$ref` using JSON pointer fragments, Negative Consequences, Notes (+42 more)
 
 ### Community 38 - "time.Time"
-Cohesion: 0.08
-Nodes (10): time.Time, IsPublished(), User, Test_validateDeletedAt(), Test_validateProfileFields(), validateDeletedAt(), validateProfileFields(), Copy() (+2 more)
+Cohesion: 0.03
+Nodes (53): Attributes, Event, time.Time, Coupon, Coupons, newCoupon(), Reconstruct(), AllListParams (+45 more)
 
 ### Community 39 - "PurchaseFeedReadModel"
-Cohesion: 0.17
-Nodes (15): feedRow, service, T, toFeedReadModel(), toFeedReadModels(), decodePurchaseCursor(), encodePurchaseCursor(), usecase (+7 more)
+Cohesion: 0.14
+Nodes (18): feedRow, service, T, New(), TestNew(), toFeedReadModel(), toFeedReadModels(), decodePurchaseCursor() (+10 more)
 
-### Community 40 - "NewTestFromSalt"
-Cohesion: 0.06
-Nodes (51): go-boilerplate/internal/infrastructure/rdb/sqlc/gen.PurchaseDetails, BindHandler(), echo.Echo, summaryViewFixture(), Test_server_GetDashboardSummary(), Test_toDashboardSummaryResponse(), TestBindHandler(), detailViewFixture() (+43 more)
+### Community 40 - "Authn"
+Cohesion: 0.05
+Nodes (32): Resource, authnSlot, stubIdentityResolver, EnsurePurchasable(), EnsureWithdrawable(), Authn, NewResource(), TestNewResource() (+24 more)
 
 ### Community 41 - "devDependencies"
 Cohesion: 0.04
-Nodes (47): commander, js-yaml, linkedom, orval, dependencies, commander, js-yaml, linkedom (+39 more)
+Nodes (48): commander, js-yaml, linkedom, orval, dependencies, commander, js-yaml, linkedom (+40 more)
 
 ### Community 42 - "Field"
-Cohesion: 0.17
-Nodes (24): fxEventLogger, go.uber.org/fx/fxevent.Event, httpErrorField(), Test_httpErrorField(), Any(), Bool(), DurationMs(), Error() (+16 more)
+Cohesion: 0.07
+Nodes (47): fxEventLogger, go.uber.org/fx/fxevent.Event, loggedJSON(), Test_httpErrorField(), Any(), Bool(), Field, HTTPRequestLogInput (+39 more)
 
 ### Community 43 - "newCookieRewriteWriter"
-Cohesion: 0.16
-Nodes (19): fakeOrig, minimalResponseWriter, bufio.ReadWriter, net.Conn, net/http.PushOptions, newCookieRewriteWriter(), newFakeOrig(), Test_cookieRewriteWriter_addRewrittenCookies() (+11 more)
+Cohesion: 0.29
+Nodes (15): minimalResponseWriter, newCookieRewriteWriter(), newFakeOrig(), Test_cookieRewriteWriter_addRewrittenCookies(), Test_cookieRewriteWriter_Flush(), Test_cookieRewriteWriter_Header(), Test_cookieRewriteWriter_Hijack(), Test_cookieRewriteWriter_Push() (+7 more)
 
 ### Community 44 - "go-cooldown/main.go"
 Cohesion: 0.22
-Nodes (25): bypass, finding, options, requirement, added(), appendOutput(), classify(), diffAdded() (+17 more)
+Nodes (24): bypass, finding, options, requirement, added(), appendOutput(), classify(), diffAdded() (+16 more)
 
 ### Community 45 - "jwks_test.go"
-Cohesion: 0.15
-Nodes (40): crypto/rsa.PublicKey, go-boilerplate/internal/infrastructure/httpclient/mock.MockClient, sync.Mutex, newRSAKey(), discoveryDoc(), newHTTPSDiscovery(), Test_discoveryResolver_cached(), Test_discoveryResolver_fetch() (+32 more)
+Cohesion: 0.16
+Nodes (39): crypto/rsa.PublicKey, go-boilerplate/internal/infrastructure/httpclient/mock.MockClient, newRSAKey(), discoveryDoc(), newHTTPSDiscovery(), Test_discoveryResolver_cached(), Test_discoveryResolver_fetch(), Test_discoveryResolver_jwksURL() (+31 more)
 
 ### Community 46 - "adr/README.md"
-Cohesion: 0.07
-Nodes (9): Architecture Decision Records (ADR), Conventions, Log, What belongs here (and what does not), Architecture Decisions, Items Dependent on Company Infrastructure Choices, Items Expected to Be Implemented by Users, Items Strongly Dependent on Domain Requirements (+1 more)
+Cohesion: 0.06
+Nodes (17): Architecture Decision Records (ADR), Conventions, Log, What belongs here (and what does not), Items Dependent on Company Infrastructure Choices, Items Expected to Be Implemented by Users, Items Strongly Dependent on Domain Requirements, What This Project Intentionally Does NOT Include (+9 more)
 
 ### Community 47 - "pin-images/main.go"
-Cohesion: 0.19
-Nodes (24): imageRef, target, applyOrCheck(), collectKeys(), detectLooseRefs(), globFiles(), isIgnorableLockErr(), lastColonSplit() (+16 more)
+Cohesion: 0.16
+Nodes (28): imageRef, target, applyOrCheck(), collectKeys(), detectLooseRefs(), digestAgeDays(), earliestCreated(), globFiles() (+20 more)
 
 ### Community 48 - "testing.TB"
-Cohesion: 0.07
-Nodes (14): testing.TB, ApplicationConfig, AuthConfig, ConsumerQueueConfig, DatabaseConfig, DBConnectionConfig, EndpointConfig, MetricsConfig (+6 more)
+Cohesion: 0.06
+Nodes (15): testing.TB, ApplicationConfig, AuthConfig, ConsumerQueueConfig, DatabaseConfig, DBConnectionConfig, EndpointConfig, MetricsConfig (+7 more)
 
-### Community 49 - "ObjectStorageConfig"
-Cohesion: 0.13
-Nodes (13): ObjectStorageConfig, NewObjectStorageConfig(), provideObjectStorage(), Test_provideObjectStorage(), allowPrivateNetworkForEnv(), provideOutboundHTTPClient(), getWith(), newAppCfgForEnv() (+5 more)
+### Community 49 - "provideOutboundHTTPClient"
+Cohesion: 0.39
+Nodes (6): allowPrivateNetworkForEnv(), provideOutboundHTTPClient(), getWith(), newAppCfgForEnv(), Test_allowPrivateNetworkForEnv(), Test_provideOutboundHTTPClient()
 
 ### Community 50 - "TestNewMetricsServer"
-Cohesion: 0.11
-Nodes (18): github.com/labstack/echo/v5/middleware.BasicAuthValidator, logListenError(), metricsServer(), NewMetricsServer(), blockingHandler(), canceledContext(), driveInFlight(), reservePort() (+10 more)
+Cohesion: 0.18
+Nodes (13): logListenError(), metricsServer(), NewMetricsServer(), blockingHandler(), canceledContext(), driveInFlight(), reservePort(), sendUntilConnected() (+5 more)
 
 ### Community 51 - "New"
-Cohesion: 0.06
-Nodes (70): authnSlot, authnSlotKey, go-boilerplate/internal/controller/handler/v1/products/gen.PostProductsImagesRequestObject, go-boilerplate/internal/controller/handler/v1/products/gen.PostProductsImagesResponseObject, AuthnFailure(), GetAuthn(), RequireAuthn(), RequireUserID() (+62 more)
+Cohesion: 0.04
+Nodes (102): authnSlotKey, github.com/getkin/kin-openapi/openapi3filter.AuthenticationFunc, go-boilerplate/internal/controller/handler/v1/users/gen.UserResponse, AuthnFailure(), GetAuthn(), SetAuthn(), SetAuthnFailure(), newTestAuthn() (+94 more)
 
 ### Community 52 - "新機能・改善"
 Cohesion: 0.07
@@ -1339,64 +1365,60 @@ Cohesion: 0.10
 Nodes (35): Header, Method, RequestOption, Request, MethodDelete(), MethodPatch(), MethodPost(), MethodPut() (+27 more)
 
 ### Community 54 - "commonDeps"
-Cohesion: 0.09
-Nodes (31): authzModule(), Test_authzModule(), Test_authzModule_GraphIsValid(), commonDeps(), validateGraph(), InfrastructureModule(), TestInfrastructureModule(), TestInfrastructureModule_GraphIsValid() (+23 more)
+Cohesion: 0.05
+Nodes (72): authzModule(), Test_authzModule(), Test_authzModule_GraphIsValid(), clockModule(), Test_clockModule(), Test_clockModule_GraphIsValid(), collectGroup(), commonDeps() (+64 more)
 
-### Community 55 - "sync-versions/main.go"
-Cohesion: 0.24
-Nodes (20): regexp.Regexp, applyMiseKV(), buildRules(), computeChanges(), dockerfileRule(), emptyAs(), fromReplacer(), main() (+12 more)
+### Community 55 - "sync-versions/main_test.go"
+Cohesion: 0.12
+Nodes (39): regexp.Regexp, applyMiseKV(), buildRules(), computeChanges(), dockerfileRule(), emptyAs(), fromReplacer(), main() (+31 more)
 
 ### Community 56 - "http_client_transport.go"
-Cohesion: 0.10
-Nodes (26): dialControl, net/http.RoundTripper, net/http.Transport, syscall.RawConn, TestNewHTTPClientTransport(), allowPrivateNetworkFromContext(), ContextWithAllowPrivateNetwork(), HTTPClientTransport (+18 more)
+Cohesion: 0.21
+Nodes (13): syscall.RawConn, allowPrivateNetworkFromContext(), ContextWithAllowPrivateNetwork(), guardedDialControl(), Test_guardedDialControl(), permissiveDialControl(), Test_allowPrivateNetworkFromContext(), Test_permissiveDialControl() (+5 more)
 
 ### Community 57 - "httpstack"
 Cohesion: 0.13
 Nodes (16): Request Lifecycle Sentinels, Request Body Limit Middleware, Early Payload Rejection, HTTP Error Handler, Fail-Closed Error Details, Explicit Content-Type Preservation, JSON Content-Type Normalizer, Client IP Extractor (+8 more)
 
 ### Community 58 - "infrastructure/README.md"
-Cohesion: 0.03
-Nodes (52): Credentials: one path, not a choice, Fail-fast, infrastructure/awsclient, Notes, Role, Two HTTP clients, because they guard different things, Architectural Position, Design Policy (+44 more)
+Cohesion: 0.02
+Nodes (74): Credentials: one path, not a choice, Fail-fast, infrastructure/awsclient, Notes, Role, Two HTTP clients, because they guard different things, infrastructure/dynamodbclient, Test strategy (+66 more)
 
 ### Community 59 - "Message"
-Cohesion: 0.13
-Nodes (3): Message, FailedRecord, Fake
+Cohesion: 0.07
+Nodes (16): newKeyedDispatcher(), Test_newKeyedDispatcher(), Test_keyedDispatcher_dispatch(), Test_keyedDispatcher_runKey(), normalizeError(), Test_normalizeError(), Test_toMessage(), Test_visibilitySeconds() (+8 more)
 
 ### Community 60 - "load-band/main_test.go"
 Cohesion: 0.13
 Nodes (35): band, advice(), bandFor(), countWindows(), golangciConcurrencyFlag(), goTestLoadEnv(), goTestPFlag(), main() (+27 more)
 
-### Community 61 - "seed"
-Cohesion: 0.10
-Nodes (18): Difference from Migrations, Execution, Naming Convention, Notes, Placeholders, Role, seed, Command (+10 more)
+### Community 61 - "migrations"
+Cohesion: 0.05
+Nodes (37): CI Check, File Generation, File Naming Convention, migrations, Notes, Reference-master table shape, Rules, Running Migrations (+29 more)
 
-### Community 62 - "Engine"
-Cohesion: 0.10
-Nodes (14): sync/atomic.Bool, sync/atomic.Int64, Settings, state, NewState(), Test_state_Set(), Test_state_Snapshot(), TestNewState() (+6 more)
+### Community 62 - "WorkerMetrics"
+Cohesion: 0.06
+Nodes (26): go-boilerplate/internal/usecase/boundary/worker/mock.MockWorker, sync/atomic.Int64, NewWorkerConfig(), Settings, state, NewState(), Test_state_Set(), Test_state_Snapshot() (+18 more)
 
 ### Community 63 - "sanitized-document.ts"
-Cohesion: 0.12
-Nodes (18): parseMarkdownDocument(), collectElements(), firstElement(), tagNamesOf(), DOCUMENT_BLOCK_TAG_NAMES, DOCUMENT_CODE_CLASS_PATTERN, DOCUMENT_INLINE_TAG_NAMES, DOCUMENT_LINK_PROTOCOLS (+10 more)
+Cohesion: 0.14
+Nodes (13): DOCUMENT_BLOCK_TAG_NAMES, DOCUMENT_CODE_CLASS_PATTERN, DOCUMENT_INLINE_TAG_NAMES, DOCUMENT_LINK_PROTOCOLS, DOCUMENT_SANITIZE_SCHEMA, DOCUMENT_STRIPPED_TAG_NAMES, DOCUMENT_TAG_NAMES, dropProtocolRelativeUrls() (+5 more)
 
-### Community 64 - "NewOperatingSystemConfig"
-Cohesion: 0.05
-Nodes (52): AuthConfig, ConsumerQueueConfig, DatabaseConfig, DBConnectionConfig, EndpointConfig, stubDetailPolicy, ApplicationConfig, Config (+44 more)
-
-### Community 65 - "ADR-0013: Author the spec in modular Redocly files, bundle, then generate"
-Cohesion: 0.18
-Nodes (11): ADR-0013: Author the spec in modular Redocly files, bundle, then generate, Alternatives Considered, Consequences, Context, Decision, Inline `$ref` using JSON pointer fragments, Negative Consequences, Notes (+3 more)
+### Community 65 - "module/realtime_test.go"
+Cohesion: 0.04
+Nodes (58): go-boilerplate/internal/infrastructure/realtime.AttributesBuilder, go-boilerplate/internal/infrastructure/realtime.ClientConfig, go-boilerplate/internal/infrastructure/realtime.Clients, RealtimeConfig, Settings, newRealtimeFanout(), newStreamSettings(), provideEventLogStore() (+50 more)
 
 ### Community 66 - "NewRequest"
-Cohesion: 0.10
-Nodes (53): net/http/httptest.Server, sync/atomic.Int32, errReader, Profile, staticRegistry, provideJWKSDownstreamProfile(), provideHTTPClientRegistry(), Test_provideHTTPClientRegistry() (+45 more)
+Cohesion: 0.15
+Nodes (40): net/http/httptest.Server, sync/atomic.Int32, errReader, Test_client_attempt(), Test_client_canRetryWithin(), Test_client_doWithRetry(), Test_client_recordOutcome(), Test_readBody() (+32 more)
 
 ### Community 67 - "extension.go"
 Cohesion: 0.12
 Nodes (34): middlewareEntry, PreMiddleware, ServerExtends, SrvCfg, UseMiddleware, go.uber.org/fx.Out, ApplyConfigurators(), ApplyExtends() (+26 more)
 
 ### Community 68 - "New"
-Cohesion: 0.17
-Nodes (13): github.com/jackc/pgx/v5/pgxpool.Stat, github.com/prometheus/client_golang/prometheus.Registerer, github.com/prometheus/client_golang/prometheus.ValueType, New(), NewRegisterer(), RegisterPoolStatsCollector(), TestNew(), TestNewRegisterer() (+5 more)
+Cohesion: 0.20
+Nodes (12): github.com/prometheus/client_golang/prometheus.Registerer, github.com/prometheus/client_golang/prometheus.ValueType, New(), NewRegisterer(), RegisterPoolStatsCollector(), TestNew(), TestNewRegisterer(), TestPoolStatsCollector_Collect() (+4 more)
 
 ### Community 69 - "Usecase Boundary Catalog"
 Cohesion: 0.05
@@ -1407,44 +1429,44 @@ Cohesion: 0.04
 Nodes (48): 1. Writing business logic, 2. Creating DTO, 3. Returning sqlc Row as-is, 4. Writing QueryService, 5. Starting transaction, 6. Referencing Controller type, 7. Defining Domain interface in Infra, About LIKE search (+40 more)
 
 ### Community 71 - "cn"
-Cohesion: 0.13
-Nodes (14): cn(), Card(), CardAction(), CardContent(), CardDescription(), CardFooter(), CardHeader(), CardTitle() (+6 more)
+Cohesion: 0.10
+Nodes (26): cn(), Card(), CardAction(), CardContent(), CardDescription(), CardFooter(), CardHeader(), CardTitle() (+18 more)
 
 ### Community 72 - "input-group.tsx"
 Cohesion: 0.09
-Nodes (29): Button(), ButtonProps, buttonVariants, BUTTON_SIZE, BUTTON_VARIANT, ButtonSize, ButtonVariant, INPUT_GROUP_ADDON_ALIGN (+21 more)
+Nodes (24): INPUT_GROUP_ADDON_ALIGN, INPUT_GROUP_BUTTON_SIZE, InputGroupAddonAlign, InputGroupButtonSize, InputGroup(), InputGroupAddon(), InputGroupAddonProps, inputGroupAddonVariants (+16 more)
 
-### Community 73 - "newServer"
-Cohesion: 0.21
-Nodes (11): go-boilerplate/internal/usecase/product/mock.MockUsecase, mime/multipart.Reader, newPostProductsRequest(), Test_server_PostProducts(), server, newServer(), readImagePart(), authnContext() (+3 more)
+### Community 73 - "authnContext"
+Cohesion: 0.23
+Nodes (9): go-boilerplate/internal/controller/handler/v1/products/gen.PostProductsImagesRequestObject, go-boilerplate/internal/controller/handler/v1/products/gen.PostProductsImagesResponseObject, mime/multipart.Reader, server, readImagePart(), authnContext(), newImageMultipartReader(), Test_readImagePart() (+1 more)
 
-### Community 74 - "propagation_test.go"
-Cohesion: 0.11
-Nodes (16): go.opentelemetry.io/otel/propagation.TextMapCarrier, go.opentelemetry.io/otel/propagation.TextMapPropagator, go.opentelemetry.io/otel/trace.SpanContext, run, ExtractFromCarrier(), injectToCarrier(), InjectTraceContextToCarrier(), Test_extractFromCarrier() (+8 more)
+### Community 74 - "extractFromCarrier"
+Cohesion: 0.15
+Nodes (14): go.opentelemetry.io/otel/trace.SpanContext, run, ExtractFromCarrier(), extractFromCarrier(), Test_extractFromCarrier(), Test_injectToCarrier(), Test_mapCarrier_Get(), Test_mapCarrier_Keys() (+6 more)
 
 ### Community 75 - "closed-loop/index.ts"
 Cohesion: 0.10
-Nodes (29): claudeDir, codexDir, listJsonl(), MARKS_DIR, marksReader, period, readSessions(), REPO_ROOT (+21 more)
+Nodes (30): summarizeSession(), claudeDir, codexDir, listJsonl(), MARKS_DIR, marksReader, period, readSessions() (+22 more)
 
-### Community 76 - "Wrap"
-Cohesion: 0.02
-Nodes (113): PgxAdmin, github.com/aws/aws-sdk-go-v2/service/s3.Client, go-boilerplate/internal/controller/handler/v1/products/count/gen.GetProductsCountRequestObject, go-boilerplate/internal/controller/handler/v1/products/count/gen.GetProductsCountResponseObject, go-boilerplate/internal/controller/handler/v1/products/detail/gen.GetProductsDetailRequestObject, go-boilerplate/internal/controller/handler/v1/products/detail/gen.GetProductsDetailResponseObject, go-boilerplate/internal/controller/handler/v1/products/detail/gen.PatchProductsDetailResponseObject, go-boilerplate/internal/controller/handler/v1/products/detail/gen.PatchProductsStockRequestObject (+105 more)
+### Community 76 - "ProductView"
+Cohesion: 0.07
+Nodes (46): go-boilerplate/internal/controller/handler/v1/products/gen.GetProductsParamsSort, go-boilerplate/internal/controller/handler/v1/products/gen.PostProductsRequestObject, go-boilerplate/internal/controller/handler/v1/products/gen.PostProductsResponseObject, go-boilerplate/internal/controller/handler/v1/products/gen.ProductImageInput, go-boilerplate/internal/controller/handler/v1/products/gen.ProductImageItem, go-boilerplate/internal/controller/handler/v1/products/gen.ProductResponse, go-boilerplate/internal/controller/handler/v1/products/lowstock/gen.GetProductsLowStockRequestObject, go-boilerplate/internal/controller/handler/v1/products/lowstock/gen.GetProductsLowStockResponseObject (+38 more)
 
 ### Community 77 - "go-cooldown/main_test.go"
-Cohesion: 0.12
-Nodes (32): roundTripFunc, captureLog(), day(), infoBody(), initGoModRepo(), keysOf(), proxyResponse(), stubProxy() (+24 more)
+Cohesion: 0.13
+Nodes (29): roundTripFunc, captureLog(), day(), infoBody(), initGoModRepo(), keysOf(), proxyResponse(), stubProxy() (+21 more)
 
 ### Community 78 - "New"
 Cohesion: 0.04
-Nodes (65): Attributes, go-boilerplate/internal/domain/product/category/mock.MockRepository, go-boilerplate/internal/domain/product/status/mock.MockRepository, TestUUID(), TestUUIDPtr(), Categories, Category, New() (+57 more)
+Nodes (50): Attributes, TestUUID(), TestUUIDPtr(), provideInstanceID(), Categories, Category, New(), TestCategory_Code() (+42 more)
 
 ### Community 79 - "remove-licensed-scanners/index.ts"
-Cohesion: 0.10
-Nodes (31): toAbsolutePath(), updateFile(), assertCleanWorktree(), commitPaths(), DirtyWorktreeError, git(), commitCount(), git() (+23 more)
+Cohesion: 0.09
+Nodes (30): removeEgressSections(), updateFile(), assertCleanWorktree(), commitPaths(), DirtyWorktreeError, git(), commitCount(), git() (+22 more)
 
 ### Community 80 - "PrometheusRecorder"
-Cohesion: 0.19
-Nodes (14): github.com/prometheus/client_golang/prometheus.CounterVec, github.com/prometheus/client_golang/prometheus.HistogramVec, PrometheusRecorder, ignoreAlreadyRegistered(), NewPrometheusRecorder(), RegisterRecorder(), collectMetrics(), Test_ignoreAlreadyRegistered() (+6 more)
+Cohesion: 0.14
+Nodes (18): github.com/prometheus/client_golang/prometheus.CounterVec, github.com/prometheus/client_golang/prometheus.HistogramVec, PrometheusRecorder, Recorder, NewPrometheusRecorder(), RegisterRecorder(), collectMetrics(), TestNewPrometheusRecorder() (+10 more)
 
 ### Community 81 - "sqlc.yaml Options Affecting Go Code Generation (sqlc / PostgreSQL — pinned version in `mise.toml`)"
 Cohesion: 0.05
@@ -1454,21 +1476,21 @@ Nodes (43): 10. Build Tags & JSON Case Style, 1. Output & Package Configuration,
 Cohesion: 0.08
 Nodes (35): 401 Unauthorized Response, Invalid Field Details, 422 Unprocessable Entity Response, Nonpersistent Degraded Currency Conversion, Reference Currency Amount, Go Boilerplate OpenAPI Specification, OpenAPI-First Contract, OpenAPI Parameter Reference Guide (+27 more)
 
-### Community 83 - "NewMeta"
-Cohesion: 0.13
-Nodes (22): Meta, plainError, fmt.State, MetaError, MetaFrom(), NewMeta(), asMetaError(), TestMeta_Code() (+14 more)
+### Community 83 - "MetaFrom"
+Cohesion: 0.09
+Nodes (30): Meta, plainError, fmt.State, MetaError, MetaFrom(), NewMeta(), asMetaError(), TestMeta_Code() (+22 more)
 
-### Community 84 - "pin-actions/main.go"
-Cohesion: 0.16
-Nodes (27): ref, rewritePlan, applyOrCheck(), collectKeys(), daysSince(), detectLooseUses(), fileRefs(), githubGet() (+19 more)
+### Community 84 - "InstanceID"
+Cohesion: 0.06
+Nodes (47): cleanupFixture, NewHeartbeat(), newHeartbeat(), TestHeartbeat_Run(), TestNewHeartbeat(), leaseExists(), queueURLs(), TestRealtimeProvisionerContract() (+39 more)
 
 ### Community 85 - "RunFix"
 Cohesion: 0.10
 Nodes (21): Generator, OS, go-boilerplate/pkg/exec/mock.MockRunner, go-boilerplate/pkg/fs/mock.MockFS, NewGenerator(), sanitizeSchema(), Generator, newTestGenerator() (+13 more)
 
-### Community 86 - "remove-boilerplate-identity/index.ts"
-Cohesion: 0.16
-Nodes (19): listFilesRecursive(), toRelativePath(), deletePaths(), program, run(), selfDestruct(), stripFiles(), StrippedFile (+11 more)
+### Community 86 - "markers.ts"
+Cohesion: 0.09
+Nodes (34): blockTransition(), cut(), keep(), keepMarked(), LineOutcome, markerPattern(), MarkerPatterns, replaceTransition() (+26 more)
 
 ### Community 87 - "route_spec_parity_test.go"
 Cohesion: 0.17
@@ -1476,11 +1498,11 @@ Nodes (20): echoRouteScan, routeIndex, routeRegistration, assertOpaque(), echoFu
 
 ### Community 88 - "AssertEchoRouterMethods"
 Cohesion: 0.03
-Nodes (65): echo.Routes, go-boilerplate/internal/controller/handler/ready/gen.GetReadyRequestObject, go-boilerplate/internal/controller/handler/ready/gen.GetReadyResponseObject, go-boilerplate/internal/usecase/exchangerate/mock.MockUsecase, go-boilerplate/internal/usecase/healthcheck.Usecase, go-boilerplate/internal/usecase/prefecture/mock.MockUsecase, go-boilerplate/internal/usecase/product/status/mock.MockUsecase, Test_server_GetHealth() (+57 more)
+Nodes (65): echo.Routes, github.com/labstack/echo/v5/middleware.BasicAuthValidator, go-boilerplate/internal/controller/handler/healthz/gen.GetHealthzRequestObject, go-boilerplate/internal/controller/handler/healthz/gen.GetHealthzResponseObject, go-boilerplate/internal/controller/handler/v1/inquiries/feed/streamticket/gen.PostInquiriesFeedStreamTicketRequestObject, go-boilerplate/internal/controller/handler/v1/inquiries/feed/streamticket/gen.PostInquiriesFeedStreamTicketResponseObject, go-boilerplate/internal/controller/handler/v1/users/search/gen.GetUsersSearchRequestObject, go-boilerplate/internal/controller/handler/v1/users/search/gen.GetUsersSearchResponseObject (+57 more)
 
-### Community 89 - "LogFieldBuilder"
-Cohesion: 0.10
-Nodes (24): echo.Context, echo.MiddlewareFunc, echo.Response, Middleware(), GetRequestIDFromResponse(), echo.Context, BuildHTTPRequestLogInput(), ExtractPathParams() (+16 more)
+### Community 89 - "New"
+Cohesion: 0.06
+Nodes (38): github.com/getkin/kin-openapi/openapi3.SecurityScheme, echo.Context, echo.MiddlewareFunc, echo.Response, Middleware(), loggedJSON(), Test_requestLog_buildRequestLogFields(), Test_requestLog_buildResponseLogFields() (+30 more)
 
 ### Community 90 - "RuneCount"
 Cohesion: 0.11
@@ -1492,27 +1514,27 @@ Nodes (31): listSurvivingComponents(), main(), readDanglingHits(), readGitStatus
 
 ### Community 92 - "checks.ts"
 Cohesion: 0.11
-Nodes (24): allowlistLocation(), asRepoPath(), collectMakeTargets(), compareHeadingStructure(), CONFIG_FILE_RE, eachLineOutsideFence(), EXCLUDE_DIRS, EXTERNAL_SKILLS (+16 more)
+Nodes (26): RFC-7235, allowlistLocation(), asRepoPath(), collectMakeTargets(), CONFIG_FILE_RE, eachLineOutsideFence(), EXCLUDE_DIRS, expandBraces() (+18 more)
 
 ### Community 93 - "Decimal"
-Cohesion: 0.11
-Nodes (5): rateResponse, github.com/shopspring/decimal.Decimal, Decimal, fromShopspring(), Test_fromShopspring()
+Cohesion: 0.09
+Nodes (5): database/sql/driver.Value, github.com/shopspring/decimal.Decimal, Decimal, fromShopspring(), Test_fromShopspring()
 
-### Community 94 - "NormalizeError"
-Cohesion: 0.04
-Nodes (72): Attributes, SetItemAttributes, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.Carts, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.ListActiveUsersParams, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.ListCartItemsByCartIDRow, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.ListDeletedUsersParams, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.ListUsersParams, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.Queries (+64 more)
+### Community 94 - "context.Context"
+Cohesion: 0.02
+Nodes (103): service, stubDriver, stubTx, context.Context, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.Carts, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.Coupons, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.GetUserRolesByUserIDRow, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.Inquiries (+95 more)
 
 ### Community 95 - "server hook"
-Cohesion: 0.05
-Nodes (37): Echo context utilities, Notes, Role, server, Server construction, Test Strategy, core module, Design Policy (+29 more)
+Cohesion: 0.04
+Nodes (50): Echo context utilities, Notes, Role, server, Server construction, Test Strategy, core module, Design Policy (+42 more)
 
 ### Community 96 - "RelayUsecase"
-Cohesion: 0.15
-Nodes (21): Store, Publisher, decodeHeaders(), Metrics, RelayUsecase, deliverMessage(), Metrics, newDeliverUsecase() (+13 more)
+Cohesion: 0.09
+Nodes (36): provideRelayUsecase(), New(), TestNew(), Store, Publisher, GCUsecase, NewGC(), Test_gcUsecase_SweepPublished() (+28 more)
 
 ### Community 97 - "send/index.ts"
-Cohesion: 0.10
-Nodes (27): FINDING_KINDS, branch, DRY_RUN, gh(), INDEX_FILE, localSummary(), MARKS_DIR, marksReader (+19 more)
+Cohesion: 0.09
+Nodes (29): Candidate, looksSecret(), FINDING_KINDS, branch, DRY_RUN, gh(), INDEX_FILE, localSummary() (+21 more)
 
 ### Community 98 - "remove-sample-api/index.ts"
 Cohesion: 0.13
@@ -1523,7 +1545,7 @@ Cohesion: 0.04
 Nodes (45): Aggregate, Anticorruption Layer, Context Map, DDD Pattern Ledger, Domain Event, Layered Architecture, Published Language, Repository (+37 more)
 
 ### Community 100 - "score.ts"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (20): ADR-0008, Cluster, clusterIssues(), clusterKey(), DEFAULT_WEIGHTS, failureRate(), FeedbackIssue, FindingKind (+12 more)
 
 ### Community 101 - "genctxkey/generator.go"
@@ -1535,40 +1557,40 @@ Cohesion: 0.17
 Nodes (19): breaker, BreakerConfig, breakerManager, breakerState, newBreaker(), newBreakerManager(), recordClosedFailures(), Test_breaker_allow() (+11 more)
 
 ### Community 103 - "run"
-Cohesion: 0.11
-Nodes (10): context.CancelFunc, sync.WaitGroup, classify(), Engine, run, msSince(), Test_msSince(), msgFields() (+2 more)
+Cohesion: 0.12
+Nodes (9): sync.WaitGroup, classify(), Engine, run, msSince(), Test_msSince(), msgFields(), Test_msgFields() (+1 more)
 
 ### Community 104 - "NewMockClock"
 Cohesion: 0.13
-Nodes (33): Authenticator, buildAuthenticator(), buildJWKSURLProvider(), extractScopes(), New(), NewJWKS(), NewWithKeyResolver(), newAuthenticator() (+25 more)
+Nodes (32): Authenticator, buildAuthenticator(), buildJWKSURLProvider(), extractScopes(), New(), NewJWKS(), NewWithKeyResolver(), newAuthenticator() (+24 more)
 
 ### Community 105 - "Job Controller Layer (`internal/controller/job`) Guide"
 Cohesion: 0.05
 Nodes (38): 1. Starting and Ending a Span in the Controller Layer, 2. DI of Tracer (observability.LayerTracer), Architecture, DI (Dependency Injection) Mechanism, Differences Between Job Controller and HTTP Controller, Do, Do's and Don'ts (Summary), Don’t (+30 more)
 
 ### Community 106 - "premise-lint/rules.ts"
-Cohesion: 0.10
-Nodes (26): line(), ALLOWANCES, EXCLUDED_DIRECTORIES, EXCLUDED_PREFIXES, findings, listMarkdown(), REPO_ROOT, Allowance (+18 more)
+Cohesion: 0.11
+Nodes (25): ALLOWANCES, EXCLUDED_DIRECTORIES, EXCLUDED_PREFIXES, findings, listMarkdown(), REPO_ROOT, Allowance, ALLOWED_PREFIXES (+17 more)
 
-### Community 107 - "tool-cooldown/main.go"
-Cohesion: 0.19
-Nodes (22): net/http.Client, appendOutput(), backendKind(), declarationPaths(), escapeModulePath(), getJSON(), githubReleaseAt(), goModuleAt() (+14 more)
+### Community 107 - "github.com/aws/aws-sdk-go-v2/service/dynamodb.Client"
+Cohesion: 0.07
+Nodes (50): github.com/aws/aws-sdk-go-v2/service/dynamodb.Client, github.com/aws/aws-sdk-go-v2/service/dynamodb/types.AttributeDefinition, github.com/aws/aws-sdk-go-v2/service/dynamodb/types.AttributeValue, github.com/aws/aws-sdk-go-v2/service/dynamodb/types.AttributeValueMemberN, github.com/aws/aws-sdk-go-v2/service/dynamodb/types.GlobalSecondaryIndex, github.com/aws/aws-sdk-go-v2/service/dynamodb/types.KeySchemaElement, github.com/aws/smithy-go/middleware.Stack, provideRealtimeClient() (+42 more)
 
-### Community 108 - "net/http.Header"
-Cohesion: 0.15
-Nodes (5): cookieRewriteWriter, badWriter, net/http.Header, net/http.ResponseWriter, unwrappableWriter
+### Community 108 - "cookieRewriteWriter"
+Cohesion: 0.23
+Nodes (3): cookieRewriteWriter, net/http.ResponseWriter, unwrappableWriter
 
 ### Community 109 - "Outbox Subsystem Design Reference"
 Cohesion: 0.13
 Nodes (15): 1. Role theory (what, and what for), 2.1 Outbox row lifecycle (`status` column: `pending` / `published` / `dead`), 2.2 Relay poll loop (`Engine.Run` + `RelayUsecase.RelayBatch`), 2. State transitions, 3.1 Package placement and dependency direction, 3.2 Per-batch action sequence (relay process), 3. Implementation locations (where in the architecture it lives and acts), 4. What an integrator implements (the parts the subsystem does not provide) (+7 more)
 
 ### Community 110 - "workflow.ts"
-Cohesion: 0.11
-Nodes (24): Finding, formatFindings(), splitJobs(), SplitWorkflow, toLine(), usesActionPattern(), WorkflowJob, WorkflowLine (+16 more)
+Cohesion: 0.14
+Nodes (19): splitJobs(), SplitWorkflow, toLine(), usesActionPattern(), WorkflowJob, WorkflowLine, WorkflowStep, ALLOWED_SECRET (+11 more)
 
 ### Community 111 - "NewRole"
-Cohesion: 0.07
-Nodes (37): go-boilerplate/internal/controller/handler/v1/users/me/roles/gen.GetUsersMeRolesRequestObject, go-boilerplate/internal/controller/handler/v1/users/me/roles/gen.GetUsersMeRolesResponseObject, go-boilerplate/internal/controller/handler/v1/users/me/roles/gen.UserRolesResponse, BindHandler(), echo.Echo, rolesViewFixture(), Test_server_GetUsersMeRoles(), Test_toUserRolesResponse() (+29 more)
+Cohesion: 0.05
+Nodes (46): go-boilerplate/internal/controller/handler/v1/users/me/roles/gen.GetUsersMeRolesRequestObject, go-boilerplate/internal/controller/handler/v1/users/me/roles/gen.GetUsersMeRolesResponseObject, go-boilerplate/internal/controller/handler/v1/users/me/roles/gen.UserRolesResponse, BindHandler(), echo.Echo, authnContext(), rolesViewFixture(), Test_server_GetUsersMeRoles() (+38 more)
 
 ### Community 112 - "internal/observability"
 Cohesion: 0.05
@@ -1579,68 +1601,68 @@ Cohesion: 0.05
 Nodes (37): 1. Application Execution, 2. Execution Profile Switching, 3. Environment-Based Dependency Switching, Adapter — explicit wiring only (never forced into the default graph), Assemble dependencies, Bring frameworks into Domain / Usecase, Composition Root, Core — always wired (shared substrate) (+29 more)
 
 ### Community 114 - "MakeAvailableAuthn"
-Cohesion: 0.04
-Nodes (66): server, github.com/oapi-codegen/runtime/types.Email, go-boilerplate/internal/controller/handler/v1/users/detail/gen.DeleteUsersDetailRequestObject, go-boilerplate/internal/controller/handler/v1/users/detail/gen.DeleteUsersDetailResponseObject, go-boilerplate/internal/controller/handler/v1/users/detail/gen.GetUsersDetailRequestObject, go-boilerplate/internal/controller/handler/v1/users/detail/gen.GetUsersDetailResponseObject, go-boilerplate/internal/controller/handler/v1/users/detail/gen.GetUsersMeRequestObject, go-boilerplate/internal/controller/handler/v1/users/detail/gen.GetUsersMeResponseObject (+58 more)
+Cohesion: 0.09
+Nodes (31): go-boilerplate/internal/controller/handler/v1/users/detail/gen.UserResponse, go-boilerplate/internal/controller/handler/v1/users/feed/gen.UserResponse, go-boilerplate/internal/controller/handler/v1/users/search/gen.UsersSearchResponseItem, go-boilerplate/internal/usecase/user/mock.MockUsecase, go-boilerplate/internal/usecase/user/search/mock.MockUsecase, MakeAvailableAuthn(), TestMakeAvailableAuthn(), RequestUUID() (+23 more)
 
-### Community 115 - "newTestStore"
-Cohesion: 0.42
-Nodes (13): assertSkipLockedContention(), canceledContext(), emitParams(), store, newTestStore(), Test_store_ClaimPending(), Test_store_DeletePublished(), Test_store_Insert() (+5 more)
+### Community 115 - "outbox_system_cqrs_test.go"
+Cohesion: 0.29
+Nodes (18): assertSkipLockedContention(), canceledContext(), emitParams(), store, newTestStore(), orderedEmitParams(), Test_store_ClaimPending(), Test_store_ClaimPending_channelIsolation() (+10 more)
 
-### Community 116 - "sync-versions/main_test.go"
-Cohesion: 0.17
-Nodes (19): atRoot(), captureLog(), readSynced(), ruleByLabel(), Test_applyMiseKV(), Test_buildRules(), Test_dockerfileRule(), Test_emptyAs() (+11 more)
+### Community 116 - "Sequence"
+Cohesion: 0.07
+Nodes (41): parseCursor(), resolveCursor(), Test_parseCursor(), Test_resolveCursor(), DeliveryEvent, Sequence, StreamID, ParseDeliveryEvent() (+33 more)
 
 ### Community 117 - "doc-ref-lint/index.ts"
 Cohesion: 0.12
 Nodes (28): adr, files, findings, readRepositoryFile(), repositoryPath(), root, skip, write (+20 more)
 
-### Community 118 - "BindHandler"
-Cohesion: 0.29
-Nodes (6): go-boilerplate/internal/controller/handler/v1/users/search/gen.GetUsersSearchRequestObject, go-boilerplate/internal/controller/handler/v1/users/search/gen.GetUsersSearchResponseObject, go-boilerplate/internal/usecase/user/search.Usecase, BindHandler(), echo.Echo, server
+### Community 118 - "NewTestClient"
+Cohesion: 0.07
+Nodes (49): DeleteOnCleanup(), NewTestClient(), TableName(), TestDeleteOnCleanup(), TestNewTestClient(), TestTableName(), event(), store (+41 more)
 
 ### Community 119 - "unit_test_mapping_completeness_test.go"
-Cohesion: 0.19
-Nodes (20): prodSubject, io/fs.DirEntry, TestFxPopulateHasConstructionErrorGuard(), collectInlineXerrorsNew(), Test_collectInlineXerrorsNew(), TestNoInlineXerrorsNew(), collectSubjects(), collectViolations() (+12 more)
+Cohesion: 0.11
+Nodes (32): prodSubject, io/fs.DirEntry, TestFxPopulateHasConstructionErrorGuard(), collectInlineXerrorsNew(), Test_collectInlineXerrorsNew(), TestNoInlineXerrorsNew(), collectSkipReasonViolations(), commentStart() (+24 more)
 
 ### Community 120 - "queryTracer"
-Cohesion: 0.10
-Nodes (23): fakeQueryRecorder, queryLogData, queryLogKey, queryTracer, go-boilerplate/internal/logging/mock.MockLogger, TestStartTestSpanForEcho(), QueryRecorder, pgx.Conn (+15 more)
+Cohesion: 0.23
+Nodes (7): queryLogData, queryLogKey, queryTracer, QueryRecorder, pgx.Conn, pgx.TraceQueryEndData, pgx.TraceQueryStartData
 
-### Community 121 - "HTTPClientMetrics"
-Cohesion: 0.08
-Nodes (29): buildRequest(), client, Request, Profile, Registry, Test_noFollowRedirect(), noFollowRedirect(), readBody() (+21 more)
+### Community 121 - ".attempt"
+Cohesion: 0.09
+Nodes (30): buildRequest(), client, Request, Profile, Registry, Test_noFollowRedirect(), noFollowRedirect(), readBody() (+22 more)
 
-### Community 122 - "Middleware"
-Cohesion: 0.08
-Nodes (27): ctxKeyForTest, IdentityResolver, github.com/getkin/kin-openapi/openapi3filter.AuthenticationFunc, github.com/labstack/echo/v5/middleware.Skipper, passthroughResolver, authExtractor(), extractBearerToken(), NewAuthenticator() (+19 more)
+### Community 122 - "NewAuthenticator"
+Cohesion: 0.11
+Nodes (21): ctxKeyForTest, IdentityResolver, SchemeAuthenticator, stubScheme, github.com/getkin/kin-openapi/openapi3filter.AuthenticationInput, passthroughResolver, authExtractor(), extractBearerToken() (+13 more)
 
 ### Community 123 - "weekly/index.ts"
 Cohesion: 0.09
 Nodes (34): buildConcernPrompt(), Concern, INTEGRATION_LABEL, parseConcerns(), renderIntegrationBody(), renderRollupComment(), ROLLED_UP_REASON, rollupDestinations() (+26 more)
 
-### Community 124 - "toCartItemResponses"
-Cohesion: 0.13
-Nodes (17): go-boilerplate/internal/controller/handler/v1/carts/items/gen.CartItemIssue, go-boilerplate/internal/controller/handler/v1/carts/items/gen.CartItemResponse, go-boilerplate/internal/controller/handler/v1/carts/items/gen.CartResponse, go-boilerplate/internal/controller/handler/v1/carts/items/gen.PutCartsMeItemRequestObject, go-boilerplate/internal/controller/handler/v1/carts/items/gen.PutCartsMeItemResponseObject, BindHandler(), echo.Echo, Test_toAvailableQuantity() (+9 more)
+### Community 124 - "Cart"
+Cohesion: 0.09
+Nodes (37): Attributes, SetItemAttributes, compareByAddedAt(), Cart, Carts, CartItem, newCart(), NewForGuest() (+29 more)
 
 ### Community 125 - "dependencies"
 Cohesion: 0.07
 Nodes (27): class-variance-authority, dependencies, class-variance-authority, fuse.js, hast-util-from-html, hast-util-to-jsx-runtime, highlight.js, lucide-react (+19 more)
 
-### Community 126 - "New"
-Cohesion: 0.05
-Nodes (64): go-boilerplate/internal/controller/handler/v1/products/ranking/gen.GetProductsRankingAmountRequestObject, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.GetProductsRankingAmountResponseObject, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.GetProductsRankingQuantityRequestObject, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.GetProductsRankingQuantityResponseObject, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.ProductAmountRankingResponse, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.ProductQuantityRankingResponse, go-boilerplate/internal/usecase/product/ranking/mock.MockUsecase, limitParam() (+56 more)
+### Community 126 - "NewLimit"
+Cohesion: 0.08
+Nodes (29): go-boilerplate/internal/controller/handler/v1/products/ranking/gen.GetProductsRankingAmountRequestObject, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.GetProductsRankingAmountResponseObject, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.GetProductsRankingQuantityRequestObject, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.GetProductsRankingQuantityResponseObject, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.ProductAmountRankingResponse, go-boilerplate/internal/controller/handler/v1/products/ranking/gen.ProductQuantityRankingResponse, limitParam(), toAmountRankingResponse() (+21 more)
 
 ### Community 127 - "query_metric.go"
-Cohesion: 0.16
-Nodes (22): queryNameKey, buildQueryAttrs(), classifyErrorClass(), classifyOperation(), firstSQLToken(), QueryAttrs, isConstraintViolation(), isStatementTimeout() (+14 more)
-
-### Community 128 - "NewApplicationConfig"
 Cohesion: 0.13
-Nodes (18): Collector, fakeRegisterer, github.com/prometheus/client_golang/prometheus.Collector, NewApplicationConfig(), Test_provideJWKSDownstreamProfile(), ObservabilityModule(), TestObservabilityModule(), TestObservabilityModule_ProvidesTracerFactory() (+10 more)
+Nodes (23): fakeQueryRecorder, queryNameKey, buildQueryAttrs(), classifyErrorClass(), classifyOperation(), firstSQLToken(), QueryAttrs, isConstraintViolation() (+15 more)
 
-### Community 129 - "context.Context"
-Cohesion: 0.03
-Nodes (74): CartItemView, CartView, ItemIssue, MergeCartResult, MergeOnLoginParams, RemoveItemParams, SetItemParams, Subject (+66 more)
+### Community 128 - "NewCollector"
+Cohesion: 0.17
+Nodes (14): Collector, fakeRegisterer, github.com/prometheus/client_golang/prometheus.Collector, NewCollector(), Register(), register(), gatherLabels(), Test_normalize() (+6 more)
+
+### Community 129 - "Wrap"
+Cohesion: 0.02
+Nodes (99): CandidateView, Result, Usecase, server, CartItemAttributes, CartItemView, CartView, ItemIssue (+91 more)
 
 ### Community 130 - "Codex CLI Operational Safeguards"
 Cohesion: 0.12
@@ -1650,29 +1672,29 @@ Nodes (16): Dependency Boundary Lint, Exhaustive Linter Suite, Full golangci-lin
 Cohesion: 0.06
 Nodes (35): 1. Writing search in Repository, 2. Writing business logic, 3. Returning sqlc Row, About Nullable, About span name, About UUID, Anti-Patterns, Architecture Position (+27 more)
 
-### Community 132 - "newEvalItem"
-Cohesion: 0.38
-Nodes (11): NewProductSnapshot(), CartItem, newEvalItem(), newEvalPrice(), newEvalSnapshot(), TestCartItem_Evaluate(), TestEvaluation_AvailableQuantity(), TestEvaluation_hasNoIssue() (+3 more)
+### Community 132 - "NewProductSnapshot"
+Cohesion: 0.17
+Nodes (18): Evaluation, ProductSnapshotAttributes, CartItem, Issue, ProductSnapshot, NewProductSnapshot(), CartItem, newDiscontinuedEvalSnapshot() (+10 more)
 
 ### Community 133 - "compilerOptions"
 Cohesion: 0.08
 Nodes (25): compilerOptions, isolatedModules, jsx, lib, module, moduleResolution, noEmit, paths (+17 more)
 
-### Community 134 - "newShippablePurchase"
-Cohesion: 0.07
-Nodes (33): go-boilerplate/internal/controller/handler/v1/purchases/shippable/gen.GetPurchasesShippableRequestObject, go-boilerplate/internal/controller/handler/v1/purchases/shippable/gen.GetPurchasesShippableResponseObject, go-boilerplate/internal/controller/handler/v1/purchases/shippable/gen.PurchaseDispatchGroupResponse, go-boilerplate/internal/usecase/purchase/mock.MockUsecase, limitParam(), server, newDispatchGroupView(), newServer() (+25 more)
+### Community 134 - "newPurchaseWithStatus"
+Cohesion: 0.08
+Nodes (35): go-boilerplate/internal/controller/handler/v1/purchases/shippable/gen.PurchaseDispatchGroupResponse, go-boilerplate/internal/usecase/purchase/mock.MockUsecase, BindHandler(), echo.Echo, limitParam(), authnContext(), server, newDispatchGroupView() (+27 more)
 
-### Community 135 - "skill-lint/rules.ts"
+### Community 135 - "skill-lint/rules.test.ts"
 Cohesion: 0.14
-Nodes (23): onlyIn(), parseFrontmatterKeys(), readMakefileSources(), agentName(), checkAgentParity(), checkCodexSkillStructure(), checkFrontmatter(), checkPlatformOnlyAllowlist() (+15 more)
+Nodes (17): onlyIn(), readMakefileSources(), agentName(), checkAgentParity(), checkPlatformOnlyAllowlist(), checkSkillParity(), EnvLayout, formatFindings() (+9 more)
 
 ### Community 136 - "Downstream"
-Cohesion: 0.21
-Nodes (10): retryBudget, RequiredDownstream(), TestNewDownstreamProfile(), TestRequiredDownstream(), newRetryBudget(), Test_newRetryBudget(), Test_retryBudget(), Test_retryBudget_refill() (+2 more)
+Cohesion: 0.14
+Nodes (19): Profile, retryBudget, staticRegistry, provideHTTPClientRegistry(), Test_provideHTTPClientRegistry(), newRetryBudget(), Test_newRetryBudget(), Test_retryBudget() (+11 more)
 
-### Community 137 - "applicationCoreOptions"
-Cohesion: 0.07
-Nodes (36): recordingLifecycle, go.uber.org/fx.Hook, ControllerModule(), TestControllerModule(), TestControllerModule_GraphIsValid(), AuthnModule(), authnDeps(), resolverDeps() (+28 more)
+### Community 137 - "serveBaseOptions"
+Cohesion: 0.06
+Nodes (46): recordingLifecycle, go.uber.org/fx.App, go.uber.org/fx.Hook, ControllerModule(), TestControllerModule(), TestControllerModule_GraphIsValid(), AuthnModule(), authnDeps() (+38 more)
 
 ### Community 138 - "Distributed Ready Architecture (v3 requirements)"
 Cohesion: 0.06
@@ -1691,24 +1713,24 @@ Cohesion: 0.11
 Nodes (20): Actions Lint, App Boot Check, Auto-generate Docs, Capability Diff, Checkov Scan, Claude Assistant Workflow, Closed Loop Summarize, Closed Loop Weekly (+12 more)
 
 ### Community 142 - "request_unknown_field_rejection_test.go"
-Cohesion: 0.19
-Nodes (22): closureVerdict, requestSchemaSubject, github.com/getkin/kin-openapi/openapi3.Content, github.com/getkin/kin-openapi/openapi3.Paths, github.com/getkin/kin-openapi/openapi3.Schema, github.com/getkin/kin-openapi/openapi3.SchemaRef, closed(), collectRequestBodySchemas() (+14 more)
+Cohesion: 0.18
+Nodes (23): closureVerdict, requestSchemaSubject, github.com/getkin/kin-openapi/openapi3.Content, github.com/getkin/kin-openapi/openapi3.Paths, github.com/getkin/kin-openapi/openapi3.Schema, github.com/getkin/kin-openapi/openapi3.SchemaRef, closed(), collectRequestBodySchemas() (+15 more)
 
 ### Community 143 - "graphify-pending/main_test.go"
 Cohesion: 0.11
-Nodes (33): manifestEntry, pending, atoiOrZero(), gitOutput(), isDocument(), lastSemanticCommit(), loadIgnore(), main() (+25 more)
+Nodes (35): manifestEntry, pending, atoiOrZero(), emitCounts(), gitOutput(), isDocument(), lastSemanticCommit(), loadIgnore() (+27 more)
 
 ### Community 144 - ".claude/skills/full-verify/scripts/run.sh"
-Cohesion: 0.17
-Nodes (18): add_module(), attempt_module(), cb_on_fail(), cb_reset(), enumerate_files(), enumerate_modules(), gen_deps(), have() (+10 more)
+Cohesion: 0.20
+Nodes (24): add_module(), attempt_module(), cb_on_fail(), cb_reset(), code_exts(), detect_lang_from_ext(), enumerate_files(), enumerate_modules() (+16 more)
 
 ### Community 145 - ".codex/skills/full-verify/scripts/run.sh"
-Cohesion: 0.17
-Nodes (18): add_module(), attempt_module(), cb_on_fail(), cb_reset(), enumerate_files(), enumerate_modules(), gen_deps(), have() (+10 more)
+Cohesion: 0.20
+Nodes (24): add_module(), attempt_module(), cb_on_fail(), cb_reset(), code_exts(), detect_lang_from_ext(), enumerate_files(), enumerate_modules() (+16 more)
 
-### Community 146 - "Product — Domain Spec"
-Cohesion: 0.14
-Nodes (13): Product Category Domain Spec, Product Category Usecase Spec, Behavior Methods, Cross-field Invariants, Entity, Image（子エンティティ）, Overview, Product — Domain Spec (+5 more)
+### Community 146 - "ADR-0099: CLI humble-object split (thin cmd/ shell + testable internal/cli core)"
+Cohesion: 0.04
+Nodes (44): ADR-0099: CLI humble-object split (thin cmd/ shell + testable internal/cli core), Alternatives Considered, Cobra handler contains all logic, Consequences, Context, Decision, Negative Consequences, Notes (+36 more)
 
 ### Community 147 - "devDependencies"
 Cohesion: 0.08
@@ -1716,55 +1738,55 @@ Nodes (25): devDependencies, eslint, eslint-plugin-security, jsdom, msw, @testin
 
 ### Community 148 - "portal-app.tsx"
 Cohesion: 0.07
-Nodes (41): DocsJson, docsJsonSchema, PortalGroup, portalGroupSchema, PortalItem, portalItemSchema, portalReferenceLinkSchema, PortalSection (+33 more)
+Nodes (42): ADR-0001, ADR-0021, DocsJson, docsJsonSchema, PortalGroup, portalGroupSchema, PortalItem, portalItemSchema (+34 more)
 
 ### Community 149 - "NewHTTP"
 Cohesion: 0.19
 Nodes (14): Endpoint, NewEndpoint(), parseEndpoint(), Test_parseEndpoint(), TestNewEndpoint(), NewDownstreamProfile(), NewHTTP(), RequiredDownstream() (+6 more)
 
 ### Community 150 - "address_gateway.go"
-Cohesion: 0.15
-Nodes (14): Endpoint, zipcloudResponse, zipcloudResult, gateway, New(), NewDownstreamProfile(), RequiredDownstream(), Test_gateway_Lookup() (+6 more)
+Cohesion: 0.12
+Nodes (16): Candidate, Endpoint, zipcloudResponse, zipcloudResult, gateway, New(), NewDownstreamProfile(), RequiredDownstream() (+8 more)
 
 ### Community 151 - "base-branch/main_test.go"
 Cohesion: 0.18
 Nodes (18): releaseLine, latestRelease(), lsRemoteReleases(), main(), parseLine(), parseTriple(), run(), checkoutOf() (+10 more)
 
-### Community 152 - "WorkerMetrics"
-Cohesion: 0.11
-Nodes (10): go-boilerplate/internal/usecase/boundary/worker/mock.MockWorker, ProvideEngine(), newEngineIn(), newNamedWorker(), Test_validateShutdownGrace(), TestProvideEngine(), TestValidateShutdownGrace(), WorkerMetrics (+2 more)
+### Community 152 - ".GetStream"
+Cohesion: 0.08
+Nodes (37): streamGrantSlot, streamGrantSlotKey, go-boilerplate/internal/controller/stream/gen.GetStreamParams, go-boilerplate/internal/controller/stream/gen.StreamDestinationParam, go-boilerplate/internal/usecase/realtime/mock.MockCursorValidator, stubTicketVerifier, GetStreamGrant(), GetStreamRevalidator() (+29 more)
 
 ### Community 153 - "Pool"
-Cohesion: 0.22
-Nodes (10): Compose, DBAdmin, dbLocal(), dbTest(), Config, Pool, Registry, NewPool() (+2 more)
+Cohesion: 0.29
+Nodes (5): dbLocal(), dbTest(), Config, Pool, serveProject()
 
 ### Community 154 - "decimal_test.go"
 Cohesion: 0.17
 Nodes (20): mustParse(), TestDecimal_Add(), TestDecimal_Cmp(), TestDecimal_DivRound(), TestDecimal_Equal(), TestDecimal_IsNegative(), TestDecimal_IsZero(), TestDecimal_MarshalJSON() (+12 more)
 
 ### Community 155 - "skill-lint/index.ts"
-Cohesion: 0.10
-Nodes (23): agentFiles, ALLOWLIST_REL, basenameIndex, codexAgentFiles, codexSkillDirs, collectClaudeMarkdown(), entryIndex, exists() (+15 more)
+Cohesion: 0.09
+Nodes (28): extractNumberedSections(), agentFiles, ALLOWLIST_REL, basenameIndex, buildSectionIndex(), claudeSections, codexAgentFiles, codexMarkdownFiles (+20 more)
 
-### Community 156 - "OperatingSystemConfig"
-Cohesion: 0.10
-Nodes (27): net/http.Server, net.Listener, OperatingSystemConfig, NewServerConfig(), echo.MiddlewareFunc, Middleware(), TestMiddleware(), echo.Echo (+19 more)
+### Community 156 - "NewServerConfig"
+Cohesion: 0.09
+Nodes (23): NewServerConfig(), echo.MiddlewareFunc, Middleware(), TestMiddleware(), echo.Echo, NewAppServer(), NewHTTPServer(), TestNewAppServer() (+15 more)
 
-### Community 157 - "tool"
-Cohesion: 0.16
-Nodes (17): added(), addedFrom(), baseDeclarations(), diffAdded(), parseDeclarations(), parsePyRequirements(), parseTools(), Test_added() (+9 more)
+### Community 157 - "remove-doc-language/index.ts"
+Cohesion: 0.09
+Nodes (34): toAbsolutePath(), isScanTarget(), listDocPairs(), Mode, applyOperation(), LanguageChoice, Options, planFold() (+26 more)
 
-### Community 158 - "day"
-Cohesion: 0.19
-Nodes (18): classify(), hasBypass(), readBypasses(), report(), sortedKeys(), summary(), day(), Test_classify() (+10 more)
+### Community 158 - "newEngine"
+Cohesion: 0.09
+Nodes (34): revocationBody, wakeupBody, github.com/aws/aws-sdk-go-v2/service/sns/types.MessageAttributeValue, go-boilerplate/internal/controller/realtime/mock.MockFanoutObserver, go-boilerplate/internal/controller/realtime/mock.MockReprovisioner, go-boilerplate/internal/controller/realtime/mock.MockRevoker, go-boilerplate/internal/controller/realtime/mock.MockWaker, go-boilerplate/internal/usecase/boundary/realtime/mock.MockInstanceSubscription (+26 more)
 
-### Community 159 - "sqs_test.go"
-Cohesion: 0.22
-Nodes (14): NewDeadLetter(), Config, NewConsumer(), Config, newConsumer(), newConsumerWithConfig(), Test_consumer_Ack(), Test_consumer_Extend() (+6 more)
+### Community 159 - "classify"
+Cohesion: 0.13
+Nodes (37): pubSubSmoke, Test_dispatchByType(), Test_pubSubSmoke_attributeSteps(), Test_pubSubSmoke_firstQueue(), Test_pubSubSmoke_kmsKey(), Test_pubSubSmoke_listSubscriptions(), Test_pubSubSmoke_managedSSE(), Test_pubSubSmoke_notificationTypes() (+29 more)
 
 ### Community 160 - "UUID"
-Cohesion: 0.03
-Nodes (66): authorizer, Resource, MergeResult, database/sql/driver.Value, github.com/google/uuid.UUID, github.com/oapi-codegen/runtime/types.UUID, stubIdentityResolver, UUID() (+58 more)
+Cohesion: 0.02
+Nodes (95): MergeCartResult, MergeOnLoginParams, MergeResult, CreatePurchaseParams, PurchaseView, ReferenceAmountView, Usecase, LineAttributes (+87 more)
 
 ### Community 161 - "fence.ts"
 Cohesion: 0.16
@@ -1774,41 +1796,41 @@ Nodes (21): basename(), COMMENT_ACTION, COMMENT_ACTION_USE, compareImplementatio
 Cohesion: 0.07
 Nodes (28): 0. Finding the authoritative source, 10. `commitlint: not found` / `orval: not found` / `ERR_PNPM_VERIFY_DEPS_BEFORE_RUN` / a stale tool version, 11. Hook map — what runs when, and what to do when it fails for reasons outside your change, 12. `pin-images-check` / `pin-actions-check` — fail-closed lockfiles, 13. "Migration version gap / duplicate" from pre-commit, 14. Local S3 calls return 503, 15. Per-environment Docker images, 16. `sync-versions` drift (+20 more)
 
-### Community 163 - "BindHandler"
-Cohesion: 0.14
-Nodes (15): go-boilerplate/internal/controller/handler/v1/purchases/gen.PostPurchasesRequestObject, go-boilerplate/internal/controller/handler/v1/purchases/gen.PostPurchasesResponseObject, go-boilerplate/internal/controller/handler/v1/purchases/gen.PurchaseResponse, go-boilerplate/internal/controller/handler/v1/purchases/gen.PurchaseSummaryResponse, go-boilerplate/internal/controller/handler/v1/purchases/gen.ReferenceAmount, BindHandler(), echo.Echo, newTestPurchaseView() (+7 more)
+### Community 163 - "newFanoutFixture"
+Cohesion: 0.10
+Nodes (27): ClientConfig, fanoutFixture, Clients, NewClients(), Test_withCallTimeout(), TestNewClients(), withCallTimeout(), drain() (+19 more)
 
 ### Community 164 - "Architecture Rules"
-Cohesion: 0.07
-Nodes (29): AI Agent Rules, Allowed in Domain, Architecture Rules, Boundary Type Conversion, Comment Rules, Context Propagation Rules, Database Migration, Documentation Rules (+21 more)
+Cohesion: 0.05
+Nodes (40): AI Agent Rules, Allowed Dependencies, Allowed in Domain, Architecture Rules, Boundary Type Conversion, Comment Rules, Context Propagation Rules, Controller (+32 more)
 
 ### Community 165 - "resolve_test.go"
 Cohesion: 0.10
-Nodes (32): GitContext, GitProbe, probeStub, Values, io.Writer, Config, Resolver, hasGitEntry() (+24 more)
+Nodes (31): GitContext, GitProbe, probeStub, Values, Config, Resolver, hasGitEntry(), NewResolver() (+23 more)
 
 ### Community 166 - "users"
-Cohesion: 0.07
-Nodes (14): prefectures, users, roles, user_roles, user_identities, product_statuses, product_categories, products (+6 more)
+Cohesion: 0.06
+Nodes (17): prefectures, users, roles, user_roles, user_identities, product_statuses, product_categories, products (+9 more)
 
-### Community 167 - "Run"
-Cohesion: 0.13
-Nodes (19): nopMetrics, payload, unmarshalable, uuidPayload, Store, Metrics, NewDeps(), TestNewDeps() (+11 more)
+### Community 167 - "Deps"
+Cohesion: 0.08
+Nodes (31): go-boilerplate/internal/controller/handler/v1/carts/merge/gen.CartMergeResponse, go-boilerplate/internal/controller/handler/v1/carts/merge/gen.PostCartsMeMergeRequestObject, go-boilerplate/internal/controller/handler/v1/carts/merge/gen.PostCartsMeMergeResponseObject, nopMetrics, payload, Request, requestCtxKey, unmarshalable (+23 more)
 
-### Community 168 - "newWorkerUnderTest"
-Cohesion: 0.13
-Nodes (13): New(), newWorkerUnderTest(), Test_workerImpl_Consumer(), Test_workerImpl_FailureHandler(), Test_workerImpl_Handler(), Test_workerImpl_Name(), TestNew(), Consumer (+5 more)
+### Community 168 - "API"
+Cohesion: 0.10
+Nodes (21): NewDeadLetter(), Config, API, NewConsumer(), Config, newConsumer(), newConsumerWithConfig(), Test_consumer_Ack() (+13 more)
 
 ### Community 169 - "net/http.Request"
-Cohesion: 0.17
-Nodes (10): stubAllowPolicy, net/http.Request, limitedRedirectForOutbound(), NewOutboundHTTPClient(), Test_limitedRedirectForOutbound(), Test_policyStampingRoundTripper_RoundTrip(), TestNewDisabledOutboundHTTPClient(), TestNewOutboundHTTPClient() (+2 more)
+Cohesion: 0.15
+Nodes (10): net/http.Request, limitedRedirectForOutbound(), Test_limitedRedirectForOutbound(), Test_policyStampingRoundTripper_RoundTrip(), TestNewDisabledOutboundHTTPClient(), capturingRoundTripper, policyStampingRoundTripper, parseFakeRequest() (+2 more)
 
 ### Community 170 - "integration/README.md"
 Cohesion: 0.07
 Nodes (27): 1 Do not use DB / SQL / Repository, 2 Mock Usecase, 3 Actually hit HTTP, 4 Verify with response types, 5 Wire a middleware-order contract from the DI providers, not by hand, `AssertErrorResponse(t, actual, wantStatus)`, `AssertErrorResponseBody(t, actual, wantStatus)`, `AssertJSONResponseType[T any]` (+19 more)
 
-### Community 171 - "NewOpenAPIDetailPolicy"
-Cohesion: 0.14
-Nodes (23): github.com/getkin/kin-openapi/openapi3.Operation, github.com/getkin/kin-openapi/openapi3.ResponseRef, operationKeys(), newTestDetailPolicy(), Test_newTestDetailPolicy(), buildDetailExposureMap(), DetailPolicy, operationReferencesSchema() (+15 more)
+### Community 171 - "newRevocationServer"
+Cohesion: 0.04
+Nodes (72): openAPIAllowPolicy, openAPIDetailPolicy, github.com/getkin/kin-openapi/openapi3.Operation, github.com/getkin/kin-openapi/openapi3.PathItem, github.com/getkin/kin-openapi/openapi3.ResponseRef, github.com/getkin/kin-openapi/openapi3.T, github.com/getkin/kin-openapi/routers.Router, github.com/labstack/echo/v5/middleware.Skipper (+64 more)
 
 ### Community 172 - "paging"
 Cohesion: 0.07
@@ -1826,57 +1848,57 @@ Nodes (17): EXCLUDE_DIRS, EXCLUDE_FILES, EXCLUDE_PREFIXES, extractMermaidBlocks(
 Cohesion: 0.16
 Nodes (20): github.com/johannesboyne/gofakes3.Backend, listedKeys(), newFakeS3(), newPartialDeleteFailureS3(), newStorage(), newStorageWithOutbound(), putObjects(), readAll() (+12 more)
 
-### Community 176 - "ADR-0014: Generate per tag/handler with oapi-codegen in strict-server mode"
-Cohesion: 0.18
-Nodes (11): ADR-0014: Generate per tag/handler with oapi-codegen in strict-server mode, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Plain echo-server mode (without strict-server) (+3 more)
+### Community 176 - "newTestUsecase"
+Cohesion: 0.10
+Nodes (32): go-boilerplate/internal/domain/inquiry/mock.MockRepository, go-boilerplate/internal/usecase/boundary/realtime/mock.MockSequenceAllocator, go-boilerplate/internal/usecase/outbox/mock.MockEmitUsecase, go-boilerplate/internal/usecase/realtime/mock.MockTicketIssuer, deps, expectAppendSucceeds(), deps, Test_usecase_appendForUser() (+24 more)
 
 ### Community 177 - "cookieAttrs"
-Cohesion: 0.16
-Nodes (26): cookieAttrs, buildSetCookie(), canonicalAttrKey(), delAttr(), parseSetCookie(), setBoolAttr(), setKVAttr(), splitAttr() (+18 more)
+Cohesion: 0.14
+Nodes (29): cookieAttrs, buildSetCookie(), canonicalAttrKey(), delAttr(), parseSetCookie(), setBoolAttr(), setKVAttr(), splitAttr() (+21 more)
 
 ### Community 178 - "docs-viewer"
 Cohesion: 0.12
 Nodes (16): Docs Portal HTML Shell, Docs Viewer Dependency Policy, Commands, Dependency policy, docs-viewer, Relationship to the design system, Rendering documents, Structure (+8 more)
 
-### Community 179 - "serveRun"
-Cohesion: 0.17
-Nodes (11): serveRun(), go.uber.org/fx.App, RunServer(), StartMetricsAndResolveStop(), TestRunServer(), TestStartMetricsAndResolveStop(), NewApplicationCore(), NewApplicationServer() (+3 more)
+### Community 179 - "ADR-0088: Two-layer golangci config: minimal default vs full authoritative gate"
+Cohesion: 0.06
+Nodes (31): ADR-0088: Two-layer golangci config: minimal default vs full authoritative gate, Alternatives Considered, Consequences, Context, Decision, golangci-lint `--fast` flag, Negative Consequences, Notes (+23 more)
 
 ### Community 180 - "Architecture Decision Records"
-Cohesion: 0.19
-Nodes (15): Per-Environment Images, Pre-Deploy One-Shot Migration, Release Image Supply Chain, Vendor-Neutral Deploy Skeleton, Documentation via GitHub Pages, No In-App Rate Limiter, Scheduled Job Concurrency Delegated, No Generic Cache Abstraction (+7 more)
+Cohesion: 0.67
+Nodes (3): Architecture Decision Records, ADR Template, Architecture Decisions Redirect
 
 ### Community 181 - "CLI core"
 Cohesion: 0.15
 Nodes (13): Dump Schema CLI, Fix Collation CLI, Merge DML CLI, Migration CLI, Outbox Relay CLI, CLI core, Command List, Design Policy (+5 more)
 
-### Community 182 - "github.com/getkin/kin-openapi/openapi3.T"
-Cohesion: 0.21
-Nodes (15): github.com/getkin/kin-openapi/openapi3.PathItem, github.com/getkin/kin-openapi/openapi3.T, newTestAllowPolicy(), Test_newTestAllowPolicy(), buildAllowMap(), AllowPolicy, NewOpenAPIAllowPolicy(), methodOutsidePathItem() (+7 more)
+### Community 182 - "plan.ts"
+Cohesion: 0.12
+Nodes (31): canonicalOf(), describesAPair(), DocPair, EXCLUDED_PREFIXES, frontmatterOf(), hrefOf(), isDecorationOnly(), isNavigationOnly() (+23 more)
 
-### Community 183 - "ADR-0029: Treat migrations as append-only and immutable"
-Cohesion: 0.18
-Nodes (11): ADR-0029: Treat migrations as append-only and immutable, Allow editing applied migrations, Alternatives Considered, Consequences, Context, Decision, Migration squashing, Negative Consequences (+3 more)
+### Community 183 - "sseClient"
+Cohesion: 0.10
+Nodes (21): go-boilerplate/internal/controller/stream/gen.ControlEventAction, sync.Once, fanoutToRegistry, revocationFixture, sseClient, sseFixture, sseFrame, sseSleeper (+13 more)
 
 ### Community 184 - "NewEchoTestClient"
-Cohesion: 0.20
-Nodes (18): NewEchoTestClient(), echo.Echo, newEchoWithUserRoute(), TestEchoTestClient_AuthBearer(), TestEchoTestClient_Build(), TestEchoTestClient_buildRequest(), TestEchoTestClient_Header(), TestEchoTestClient_JSONBody() (+10 more)
+Cohesion: 0.18
+Nodes (20): NewEchoTestClient(), echo.Echo, newEchoWithUserRoute(), Test_newTestDetailPolicy(), Test_newTestRedactor(), TestEchoTestClient_AuthBearer(), TestEchoTestClient_Build(), TestEchoTestClient_buildRequest() (+12 more)
 
 ### Community 185 - "Lifecycle Registrar and Supervised Runner"
 Cohesion: 0.43
 Nodes (7): Job Lifecycle Hook, Lifecycle Registrar and Supervised Runner, Dependency Injection Layer, Server Lifecycle Hooks, Server DI Module, Application Shutdowner, Worker Lifecycle Hook
 
 ### Community 186 - "jwksResolver"
-Cohesion: 0.22
-Nodes (8): crypto.PublicKey, detachedErr(), parseJWKSKeys(), sameKeySet(), Test_detachedErr(), errKeyResolver, fixedKeyResolver, jwksResolver
+Cohesion: 0.18
+Nodes (10): crypto.PublicKey, NewDownstreamProfile(), parseJWKSKeys(), RequiredDownstream(), sameKeySet(), TestNewDownstreamProfile(), TestRequiredDownstream(), errKeyResolver (+2 more)
 
-### Community 187 - "normalizeError"
-Cohesion: 0.19
-Nodes (8): github.com/aws/aws-sdk-go-v2/service/sqs/types.Message, normalizeError(), Test_normalizeError(), Test_toMessage(), Test_visibilitySeconds(), toMessage(), visibilitySeconds(), consumer
+### Community 187 - "pubSubSmoke"
+Cohesion: 0.10
+Nodes (13): github.com/aws/aws-sdk-go-v2/service/sqs/types.Message, github.com/aws/aws-sdk-go-v2/service/sqs/types.QueueAttributeName, redrivePolicy, revocation, dispatchByType(), pubSubSmoke, step, isNotification() (+5 more)
 
 ### Community 188 - "usecase"
-Cohesion: 0.18
-Nodes (10): Page, usecase, New(), Test_toSearchResult(), TestNew(), toSearchResult(), SearchParams, UserSearchListView (+2 more)
+Cohesion: 0.15
+Nodes (17): dedupePreserveOrder(), limit(), ParseSearchTokens(), splitIntoTerms(), Test_dedupePreserveOrder(), Test_limit(), Test_splitIntoTerms(), TestParseSearchTokens() (+9 more)
 
 ### Community 189 - "New Spec Integrator"
 Cohesion: 0.25
@@ -1886,13 +1908,13 @@ Nodes (8): New Spec Agent Interface, New Spec Domain Agent Interface, Business V
 Cohesion: 0.08
 Nodes (25): Worktree Slot Ring, 10. `commitlint: not found` / `orval: not found` / `ERR_PNPM_VERIFY_DEPS_BEFORE_RUN` / a stale tool version, 11. Hook map — what runs when, and what to do when it fails for reasons outside your change, 12. `pin-images-check` / `pin-actions-check` — fail-closed lockfiles, 13. "Migration version gap / duplicate" from pre-commit, 14. Local S3 calls return 503, 15. Per-environment Docker images, 16. `sync-versions` drift (+17 more)
 
-### Community 192 - "Test_jobImpl_Execute"
-Cohesion: 0.20
-Nodes (12): abortedMessage(), New(), parseArgs(), resultMessage(), Test_abortedMessage(), Test_jobImpl_Execute(), Test_jobImpl_Name(), Test_parseArgs() (+4 more)
+### Community 192 - "runJobAndShutdown"
+Cohesion: 0.07
+Nodes (29): go.uber.org/fx.Shutdowner, abortedMessage(), New(), parseArgs(), resultMessage(), Test_abortedMessage(), Test_jobImpl_Name(), Test_parseArgs() (+21 more)
 
-### Community 193 - "ArchiveUsecase"
-Cohesion: 0.31
-Nodes (7): go-boilerplate/internal/usecase/boundary/objectstorage/mock.MockStorage, ArchiveUsecase, NewArchive(), newArchiveUsecase(), Test_archiveUsecase_ArchiveWithdrawal(), TestNewArchive(), ArchiveWithdrawalParams
+### Community 193 - "newArchiveUsecase"
+Cohesion: 0.60
+Nodes (4): go-boilerplate/internal/usecase/boundary/objectstorage/mock.MockStorage, newArchiveUsecase(), Test_archiveUsecase_ArchiveWithdrawal(), TestNewArchive()
 
 ### Community 194 - "新機能・改善"
 Cohesion: 0.08
@@ -1902,9 +1924,9 @@ Nodes (23): DB トランザクションの信頼性, REST の信頼性強化, Tr
 Cohesion: 0.09
 Nodes (22): 10. Refresh Base Image Digest Pins, 11. Rebuild Docker Containers, 12. Re-run Code Generation, 13. Run Tests, 14. Run Lint, 15. Final Verification, 1. Check the Release Notes, 2. Update `mise.toml` (+14 more)
 
-### Community 196 - "Prefecture"
-Cohesion: 0.22
-Nodes (6): Prefecture, Prefectures, repository, New(), rowToPrefecture(), Test_rowToPrefecture()
+### Community 196 - "pnpm-cooldown/main_test.go"
+Cohesion: 0.16
+Nodes (32): bypass, exclusion, checkExclusion(), checkResolved(), findExcludeSequence(), findWorkspaces(), yaml.Node, lockedSpecs() (+24 more)
 
 ### Community 197 - "NewPgxAdmin"
 Cohesion: 0.49
@@ -1934,25 +1956,25 @@ Nodes (23): 1. Hiding DB Implementation, 2. Separation of Responsibility (Reposi
 Cohesion: 0.15
 Nodes (6): io.Reader, net/http/httptest.ResponseRecorder, echo.Context, echo.Echo, EchoTestClient, EchoTestParam
 
-### Community 204 - "dialog.tsx"
-Cohesion: 0.25
-Nodes (10): Dialog(), DialogClose(), DialogContent(), DialogDescription(), DialogFooter(), DialogHeader(), DialogOverlay(), DialogPortal() (+2 more)
+### Community 204 - "newSubscription"
+Cohesion: 0.12
+Nodes (30): subscriptionMocks, cursorValidator, go-boilerplate/internal/infrastructure/realtime/aws/mock.MockSNSAPI, go-boilerplate/internal/infrastructure/realtime/aws/mock.MockSQSAPI, go-boilerplate/internal/usecase/boundary/realtime/mock.MockEventLogStore, newPublisher(), outboxMessage(), Test_classifyAppend() (+22 more)
 
 ### Community 205 - "logging"
 Cohesion: 0.09
 Nodes (22): Attaching an Additional Core (Observability), Design Policy, Error, Field, HTTP, HTTP Logging, Input Structs, Job (+14 more)
 
 ### Community 206 - "http_client_transport_internal_test.go"
-Cohesion: 0.14
-Nodes (14): go.opentelemetry.io/otel/sdk/trace.ReadOnlySpan, ContextWithTracePropagation(), newSampledContext(), Test_conditionalPropagator_Extract(), Test_conditionalPropagator_Fields(), Test_conditionalPropagator_Inject(), Test_newGuardedBaseTransport(), Test_newHTTPClientTransport_redactsQueryFromSpanButPreservesRequest() (+6 more)
+Cohesion: 0.24
+Nodes (10): ContextWithTracePropagation(), newSampledContext(), Test_conditionalPropagator_Extract(), Test_conditionalPropagator_Fields(), Test_conditionalPropagator_Inject(), Test_spanURLRedactingRoundTripper_RoundTrip(), Test_urlSecretRestoringRoundTripper_RoundTrip(), TestContextWithTracePropagation() (+2 more)
 
-### Community 207 - "deps"
-Cohesion: 0.18
-Nodes (14): deps, go-boilerplate/internal/domain/product/mock.MockRepository, go-boilerplate/internal/usecase/boundary/tx/mock.MockManager, go-boilerplate/internal/usecase/dashboard/query/mock.MockDashboardQueryService, expectAllQueries(), usecase, mustWindow(), newUsecase() (+6 more)
+### Community 207 - "discontinueTestDeps"
+Cohesion: 0.09
+Nodes (28): testDeps, deps, go-boilerplate/internal/domain/cart/mock.MockRepository, go-boilerplate/internal/domain/coupon/mock.MockRepository, go-boilerplate/internal/domain/product/category/mock.MockRepository, go-boilerplate/internal/domain/product/mock.MockRepository, go-boilerplate/internal/domain/product/status/mock.MockRepository, go-boilerplate/internal/domain/purchase/mock.MockRepository (+20 more)
 
 ### Community 208 - "purchase_summary_usecase.go"
-Cohesion: 0.21
-Nodes (17): PurchaseItemSummaryReadModel, PurchaseSummaryQueryService, accumulate(), levelsOf(), New(), Test_toSummaryView(), TestNew(), toGroups() (+9 more)
+Cohesion: 0.24
+Nodes (16): PurchaseItemSummaryReadModel, PurchaseStatusSummaryReadModel, PurchaseSummaryQueryService, accumulate(), levelsOf(), New(), toGroups(), toSummaryView() (+8 more)
 
 ### Community 209 - "compilerOptions"
 Cohesion: 0.10
@@ -1960,11 +1982,11 @@ Nodes (20): ES2023, **/*.mts, node, compilerOptions, allowImportingTsExtensions,
 
 ### Community 210 - "DDD Audit"
 Cohesion: 0.09
-Nodes (20): Impl Verifier, How to verify, Output (Japanese), Review Verifier, Your input, AI Modification Scope, Architecture: fan-out unit is the pattern, not the document, Checklist (+12 more)
+Nodes (21): Impl Verifier, How to verify, Output (Japanese), Review Verifier, Your input, AI Modification Scope, Architecture: fan-out unit is the pattern, not the document, Checklist (+13 more)
 
 ### Community 211 - "Usecase"
-Cohesion: 0.11
-Nodes (17): server, CategoryDTO, CategoryDTOs, Usecase, go-boilerplate/internal/controller/handler/v1/products/categories/gen.GetProductCategoriesRequestObject, go-boilerplate/internal/controller/handler/v1/products/categories/gen.GetProductCategoriesResponseObject, go-boilerplate/internal/controller/handler/v1/products/categories/gen.ProductCategoryResponse, go-boilerplate/internal/usecase/product/category/mock.MockUsecase (+9 more)
+Cohesion: 0.12
+Nodes (15): server, CategoryDTO, CategoryDTOs, Usecase, go-boilerplate/internal/controller/handler/v1/products/categories/gen.GetProductCategoriesRequestObject, go-boilerplate/internal/controller/handler/v1/products/categories/gen.GetProductCategoriesResponseObject, go-boilerplate/internal/controller/handler/v1/products/categories/gen.ProductCategoryResponse, go-boilerplate/internal/usecase/product/category/mock.MockUsecase (+7 more)
 
 ### Community 212 - "ask"
 Cohesion: 0.10
@@ -1976,43 +1998,43 @@ Nodes (23): backoff, Checklist for Adding a New Package, Constraints, datetime, 
 
 ### Community 214 - "NewStepClock"
 Cohesion: 0.09
-Nodes (26): cacheEntry, cacheGateway, cacheKey, Endpoint, Rate, sync.RWMutex, provideCachedExchangeRateGateway(), provideExchangeRateDownstreamProfile() (+18 more)
+Nodes (25): Endpoint, rateResponse, Test_provideRelayUsecase(), provideCachedExchangeRateGateway(), provideExchangeRateDownstreamProfile(), Test_provideCachedExchangeRateGateway(), Test_cacheGateway_store(), NewCache() (+17 more)
 
 ### Community 215 - "Middleware"
-Cohesion: 0.13
-Nodes (16): IsOpsPath(), TestIsOpsPath(), echo.MiddlewareFunc, Middleware(), echo.HandlerFunc, okHandler(), serve(), TestMiddleware() (+8 more)
+Cohesion: 0.16
+Nodes (13): echo.MiddlewareFunc, Middleware(), echo.HandlerFunc, okHandler(), serve(), TestMiddleware(), normalizeStatus(), statusClass() (+5 more)
 
-### Community 216 - "Test_service_FindDetailByUserAndCode"
-Cohesion: 0.22
-Nodes (11): go-boilerplate/internal/infrastructure/rdb/sqlc/gen.ListPurchaseDetailItemsForUserRow, New(), insertDetail(), insertProduct(), insertPurchase(), mustParse(), Test_service_FindDetailByUserAndCode(), Test_toPurchaseDetailItems() (+3 more)
+### Community 216 - "DBTX"
+Cohesion: 0.06
+Nodes (61): txKey, New(), insertCartWithItem(), insertDiscontinuedProduct(), insertRecipientUser(), newIssueParams(), Test_commandService_IssueDiscontinuationCoupons(), TestNew() (+53 more)
 
 ### Community 217 - "Scaffold Endpoint"
 Cohesion: 0.09
 Nodes (21): AI Modification Scope, Checklist, Constraints, Core (both modes) — Phases 5–7, Phase 0. Confirm Feature + Detect Mode, Phase 1. Discovery + Clarifying Questions, Phase 2. Codebase Exploration, Phase 3. Architecture Design (+13 more)
 
-### Community 218 - "RequireProvidesOne"
+### Community 218 - "go.uber.org/fx.Option"
 Cohesion: 0.06
-Nodes (27): echo.MiddlewareFunc, Middleware(), BodyLimitModule(), IPExtractorModule(), TestBodyLimitModule(), TestIPExtractorModule(), TestOpenAPIModule(), TestTimeoutModule() (+19 more)
+Nodes (45): github.com/labstack/echo/v5/middleware.CORSConfig, go.uber.org/fx.Option, NewSecurityConfig(), buildCORSConfig(), echo.MiddlewareFunc, Middleware(), Test_buildCORSConfig(), TestMiddleware() (+37 more)
 
-### Community 219 - "runJobAndShutdown"
+### Community 219 - "run"
+Cohesion: 0.11
+Nodes (24): github.com/aws/aws-sdk-go-v2/service/sns.Client, github.com/aws/aws-sdk-go-v2/service/sqs.Client, clients, dialFunc, names, options, Result, hostPort() (+16 more)
+
+### Community 220 - "newRequestIDStackServer"
 Cohesion: 0.13
-Nodes (20): go.opentelemetry.io/otel/trace.Tracer, go.uber.org/fx.Shutdowner, RegisterJobHooks(), runJobAndShutdown(), shutdown(), Test_runJobAndShutdown(), Test_shutdown(), TestRegisterJobHooks() (+12 more)
-
-### Community 220 - "NewSecurityCookie"
-Cohesion: 0.20
-Nodes (10): echo.MiddlewareFunc, Middleware(), secureCookieMiddleware(), Test_secureCookieMiddleware(), TestMiddleware(), NewSecurityCookie(), normalizeSameSite(), Test_normalizeSameSite() (+2 more)
+Nodes (12): SecureCookieConfig, NewSecureCookieConfig(), echo.MiddlewareFunc, Middleware(), secureCookieMiddleware(), Test_secureCookieMiddleware(), TestMiddleware(), CookieMiddleware() (+4 more)
 
 ### Community 221 - "required-checks.ts"
 Cohesion: 0.19
 Nodes (11): findings, ruleset, statusRule, workflows, appendTriggerFindings(), checkRequiredChecks(), findPullRequestTrigger(), PullRequestTrigger (+3 more)
 
-### Community 222 - "replace-module/index.ts"
-Cohesion: 0.17
-Nodes (17): updateAbsoluteFile(), ChangedFile, collectTargetFiles(), program, replaceInFile(), run(), ensureModuleArguments(), ensureSimpleModuleName() (+9 more)
+### Community 222 - "file-utils.ts"
+Cohesion: 0.10
+Nodes (30): listChildFiles(), ListFilesOptions, listFilesRecursive(), toRelativePath(), Transformer, updateAbsoluteFile(), ROOT_DIR, APP_METADATA_TARGETS (+22 more)
 
-### Community 223 - "LevelError"
-Cohesion: 0.12
-Nodes (34): runDumpSchema(), runFixCollation(), mergeDMLRun(), go.uber.org/zap/zapcore.Encoder, go.uber.org/zap/zapcore.EncoderConfig, go.uber.org/zap/zapcore.LevelEncoder, go.uber.org/zap/zapcore.WriteSyncer, provideLogger() (+26 more)
+### Community 223 - "runRealtimeInit"
+Cohesion: 0.07
+Nodes (52): registerCommands(), newDumpSchemaCommand(), runDumpSchema(), newFixCollationCommand(), runFixCollation(), main(), mergeDMLRun(), newMergeDMLCommand() (+44 more)
 
 ### Community 224 - "Submit PR"
 Cohesion: 0.09
@@ -2030,21 +2052,21 @@ Nodes (19): System CQRS DML Category, CommandService Atomicity Criterion, Transa
 Cohesion: 0.09
 Nodes (21): Architectural Position, Connects to a Real DB, DB Instance, Design of WithinTx, HoldSuiteSerialization, NewTestDB, NewTestTransactionRunner, Notes (+13 more)
 
-### Community 228 - "authenticatorParams"
-Cohesion: 0.10
-Nodes (16): authenticatorParams, go.uber.org/fx.Lifecycle, Registrar, NewLifecycleRegistrar(), allowInsecureJWKSURL(), provideAuthenticator(), provideJWKSAuthenticator(), newAuthParams() (+8 more)
+### Community 228 - ".stop"
+Cohesion: 0.05
+Nodes (45): go.uber.org/fx.Lifecycle, net/http.ServeMux, net/http.Server, net.Listener, boundRunner, HTTPServerHooksIn, serveLifecycle, healthMux() (+37 more)
 
-### Community 229 - "API"
-Cohesion: 0.13
-Nodes (18): github.com/aws/aws-sdk-go-v2/service/sqs.GetQueueAttributesOutput, API, Config, NewQueueStatsProvider(), parseApproxCount(), attrs(), Config, newStatsProvider() (+10 more)
+### Community 229 - "NewQueueStatsProvider"
+Cohesion: 0.16
+Nodes (15): github.com/aws/aws-sdk-go-v2/service/sqs.GetQueueAttributesOutput, Config, NewQueueStatsProvider(), parseApproxCount(), attrs(), Config, newStatsProvider(), Test_parseApproxCount() (+7 more)
 
 ### Community 230 - "Comment Sweep"
 Cohesion: 0.10
 Nodes (20): Comment Sweep Auditor Instructions, Apply modes, Authoritative sources — read at runtime, hardcode nothing, Comment Sweep, Explicitly out of scope, Flags, Relationship to the existing reviewers, Relocating is not dumping — each destination has an entry bar (+12 more)
 
 ### Community 231 - "NewRegistry"
-Cohesion: 0.10
-Nodes (41): go-boilerplate/internal/cli/dbslot/mock.MockCompose, go-boilerplate/internal/cli/dbslot/mock.MockDBAdmin, expectSlotDBs(), fillSlots(), newMockPool(), Test_dbLocal(), Test_dbTest(), TestNewPool() (+33 more)
+Cohesion: 0.14
+Nodes (25): newCapturingPool(), TestNewRegistry(), TestPool_ensureLocalEnv(), TestPool_ensureSlotDBs(), TestPool_finishAcquire(), TestPool_heldSlot(), TestPool_printSlotFile(), TestPool_writeSlotFile() (+17 more)
 
 ### Community 232 - "migrate_test.go"
 Cohesion: 0.22
@@ -2054,17 +2076,17 @@ Nodes (14): factoryFailing(), factoryReturning(), Test_executeMigrateDownSteps()
 Cohesion: 0.10
 Nodes (20): Issue to PR Interface, Runtime Merge Gate, AI Modification Scope, Checklist, [Codex-side difference], Delegating without double-asking, Do / Do NOT, Impl Issue (+12 more)
 
-### Community 234 - "EnsureRepoRootAndEnv"
-Cohesion: 0.10
-Nodes (26): StartFunc, StopFunc, EnsureRepoRootAndEnv(), repoRoot(), ResolvedAuthIssuer(), setWorktreeDBName(), Test_repoRoot(), Test_setWorktreeDBName() (+18 more)
+### Community 234 - "NewJobCore"
+Cohesion: 0.19
+Nodes (16): newJobCommand(), StartFunc, StopFunc, gracefulStop(), runJob(), RunJobWith(), failClosedChan(), jobEventFields() (+8 more)
 
 ### Community 235 - "ImageGCUsecase"
-Cohesion: 0.23
-Nodes (10): agedImageKeys(), excludeKeys(), ImageGCUsecase, NewImageGC(), Test_agedImageKeys(), Test_excludeKeys(), Test_imageGCUsecase_sweepPage(), TestNewImageGC() (+2 more)
+Cohesion: 0.31
+Nodes (7): agedImageKeys(), excludeKeys(), ImageGCUsecase, NewImageGC(), ProductImageQueryService, imageGCPageResult, ImageGCResult
 
 ### Community 236 - "metricNamesOf"
-Cohesion: 0.11
-Nodes (53): go.opentelemetry.io/otel/sdk/metric.ManualReader, go.opentelemetry.io/otel/sdk/metric/metricdata.Metrics, go.opentelemetry.io/otel/sdk/metric/metricdata.ResourceMetrics, NewHTTPClientMetrics(), attrOfAny(), collectHTTPClientMetrics(), gaugeValueOf(), newHTTPClientMetricsForTest() (+45 more)
+Cohesion: 0.28
+Nodes (23): collectHTTPClientMetrics(), newHTTPClientMetricsForTest(), TestHTTPClientMetrics_InFlightAdd(), TestHTTPClientMetrics_RecordError(), TestHTTPClientMetrics_RecordLatencyMs(), TestHTTPClientMetrics_RecordRequest(), TestHTTPClientMetrics_RecordRetry(), TestHTTPClientMetrics_SetBreakerState() (+15 more)
 
 ### Community 237 - "Scaffold Lifecycle"
 Cohesion: 0.10
@@ -2074,41 +2096,41 @@ Nodes (19): scaffold-domain のスコープ, Scaffold Lifecycle, spec format, sp
 Cohesion: 0.10
 Nodes (20): Checklist, Commit, Commit message rules, Confirmation, Constraints (Summary), Error handling, Granularity guidance, Lefthook notice (+12 more)
 
-### Community 239 - "New"
-Cohesion: 0.21
-Nodes (9): filterLabel(), New(), parseFilter(), Test_filterLabel(), Test_jobImpl_Execute(), Test_jobImpl_Name(), Test_parseFilter(), TestNew() (+1 more)
+### Community 239 - "RequireAuthn"
+Cohesion: 0.02
+Nodes (75): server, server, server, server, go-boilerplate/internal/controller/handler/v1/products/count/gen.GetProductsCountRequestObject, go-boilerplate/internal/controller/handler/v1/products/count/gen.GetProductsCountResponseObject, go-boilerplate/internal/controller/handler/v1/products/detail/gen.GetProductsDetailRequestObject, go-boilerplate/internal/controller/handler/v1/products/detail/gen.GetProductsDetailResponseObject (+67 more)
 
 ### Community 240 - "ADR-0014 oapi-codegen Strict Server"
 Cohesion: 0.13
 Nodes (18): ADR-0012 OpenAPI-first, OpenAPI Wire-contract SSOT, ADR-0013 Redocly Modular Spec Pipeline, Lint Bundle Generate Docs Pipeline, ADR-0014 oapi-codegen Strict Server, Per-tag Strict-server Generation, ADR-0015 Retain Generated OpenAPI, Committed Cross-repo Contract Artifact (+10 more)
 
 ### Community 241 - "Usecase"
-Cohesion: 0.15
-Nodes (13): ConvertInput, ConvertResult, ReferenceAmount, server, go-boilerplate/internal/controller/handler/v1/exchangerate/gen.GetExchangeRatesRequestObject, go-boilerplate/internal/controller/handler/v1/exchangerate/gen.GetExchangeRatesResponseObject, go-boilerplate/internal/controller/handler/v1/exchangerate/gen.ReferenceAmount, toReferenceAmount() (+5 more)
+Cohesion: 0.13
+Nodes (17): cacheEntry, cacheGateway, cacheKey, ConvertInput, ConvertResult, Rate, ReferenceAmount, sync.RWMutex (+9 more)
 
-### Community 242 - "newOwnerCart"
-Cohesion: 0.33
-Nodes (11): Generator, usecase, newIssuingTokenGen(), newOwnerCart(), newSetItemUsecase(), Test_usecase_createGuestCart(), Test_usecase_createOwnerCart(), Test_usecase_resolveGuestCart() (+3 more)
+### Community 242 - "Discount"
+Cohesion: 0.14
+Nodes (20): DiscountKind, allDiscountKinds(), Discount, NewDiscountKind(), NewFlatDiscount(), NewRateDiscount(), ReconstructDiscount(), newTestDecimal() (+12 more)
 
 ### Community 243 - "Sync README"
 Cohesion: 0.10
 Nodes (20): 1. Read the target README, 2. Enumerate the actual file tree, 3. Compute the diff, 4. Apply the update, 5. Verify the canonical update, 6. Chain into `canonicalize-doc` to sync the translation, 7. Verify with Markdown Lint, 8. Final verification (+12 more)
 
-### Community 244 - "Job"
-Cohesion: 0.06
-Nodes (30): go.uber.org/fx.In, jobImpl, New(), parseBatchSize(), Test_jobImpl_Execute(), Test_jobImpl_Name(), Test_parseBatchSize(), TestNew() (+22 more)
+### Community 244 - "user_purge_job.go"
+Cohesion: 0.20
+Nodes (11): abortedMessage(), New(), parseArgs(), resultMessage(), Test_abortedMessage(), Test_jobImpl_Name(), Test_parseArgs(), Test_resultMessage() (+3 more)
 
-### Community 245 - "useDockerStub"
-Cohesion: 0.19
-Nodes (13): digestAgeDays(), earliestCreated(), inspect(), minCreated(), resolveDigest(), Test_digestAgeDays(), Test_earliestCreated(), Test_inspect() (+5 more)
+### Community 245 - "Scope"
+Cohesion: 0.12
+Nodes (20): ScopeKind, allScopeKinds(), Scope, NewCategoryScope(), NewProductScope(), NewScopeKind(), ReconstructScope(), Test_allScopeKinds() (+12 more)
 
 ### Community 246 - "Status"
-Cohesion: 0.18
-Nodes (10): allStatuses(), Status, NewStatus(), Test_allStatuses(), TestNewStatus(), TestStatus_CanTransitionTo(), TestStatus_Code(), TestStatus_IsTerminal() (+2 more)
+Cohesion: 0.11
+Nodes (22): allStatuses(), Status, NewStatus(), TerminalStatusCodes(), Test_allStatuses(), TestNewStatus(), TestStatus_CanTransitionTo(), TestStatus_Code() (+14 more)
 
 ### Community 247 - "bytes.Buffer"
-Cohesion: 0.14
-Nodes (15): bytes.Buffer, go.uber.org/zap.Logger, go.uber.org/zap/zapcore.CheckedEntry, go.uber.org/zap/zapcore.Core, go.uber.org/zap/zapcore.Entry, go.uber.org/zap/zapcore.Field, go.uber.org/zap/zapcore.Level, newJSONStacktraceLogger() (+7 more)
+Cohesion: 0.11
+Nodes (17): bytes.Buffer, go.uber.org/zap.Field, go.uber.org/zap.Logger, go.uber.org/zap/zapcore.CheckedEntry, go.uber.org/zap/zapcore.Core, go.uber.org/zap/zapcore.Entry, go.uber.org/zap/zapcore.Field, go.uber.org/zap/zapcore.Level (+9 more)
 
 ### Community 248 - "newWorkerCommand"
 Cohesion: 0.33
@@ -2118,29 +2140,29 @@ Nodes (9): newWorkerCommand(), gracefulStop(), runWorker(), RunWorkerWith(), Tes
 Cohesion: 0.53
 Nodes (5): buildInfo, newTestBuildInfo(), Test_buildInfo_BuildDate(), Test_buildInfo_Revision(), Test_buildInfo_Version()
 
-### Community 250 - "go.opentelemetry.io/otel/metric.Meter"
-Cohesion: 0.09
-Nodes (15): go.opentelemetry.io/otel/metric/embedded.MeterProvider, go.opentelemetry.io/otel/metric.Float64Histogram, go.opentelemetry.io/otel/metric.Int64Counter, go.opentelemetry.io/otel/metric.Int64Gauge, go.opentelemetry.io/otel/metric.Int64UpDownCounter, go.opentelemetry.io/otel/metric.Meter, failingGaugeMeter, failingGaugeMeterProvider (+7 more)
+### Community 250 - "HTTPClientMetrics"
+Cohesion: 0.06
+Nodes (20): go.opentelemetry.io/otel/metric/embedded.MeterProvider, go.opentelemetry.io/otel/metric.Float64Histogram, go.opentelemetry.io/otel/metric.Int64Counter, go.opentelemetry.io/otel/metric.Int64Gauge, go.opentelemetry.io/otel/metric.Int64UpDownCounter, go.opentelemetry.io/otel/metric.Meter, HTTPClientMetrics, NewHTTPClientMetrics() (+12 more)
 
 ### Community 251 - "ADR-0034: Reserve CommandService for multi-aggregate writes that require single-transaction atomicity"
 Cohesion: 0.10
 Nodes (21): ADR-0034: Reserve CommandService for multi-aggregate writes that require single-transaction atomicity, Alternatives Considered, Classification by derivability, Classifying every multi-aggregate write as CommandService, Consequences, Context, Criterion, Decision (+13 more)
 
 ### Community 252 - "events.ts"
-Cohesion: 0.21
-Nodes (13): claudeBase(), claudeBlockEvent(), Client, codexEventMsg(), codexResponseItem(), EventBase, EventKind, isRecord() (+5 more)
+Cohesion: 0.20
+Nodes (14): claudeBase(), claudeBlockEvent(), Client, codexEventMsg(), codexResponseItem(), Event, EventBase, EventKind (+6 more)
 
 ### Community 253 - "report.ts"
-Cohesion: 0.17
-Nodes (16): SessionFacts, summarizeSession(), DAY_BOUNDARY_OFFSET_SEC, foldWindowEvents(), overlapsPeriod(), parseDay(), Period, PeriodSummary (+8 more)
+Cohesion: 0.18
+Nodes (15): SessionFacts, DAY_BOUNDARY_OFFSET_SEC, foldWindowEvents(), overlapsPeriod(), parseDay(), Period, PeriodSummary, resolvePeriod() (+7 more)
 
 ### Community 254 - "scan.ts"
 Cohesion: 0.25
 Nodes (13): actual, failures, Baseline, countMarkerLines(), diffBaseline(), EXCLUDED_DIRECTORIES, EXCLUDED_PATH_PREFIXES, isBaselineTarget() (+5 more)
 
-### Community 255 - "ADR-0098: Use a hardened-alpine runtime base; do NOT use distroless/scratch"
-Cohesion: 0.17
-Nodes (11): ADR-0098: Use a hardened-alpine runtime base; do NOT use distroless/scratch, Alternatives Considered, Consequences, Context, Decision, distroless/static or distroless/base, Negative Consequences, Notes (+3 more)
+### Community 255 - "RunWithSpan"
+Cohesion: 0.11
+Nodes (20): go.opentelemetry.io/otel/trace.Link, TestStartTestSpanForEcho(), BuildSpanName(), ExtractTraceContext(), NewTraceExtractor(), StartSpanWithParent(), TestBuildSpanName(), TestExtractTraceContext() (+12 more)
 
 ### Community 256 - "Canonicalize Doc"
 Cohesion: 0.10
@@ -2162,33 +2184,33 @@ Nodes (19): API パラメータ命名の統一, httpclient / outbox relay の堅
 Cohesion: 0.10
 Nodes (19): applyToAll, config.SecureCookieConfig から反映される値, Cookie Prefix の扱い（自動ルール）, cookieNames, enforceSecureWhenSameSiteNone, forceDomain, forceHTTPOnly, forceMaxAge (+11 more)
 
-### Community 261 - "worker/health_test.go"
-Cohesion: 0.24
-Nodes (12): net/http.ServeMux, healthMux(), NewHealthServer(), blockingReady(), canceledContext(), driveInFlight(), httpGet(), readBody() (+4 more)
-
-### Community 262 - "NewEndpointConfig"
+### Community 261 - "newDDB"
 Cohesion: 0.13
-Nodes (16): ConsumerQueueConfig, NewConsumerQueueConfig(), NewEndpointConfig(), provideWithdrawalArchiveQueue(), provideWithdrawalArchiveQueueStats(), provideWithdrawalArchiveWorker(), newConsumerQueueConfig(), newWithdrawalArchiveQueueForTest() (+8 more)
+Nodes (24): awsFake, fakeHandler, newDDB(), queryInput(), Test_ddbSmoke_cleanup(), Test_ddbSmoke_conditionalPut(), Test_ddbSmoke_createTable(), Test_ddbSmoke_duplicatePut() (+16 more)
 
-### Community 263 - "handleHTTPError"
-Cohesion: 0.08
-Nodes (38): echo.HTTPErrorHandler, Policies, HTTPErrorResponse, NewHTTPErrorFromAppError(), newHTTPErrorFromMeta(), NewHTTPErrorFromStatus(), Test_newHTTPErrorFromMeta(), TestHTTPErrorResponse_Error() (+30 more)
+### Community 262 - "Config"
+Cohesion: 0.05
+Nodes (52): AuthConfig, dbSeedRun(), newConfigForSeed(), newDBSeedCommand(), openSeedObjectStorage(), seedVars(), ConsumerQueueConfig, DatabaseConfig (+44 more)
+
+### Community 263 - "NewObservabilityConfig"
+Cohesion: 0.05
+Nodes (65): echo.HTTPErrorHandler, badWriter, Policies, stubAllowPolicy, stubDetailPolicy, go-boilerplate/internal/logging/mock.MockLogger, isActiveExporter(), Test_isActiveExporter() (+57 more)
 
 ### Community 264 - "v1_users_me_purchases_summary_handler_test.go"
 Cohesion: 0.13
 Nodes (22): go-boilerplate/internal/controller/handler/v1/users/me/purchases/gen.GetUsersMePurchasesSummaryRequestObject, go-boilerplate/internal/controller/handler/v1/users/me/purchases/gen.GetUsersMePurchasesSummaryResponseObject, go-boilerplate/internal/controller/handler/v1/users/me/purchases/gen.PurchaseAggregateResponse, go-boilerplate/internal/controller/handler/v1/users/me/purchases/gen.PurchaseGroupByParam, go-boilerplate/internal/controller/handler/v1/users/me/purchases/gen.PurchaseGroupResponse, go-boilerplate/internal/controller/handler/v1/users/me/purchases/gen.PurchaseSubGroupResponse, BindHandler(), echo.Echo (+14 more)
 
 ### Community 265 - "ApplicationConfig"
-Cohesion: 0.09
-Nodes (20): github.com/labstack/echo/v5/middleware.RecoverConfig, ApplicationConfig, developmentConfig(), echo.Context, echo.MiddlewareFunc, Middleware(), newPanicLogFunc(), newRecoverConfig() (+12 more)
+Cohesion: 0.05
+Nodes (34): authorizer, authenticatorParams, echo.IPExtractor, github.com/labstack/echo/v5/middleware.RecoverConfig, go.uber.org/fx.In, net.IPNet, ApplicationConfig, SecurityConfig (+26 more)
 
-### Community 266 - "BindHandler"
-Cohesion: 0.20
-Nodes (10): go-boilerplate/internal/controller/handler/v1/carts/merge/gen.CartMergeResponse, go-boilerplate/internal/controller/handler/v1/carts/merge/gen.PostCartsMeMergeRequestObject, go-boilerplate/internal/controller/handler/v1/carts/merge/gen.PostCartsMeMergeResponseObject, BindHandler(), echo.Echo, Test_toCartMergeResponse(), Test_toUUIDs(), toCartMergeResponse() (+2 more)
+### Community 266 - "Usecase"
+Cohesion: 0.10
+Nodes (19): go-boilerplate/internal/controller/handler/v1/purchases/statuses/gen.GetPurchaseStatusesRequestObject, go-boilerplate/internal/controller/handler/v1/purchases/statuses/gen.GetPurchaseStatusesResponseObject, go-boilerplate/internal/controller/handler/v1/purchases/statuses/gen.PurchaseStatusRef, go-boilerplate/internal/usecase/purchase/status/mock.MockUsecase, BindHandler(), echo.Echo, server, server (+11 more)
 
 ### Community 267 - "DatabaseConfig"
-Cohesion: 0.10
-Nodes (16): buildMigrateInstance(), net/url.URL, net/url.Values, DatabaseConfig, buildDSN(), DSN(), DSNString(), DSNStringWithoutPassword() (+8 more)
+Cohesion: 0.06
+Nodes (27): dbDriver, github.com/jackc/pgx/v5/pgconn.CommandTag, github.com/jackc/pgx/v5/pgxpool.Config, github.com/jackc/pgx/v5/pgxpool.Pool, github.com/jackc/pgx/v5/pgxpool.Stat, net/url.URL, net/url.Values, DatabaseConfig (+19 more)
 
 ### Community 268 - "registerOrExisting"
 Cohesion: 0.24
@@ -2199,12 +2221,12 @@ Cohesion: 0.23
 Nodes (13): logger, newBufLogger(), newExtractSpyLogger(), Test_levelGatedCore_Check(), Test_levelGatedCore_Enabled(), Test_levelGatedCore_With(), Test_logger_CallerSkip(), Test_logger_Debug() (+5 more)
 
 ### Community 270 - "IdempotencyMetrics"
-Cohesion: 0.23
-Nodes (3): IdempotencyMetrics, Test_normalizeOperationID(), normalizeOperationID()
+Cohesion: 0.16
+Nodes (10): go.opentelemetry.io/otel/sdk/metric.ManualReader, IdempotencyMetrics, collectLabelValues(), newIdempotencyMetricsWithReader(), Test_normalizeOperationID(), TestIdempotencyMetrics_incFailure(), TestIdempotencyMetrics_incRequest(), NewIdempotencyMetrics() (+2 more)
 
-### Community 271 - "observability/test_kit.go"
-Cohesion: 0.07
-Nodes (31): ShouldLogWithSpan(), TestExtractTraceContext(), TestNewTraceExtractor(), TestShouldLogWithSpan(), TestStartSpanWithParent(), TestTraceContext_ParentSpanID(), TestTraceContext_SpanID(), TestTraceContext_TraceID() (+23 more)
+### Community 271 - "observability/test_kit_test.go"
+Cohesion: 0.04
+Nodes (70): go.opentelemetry.io/otel/attribute.Set, go.opentelemetry.io/otel/sdk/metric/metricdata.HistogramDataPoint, go.opentelemetry.io/otel/sdk/metric/metricdata.Metrics, go.opentelemetry.io/otel/sdk/trace.ReadOnlySpan, go.opentelemetry.io/otel/trace.Tracer, echo.MiddlewareFunc, Middleware(), PassthroughMiddleware() (+62 more)
 
 ### Community 272 - "CommandService Implementation Guide"
 Cohesion: 0.20
@@ -2223,16 +2245,16 @@ Cohesion: 0.11
 Nodes (21): Conclusion, Evaluation of UUID Exposure, Prerequisites and Design Philosophy, Security Defense Layers, UUID Exposure Security Evaluation, Exponential Backoff Utility, Date and Time Parsing Utility, Exact Decimal Utility (+13 more)
 
 ### Community 276 - "candidates.ts"
-Cohesion: 0.20
-Nodes (13): Candidate, CandidateReason, CORRECTIVE_MARKERS, DEFAULT_LIMIT, excerpt(), INJECTED_MARKERS, isCorrective(), isInjected() (+5 more)
+Cohesion: 0.23
+Nodes (10): CandidateReason, CORRECTIVE_MARKERS, DEFAULT_LIMIT, excerpt(), INJECTED_MARKERS, isCorrective(), isInjected(), renderCandidateComment() (+2 more)
 
 ### Community 277 - "cover-gate/main_test.go"
 Cohesion: 0.21
 Nodes (14): annotate(), coverTotal(), judge(), main(), parseTotal(), run(), captureLog(), stubTotal() (+6 more)
 
 ### Community 278 - "runtime.ts"
-Cohesion: 0.15
-Nodes (23): listChildFiles(), ListFilesOptions, Transformer, currentDir, newSetupCommand(), ROOT_DIR, SetupOptions, APP_METADATA_TARGETS (+15 more)
+Cohesion: 0.10
+Nodes (28): currentDir, newSetupCommand(), SetupOptions, ensureCodeOwners(), ensureFourDigitYear(), ensureRepositoryReference(), CODEOWNERS_FILE, CodeownersUpdate (+20 more)
 
 ### Community 279 - "Scan Issue Report"
 Cohesion: 0.18
@@ -2259,8 +2281,8 @@ Cohesion: 0.11
 Nodes (17): Human-gated Issue-to-PR Pipeline, AI Modification Scope, Checklist, Delegating without double-asking, Do / Do NOT, Impl Issue, Step 0 — Confirm the three modes (one `AskUserQuestion`), Step 1 — Kickoff (+9 more)
 
 ### Community 285 - "purchase_summary_usecase_test.go"
-Cohesion: 0.36
-Nodes (8): dec(), newAuthn(), Test_accumulate(), Test_levelsOf(), Test_toGroups(), Test_usecase_GetPurchaseSummary(), Test_usecase_summarizeItems(), Test_validateGroupBy()
+Cohesion: 0.27
+Nodes (10): dec(), newAuthn(), Test_accumulate(), Test_levelsOf(), Test_toGroups(), Test_toSummaryView(), Test_usecase_GetPurchaseSummary(), Test_usecase_summarizeItems() (+2 more)
 
 ### Community 286 - "New Issue"
 Cohesion: 0.11
@@ -2287,20 +2309,20 @@ Cohesion: 0.11
 Nodes (17): Scaffold Domain Agent Interface, Spec-Driven Domain Generation, AI Modification Scope, Checklist, Constraints, First Step: Resolve Spec Path, Scaffold Domain, Step 1. Read Spec + README Context (+9 more)
 
 ### Community 292 - "graph-affected.ts"
-Cohesion: 0.25
-Nodes (14): buildGraphifyArgs(), CliOptions, describeNode(), findCandidates(), fold(), GraphNode, main(), parseArgs() (+6 more)
+Cohesion: 0.21
+Nodes (16): buildGraphifyArgs(), CliOptions, describeNode(), findCandidates(), fold(), GraphNode, main(), parseArgs() (+8 more)
 
-### Community 293 - "ParseSearchTokens"
-Cohesion: 0.33
-Nodes (8): dedupePreserveOrder(), limit(), ParseSearchTokens(), splitIntoTerms(), Test_dedupePreserveOrder(), Test_limit(), Test_splitIntoTerms(), TestParseSearchTokens()
+### Community 293 - "report_test.go"
+Cohesion: 0.08
+Nodes (18): fakeAPIError, fakeNetError, hasUnsupportedMarker(), isTransportFailure(), Test_count(), Test_describe(), Test_escapeCell(), Test_exitCode() (+10 more)
 
-### Community 294 - "Local Hooks Mirror CI"
-Cohesion: 0.15
-Nodes (15): Two-Layer GolangCI Configuration, Local Hooks Mirror CI, Coverage Hard Gate, CI Real Graph Boot Check, Generated Artifact Drift Gate, Multi-Layer Security Scanning, SHA-Pinned GitHub Actions, Package Publication Cooldown (+7 more)
+### Community 294 - "Usecase"
+Cohesion: 0.14
+Nodes (18): CartCouponView, CouponView, Usecase, go-boilerplate/internal/controller/handler/v1/carts/coupons/gen.CartCouponResponse, go-boilerplate/internal/controller/handler/v1/carts/coupons/gen.CouponResponse, go-boilerplate/internal/controller/handler/v1/carts/coupons/gen.GetCartsMeCouponsRequestObject, go-boilerplate/internal/controller/handler/v1/carts/coupons/gen.GetCartsMeCouponsResponseObject, BindHandler() (+10 more)
 
-### Community 295 - "mermaid-diagram.tsx"
-Cohesion: 0.24
-Nodes (10): MermaidDiagram(), MermaidDiagramProps, renderMermaidMock, toElementId(), currentTheme(), loadMermaid(), renderMermaid(), resolveMermaidTheme() (+2 more)
+### Community 295 - "newMockPool"
+Cohesion: 0.13
+Nodes (21): Compose, DBAdmin, go-boilerplate/internal/cli/dbslot/mock.MockCompose, go-boilerplate/internal/cli/dbslot/mock.MockDBAdmin, Registry, NewPool(), expectSlotDBs(), fillSlots() (+13 more)
 
 ### Community 296 - "ADR-0043: Subsystem-scoped envPrefix typed config loaders"
 Cohesion: 0.18
@@ -2311,8 +2333,8 @@ Cohesion: 0.07
 Nodes (25): Correctness Security Architecture Runtime-Gap Lenses, Adversarial Reviewer, How to review, Lens definitions, Output (Japanese), Silent-failure focus (correctness lens only), Your input, Agents Documentation (+17 more)
 
 ### Community 298 - "security_declaration_test.go"
-Cohesion: 0.36
-Nodes (12): github.com/getkin/kin-openapi/openapi3.SecurityRequirements, assertAllowListMembership(), assertAllowListsCoverSpec(), assertOptionalAuthDeclaresBearer(), classifySecurity(), declaresBearer(), effectiveSecurity(), emptyRequirementIndex() (+4 more)
+Cohesion: 0.34
+Nodes (14): github.com/getkin/kin-openapi/openapi3.SecurityRequirements, assertAllowListMembership(), assertAllowListsCoverSpec(), assertOptionalAuthDeclaresBearer(), assertStreamTicketDeclaration(), classifySecurity(), declaresBearer(), declaresStreamTicket() (+6 more)
 
 ### Community 299 - "Test Review"
 Cohesion: 0.11
@@ -2327,8 +2349,8 @@ Cohesion: 0.33
 Nodes (4): requireSecureURL(), Test_requireSecureURL(), discoveryResolver, openidConfiguration
 
 ### Community 302 - "help.ts"
-Cohesion: 0.36
-Nodes (8): categoryLines(), HelpOutput, isMakefileSource(), MakefileSource, renderHelp(), targetLines(), collectMakefiles(), main()
+Cohesion: 0.32
+Nodes (9): categoryLines(), HelpOutput, isMakefileSource(), MakefileSource, renderHelp(), targetLines(), source(), collectMakefiles() (+1 more)
 
 ### Community 303 - "ADR-0032: Adopt lightweight CQRS — Repository for writes, QueryService for reads"
 Cohesion: 0.11
@@ -2355,24 +2377,24 @@ Cohesion: 0.22
 Nodes (7): Toggle(), ToggleProps, toggleVariants, ToggleGroupNative(), ToggleGroupNativeItem(), ToggleGroupNativeItemProps, ToggleGroupNativeProps
 
 ### Community 309 - "usecase"
-Cohesion: 0.29
-Nodes (6): DTO, usecase, New(), TestNew(), DBHealth, DBSystemCqrs
+Cohesion: 0.12
+Nodes (18): go-boilerplate/internal/controller/handler/ready/gen.GetReadyRequestObject, go-boilerplate/internal/controller/handler/ready/gen.GetReadyResponseObject, go-boilerplate/internal/controller/handler/ready/gen.ReadyDependency, go-boilerplate/internal/usecase/healthcheck.Usecase, DependencyStatus, DTO, usecase, BindHandler() (+10 more)
 
 ### Community 310 - "Scaffold Integration Test"
 Cohesion: 0.12
 Nodes (16): Scaffold Integration Test Interface, AI Modification Scope, Checklist, Constraints, First Step: Resolve Identity, Preconditions, Scaffold Integration Test, Step 1. Read Inputs (+8 more)
 
-### Community 311 - "ObservabilityConfig"
-Cohesion: 0.05
-Nodes (53): github.com/exaring/otelpgx.Tracer, go-boilerplate/internal/logging.LogCore, go.opentelemetry.io/otel/metric.MeterProvider, go.opentelemetry.io/otel/sdk/log.Exporter, go.opentelemetry.io/otel/sdk/log.LoggerProvider, go.opentelemetry.io/otel/sdk/metric.Exporter, go.opentelemetry.io/otel/sdk/metric.MeterProvider, go.opentelemetry.io/otel/sdk/metric.Reader (+45 more)
+### Community 311 - "EndpointConfig"
+Cohesion: 0.15
+Nodes (10): go.opentelemetry.io/otel/sdk/metric.Exporter, go.opentelemetry.io/otel/sdk/metric.Reader, go.opentelemetry.io/otel/sdk/trace.SpanExporter, EndpointConfig, ensureOTLPPath(), NewMeterProvider(), newMetricExporter(), newMetricReader() (+2 more)
 
 ### Community 312 - "Scaffold Usecase"
 Cohesion: 0.12
 Nodes (16): Scaffold Usecase Interface, AI Modification Scope, Checklist, Constraints, First Step: Resolve Spec Path, Preconditions, Scaffold Usecase, Step 1. Read Spec + Reference Context (+8 more)
 
-### Community 313 - "redmetrics/status.go"
-Cohesion: 0.28
-Nodes (6): normalizeStatus(), statusClass(), statusCodeLabel(), Test_normalizeStatus(), Test_statusClass(), Test_statusCodeLabel()
+### Community 313 - "report.go"
+Cohesion: 0.18
+Nodes (18): context.CancelFunc, apiError, incompatibleError, recorder, Result, step, Verdict, runDynamoDB() (+10 more)
 
 ### Community 314 - "Reusable OpenAPI Schemas"
 Cohesion: 0.15
@@ -2387,28 +2409,28 @@ Cohesion: 0.10
 Nodes (19): Impl Review Interface, Different-model Adversarial Review, Finder-verifier Pipeline, Single Test-viewpoint Owner, Checklist, Core Idea — reviewer ≠ implementer, Do / Do NOT, Impl Review (+11 more)
 
 ### Community 317 - "marks.sh"
-Cohesion: 0.33
-Nodes (11): acquire_lock(), close_window(), current_window(), current_window_unsafe(), is_known(), is_window_closed(), open_window(), release_lock() (+3 more)
+Cohesion: 0.38
+Nodes (12): acquire_lock(), close_window(), current_window(), current_window_unsafe(), is_known(), is_window_closed(), new_window_id(), open_window() (+4 more)
 
 ### Community 318 - "Glossary — Business Vocabulary Spec"
 Cohesion: 0.20
 Nodes (10): Glossary — Business Vocabulary Spec, How a term earns a row, Mechanism vocabulary, Overview, Terms, Watch list, What this document is not, 同音異義（未決） (+2 more)
 
-### Community 319 - "Spec Validator — Usecase"
-Cohesion: 0.08
-Nodes (25): Constraints, Output (Japanese — this IS the return value), Source of Truth (read every run — never hardcode rules), Spec Validator — Usecase, Step 1. Format Check, Step 2. Cross-Spec Reference Check, Step 3. Interface Coverage Check, Step 4. Naming Convention Check (lean A — suggestion only) (+17 more)
+### Community 319 - "Verify-Spec Rules"
+Cohesion: 0.07
+Nodes (27): Constraints, Output (Japanese — this IS the return value), Source of Truth (read every run — never hardcode rules), Spec Validator — Usecase, Step 1. Format Check, Step 2. Cross-Spec Reference Check, Step 3. Interface Coverage Check, Step 4. Naming Convention Check (lean A — suggestion only) (+19 more)
 
 ### Community 320 - "Docker Base Image Pin Refresh"
 Cohesion: 0.12
 Nodes (16): 0. Pre-flight: vendor consistency + registry access, 1. Parse Arguments and Inventory, 2. Resolve, 3. Triage a Rule 3 Refusal (only when a decision needs it), 4. Apply, 5. Verify, 6. Final Report, AI Modification Scope (+8 more)
 
-### Community 321 - "github.com/spf13/cobra.Command"
-Cohesion: 0.13
-Nodes (23): registerCommands(), envInt(), envStr(), gitBranch(), newDBSlotCommand(), newDBSlotResolverCommand(), newDBSlotStatusCommand(), newDBSlotSubCommand() (+15 more)
+### Community 321 - "io.Writer"
+Cohesion: 0.36
+Nodes (12): envInt(), envStr(), gitBranch(), newDBSlotCommand(), newDBSlotResolverCommand(), newDBSlotStatusCommand(), newDBSlotSubCommand(), newSlotPool() (+4 more)
 
-### Community 322 - "skip_reason_policy_test.go"
-Cohesion: 0.38
-Nodes (9): collectSkipReasonViolations(), commentStart(), describe(), inComment(), skipCallText(), Test_collectSkipReasonViolations(), Test_commentStart(), Test_skipCallText() (+1 more)
+### Community 322 - "Usecase"
+Cohesion: 0.11
+Nodes (18): go-boilerplate/internal/controller/handler/v1/products/statuses/gen.GetProductStatusesRequestObject, go-boilerplate/internal/controller/handler/v1/products/statuses/gen.GetProductStatusesResponseObject, go-boilerplate/internal/controller/handler/v1/products/statuses/gen.ProductStatusResponse, go-boilerplate/internal/usecase/product/status/mock.MockUsecase, BindHandler(), echo.Echo, server, server (+10 more)
 
 ### Community 323 - "Execution Steps"
 Cohesion: 0.12
@@ -2422,9 +2444,9 @@ Nodes (16): AI Modification Scope, Checklist, Constraints, First Step: Resolve I
 Cohesion: 0.12
 Nodes (16): 0. Pre-flight: vendor consistency + registry access, 1. Parse Arguments and Inventory, 2. Resolve, 3. Triage a Rule 3 Refusal (only when a decision needs it), 4. Apply, 5. Verify, 6. Final Report, AI Modification Scope (+8 more)
 
-### Community 326 - "New"
-Cohesion: 0.06
-Nodes (37): go.uber.org/fx/fxevent.Logger, Test_classify(), NewFxEventLogger(), Test_fxEventLogger_LogEvent(), Test_fxEventLogger_record(), TestNewFxEventLogger(), Test_txManager_doOnce(), Test_txManager_rollback() (+29 more)
+### Community 326 - "newNoopMeterBuilder"
+Cohesion: 0.52
+Nodes (6): newNoopMeterBuilder(), Test_meterBuilder_counter(), Test_meterBuilder_countHistogram(), Test_meterBuilder_gauge(), Test_meterBuilder_histogram(), Test_meterBuilder_upDownCounter()
 
 ### Community 327 - "Go Version Upgrade"
 Cohesion: 0.29
@@ -2495,24 +2517,24 @@ Cohesion: 0.05
 Nodes (39): Back Prop Agent Interface, Documentation Drift Categories, Context Map Agent Interface, Context Map Audit Agent Interface, Contact-Point Drift, Human-Confirmed Relationship Labels, Evans Pattern Language Comparison, Applying approved documentation changes (+31 more)
 
 ### Community 344 - "doc-router.sh"
-Cohesion: 0.27
-Nodes (7): checkout_for(), checkout_root(), match_route(), routes(), run_hook(), doc-router.sh script, usage()
+Cohesion: 0.40
+Nodes (10): checkout_for(), checkout_root(), match_route(), nearest_readme(), routes(), run_hook(), doc-router.sh script, to_relative() (+2 more)
 
-### Community 345 - "At-Least-Once Outbox Polling"
+### Community 345 - "Single-Transaction At-Most-Once Idempotency"
 Cohesion: 0.20
-Nodes (11): At-Least-Once Outbox Polling, Skip-Locked Outbox Relay, Message ID Idempotency Propagation, Outbox Dead After Max Attempts, Outbox Retention GC, Publisher HTTP Profile Isolation, Resident Relay and One-Shot GC, Single-Transaction At-Most-Once Idempotency (+3 more)
+Nodes (10): At-Least-Once Outbox Polling, Skip-Locked Outbox Relay, Message ID Idempotency Propagation, Outbox Retention GC, Publisher HTTP Profile Isolation, Resident Relay and One-Shot GC, Single-Transaction At-Most-Once Idempotency, Required Idempotency Scope (+2 more)
 
-### Community 346 - "NewPublisher"
-Cohesion: 0.13
-Nodes (15): github.com/aws/aws-sdk-go-v2/service/sqs.SendMessageInput, github.com/aws/aws-sdk-go-v2/service/sqs/types.MessageAttributeValue, go-boilerplate/internal/infrastructure/queue/sqs/mock.MockAPI, PublisherConfig, NewPublisher(), captureSendMessage(), newPublisher(), newTestUUID() (+7 more)
+### Community 346 - "OutboxConfig"
+Cohesion: 0.08
+Nodes (18): github.com/aws/aws-sdk-go-v2/service/sqs.SendMessageInput, github.com/aws/aws-sdk-go-v2/service/sqs/types.MessageAttributeValue, go-boilerplate/internal/infrastructure/queue/sqs/mock.MockAPI, OutboxConfig, New(), newQueueConfig(), PublisherConfig, NewPublisher() (+10 more)
 
-### Community 347 - "keyedDispatcher"
+### Community 347 - "observability/realtime_metrics_test.go"
 Cohesion: 0.29
-Nodes (6): newKeyedDispatcher(), Test_newKeyedDispatcher(), Test_keyedDispatcher_dispatch(), Test_keyedDispatcher_runKey(), keyedDispatcher, keyRunner
+Nodes (23): collectRealtime(), histogramCountFloat64(), newTestRealtimeMetrics(), sumInt64(), TestNewRealtimeMetrics(), TestRealtimeMetrics_CatchUpLag(), TestRealtimeMetrics_CleanupExecuted(), TestRealtimeMetrics_CleanupInstances() (+15 more)
 
 ### Community 348 - "handler"
-Cohesion: 0.08
-Nodes (23): go-boilerplate/internal/usecase/user/mock.MockArchiveUsecase, ensureJSONContentType(), echo.Context, echo.MiddlewareFunc, Middleware(), shouldForceJSON(), Test_ensureJSONContentType(), Test_shouldForceJSON() (+15 more)
+Cohesion: 0.06
+Nodes (34): go-boilerplate/internal/usecase/user/mock.MockArchiveUsecase, ensureJSONContentType(), echo.Context, echo.MiddlewareFunc, Middleware(), shouldForceJSON(), Test_ensureJSONContentType(), Test_shouldForceJSON() (+26 more)
 
 ### Community 349 - "Scaffold Infra DB"
 Cohesion: 0.12
@@ -2522,9 +2544,9 @@ Nodes (15): AI Modification Scope, Checklist, Constraints, First Step: Resolve I
 Cohesion: 0.06
 Nodes (31): HTTP Structured Logging Middleware, Authentication Steps, Authn Slot Integration, OpenAPI Bearer Authentication, Errors, Extraction Rules, Notes, oapi/auth (+23 more)
 
-### Community 351 - "Evaluation"
-Cohesion: 0.28
-Nodes (4): Evaluation, CartItem, Issue, Test_toItemIssue()
+### Community 351 - "As"
+Cohesion: 0.12
+Nodes (15): ignoreAlreadyRegistered(), Test_ignoreAlreadyRegistered(), IsLockNotAvailable(), isPgConnectionError(), IsRetryableTxError(), IsUnavailable(), Test_isPgConnectionError(), TestIsLockNotAvailable() (+7 more)
 
 ### Community 352 - "Scaffold Integration Test"
 Cohesion: 0.12
@@ -2550,9 +2572,9 @@ Nodes (9): Controller Layer Guide (`internal/controller`), Dependency Rules, Dir
 Cohesion: 0.17
 Nodes (12): 4-digit IDs, ADR-0030: Use sequential 6-digit migration IDs with CI-enforced gap and pair checks, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, No CI enforcement (honor system) (+4 more)
 
-### Community 358 - "newEvent"
-Cohesion: 0.22
-Nodes (4): Event, newEvent(), Event, EventType
+### Community 358 - "newTestUUID"
+Cohesion: 0.26
+Nodes (21): New(), Attributes, newScopedCoupon(), newTestCoupon(), Test_newCoupon(), TestCoupon_Discount(), TestCoupon_DiscountFor(), TestCoupon_ExpiresAt() (+13 more)
 
 ### Community 359 - "Tool Map"
 Cohesion: 0.12
@@ -2567,8 +2589,8 @@ Cohesion: 0.35
 Nodes (8): main(), OPENAPI_PATH, deriveVersion(), planStamp(), readVersion(), replaceVersion(), StampPlan, SPEC
 
 ### Community 362 - "Scaffold Lifecycle"
-Cohesion: 0.04
-Nodes (44): Lean Two-Spec Architecture, TODO Hand-Off Model, Usecase Workflow, Cross-Spec Consistency, Arch Check Agent Interface, scaffold-domain のスコープ, Scaffold Lifecycle, spec format (+36 more)
+Cohesion: 0.14
+Nodes (13): Lean Two-Spec Architecture, scaffold-domain のスコープ, Scaffold Lifecycle, spec format, spec パス規約, spec ファイルのライフサイクル, Standalone 実行, なぜ 2 spec か (+5 more)
 
 ### Community 363 - "Execution Steps"
 Cohesion: 0.07
@@ -2582,61 +2604,61 @@ Nodes (10): govulncheck Reporting Flow, Vulnerability Scan, Actions Static Analy
 Cohesion: 0.12
 Nodes (16): 1. `-- name:` and Execution Type, 2. Fix Parameter Names with `sqlc.arg()`, 3. Nest JOIN Results with `sqlc.embed()`, 4. Nullable Parameters with `sqlc.narg()`, 5. Reinforce Go Types with CAST, 6. Override Generated Types with `overrides`, 7. Combine Array Parameters with `ANY()`, 8. SELECT Column Names = Go Field Names (+8 more)
 
-### Community 366 - "SecurityConfig"
-Cohesion: 0.05
-Nodes (35): echo.IPExtractor, github.com/labstack/echo/v5/middleware.CORSConfig, github.com/labstack/echo/v5/middleware.SecureConfig, net.IPNet, SecurityConfig, NewSecurityConfig(), buildCORSConfig(), echo.MiddlewareFunc (+27 more)
+### Community 366 - "Middleware"
+Cohesion: 0.29
+Nodes (8): github.com/labstack/echo/v5/middleware.SecureConfig, applyCORP(), buildSecureConfig(), echo.MiddlewareFunc, Middleware(), Test_applyCORP(), Test_buildSecureConfig(), TestMiddleware()
 
 ### Community 367 - "ADR-0036: Serialize contended writes with ordered pessimistic row locks taken before the guarded condition"
 Cohesion: 0.12
 Nodes (16): A database constraint (partial unique index or trigger), ADR-0036: Serialize contended writes with ordered pessimistic row locks taken before the guarded condition, Advisory locks (`pg_advisory_xact_lock`), Alternatives Considered, An unlocked existence check (plain `SELECT ... WHERE <condition>`), Consequences, Context, Decision (+8 more)
 
-### Community 368 - "driver_test.go"
-Cohesion: 0.39
-Nodes (8): sharedTestDriver(), Test_dbDriver_Begin(), Test_dbDriver_Close(), Test_dbDriver_Exec(), Test_dbDriver_Ping(), Test_dbDriver_Query(), Test_dbDriver_QueryRow(), Test_dbDriver_Stats()
+### Community 368 - "newTestMessage"
+Cohesion: 0.15
+Nodes (20): newTestInquiry(), Test_newInquiry(), TestInquiry_AppendMessage(), TestInquiry_CreatedAt(), TestInquiry_ID(), TestInquiry_UpdatedAt(), TestInquiry_UserID(), TestNew() (+12 more)
 
 ### Community 369 - "Alternatives Considered"
 Cohesion: 0.12
 Nodes (16): ADR-0038: Hold a quantity in two scales — exact decimal for precision, integer minor unit for settlement, Alternatives Considered, Bake the rounding mode and minor-unit digit count into the decimal container, `big.Rat` (true rationals), Consequences, Context, Decision, Fix `NUMERIC(precision, scale)` per column (+8 more)
 
-### Community 370 - "template.md"
-Cohesion: 0.12
-Nodes (15): ADR-NNNN: imperative decision title, Alternative A, Alternative B, Alternatives Considered, boilerplate-only:replace-begin, boilerplate-only:replace-end, boilerplate-only:replace-with, Consequences (+7 more)
+### Community 370 - "ADR-NNNN: imperative decision title"
+Cohesion: 0.18
+Nodes (11): ADR-NNNN: imperative decision title, Alternative A, Alternative B, Alternatives Considered, Consequences, Context, Decision, Negative Consequences (+3 more)
 
-### Community 371 - "Workflow"
-Cohesion: 0.12
-Nodes (15): Repository and QueryService Boundary, CountProducts, CreateProduct, Dependencies, DTOs, GetProduct, Interface, ListLowStockProducts (+7 more)
+### Community 371 - "fake_test.go"
+Cohesion: 0.28
+Nodes (10): ddbState, fakeRequest, fakeResponse, goawsState, fakeQuery(), installGoAWS(), jsonOK(), jsonPath() (+2 more)
 
-### Community 372 - "Prefecture — Domain Spec"
-Cohesion: 0.12
-Nodes (14): Behavior Methods, Cross-field Invariants, Entity, Overview, Prefecture — Domain Spec, Repository Methods, Value Objects, Dependencies (+6 more)
+### Community 372 - "NewNoopRealtimeMetrics"
+Cohesion: 0.15
+Nodes (16): go-boilerplate/internal/usecase/realtime/mock.MockOrphanSweeper, SweeperFactory, New(), resultFields(), newJob(), newSweeperMock(), Test_jobImpl_Execute(), Test_jobImpl_Name() (+8 more)
 
-### Community 373 - "Purchase — Usecase Spec"
-Cohesion: 0.12
-Nodes (16): Dependencies, DTOs, GET 一覧（購入履歴・cursor）, GET 発送待ち一覧（まとめ発送・admin）, GET 詳細（購入詳細・集約跨ぎ QS）, GET 集計（購入サマリ・me）, Interface, Notes (+8 more)
+### Community 373 - "go.opentelemetry.io/otel/sdk/metric/metricdata.ResourceMetrics"
+Cohesion: 0.19
+Nodes (16): go.opentelemetry.io/otel/sdk/metric/metricdata.ResourceMetrics, attrOfAny(), gaugeValueOf(), metricPresent(), NewOutboxMetrics(), lagSecondsOfChannel(), metricByName(), TestNewOutboxMetrics() (+8 more)
 
 ### Community 374 - "Testing Conventions"
-Cohesion: 0.12
-Nodes (16): 10. Semantic quality bar (anti-patterns), 11. Test Strategy sections: ownership and adjudicating drift, 1. Structure, 2. Naming, 3. Parallelism, 4. No table-driven `for` loops, 5. Assertions, 6. Mocks and generated files (+8 more)
+Cohesion: 0.15
+Nodes (13): 11. Test Strategy sections: ownership and adjudicating drift, 1. Structure, 2. Naming, 3. Parallelism, 4. No table-driven `for` loops, 5. Assertions, 6. Mocks and generated files, 7. Architectural rules in tests (+5 more)
 
 ### Community 375 - "Product"
 Cohesion: 0.03
-Nodes (81): ProductSnapshot, Cart, Price, Product, Image, CategoryRef, StatusRef, buildImages() (+73 more)
+Nodes (108): testing.F, ListInquiriesParams, Price, NewPrice(), TestNewPrice(), Attributes, Product, IsDiscontinued() (+100 more)
 
 ### Community 376 - "Resolve"
-Cohesion: 0.16
-Nodes (13): Config, github.com/aws/aws-sdk-go-v2/aws.Config, github.com/aws/aws-sdk-go-v2/aws.HTTPClient, github.com/aws/aws-sdk-go-v2/service/sqs.Client, Resolve(), isolateCredentialChain(), TestResolve(), New() (+5 more)
+Cohesion: 0.17
+Nodes (12): Config, Config, github.com/aws/aws-sdk-go-v2/aws.Config, github.com/aws/aws-sdk-go-v2/aws.HTTPClient, Resolve(), New(), NewClient(), ClientConfig (+4 more)
 
 ### Community 377 - "Database Driver"
 Cohesion: 0.29
 Nodes (10): Database Driver, Transaction Manager, Database Metrics, PostgreSQL Error Normalization, Query Service, RDB Infrastructure, Repository Implementation, sqlc Query Substrate (+2 more)
 
 ### Community 378 - "actions-cutoff-lint/index.ts"
-Cohesion: 0.25
-Nodes (8): COMMENT_ACTION, findings, listWorkflowFiles(), REPO_ROOT, workflowFiles, selectWorkflowFiles(), listWorkflows(), listWorkflowFiles()
+Cohesion: 0.18
+Nodes (13): COMMENT_ACTION, findings, listWorkflowFiles(), REPO_ROOT, workflowFiles, Finding, formatFindings(), selectWorkflowFiles() (+5 more)
 
-### Community 379 - "bindPurchaseCodeRoutes"
-Cohesion: 0.11
-Nodes (22): BindHandler(), echo.Echo, TestBindHandler(), BindHandler(), echo.Echo, TestBindHandler(), BindHandler(), echo.Echo (+14 more)
+### Community 379 - "MustParse"
+Cohesion: 0.04
+Nodes (61): go-boilerplate/internal/controller/handler/v1/purchases/gen.AppliedCouponResponse, go-boilerplate/internal/controller/handler/v1/purchases/gen.PurchaseResponse, go-boilerplate/internal/controller/handler/v1/purchases/gen.PurchaseSummaryResponse, go-boilerplate/internal/controller/handler/v1/purchases/gen.ReferenceAmount, go-boilerplate/internal/infrastructure/rdb/sqlc/gen.PurchaseDetails, BindHandler(), echo.Echo, TestBindHandler() (+53 more)
 
 ### Community 380 - "Scaffold Endpoint"
 Cohesion: 0.13
@@ -2647,8 +2669,8 @@ Cohesion: 0.13
 Nodes (14): Scaffold Test Interface, Chainability, Checklist, Constraints (Summary), First Step: Resolve Target, Scaffold Test, Step 1. Read Layer Context, Step 2. Test-Perspective Subagent (+6 more)
 
 ### Community 382 - "StatsCollector"
-Cohesion: 0.12
-Nodes (21): github.com/prometheus/client_golang/prometheus.Desc, github.com/prometheus/client_golang/prometheus.Metric, provideQueueStatsCollector(), Test_provideQueueStatsCollector(), drainMetrics(), labeledValues(), Test_StatsCollector_emitFailures(), TestStatsCollector_collectDepth() (+13 more)
+Cohesion: 0.13
+Nodes (19): github.com/prometheus/client_golang/prometheus.Desc, github.com/prometheus/client_golang/prometheus.Metric, drainMetrics(), labeledValues(), Test_StatsCollector_emitFailures(), TestStatsCollector_collectDepth(), TestStatsCollector_recordFailure(), NewStatsCollector() (+11 more)
 
 ### Community 383 - "pin-consistency.ts"
 Cohesion: 0.36
@@ -2659,40 +2681,40 @@ Cohesion: 0.06
 Nodes (33): Cross-feature Vocabulary Drift, Ubiquitous Language, Domain Spec Template, New Spec Domain, Two-layer Spec Set, New Spec Usecase, Usecase Spec Template, AI Modification Scope (+25 more)
 
 ### Community 385 - "send.sh"
-Cohesion: 0.42
-Nodes (7): acquire_lock(), lock_is_stale(), locked_run(), release_lock(), run(), send.sh script, usage()
+Cohesion: 0.44
+Nodes (8): acquire_lock(), lock_is_stale(), locked_run(), release_lock(), run(), send.sh script, transcripts_dir(), usage()
 
 ### Community 386 - "ADR-0026 SQL-first Data Access"
 Cohesion: 0.25
 Nodes (9): ADR-0026 SQL-first Data Access, SQL as Explicit Contract, ADR-0027 sqlc Type-safe SQL, Generated Typed Go Data Access, ADR-0028 Merged DML and Schema as sqlc Input, Unified Generated sqlc Inputs, ADR-0032 Lightweight CQRS, Repository QueryService CommandService Split (+1 more)
 
 ### Community 387 - "document-content.tsx"
-Cohesion: 0.16
-Nodes (13): CodeBlock(), CodeBlockProps, highlightCodeMock, highlightCode(), CodeFence, languageOf(), readCodeFence(), textOf() (+5 more)
+Cohesion: 0.09
+Nodes (26): CodeBlock(), CodeBlockProps, highlightCodeMock, highlightCode(), CodeFence, languageOf(), readCodeFence(), codeFence() (+18 more)
 
 ### Community 388 - "portal-sidebar.tsx"
-Cohesion: 0.25
-Nodes (9): Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger(), PortalReferenceLink, PortalSidebar(), PortalSidebarProps, groups (+1 more)
+Cohesion: 0.27
+Nodes (8): Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger(), PortalReferenceLink, PortalSidebarProps, groups, referenceLinks
 
-### Community 389 - "codeowners.ts"
-Cohesion: 0.31
-Nodes (7): CODEOWNERS_FILE, CodeownersUpdate, isOwnerless(), OWNER_TOKEN, parseOwners(), replaceCodeowners(), RULE_LINE
+### Community 389 - "Alternatives Considered"
+Cohesion: 0.10
+Nodes (20): A contiguous watermark instead of head-of-line blocking, A failure marker that consumes the sequence, Accepting any cursor past the end, ADR-0072: PostgreSQL holds current state; the DynamoDB EventLog is a bounded replay store, not an event-sourced log, Alternatives Considered, An event table in PostgreSQL, Checking the predecessor at append time (publisher-side ordering), Consequences (+12 more)
 
-### Community 390 - "ADR-0089: Multi-layer security scanning, splitting reporting from gating, on hardened runners"
-Cohesion: 0.13
-Nodes (15): ADR-0089: Multi-layer security scanning, splitting reporting from gating, on hardened runners, Alternatives Considered, Consequences, Consolidate all scanning into a single Trivy step, Context, Decision, `egress-policy: block` from the start, Gate on every PR (+7 more)
+### Community 390 - "sseWriter"
+Cohesion: 0.19
+Nodes (12): net/http.ResponseController, newSSEWriter(), captureSSE(), sseTestEvent(), Test_newSSEWriter(), Test_sseWriter_commit(), Test_sseWriter_flush(), Test_sseWriter_write() (+4 more)
 
-### Community 391 - "ADR-0107: Ship a balanced outbox relay; delegate hardening to operational evidence"
-Cohesion: 0.13
-Nodes (15): ADR-0107: Ship a balanced outbox relay; delegate hardening to operational evidence, Alternatives Considered, At-most-once relay (mark published before sending; never retry ambiguous outcomes), Consequences, Context, Decision, Hardening blueprint, Implement the multi-layer redesign up front (+7 more)
+### Community 391 - "getCallerFullName"
+Cohesion: 0.17
+Nodes (8): getCallerFullName(), Test_getCallerFullName(), ExtractFunctionName(), ExtractPackageName(), splitFuncName(), Test_splitFuncName(), TestExtractFunctionName(), TestExtractPackageName()
 
 ### Community 392 - "Job Subsystem Design Reference"
 Cohesion: 0.13
 Nodes (15): 1. Role theory (what, and what for), 2.1 invocation lifecycle (`cli/job.RunJobWith` / `runJob` + DI hook), 2.2 state hand-off (`controller/job/state.go`), 2.3 dispatch (`run.Run`, registry lookup), 2. State transitions, 3.1 Package placement and dependency direction, 3.2 Per-invocation action sequence, 3. Implementation locations (where in the architecture it lives and acts) (+7 more)
 
-### Community 393 - "Subdirectory List"
+### Community 393 - "circuit"
 Cohesion: 0.13
-Nodes (13): extension, How It Works, inbound (Request Receiving), instrumentation (Instrumentation), Notes, outbound (Response Output), security (Security), Subdirectory List (+5 more)
+Nodes (4): Exponential, circuit, circuitPhase, Settings
 
 ### Community 394 - "JWT Authenticator"
 Cohesion: 0.22
@@ -2727,8 +2749,8 @@ Cohesion: 0.25
 Nodes (8): Compact Finding Lines, Notification Detail Action, Normalized Advisory Findings, OSV Scan Action, Vulnerability Promotion Gate Policy, Cut-off Job Reporting, Marker-based Comment Upsert, Upsert PR Comment Action
 
 ### Community 402 - "session-start-env.sh"
-Cohesion: 0.36
-Nodes (4): add_notice(), emit_hook(), session-start-env.sh script, usage()
+Cohesion: 0.46
+Nodes (7): add_notice(), checkout_kind(), current_branch(), emit_hook(), session-start-env.sh script, slot_value(), usage()
 
 ### Community 403 - "Contributing"
 Cohesion: 0.14
@@ -2738,37 +2760,37 @@ Nodes (14): Unknown-worker Boot Probe, Worker Boot Check, Change-scoped Git Gate
 Cohesion: 0.29
 Nodes (8): ADR-0019 Search Query Parameter Shape, Repeated Filter and Scalar Free-text, ADR-0029 Append-only Immutable Migrations, New Migration for Every Schema Change, ADR-0030 Sequential Migration IDs, Six-digit Up-down Migration Pair, ADR-0031 Master Data via Migration, Master Data and Transactional Seed Boundary
 
-### Community 405 - "Usecase"
-Cohesion: 0.46
-Nodes (5): CreatePurchaseParams, PurchaseView, ReferenceAmountView, Usecase, New()
+### Community 405 - "net/http.Header"
+Cohesion: 0.14
+Nodes (7): fakeOrig, bufio.ReadWriter, net.Conn, net/http.Header, net/http.PushOptions, refuse(), unflushableWriter
 
 ### Community 406 - "Arch Check"
-Cohesion: 0.14
-Nodes (13): AI Modification Scope, Arch Check, Architecture: parallel auditor subagents, Checklist, Constraints, First Step: Confirm Scope + TODO opt, Step 1. Resolve Scope to Layers + File Lists, Step 2. Run `make lint` ONCE (shared baseline) (+5 more)
+Cohesion: 0.13
+Nodes (14): AI Modification Scope, Arch Check, Architecture: parallel auditor subagents, Checklist, Constraints, Contract, First Step: Confirm Scope + TODO opt, Step 1. Resolve Scope to Layers + File Lists (+6 more)
 
-### Community 407 - "newJobCommand"
-Cohesion: 0.57
-Nodes (6): newJobCommand(), gracefulStop(), runJob(), RunJobWith(), StartFunc, StopFunc
+### Community 407 - "2. State transitions"
+Cohesion: 0.11
+Nodes (19): 1. Role theory (what, and what for), 2.1 Delivery lifecycle (one event, end to end), 2.2 The ordering chain as a state machine (per stream, in the outbox), 2.3 Connection lifecycle (one SSE connection), 2.4 Ticket lifecycle, 2.5 Serve instance lifecycle and the instance lease, 2.6 Degraded operation, 2. State transitions (+11 more)
 
 ### Community 408 - "Comment Sweep — auditor instructions"
 Cohesion: 0.14
 Nodes (13): Comment Sweep — auditor instructions, Destinations have entry bars — refuse the misroutes, Go exported-declaration caveat, Out of scope — do not flag, Output (Japanese), Pass 1 — per comment: jurisdiction, Pass 2 — per file: which single site owns this content, Read these first (single source of truth) (+5 more)
 
 ### Community 409 - "Engine"
-Cohesion: 0.11
-Nodes (17): go-boilerplate/internal/usecase/boundary/clock/mock.MockSleeper, go-boilerplate/internal/usecase/outbox/mock.MockRelayUsecase, NewEngine(), Engine, newObserveLagEngine(), TestEngine_observeLag(), newEngine(), TestEngine_Run() (+9 more)
+Cohesion: 0.13
+Nodes (16): go-boilerplate/internal/usecase/boundary/clock/mock.MockSleeper, go-boilerplate/internal/usecase/outbox/mock.MockRelayUsecase, go-boilerplate/internal/usecase/realtime/mock.MockLeaseKeeper, NewEngine(), Engine, newObserveLagEngine(), TestEngine_observeLag(), newEngine() (+8 more)
 
 ### Community 410 - "newContext"
 Cohesion: 0.33
 Nodes (5): echo.Context, routeOf(), echo.Context, newContext(), Test_routeOf()
 
-### Community 411 - "WithRequest"
-Cohesion: 0.39
-Nodes (6): Request, requestCtxKey, requestFromContext(), Test_requestFromContext(), TestWithRequest(), WithRequest()
+### Community 411 - "ticket_test.go"
+Cohesion: 0.16
+Nodes (16): accessRevoker, go-boilerplate/internal/usecase/boundary/realtime/mock.MockRevocationNotifier, go-boilerplate/internal/usecase/boundary/realtime/mock.MockSecretGenerator, go-boilerplate/internal/usecase/boundary/realtime/mock.MockStreamTicketStore, newRevoker(), Test_accessRevoker_Revoke(), TestNewAccessRevoker(), hashTicket() (+8 more)
 
-### Community 412 - "GetValidator"
-Cohesion: 0.29
-Nodes (5): Test_openAPIDetailPolicy_Allows(), TestNewOpenAPIDetailPolicy(), TestOpenAPIDetailPolicy_Allows(), GetValidator(), TestGetValidator()
+### Community 412 - "Repo Truth"
+Cohesion: 0.11
+Nodes (17): Arguments, and the door check, Checklist, Contract, Do / Do NOT, Gaps are an answer, Record the frontier before concluding, Repo Truth, Search index-first, by concern (+9 more)
 
 ### Community 413 - "Context Map"
 Cohesion: 0.14
@@ -2786,17 +2808,17 @@ Nodes (12): Code Generation, CommandService DML, Directory Structure, Infrastruc
 Cohesion: 0.16
 Nodes (13): Database Migrations, Data Lifecycle, database, Details, Related Commands, Subdirectory Roles, Database Seed Data, Current Files (+5 more)
 
-### Community 417 - "Product Image GC Job Guide (`internal/controller/job/productimagegc`)"
-Cohesion: 0.25
-Nodes (7): Args, Dependencies, Execution semantics (`Execute`), Notes, Product Image GC Job Guide (`internal/controller/job/productimagegc`), Public API, Role in Onion Architecture
+### Community 417 - "Repo Truth"
+Cohesion: 0.11
+Nodes (17): Arguments and Entry Check, Checklist, Contract, Do / Do NOT, Gaps Are an Answer, Repo Truth, Reserve the Two Absence Verdicts, Search Index-First by Owned Concern (+9 more)
 
 ### Community 418 - "Paging Tool"
 Cohesion: 0.25
 Nodes (8): Money Rounding Tool, Cursor and Offset Pagination, Paging Tool, Shared Usecase Tools, Search Tokenization Tool, Cursor After Parameter, Cursor First Parameter, Page Parameter
 
-### Community 419 - "replace-license-copyright/index.ts"
-Cohesion: 0.26
-Nodes (8): ensureCodeOwners(), ensureFourDigitYear(), ensureRepositoryReference(), Options, program, run(), LICENSE_FILE, replaceCopyright()
+### Community 419 - "Usecase"
+Cohesion: 0.17
+Nodes (14): server, StatusCountView, SummaryView, Usecase, go-boilerplate/internal/controller/handler/v1/dashboard/gen.DashboardSummaryResponse, go-boilerplate/internal/controller/handler/v1/dashboard/gen.GetDashboardSummaryRequestObject, go-boilerplate/internal/controller/handler/v1/dashboard/gen.GetDashboardSummaryResponseObject, BindHandler() (+6 more)
 
 ### Community 420 - "Supply-chain Triage"
 Cohesion: 0.05
@@ -2818,17 +2840,17 @@ Nodes (14): ADR-0025: Adopt an egress SSRF / dial-guard security posture for out
 Cohesion: 0.43
 Nodes (7): Record Architecture Decisions as ADRs, Lock-In Avoidance, Pragmatic Onion Architecture, Interface-Based Decoupling, Modular Monolith, Driving Adapters, Not a Split Axis, Structural Safety via Tooling
 
-### Community 425 - "ADR-0080: mise.toml is the single source of truth for mise-resolved versions; versions propagate downstream with a CI drift gate"
-Cohesion: 0.14
-Nodes (14): ADR-0080: mise.toml is the single source of truth for mise-resolved versions; versions propagate downstream with a CI drift gate, Alternatives Considered, Consequences, Context, Decision, Keep PyPI tools in `[tools]` and accept unpinned transitive dependencies, Negative Consequences, No sync; maintain each file independently (+6 more)
+### Community 425 - "ddbSmoke"
+Cohesion: 0.20
+Nodes (7): github.com/aws/aws-sdk-go-v2/service/dynamodb.QueryInput, ddbSmoke, equalInts(), step, joinInts(), Test_equalInts(), Test_joinInts()
 
-### Community 426 - "ADR-0088: Generated-artifact drift gate + release-branch-centralized auto-generation bot"
-Cohesion: 0.14
-Nodes (14): 1. PR-time drift gate (two workflows), 2. Release-branch auto-generation bot (`auto-generate-docs.yaml`), ADR-0088: Generated-artifact drift gate + release-branch-centralized auto-generation bot, Alternatives Considered, Commit generated artifacts manually as part of every PR, Consequences, Context, Decision (+6 more)
+### Community 426 - "BindHandler"
+Cohesion: 0.15
+Nodes (14): go-boilerplate/internal/controller/handler/v1/addresses/gen.AddressCandidate, go-boilerplate/internal/controller/handler/v1/addresses/gen.GetAddressesRequestObject, go-boilerplate/internal/controller/handler/v1/addresses/gen.GetAddressesResponseObject, go-boilerplate/internal/usecase/address/mock.MockUsecase, BindHandler(), echo.Echo, server, newServer() (+6 more)
 
-### Community 427 - "ADR-0093: Use multi-model adversarial review with finder and verifier subagents"
-Cohesion: 0.14
-Nodes (14): ADR-0093: Use multi-model adversarial review with finder and verifier subagents, Alternatives Considered, Automated linting only, Consequences, Context, Decision, Heuristic static analysis for undecidable properties, Human-only review (+6 more)
+### Community 427 - "Purchase — Usecase Spec"
+Cohesion: 0.12
+Nodes (17): Dependencies, DTOs, GET 一覧（購入履歴・cursor）, GET 発送待ち一覧（まとめ発送・admin）, GET 詳細（購入詳細・集約跨ぎ QS）, GET 集計（購入サマリ・me）, Interface, Notes (+9 more)
 
 ### Community 428 - "Local Development Environment"
 Cohesion: 0.14
@@ -2846,9 +2868,9 @@ Nodes (14): app error, Basic Policy, Classification Helper (`IsAppError`), Error
 Cohesion: 0.14
 Nodes (14): 1 Implement the Boundary, 2 Do not include business logic, 3 Separate by verification method, 4 Constructor convention, auth Directory, Design Policy, IdentityResolver Implementations, jwt Implementation (+6 more)
 
-### Community 432 - "OpenAPI Paths"
-Cohesion: 0.18
-Nodes (10): Directory Structure, Endpoint Categories, Internal Types, Naming and Structure Rules, OpenAPI Paths, Operational Endpoints, Path-to-Handler Mapping, Rules (+2 more)
+### Community 432 - "Workflow"
+Cohesion: 0.12
+Nodes (17): CountUsers, CreateUser, DeleteUser, Dependencies, DTOs, GET ロール（me）, GetUser, Interface (+9 more)
 
 ### Community 433 - "sqlc/README.md"
 Cohesion: 0.14
@@ -2858,17 +2880,17 @@ Nodes (13): About Generated Code, Design Policy, Directory Structure, EscapeForL
 Cohesion: 0.14
 Nodes (12): Current Implementation, Design Policy, Extending, healthcheck, idempotency, outbox, Position in Onion Architecture, Structure (+4 more)
 
-### Community 435 - "User Purge Job Guide (`internal/controller/job/userpurge`)"
-Cohesion: 0.25
-Nodes (7): Args, Dependencies, Execution semantics (`Execute`), Notes, Public API, Role in Onion Architecture, User Purge Job Guide (`internal/controller/job/userpurge`)
+### Community 435 - "ProviderShutdowner"
+Cohesion: 0.15
+Nodes (13): github.com/exaring/otelpgx.Tracer, go.opentelemetry.io/otel/metric.MeterProvider, go.opentelemetry.io/otel/sdk/log.LoggerProvider, go.opentelemetry.io/otel/sdk/metric.MeterProvider, go.opentelemetry.io/otel/sdk/trace.TracerProvider, NewPgxTracer(), TestNewPgxTracer(), ProvideMeterProvider() (+5 more)
 
 ### Community 436 - "index-store.ts"
 Cohesion: 0.22
-Nodes (12): EMPTY, findByBranch(), findByWindow(), IndexEntry, IndexStore, needsSend(), parseIndex(), pendingEntries() (+4 more)
+Nodes (11): EMPTY, findByBranch(), findByWindow(), IndexEntry, IndexStore, needsSend(), parseIndex(), pendingEntries() (+3 more)
 
 ### Community 437 - "Back-Prop"
 Cohesion: 0.10
-Nodes (18): Constraints, Detection (run only the selected categories), Drift Detector — Pkg, Output (Japanese — this IS the return value), What you read (priority: README > Code > SKILL), Your input (from the orchestrator), AI Modification Scope, Architecture: parallel detector subagents + integrator-side approval (+10 more)
+Nodes (18): Constraints, Detection (run only the selected categories), Drift Detector — Usecase, Output (Japanese — this IS the return value), What you read (priority: README > Code > SKILL), Your input (from the orchestrator), AI Modification Scope, Architecture: parallel detector subagents + integrator-side approval (+10 more)
 
 ### Community 438 - "Input Boundary Value Ownership"
 Cohesion: 0.09
@@ -2882,9 +2904,9 @@ Nodes (29): Portal Manifest Sync Agent Interface, Curated Portal Reading List, R
 Cohesion: 0.50
 Nodes (5): Fuzz, Grype Scan, Image Scan, Notify, SAST
 
-### Community 441 - "Config-Driven Observability Gating"
-Cohesion: 0.40
-Nodes (6): Config-Driven Observability Gating, Vendor-Neutral OTLP Export, Official OpenTelemetry Semantic Conventions, Dual-Path Metrics, Lifecycle-Independent Observability Providers, Fixed Default Sampling
+### Community 441 - "BuildInfo"
+Cohesion: 0.14
+Nodes (11): go-boilerplate/internal/controller/handler/version/gen.GetVersionRequestObject, go-boilerplate/internal/controller/handler/version/gen.GetVersionResponseObject, go.opentelemetry.io/otel/sdk/resource.Resource, BindHandler(), echo.Echo, NewResource(), TestNewResource(), BuildInfo (+3 more)
 
 ### Community 442 - "Post-Repository Clone Task List"
 Cohesion: 0.12
@@ -2946,9 +2968,9 @@ Nodes (13): A generic `internal/domain/shared` (or `common` / `util`) package, A
 Cohesion: 0.15
 Nodes (13): ADR-0053: Measure broker-SDK isolation as coupling, not as linkage, Alternatives Considered, Consequences, Context, Decision, Demonstrate with a broker that needs no SDK, Keep E3 in its linkage form, Negative Consequences (+5 more)
 
-### Community 457 - "Outbox Relay Engine Guide (`internal/controller/outbox`)"
-Cohesion: 0.25
-Nodes (8): Files, Loop semantics (`Run`), Observability, Outbox Relay Engine Guide (`internal/controller/outbox`), Public API, Related, Role in Onion Architecture, Wiring & lifecycle
+### Community 457 - "Sleeper"
+Cohesion: 0.27
+Nodes (13): NewEngine(), TestReprovisionFunc_Reprovision(), provideRealtimeConsumer(), provideRealtimeReprovisioner(), Sleeper, Engine, FanoutObserver, InstanceSubscription (+5 more)
 
 ### Community 458 - "Unpaginated Product Category Master List"
 Cohesion: 0.33
@@ -2962,9 +2984,9 @@ Nodes (6): Product Count Response, Cursor-Paginated Product List Response, Curso
 Cohesion: 0.33
 Nodes (6): Get Current User, Get Current User Roles, Delete User, Get User Detail, Patch User Detail, Put User Detail
 
-### Community 461 - "ADR-0075: Observability providers are lifecycle-independent (ProviderShutdowner)"
-Cohesion: 0.17
-Nodes (12): A lifecycle interface injected into provider constructors, ADR-0075: Observability providers are lifecycle-independent (ProviderShutdowner), Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes (+4 more)
+### Community 461 - "provider_test.go"
+Cohesion: 0.26
+Nodes (15): newTestAppCfg(), shutdownLoggerProvider(), Test_ensureOTLPPath(), Test_newLogExporter(), TestNewLogCore(), TestNewLoggerProvider(), newTestEndpointCfg(), newTestObsCfg() (+7 more)
 
 ### Community 462 - "Test Review"
 Cohesion: 0.09
@@ -2978,17 +3000,17 @@ Nodes (15): Verify Spec Interface, Spec Validation Dependency Direction, Lean A 
 Cohesion: 0.40
 Nodes (5): DAST, OpenAPI-driven ZAP API Scan, Real Authentication Scan Profile, Reasoned API Security Rule Overrides, Spectral OWASP API Configuration
 
-### Community 465 - "ADR-0082: Operational scripts live in scripts/ as TypeScript or Go; shell scripting is not used"
-Cohesion: 0.15
-Nodes (13): ADR-0082: Operational scripts live in scripts/ as TypeScript or Go; shell scripting is not used, Alternatives Considered, Consequences, Context, Decision, Deno, Negative Consequences, Notes (+5 more)
+### Community 465 - "Research"
+Cohesion: 0.12
+Nodes (15): Arguments, Checklist, Contract, Do / Do NOT, Research, Sources, Standalone by design, Step 0 — Establish that the question is actually open (+7 more)
 
 ### Community 466 - "Agent Environment Alignment"
 Cohesion: 0.50
 Nodes (5): AI-Assisted Development Operational Contract, Agent Environment Alignment, Closed Improvement Loop, Durable Agent State, Development Window as Feedback Unit
 
-### Community 467 - "Containerized Pinned Toolchain"
-Cohesion: 0.50
-Nodes (5): Containerized Pinned Toolchain, Mise Version SSOT Drift Gate, Make as Single Tool Entrypoint, Operational Scripts in TypeScript or Go, Docker Compose Development Environment
+### Community 467 - "Resolve Merge"
+Cohesion: 0.12
+Nodes (15): Anything left → stop there, Arguments, Checklist, Contract, Do / Do NOT, Nothing left → ask, then commit and push, Resolve Merge, Step 1 — Resolve the base, and merge (+7 more)
 
 ### Community 468 - "Security Posture"
 Cohesion: 0.10
@@ -2996,11 +3018,11 @@ Nodes (20): Application runtime, Build Dependency and Runtime Controls, Build in
 
 ### Community 469 - "Logger"
 Cohesion: 0.07
-Nodes (42): go.uber.org/zap.Field, go.uber.org/zap/zaptest/observer.ObservedLogs, collectSeedObjects(), PutObjectFunc, putSeedObject(), putSeedObjects(), RunObjectSeed(), failingPut() (+34 more)
+Nodes (37): jobImpl, collectSeedObjects(), PutObjectFunc, putSeedObject(), putSeedObjects(), RunObjectSeed(), failingPut(), recordingPut() (+29 more)
 
-### Community 470 - "Design References"
-Cohesion: 0.17
-Nodes (13): System Architecture, Agent Environment, Correct after action, Escalation and load-aware verification, Guide before action, Improving the environment itself, Keeping this interpretation current, Authentication Subsystem (+5 more)
+### Community 470 - "Agent Environment"
+Cohesion: 0.29
+Nodes (7): Agent Environment, Correct after action, Escalation and load-aware verification, Guide before action, Improving the environment itself, Keeping this interpretation current, AI Feedback Closed Loop
 
 ### Community 471 - "Ready Handler (`internal/controller/handler/ready`)"
 Cohesion: 0.18
@@ -3008,7 +3030,7 @@ Nodes (9): Ready Handler (`internal/controller/handler/ready`), Response, Role, 
 
 ### Community 472 - "Data Access Pattern"
 Cohesion: 0.15
-Nodes (13): 1. The underlying fact, 2. The four constructs, 4. Write side, 5. The guard branch, 6. Derivation: what a CommandService may enforce, 7. What is not a criterion, 8. Where each construct lives, 9. Departure from "1 Aggregate = 1 Transaction Boundary" (+5 more)
+Nodes (13): 1. The underlying fact, 2. The four constructs, 3.1 Is the aggregate even the source of record for what is being read?, 3.2 Does the read span independent aggregates?, 3.3 Would decomposition materialize an aggregate the operation does not need?, 3. Read side: when is decomposition forbidden, 5. The guard branch, 6. Derivation: what a CommandService may enforce (+5 more)
 
 ### Community 473 - "Observability Subsystem Design Reference"
 Cohesion: 0.15
@@ -3026,9 +3048,9 @@ Nodes (13): 1. Role theory (what, and what for), 2.1 server lifecycle (`cli/serv
 Cohesion: 0.40
 Nodes (5): Structured Logging Foundation, Trace-Correlated Logger, Layer-Based Tracing, OpenTelemetry Observability, OTLP Trace Metrics and Log Export
 
-### Community 477 - "Cart — Usecase Spec"
-Cohesion: 0.15
-Nodes (13): Cart — Usecase Spec, ClearCart, Dependencies, DTOs, GetCart, Interface, MergeOnLogin, Notes (+5 more)
+### Community 477 - "Resolve Merge"
+Cohesion: 0.12
+Nodes (15): Anything remains — stop immediately, Arguments, Checklist, Contract, Do / Do NOT, Nothing remains — ask before commit or push, Resolve Merge, Step 1 — Read policy, resolve the base, and merge (+7 more)
 
 ### Community 478 - "error response"
 Cohesion: 0.15
@@ -3091,7 +3113,7 @@ Cohesion: 0.50
 Nodes (4): Production Service Foundation, Release v2.0.0, Release v2.1.0, Security and API Contract Hardening
 
 ### Community 493 - "Security Policy"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (12): Cosign, SLSA, and SBOM Attestations, Digest-based Artifact Verification, Private Vulnerability Reporting, 0. Resolve the target digest, 1. Verify the cosign signature, 2. Verify the provenance attestation (where and from what it was built), 3. Verify the SBOM (SPDX) attestation (proof of contents), Making verification a deploy gate (recommended) (+4 more)
 
 ### Community 494 - "Echo v5 with Application-owned Server Lifecycle"
@@ -3110,9 +3132,9 @@ Nodes (12): Metrics Handler, Prometheus Scrape Endpoint, Controller Handler Guid
 Cohesion: 0.15
 Nodes (9): Handler Testkit, Role, testassert, Role, testecho, Role, testspan, Role (+1 more)
 
-### Community 498 - "stripMarkers"
-Cohesion: 0.24
-Nodes (10): blockTransition(), cut(), keep(), markerPattern(), MarkerPatterns, replaceTransition(), Sink, stripMarkers() (+2 more)
+### Community 498 - "NewTextMapPropagator"
+Cohesion: 0.17
+Nodes (15): dialControl, net/http.Transport, TestNewHTTPClientTransport(), Test_newGuardedBaseTransport(), newGuardedBaseTransport(), NewHTTPClientTransport(), newHTTPClientTransport(), Test_newHTTPClientTransport() (+7 more)
 
 ### Community 499 - "full-verify"
 Cohesion: 0.17
@@ -3154,9 +3176,9 @@ Nodes (4): Deliver Purchase, Pay Purchase, Ship Purchase, Get Shippable Purchase
 Cohesion: 0.50
 Nodes (4): Get User Feed, Get Users, Post Users, Search Users
 
-### Community 509 - "error_handler_di_test.go"
-Cohesion: 0.39
-Nodes (5): newDetailOptInSpec(), Test_provideAllowPolicy(), Test_provideDetailPolicy(), stubAllowPolicy, stubDetailPolicy
+### Community 509 - "ADR-0071: Adopt Realtime Delivery as an independent driving mechanism for server-to-client event delivery"
+Cohesion: 0.12
+Nodes (16): ADR-0071: Adopt Realtime Delivery as an independent driving mechanism for server-to-client event delivery, Alternatives Considered, Build the mechanism inside the first feature, Consequences, Context, Decision, Dependency direction, enforced, Extend the worker port to streaming consumption (+8 more)
 
 ### Community 510 - "Skill Usage Metadata"
 Cohesion: 0.67
@@ -3212,7 +3234,7 @@ Nodes (18): Input, テスト, 利用ケース, 役割と公開 component, 用途
 
 ### Community 526 - "Verify Spec"
 Cohesion: 0.17
-Nodes (11): AI Modification Scope, Architecture: parallel validator subagents, Checklist, Constraints, First Step: Confirm Target Feature, Step 1. Detect Existing Spec Files, Step 2. Fan Out Validator Subagents IN PARALLEL, Step 3. Aggregate Report (Japanese) (+3 more)
+Nodes (11): AI Modification Scope, Architecture: parallel validator subagents, Checklist, Constraints, First Step: Confirm Target Package Path, Step 1. Detect Existing Spec Files, Step 2. Fan Out Validator Subagents IN PARALLEL, Step 3. Aggregate Report (Japanese) (+3 more)
 
 ### Community 527 - "New Spec — Usecase"
 Cohesion: 0.17
@@ -3243,7 +3265,7 @@ Cohesion: 0.67
 Nodes (3): HTTP Basic Authentication Scheme, JWT Bearer Authentication Scheme, RFC 8725 JSON Web Token Best Current Practices
 
 ### Community 535 - "ADR-0017: Designate the domain layer as the sole authority for business-validity rules"
-Cohesion: 0.17
+Cohesion: 0.15
 Nodes (12): ADR-0017: Designate the domain layer as the sole authority for business-validity rules, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Positive Consequences (+4 more)
 
 ### Community 536 - "ADR-0020: /metrics is an auth exception — outside OpenAPI validation, protected by a separate BasicAuth middleware"
@@ -3282,21 +3304,25 @@ Nodes (8): Declared vs Live GitHub State, Applying `pull_request` to a single-ma
 Cohesion: 0.17
 Nodes (12): ADR-0021: Optional authentication is allowed, and a failed authentication still denies the request, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Positive Consequences (+4 more)
 
+### Community 574 - ".GetExchangeRates"
+Cohesion: 0.15
+Nodes (13): server, go-boilerplate/internal/controller/handler/v1/exchangerate/gen.GetExchangeRatesRequestObject, go-boilerplate/internal/controller/handler/v1/exchangerate/gen.GetExchangeRatesResponseObject, go-boilerplate/internal/controller/handler/v1/exchangerate/gen.ReferenceAmount, go-boilerplate/internal/usecase/exchangerate/mock.MockUsecase, BindHandler(), echo.Echo, server (+5 more)
+
 ### Community 575 - "Go Version Upgrade Procedure"
 Cohesion: 0.11
 Nodes (18): 10. Run tests, 11. Run lint, 12. Final check, 1. Check Release Notes, 2. Update `mise.toml` (SSOT) and run sync, 3. Update Local Go Environment, 4. CI uses `go.mod` automatically, 5.5. (Optional) Update Go module dependencies (+10 more)
 
 ### Community 577 - "README.md"
 Cohesion: 0.05
-Nodes (31): .agents, Editing, Layout, Scope for AI agents, What belongs here, Why not under `.claude/`, Caveats, Environment variables (+23 more)
+Nodes (32): boilerplate-only:replace-begin, boilerplate-only:replace-end, boilerplate-only:replace-with, = tags: []                # e.g. [architecture, http], Architecture Decisions, Caveats, Environment variables, How it works (+24 more)
 
 ### Community 578 - "Versioning Policy"
 Cohesion: 0.18
 Nodes (10): Creating the Next Release Branch, Hotfix Procedure, Principles, Release Branch Strategy, Release-Centric Branching, Release Procedure, Rules for Breaking Changes, Tagging (+2 more)
 
-### Community 579 - "Direct Dependency Inventory"
-Cohesion: 0.18
-Nodes (9): Bridge / instrumentation exceptions, Direct dependencies by responsibility, Direct Dependency Inventory, Notes, Single-Responsibility Dependencies, infrastructure/queue, Layout convention, SQS is one worked example, not the target (+1 more)
+### Community 579 - "infrastructure/queue"
+Cohesion: 0.40
+Nodes (4): infrastructure/queue, Layout convention, SQS is one worked example, not the target, Test Strategy
 
 ### Community 589 - "SearchFieldClient"
 Cohesion: 0.18
@@ -3323,7 +3349,7 @@ Cohesion: 0.17
 Nodes (12): ADR-0022: Adopt Echo as the HTTP framework, Alternatives Considered, Chi, Consequences, Context, Decision, Gin, Negative Consequences (+4 more)
 
 ### Community 595 - "ADR-0023: Build the middleware chain as a priority-ordered, data-driven list"
-Cohesion: 0.15
+Cohesion: 0.17
 Nodes (12): ADR-0023: Build the middleware chain as a priority-ordered, data-driven list, Alternatives Considered, Consequences, Context, Decision, fx ordered-group annotation (soft ordering), Hardcoded call-site ordering in a single setup function, Named ordered slice in a configuration struct (+4 more)
 
 ### Community 596 - "ADR-0028: Use merged DML and a dumped schema as sqlc's single input"
@@ -3350,9 +3376,9 @@ Nodes (12): ADR-0049: Opt-in gate for error-response details via schema split, A
 Cohesion: 0.17
 Nodes (12): ADR-0056: Single-transaction relay using SELECT FOR UPDATE SKIP LOCKED (safe across instances), Alternatives Considered, Application-level advisory locks, Consequences, Context, Decision, Exclusive relay (single instance), Negative Consequences (+4 more)
 
-### Community 602 - "ADR-0058: MaxAttempts = 10, then the message is dead (terminal until manual replay)"
-Cohesion: 0.17
-Nodes (12): ADR-0058: MaxAttempts = 10, then the message is dead (terminal until manual replay), Alternatives Considered, Automatic exponential backoff with dead-letter only after a timeout, Consequences, Context, Decision, Delete on exhaustion, Negative Consequences (+4 more)
+### Community 602 - ".add"
+Cohesion: 0.35
+Nodes (8): callLog, fixture, Drainer, newFixture(), Test_serveLifecycle_start(), Test_serveLifecycle_stop(), Test_serveLifecycle_stopRunners(), Test_serveLifecycle_teardown()
 
 ### Community 603 - "ADR-0059: 7-day retention GC of published rows (batches of 10,000)"
 Cohesion: 0.17
@@ -3362,13 +3388,17 @@ Nodes (12): ADR-0059: 7-day retention GC of published rows (batches of 10,000), 
 Cohesion: 0.25
 Nodes (7): Constructors, Error Handling, Extension Points, jwt (JWT Authentication), Notes, Role, Verification Scope (Standard Core)
 
-### Community 623 - "Idempotency GC Job Guide (`internal/controller/job/idempotencygc`)"
-Cohesion: 0.29
-Nodes (7): Args, Dependencies, Execution semantics (`Execute`), Idempotency GC Job Guide (`internal/controller/job/idempotencygc`), Notes, Public API, Role in Onion Architecture
+### Community 623 - "coupon_usecase_test.go"
+Cohesion: 0.33
+Nodes (15): flatDiscount(), usecase, newCoupon(), newDecimal(), newTestAuthn(), newTestCart(), newTestCartExpiringAt(), newTestProduct() (+7 more)
 
-### Community 636 - "ObservabilityMiddleware"
-Cohesion: 0.21
-Nodes (11): echo.MiddlewareFunc, Middleware(), PassthroughMiddleware(), TestMiddleware(), TestMiddleware_Integration(), TestPassthroughMiddleware(), ObservabilityMiddleware(), echo.MiddlewareFunc (+3 more)
+### Community 636 - "ParseCustomLayout"
+Cohesion: 0.23
+Nodes (14): ParseCustomLayout(), ParseDateOnly(), ParseDateTime(), ParseISO8601(), ParseRFC3339(), ParseRFC3339Nano(), ParseRFC3339UTC(), TestParseCustomLayout() (+6 more)
+
+### Community 643 - "Research"
+Cohesion: 0.13
+Nodes (14): Arguments, Checklist, Contract, Research, Sources, Standalone by Design, Step 0 — Establish That the Choice Is Open, Step 1 — Try to Dissolve the Question by Structure (+6 more)
 
 ### Community 645 - "Dialog"
 Cohesion: 0.29
@@ -3379,11 +3409,11 @@ Cohesion: 0.18
 Nodes (11): ADR-0062: Run claim, business function, and complete in a single transaction for at-most-once semantics, Alternatives Considered, Consequences, Context, Decision, Idempotency table in a separate database, Negative Consequences, Notes (+3 more)
 
 ### Community 703 - "ADR-0065: Persist the response body as JSON to enable deterministic replay (accepted PII tradeoff)"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (11): ADR-0065: Persist the response body as JSON to enable deterministic replay (accepted PII tradeoff), Alternatives Considered, Consequences, Context, Decision, Encrypt the response payload at rest, Negative Consequences, Notes (+3 more)
 
 ### Community 704 - "ADR-0068: Each job launch constructs a fresh fx.App (one-shot lifecycle)"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (11): A resident process that dispatches jobs on demand, ADR-0068: Each job launch constructs a fresh fx.App (one-shot lifecycle), Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes (+3 more)
 
 ### Community 705 - "ADR-0069: Jobs deliberately have no broker, circuit breaker, drain, or health machinery"
@@ -3391,64 +3421,64 @@ Cohesion: 0.17
 Nodes (11): Adding a circuit breaker for automatic retry on failure, ADR-0069: Jobs deliberately have no broker, circuit breaker, drain, or health machinery, Alternatives Considered, Consequences, Context, Decision, Exposing a health endpoint for long-running jobs, Negative Consequences (+3 more)
 
 ### Community 706 - "ADR-0070: Jobs are explicitly registered (no auto-discovery)"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (11): ADR-0070: Jobs are explicitly registered (no auto-discovery), Alternatives Considered, Auto-discovery via init functions or reflection, Code generation for the registration list, Consequences, Context, Decision, Negative Consequences (+3 more)
 
-### Community 707 - "ADR-0071: Config-driven observability gating"
-Cohesion: 0.17
-Nodes (12): A dedicated `OBSERVABILITY_ENABLED` flag alongside exporter settings, ADR-0071: Config-driven observability gating, Alternatives Considered, Build-tag removal of the otel / bridge dependencies, Consequences, Context, Decision, Keep `OTEL_*` + autoexport (+4 more)
+### Community 707 - "ADR-0074: Authenticate SSE streams with an opaque query ticket bound to subject, destination, scope, and expiry"
+Cohesion: 0.13
+Nodes (15): A cookie-backed session for the stream endpoint, A one-time ticket, ADR-0074: Authenticate SSE streams with an opaque query ticket bound to subject, destination, scope, and expiry, Alternatives Considered, `Authorization: Bearer` on the stream request, Consequences, Context, Decision (+7 more)
 
-### Community 708 - "ADR-0072: Vendor-neutral OTLP-only export (delegate backend to the Collector)"
-Cohesion: 0.17
-Nodes (12): ADR-0072: Vendor-neutral OTLP-only export (delegate backend to the Collector), Alternatives Considered, Consequences, Console exporter for local development, Context, Decision, Negative Consequences, Notes (+4 more)
+### Community 708 - "ADR-0093: Multi-layer security scanning, splitting reporting from gating, on hardened runners"
+Cohesion: 0.13
+Nodes (15): ADR-0093: Multi-layer security scanning, splitting reporting from gating, on hardened runners, Alternatives Considered, Consequences, Consolidate all scanning into a single Trivy step, Context, Decision, `egress-policy: block` from the start, Gate on every PR (+7 more)
 
-### Community 709 - "ADR-0074: Metrics travel two paths — OTLP push and Prometheus scrape"
-Cohesion: 0.17
-Nodes (12): ADR-0074: Metrics travel two paths — OTLP push and Prometheus scrape, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, OTLP push only (bridge Prometheus collectors into the OTel MeterProvider) (+4 more)
+### Community 709 - "ADR-0097: Use multi-model adversarial review with finder and verifier subagents"
+Cohesion: 0.13
+Nodes (14): ADR-0097: Use multi-model adversarial review with finder and verifier subagents, Alternatives Considered, Automated linting only, Consequences, Context, Decision, Heuristic static analysis for undecidable properties, Human-only review (+6 more)
 
-### Community 710 - "ADR-0079: Use a containerized toolchain pinned by mise for reproducibility"
-Cohesion: 0.17
-Nodes (12): ADR-0079: Use a containerized toolchain pinned by mise for reproducibility, Alternatives Considered, Consequences, Context, Decision, devcontainer (VS Code Dev Containers), Direct host tool execution, Negative Consequences (+4 more)
+### Community 710 - "ADR-0111: Ship a balanced outbox relay; delegate hardening to operational evidence"
+Cohesion: 0.13
+Nodes (15): ADR-0111: Ship a balanced outbox relay; delegate hardening to operational evidence, Alternatives Considered, At-most-once relay (mark published before sending; never retry ambiguous outcomes), Consequences, Context, Decision, Hardening blueprint, Implement the multi-layer redesign up front (+7 more)
 
-### Community 711 - "ADR-0081: Make is the single tool entrypoint with .mk registration and self-documenting help"
-Cohesion: 0.17
-Nodes (12): ADR-0081: Make is the single tool entrypoint with .mk registration and self-documenting help, Alternatives Considered, Bare shell scripts, Consequences, Context, Decision, Just, Negative Consequences (+4 more)
+### Community 711 - "Workflow"
+Cohesion: 0.13
+Nodes (15): CountProducts, CreateProduct, Dependencies, DTOs, GetProduct, Interface, ListLowStockProducts, ListProducts (+7 more)
 
-### Community 712 - "ADR-0083: Local dev environment is provided via Docker Compose with profile-separated services"
-Cohesion: 0.17
-Nodes (12): ADR-0083: Local dev environment is provided via Docker Compose with profile-separated services, Alternatives Considered, Consequences, Context, Decision, devcontainer (VS Code Dev Containers), Negative Consequences, Notes (+4 more)
+### Community 712 - "newOrphanSweeper"
+Cohesion: 0.23
+Nodes (13): go-boilerplate/internal/usecase/boundary/clock/mock.MockClock, go-boilerplate/internal/usecase/boundary/realtime/mock.MockInstanceLeaseStore, go-boilerplate/internal/usecase/boundary/realtime/mock.MockOrphanReclaimer, expectListExpired(), newOrphanSweeper(), Test_orphanSweeper_Sweep(), Test_orphanSweeper_sweepOne(), TestNewOrphanSweeper() (+5 more)
 
-### Community 713 - "ADR-0086: Total coverage 90% is a CI hard gate, with an exception-governance path"
-Cohesion: 0.17
-Nodes (12): 100% coverage requirement, ADR-0086: Total coverage 90% is a CI hard gate, with an exception-governance path, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, No coverage gate (+4 more)
+### Community 713 - "How To"
+Cohesion: 0.14
+Nodes (13): Arguments, and the door check, Checklist, Contract, Do / Do NOT, How To, Standalone by design, Step 1 — Route to the owning skill first, Step 2 — Assemble from the registries, by concern (+5 more)
 
-### Community 714 - "ADR-0087: CI boots the real fx graph against real Postgres (startup verification)"
-Cohesion: 0.15
-Nodes (12): ADR-0087: CI boots the real fx graph against real Postgres (startup verification), Alternatives Considered, Consequences, Context, Decision, Mock the fx graph in tests, Negative Consequences, Notes (+4 more)
+### Community 714 - "Question"
+Cohesion: 0.14
+Nodes (13): Arguments, Checklist, Contract, Do / Do NOT, Not a chain, Question, Step 1 — Read the question and resolve what you can, Step 2 — Ask, but only about what is actually split (+5 more)
 
-### Community 715 - "ADR-0090: Pin GitHub Actions by SHA with a supply-chain quarantine"
-Cohesion: 0.17
-Nodes (12): ADR-0090: Pin GitHub Actions by SHA with a supply-chain quarantine, Alternatives Considered, Consequences, Context, Decision, Dependabot for Actions updates, Negative Consequences, Notes (+4 more)
+### Community 715 - "How To"
+Cohesion: 0.14
+Nodes (13): Arguments and Door Check, Checklist, Contract, Do / Do Not, How To, Standalone by Design, Step 1 — Route to the Owning Skill First, Step 2 — Assemble from Registries by Concern (+5 more)
 
-### Community 716 - "ADR-0091: Accept a publication cooldown as the primary defence against malicious packages, without a dedicated detector"
-Cohesion: 0.17
-Nodes (12): ADR-0091: Accept a publication cooldown as the primary defence against malicious packages, without a dedicated detector, Alternatives Considered, Commercial malicious-package scanning (Socket / Snyk / Phylum), Consequences, Context, Decision, Lengthening the cooldown windows, Negative Consequences (+4 more)
+### Community 716 - "Question"
+Cohesion: 0.14
+Nodes (13): Arguments, Checklist, Contract, Do / Do NOT, Not a Chain, Question, Step 1 — Resolve What the Question Already Says, Step 2 — Confirm Only the Split Axes (+5 more)
 
-### Community 717 - "ADR-0092: Run infrastructure integration tests against a real DB with sentinel-error rollback"
-Cohesion: 0.17
-Nodes (12): ADR-0092: Run infrastructure integration tests against a real DB with sentinel-error rollback, Alternatives Considered, Consequences, Context, Database driver mocking (sqlmock / interface mocks), Decision, Full database reset between tests, In-memory database (SQLite) (+4 more)
+### Community 717 - "ADR-0058: An outbox row dies on a permanent error; transient failures retry with per-message backoff"
+Cohesion: 0.14
+Nodes (14): ADR-0058: An outbox row dies on a permanent error; transient failures retry with per-message backoff, Alternatives Considered, Consequences, Context, Dead after a fixed attempt count (`MaxAttempts = 10`) — the previous decision, Decision, Delete on exhaustion, Keep a very large attempt cap as a backstop (+6 more)
 
-### Community 718 - "ADR-0095: CLI humble-object split (thin cmd/ shell + testable internal/cli core)"
-Cohesion: 0.18
-Nodes (11): ADR-0095: CLI humble-object split (thin cmd/ shell + testable internal/cli core), Alternatives Considered, Cobra handler contains all logic, Consequences, Context, Decision, Negative Consequences, Notes (+3 more)
+### Community 718 - "ADR-0073: Fan out realtime wakeups to serve instances with SNS to per-instance SQS queues"
+Cohesion: 0.14
+Nodes (14): A general lease, lock, or leader election for the cleanup, A queue per user or per browser, ADR-0073: Fan out realtime wakeups to serve instances with SNS to per-instance SQS queues, Alternatives Considered, An inbox / deduplication table for wakeups, Carrying the payload in the notification, Consequences, Context (+6 more)
 
-### Community 719 - "go.uber.org/fx.Option"
-Cohesion: 0.09
-Nodes (27): go.uber.org/fx.Option, Module(), TestModule(), ConfigModule(), DatabaseModule(), TestDatabaseModule(), TestDatabaseModule_Composes(), LoggingModule() (+19 more)
+### Community 719 - "Channel"
+Cohesion: 0.06
+Nodes (33): EnsureRepoRootAndEnv(), Module(), TestModule(), ConfigModule(), TestConfigConstructors_WithProvidedConfig(), TestConfigModule(), DatabaseModule(), TestDatabaseModule() (+25 more)
 
-### Community 720 - "ADR-0103: Publish static docs/ via GitHub Pages (released on production push)"
-Cohesion: 0.17
-Nodes (11): ADR-0103: Publish static docs/ via GitHub Pages (released on production push), Alternatives Considered, Consequences, Context, Decision, External static hosting (Netlify, Cloudflare Pages, Vercel), Manual publishing, Negative Consequences (+3 more)
+### Community 720 - "ADR-0084: mise.toml is the single source of truth for mise-resolved versions; versions propagate downstream with a CI drift gate"
+Cohesion: 0.14
+Nodes (14): ADR-0084: mise.toml is the single source of truth for mise-resolved versions; versions propagate downstream with a CI drift gate, Alternatives Considered, Consequences, Context, Decision, Keep PyPI tools in `[tools]` and accept unpinned transitive dependencies, Negative Consequences, No sync; maintain each file independently (+6 more)
 
 ### Community 721 - "Architecture"
 Cohesion: 0.17
@@ -3466,17 +3496,13 @@ Nodes (12): 1. Role theory (what, and what for), 2.1 engine lifecycle (`Engine.R
 Cohesion: 0.17
 Nodes (11): Commands, Consts and Vars, Funcs and Methods, Go Doc-Comment Conventions (Condensed), Not Prescribed by godoc (treat as surplus in a doc comment), Packages, Per-Declaration Conventions, Purpose and Scope (+3 more)
 
-### Community 725 - "Purchase — Domain Spec"
-Cohesion: 0.17
-Nodes (12): Business Glossary, Ubiquitous Language, Atomic Purchase Invariants, Behavior Methods, Cross-field Invariants, Domain Service, Entity, Notes (+4 more)
-
-### Community 726 - "NewEmail"
-Cohesion: 0.38
-Nodes (4): NewEmail(), TestEmail_Value(), TestNewEmail(), Email
+### Community 726 - "ADR-0092: Generated-artifact drift gate + release-branch-centralized auto-generation bot"
+Cohesion: 0.14
+Nodes (14): 1. PR-time drift gate (two workflows), 2. Release-branch auto-generation bot (`auto-generate-docs.yaml`), ADR-0092: Generated-artifact drift gate + release-branch-centralized auto-generation bot, Alternatives Considered, Commit generated artifacts manually as part of every PR, Consequences, Context, Decision (+6 more)
 
 ### Community 727 - "`Config` Package"
 Cohesion: 0.17
-Nodes (11): Database Slot CLI, Database Seed CLI, Server CLI, Config Loading Flow, `Config` Package, Design Principles, Implementation, Main Libraries Used (+3 more)
+Nodes (11): Database Slot CLI, Server CLI, Worker CLI, Config Loading Flow, `Config` Package, Design Principles, Implementation, Main Libraries Used (+3 more)
 
 ### Community 728 - "Metrics Handler (`internal/controller/handler/metrics`)"
 Cohesion: 0.17
@@ -3502,9 +3528,9 @@ Nodes (12): Callable layers, Do, Do / Don’t, Domain boundaries, Domain events,
 Cohesion: 0.18
 Nodes (11): Agent Operational Contract, Agent compatibility, AI-assisted development, Design Intent, Feeding implementation back into design, Intended system types, Making change observable, Opinionated, but replaceable (+3 more)
 
-### Community 734 - "NewPostalCode"
-Cohesion: 0.38
-Nodes (4): NewPostalCode(), TestNewPostalCode(), TestPostalCode_Value(), PostalCode
+### Community 734 - ".PostInquiriesMeMessages"
+Cohesion: 0.19
+Nodes (11): go-boilerplate/internal/controller/handler/v1/inquiries/me/messages/gen.GetInquiriesMeMessagesRequestObject, go-boilerplate/internal/controller/handler/v1/inquiries/me/messages/gen.GetInquiriesMeMessagesResponseObject, go-boilerplate/internal/controller/handler/v1/inquiries/me/messages/gen.InquiryHistoryResponse, go-boilerplate/internal/controller/handler/v1/inquiries/me/messages/gen.InquiryMessage, go-boilerplate/internal/controller/handler/v1/inquiries/me/messages/gen.InquiryMessageResponse, go-boilerplate/internal/controller/handler/v1/inquiries/me/messages/gen.PostInquiriesMeMessagesRequestObject, go-boilerplate/internal/controller/handler/v1/inquiries/me/messages/gen.PostInquiriesMeMessagesResponseObject, server (+3 more)
 
 ### Community 735 - "Context Map Audit"
 Cohesion: 0.18
@@ -3562,9 +3588,9 @@ Nodes (11): ADR-0040: Adopt Uber Fx for dependency injection and lifecycle, Alte
 Cohesion: 0.18
 Nodes (11): ADR-0041: Contain fx behind a neutral DI abstraction (Registrar / Shutdowner), Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Positive Consequences (+3 more)
 
-### Community 749 - "openSeedObjectStorage"
-Cohesion: 0.31
-Nodes (7): dbSeedRun(), newConfigForSeed(), newDBSeedCommand(), openSeedObjectStorage(), seedVars(), IsLocalClassEnv(), TestIsLocalClassEnv()
+### Community 749 - "NewRealtimeTestConnection"
+Cohesion: 0.14
+Nodes (15): RealtimeTestConnection, IsLocalClassEnv(), TestIsLocalClassEnv(), NewRealtimeTestConnection(), NewTestLocation(), repoRoot(), ResolvedAuthIssuer(), setWorktreeDBName() (+7 more)
 
 ### Community 750 - "ADR-0044: Governance: default-in-code (immutable) vs required-in-file (variable)"
 Cohesion: 0.18
@@ -3575,7 +3601,7 @@ Cohesion: 0.18
 Nodes (11): ADR-0045: Config is immutable, loaded once at startup, fail-fast, Alternatives Considered, Consequences, Context, Decision, Load config on first use (lazy), Mutable config with live reload, Negative Consequences (+3 more)
 
 ### Community 752 - "ADR-0046: go:embed bundles config (.env) and migrations for a self-contained binary"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (11): ADR-0046: go:embed bundles config (.env) and migrations for a self-contained binary, Alternatives Considered, Config server / remote key-value store, Consequences, Context, Decision, External config files only, Negative Consequences (+3 more)
 
 ### Community 753 - "ADR-0047: Protocol-agnostic aggregated error classification (apperror)"
@@ -3627,72 +3653,72 @@ Cohesion: 0.18
 Nodes (11): ADR-0066: Run idempotency key garbage collection as a separate one-shot CLI job, Alternatives Considered, Background goroutine inside the API server, Consequences, Context, Decision, Inline cleanup on the request path, Negative Consequences (+3 more)
 
 ### Community 765 - "ADR-0067: Keep idempotency orthogonal to optimistic locking and rate limiting"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (11): ADR-0067: Keep idempotency orthogonal to optimistic locking and rate limiting, Alternatives Considered, Bundle optimistic locking into the idempotency middleware, Co-locate rate-limiting counters with idempotency state, Consequences, Context, Decision, Negative Consequences (+3 more)
 
-### Community 766 - "ADR-0073: Use only official OpenTelemetry semantic conventions; do not invent custom semconv or put vendor keys in typed config"
-Cohesion: 0.18
-Nodes (11): Add vendor-specific keys to `ObservabilityConfig`, ADR-0073: Use only official OpenTelemetry semantic conventions; do not invent custom semconv or put vendor keys in typed config, Alternatives Considered, Consequences, Context, Decision, Invent project-local semconv-like keys, Negative Consequences (+3 more)
+### Community 766 - "openapi-client-check/index.ts"
+Cohesion: 0.21
+Nodes (10): declaredTypeNames(), DegenerateOutputError, Finding, missingTypes(), SAMPLE, EXPECTED_TYPES, INPUT, OUTPUT_DIR (+2 more)
 
-### Community 767 - "ADR-0076: Fix the SDK default sampling; do not expose sampling as an env knob"
-Cohesion: 0.18
-Nodes (11): ADR-0076: Fix the SDK default sampling; do not expose sampling as an env knob, Alternatives Considered, Consequences, Context, Decision, Head-based configurable sampling via `OBS_SAMPLE_RATE`, Negative Consequences, Notes (+3 more)
+### Community 767 - "ADR-0078: Metrics travel two paths — OTLP push and Prometheus scrape"
+Cohesion: 0.15
+Nodes (12): ADR-0078: Metrics travel two paths — OTLP push and Prometheus scrape, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, OTLP push only (bridge Prometheus collectors into the OTel MeterProvider) (+4 more)
 
-### Community 768 - "ADR-0077: Single-responsibility library selection policy"
-Cohesion: 0.18
-Nodes (11): ADR-0077: Single-responsibility library selection policy, Alternatives Considered, Ban all multi-upstream libraries outright, Consequences, Context, Decision, Negative Consequences, No stated policy (adopt per convenience) (+3 more)
+### Community 768 - "ADR-0079: Observability providers are lifecycle-independent (ProviderShutdowner)"
+Cohesion: 0.15
+Nodes (12): A lifecycle interface injected into provider constructors, ADR-0079: Observability providers are lifecycle-independent (ProviderShutdowner), Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes (+4 more)
 
-### Community 769 - "ADR-0078: Bridge / instrumentation libraries as bounded SRP exceptions"
-Cohesion: 0.18
-Nodes (11): ADR-0078: Bridge / instrumentation libraries as bounded SRP exceptions, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Positive Consequences (+3 more)
+### Community 769 - "ADR-0086: Operational scripts live in scripts/ as TypeScript or Go; shell scripting is not used"
+Cohesion: 0.15
+Nodes (13): ADR-0086: Operational scripts live in scripts/ as TypeScript or Go; shell scripting is not used, Alternatives Considered, Consequences, Context, Decision, Deno, Negative Consequences, Notes (+5 more)
 
-### Community 770 - "0084-two-layer-golangci-config.md"
+### Community 770 - "ADR-0091: CI boots the real fx graph against real Postgres (startup verification)"
+Cohesion: 0.15
+Nodes (12): ADR-0091: CI boots the real fx graph against real Postgres (startup verification), Alternatives Considered, Consequences, Context, Decision, Mock the fx graph in tests, Negative Consequences, Notes (+4 more)
+
+### Community 771 - "ADR-0096: Run infrastructure integration tests against a real DB with sentinel-error rollback"
+Cohesion: 0.15
+Nodes (12): ADR-0096: Run infrastructure integration tests against a real DB with sentinel-error rollback, Alternatives Considered, Consequences, Context, Database driver mocking (sqlmock / interface mocks), Decision, Full database reset between tests, In-memory database (SQLite) (+4 more)
+
+### Community 772 - "Cart — Usecase Spec"
+Cohesion: 0.15
+Nodes (13): Cart — Usecase Spec, ClearCart, Dependencies, DTOs, GetCart, Interface, MergeOnLogin, Notes (+5 more)
+
+### Community 773 - "Inquiry — Usecase Spec"
+Cohesion: 0.14
+Nodes (13): Dependencies, DTOs, Inquiry — Usecase Spec, Interface, Notes, Overview, Workflow, Emulator compatibility (`local/`) (+5 more)
+
+### Community 774 - "attributeOf"
+Cohesion: 0.54
+Nodes (12): attributeOf(), collectIdempotencyMetrics(), newIdempotencyMetricsForTest(), operationIDOf(), TestIdempotencyMetrics_IncClaimFailure(), TestIdempotencyMetrics_IncCompleteFailure(), TestIdempotencyMetrics_IncConflict(), TestIdempotencyMetrics_IncExpiredCleanup() (+4 more)
+
+### Community 775 - "ADR-0075: Config-driven observability gating"
 Cohesion: 0.17
-Nodes (11): ADR-0084: Two-layer golangci config: minimal default vs full authoritative gate, Alternatives Considered, Consequences, Context, Decision, golangci-lint `--fast` flag, Negative Consequences, Notes (+3 more)
+Nodes (12): A dedicated `OBSERVABILITY_ENABLED` flag alongside exporter settings, ADR-0075: Config-driven observability gating, Alternatives Considered, Build-tag removal of the otel / bridge dependencies, Consequences, Context, Decision, Keep `OTEL_*` + autoexport (+4 more)
 
-### Community 771 - "ADR-0085: Local git hooks duplicate the CI contract (local == CI, glob-scoped, bypass-then-verify-once)"
+### Community 776 - "ADR-0076: Vendor-neutral OTLP-only export (delegate backend to the Collector)"
 Cohesion: 0.17
-Nodes (11): ADR-0085: Local git hooks duplicate the CI contract (local == CI, glob-scoped, bypass-then-verify-once), Alternatives Considered, Consequences, Context, Decision, Negative Consequences, No local hooks; rely entirely on CI, Notes (+3 more)
+Nodes (12): ADR-0076: Vendor-neutral OTLP-only export (delegate backend to the Collector), Alternatives Considered, Consequences, Console exporter for local development, Context, Decision, Negative Consequences, Notes (+4 more)
 
-### Community 772 - "ADR-0094: Scaffold only domain and usecase from spec files; derive controller and infra from generated code"
-Cohesion: 0.18
-Nodes (11): ADR-0094: Scaffold only domain and usecase from spec files; derive controller and infra from generated code, Alternatives Considered, Consequences, Context, Decision, Four-layer spec (domain + usecase + controller + infra), Negative Consequences, No spec files (pure derivation) (+3 more)
+### Community 777 - "ADR-0080: Fix the SDK default sampling; do not expose sampling as an env knob"
+Cohesion: 0.17
+Nodes (11): ADR-0080: Fix the SDK default sampling; do not expose sampling as an env knob, Alternatives Considered, Consequences, Context, Decision, Head-based configurable sampling via `OBS_SAMPLE_RATE`, Negative Consequences, Notes (+3 more)
 
-### Community 773 - "ADR-0096: All roles are one multi-command binary"
-Cohesion: 0.18
-Nodes (11): ADR-0096: All roles are one multi-command binary, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Positive Consequences (+3 more)
+### Community 778 - "ADR-0083: Use a containerized toolchain pinned by mise for reproducibility"
+Cohesion: 0.17
+Nodes (12): ADR-0083: Use a containerized toolchain pinned by mise for reproducibility, Alternatives Considered, Consequences, Context, Decision, devcontainer (VS Code Dev Containers), Direct host tool execution, Negative Consequences (+4 more)
 
-### Community 774 - "ADR-0097: A single runtime image with command override (no purpose-specific images)"
-Cohesion: 0.18
-Nodes (11): ADR-0097: A single runtime image with command override (no purpose-specific images), Alternatives Considered, Consequences, Context, Decision, Dedicated migration image, Init-container that pulls migration binary separately, Negative Consequences (+3 more)
+### Community 779 - "ADR-0085: Make is the single tool entrypoint with .mk registration and self-documenting help"
+Cohesion: 0.17
+Nodes (12): ADR-0085: Make is the single tool entrypoint with .mk registration and self-documenting help, Alternatives Considered, Bare shell scripts, Consequences, Context, Decision, Just, Negative Consequences (+4 more)
 
-### Community 775 - "ADR-0099: Per-environment images (.env matrix x APP_ENV build-arg, fixed at build time)"
-Cohesion: 0.18
-Nodes (11): ADR-0099: Per-environment images (.env matrix x APP_ENV build-arg, fixed at build time), Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Per-environment Dockerfile (+3 more)
+### Community 780 - "ADR-0087: Local dev environment is provided via Docker Compose with profile-separated services"
+Cohesion: 0.17
+Nodes (12): ADR-0087: Local dev environment is provided via Docker Compose with profile-separated services, Alternatives Considered, Consequences, Context, Decision, devcontainer (VS Code Dev Containers), Negative Consequences, Notes (+4 more)
 
-### Community 776 - "ADR-0100: Migrations run as a pre-deploy one-shot; do NOT auto-migrate at application startup"
-Cohesion: 0.18
-Nodes (11): ADR-0100: Migrations run as a pre-deploy one-shot; do NOT auto-migrate at application startup, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Positive Consequences (+3 more)
-
-### Community 777 - "ADR-0101: Release-image supply-chain integrity (cosign signing + provenance + SBOM)"
-Cohesion: 0.18
-Nodes (11): ADR-0101: Release-image supply-chain integrity (cosign signing + provenance + SBOM), Alternatives Considered, Consequences, Context, Decision, Long-lived signing key (cosign with a stored key), Negative Consequences, No supply-chain artifacts (+3 more)
-
-### Community 778 - "ADR-0102: Deploy is a vendor-neutral skeleton (build/sign implemented; cloud CD is a stub; registry not fixed)"
-Cohesion: 0.18
-Nodes (11): ADR-0102: Deploy is a vendor-neutral skeleton (build/sign implemented; cloud CD is a stub; registry not fixed), Alternatives Considered, Consequences, Context, Decision, External CD tool (Argo CD, Flux, Spinnaker), Fully implemented for one cloud (e.g., AWS ECS), Negative Consequences (+3 more)
-
-### Community 779 - "ADR-0104: Do not provide an in-application rate limiter"
-Cohesion: 0.18
-Nodes (11): ADR-0104: Do not provide an in-application rate limiter, Alternatives Considered, Consequences, Context, Decision, Distributed in-app limiter backed by Redis or similar, In-memory token bucket / sliding window (e.g. `golang.org/x/time/rate`), Negative Consequences (+3 more)
-
-### Community 780 - "ADR-0105: Do not control scheduled-job concurrency in-app; delegate to the scheduler"
-Cohesion: 0.18
-Nodes (11): ADR-0105: Do not control scheduled-job concurrency in-app; delegate to the scheduler, Advisory database lock per job (`pg_try_advisory_lock`), Alternatives Considered, Consequences, Context, Decision, Distributed lock via Redis, Negative Consequences (+3 more)
-
-### Community 781 - "ADR-0106: Do not provide a generic Cache abstraction"
-Cohesion: 0.18
-Nodes (11): ADR-0106: Do not provide a generic Cache abstraction, Alternatives Considered, Consequences, Context, Decision, Generic `Cache[K, V]` interface with TTL get/set, Negative Consequences, Notes (+3 more)
+### Community 781 - "ADR-0090: Total coverage 90% is a CI hard gate, with an exception-governance path"
+Cohesion: 0.17
+Nodes (12): 100% coverage requirement, ADR-0090: Total coverage 90% is a CI hard gate, with an exception-governance path, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, No coverage gate (+4 more)
 
 ### Community 782 - "Idempotency Subsystem Design Reference"
 Cohesion: 0.18
@@ -3706,21 +3732,21 @@ Nodes (11): Arguments that rest on the sample feature set, Boilerplate-only Conv
 Cohesion: 0.18
 Nodes (11): A host port is already allocated, `CREATE DATABASE` fails with a collation version mismatch, Database and tests, Generated files became root-owned and `git` can no longer touch them, `make gen-query` fails with `connection refused`, Related documents, Running locally, Symptom-indexed Recovery (+3 more)
 
-### Community 785 - "Workflow"
-Cohesion: 0.18
-Nodes (11): CountUsers, CreateUser, DeleteUser, GetUser, ListUsers, ListUsersFeed, ListUsersWithTotal, PurgeDeleted（PurgeUsecase） (+3 more)
+### Community 785 - "ADR-0094: Pin GitHub Actions by SHA with a supply-chain quarantine"
+Cohesion: 0.17
+Nodes (12): ADR-0094: Pin GitHub Actions by SHA with a supply-chain quarantine, Alternatives Considered, Consequences, Context, Decision, Dependabot for Actions updates, Negative Consequences, Notes (+4 more)
 
-### Community 786 - "User — Usecase Spec"
-Cohesion: 0.20
-Nodes (11): Dependencies, DTOs, GET ロール（me）, Interface, Overview, User — Usecase Spec, Build User Feature Tutorial, Application Error Taxonomy (+3 more)
+### Community 786 - "Job CLI"
+Cohesion: 0.40
+Nodes (5): Build User Feature Tutorial, Application Error Taxonomy, Job CLI, Controller Boundary Conversions, Controller Layer
 
 ### Community 787 - "ctxhelper"
 Cohesion: 0.18
 Nodes (10): About editing, Complex types, ctxhelper, How to specify type, Implementation Method, Notes, Primitive types / same-package types, Provided helpers (+2 more)
 
-### Community 788 - "outbox"
-Cohesion: 0.18
-Nodes (10): emit — `EmitUsecase`, Entry lifecycle, GC — `GCUsecase`, Layout, outbox, relay — `RelayUsecase`, replay — `ReplayUsecase`, The consuming end (+2 more)
+### Community 788 - "withdrawal-archive worker (sample)"
+Cohesion: 0.11
+Nodes (17): Error classification, Idempotency, Message selection, Running it end to end, Structure, What it archives, and why that, withdrawal-archive worker (sample), emit — `EmitUsecase` (+9 more)
 
 ### Community 789 - "Testing Strategy"
 Cohesion: 0.18
@@ -3754,21 +3780,21 @@ Nodes (9): Constraints, Detection, Drift Detector — Business Glossary, Identif
 Cohesion: 0.20
 Nodes (10): Build Targets, docker-compose Services, Execution, go_tools, node_tools, Notes, python_tools, Role (+2 more)
 
-### Community 797 - "Dashboard — Usecase Spec"
-Cohesion: 0.20
-Nodes (9): Cross-Aggregate Dashboard Projection, Dashboard — Usecase Spec, Dependencies, DTOs, GetDashboardSummary, Interface, Notes, Overview (+1 more)
+### Community 797 - "ADR-0102: Use a hardened-alpine runtime base; do NOT use distroless/scratch"
+Cohesion: 0.17
+Nodes (11): ADR-0102: Use a hardened-alpine runtime base; do NOT use distroless/scratch, Alternatives Considered, Consequences, Context, Decision, distroless/static or distroless/base, Negative Consequences, Notes (+3 more)
 
-### Community 798 - "Exchange Rate — Usecase Spec"
-Cohesion: 0.20
-Nodes (10): API Contract, Caching, Convert, Dependencies, DTOs, Exchange Rate — Usecase Spec, Interface, Notes (+2 more)
+### Community 798 - "ADR-0107: Publish static docs/ via GitHub Pages (released on production push)"
+Cohesion: 0.17
+Nodes (11): ADR-0107: Publish static docs/ via GitHub Pages (released on production push), Alternatives Considered, Consequences, Context, Decision, External static hosting (Netlify, Cloudflare Pages, Vercel), Manual publishing, Negative Consequences (+3 more)
 
-### Community 799 - "User Search — Usecase Spec"
-Cohesion: 0.20
-Nodes (9): CountUsersByKeyword, Dependencies, DTOs, Interface, ListUsersByKeyword, ListUsersByKeywordWithTotal, Overview, User Search — Usecase Spec (+1 more)
+### Community 799 - "Run"
+Cohesion: 0.29
+Nodes (10): Run(), RunTopic(), TableNames(), TestRun(), TestRunTopic(), TestTableNames(), TestTopicName(), TopicName() (+2 more)
 
-### Community 800 - "SetUpConfig"
-Cohesion: 0.13
-Nodes (9): newCLIConfig(), outboxRelayRun(), RunRelay(), TestRunRelay(), Load(), Config, SetUpConfig(), Override() (+1 more)
+### Community 800 - "Join"
+Cohesion: 0.04
+Nodes (61): AttributesBuilder, notifier, publisher, queueAttributes, QueueAttributesInput, reclaimer, redrivePolicy, SNSAPI (+53 more)
 
 ### Community 801 - "idempotency"
 Cohesion: 0.20
@@ -3802,25 +3828,25 @@ Nodes (8): Constraints, Output (Japanese — this IS the return value), Source o
 Cohesion: 0.22
 Nodes (9): 1. Locate Each Package, 2. Select the Fixed Version, 3. Apply the Supply-chain Caution Gate, 4. Triage What the Gate Caught, 5. Display Summary; Auto-apply Clear, Confirm Only the Flagged, 6. Apply the Updates, 7. Verify, 8. Final Report (+1 more)
 
-### Community 809 - "GCUsecase"
-Cohesion: 0.38
-Nodes (4): GCUsecase, NewGC(), Test_gcUsecase_SweepPublished(), TestNewGC()
+### Community 809 - "stream"
+Cohesion: 0.17
+Nodes (12): Degraded operation, Placement, Reason codes this package sends, Runtime: what one connection does after commit, Stop-time budget, stream, Sub-packages, Test Strategy (+4 more)
 
-### Community 810 - "ADR-0108: Resolve every Node package with pnpm; do not use npm"
-Cohesion: 0.22
-Nodes (8): ADR-0108: Resolve every Node package with pnpm; do not use npm, Consequences, Context, Decision, Negative, Neutral, Positive, Status
+### Community 810 - "ADR-0012: Define the API contract OpenAPI-first"
+Cohesion: 0.18
+Nodes (11): ADR-0012: Define the API contract OpenAPI-first, Alternatives Considered, Code-first API (generate OpenAPI from code), Consequences, Context, Decision, GraphQL-first, Negative Consequences (+3 more)
 
-### Community 811 - "Address — Usecase Spec"
-Cohesion: 0.22
-Nodes (8): Address — Usecase Spec, Dependencies, DTOs, Graceful Address Lookup Degradation, Interface, LookupByPostalCode, Overview, Workflow
+### Community 811 - "ADR-0077: Use only official OpenTelemetry semantic conventions; do not invent custom semconv or put vendor keys in typed config"
+Cohesion: 0.18
+Nodes (11): Add vendor-specific keys to `ObservabilityConfig`, ADR-0077: Use only official OpenTelemetry semantic conventions; do not invent custom semconv or put vendor keys in typed config, Alternatives Considered, Consequences, Context, Decision, Invent project-local semconv-like keys, Negative Consequences (+3 more)
 
-### Community 812 - "User — Domain Spec"
-Cohesion: 0.22
-Nodes (8): Behavior Methods, Cross-field Invariants, Entity, Notes, Overview, Repository Methods, User — Domain Spec, Value Objects
+### Community 812 - "ADR-0081: Single-responsibility library selection policy"
+Cohesion: 0.18
+Nodes (11): ADR-0081: Single-responsibility library selection policy, Alternatives Considered, Ban all multi-upstream libraries outright, Consequences, Context, Decision, Negative Consequences, No stated policy (adopt per convenience) (+3 more)
 
-### Community 813 - "expandBraces"
-Cohesion: 0.38
-Nodes (7): expandBraces(), literalParentDir(), makeTargetExists(), placeholderToRegExp(), configFileExists(), isExternalSkillPath(), repoPathExists()
+### Community 813 - "ADR-0082: Bridge / instrumentation libraries as bounded SRP exceptions"
+Cohesion: 0.18
+Nodes (11): ADR-0082: Bridge / instrumentation libraries as bounded SRP exceptions, Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Positive Consequences (+3 more)
 
 ### Community 814 - "bindhandler_di_parity_test.go"
 Cohesion: 0.13
@@ -3830,9 +3856,9 @@ Nodes (26): handlerTreeIndex, collectHandlerImports(), collectInvokedBindHandler
 Cohesion: 0.22
 Nodes (9): Controller Layer Handler (`internal/controller/handler`) Guide, Example, Handler Design, Handler Responsibilities, Reference Snippet, Role in This Project, Thin Controller Principle, What is Presenter (+1 more)
 
-### Community 816 - "Outbox GC Job Guide (`internal/controller/job/outboxgc`)"
-Cohesion: 0.07
-Nodes (22): conv, Notes, Why, Note, Response, Role, Standard handler pattern, Version Handler (`internal/controller/handler/version`) (+14 more)
+### Community 816 - "design/README.md"
+Cohesion: 0.03
+Nodes (67): Command, Flags, Notes, outbox-relay, Role, Usage, conv, Notes (+59 more)
 
 ### Community 817 - "NewCredential"
 Cohesion: 0.15
@@ -3843,8 +3869,8 @@ Cohesion: 0.22
 Nodes (9): 1. Concept — why a transaction is not enough, 2. State transitions, 3. How to make an endpoint idempotent, 4. Client contract, 5. (c) Per-endpoint scope extension (no config flag), 6. Operations, Idempotency (Idempotency-Key), Layout (+1 more)
 
 ### Community 819 - "strings.Builder"
-Cohesion: 0.47
-Nodes (4): stripState, strings.Builder, byteAt(), Test_byteAt()
+Cohesion: 0.27
+Nodes (8): stripState, strings.Builder, byteAt(), Test_byteAt(), fenced(), fenceFor(), Test_fenced(), Test_fenceFor()
 
 ### Community 820 - "Implementation Notes"
 Cohesion: 0.22
@@ -3870,33 +3896,33 @@ Nodes (8): ADR-0009: Keep durable agent state in its owning canonical form, Alte
 Cohesion: 0.25
 Nodes (8): An undecided edge is an entry, not a blank, Context Map, Diagram, Edges, Sample-derived contact points, The open questions, What counts as a contact point, What this map does not cover
 
-### Community 826 - "Cart — Domain Spec"
-Cohesion: 0.25
-Nodes (8): Behavior Methods, Cart — Domain Spec, Cross-field Invariants, Entity, Notes, Overview, Repository Methods, Value Objects
+### Community 826 - "ADR-0089: Local git hooks duplicate the CI contract (local == CI, glob-scoped, bypass-then-verify-once)"
+Cohesion: 0.18
+Nodes (11): ADR-0089: Local git hooks duplicate the CI contract (local == CI, glob-scoped, bypass-then-verify-once), Alternatives Considered, Consequences, Context, Decision, Negative Consequences, No local hooks; rely entirely on CI, Notes (+3 more)
 
-### Community 827 - "Health Check — Usecase Spec"
-Cohesion: 0.25
-Nodes (7): CheckHealth, Dependencies, DTOs, Health Check — Usecase Spec, Interface, Overview, Workflow
+### Community 827 - "ADR-0098: Scaffold only domain and usecase from spec files; derive controller and infra from generated code"
+Cohesion: 0.18
+Nodes (11): ADR-0098: Scaffold only domain and usecase from spec files; derive controller and infra from generated code, Alternatives Considered, Consequences, Context, Decision, Four-layer spec (domain + usecase + controller + infra), Negative Consequences, No spec files (pure derivation) (+3 more)
 
-### Community 828 - "ProductCategory — Domain Spec"
-Cohesion: 0.25
-Nodes (7): Behavior Methods, Cross-field Invariants, Entity, Overview, ProductCategory — Domain Spec, Repository Methods, Value Objects
+### Community 828 - "ADR-0103: Per-environment images (.env matrix x APP_ENV build-arg, fixed at build time)"
+Cohesion: 0.18
+Nodes (11): ADR-0103: Per-environment images (.env matrix x APP_ENV build-arg, fixed at build time), Alternatives Considered, Consequences, Context, Decision, Negative Consequences, Notes, Per-environment Dockerfile (+3 more)
 
-### Community 829 - "ProductCategory — Usecase Spec"
-Cohesion: 0.25
-Nodes (7): Dependencies, DTOs, Interface, ListCategories, Overview, ProductCategory — Usecase Spec, Workflow
+### Community 829 - "ADR-0105: Release-image supply-chain integrity (cosign signing + provenance + SBOM)"
+Cohesion: 0.18
+Nodes (11): ADR-0105: Release-image supply-chain integrity (cosign signing + provenance + SBOM), Alternatives Considered, Consequences, Context, Decision, Long-lived signing key (cosign with a stored key), Negative Consequences, No supply-chain artifacts (+3 more)
 
-### Community 830 - "ProductRanking — Usecase Spec"
-Cohesion: 0.25
-Nodes (7): Dependencies, DTOs, GetProductsRanking, Interface, Overview, ProductRanking — Usecase Spec, Workflow
+### Community 830 - "ADR-0106: Deploy is a vendor-neutral skeleton (build/sign implemented; cloud CD is a stub; registry not fixed)"
+Cohesion: 0.18
+Nodes (11): ADR-0106: Deploy is a vendor-neutral skeleton (build/sign implemented; cloud CD is a stub; registry not fixed), Alternatives Considered, Consequences, Context, Decision, External CD tool (Argo CD, Flux, Spinnaker), Fully implemented for one cloud (e.g., AWS ECS), Negative Consequences (+3 more)
 
-### Community 831 - "ProductStatus — Domain Spec"
-Cohesion: 0.25
-Nodes (7): Behavior Methods, Cross-field Invariants, Entity, Overview, ProductStatus — Domain Spec, Repository Methods, Value Objects
+### Community 831 - "ADR-0108: Do not provide an in-application rate limiter"
+Cohesion: 0.18
+Nodes (11): ADR-0108: Do not provide an in-application rate limiter, Alternatives Considered, Consequences, Context, Decision, Distributed in-app limiter backed by Redis or similar, In-memory token bucket / sliding window (e.g. `golang.org/x/time/rate`), Negative Consequences (+3 more)
 
-### Community 832 - "ProductStatus — Usecase Spec"
-Cohesion: 0.25
-Nodes (7): Dependencies, DTOs, Interface, ListStatuses, Overview, ProductStatus — Usecase Spec, Workflow
+### Community 832 - "ADR-0109: Do not control scheduled-job concurrency in-app; delegate to the scheduler"
+Cohesion: 0.18
+Nodes (11): ADR-0109: Do not control scheduled-job concurrency in-app; delegate to the scheduler, Advisory database lock per job (`pg_try_advisory_lock`), Alternatives Considered, Consequences, Context, Decision, Distributed lock via Redis, Negative Consequences (+3 more)
 
 ### Community 833 - "Toggle"
 Cohesion: 0.25
@@ -3911,12 +3937,12 @@ Cohesion: 0.25
 Nodes (8): Dependency Policy, Do not introduce HTTP vocabulary into Usecase, Do not leak HTTP into Usecase, Error Mapping, Implementation Rules, Naming / Structure, Page, Transaction
 
 ### Community 836 - "newActiveUser"
-Cohesion: 0.46
-Nodes (6): EnsurePurchasable(), EnsureWithdrawable(), newActiveUser(), newWithdrawnUser(), TestEnsurePurchasable(), TestEnsureWithdrawable()
+Cohesion: 0.90
+Nodes (4): newActiveUser(), newWithdrawnUser(), TestEnsurePurchasable(), TestEnsureWithdrawable()
 
-### Community 837 - "runPruneReleaseNotes"
-Cohesion: 0.50
-Nodes (4): releaseNotesToDelete(), runPruneReleaseNotes(), Test_releaseNotesToDelete(), Test_runPruneReleaseNotes()
+### Community 837 - "ADR-0110: Do not provide a generic Cache abstraction"
+Cohesion: 0.18
+Nodes (11): ADR-0110: Do not provide a generic Cache abstraction, Alternatives Considered, Consequences, Context, Decision, Generic `Cache[K, V]` interface with TTL get/set, Negative Consequences, Notes (+3 more)
 
 ### Community 839 - "Testing strategy"
 Cohesion: 0.25
@@ -3958,9 +3984,9 @@ Nodes (6): Constraints, Detection (run only the selected categories), Drift Dete
 Cohesion: 0.11
 Nodes (9): go.opentelemetry.io/otel/sdk/log.Record, go.opentelemetry.io/otel/sdk/metric.Aggregation, go.opentelemetry.io/otel/sdk/metric.InstrumentKind, go.opentelemetry.io/otel/sdk/metric/metricdata.Temporality, Test_providerShutdowner_Shutdown(), TestNewProviderShutdowner(), errLogExporter, errMetricExporter (+1 more)
 
-### Community 850 - "Drift Detector — Usecase"
-Cohesion: 0.29
-Nodes (6): Constraints, Detection (run only the selected categories), Drift Detector — Usecase, Output (Japanese — this IS the return value), What you read (priority: README > Code > SKILL), Your input (from the orchestrator)
+### Community 850 - "Middleware"
+Cohesion: 0.20
+Nodes (7): Is(), IsCommittedStream(), TestIs(), TestIsCommittedStream(), echo.MiddlewareFunc, Middleware(), TestMiddleware()
 
 ### Community 851 - "Type Design Reviewer"
 Cohesion: 0.17
@@ -4098,9 +4124,9 @@ Nodes (5): Axis A — artifact versus source, Axis D — what actually changed, 
 Cohesion: 0.33
 Nodes (6): Architectural Principles, Contract-first API, Dependency Inversion, SQL-first Data Access, Structural Safety, Vendor Neutrality
 
-### Community 887 - "Layer Dependency Rules"
-Cohesion: 0.33
-Nodes (6): Allowed Dependencies, Domain lexicon, Domain services, Forbidden Dependencies, Layer Dependency Rules, Rationale
+### Community 887 - "pubsub.go"
+Cohesion: 0.20
+Nodes (10): notification, policyStatement, queuePolicy, canonicalJSON(), policyStatement, isSNSEnvelope(), sameJSON(), Test_canonicalJSON() (+2 more)
 
 ### Community 888 - "Workflow List"
 Cohesion: 0.33
@@ -4138,9 +4164,9 @@ Nodes (6): Every Route Must Exist in OpenAPI, Generated Code Policy, Handler Gen
 Cohesion: 0.33
 Nodes (6): Test Kit (testkit), testassert, testauth, testecho, testspan, testuuid
 
-### Community 897 - "NewEndpoint"
-Cohesion: 0.33
-Nodes (4): Endpoint, NewEndpoint(), TestNewDownstreamProfile(), TestNewEndpoint()
+### Community 897 - "Architecture Compliance Check"
+Cohesion: 0.20
+Nodes (9): TODO Hand-Off Model, Arch Check Agent Interface, Architecture Compliance Check, Auditor architecture, Completion constraints, Contract, Optional TODO hand-off, Procedure (+1 more)
 
 ### Community 898 - "job hook"
 Cohesion: 0.33
@@ -4158,9 +4184,9 @@ Nodes (6): Inbound Server Extensions, Instrumentation Server Extensions, Outboun
 Cohesion: 0.33
 Nodes (4): Notes, Role, Usage Flow, worker hook
 
-### Community 902 - "lexicon"
-Cohesion: 0.33
-Nodes (6): Admission bar, Enforcement, lexicon, Packages, Where a type goes, Why this exists
+### Community 902 - "Usecase Spec Format"
+Cohesion: 0.20
+Nodes (8): Usecase Workflow, Usecase Spec Format, テンプレ例, メソッドの書き方は 2 形式ある, 展開形（`## <メソッドの説明>` を独立させる）, 節構成, 自動派生ルール（spec に書かない）, 集約形（既定）
 
 ### Community 903 - "Where a rule goes"
 Cohesion: 0.33
@@ -4194,9 +4220,9 @@ Nodes (4): Arch Verifier (full-verify worker), Canonical criteria (single source
 Cohesion: 0.40
 Nodes (4): Canonical criteria (single source of truth — do not restate), Impl Verifier (full-verify worker), Output, Your input (from the orchestrator — these fill the prompt's placeholders)
 
-### Community 911 - "miseRegistry"
-Cohesion: 0.33
-Nodes (6): firstBackend(), miseRegistry(), resolveBackends(), Test_firstBackend(), Test_miseRegistry(), Test_resolveBackends()
+### Community 911 - "Exchange Rate — Usecase Spec"
+Cohesion: 0.20
+Nodes (10): API Contract, Caching, Convert, Dependencies, DTOs, Exchange Rate — Usecase Spec, Interface, Notes (+2 more)
 
 ### Community 912 - "Upstream design phases (Mode A only) — Phases 1–4"
 Cohesion: 0.40
@@ -4214,9 +4240,9 @@ Nodes (5): A new ADR versus a revision, ADR conventions that apply only upstream
 Cohesion: 0.40
 Nodes (5): A `vendor/` inconsistency after switching branches, CI fails on a generated artifact, but the code compiles locally, Gates and generated artifacts, Local gates seem to have stopped running, The editor's lint findings differ from `make lint`
 
-### Community 916 - "verifyLocks"
-Cohesion: 0.40
-Nodes (6): lockedVersion(), pyPackageName(), Test_lockedVersion(), Test_pyPackageName(), Test_verifyLocks(), verifyLocks()
+### Community 916 - "User Search — Usecase Spec"
+Cohesion: 0.20
+Nodes (9): CountUsersByKeyword, Dependencies, DTOs, Interface, ListUsersByKeyword, ListUsersByKeywordWithTotal, Overview, User Search — Usecase Spec (+1 more)
 
 ### Community 917 - "Importance"
 Cohesion: 0.40
@@ -4254,9 +4280,9 @@ Nodes (4): Helpers, Notes, testkit, Usage
 Cohesion: 0.40
 Nodes (5): Boundary value check, Errors, Format check, Validation, Why validate here when OpenAPI already validates the request?
 
-### Community 926 - "openAPIAllowPolicy"
-Cohesion: 0.40
-Nodes (3): openAPIAllowPolicy, openAPIDetailPolicy, github.com/getkin/kin-openapi/routers.Router
+### Community 926 - "button.tsx"
+Cohesion: 0.42
+Nodes (7): Button(), ButtonProps, buttonVariants, BUTTON_SIZE, BUTTON_VARIANT, ButtonSize, ButtonVariant
 
 ### Community 927 - "worker"
 Cohesion: 0.40
@@ -4302,9 +4328,9 @@ Nodes (4): Flags, Reviewer model selection, Step 0 — Confirm Scope, Test-viewp
 Cohesion: 0.50
 Nodes (4): Core (both modes) — Phases 5–7, Phase 5. Verify Specs (auto-chain), Phase 6. Chain Child Skills in Dependency Order, Phase 7. Integration Verification (make test + runtime curl + o11y)
 
-### Community 938 - "3. Read side: when is decomposition forbidden"
-Cohesion: 0.50
-Nodes (4): 3.1 Is the aggregate even the source of record for what is being read?, 3.2 Does the read span independent aggregates?, 3.3 Would decomposition materialize an aggregate the operation does not need?, 3. Read side: when is decomposition forbidden
+### Community 938 - "naming_test.go"
+Cohesion: 0.20
+Nodes (7): failingReader, newRunID(), Test_names_dlq(), Test_names_queue(), Test_names_table(), Test_names_topic(), Test_newRunID()
 
 ### Community 939 - "Arguments that rest on there being no adopter yet"
 Cohesion: 0.50
@@ -4314,9 +4340,9 @@ Nodes (4): Arguments that rest on there being no adopter yet, Setup scripts: why
 Cohesion: 0.50
 Nodes (4): A Docker image build fails with `403 Forbidden`, A pinned tool is "not found" although `mise` is installed, Git hooks never run, Setup
 
-### Community 941 - "Layer Responsibility Rules"
-Cohesion: 0.50
-Nodes (4): Controller, Layer Responsibility Rules, Transaction Rules, Usecase
+### Community 941 - "Verify-Spec Rules"
+Cohesion: 0.22
+Nodes (9): Cross-Spec Consistency, cross-spec 参照ルール（lean A）, scaffold-X skill 内では pre-check しない, Verify-Spec Rules, 参照する spec format, 層ごとの責務, 検出粒度, 検証スコープ (+1 more)
 
 ### Community 942 - "概要"
 Cohesion: 0.50
@@ -4482,101 +4508,233 @@ Nodes (3): Do, Do / Don’t, Don’t
 Cohesion: 0.67
 Nodes (3): Observability (Tracing), Start / End span, Tracer injection
 
-### Community 990 - "ContentLines"
-Cohesion: 0.50
-Nodes (3): ContentLines(), lines(), Test_ContentLines()
+### Community 990 - "Inquiry — Domain Spec"
+Cohesion: 0.22
+Nodes (9): Behavior Methods, Cross-field Invariants, Domain Service, Entity, Inquiry — Domain Spec, Notes, Overview, Repository Methods (+1 more)
+
+### Community 996 - "Product — Domain Spec"
+Cohesion: 0.22
+Nodes (8): Behavior Methods, Cross-field Invariants, Entity, Image（子エンティティ）, Overview, Product — Domain Spec, Repository Methods, Value Objects
+
+### Community 997 - "Purchase — Domain Spec"
+Cohesion: 0.22
+Nodes (9): Behavior Methods, Cross-field Invariants, Domain Service, Entity, Notes, Overview, Purchase — Domain Spec, Repository Methods (+1 more)
+
+### Community 998 - "User — Domain Spec"
+Cohesion: 0.22
+Nodes (8): Behavior Methods, Cross-field Invariants, Entity, Notes, Overview, Repository Methods, User — Domain Spec, Value Objects
+
+### Community 999 - "Dashboard — Usecase Spec"
+Cohesion: 0.22
+Nodes (8): Dashboard — Usecase Spec, Dependencies, DTOs, GetDashboardSummary, Interface, Notes, Overview, Workflow
+
+### Community 1000 - "ProductRanking — Usecase Spec"
+Cohesion: 0.22
+Nodes (8): Dependencies, DTOs, GetAmountRanking, GetQuantityRanking, Interface, Overview, ProductRanking — Usecase Spec, Workflow
+
+### Community 1001 - "newUsecase"
+Cohesion: 0.25
+Nodes (8): go-boilerplate/internal/usecase/product/ranking/query/mock.MockProductRankingQueryService, Test_agedImageKeys(), Test_excludeKeys(), Test_imageGCUsecase_SweepOrphans(), Test_imageGCUsecase_sweepPage(), TestNewImageGC(), usecase, newUsecase()
+
+### Community 1027 - "setAllowHeader"
+Cohesion: 0.36
+Nodes (7): allowFromEchoRouter(), echo.Context, setAllowHeader(), echo.Context, newAllowTestContext(), Test_allowFromEchoRouter(), Test_setAllowHeader()
 
 ### Community 1142 - "Full"
-Cohesion: 0.20
-Nodes (4): Full(), TestDo(), TestFull(), fakeSleeper
+Cohesion: 0.15
+Nodes (9): Test_retryDelay(), retryDelay(), Full(), Do(), TestDo(), TestFull(), fakeSleeper, Policy (+1 more)
 
-### Community 1143 - ".fn"
-Cohesion: 0.19
-Nodes (14): StartFunc, StopFunc, makeStart(), Test_gracefulStop(), Test_runJob(), TestRunJobWith(), afterErrManager(), passthroughManager() (+6 more)
+### Community 1143 - "Cart — Domain Spec"
+Cohesion: 0.25
+Nodes (8): Behavior Methods, Cart — Domain Spec, Cross-field Invariants, Entity, Notes, Overview, Repository Methods, Value Objects
 
 ### Community 1144 - "Closed Loop"
-Cohesion: 0.25
-Nodes (8): Closed Loop, Deterministic first, model second, Issue and pull request comments are part of the input, Keeping this interpretation current, Skills are judged against their class, What is observed, and by whom, What the loop may not do, Where each thing lives
+Cohesion: 0.13
+Nodes (14): .agents, Editing, Layout, Scope for AI agents, What belongs here, Why not under `.claude/`, Closed Loop, Deterministic first, model second (+6 more)
 
-### Community 1145 - "checkReferences"
-Cohesion: 0.40
-Nodes (5): extractInlineCode(), extractMakeTargets(), checkReferences(), missingMakeTargets(), missingPath()
+### Community 1145 - "skill-lint/rules.ts"
+Cohesion: 0.13
+Nodes (23): compareHeadingStructure(), extractInlineCode(), extractMakeTargets(), extractSectionRefs(), hasTranslationNote(), Heading, IGNORE_DIRECTIVE, parseFrontmatterKeys() (+15 more)
 
 ### Community 1146 - "compose_test.go"
 Cohesion: 0.43
 Nodes (7): stubDocker(), stubDockerStdout(), TestExecCompose_DownServe(), TestExecCompose_output(), TestExecCompose_run(), TestExecCompose_RunningContainers(), TestExecCompose_UpSharedDB()
 
-### Community 1147 - "code-fence.test.ts"
-Cohesion: 0.83
-Nodes (3): codeFence(), element(), text()
+### Community 1147 - "Coupon — Domain Spec"
+Cohesion: 0.25
+Nodes (8): Behavior Methods, Coupon — Domain Spec, Cross-field Invariants, Entity, Notes, Overview, Repository Methods, Value Objects
 
-### Community 1148 - "collectSubtestGroupViolations"
-Cohesion: 0.83
-Nodes (3): collectSubtestGroupViolations(), Test_collectSubtestGroupViolations(), TestSubtestGroupPolicy()
+### Community 1148 - "Prefecture — Domain Spec"
+Cohesion: 0.25
+Nodes (7): Behavior Methods, Cross-field Invariants, Entity, Overview, Prefecture — Domain Spec, Repository Methods, Value Objects
 
-### Community 1149 - "BuildWithdrawn"
-Cohesion: 0.43
-Nodes (5): Withdrawn, BuildWithdrawn(), ParseWithdrawn(), TestBuildWithdrawn(), TestParseWithdrawn()
+### Community 1149 - "ProductCategory — Domain Spec"
+Cohesion: 0.25
+Nodes (7): Behavior Methods, Cross-field Invariants, Entity, Overview, ProductCategory — Domain Spec, Repository Methods, Value Objects
 
-### Community 1150 - "outbox-relay"
+### Community 1150 - "ProductStatus — Domain Spec"
+Cohesion: 0.25
+Nodes (7): Behavior Methods, Cross-field Invariants, Entity, Overview, ProductStatus — Domain Spec, Repository Methods, Value Objects
+
+### Community 1151 - "PurchaseStatus — Domain Spec"
+Cohesion: 0.25
+Nodes (7): Behavior Methods, Cross-field Invariants, Entity, Overview, PurchaseStatus — Domain Spec, Repository Methods, Value Objects
+
+### Community 1152 - "TracerFactory"
+Cohesion: 0.07
+Nodes (38): go.opentelemetry.io/otel/trace.TracerProvider, BindHandler(), echo.Echo, BindHandler(), echo.Echo, TestBindHandler(), provideAccessRevoker(), provideCursorValidator() (+30 more)
+
+### Community 1153 - "Address — Usecase Spec"
+Cohesion: 0.25
+Nodes (7): Address — Usecase Spec, Dependencies, DTOs, Interface, LookupByPostalCode, Overview, Workflow
+
+### Community 1154 - "clock/testkit/test_kit_test.go"
 Cohesion: 0.29
-Nodes (6): Command, Flags, Notes, outbox-relay, Role, Usage
-
-### Community 1151 - "NewDisabledTracerFactory"
-Cohesion: 0.67
-Nodes (3): NewDisabledTracerFactory(), NewTracerFactory(), TestNewDisabledTracerFactory()
-
-### Community 1152 - "Test_emitUsecase_Emit"
-Cohesion: 0.67
-Nodes (3): NewEmit(), Test_emitUsecase_Emit(), TestNewEmit()
-
-### Community 1153 - "withdrawal-archive worker (sample)"
-Cohesion: 0.29
-Nodes (7): Error classification, Idempotency, Message selection, Running it end to end, Structure, What it archives, and why that, withdrawal-archive worker (sample)
-
-### Community 1154 - "NewNoopSleeper"
-Cohesion: 0.22
-Nodes (5): NewNoopSleeper(), TestNewMockClock(), TestNewMockClockOnce(), TestNewNoopSleeper(), fatalRecorder
+Nodes (4): TestNewMockClock(), TestNewMockClockOnce(), TestNewNoopSleeper(), fatalRecorder
 
 ### Community 1155 - "run"
 Cohesion: 0.16
 Nodes (16): Setup(), canceledContext(), requireShellcheck(), TestRun(), TestSetup(), main(), prefixFindings(), run() (+8 more)
 
-### Community 1156 - "fenced"
-Cohesion: 0.50
-Nodes (4): fenced(), fenceFor(), Test_fenced(), Test_fenceFor()
+### Community 1156 - "Health Check — Usecase Spec"
+Cohesion: 0.25
+Nodes (7): CheckHealth, Dependencies, DTOs, Health Check — Usecase Spec, Interface, Overview, Workflow
+
+### Community 1157 - "Prefecture — Usecase Spec"
+Cohesion: 0.25
+Nodes (7): Dependencies, DTOs, Interface, ListPrefectures, Overview, Prefecture — Usecase Spec, Workflow
 
 ### Community 1158 - "Handler"
 Cohesion: 0.33
 Nodes (3): BaseHTTPRequestHandler, Handler, Silence per-request logging; the scan makes many calls and the job log is…
 
-### Community 1165 - "Parse"
-Cohesion: 0.17
-Nodes (9): testing.F, Test_toCartItemResponses(), Test_toUnitPrice(), checkMagnitude(), FuzzParse(), Parse(), TestParse(), Test_checkMagnitude() (+1 more)
+### Community 1159 - "ProductCategory — Usecase Spec"
+Cohesion: 0.25
+Nodes (7): Dependencies, DTOs, Interface, ListCategories, Overview, ProductCategory — Usecase Spec, Workflow
 
-### Community 1177 - "captureHooks"
+### Community 1160 - "ProductStatus — Usecase Spec"
+Cohesion: 0.25
+Nodes (7): Dependencies, DTOs, Interface, ListStatuses, Overview, ProductStatus — Usecase Spec, Workflow
+
+### Community 1161 - "PurchaseStatus — Usecase Spec"
+Cohesion: 0.25
+Nodes (7): Dependencies, DTOs, Interface, ListStatuses, Overview, PurchaseStatus — Usecase Spec, Workflow
+
+### Community 1162 - "lookupErrorMetaByAppError"
+Cohesion: 0.46
+Nodes (6): lookupErrorMetaByAppError(), lookupErrorMetaByHTTPStatus(), Test_lookupErrorMetaByAppError(), Test_lookupErrorMetaByHTTPStatus(), TestErrorMetaLiteralContract(), httpErrorMeta
+
+### Community 1163 - "Orphan Cleanup Job Guide (`internal/controller/job/orphancleanup`)"
+Cohesion: 0.25
+Nodes (8): Args, Dependencies, Execution semantics (`Execute`), Notes, Orphan Cleanup Job Guide (`internal/controller/job/orphancleanup`), Public API, Result counts, Role in Onion Architecture
+
+### Community 1164 - "queuePolicyDocument"
+Cohesion: 0.29
+Nodes (5): policyStatement, queuePolicy, policyStatement, queuePolicyDocument(), Test_queuePolicyDocument()
+
+### Community 1165 - "Parse"
+Cohesion: 0.08
+Nodes (33): go-boilerplate/internal/controller/handler/v1/users/me/coupons/gen.CouponResponse, go-boilerplate/internal/controller/handler/v1/users/me/coupons/gen.GetUsersMeCouponsRequestObject, go-boilerplate/internal/controller/handler/v1/users/me/coupons/gen.GetUsersMeCouponsResponseObject, go-boilerplate/internal/usecase/coupon/mock.MockUsecase, authnContext(), server, newCouponView(), newServer() (+25 more)
+
+### Community 1166 - "Drift Detector — Pkg"
+Cohesion: 0.29
+Nodes (6): Constraints, Detection (run only the selected categories), Drift Detector — Pkg, Output (Japanese — this IS the return value), What you read (priority: README > Code > SKILL), Your input (from the orchestrator)
+
+### Community 1167 - "Design References"
+Cohesion: 0.33
+Nodes (7): System Architecture, Authentication Subsystem, Idempotency Subsystem, Design References, Documents, How to read these, Reading order
+
+### Community 1168 - "Email"
+Cohesion: 0.38
+Nodes (5): github.com/oapi-codegen/runtime/types.Email, Email(), EmailPtr(), TestEmail(), TestEmailPtr()
+
+### Community 1169 - "BindHandler"
+Cohesion: 0.29
+Nodes (5): go-boilerplate/internal/controller/handler/health/gen.GetHealthRequestObject, go-boilerplate/internal/controller/handler/health/gen.GetHealthResponseObject, server, BindHandler(), echo.Echo
+
+### Community 1170 - "HTTPClientTransport"
+Cohesion: 0.38
+Nodes (4): net/http.RoundTripper, HTTPClientTransport, spanURLRedactingRoundTripper, urlSecretRestoringRoundTripper
+
+### Community 1171 - "redaction"
+Cohesion: 0.29
+Nodes (6): API, redaction, Role, Test Strategy, Where the names come from, Wiring
+
+### Community 1172 - "New"
+Cohesion: 0.33
+Nodes (4): New(), Test_cryptoGenerator_Generate(), TestNew(), cryptoGenerator
+
+### Community 1173 - "Coupon — Usecase Spec"
+Cohesion: 0.33
+Nodes (6): Coupon — Usecase Spec, Dependencies, DTOs, Interface, Overview, Workflow
+
+### Community 1174 - "TestStreamTicketRedaction_Integration"
+Cohesion: 0.60
+Nodes (5): E, contextMapper, entriesMentioning(), loggedText(), TestStreamTicketRedaction_Integration()
+
+### Community 1176 - "newLogExporter"
 Cohesion: 0.40
-Nodes (4): captureHooks(), TestSupervisedRunner_Register(), Test_Collect(), writeFile()
+Nodes (5): go-boilerplate/internal/logging.LogCore, go.opentelemetry.io/otel/sdk/log.Exporter, NewLogCore(), newLogExporter(), NewLoggerProvider()
+
+### Community 1177 - "go.opentelemetry.io/otel/propagation.TextMapPropagator"
+Cohesion: 0.40
+Nodes (3): go.opentelemetry.io/otel/propagation.TextMapCarrier, go.opentelemetry.io/otel/propagation.TextMapPropagator, conditionalPropagator
+
+### Community 1178 - "newTestLine"
+Cohesion: 0.60
+Nodes (5): newTestLine(), TestLine_CategoryID(), TestLine_ProductID(), TestLine_Subtotal(), TestNewLine()
+
+### Community 1179 - ".PostInquiriesMeStreamTicket"
+Cohesion: 0.40
+Nodes (3): go-boilerplate/internal/controller/handler/v1/inquiries/me/streamticket/gen.PostInquiriesMeStreamTicketRequestObject, go-boilerplate/internal/controller/handler/v1/inquiries/me/streamticket/gen.PostInquiriesMeStreamTicketResponseObject, server
+
+### Community 1180 - "realtime/testkit"
+Cohesion: 0.40
+Nodes (4): `EventLog`, realtime/testkit, `StreamTicketStore`, Test Strategy
+
+### Community 1181 - "規約逸脱への対処（lean A の trade-off）"
+Cohesion: 0.50
+Nodes (4): TODO hand-off モデル（suggestion レベル逸脱の取り扱い）, 実装コードに arch-check 専用 annotation を導入しない, 既存ケース別の対処, 規約逸脱への対処（lean A の trade-off）
+
+### Community 1182 - "Test Perspectives Subagent"
+Cohesion: 0.50
+Nodes (3): Test Perspectives Subagent, 層固有の主要観点, 起動方法
+
+### Community 1183 - "4. Write side"
+Cohesion: 0.50
+Nodes (4): 4. Write side, Gate 1 — Eligibility: can the write be expressed as load-mutate-save?, Gate 2 — Atomicity: does the multi-aggregate write require a single transaction?, The Repository write contract
+
+### Community 1184 - "markdown-document.test.ts"
+Cohesion: 0.83
+Nodes (3): collectElements(), firstElement(), tagNamesOf()
+
+### Community 1185 - "streampath"
+Cohesion: 0.50
+Nodes (3): streampath, What consults which, and why, What must not consult it
+
+### Community 1186 - "10. Semantic quality bar (anti-patterns)"
+Cohesion: 0.67
+Nodes (3): 10. Semantic quality bar (anti-patterns), Anti-patterns (avoid when writing, flag when reviewing), Meaning coverage (意味網羅)
 
 ## Knowledge Gaps
-- **5648 isolated node(s):** `bootstrap-external-skills.sh script`, `bootstrap-plugins.sh script`, `GraphNode`, `CliOptions`, `ParsedArgs` (+5643 more)
+- **5989 isolated node(s):** `bootstrap-external-skills.sh script`, `bootstrap-plugins.sh script`, `PINNED_GRAPHIFY`, `GraphNode`, `CliOptions` (+5984 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **111 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **115 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Wrap()` connect `Wrap` to `NewNoopTracerFactory`, `PurchaseDetail`, `time.Location`, `NewFake`, `actions-shellcheck/main_test.go`, `NewMockUsecaseLayerTracer`, `DatabaseDriver`, `New`, `newTestCartItem`, `pin-actions/main_test.go`, `pin-images/main_test.go`, `Purchase`, `TracerFactory`, `repo-setup/main.go`, `egress/main_test.go`, `release/main_test.go`, `RunMerge`, `New`, `time.Duration`, `TestJWKSRotationIntegration`, `graphify-export/main.go`, `time.Time`, `PurchaseFeedReadModel`, `NewTestFromSalt`, `go-cooldown/main.go`, `jwks_test.go`, `pin-images/main.go`, `New`, `sync-versions/main.go`, `http_client_transport.go`, `load-band/main_test.go`, `Engine`, `NewRequest`, `extension.go`, `newServer`, `New`, `NewMeta`, `pin-actions/main.go`, `RunFix`, `Decimal`, `NormalizeError`, `genctxkey/generator.go`, `run`, `NewMockClock`, `tool-cooldown/main.go`, `NewRole`, `MakeAvailableAuthn`, `HTTPClientMetrics`, `Middleware`, `toCartItemResponses`, `BuildWithdrawn`, `New`, `query_metric.go`, `context.Context`, `run`, `newShippablePurchase`, `graphify-check/main_test.go`, `Parse`, `graphify-pending/main_test.go`, `NewHTTP`, `address_gateway.go`, `base-branch/main_test.go`, `Pool`, `OperatingSystemConfig`, `tool`, `day`, `UUID`, `BindHandler`, `resolve_test.go`, `Run`, `jwksResolver`, `usecase`, `Registry`, `Test_jobImpl_Execute`, `ArchiveUsecase`, `handle`, `purchase_summary_usecase.go`, `NewEmail`, `NewStepClock`, `NewPostalCode`, `LevelError`, `authenticatorParams`, `migrate_test.go`, `New`, `Usecase`, `newOwnerCart`, `Job`, `useDockerStub`, `Status`, `go.opentelemetry.io/otel/metric.Meter`, `NewEndpointConfig`, `handleHTTPError`, `DatabaseConfig`, `registerOrExisting`, `cover-gate/main_test.go`, `New`, `purchase_summary_usecase_test.go`, `SetUpConfig`, `run`, `discoveryResolver`, `ObservabilityConfig`, `runPruneReleaseNotes`, `New`, `NewPublisher`, `handler`, `Product`, `Resolve`, `miseRegistry`, `Logger`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
-- **Why does `Decimal` connect `Decimal` to `NewNoopTracerFactory`, `context.Context`, `v1_users_me_purchases_summary_handler_test.go`, `New`, `Parse`, `Purchase`, `Usecase`, `decimal_test.go`, `purchase_summary_usecase_test.go`, `UUID`, `NewTestFromSalt`, `Wrap`, `purchase_summary_usecase.go`, `NewStepClock`, `NormalizeError`, `Usecase`, `Product`, `toCartItemResponses`, `New`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **Why does `NewTestFromSalt()` connect `NewTestFromSalt` to `NewNoopTracerFactory`, `Test_emitUsecase_Emit`, `newEvalItem`, `newShippablePurchase`, `NewMockUsecaseLayerTracer`, `v1_users_me_purchases_summary_handler_test.go`, `cart_domain_test.go`, `BindHandler`, `New`, `Parse`, `newTestCartItem`, `Purchase`, `NewHTTP`, `v1_products_detail_handler_test.go`, `purchase_summary_usecase_test.go`, `New`, `UUID`, `BindHandler`, `time.Time`, `Run`, `PurchaseFeedReadModel`, `user_domain_test.go`, `testing.TB`, `New`, `usecase`, `newActiveUser`, `newServer`, `Wrap`, `New`, `deps`, `purchase_summary_usecase.go`, `Usecase`, `AssertEchoRouterMethods`, `Test_service_FindDetailByUserAndCode`, `RunReplayWith`, `NormalizeError`, `RelayUsecase`, `NewRole`, `MakeAvailableAuthn`, `newOwnerCart`, `Product`, `bindPurchaseCodeRoutes`, `toCartItemResponses`, `BuildWithdrawn`, `New`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+- **Why does `Wrap()` connect `Wrap` to `NewNoopTracerFactory`, `Inquiry`, `time.Location`, `New`, `actions-shellcheck/main_test.go`, `NewMockUsecaseLayerTracer`, `NewDatabaseConfig`, `.fn`, `pin-actions/main_test.go`, `pin-images/main_test.go`, `NewTestFromSalt`, `Registry`, `Clock`, `repo-setup/main.go`, `egress/main_test.go`, `release/main_test.go`, `tool-cooldown/main_test.go`, `RunMerge`, `sync.Mutex`, `graphify-export/main.go`, `time.Time`, `PurchaseFeedReadModel`, `Authn`, `go-cooldown/main.go`, `jwks_test.go`, `pin-images/main.go`, `New`, `commonDeps`, `sync-versions/main_test.go`, `http_client_transport.go`, `load-band/main_test.go`, `.GetExchangeRates`, `WorkerMetrics`, `module/realtime_test.go`, `NewRequest`, `extension.go`, `authnContext`, `ProductView`, `New`, `MetaFrom`, `InstanceID`, `RunFix`, `Decimal`, `context.Context`, `genctxkey/generator.go`, `NewMockClock`, `github.com/aws/aws-sdk-go-v2/service/dynamodb.Client`, `NewRole`, `Sequence`, `NewTestClient`, `.attempt`, `NewAuthenticator`, `Cart`, `NewLimit`, `query_metric.go`, `run`, `newPurchaseWithStatus`, `Downstream`, `lookupErrorMetaByAppError`, `graphify-check/main_test.go`, `queuePolicyDocument`, `Parse`, `graphify-pending/main_test.go`, `New`, `NewHTTP`, `address_gateway.go`, `base-branch/main_test.go`, `.GetStream`, `Pool`, `newLogExporter`, `newEngine`, `UUID`, `resolve_test.go`, `Deps`, `jwksResolver`, `pubSubSmoke`, `usecase`, `Registry`, `runJobAndShutdown`, `newArchiveUsecase`, `pnpm-cooldown/main_test.go`, `handle`, `Channel`, `purchase_summary_usecase.go`, `NewStepClock`, `run`, `runRealtimeInit`, `.stop`, `migrate_test.go`, `RequireAuthn`, `Usecase`, `Discount`, `user_purge_job.go`, `Scope`, `Status`, `HTTPClientMetrics`, `Config`, `NewObservabilityConfig`, `ApplicationConfig`, `DatabaseConfig`, `registerOrExisting`, `cover-gate/main_test.go`, `New`, `purchase_summary_usecase_test.go`, `Run`, `Join`, `run`, `report_test.go`, `discoveryResolver`, `EndpointConfig`, `report.go`, `OutboxConfig`, `handler`, `NewNoopRealtimeMetrics`, `Product`, `Resolve`, `pubsub.go`, `MustParse`, `sseWriter`, `Usecase`, `ddbSmoke`, `naming_test.go`, `BuildInfo`, `Logger`?**
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._
+- **Why does `UUID` connect `UUID` to `NewNoopTracerFactory`, `Wrap`, `Inquiry`, `newPurchaseWithStatus`, `NewMockUsecaseLayerTracer`, `v1_users_me_purchases_summary_handler_test.go`, `cart_domain_test.go`, `Usecase`, `NewTestDB`, `Parse`, `.fn`, `NewTestFromSalt`, `Clock`, `v1_products_detail_handler_test.go`, `Repository`, `purchase_summary_usecase_test.go`, `product_domain_test.go`, `Usecase`, `time.Time`, `Usecase`, `Authn`, `PurchaseFeedReadModel`, `Deps`, `BindHandler`, `newTestUsecase`, `New`, `usecase`, `Usecase`, `ProductView`, `New`, `Channel`, `purchase_summary_usecase.go`, `Usecase`, `DBTX`, `OutboxConfig`, `Decimal`, `context.Context`, `newTestUUID`, `RequireAuthn`, `NewRole`, `coupon_usecase_test.go`, `Scope`, `Product`, `MustParse`, `Cart`, `NewLimit`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `MakeAvailableAuthn()` connect `MakeAvailableAuthn` to `New`, `testing.T`, `NewTestDB`, `context.Context`?**
+  _High betweenness centrality (0.005) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `Wrap()` (e.g. with `TestAs()` and `TestIs()`) actually correct?**
   _`Wrap()` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `bootstrap-external-skills.sh script`, `bootstrap-plugins.sh script`, `GraphNode` to the rest of the system?**
-  _5648 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `bootstrap-external-skills.sh script`, `bootstrap-plugins.sh script`, `PINNED_GRAPHIFY` to the rest of the system?**
+  _5989 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `NewNoopTracerFactory` be split into smaller, more focused modules?**
-  _Cohesion score 0.040958605664488015 - nodes in this community are weakly interconnected._
-- **Should `PurchaseDetail` be split into smaller, more focused modules?**
-  _Cohesion score 0.09852216748768473 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.042919389978213505 - nodes in this community are weakly interconnected._
+- **Should `Inquiry` be split into smaller, more focused modules?**
+  _Cohesion score 0.029188324670131948 - nodes in this community are weakly interconnected._
