@@ -17,7 +17,6 @@ import (
 	uuidtestkit "go-boilerplate/pkg/uuid/testkit"
 
 	"github.com/labstack/echo/v5"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -109,7 +108,7 @@ func Test_server_PostCouponsBulkIssue(t *testing.T) {
 
 			s, uc := newServer(t)
 			categoryID := uuidtestkit.NewTestFromSalt(t, "bulk_issue_handler_category")
-			primitive := openapi_types.UUID(categoryID.ToPrimitive())
+			primitive := categoryID.ToPrimitive()
 
 			body := newRequestBody()
 			body.Scope = gen.CouponScopeInput{Kind: gen.Category, TargetId: &primitive}
@@ -195,7 +194,7 @@ func Test_fromPrimitivePtr(t *testing.T) {
 			t.Parallel()
 
 			id := uuidtestkit.NewTestFromSalt(t, "from_primitive_ptr")
-			primitive := openapi_types.UUID(id.ToPrimitive())
+			primitive := id.ToPrimitive()
 
 			got := fromPrimitivePtr(&primitive)
 

@@ -11,6 +11,7 @@ import (
 	"go-boilerplate/internal/observability"
 	"go-boilerplate/internal/usecase/coupon/command"
 	decimaltestkit "go-boilerplate/pkg/decimal/testkit"
+	"go-boilerplate/pkg/safecast"
 	"go-boilerplate/pkg/uuid"
 	uuidtestkit "go-boilerplate/pkg/uuid/testkit"
 
@@ -174,8 +175,12 @@ func Test_commandService_IssuePromotionalCoupons(t *testing.T) {
 				require.NoError(t, row.Scan(&idB))
 
 				assert.NotEqual(t, idA, idB)
-				assert.Equal(t, int16(params.Discount.Kind().Code()), discountKindA)
-				assert.Equal(t, int16(params.Scope.Kind().Code()), scopeKindA)
+				wantDiscountKind, err := safecast.IntToInt16(params.Discount.Kind().Code())
+				require.NoError(t, err)
+				wantScopeKind, err := safecast.IntToInt16(params.Scope.Kind().Code())
+				require.NoError(t, err)
+				assert.Equal(t, wantDiscountKind, discountKindA)
+				assert.Equal(t, wantScopeKind, scopeKindA)
 				assert.Equal(t, params.ExpiresAt.UTC(), expiresAtA.UTC())
 			})
 		})
