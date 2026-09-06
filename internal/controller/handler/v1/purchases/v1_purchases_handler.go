@@ -161,8 +161,6 @@ func (s *server) PostPurchases(ctx context.Context, request gen.PostPurchasesReq
 	return gen.PostPurchases201JSONResponse(res), nil
 }
 
-// toPurchaseResponse は、ユースケースの DTO を HTTP レスポンスへ変換します。
-// 数量が int32 に収まらない場合はエラーを返します。
 // toAppliedCouponResponse は、適用したクーポンを応答の語彙へ写します。未適用の場合は nil です。
 func toAppliedCouponResponse(v *purchaseuc.AppliedCouponView) *gen.AppliedCouponResponse {
 	if v == nil {
@@ -188,6 +186,8 @@ func toAppliedCouponResponse(v *purchaseuc.AppliedCouponView) *gen.AppliedCoupon
 	}
 }
 
+// toPurchaseResponse は、ユースケースの DTO を HTTP レスポンスへ変換します。
+// 数量が int32 に収まらない場合はエラーを返します。
 func toPurchaseResponse(v purchaseuc.PurchaseView, ref *checkoutuc.ReferenceAmountView) (gen.PurchaseResponse, error) {
 	details := make([]gen.PurchaseDetailResponse, len(v.Details))
 	for i, d := range v.Details {

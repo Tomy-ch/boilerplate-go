@@ -72,7 +72,6 @@ type PurchaseView struct {
 }
 
 // AppliedCouponView は、購入に適用したクーポンのユースケース出力 DTO です。
-// 値引きと適用範囲は控えへ写さず結合で解決した現在値です（ProductName と同じ扱い）。
 type AppliedCouponView struct {
 	ID            uuid.UUID
 	DiscountKind  string
@@ -330,9 +329,7 @@ func (u *usecase) CreatePurchase(ctx context.Context, params CreatePurchaseParam
 }
 
 // applyRedeemedCoupon は、引き換えたクーポンの値引きを購入へ適用します。
-//
-// 購入明細は商品カテゴリを持たないため、適用範囲の判定に要るカテゴリはロック済み商品から解決します。
-// 対象の明細が無い、または値引きが最小単位に満たない場合は購入側が 422 で拒みます。
+// 対象明細の組み立てと拒否の条件は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照。
 func applyRedeemedCoupon(entity *purchase.Purchase, redeemed *coupon.Coupon, products product.Products) error {
 	if redeemed == nil {
 		return nil
@@ -788,8 +785,8 @@ func (u *usecase) restoreStock(ctx context.Context, details []purchase.PurchaseD
 // createPurchaseInTx は、購入作成のトランザクション本体です。
 //
 // ロック順序（ユーザー行 → クーポン行 → 商品行、id 昇順）は docs/spec/usecase/purchase.md の
-// Workflow を参照。書き込み後は Repository 経由で再検証します
-// （internal/infrastructure/README.md の Verifying infrastructure against the domain）。
+// § クーポンの適用（CreatePurchase）を参照。書き込み後は Repository 経由で再検証します
+// （internal/usecase/README.md の Verifying infrastructure against the domain）。
 func (u *usecase) createPurchaseInTx(
 	ctx context.Context, params CreatePurchaseParams, draft *purchaseDraft, now time.Time,
 ) (*purchase.Purchase, *coupon.Coupon, error) {
@@ -873,10 +870,8 @@ func (u *usecase) redeemRequestedCoupon(
 	return u.redeemCoupon(ctx, *params.CouponID, params.UserID, now)
 }
 
-// markCouponUsed は、引き換えたクーポンを使用済みとして確定させます。
-//
-// 購入行を書いたあとに呼びます。先に消費すると、購入の作成が失敗したときにクーポンだけが消える
-// 窓が開きます（同一トランザクションなので実際には巻き戻りますが、順序を揃えておくほうが明快です）。
+// markCouponUsed は、引き換えたクーポンを使用済みとして確定させます。購入行を書いたあとに呼びます
+// （順序の理由は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照）。
 func (u *usecase) markCouponUsed(ctx context.Context, redeemed *coupon.Coupon, now time.Time) error {
 	if redeemed == nil {
 		return nil
@@ -886,9 +881,7 @@ func (u *usecase) markCouponUsed(ctx context.Context, redeemed *coupon.Coupon, n
 }
 
 // redeemCoupon は、指定されたクーポンを行ロックのもとで検証し、使用済みへ遷移させます。
-//
-// 存在しない・保有していない・失効・使用済みはいずれも 422 の族へ畳みます。次にすべきことが
-// どれも同じ（別のクーポンを選ぶか外す）ためで、存在の有無を漏らさない狙いも兼ねます。
+// エラーの畳み方は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照。
 func (u *usecase) redeemCoupon(
 	ctx context.Context, couponID, userID uuid.UUID, now time.Time,
 ) (*coupon.Coupon, error) {

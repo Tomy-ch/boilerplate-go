@@ -31,9 +31,6 @@ func BindHandler(e *echo.Echo, tf observability.TracerFactory, uc purchaseuc.Use
 	}, nil))
 }
 
-// GetPurchasesDetail は、本人の購入 1 件を明細込みで取得します。認証必須。404: 不存在 / 他人の購入
-// （理由は docs/spec/usecase/purchase.md § GET 詳細（購入詳細・集約跨ぎ QS）を参照）。
-
 // toAppliedCouponResponse は、適用したクーポンを応答の語彙へ写します。未適用の場合は nil です。
 func toAppliedCouponResponse(v *purchaseuc.AppliedCouponView) *gen.AppliedCouponResponse {
 	if v == nil {
@@ -59,6 +56,8 @@ func toAppliedCouponResponse(v *purchaseuc.AppliedCouponView) *gen.AppliedCoupon
 	}
 }
 
+// GetPurchasesDetail は、本人の購入 1 件を明細込みで取得します。認証必須。404: 不存在 / 他人の購入
+// （理由は docs/spec/usecase/purchase.md § GET 詳細（購入詳細・集約跨ぎ QS）を参照）。
 func (s *server) GetPurchasesDetail(
 	ctx context.Context,
 	request gen.GetPurchasesDetailRequestObject,
