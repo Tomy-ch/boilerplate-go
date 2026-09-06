@@ -30,7 +30,7 @@ o11y は共有が利点になる（全 checkout のトレース / メトリク�
 `make require-db-owner`（`.makefiles/database/pool.mk`）を、データベース名を解決する全ターゲットの
 前提条件に置いている — `db-migrate-*` / `db-seed` / `db-drop-tables` / `db-ensure` / `dump-schema` に加え、
 `make test` / `test-cached` / `gen-test-repo`（host 実行の `go test` が `DB_NAME_TEST` を読む）と
-`make serve` / `serve-build` / `serve-build-clean`（app コンテナが `DB_NAME_LOCAL` を読む）。
+`make serve` / `serve-build` / `serve-build-clean`（app コンテナが解決値 `DB_LOCAL` を読む）。
 判定の実体は `internal/cli/dbslot` にある。リンク worktree は `git-dir` ≠ `git-common-dir` の
 食い違いで識別するため、主 checkout と CI は素通りする。`git` がそもそも答えられない場合も一律には
 扱わない。git 実行ファイルが無い場合（ツールランナーのコンテナ）と、git リポジトリでない場合は
@@ -67,7 +67,8 @@ o11y は共有が利点になる（全 checkout のトレース / メトリク�
 - **占有情報** = acquire が worktree ルートに `.gobp-db-slot`（gitignore）を書き出す。`make` が
   `-include` して `.makefiles/docker/compose.mk` の既定値を上書きし、全ターゲットへ伝播する:
   - `DB_NAME_LOCAL` / `DB_NAME_TEST` = `wt<N>_local` / `wt<N>_test`（既定 `local` / `test`。host 実行の
-    `go test` は共有 DB の localhost:5432 経由でこの名前の自 worktree DB へ繋ぐ。`internal/config` のテスト設定が参照）
+    `go test` は共有 DB の localhost:5432 経由でこの名前の自 worktree DB へ繋ぐ。`internal/config` のテスト設定が参照）。
+    app コンテナはこのキーを読まない。Realtime の名前と同じく、`db-slot env` が撒く解決値 `DB_LOCAL` を読む
   - `API_HOST_PORT` = `8080+N` / `MOCK_AUTH_HOST_PORT` = `2010+N` / `DLV_HOST_PORT` = `2345+N` /
     `PPROF_HOST_PORT` = `6060+N`（app 層のホスト公開ポートは全てスロット番号で相対化する）
   - `SERVE_PROJECT` = `gobp-wt-N`（app 層の compose プロジェクト = `APP_PROJECT`）

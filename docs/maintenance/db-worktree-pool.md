@@ -33,7 +33,7 @@ migrations, or as a generated artifact rebuilt from a schema someone else was mi
 that resolves a database name — `db-migrate-*` / `db-seed` / `db-drop-tables` / `db-ensure` /
 `dump-schema`, plus `make test` / `test-cached` / `gen-test-repo` (a host-run `go test` reads
 `DB_NAME_TEST`) and `make serve` / `serve-build` / `serve-build-clean` (the app container reads
-`DB_NAME_LOCAL`). The check lives in `internal/cli/dbslot`. A linked worktree is identified by the
+the resolved `DB_LOCAL`). The check lives in `internal/cli/dbslot`. A linked worktree is identified by the
 `git-dir` ≠ `git-common-dir` split, so the main checkout and CI pass through untouched. The cases
 where `git` cannot answer at all are not treated alike: no `git` executable (the tool-runner
 containers) and no repository both pass through, since neither can be a worktree, while a directory
@@ -76,7 +76,9 @@ That is the point — before this guard it quietly ran against the shared `test`
   every target:
   - `DB_NAME_LOCAL` / `DB_NAME_TEST` = `wt<N>_local` / `wt<N>_test` (default `local` / `test`; a
     host-run `go test` connects through the shared DB on localhost:5432 to its own worktree database
-    under this name — read by the test configuration in `internal/config`)
+    under this name — read by the test configuration in `internal/config`). The app container does not
+    read this key: it takes the resolved `DB_LOCAL` that `db-slot env` emits, the same way it takes the
+    Realtime names
   - `API_HOST_PORT` = `8080+N` / `MOCK_AUTH_HOST_PORT` = `2010+N` / `DLV_HOST_PORT` = `2345+N` /
     `PPROF_HOST_PORT` = `6060+N` (every app-layer host port is relative to the slot number)
   - `SERVE_PROJECT` = `gobp-wt-N` (the app layer's compose project = `APP_PROJECT`)

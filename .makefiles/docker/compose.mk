@@ -36,13 +36,13 @@ COMPOSE_APP = $(LOAD_SLOT); $(DB_SLOT_ENV_EXPORTED); $(LOAD_GH_TOKEN); docker co
 # 検出が黙って外れたまま共有インフラを触ることになる。
 DB_SLOT_ENV = eval "$$(go run ./cmd/ db-slot env || echo 'exit 1')"
 
-# 解決値を環境変数として撒く版。compose ファイルの ${REALTIME_*} と、その名前を読む子プロセスは
+# 解決値を環境変数として撒く版。compose ファイルの ${DB_LOCAL} / ${REALTIME_*} と、その名前を読む子プロセスは
 # シェル変数を見られないため、この 2 つの消費者だけがこちらを使う。全呼び出しへ広げると host の
 # go test にも流れ込み、環境の正本が埋め込み env から make へ移る。
 DB_SLOT_ENV_EXPORTED = set -a; $(DB_SLOT_ENV); set +a
 
-# 共有インフラの稼働中コンテナを作り直させないフラグ。config-hash が checkout ごとに一致しない
-# 理由は docs/maintenance/db-worktree-pool.md「Re-creation of the infra layer」参照。
-# 渡すのは worktree のときだけで（判定は db-slot）、単一 checkout では空。この判定で拾えない構成は
-# `make infra-up INFRA_NO_RECREATE=--no-recreate` と明示する（明示値は db-slot の判定へ落とさない）。
+# config-hash が checkout ごとに一致しない理由は docs/maintenance/db-worktree-pool.md
+# 「Re-creation of the infra layer」参照。渡すのは worktree のときだけで（判定は db-slot）、単一
+# checkout では空。この判定で拾えない構成は `make infra-up INFRA_NO_RECREATE=--no-recreate` と
+# 明示する（明示値は db-slot の判定へ落とさない）。
 INFRA_NO_RECREATE_SH = $(if $(filter undefined,$(origin INFRA_NO_RECREATE)),$${INFRA_NO_RECREATE},$(INFRA_NO_RECREATE))
