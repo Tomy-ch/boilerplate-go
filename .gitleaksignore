@@ -46,6 +46,19 @@ env/README.ja.md:generic-api-key:217
 daf3f6a9bfa7ced79fe84d0ebf18f42b73eee40b:docker/mock-auth-server/keys/mock-key-2.pem:private-key:1
 daf3f6a9bfa7ced79fe84d0ebf18f42b73eee40b:docker/mock-auth-server/keys/mock-key-retired.pem:private-key:1
 a77359f8d20ba3797acf260ecfc9c789e34f9e7d:docker/mock-auth-server/keys/mock-key-1.pem:private-key:1
+
+# 週次の履歴スキャン（make secret-scan-history-ci）が拾う分。graph.json 以外はマーカー外で
+# 許可済みの検出が、過去の版の行番号で再出現したもの。graph.json の一件は "built_at_commit"
+# のコミット SHA が sourcegraph-access-token の形に当たる誤検知。
+env/.env:generic-api-key:84
+env/README.md:generic-api-key:221
+env/README.md:generic-api-key:241
+env/README.md:generic-api-key:247
+env/README.ja.md:generic-api-key:219
+env/README.ja.md:generic-api-key:245
+scripts/closed-loop/candidates.test.ts:slack-legacy-workspace-token:148
+scripts/closed-loop/candidates.test.ts:slack-legacy-workspace-token:152
+graphify-out/graph.json:sourcegraph-access-token:627733
 # 0f0157be は pnpm の store（4,858 ファイル）を誤ってコミットした回で、検出はいずれも
 # 依存パッケージ同梱のフィクスチャ。現在 .pnpm-store は gitignore 済みで追跡していない。
 0f0157be54fd47eba060c1332c26c67a0ba93fff:.pnpm-store/v11/files/11/41bde8f7fc5e1c7b4da412ee02d3d9c0e4dc9d761c983c2c4bac7f2623ad953422894c214d2fbf2121daec5f64692d4ba4637aef29d95ae4c902314aa70b15:generic-api-key:5

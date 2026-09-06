@@ -54,7 +54,11 @@ jobs:
       # upload-sarif and comment-on-pr each cost a write scope — `security-events`
       # and `pull-requests` — handed to that binary, so both stay off and the
       # findings ride the step summary and the artifact instead.
+      # `severity-threshold` / `risk-score-threshold` do not reach the failure the
+      # action raises on the engine's own exit code (any medium+ finding), so
+      # report-only takes `continue-on-error` too — README.md § Agent Config Scan.
       - name: Scan agent configuration
+        continue-on-error: true
         uses: trustabl/trustabl-action@973f666d20b5fbb2e6a4511bd3846e965a08c28b # v0.4.1
         with:
           version: v0.1.6
