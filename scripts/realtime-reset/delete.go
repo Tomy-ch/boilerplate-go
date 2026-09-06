@@ -55,6 +55,9 @@ func deleteTable(ctx context.Context, api tableAPI, table string) (bool, error) 
 
 // waitGone は、table が引けなくなるまで待ちます。DeleteTable は非同期に返るため、待たずに
 // realtime-init へ進むと作り直しが ResourceInUseException で落ちます。
+//
+// 打ち切りは待っている間にも問い合わせの最中にも起こるので、errGone はその両方に付けます。
+// 片方だけだと、同じ「消え切らなかった」が呼び出し側から 2 通りの error に見えます。
 func waitGone(ctx context.Context, api tableAPI, table string) error {
 	for {
 		_, err := api.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: aws.String(table)})
@@ -65,12 +68,16 @@ func waitGone(ctx context.Context, api tableAPI, table string) error {
 		}
 
 		if err != nil {
+			if ctx.Err() != nil {
+				return xerrors.Join(errGone, xerrors.Wrap(err, "describe table"))
+			}
+
 			return xerrors.Wrap(err, "describe table")
 		}
 
 		select {
 		case <-ctx.Done():
-			return xerrors.Join(errGone, xerrors.Wrap(ctx.Err(), table))
+			return xerrors.Join(errGone, ctx.Err())
 		case <-time.After(gonePollInterval):
 		}
 	}

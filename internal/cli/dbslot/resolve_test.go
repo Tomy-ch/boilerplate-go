@@ -505,13 +505,16 @@ func TestRenderValues(t *testing.T) {
 			t.Parallel()
 
 			got := RenderValues(Values{
-				Git:             GitLinkedWorktree,
-				SlotHeld:        true,
-				DBLocal:         "wt3_local",
-				DBTest:          "wt3_test",
-				AppProject:      "gobp-wt-3",
-				AuthIssuer:      "http://localhost:2013/default",
-				InfraNoRecreate: noRecreateFlag,
+				Git:                 GitLinkedWorktree,
+				SlotHeld:            true,
+				DBLocal:             "wt3_local",
+				DBTest:              "wt3_test",
+				AppProject:          "gobp-wt-3",
+				AuthIssuer:          "http://localhost:2013/default",
+				InfraNoRecreate:     noRecreateFlag,
+				RealtimeTableSuffix: "local_wt3",
+				RealtimeQueuePrefix: "realtime-local-wt3",
+				RealtimeTopic:       "arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3",
 			})
 
 			assert.Contains(t, got, "git context       : linked-worktree")
@@ -521,6 +524,9 @@ func TestRenderValues(t *testing.T) {
 			assert.Contains(t, got, "APP_PROJECT       : gobp-wt-3")
 			assert.Contains(t, got, "AUTH_ISSUER       : http://localhost:2013/default")
 			assert.Contains(t, got, "INFRA_NO_RECREATE : --no-recreate")
+			assert.Contains(t, got, "REALTIME_TABLE    : local_wt3")
+			assert.Contains(t, got, "REALTIME_QUEUE    : realtime-local-wt3")
+			assert.Contains(t, got, "REALTIME_TOPIC    : arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3")
 		})
 
 		t.Run("渡さないフラグは空欄ではなく明示の文言で示す", func(t *testing.T) {

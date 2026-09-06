@@ -34,8 +34,7 @@ const (
 	defaultRegion   = "us-east-1"
 	defaultTimeout  = 60 * time.Second
 
-	// gonePollInterval は、削除が終わったかを確かめ直す間隔です。DeleteTable は非同期で、
-	// 消え切る前に realtime-init が作り直そうとすると ResourceInUseException になります。
+	// gonePollInterval は、waitGone が table の消失を確かめ直す間隔です。
 	gonePollInterval = 200 * time.Millisecond
 
 	// resetCredential は、emulator へ渡す静的資格情報です。emulator は認証しませんが、
@@ -65,17 +64,30 @@ type options struct {
 	timeout  time.Duration
 }
 
+// tableResolver は、削除対象の table 名を返す関数型です。
+type tableResolver func() ([]string, error)
+
+// apiFactory は、endpoint と region から DynamoDB クライアントを組み立てる関数型です。
+type apiFactory func(ctx context.Context, opts options) (tableAPI, error)
+
 func main() {
 	log.SetFlags(0)
 
-	if err := run(context.Background(), os.Args[1:], os.Stdout); err != nil {
+	err := run(context.Background(), os.Args[1:], os.Stdout, configuredTables, func(
+		ctx context.Context, opts options,
+	) (tableAPI, error) {
+		return newClient(ctx, opts)
+	})
+	if err != nil {
 		log.Printf("❌ %v", err)
 		os.Exit(1)
 	}
 }
 
-// run は、flag を解釈し、設定から table 名を解決して削除します。
-func run(ctx context.Context, args []string, out io.Writer) error {
+// run は、flag を解釈し、削除対象を解決して削除します。設定の読み取りとクライアントの生成は
+// 引数で受けます。削除は取り消せないので、endpoint の拒否が実際に削除より先に効くことを
+// テストから確かめられる形にしています（scripts/README.md の Test Strategy）。
+func run(ctx context.Context, args []string, out io.Writer, tables tableResolver, newAPI apiFactory) error {
 	opts, err := parseOptions(args)
 	if err != nil {
 		if xerrors.Is(err, flag.ErrHelp) {
@@ -85,14 +97,12 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		return err
 	}
 
-	cfg, err := config.SetUpConfig()
+	names, err := tables()
 	if err != nil {
-		return xerrors.Wrap(err, "load config")
+		return err
 	}
 
-	tables := realtimeinit.TableNames(config.NewRealtimeConfig(cfg))
-
-	client, err := newClient(ctx, opts)
+	api, err := newAPI(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -100,7 +110,17 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	ctx, cancel := context.WithTimeout(ctx, opts.timeout)
 	defer cancel()
 
-	return deleteTables(ctx, client, tables, out)
+	return deleteTables(ctx, api, names, out)
+}
+
+// configuredTables は、この checkout の設定が指す 3 table の名前を返します。
+func configuredTables() ([]string, error) {
+	cfg, err := config.SetUpConfig()
+	if err != nil {
+		return nil, xerrors.Wrap(err, "load config")
+	}
+
+	return realtimeinit.TableNames(config.NewRealtimeConfig(cfg)), nil
 }
 
 func parseOptions(args []string) (options, error) {

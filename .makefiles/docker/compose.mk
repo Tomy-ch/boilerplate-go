@@ -24,20 +24,23 @@ LOAD_GH_TOKEN = export GITHUB_TOKEN="$${GITHUB_TOKEN:-$$(gh auth token 2>/dev/nu
 # 起動対象は常にサービス名で明示するため、profile 指定は対象を絞る用途ではなく有効化のためだけに置く
 # （COMPOSE_INFRA は profile 無指定。tools 等でサービス名を省く呼び出しがあり、development を混ぜられない）。
 COMPOSE_INFRA = $(LOAD_GH_TOKEN); docker compose -p $(INFRA_PROJECT)
-COMPOSE_APP = $(LOAD_SLOT); $(DB_SLOT_ENV); $(LOAD_GH_TOKEN); docker compose -p "$$APP_PROJECT" \
+COMPOSE_APP = $(LOAD_SLOT); $(DB_SLOT_ENV_EXPORTED); $(LOAD_GH_TOKEN); docker compose -p "$$APP_PROJECT" \
 	-f docker-compose.yaml -f docker-compose.attach.yaml --profile development
 
 # スロットと git 文脈から導かれる値（DB_LOCAL / DB_TEST / APP_PROJECT / AUTH_ISSUER /
 # INFRA_NO_RECREATE / REALTIME_*）の導出は internal/cli/dbslot だけが持つ。レシピ内で 1 回解決して
 # 読む（パース時に置くと make の全呼び出しにビルドが乗るため）。
-# make 側に同じ導出を書き写さないこと。両方に置くと片方だけを直したときに黙ってずれ、
-# 例えば mock 認証サーバーの既定ポートを変えても make 側のリテラルが追従しない。
+# make 側に同じ導出を書き写さないこと（理由は internal/cli/dbslot/README.md「Resolved values」）。
 # LOAD_SLOT が読むのはスロットの生の値（API_HOST_PORT など）で、こちらは導出済みの値を読む。
-# `set -a` で囲むのは、compose ファイルの ${REALTIME_*} と子プロセスの go run が環境変数として
-# 読むため。シェル変数のままだとどちらにも届かず、compose 側は既定値へ黙って落ちる。
 # 解決に失敗したときは `exit 1` を eval させて止める。空の解決結果で走らせると、リンク worktree の
 # 検出が黙って外れたまま共有インフラを触ることになる。
-DB_SLOT_ENV = set -a; eval "$$(go run ./cmd/ db-slot env || echo 'exit 1')"; set +a
+DB_SLOT_ENV = eval "$$(go run ./cmd/ db-slot env || echo 'exit 1')"
+
+# 解決値を環境変数として撒く版。compose ファイルの ${REALTIME_*} と、その名前を読む子プロセスは
+# シェル変数を見られないため、この 2 つの消費者だけがこちらを使う。
+# 全呼び出しへ広げないのは、host の go test にも流れ込み、CI が埋め込む .env.ci の
+# REALTIME_* を黙って上書きしてしまうため（環境の正本は埋め込み env であって make ではない）。
+DB_SLOT_ENV_EXPORTED = set -a; $(DB_SLOT_ENV); set +a
 
 # 共有インフラの稼働中コンテナを作り直させないフラグ。config-hash が checkout ごとに一致しない
 # 理由は docs/maintenance/db-worktree-pool.md「Re-creation of the infra layer」参照。

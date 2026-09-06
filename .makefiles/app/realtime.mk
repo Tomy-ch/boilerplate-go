@@ -20,14 +20,14 @@ realtime-init:
 realtime-provision:
 	@$(COMPOSE_APP) run --rm api_server go run ./cmd/ realtime-init > /dev/null
 
-# 採番は PostgreSQL、配送済み event は EventLog にあり、片方だけ巻き戻すと採番が既存 item の位置へ
-# 届いて stream が止まる。slot-acquire が PostgreSQL を作り直すときは EventLog も一緒に空にする。
+# slot-acquire が PostgreSQL を作り直すのと対で EventLog を空にする
+# （理由は docs/maintenance/db-worktree-pool.md「A slot's two stores are reset together」）。
 # host から実行するのは、接続先が公開ポートで足り、slot-acquire に app イメージのビルドを
 # 持ち込まないため（table の作成は realtime-provision の担当なので、ここは削除だけ）。
-realtime-reset:
+realtime-reset: require-db-owner
 	@echo "🧹 この checkout の Realtime Delivery の table を削除します..."
 	@$(DB_SLOT_ENV); $(COMPOSE_INFRA) --profile development up -d --wait $(INFRA_NO_RECREATE_SH) dynamodb_local
-	@$(DB_SLOT_ENV); go run ./scripts/realtime-reset $(ARGS)
+	@$(DB_SLOT_ENV_EXPORTED); go run ./scripts/realtime-reset $(ARGS)
 
 # 共有インフラ上で走るため、資源は実行ごとに一意な名前で作り終了時に消す（scripts/realtime-smoke）。
 realtime-smoke:

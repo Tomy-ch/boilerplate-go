@@ -87,8 +87,8 @@ type Values struct {
 	AuthIssuer      string // mock 認証サーバーのホスト公開 URL（トークンの iss）
 	InfraNoRecreate string // 共有インフラへ渡す --no-recreate（不要なら空）
 
-	// Realtime Delivery の資源名。DynamoDB / GoAWS は共有インスタンスを名前で分けるため、
-	// スロットごとに別の名前空間へ落とす必要があります。
+	// Realtime Delivery の資源名。共有の DynamoDB Local / GoAWS 上でスロット毎に名前空間を分けます
+	// （docs/maintenance/db-worktree-pool.md「The Realtime Delivery emulators are shared instances」）。
 	RealtimeTableSuffix string // table 名の末尾（realtime_event_log_<suffix> の suffix）
 	RealtimeQueuePrefix string // serve instance ごとの queue 名の先頭
 	RealtimeTopic       string // fan-out topic の ARN
@@ -345,10 +345,9 @@ func readSlotFile(path string) map[string]string {
 }
 
 // realtimeName は、Realtime Delivery の資源名に入る環境識別子を返します。スロットを保持していれば
-// 環境名にスロット番号を継ぎ、保持していなければ環境名のままです。
-//
-// 区切りは呼び出し側が渡します。table の suffix だけ `_` なのは DynamoDB の table 名が
-// `-` を許す一方で suffix の使用可能文字を `[a-z0-9_]` に揃えているためで、queue と topic は `-` です。
+// 環境名にスロット番号を separator で継ぎ、保持していなければ環境名のままです。
+// separator が table だけ `_` なのは REALTIME_TABLE_SUFFIX の使用可能文字に合わせるためで、
+// queue と topic は `-` です。
 func realtimeName(slot, separator string) string {
 	if slot == "" {
 		return realtimeEnvName
