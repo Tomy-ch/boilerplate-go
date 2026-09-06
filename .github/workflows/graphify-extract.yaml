@@ -145,7 +145,9 @@ jobs:
           # Nothing here is interactive, so a tool outside the allowed set is refused rather than
           # asked about, and the assistant finishes cleanly having written nothing. The repository's
           # own `deny` list in `.claude/settings.json` still applies on top of this.
-          claude_args: --allowedTools Bash,Read,Write,Edit,Glob,Grep
+          # `Agent` is load-bearing: the skill extracts documents by dispatching one subagent per
+          # chunk, so without it only the structural half runs and the semantic cache never grows.
+          claude_args: --allowedTools Agent,Bash,Read,Write,Edit,Glob,Grep
           prompt: |
             Run `/graphify --update` on this repository, then stop.
             Do not commit, push, or open a pull request — a later step handles that.
@@ -166,16 +168,25 @@ jobs:
           else
             echo "has_diff=true" >> "$GITHUB_OUTPUT"
           fi
+          # Tracked separately from the line above because the two answer different questions: the
+          # skill rebuilds the graph from the structural half on its way through, so a refreshed
+          # `graph.json` proves the run happened, not that any document was read.
+          if git diff --cached --quiet -- graphify-out/cache/semantic; then
+            echo "semantic_diff=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "semantic_diff=true" >> "$GITHUB_OUTPUT"
+          fi
 
-      # A clean finish and an empty diff look identical whether the extraction had nothing to do or
-      # never ran at all — a refused tool call, an unresolved skill, a model that stopped early all
-      # end green. The pending count separates them: work was waiting and nothing moved.
-      - name: Fail when waiting work produced nothing
-        if: steps.config.outputs.configured == 'true' && steps.diff.outputs.has_diff == 'false' && steps.pending.outputs.files != '0'
+      # A clean finish tells us nothing about whether any document was read — a refused tool call, an
+      # unresolved skill, a model that stopped early all end green. Neither does a non-empty diff,
+      # since the skill refreshes the graph from the structural half regardless. What separates the
+      # cases is the semantic cache: documents were waiting and none of them was extracted.
+      - name: Fail when waiting documents were not extracted
+        if: steps.config.outputs.configured == 'true' && steps.diff.outputs.semantic_diff == 'false' && steps.pending.outputs.files != '0'
         env:
           WAITING: ${{ steps.pending.outputs.files }}
         run: |
-          echo "::error::semantic extraction produced no change while ${WAITING} files were waiting"
+          echo "::error::the semantic cache did not change while ${WAITING} documents were waiting"
           exit 1
 
       # The secrets context is unavailable in `if:`, hence the detour through a run step output.
