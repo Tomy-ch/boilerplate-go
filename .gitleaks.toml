@@ -12,12 +12,14 @@ paths = [
   '''.*/mock_.*\.go$''',
   '''openapi/openapi\.gen\.yaml$''',
   # graphify の抽出キャッシュ。内容アドレス指定の索引で、SHA-256 の羅列が generic-api-key に
-  # 当たる。gitignore 済みでコミットされ得ないため、ここを外しても走査範囲は狭まらない
-  # （追跡する graphify-out/ の成果物は対象のまま）。gitleaks の dir 走査は gitignore を見ない。
+  # 当たる。semantic/ は追跡下にあるため、これはコミット済みの内容を走査から外す除外である。
+  # 外して安全なのは、キャッシュが持つのがリポジトリ内の文書に対する抽出結果とその内容ハッシュ
+  # だけで、元の文書自身は走査対象に残るため。派生物が元に無い値を持ち込むことがない。
+  # なお gitleaks の dir 走査は gitignore を見ないので、追跡外の cache/ast/ もここで一緒に落ちる。
   '''graphify-out/cache/''',
   # pnpm のパッケージストア。内容アドレス指定でファイル名が SHA の羅列になり、同梱物と
-  # あわせて generic-api-key / jwt に当たる。gitignore 済みでコミットされ得ないため、
-  # graphify のキャッシュと同じ理由でここを外しても走査範囲は狭まらない。
+  # あわせて generic-api-key / jwt に当たる。gitignore 済みでコミットされ得ず、ここを外しても
+  # 走査範囲は狭まらない。
   '''\.pnpm-store/''',
   '''docs/openapi/''',
   '''docs/coverage/''',

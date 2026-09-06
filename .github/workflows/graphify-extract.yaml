@@ -104,9 +104,13 @@ jobs:
         if: steps.config.outputs.configured == 'true'
         run: bash .claude/scripts/bootstrap-external-skills.sh
 
+      # The path is repo-relative because that is the only place the skill exists: the bootstrap
+      # runs `graphify install` against a throwaway HOME and copies just the skill directory into
+      # the checkout, so nothing lands under the runner's own HOME. It is also the copy the next
+      # step's assistant loads, which is what makes checking it meaningful.
       - name: Verify the prompt matches the pin
         if: steps.config.outputs.configured == 'true'
-        run: make graphify-check SPEC="$HOME/.claude/skills/graphify/references/extraction-spec.md"
+        run: make graphify-check SPEC=.claude/skills/graphify/references/extraction-spec.md
 
       - name: Run semantic extraction
         if: steps.config.outputs.configured == 'true'
