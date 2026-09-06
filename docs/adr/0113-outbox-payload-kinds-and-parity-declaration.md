@@ -67,6 +67,60 @@ payload may carry fields that come from elsewhere — another aggregate, a deriv
 declaring them, because the risk this record addresses is the aggregate moving out from under the
 payload, not the payload growing.
 
+## Alternatives Considered
+
+### Require a snapshot payload to carry every field of its aggregate
+
+The rule the failure suggests, and the reason this record needed a different one. Six of the eight
+payloads carry only an identifier and a timestamp, which is what an event notification is; the rule
+would have failed them for being correct. It also mistakes a domain event for a change feed.
+
+### Declare the correspondence in Go, beside the payload — the `wireTypes` shape
+
+`internal/usecase/purchase/event/wire.go` already declares a correspondence (domain event → versioned
+wire type) as a Go `map` in the package, so a `var payloadParity = map[string]...` next to it is the
+closest precedent this repository has, and it needs no new file type.
+
+Rejected because the two declarations differ in who reads them. `wireTypes` is read at runtime by the
+code that emits, so it must be Go. This one is read only by a check that already cannot import the
+package — `depguard` forbids `go/ast` in `internal/architest`, and the payload types are unexported,
+so the check reads source text either way. A Go map would therefore be parsed as text, which is
+strictly worse than parsing a format meant to be parsed, and it would put a table with no runtime
+caller into the production build.
+
+### Keep the declaration on the checking side, in `internal/architest`
+
+The check would carry the table itself, and no new file appears in a usecase package.
+
+Rejected because `internal/architest/README.md` states that allowlists are avoided, and a table on
+the checking side is one: it names the sample packages, so it goes stale silently and it leaves a
+dead table behind in a repository whose sample APIs have been removed. It would also make writing a
+new payload require editing `internal/architest`, which is the wrong direction of dependency for
+what is a statement about the payload.
+
+### Put the declaration under `.agents/`
+
+`.agents/README.md` defines that directory as artifacts a skill writes and a skill reads, maintained
+through the owning skill rather than by hand. A contract declaration is neither, and a Go test
+depending on a directory reserved for AI tooling contradicts the requirement in `docs/rules.md` that
+the application — tests included — does not depend on AI.
+
+### Enforce the arithmetic only, without a field-level declaration
+
+`purchase.created.v1` broke arithmetically, and pinning `subtotal - discount + tax + shipping ==
+total` catches exactly that with no false positives. It is kept, as a unit-test obligation stated in
+the Decision, but not as the whole mechanism: it applies only to a payload that carries a breakdown,
+and it would not notice a non-numeric field — a `couponId`, a status — that the aggregate gained and
+the payload did not.
+
+### Reconstruct the aggregate from the payload and compare
+
+A round trip through `purchase.Reconstruct` would prove the payload is sufficient to rebuild the
+aggregate. It was rejected on evidence: `Reconstruct` validates non-negativity and the
+coupon/discount biconditional, but not the arithmetic, so the round trip passes on exactly the
+payload that produced this record. It also adds payload-to-`Attributes` code to the production build
+for no runtime caller.
+
 ## Consequences
 
 ### Positive
@@ -78,9 +132,10 @@ payload, not the payload growing.
 - The declaration sits beside the code it describes and is exhaustive, so it fails when it goes
   stale. That is what distinguishes it from an allowlist, which is silent when it rots
   (`internal/architest/README.md`, *Notes*).
-- A project that instantiates this template and removes the sample APIs keeps the gate. The
-  declarations leave with the sample packages, the check tolerates zero subjects, and the first
-  `Build*` the integrator writes fails until it is declared.
+- The gate does not depend on any particular package existing. It tolerates zero subjects, so a
+  repository that publishes no outbox payload at all stays green, and the first `Build*` anyone
+  writes fails until its kind is declared. A declaration lives beside the payload it describes, so
+  it leaves whenever that package does.
 
 ### Negative
 

@@ -50,8 +50,10 @@ expressed as a structural carve-out with a test pinning it, or it is a failure.
 A **complete declaration owned by the subject** is not an allowlist, and the difference is worth
 stating because the two look alike from here. An allowlist lives on the checking side and enumerates
 what the check agrees to ignore, so nothing fails when it goes stale. A declaration lives beside the
-code it describes, covers that code exhaustively rather than by exception, and is itself checked in
-both directions — a stale entry and an unclassified one both fail. `payload_parity.yaml` next to each
+code it describes, covers that code exhaustively *within the scope it declares* rather than by
+exception, and is itself checked in both directions — a stale entry and an unclassified one both
+fail. Read the scope, not the word: `payload_parity.yaml`'s `notification` kind declares that the
+payload does not track its aggregate, so nothing about that payload's own fields is checked. `payload_parity.yaml` next to each
 `Build*` is the current instance: it does not exempt a payload from the check, it is what the check
 reads to know what that payload promised.
 
