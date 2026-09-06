@@ -11,6 +11,7 @@ import (
 
 	"go-boilerplate/internal/cli/dbslot"
 	"go-boilerplate/internal/config"
+	"go-boilerplate/pkg/xerrors"
 
 	"github.com/spf13/cobra"
 )
@@ -121,7 +122,12 @@ func newSlotPool() (*dbslot.Pool, error) {
 		envStr("GOBP_DB_POOL_PGPASSWORD", "postgres-password"),
 		envStr("GOBP_DB_POOL_PGMAINTDB", "postgres"),
 	)
-	return dbslot.NewPool(reg, admin, dbslot.ExecCompose{}, slotConfig(root), os.Stdout, os.Stderr), nil
+	cfg, err := slotConfig(root)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbslot.NewPool(reg, admin, dbslot.ExecCompose{}, cfg, os.Stdout, os.Stderr), nil
 }
 
 // newSlotResolver は、スロットから導かれる値の解決器を実依存（ホストの git）で配線して生成します。
@@ -130,10 +136,15 @@ func newSlotResolver(out io.Writer) (*dbslot.Resolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	return dbslot.NewResolver(slotConfig(root), nil, out), nil
+	cfg, err := slotConfig(root)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbslot.NewResolver(cfg, nil, out), nil
 }
 
-func slotConfig(root string) dbslot.Config {
+func slotConfig(root string) (dbslot.Config, error) {
 	cfg := dbslot.Config{
 		Root:          root,
 		SharedProject: envStr("GOBP_DB_SHARED_PROJECT", "gobp-shared"),
@@ -144,12 +155,13 @@ func slotConfig(root string) dbslot.Config {
 		APPEnv:        os.Getenv("APP_ENV"),
 	}
 
-	// Realtime の資源名の基底は埋め込み env が正本。読めない場合は空のまま返し、
-	// スロットを継ぐ側（Resolver）が空の名前を出す — 空は config の notEmpty が起動時に弾くので、
-	// 誤った名前で共有の emulator を触るより、その場で止まるほうが安全である。
+	// Realtime の資源名の基底は埋め込み env が正本。読めなければここで止める。
+	// 空のまま進ませてはならない: compose 側の既定値は `${VAR:-local}` なので、空は
+	// エラーではなく主 checkout の名前空間へ黙って落ち、worktree 間の混線を生む
+	// （この機構が防いでいるものそのもの）。
 	loaded, err := config.SetUpConfig()
 	if err != nil {
-		return cfg
+		return dbslot.Config{}, xerrors.Wrap(err, "load embedded env for the realtime names")
 	}
 
 	rt := config.NewRealtimeConfig(loaded)
@@ -157,7 +169,7 @@ func slotConfig(root string) dbslot.Config {
 	cfg.RealtimeQueuePrefix = rt.QueuePrefix()
 	cfg.RealtimeTopic = rt.Topic()
 
-	return cfg
+	return cfg, nil
 }
 
 func poolDir() string {
