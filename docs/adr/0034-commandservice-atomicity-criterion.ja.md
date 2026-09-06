@@ -173,8 +173,9 @@ CommandService が必要になるのは、非機能要件がその分解を禁�
   クーポンを 1 枚適用する操作は `purchases` と `coupons` の両方を書く。値引き後の額で購入が確定して
   いるのにクーポンがまだ使える、という途中状態は観測されてはならない（同じクーポンが二度使える）。
   その原子性は上の購入作成と同じく、ユースケースが既に持っているトランザクションが供給する。書く行は
-  識別子で名指しできる（呼び出し側がクーポン ID を渡す）ため、書き込みは `coupon.Repository.LockByID`
-  + `coupon.Repository.UpdateUsed` と `purchase.Repository.Create` へ分解できる。
+  識別子で名指しできる（呼び出し側がクーポン ID を渡す）ため、書き込みは
+  `coupon.Repository.LockByID` + `coupon.Repository.UpdateUsed` と `purchase.Repository.Create` へ
+  分解できる。
   **このクーポンのロックは分岐 2 のガードではない。** ガードは何も書かず、観測を無効化する書き手を
   止めるために行を押さえるものだが、ここではこのトランザクション自身がその書き手である。したがって
   `LockByID` は、条件を読んだ行をこれから書く前に取る通常の悲観ロック
