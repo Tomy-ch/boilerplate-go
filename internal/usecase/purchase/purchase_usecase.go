@@ -369,64 +369,74 @@ func (u *usecase) CancelPurchase(ctx context.Context, params CancelPurchaseParam
 	// tx 境界は PayPurchase のコメントを参照。二重キャンセル対策は
 	// docs/spec/usecase/purchase.md § PATCH キャンセル を参照。
 	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
-		locked, lerr := u.repo.LockByCode(ctx, params.PurchaseCode)
-		if lerr != nil {
-			return lerr
-		}
-
-		// 存在秘匿のため NotFound へ畳む理由は CancelPurchase の doc コメントを参照。
-		if locked.UserID() != params.UserID {
-			return xerrors.Wrap(apperror.ErrNotFound, "purchase not found")
-		}
-
-		domainEvent, cerr := locked.Cancel(now)
+		reread, cerr := u.cancelPurchaseInTx(ctx, params, now)
 		if cerr != nil {
 			return cerr
 		}
-
-		// クーポン行は商品行より先に押さえます（ロック順序は docs/spec/usecase/purchase.md の
-		// § クーポンの返却（CancelPurchase）。ADR-0036 (ordered-pessimistic-row-locks)）。
-		if cerr := u.restoreCoupon(ctx, locked.CouponID(), now); cerr != nil {
-			return cerr
-		}
-
-		if serr := u.restoreStock(ctx, locked.Details()); serr != nil {
-			return serr
-		}
-
-		if perr := u.repo.UpdateCancelled(ctx, locked); perr != nil {
-			return perr
-		}
-
-		payload, berr := event.BuildCanceled(locked)
-		if berr != nil {
-			return berr
-		}
-		eventType, terr := event.WireType(domainEvent.Type())
-		if terr != nil {
-			return terr
-		}
-		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
-			AggregateType: aggregateType,
-			AggregateID:   locked.ID().String(),
-			EventType:     eventType,
-			Payload:       payload,
-			Channel:       outboxbndry.ChannelHTTP,
-		}); eerr != nil {
-			return eerr
-		}
-
-		reread, rerr := u.repo.FindDetailByID(ctx, locked.ID())
-		if rerr != nil {
-			return rerr
-		}
 		detail = reread
+
 		return nil
 	}); txErr != nil {
 		return CancelPurchaseView{}, txErr
 	}
 
 	return toCancelPurchaseView(detail), nil
+}
+
+// cancelPurchaseInTx は、購入キャンセルのトランザクション本体です。
+//
+// ロック順序（購入行 → クーポン行 → 商品行、id 昇順）は docs/spec/usecase/purchase.md の
+// § クーポンの返却（CancelPurchase）を参照。書き込み後は Repository 経由で再検証します
+// （internal/usecase/README.md の Verifying infrastructure against the domain）。
+func (u *usecase) cancelPurchaseInTx(
+	ctx context.Context, params CancelPurchaseParams, now time.Time,
+) (*purchase.Detail, error) {
+	locked, lerr := u.repo.LockByCode(ctx, params.PurchaseCode)
+	if lerr != nil {
+		return nil, lerr
+	}
+
+	// 存在秘匿のため NotFound へ畳む理由は CancelPurchase の doc コメントを参照。
+	if locked.UserID() != params.UserID {
+		return nil, xerrors.Wrap(apperror.ErrNotFound, "purchase not found")
+	}
+
+	domainEvent, cerr := locked.Cancel(now)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	if rerr := u.restoreCoupon(ctx, locked.CouponID(), now); rerr != nil {
+		return nil, rerr
+	}
+
+	if serr := u.restoreStock(ctx, locked.Details()); serr != nil {
+		return nil, serr
+	}
+
+	if perr := u.repo.UpdateCancelled(ctx, locked); perr != nil {
+		return nil, perr
+	}
+
+	payload, berr := event.BuildCanceled(locked)
+	if berr != nil {
+		return nil, berr
+	}
+	eventType, terr := event.WireType(domainEvent.Type())
+	if terr != nil {
+		return nil, terr
+	}
+	if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
+		AggregateType: aggregateType,
+		AggregateID:   locked.ID().String(),
+		EventType:     eventType,
+		Payload:       payload,
+		Channel:       outboxbndry.ChannelHTTP,
+	}); eerr != nil {
+		return nil, eerr
+	}
+
+	return u.repo.FindDetailByID(ctx, locked.ID())
 }
 
 func (u *usecase) PayPurchase(ctx context.Context, params PayPurchaseParams) (PayPurchaseView, error) {

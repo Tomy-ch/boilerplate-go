@@ -590,53 +590,6 @@ func Test_usecase_CancelPurchase(t *testing.T) {
 		}
 	}
 
-	// couponID は、クーポンを適用した購入が指すクーポンの ID です。
-	couponID := uuidtestkit.NewTestFromSalt(t, "cancel_uc_coupon")
-
-	// lockableWithCoupon は、クーポンを適用した購入を生成するローカルヘルパーです。
-	// couponID と正の discountAmount は同時にしか設定できません（domainpurchase.validateDiscount）。
-	lockableWithCoupon := func(t *testing.T) *domainpurchase.Purchase {
-		t.Helper()
-		p, err := domainpurchase.Reconstruct(purchaseID, domainpurchase.Attributes{
-			Code:           "cancel-uc-code",
-			UserID:         userID,
-			StatusID:       uuidtestkit.NewTestFromSalt(t, "cancel_uc_status"),
-			StatusCode:     domainpurchase.StatusUnprocessed.Code(),
-			SubtotalAmount: 160000,
-			CouponID:       &couponID,
-			DiscountAmount: 16000,
-			TaxAmount:      14400,
-			ShippingFee:    500,
-			TotalAmount:    158900,
-			Details: []domainpurchase.PurchaseDetail{
-				domainpurchase.NewPurchaseDetail(uuidtestkit.NewTestFromSalt(t, "cancel_uc_d1"), domainpurchase.PurchaseDetailAttributes{
-					ProductID: uuidtestkit.NewTestFromSalt(t, "cancel_uc_p1"),
-					Quantity:  2,
-					UnitPrice: mustPrice(t, "800"),
-				}),
-			},
-			OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
-		})
-		require.NoError(t, err)
-
-		return p
-	}
-
-	// newUCWithCoupon は、クーポンリポジトリも注入した usecase を生成するローカルヘルパーです。
-	newUCWithCoupon := func(
-		t *testing.T,
-		repo *mock_purchase.MockRepository,
-		productRepo *mock_product.MockRepository,
-		emit *mock_outbox.MockEmitUsecase,
-		couponRepo *mock_coupon.MockRepository,
-	) *usecase {
-		t.Helper()
-		u := newUC(t, repo, productRepo, emit)
-		u.couponRepo = couponRepo
-
-		return u
-	}
-
 	t.Run("正常系", func(t *testing.T) {
 		t.Parallel()
 
@@ -689,96 +642,10 @@ func Test_usecase_CancelPurchase(t *testing.T) {
 			require.Len(t, view.Details, 1)
 		})
 
-		t.Run("クーポン適用済みの購入は、クーポン行を商品行より先にロックして未使用へ戻す", func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			repo := mock_purchase.NewMockRepository(ctrl)
-			productRepo := mock_product.NewMockRepository(ctrl)
-			emit := mock_outbox.NewMockEmitUsecase(ctrl)
-			couponRepo := mock_coupon.NewMockRepository(ctrl)
-
-			c := newRedemptionCoupon(t, "cancel_uc_coupon", userID, domaincoupon.NewAllScope())
-			require.NoError(t, c.Redeem(time.Date(2026, time.July, 24, 0, 0, 0, 0, time.UTC)))
-
-			repo.EXPECT().LockByCode(gomock.Any(), purchaseCode).Return(lockableWithCoupon(t), nil)
-			gomock.InOrder(
-				couponRepo.EXPECT().LockByID(gomock.Any(), couponID).Return(c, nil),
-				productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).
-					Return(lockedProducts(t, uuidtestkit.NewTestFromSalt(t, "cancel_uc_p1"), 10), nil),
-			)
-			couponRepo.EXPECT().UpdateUnused(gomock.Any(), c.ID()).Return(nil)
-			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
-			repo.EXPECT().UpdateCancelled(gomock.Any(), gomock.Any()).Return(nil)
-			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
-			repo.EXPECT().FindDetailByID(gomock.Any(), purchaseID).Return(&domainpurchase.Detail{
-				ID: purchaseID, Code: "cancel-uc-code", UserID: userID,
-				StatusCode: domainpurchase.StatusCanceled.Code(), StatusName: "キャンセル",
-				OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
-			}, nil)
-
-			u := newUCWithCoupon(t, repo, productRepo, emit, couponRepo)
-			_, err := u.CancelPurchase(context.Background(), CancelPurchaseParams{PurchaseCode: purchaseCode, UserID: userID})
-
-			require.NoError(t, err)
-			assert.False(t, c.IsUsed())
-		})
-
-		t.Run("失効したクーポンは戻さず、キャンセル自体は成立する", func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			repo := mock_purchase.NewMockRepository(ctrl)
-			productRepo := mock_product.NewMockRepository(ctrl)
-			emit := mock_outbox.NewMockEmitUsecase(ctrl)
-			couponRepo := mock_coupon.NewMockRepository(ctrl)
-
-			// 有効期限（2026-10-01）より後にキャンセルするため、この検証だけ時計を進める。
-			expired := newRedemptionCoupon(t, "cancel_uc_coupon", userID, domaincoupon.NewAllScope())
-			require.NoError(t, expired.Redeem(time.Date(2026, time.July, 24, 0, 0, 0, 0, time.UTC)))
-
-			repo.EXPECT().LockByCode(gomock.Any(), purchaseCode).Return(lockableWithCoupon(t), nil)
-			couponRepo.EXPECT().LockByID(gomock.Any(), couponID).Return(expired, nil)
-			productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).
-				Return(lockedProducts(t, uuidtestkit.NewTestFromSalt(t, "cancel_uc_p1"), 10), nil)
-			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
-			repo.EXPECT().UpdateCancelled(gomock.Any(), gomock.Any()).Return(nil)
-			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
-			repo.EXPECT().FindDetailByID(gomock.Any(), purchaseID).Return(&domainpurchase.Detail{
-				ID: purchaseID, Code: "cancel-uc-code", UserID: userID,
-				StatusCode: domainpurchase.StatusCanceled.Code(), StatusName: "キャンセル",
-				OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
-			}, nil)
-
-			u := newUCWithCoupon(t, repo, productRepo, emit, couponRepo)
-			u.clock = clocktestkit.NewMockClock(t, time.Date(2026, time.October, 2, 0, 0, 0, 0, time.UTC))
-			_, err := u.CancelPurchase(context.Background(), CancelPurchaseParams{PurchaseCode: purchaseCode, UserID: userID})
-
-			require.NoError(t, err)
-			assert.True(t, expired.IsUsed())
-		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
 		t.Parallel()
-
-		t.Run("クーポンの返却が失敗した場合、在庫復元へ進まない", func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			repo := mock_purchase.NewMockRepository(ctrl)
-			productRepo := mock_product.NewMockRepository(ctrl)
-			emit := mock_outbox.NewMockEmitUsecase(ctrl)
-			couponRepo := mock_coupon.NewMockRepository(ctrl)
-
-			repo.EXPECT().LockByCode(gomock.Any(), purchaseCode).Return(lockableWithCoupon(t), nil)
-			couponRepo.EXPECT().LockByID(gomock.Any(), couponID).Return(nil, apperror.ErrNotFound)
-
-			u := newUCWithCoupon(t, repo, productRepo, emit, couponRepo)
-			_, err := u.CancelPurchase(context.Background(), CancelPurchaseParams{PurchaseCode: purchaseCode, UserID: userID})
-
-			require.ErrorIs(t, err, apperror.ErrNotFound)
-		})
 
 		t.Run("他人の購入の場合、ErrNotFoundを返し在庫復元を行わない", func(t *testing.T) {
 			t.Parallel()
@@ -883,6 +750,157 @@ func Test_usecase_CancelPurchase(t *testing.T) {
 
 			u := newUC(t, repo, productRepo, emit)
 			_, err := u.CancelPurchase(context.Background(), CancelPurchaseParams{PurchaseCode: purchaseCode, UserID: userID})
+			require.ErrorIs(t, err, apperror.ErrNotFound)
+		})
+	})
+}
+
+func Test_usecase_cancelPurchaseInTx(t *testing.T) {
+	t.Parallel()
+
+	userID := uuidtestkit.NewTestFromSalt(t, "cancel_uc_user")
+	purchaseID := uuidtestkit.NewTestFromSalt(t, "cancel_uc_id")
+	purchaseCode := "cancel-uc-code"
+	cancelAt := time.Date(2026, time.July, 25, 12, 0, 0, 0, time.UTC)
+	// couponID は、クーポンを適用した購入が指すクーポンの ID です。
+	couponID := uuidtestkit.NewTestFromSalt(t, "cancel_uc_coupon")
+
+	// lockableWithCoupon は、クーポンを適用した購入を生成するローカルヘルパーです。
+	// couponID と正の discountAmount は同時にしか設定できません（domainpurchase.validateDiscount）。
+	lockableWithCoupon := func(t *testing.T) *domainpurchase.Purchase {
+		t.Helper()
+		p, err := domainpurchase.Reconstruct(purchaseID, domainpurchase.Attributes{
+			Code:           "cancel-uc-code",
+			UserID:         userID,
+			StatusID:       uuidtestkit.NewTestFromSalt(t, "cancel_uc_status"),
+			StatusCode:     domainpurchase.StatusUnprocessed.Code(),
+			SubtotalAmount: 160000,
+			CouponID:       &couponID,
+			DiscountAmount: 16000,
+			TaxAmount:      14400,
+			ShippingFee:    500,
+			TotalAmount:    158900,
+			Details: []domainpurchase.PurchaseDetail{
+				domainpurchase.NewPurchaseDetail(uuidtestkit.NewTestFromSalt(t, "cancel_uc_d1"), domainpurchase.PurchaseDetailAttributes{
+					ProductID: uuidtestkit.NewTestFromSalt(t, "cancel_uc_p1"),
+					Quantity:  2,
+					UnitPrice: mustPrice(t, "800"),
+				}),
+			},
+			OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
+		})
+		require.NoError(t, err)
+
+		return p
+	}
+
+	// newUCWithCoupon は、クーポンリポジトリも注入した usecase を生成するローカルヘルパーです。
+	newUCWithCoupon := func(
+		t *testing.T,
+		repo *mock_purchase.MockRepository,
+		productRepo *mock_product.MockRepository,
+		emit *mock_outbox.MockEmitUsecase,
+		couponRepo *mock_coupon.MockRepository,
+	) *usecase {
+		t.Helper()
+
+		return &usecase{
+			tracer: observability.NewNoopTracerFactory(t).Usecase(),
+			repo:   repo, productRepo: productRepo, emit: emit, couponRepo: couponRepo,
+		}
+	}
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("クーポン適用済みの購入は、クーポン行を商品行より先にロックして未使用へ戻す", func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			repo := mock_purchase.NewMockRepository(ctrl)
+			productRepo := mock_product.NewMockRepository(ctrl)
+			emit := mock_outbox.NewMockEmitUsecase(ctrl)
+			couponRepo := mock_coupon.NewMockRepository(ctrl)
+
+			c := newRedemptionCoupon(t, "cancel_uc_coupon", userID, domaincoupon.NewAllScope())
+			require.NoError(t, c.Redeem(time.Date(2026, time.July, 24, 0, 0, 0, 0, time.UTC)))
+
+			repo.EXPECT().LockByCode(gomock.Any(), purchaseCode).Return(lockableWithCoupon(t), nil)
+			gomock.InOrder(
+				couponRepo.EXPECT().LockByID(gomock.Any(), couponID).Return(c, nil),
+				productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).
+					Return(lockedProducts(t, uuidtestkit.NewTestFromSalt(t, "cancel_uc_p1"), 10), nil),
+			)
+			couponRepo.EXPECT().UpdateUnused(gomock.Any(), c.ID()).Return(nil)
+			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
+			repo.EXPECT().UpdateCancelled(gomock.Any(), gomock.Any()).Return(nil)
+			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
+			repo.EXPECT().FindDetailByID(gomock.Any(), purchaseID).Return(&domainpurchase.Detail{
+				ID: purchaseID, Code: "cancel-uc-code", UserID: userID,
+				StatusCode: domainpurchase.StatusCanceled.Code(), StatusName: "キャンセル",
+				OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
+			}, nil)
+
+			u := newUCWithCoupon(t, repo, productRepo, emit, couponRepo)
+			_, err := u.cancelPurchaseInTx(context.Background(), CancelPurchaseParams{PurchaseCode: purchaseCode, UserID: userID}, cancelAt)
+
+			require.NoError(t, err)
+			assert.False(t, c.IsUsed())
+		})
+
+		t.Run("失効したクーポンは戻さず、キャンセル自体は成立する", func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			repo := mock_purchase.NewMockRepository(ctrl)
+			productRepo := mock_product.NewMockRepository(ctrl)
+			emit := mock_outbox.NewMockEmitUsecase(ctrl)
+			couponRepo := mock_coupon.NewMockRepository(ctrl)
+
+			// 有効期限（2026-10-01）より後の時刻でキャンセルする。
+			expiredAt := time.Date(2026, time.October, 2, 0, 0, 0, 0, time.UTC)
+			expired := newRedemptionCoupon(t, "cancel_uc_coupon", userID, domaincoupon.NewAllScope())
+			require.NoError(t, expired.Redeem(time.Date(2026, time.July, 24, 0, 0, 0, 0, time.UTC)))
+
+			repo.EXPECT().LockByCode(gomock.Any(), purchaseCode).Return(lockableWithCoupon(t), nil)
+			couponRepo.EXPECT().LockByID(gomock.Any(), couponID).Return(expired, nil)
+			productRepo.EXPECT().LockByIDs(gomock.Any(), gomock.Any()).
+				Return(lockedProducts(t, uuidtestkit.NewTestFromSalt(t, "cancel_uc_p1"), 10), nil)
+			productRepo.EXPECT().UpdateStock(gomock.Any(), gomock.Any()).Return(2, nil)
+			repo.EXPECT().UpdateCancelled(gomock.Any(), gomock.Any()).Return(nil)
+			emit.EXPECT().Emit(gomock.Any(), gomock.Any()).Return(uuid.UUID{}, nil)
+			repo.EXPECT().FindDetailByID(gomock.Any(), purchaseID).Return(&domainpurchase.Detail{
+				ID: purchaseID, Code: "cancel-uc-code", UserID: userID,
+				StatusCode: domainpurchase.StatusCanceled.Code(), StatusName: "キャンセル",
+				OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
+			}, nil)
+
+			u := newUCWithCoupon(t, repo, productRepo, emit, couponRepo)
+			_, err := u.cancelPurchaseInTx(context.Background(), CancelPurchaseParams{PurchaseCode: purchaseCode, UserID: userID}, expiredAt)
+
+			require.NoError(t, err)
+			assert.True(t, expired.IsUsed())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("クーポンの返却が失敗した場合、在庫復元へ進まない", func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			repo := mock_purchase.NewMockRepository(ctrl)
+			productRepo := mock_product.NewMockRepository(ctrl)
+			emit := mock_outbox.NewMockEmitUsecase(ctrl)
+			couponRepo := mock_coupon.NewMockRepository(ctrl)
+
+			repo.EXPECT().LockByCode(gomock.Any(), purchaseCode).Return(lockableWithCoupon(t), nil)
+			couponRepo.EXPECT().LockByID(gomock.Any(), couponID).Return(nil, apperror.ErrNotFound)
+
+			u := newUCWithCoupon(t, repo, productRepo, emit, couponRepo)
+			_, err := u.cancelPurchaseInTx(context.Background(), CancelPurchaseParams{PurchaseCode: purchaseCode, UserID: userID}, cancelAt)
+
 			require.ErrorIs(t, err, apperror.ErrNotFound)
 		})
 	})
