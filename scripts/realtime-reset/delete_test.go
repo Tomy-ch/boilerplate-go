@@ -151,15 +151,17 @@ func Test_deleteTables(t *testing.T) {
 			require.ErrorContains(t, err, eventLogTable)
 		})
 
-		t.Run("途中で失敗したら後続のtableに触れない", func(t *testing.T) {
+		t.Run("途中で失敗したら後続のtableを消さない", func(t *testing.T) {
 			t.Parallel()
 
-			api := newFakeTableAPI("a", "b")
+			api := newFakeTableAPI("a", "b", "c")
 			api.deleteErr = errAPI
-			api.deleteErrOn = "a"
+			api.deleteErrOn = "b"
 
-			require.ErrorIs(t, deleteTables(context.Background(), api, []string{"a", "b"}, &bytes.Buffer{}), errAPI)
-			assert.NotContains(t, api.deleted, "b", "1 つ目で止まらなければ 2 つ目を消してしまう")
+			err := deleteTables(context.Background(), api, []string{"a", "b", "c"}, &bytes.Buffer{})
+			require.ErrorIs(t, err, errAPI)
+			assert.Equal(t, []string{"a"}, api.deleted,
+				"b で止まる。a が消えていることが fake の選択性を、c が無いことが停止を示す")
 		})
 	})
 }
