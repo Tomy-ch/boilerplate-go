@@ -226,27 +226,35 @@ func flatten[T any](rows []*T, pick func(*T) gen.Inquiries) []gen.Inquiries {
 }
 
 func reconstruct(row gen.Inquiries) (*inquiry.Inquiry, error) {
-	return inquiry.Reconstruct(row.ID, inquiry.Attributes{
+	entity, err := inquiry.Reconstruct(row.ID, inquiry.Attributes{
 		UserID:    row.UserID,
 		CreatedAt: row.CreatedAt,
 		UpdatedAt: row.UpdatedAt,
 	})
+	if err != nil {
+		return nil, pgerror.NormalizeReconstructError(err)
+	}
+	return entity, nil
 }
 
 func reconstructMessage(row gen.InquiryMessages) (*inquiry.Message, error) {
 	kind, err := inquiry.NewAuthorKind(row.AuthorKind)
 	if err != nil {
-		return nil, err
+		return nil, pgerror.NormalizeReconstructError(err)
 	}
 	author, err := inquiry.NewAuthor(kind, row.AuthorSubjectID)
 	if err != nil {
-		return nil, err
+		return nil, pgerror.NormalizeReconstructError(err)
 	}
 
-	return inquiry.ReconstructMessage(row.ID, inquiry.MessageAttributes{
+	message, err := inquiry.ReconstructMessage(row.ID, inquiry.MessageAttributes{
 		Author:    author,
 		Body:      row.Body,
 		Sequence:  row.StreamSequence,
 		CreatedAt: row.CreatedAt,
 	})
+	if err != nil {
+		return nil, pgerror.NormalizeReconstructError(err)
+	}
+	return message, nil
 }

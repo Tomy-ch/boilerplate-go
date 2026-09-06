@@ -132,10 +132,10 @@ func validateAttributes(attrs Attributes) error {
 		errs = append(errs, xerrors.Wrap(ErrInvalidCategoryID, "category is required"))
 		fields = append(fields, FieldCategoryID)
 	}
-	// 廃番と公開の同時成立だけは自分で識別子を付けます。違反しているのは片方の項目ではなく
-	// 組み合わせで、名指しすべき項目がここからしか決まらないためです。
+	// 違反しているのは片方の項目ではなく組み合わせなので、名指しする項目はここで決まります。
 	if err := validateDiscontinuedAt(attrs.DiscontinuedAt, attrs.PublishedAt); err != nil {
-		return err
+		errs = append(errs, err)
+		fields = append(fields, FieldPublishedAt)
 	}
 	if err := validateImages(attrs.Images); err != nil {
 		errs = append(errs, err)
@@ -181,7 +181,7 @@ func (p *Product) AdjustStock(delta int) error {
 	// 増減の途中結果は在庫の表現範囲を超えうるため、検証を通すまでは広い幅で保持します。
 	adjusted := int64(p.quantity) + int64(delta)
 	if err := validateQuantity(adjusted); err != nil {
-		return apperror.WithDetails(err, FieldDelta)
+		return err
 	}
 
 	p.quantity = int(adjusted)
@@ -316,14 +316,11 @@ func (p *Product) IsDiscontinued() bool { return IsDiscontinued(p.discontinuedAt
 func IsDiscontinued(discontinuedAt *time.Time) bool { return discontinuedAt != nil }
 
 // validateDiscontinuedAt は、廃番と公開が同時に成り立たないことを検証します。
-// 違反したフィールドとして publishedAt を報告します。理由は docs/spec/domain/product.md の
+// 名指しする項目は呼び出し元が決めます。理由は docs/spec/domain/product.md の
 // Cross-field Invariants を参照してください。
 func validateDiscontinuedAt(discontinuedAt, publishedAt *time.Time) error {
 	if IsDiscontinued(discontinuedAt) && IsPublished(publishedAt) {
-		return apperror.WithDetails(
-			xerrors.Wrap(ErrDiscontinuedCannotBePublished, "publishedAt must be nil for a discontinued product"),
-			FieldPublishedAt,
-		)
+		return xerrors.Wrap(ErrDiscontinuedCannotBePublished, "publishedAt must be nil for a discontinued product")
 	}
 	return nil
 }

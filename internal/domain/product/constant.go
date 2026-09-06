@@ -47,9 +47,9 @@ const (
 	// FieldImages は、画像フィールドの識別子です。画像は集合ごと置き換わるため、要素ではなく
 	// 集合を指します。
 	FieldImages = "images"
-	// FieldDelta は、在庫増減フィールドの識別子です。増減後の在庫を検証するのは
-	// [Product.AdjustStock] ですが、クライアントが送るのは増減量なので、範囲を外したときに
-	// 名指しできるのはこちらです。
+	// FieldDelta は、在庫増減フィールドの識別子です。[Product.AdjustStock] は増減後の在庫を
+	// 検証しますが、クライアントが送るのは増減量で、しかも購入の在庫調整からも呼ばれます。
+	// どちらの呼ばれ方かを知っているのは呼び出し元なので、付けるのも呼び出し元です。
 	FieldDelta = "delta"
 	// FieldPublishedAt は、公開日時フィールドの識別子です。
 	FieldPublishedAt = "publishedAt"

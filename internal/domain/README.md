@@ -438,10 +438,11 @@ which is not always the code that detects the violation. Three shapes recur:
   request) sees only its own invariant, never that it is being named as this request's
   `couponId`. Its caller attaches the identifier, for the same reason.
 
-The same split applies inside one aggregate whenever a validator is shared between a request
-path and a reconstruction path: attach at the behavior method that corresponds to the
-operation, not inside the shared validator, or a row rebuilt from the database will name a
-request field that nobody sent.
+A validator shared with the reconstruction path needs no special handling here: a stored row that
+violates an invariant is a data-integrity failure, and the Repository flattens it to
+`apperror.ErrInternal` — dropping the sentinel and the `Meta` with it — so it never reaches a client
+as a `422` naming a request field. That flatten is load-bearing and lives in
+[`pgerror`](../infrastructure/rdb/pgerror/README.md), not here.
 
 ### Invariants (Domain Invariant)
 

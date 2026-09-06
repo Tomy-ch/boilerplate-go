@@ -45,8 +45,10 @@ func (u *usecase) UpdateProductStock(
 		}
 		entity = locked
 
+		// 識別子はここで付けます。AdjustStock は増減後の在庫を検証しますが、クライアントが
+		// 送るのは delta であり、購入の在庫調整からも呼ばれるため集約側では決まりません。
 		if err = entity.AdjustStock(params.Delta); err != nil {
-			return err
+			return apperror.WithDetails(err, product.FieldDelta)
 		}
 
 		updatedVersion, err = u.repo.UpdateStock(ctx, entity)

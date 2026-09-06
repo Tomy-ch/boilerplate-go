@@ -419,9 +419,11 @@ return apperror.WithDetails(xerrors.Join(errs...), fields...)
   自分の不変条件しか見ておらず、自分がこのリクエストの `couponId` として名指しされていることを
   知らない。同じ理由で、識別子は呼び出し元が付ける。
 
-同じ切り分けは 1 つの集約の中でも、validator が request 経路と再構築経路で共有されている場合に
-当てはまる。共有の validator の中ではなく、その操作に対応する behavior method で付けること。
-さもないと、データベースから再構築した行が、誰も送っていないリクエスト項目を名指しする。
+再構築経路と共有されている validator について、ここで特別な扱いは要らない。不変条件を破った
+保存済みの行はデータ不整合であり、Repository が `apperror.ErrInternal` へ平坦化する —
+センチネルも `Meta` も一緒に落ちる — ので、リクエスト項目を名指しする `422` としてクライアントへ
+届くことはない。この平坦化は機構として効いており、置き場所はここではなく
+[`pgerror`](../infrastructure/rdb/pgerror/README.md) である。
 
 ### 不変条件（Domain Invariant）
 

@@ -397,6 +397,21 @@ func TestNew(t *testing.T) {
 				assert.Equal(t, []string{FieldDetails}, meta.Details())
 			})
 
+			t.Run("在庫不足は状態の衝突なので識別子を付けない", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, inputs, _ := validNewArgs(t)
+				locked := make([]LockedProduct, 0, len(inputs))
+				for _, in := range inputs {
+					locked = append(locked, NewLockedProduct(in.ProductID, mustPrice(t, "800"), in.Quantity-1))
+				}
+
+				_, err := New(id, code, userID, inputs, locked)
+
+				require.ErrorIs(t, err, ErrInsufficientStock)
+				_, ok := apperror.MetaFrom(err)
+				assert.False(t, ok)
+			})
+
 			t.Run("対応するロック済み商品が無い", func(t *testing.T) {
 				t.Parallel()
 				id, code, userID, inputs, _ := validNewArgs(t)

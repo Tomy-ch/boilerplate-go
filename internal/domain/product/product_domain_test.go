@@ -519,15 +519,14 @@ func Test_validateDiscontinuedAt(t *testing.T) {
 	t.Run("異常系", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("廃番かつ公開の場合、ErrDiscontinuedCannotBePublishedを返し違反フィールドとしてpublishedAtを報告する", func(t *testing.T) {
+		t.Run("廃番かつ公開の場合、ErrDiscontinuedCannotBePublishedを返し識別子は付けない", func(t *testing.T) {
 			t.Parallel()
 
 			err := validateDiscontinuedAt(discontinuedAt, publishedAt)
 
 			require.ErrorIs(t, err, ErrDiscontinuedCannotBePublished)
-			meta, ok := apperror.MetaFrom(err)
-			require.True(t, ok)
-			assert.Equal(t, []string{FieldPublishedAt}, meta.Details())
+			_, ok := apperror.MetaFrom(err)
+			assert.False(t, ok)
 		})
 	})
 }
@@ -714,6 +713,25 @@ func Test_validateAttributes(t *testing.T) {
 			meta, ok := apperror.MetaFrom(err)
 			require.True(t, ok)
 			assert.Equal(t, []string{FieldName, FieldQuantity, FieldStatusID}, meta.Details())
+		})
+
+		t.Run("廃番と公開の同時成立が他項目の違反を握りつぶさない", func(t *testing.T) {
+			t.Parallel()
+			at := time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC)
+			attrs := valid
+			attrs.Name = ""
+			attrs.DiscontinuedAt = ptr.To(at)
+			attrs.PublishedAt = ptr.To(at)
+			attrs.Images = []Image{mustImage(t, "combined_image", "products/a.png", maxImageDisplaySort+1)}
+
+			err := validateAttributes(attrs)
+			require.ErrorIs(t, err, ErrInvalidName)
+			require.ErrorIs(t, err, ErrDiscontinuedCannotBePublished)
+			require.ErrorIs(t, err, ErrInvalidImageDisplaySort)
+
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldName, FieldPublishedAt, FieldImages}, meta.Details())
 		})
 
 		t.Run("画像の違反は集合として images を名指しする", func(t *testing.T) {
@@ -982,14 +1000,13 @@ func TestProduct_AdjustStock(t *testing.T) {
 			assert.Equal(t, snapshot, *p)
 		})
 
-		t.Run("検証するのは増減後の在庫だが、名指しするのはクライアントが送るdeltaである", func(t *testing.T) {
+		t.Run("識別子は付けない（呼び出し元が決める）", func(t *testing.T) {
 			t.Parallel()
 
 			p := newTestProduct(t)
 
-			meta, ok := apperror.MetaFrom(p.AdjustStock(-p.Quantity() - 1))
-			require.True(t, ok)
-			assert.Equal(t, []string{FieldDelta}, meta.Details())
+			_, ok := apperror.MetaFrom(p.AdjustStock(-p.Quantity() - 1))
+			assert.False(t, ok)
 		})
 	})
 }

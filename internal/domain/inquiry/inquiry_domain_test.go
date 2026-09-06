@@ -357,6 +357,21 @@ func TestInquiry_AppendMessage(t *testing.T) {
 			require.ErrorIs(t, err, ErrInvalidMessageID)
 		})
 
+		t.Run("サーバ由来の違反には識別子を付けない", func(t *testing.T) {
+			t.Parallel()
+			i := newTestInquiry(t)
+
+			_, err := i.AppendMessage(
+				uuid.UUID{},
+				newTestMessageAttributes(t),
+				time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC),
+			)
+
+			require.ErrorIs(t, err, ErrInvalidMessageID)
+			_, ok := apperror.MetaFrom(err)
+			assert.False(t, ok)
+		})
+
 		t.Run("本文が不正なら body を名指しする", func(t *testing.T) {
 			t.Parallel()
 			for _, tc := range []struct {

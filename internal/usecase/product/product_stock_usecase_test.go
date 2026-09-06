@@ -203,6 +203,11 @@ func Test_usecase_UpdateProductStock(t *testing.T) {
 				UpdateProductStockParams{Delta: -(entity.Quantity() + 1)})
 			require.ErrorIs(t, err, apperror.ErrValidation)
 			assert.Equal(t, ProductView{}, actual)
+
+			// 検証するのは増減後の在庫だが、クライアントが送るのは delta である。
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{domainproduct.FieldDelta}, meta.Details())
 		})
 
 		t.Run("在庫の更新に失敗した場合、エラーを返す", func(t *testing.T) {

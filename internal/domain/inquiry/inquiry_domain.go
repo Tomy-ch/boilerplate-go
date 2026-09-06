@@ -113,11 +113,15 @@ func (i *Inquiry) AppendMessage(id uuid.UUID, attrs MessageAttributes, now time.
 	if now.Before(i.updatedAt) {
 		return nil, xerrors.Wrap(ErrInvalidTime, "now must be at or after updatedAt")
 	}
-	// 識別子はここで付けます。newMessage は再構築とも共有する検証ゲートで、そちらの本文は
-	// クライアントが送った項目ではありません。
+	// 本文の違反だけを名指しします。newMessage は採番済みの ID・認証由来の author・機構が
+	// 振る sequence も検証しており、それらは利用者が直せる項目ではありません。
+	if err := validateBody(attrs.Body); err != nil {
+		return nil, apperror.WithDetails(err, FieldBody)
+	}
+
 	m, err := newMessage(id, attrs)
 	if err != nil {
-		return nil, apperror.WithDetails(err, FieldBody)
+		return nil, err
 	}
 	i.updatedAt = now
 	return m, nil
