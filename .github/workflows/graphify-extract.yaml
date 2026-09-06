@@ -95,6 +95,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # `graphify-pending` takes its baseline from the last commit that touched
+          # `graphify-out/cache/semantic/`. Under the default shallow checkout that history is
+          # absent, the lookup returns the tip, and the count below is zero on every run — which
+          # would leave the guard at the end of this job permanently unable to fire.
+          fetch-depth: 0
 
       - name: Setup mise and required tools
         if: steps.config.outputs.configured == 'true'
@@ -117,11 +122,32 @@ jobs:
         if: steps.config.outputs.configured == 'true'
         run: make graphify-check SPEC=.claude/skills/graphify/references/extraction-spec.md
 
+      # Read before the extraction, not after: the baseline is a commit, so the count does not move
+      # until the cache lands on the release line. Taken here it says how much work was waiting,
+      # which is what the guard at the end compares the produced diff against.
+      - name: Measure pending semantic extraction
+        id: pending
+        if: steps.config.outputs.configured == 'true'
+        run: make graphify-pending GRAPHIFY_PENDING_ARGS=-github
+
       - name: Run semantic extraction
         if: steps.config.outputs.configured == 'true'
         uses: anthropics/claude-code-action@be7b93b1907a4abad570368f3c74b6fe3807510b # v1.0.183
+        env:
+          # The skill resolves its own interpreter, and its first branch is
+          # `uv tool run --from graphifyy`, which takes the newest release from PyPI rather than the
+          # version this repository pins. Constraining uv with the lockfile lands that branch on the
+          # pinned build, so the prompt the previous step verified is the one the extraction runs.
+          # Without it the step above checks a copy nothing uses.
+          UV_CONSTRAINT: ${{ github.workspace }}/python/graphify.txt
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_TOKEN }}
+          # Nothing here is interactive, so a tool outside the allowed set is refused rather than
+          # asked about, and the assistant finishes cleanly having written nothing. The repository's
+          # own `deny` list in `.claude/settings.json` still applies on top of this.
+          # `Agent` is load-bearing: the skill extracts documents by dispatching one subagent per
+          # chunk, so without it only the structural half runs and the semantic cache never grows.
+          claude_args: --allowedTools Agent,Bash,Read,Write,Edit,Glob,Grep
           prompt: |
             Run `/graphify --update` on this repository, then stop.
             Do not commit, push, or open a pull request — a later step handles that.
@@ -142,6 +168,26 @@ jobs:
           else
             echo "has_diff=true" >> "$GITHUB_OUTPUT"
           fi
+          # Tracked separately from the line above because the two answer different questions: the
+          # skill rebuilds the graph from the structural half on its way through, so a refreshed
+          # `graph.json` proves the run happened, not that any document was read.
+          if git diff --cached --quiet -- graphify-out/cache/semantic; then
+            echo "semantic_diff=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "semantic_diff=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # A clean finish tells us nothing about whether any document was read — a refused tool call, an
+      # unresolved skill, a model that stopped early all end green. Neither does a non-empty diff,
+      # since the skill refreshes the graph from the structural half regardless. What separates the
+      # cases is the semantic cache: documents were waiting and none of them was extracted.
+      - name: Fail when waiting documents were not extracted
+        if: steps.config.outputs.configured == 'true' && steps.diff.outputs.semantic_diff == 'false' && steps.pending.outputs.files != '0'
+        env:
+          WAITING: ${{ steps.pending.outputs.files }}
+        run: |
+          echo "::error::the semantic cache did not change while ${WAITING} documents were waiting"
+          exit 1
 
       # The secrets context is unavailable in `if:`, hence the detour through a run step output.
       - name: Check auto-PR app credentials

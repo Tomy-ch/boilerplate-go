@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"go-boilerplate/internal/apperror"
+	"go-boilerplate/internal/domain/coupon"
 	"go-boilerplate/internal/usecase/boundary/auth"
 	"go-boilerplate/internal/usecase/purchase/query"
 	"go-boilerplate/pkg/decimal"
@@ -30,6 +31,8 @@ type PurchaseGetDetailView struct {
 	StatusCode     int
 	StatusName     string
 	SubtotalAmount int64
+	DiscountAmount int64
+	AppliedCoupon  *AppliedCouponView
 	TaxAmount      int64
 	ShippingFee    int64
 	TotalAmount    int64
@@ -61,6 +64,29 @@ func (u *usecase) GetPurchaseDetail(ctx context.Context, authn *auth.Authn, purc
 	return toPurchaseGetDetailView(rm), nil
 }
 
+// toAppliedCouponViewFromReadModel は、結合で解決したクーポンを出力 DTO の語彙へ写します。
+// 種別は業務キーからドメインが解決するため、既知でない code は名前が空のまま返ります
+// （読み取り経路で再構築エラーを起こさない）。
+func toAppliedCouponViewFromReadModel(rm *query.AppliedCouponReadModel) *AppliedCouponView {
+	if rm == nil {
+		return nil
+	}
+
+	view := &AppliedCouponView{
+		ID:            rm.ID,
+		DiscountValue: rm.DiscountValue,
+		ScopeTargetID: rm.ScopeTargetID,
+	}
+	if kind, err := coupon.NewDiscountKind(rm.DiscountKind); err == nil {
+		view.DiscountKind = kind.Name()
+	}
+	if kind, err := coupon.NewScopeKind(rm.ScopeKind); err == nil {
+		view.ScopeKind = kind.Name()
+	}
+
+	return view
+}
+
 func toPurchaseGetDetailView(rm *query.PurchaseDetailReadModel) PurchaseGetDetailView {
 	items := make([]PurchaseDetailItemView, len(rm.Items))
 	for i, it := range rm.Items {
@@ -78,6 +104,8 @@ func toPurchaseGetDetailView(rm *query.PurchaseDetailReadModel) PurchaseGetDetai
 		StatusCode:     rm.StatusCode,
 		StatusName:     rm.StatusName,
 		SubtotalAmount: rm.SubtotalAmount,
+		DiscountAmount: rm.DiscountAmount,
+		AppliedCoupon:  toAppliedCouponViewFromReadModel(rm.AppliedCoupon),
 		TaxAmount:      rm.TaxAmount,
 		ShippingFee:    rm.ShippingFee,
 		TotalAmount:    rm.TotalAmount,

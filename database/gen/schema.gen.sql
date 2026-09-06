@@ -760,7 +760,9 @@ CREATE TABLE public.purchases (
     shipped_at timestamp with time zone,
     delivered_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    coupon_id uuid,
+    discount_amount bigint DEFAULT 0 NOT NULL
 );
 --
 -- Name: TABLE purchases; Type: COMMENT; Schema: public; Owner: -
@@ -826,6 +828,14 @@ COMMENT ON COLUMN public.purchases.created_at IS '作成日時';
 -- Name: COLUMN purchases.updated_at; Type: COMMENT; Schema: public; Owner: -
 --
 COMMENT ON COLUMN public.purchases.updated_at IS '更新日時';
+--
+-- Name: COLUMN purchases.coupon_id; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.purchases.coupon_id IS '適用したクーポンのID（未使用のときNULL）';
+--
+-- Name: COLUMN purchases.discount_amount; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.purchases.discount_amount IS '値引き額';
 --
 -- Name: realtime_stream_sequences; Type: TABLE; Schema: public; Owner: -
 --
@@ -1351,6 +1361,10 @@ CREATE INDEX products_status_id_idx ON public.products USING btree (status_id);
 --
 CREATE INDEX purchase_details_purchase_id_idx ON public.purchase_details USING btree (purchase_id);
 --
+-- Name: purchases_coupon_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+CREATE INDEX purchases_coupon_id_idx ON public.purchases USING btree (coupon_id) WHERE (coupon_id IS NOT NULL);
+--
 -- Name: purchases_user_id_ordered_at_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 CREATE INDEX purchases_user_id_ordered_at_id_idx ON public.purchases USING btree (user_id, ordered_at DESC, id DESC);
@@ -1418,6 +1432,11 @@ ALTER TABLE ONLY public.purchase_details
 --
 ALTER TABLE ONLY public.purchase_details
     ADD CONSTRAINT purchase_details_purchase_id_foreign FOREIGN KEY (purchase_id) REFERENCES public.purchases(id);
+--
+-- Name: purchases purchases_coupon_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+ALTER TABLE ONLY public.purchases
+    ADD CONSTRAINT purchases_coupon_id_foreign FOREIGN KEY (coupon_id) REFERENCES public.coupons(id);
 --
 -- Name: purchases purchases_status_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --

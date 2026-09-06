@@ -9,6 +9,107 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CouponDiscountKind.
+const (
+	Flat CouponDiscountKind = "flat"
+	Rate CouponDiscountKind = "rate"
+)
+
+// Valid indicates whether the value is a known member of the CouponDiscountKind enum.
+func (e CouponDiscountKind) Valid() bool {
+	switch e {
+	case Flat:
+		return true
+	case Rate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponScopeKind.
+const (
+	All      CouponScopeKind = "all"
+	Category CouponScopeKind = "category"
+	Product  CouponScopeKind = "product"
+)
+
+// Valid indicates whether the value is a known member of the CouponScopeKind enum.
+func (e CouponScopeKind) Valid() bool {
+	switch e {
+	case All:
+		return true
+	case Category:
+		return true
+	case Product:
+		return true
+	default:
+		return false
+	}
+}
+
+// AppliedCouponResponse 購入に適用したクーポン。値引きと適用範囲の 2 軸だけを返します。
+//
+// 控えへ写さず結合で解決した現在値です（`productName` と同じ扱い）。発行済みクーポンの値引きと
+// 適用範囲を書き換える口が無いため、結合で解決しても内容がぶれません。
+type AppliedCouponResponse struct {
+	// Discount クーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。
+	Discount CouponDiscount `json:"discount"`
+
+	// Id 適用したクーポンのID
+	//
+	// Example: 0193a1c0-0001-7000-8000-000000000002
+	Id openapi_types.UUID `json:"id"`
+
+	// Scope クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+	Scope CouponScope `json:"scope"`
+}
+
+// CouponDiscount クーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。
+type CouponDiscount struct {
+	// Kind 値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。
+	//
+	//
+	// Example: rate
+	Kind CouponDiscountKind `json:"kind"`
+
+	// Value 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、
+	// 正確な十進量を保つ decimal 文字列で表します（例 `"0.10"` は 10% 引き）。
+	// JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
+	//
+	//
+	// Example: 0.10
+	Value string `json:"value"`
+}
+
+// CouponDiscountKind 値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。
+//
+// Example: rate
+type CouponDiscountKind string
+
+// CouponScope クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+type CouponScope struct {
+	// Kind 適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+	// `product` は特定の商品の明細だけを対象とします。
+	//
+	//
+	// Example: category
+	Kind CouponScopeKind `json:"kind"`
+
+	// TargetId 範囲を絞る対象の識別子。`category` なら商品カテゴリID、`product` なら商品IDです。
+	// `all` では対象を持たないため null になります。
+	//
+	//
+	// Example: 5dd52d84-78eb-4a52-ba0b-2e11c95c2af2
+	TargetId *openapi_types.UUID `json:"targetId"`
+}
+
+// CouponScopeKind 適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+// `product` は特定の商品の明細だけを対象とします。
+//
+// Example: category
+type CouponScopeKind string
+
 // ErrorResponse エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。
 type ErrorResponse struct {
 	// Code 機械的に処理可能なエラーコード
@@ -58,6 +159,9 @@ type PurchaseDetailItemResponse struct {
 // 未キャンセルなら null です。金額（subtotalAmount / taxAmount / shippingFee / totalAmount）は
 // すべて USD セント単位の整数、明細 unitPrice は購入時点の単価スナップショット（USD ドルの decimal 文字列）です。
 type PurchaseGetDetailResponse struct {
+	// AppliedCoupon 適用したクーポン。未使用の場合は null です。値引きと適用範囲は結合で解決した現在値です。
+	AppliedCoupon *AppliedCouponResponse `json:"appliedCoupon"`
+
 	// CanceledAt キャンセル日時。未キャンセルの場合は null です。
 	//
 	// Example: 2026-07-26T00:00:00Z
@@ -70,6 +174,14 @@ type PurchaseGetDetailResponse struct {
 
 	// Details 購入明細の配列（商品名込み）
 	Details []PurchaseDetailItemResponse `json:"details"`
+
+	// DiscountAmount クーポンによる値引き額。USD セント単位の整数です。
+	// **非 null で、クーポン未使用および過去の購入は 0** になります。
+	// 値引きが立っていることと appliedCoupon が入っていることは常に一致します。
+	//
+	//
+	// Example: 500
+	DiscountAmount int64 `json:"discountAmount"`
 
 	// OrderedAt 注文日時
 	//

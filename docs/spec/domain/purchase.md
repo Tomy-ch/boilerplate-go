@@ -88,6 +88,18 @@ fields:
 
 ## Cross-field Invariants
 
+- **クーポンの適用と値引きは常に一致する。** `couponID != nil` と `discountAmount > 0` は双条件で、
+  違反は `ErrZeroDiscount` → 422（`details` に `couponId`）。片方だけの状態を作ると「クーポンは使ったが
+  説明が付かない」控えが生まれ、表現層が値引き行を出すかどうかを金額だけで決められなくなる。
+  `New` / `Reconstruct` / `ApplyCoupon` が共有する検証ゲートで課す。
+
+- **値引きは小計を超えない。** 超えると請求額が負になる。違反は `ErrInvalidAmount`。
+  定額クーポンが対象小計を超える場合はクーポン側が対象小計まで切り詰めるため、通常経路では起きない。
+
+- **課税の基礎は値引き後の額。** `tax = (subtotal − discount) × 10%`、
+  `total = subtotal − discount + tax + shipping`。値引いた分にまで課税しないためで、規則の所在は
+  `settle` 1 箇所。`subtotalAmount` は値引き前のまま据え置く。
+
 - 明細は 1 件以上（空は `ErrEmptyDetails` → 422）。
 - 明細内の `productID` は一意（重複は `ErrDuplicateProductID` → 422。在庫行のロック順序固定の前提を守る）。
 - 各明細の `quantity >= 1`（違反は `ErrInvalidQuantity` → 422）。

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 
 	"go-boilerplate/internal/domain/purchase"
+	"go-boilerplate/pkg/ptr"
 	"go-boilerplate/pkg/xerrors"
 )
 
@@ -14,15 +15,21 @@ import (
 const TypeCreated = "purchase.created.v1"
 
 // created は、purchase.created.v1 の自己完結 snapshot payload です。金額は決済スケール（整数セント）です。
+//
+// 値引き額を載せるのは、載せないと snapshot が自己完結しなくなるためです。課税の基礎は値引き後の額
+// なので（docs/spec/domain/purchase.md の Cross-field Invariants）、値引き額が無いと購読側で
+// subtotal + tax + shipping が total に一致しません。
 type created struct {
 	PurchaseID     string          `json:"purchaseId"`
 	Code           string          `json:"code"`
 	UserID         string          `json:"userId"`
 	StatusCode     int             `json:"statusCode"`
 	SubtotalAmount int             `json:"subtotalAmount"`
+	DiscountAmount int             `json:"discountAmount"`
 	TaxAmount      int             `json:"taxAmount"`
 	ShippingFee    int             `json:"shippingFee"`
 	TotalAmount    int             `json:"totalAmount"`
+	CouponID       *string         `json:"couponId"`
 	Details        []createdDetail `json:"details"`
 }
 
@@ -45,15 +52,22 @@ func BuildCreated(p *purchase.Purchase) ([]byte, error) {
 		}
 	}
 
+	var couponID *string
+	if id := p.CouponID(); id != nil {
+		couponID = ptr.To(id.String())
+	}
+
 	payload, err := json.Marshal(created{
 		PurchaseID:     p.ID().String(),
 		Code:           p.Code(),
 		UserID:         p.UserID().String(),
 		StatusCode:     p.StatusCode(),
 		SubtotalAmount: p.SubtotalAmount(),
+		DiscountAmount: p.DiscountAmount(),
 		TaxAmount:      p.TaxAmount(),
 		ShippingFee:    p.ShippingFee(),
 		TotalAmount:    p.TotalAmount(),
+		CouponID:       couponID,
 		Details:        details,
 	})
 	if err != nil {

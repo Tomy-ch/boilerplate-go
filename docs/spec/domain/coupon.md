@@ -18,8 +18,8 @@
 メンバーが要り、軸を足すたび積で増える。2 つに割れば、それぞれが 1 つの問い（いくら引くか / どの明細が
 対象か）に答えるだけで済む。
 
-**値引き額の計算と適用範囲の判定はここに持たない。** どちらも引き換えの関心であり、その振る舞いは
-呼び出し側（checkout）と一緒に足す。発行はクーポンを組み立てて保存するだけで、評価しない。
+**値引き額の計算と適用範囲の判定はこの集約が持つ。** どちらも「このクーポンは何をするか」の問いで、
+1 枚について閉じている。丸めは `DiscountFor` の 1 箇所だけで起きる（[ADR-0038](../../adr/0038-two-scale-quantity-model.md)）。
 
 `id` は UUIDv7（[ADR-0037](../../adr/0037-uuidv7-identifiers.md)）で、生成は usecase 層（廃番では
 CommandService）が行いドメインへ渡す。有効期限も時刻境界から供給された値を受け取る。
@@ -73,6 +73,26 @@ fields:
     渡された時点で失効しているかを返す。有効期限ちょうどは失効として扱う。
     失効を一括更新する機構は持たず、判定のたびに現在時刻と突き合わせる（カートの期限切れと同じ形）。
     時刻はドメインの外から渡す。
+- name: IsHeldBy
+  signature: IsHeldBy(userID uuid.UUID) bool
+  behavior: |
+    そのユーザーが受給者かどうかを返す。受給者は発行時に確定し以後移らないため、等値比較で足りる。
+- name: DiscountFor
+  signature: DiscountFor(lines []Line) (int, error)
+  behavior: |
+    渡された明細のうち適用範囲に入るものを対象として、差し引く額を決済スケールの整数（USD セント）で返す。
+    対象が 1 件も無い場合と、差し引く額が最小単位に満たない場合は 0。
+
+    **値引き額の丸めはここが唯一の点。** 対象小計は価格スケールのまま合算し、差し引く額を求めてから
+    一度だけ切り捨てる（ADR-0038）。事前確認と購入確定の双方がこのメソッドを通るため、見せた額と
+    引かれる額が同じ規則で決まる。明細ごとに丸めないので端数の落ちも起きない。
+- name: Redeem
+  signature: Redeem(now time.Time) error
+  behavior: |
+    使用済みにする。一度きりの遷移で、取り消せない。
+    既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えない。
+    使用済みと失効が同時に成り立つ場合は使用済みを先に返す。
+    日時は引数で受け取る（ドメインは時刻へ直接依存しない）。
 ```
 
 ## Value Objects
@@ -120,6 +140,20 @@ fields:
     - name: IsZero
       returns: bool
 
+- name: Line
+  underlying_type: struct    # productID / categoryID uuid.UUID / subtotal decimal.Decimal
+  validation: |
+    検証を持たない。観測した事実をそのまま運ぶ値であり、正しさの責務は観測元にある
+    （カートの ProductSnapshot と同じ形）。
+  factory: NewLine
+  methods:
+    - name: ProductID
+      returns: uuid.UUID
+    - name: CategoryID
+      returns: uuid.UUID
+    - name: Subtotal
+      returns: decimal.Decimal
+
 - name: Scope
   underlying_type: struct    # kind ScopeKind / targetID *uuid.UUID
   validation: |
@@ -134,14 +168,40 @@ fields:
       returns: "*uuid.UUID"   # 防御コピーを返す
     - name: IsZero
       returns: bool
+    - name: Covers
+      returns: bool           # 明細がこの適用範囲に入るか。全体は常に true、限定は対象の一致で決まる
 ```
+
+**`Discount.Apply(eligible decimal.Decimal) decimal.Decimal`** は、対象額に対して差し引く額を
+価格スケールのまま返す。定額は対象額を上限に切り詰め、定率は率を掛ける。どちらも対象額を超えないため
+請求額が負にならない。丸めないのは、丸めを `Coupon.DiscountFor` の 1 箇所に集めるため。
 
 ## Repository Methods
 
-**この集約は Repository を持たない。** 廃番ジャーニーが必要とする書き込みは述語で決まる一括発行だけで、
-それは CommandService が担う（判定基準は [ADR-0034](../../adr/0034-commandservice-atomicity-criterion.md)、
-実例は [`docs/spec/usecase/product.md`](../usecase/product.md) の廃番）。集約を 1 件ずつ読み書きする
-経路は引き換え（#1473）が最初の読み手になるため、そのとき必要なメソッドとともに導入する。
+```yaml
+- name: FindByUserID
+  signature: FindByUserID(ctx context.Context, userID uuid.UUID) (Coupons, error)
+  behavior: |
+    指定利用者が保有するクーポンを発行日時の新しい順で返す。使用済み・失効済みも含む。
+    保有一覧が「使えるもの」ではなく「持っているもの」を並べるためで、使えるかどうかの判定はドメインが持つ。
+- name: LockByID
+  signature: LockByID(ctx context.Context, id uuid.UUID) (*Coupon, error)
+  behavior: |
+    引き換えのために ID からクーポンを悲観ロックして取得する。存在しない場合は NotFound。
+    使用済み・失効・受給者では絞らない。いずれもドメインが述語を持つ条件であり、SQL 側へ書き写すと
+    業務条件の著作権が infra へ移る。
+- name: UpdateUsed
+  signature: UpdateUsed(ctx context.Context, id uuid.UUID, usedAt time.Time) error
+  behavior: |
+    使用済みにする。対象は LockByID で取得し Redeem で検証済み。
+    条件付き更新（used_at IS NULL）の 0 行は ErrUsedConcurrently（409）へ写す。
+    行ロックの下では通常到達せず、ロックを取らずに呼ばれた場合の二重防御として立つ。
+```
+
+**廃番に伴う一括発行は Repository に持たない。** 発行対象が述語でしか決まらず件数に上限も無いため、
+集約を 1 件ずつ構築して書く形に分解できない。その書き込みは CommandService が担う
+（判定基準は [ADR-0034](../../adr/0034-commandservice-atomicity-criterion.md)、
+実例は [`docs/spec/usecase/product.md`](../usecase/product.md) の廃番）。
 
 **発行事由は保持しない。** 「どの商品の廃番が配ったクーポンか」は適用範囲からは辿れない
 （範囲は廃番商品ではなくそのカテゴリで固定されるため）。廃番の再実行は過去の発行実績を返さず、

@@ -336,11 +336,15 @@ func atoiOrZero(field string) int {
 	return value
 }
 
-// report は結果を job summary へ書き出します。閾値は判断の材料であって門ではないので、
-// 超過しても終了コードは 0 のままにします。
+// report は結果を job summary と、後続のステップが読む出力へ書き出します。閾値は判断の材料で
+// あって門ではないので、超過しても終了コードは 0 のままにします。
 func report(summary bool, files, total, threshold int, items []pending) error {
 	if !summary {
 		return nil
+	}
+
+	if err := emitCounts(files, total); err != nil {
+		return err
 	}
 
 	destination := os.Getenv("GITHUB_STEP_SUMMARY")
@@ -371,6 +375,28 @@ func report(summary bool, files, total, threshold int, items []pending) error {
 	defer func() { _ = file.Close() }()
 	if _, err := file.WriteString(body.String()); err != nil {
 		return xerrors.Wrap(err, "❌ job summary へ書けません")
+	}
+
+	return nil
+}
+
+// emitCounts は未処理量を後続のステップが読める形で書き出します。job summary は人が読むための
+// もので、同じ数を機械が読む経路にはならない。抽出が何も生まなかったとき、それが「溜まって
+// いなかった」のか「動かなかった」のかは、この数と差分の有無を突き合わせて初めて分かれる。
+func emitCounts(files, total int) error {
+	destination := os.Getenv("GITHUB_OUTPUT")
+	if destination == "" {
+		return nil
+	}
+
+	file, err := os.OpenFile(destination, os.O_APPEND|os.O_WRONLY|os.O_CREATE, summaryFileMode) //nolint:gosec // 宛先は Actions が渡す固定の環境変数
+	if err != nil {
+		return xerrors.Wrap(err, "❌ ステップ出力を開けません")
+	}
+	defer func() { _ = file.Close() }()
+
+	if _, err := fmt.Fprintf(file, "files=%d\nlines=%d\n", files, total); err != nil {
+		return xerrors.Wrap(err, "❌ ステップ出力へ書けません")
 	}
 
 	return nil

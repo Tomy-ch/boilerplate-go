@@ -11,6 +11,7 @@ package coupon
 import (
 	"time"
 
+	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/ptr"
 	"go-boilerplate/pkg/uuid"
 	"go-boilerplate/pkg/xerrors"
@@ -120,6 +121,48 @@ func (c *Coupon) UsedAt() *time.Time { return ptr.Copy(c.usedAt) }
 
 // IsUsed は、クーポンが使用済みかどうかを返します。
 func (c *Coupon) IsUsed() bool { return c.usedAt != nil }
+
+// IsHeldBy は、そのユーザーがこのクーポンの受給者かどうかを返します。
+// 受給者は変わらないため（[Coupon] を参照）、判定は等値比較だけで足ります。
+func (c *Coupon) IsHeldBy(userID uuid.UUID) bool { return c.userID == userID }
+
+// DiscountFor は、渡された明細のうち適用範囲に入るものを対象として、差し引く額を決済スケールの
+// 整数（USD セント）で返します。対象が 1 件も無い場合と、差し引く額が最小単位に満たない場合は 0 です。
+//
+// 丸めはこのメソッドでのみ行います（[Discount.Apply] は丸めません。ADR-0038 (two-scale-quantity-model)）。
+// 根拠は docs/spec/domain/coupon.md の Behavior Methods > DiscountFor を参照してください。
+func (c *Coupon) DiscountFor(lines []Line) (int, error) {
+	eligible := decimal.FromInt(0)
+	for _, line := range lines {
+		if c.scope.Covers(line) {
+			eligible = eligible.Add(line.Subtotal())
+		}
+	}
+
+	cents, err := c.discount.Apply(eligible).Truncate(minorUnitDigits).ToScaledInt64(minorUnitDigits)
+	if err != nil {
+		return 0, xerrors.Wrap(ErrInvalidDiscountValue, "discount exceeds the settlement range")
+	}
+
+	return int(cents), nil
+}
+
+// Redeem は、クーポンを使用済みにします。使用済みへの遷移は一度きりで、取り消せません。
+//
+// 既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えません。
+// 日時は引数で受け取ります（internal/domain/README.md の Handling time and ID を参照）。
+func (c *Coupon) Redeem(now time.Time) error {
+	if c.IsUsed() {
+		return ErrAlreadyUsed
+	}
+	if c.IsExpired(now) {
+		return ErrExpired
+	}
+
+	c.usedAt = &now
+
+	return nil
+}
 
 // IsExpired は、渡された時点でクーポンが失効しているかどうかを返します。有効期限ちょうども
 // 失効として扱います。判定の設計は docs/spec/domain/coupon.md の Behavior Methods を参照してください。

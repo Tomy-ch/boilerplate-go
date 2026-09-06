@@ -1,0 +1,20 @@
+type: object
+description: |
+  購入に適用したクーポン。値引きと適用範囲の 2 軸だけを返します。
+
+  控えへ写さず結合で解決した現在値です（`productName` と同じ扱い）。発行済みクーポンの値引きと
+  適用範囲を書き換える口が無いため、結合で解決しても内容がぶれません。
+required:
+  - id
+  - discount
+  - scope
+properties:
+  id:
+    type: string
+    format: uuid
+    description: 適用したクーポンのID
+    example: "0193a1c0-0001-7000-8000-000000000002"
+  discount:
+    $ref: './CouponDiscount.yaml'
+  scope:
+    $ref: './CouponScope.yaml'

@@ -6,11 +6,13 @@ import (
 	"time"
 
 	"go-boilerplate/internal/apperror"
+	domaincoupon "go-boilerplate/internal/domain/coupon"
 	domainpurchase "go-boilerplate/internal/domain/purchase"
 	"go-boilerplate/internal/observability"
 	authbd "go-boilerplate/internal/usecase/boundary/auth"
 	"go-boilerplate/internal/usecase/purchase/query"
 	mock_query "go-boilerplate/internal/usecase/purchase/query/mock"
+	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/uuid"
 	uuidtestkit "go-boilerplate/pkg/uuid/testkit"
 	"go-boilerplate/pkg/xerrors"
@@ -192,6 +194,45 @@ func Test_toPurchaseGetDetailView(t *testing.T) {
 			assert.Equal(t, "800", view.Details[0].UnitPrice.String())
 		})
 
+		t.Run("クーポン適用済み読み取りモデルは値引き額と適用クーポンを写像する", func(t *testing.T) {
+			t.Parallel()
+
+			value, verr := decimal.Parse("0.10")
+			require.NoError(t, verr)
+			couponID := uuidtestkit.NewTestFromSalt(t, "tvd_coupon")
+			rm := &query.PurchaseDetailReadModel{
+				ID:             uuidtestkit.NewTestFromSalt(t, "tvd_id"),
+				Code:           "tvd-code",
+				UserID:         uuidtestkit.NewTestFromSalt(t, "tvd_user"),
+				StatusID:       uuidtestkit.NewTestFromSalt(t, "tvd_status"),
+				StatusCode:     domainpurchase.StatusUnprocessed.Code(),
+				StatusName:     "未処理",
+				SubtotalAmount: 160000,
+				DiscountAmount: 16000,
+				AppliedCoupon: &query.AppliedCouponReadModel{
+					ID:            couponID,
+					DiscountKind:  domaincoupon.DiscountKindRate.Code(),
+					DiscountValue: value,
+					ScopeKind:     domaincoupon.ScopeKindAll.Code(),
+				},
+				TaxAmount:   14400,
+				ShippingFee: 500,
+				TotalAmount: 158900,
+				Items: []query.PurchaseDetailItem{
+					{ProductID: uuidtestkit.NewTestFromSalt(t, "tvd_prod"), ProductName: "商品D", Quantity: 2, UnitPrice: mustPrice(t, "800")},
+				},
+				OrderedAt: time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC),
+			}
+
+			view := toPurchaseGetDetailView(rm)
+
+			assert.Equal(t, int64(16000), view.DiscountAmount)
+			require.NotNil(t, view.AppliedCoupon)
+			assert.Equal(t, couponID, view.AppliedCoupon.ID)
+			assert.Equal(t, "rate", view.AppliedCoupon.DiscountKind)
+			assert.Equal(t, "all", view.AppliedCoupon.ScopeKind)
+		})
+
 		t.Run("キャンセル済み読み取りモデルはcanceledAtを写像しpaidAtはnilになる", func(t *testing.T) {
 			t.Parallel()
 
@@ -219,6 +260,60 @@ func Test_toPurchaseGetDetailView(t *testing.T) {
 			assert.Nil(t, view.PaidAt)
 			require.NotNil(t, view.CanceledAt)
 			assert.Equal(t, rm.CanceledAt, view.CanceledAt)
+		})
+	})
+}
+
+func Test_toAppliedCouponViewFromReadModel(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("業務キーを種別の名前へ解決する", func(t *testing.T) {
+			t.Parallel()
+
+			value, err := decimal.Parse("0.10")
+			require.NoError(t, err)
+			target := uuidtestkit.NewTestFromSalt(t, "rm_category")
+
+			got := toAppliedCouponViewFromReadModel(&query.AppliedCouponReadModel{
+				ID:            uuidtestkit.NewTestFromSalt(t, "rm_coupon"),
+				DiscountKind:  domaincoupon.DiscountKindRate.Code(),
+				DiscountValue: value,
+				ScopeKind:     domaincoupon.ScopeKindCategory.Code(),
+				ScopeTargetID: &target,
+			})
+
+			require.NotNil(t, got)
+			assert.Equal(t, "rate", got.DiscountKind)
+			assert.Equal(t, "category", got.ScopeKind)
+			require.NotNil(t, got.ScopeTargetID)
+			assert.Equal(t, target, *got.ScopeTargetID)
+		})
+
+		t.Run("未適用の場合はnilを返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Nil(t, toAppliedCouponViewFromReadModel(nil))
+		})
+
+		t.Run("ドメインが知らないコードは名前を空のまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			value, err := decimal.Parse("1")
+			require.NoError(t, err)
+
+			got := toAppliedCouponViewFromReadModel(&query.AppliedCouponReadModel{
+				ID:            uuidtestkit.NewTestFromSalt(t, "rm_unknown"),
+				DiscountKind:  99,
+				DiscountValue: value,
+				ScopeKind:     99,
+			})
+
+			require.NotNil(t, got)
+			assert.Empty(t, got.DiscountKind)
+			assert.Empty(t, got.ScopeKind)
 		})
 	})
 }

@@ -37,8 +37,6 @@ type DiscountKind struct {
 //
 // 定額では value が差し引く金額（USD ドルの十進量）、定率では value が対象額に掛ける率です。
 // 適用範囲は関知しません。どの明細が対象かは [Scope] が答えます。
-//
-// 値引き額を実際に計算するのは引き換えの関心なので、その振る舞いはここに持ちません。
 type Discount struct {
 	kind  DiscountKind
 	value decimal.Decimal
@@ -50,7 +48,7 @@ func allDiscountKinds() []DiscountKind {
 }
 
 // NewDiscountKind は、永続化されている code から値引き種別を解決します。
-// 既知でない code は ErrInvalidDiscountKind を返します（永続化状態の破損を再構築時に弾くため）。
+// 既知でない code は ErrInvalidDiscountKind を返します。
 func NewDiscountKind(code int) (DiscountKind, error) {
 	for _, k := range allDiscountKinds() {
 		if k.code == code {
@@ -79,8 +77,7 @@ func NewFlatDiscount(amount decimal.Decimal) (Discount, error) {
 }
 
 // NewRateDiscount は、定率の値引きを生成します。rate は 0 より大きく 1 以下である必要があります。
-// 範囲外は ErrInvalidDiscountValue を返します。1 を超える率は対象額より多く差し引くことになり、
-// 値引きの意味を失うため許しません。
+// 範囲外は ErrInvalidDiscountValue を返します（上限の根拠は docs/spec/domain/coupon.md の Discount）。
 func NewRateDiscount(rate decimal.Decimal) (Discount, error) {
 	if rate.Sign() <= 0 || rate.Cmp(maxDiscountRate) > 0 {
 		return Discount{}, xerrors.Wrap(ErrInvalidDiscountValue, "rate discount must be within (0, 1]")
@@ -109,3 +106,29 @@ func (d Discount) Value() decimal.Decimal { return d.value }
 
 // IsZero は、未設定の値引きかどうかを返します。
 func (d Discount) IsZero() bool { return d.kind.IsZero() }
+
+// Apply は、対象額に対して差し引く額を価格スケールの十進量で返します。
+//
+// 「いくら引くか」の定義はこのメソッドが持ちます。定額は対象額を上限に切り詰め、定率は対象額に
+// 率を掛けます。どちらも対象額を超えないため、請求額が負になることはありません。
+// 対象額が 0 以下なら差し引く額も 0 です。
+//
+// 丸めません。決済スケールへの丸めは [Coupon.DiscountFor] が 1 箇所で行います
+// （ADR-0038 (two-scale-quantity-model)）。
+func (d Discount) Apply(eligible decimal.Decimal) decimal.Decimal {
+	if eligible.Sign() <= 0 {
+		return decimal.FromInt(0)
+	}
+
+	switch d.kind {
+	case DiscountKindFlat:
+		if d.value.Cmp(eligible) > 0 {
+			return eligible
+		}
+		return d.value
+	case DiscountKindRate:
+		return eligible.Mul(d.value)
+	default:
+		return decimal.FromInt(0)
+	}
+}

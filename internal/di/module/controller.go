@@ -7,6 +7,7 @@ import (
 	"go-boilerplate/internal/controller/handler/ready"
 	addresseshandler "go-boilerplate/internal/controller/handler/v1/addresses"                             // sample-api:line
 	cartshandler "go-boilerplate/internal/controller/handler/v1/carts"                                     // sample-api:line
+	cartscouponshandler "go-boilerplate/internal/controller/handler/v1/carts/coupons"                      // sample-api:line
 	cartsitemshandler "go-boilerplate/internal/controller/handler/v1/carts/items"                          // sample-api:line
 	cartsmergehandler "go-boilerplate/internal/controller/handler/v1/carts/merge"                          // sample-api:line
 	dashboardhandler "go-boilerplate/internal/controller/handler/v1/dashboard"                             // sample-api:line
@@ -35,6 +36,7 @@ import (
 	"go-boilerplate/internal/controller/handler/v1/users"                                                  // sample-api:line
 	"go-boilerplate/internal/controller/handler/v1/users/detail"                                           // sample-api:line
 	"go-boilerplate/internal/controller/handler/v1/users/feed"                                             // sample-api:line
+	usersmecouponshandler "go-boilerplate/internal/controller/handler/v1/users/me/coupons"                 // sample-api:line
 	usersmepurchaseshandler "go-boilerplate/internal/controller/handler/v1/users/me/purchases"             // sample-api:line
 	usersmeroleshandler "go-boilerplate/internal/controller/handler/v1/users/me/roles"                     // sample-api:line
 	"go-boilerplate/internal/controller/handler/v1/users/search"                                           // sample-api:line
@@ -59,6 +61,7 @@ func ControllerModule() fx.Option {
 			search.BindHandler,
 			usersmepurchaseshandler.BindHandler,
 			usersmeroleshandler.BindHandler,
+			usersmecouponshandler.BindHandler, // sample-api:line
 			exchangeratehandler.BindHandler,
 			addresseshandler.BindHandler,
 			prefectureshandler.BindHandler,
@@ -81,6 +84,7 @@ func ControllerModule() fx.Option {
 			cartshandler.BindHandler,
 			cartsitemshandler.BindHandler,
 			cartsmergehandler.BindHandler,
+			cartscouponshandler.BindHandler, // sample-api:line
 			inquirieshandler.BindHandler,
 			inquirymemessageshandler.BindHandler,
 			inquirymetickethandler.BindHandler,

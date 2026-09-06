@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go-boilerplate/internal/apperror"
+	"go-boilerplate/internal/domain/coupon"
 	"go-boilerplate/internal/domain/product"
 	"go-boilerplate/internal/domain/purchase"
 	"go-boilerplate/internal/domain/service/membership"
@@ -44,6 +45,8 @@ type CreatePurchaseParams struct {
 	UserID uuid.UUID
 	// Details は、購入明細の配列です。
 	Details []DetailParam
+	// CouponID は、適用するクーポンの ID です。nil の場合は値引きを行いません。
+	CouponID *uuid.UUID
 }
 
 // PurchaseDetailView は、購入明細のユースケース出力 DTO です。UnitPrice は価格スケール（ドル decimal）です。
@@ -59,11 +62,22 @@ type PurchaseView struct {
 	UserID         uuid.UUID
 	StatusID       uuid.UUID
 	SubtotalAmount int
+	DiscountAmount int
+	AppliedCoupon  *AppliedCouponView
 	TaxAmount      int
 	ShippingFee    int
 	TotalAmount    int
 	Details        []PurchaseDetailView
 	OrderedAt      time.Time
+}
+
+// AppliedCouponView は、購入に適用したクーポンのユースケース出力 DTO です。
+type AppliedCouponView struct {
+	ID            uuid.UUID
+	DiscountKind  string
+	DiscountValue decimal.Decimal
+	ScopeKind     string
+	ScopeTargetID *uuid.UUID
 }
 
 // CancelPurchaseParams は、購入キャンセルの入力パラメータです。
@@ -193,6 +207,7 @@ type usecase struct {
 	txm         tx.Manager
 	repo        purchase.Repository
 	productRepo product.Repository
+	couponRepo  coupon.Repository
 	userLock    user.LockRepository
 	detailQS    query.PurchaseDetailQueryService
 	feedQS      query.PurchaseFeedQueryService
@@ -214,6 +229,7 @@ func New(
 	txm tx.Manager,
 	repo purchase.Repository,
 	productRepo product.Repository,
+	couponRepo coupon.Repository,
 	userLock user.LockRepository,
 	detailQS query.PurchaseDetailQueryService,
 	feedQS query.PurchaseFeedQueryService,
@@ -227,6 +243,7 @@ func New(
 		txm:         txm,
 		repo:        repo,
 		productRepo: productRepo,
+		couponRepo:  couponRepo,
 		userLock:    userLock,
 		detailQS:    detailQS,
 		feedQS:      feedQS,
@@ -289,63 +306,56 @@ func (u *usecase) CreatePurchase(ctx context.Context, params CreatePurchaseParam
 		return PurchaseView{}, err
 	}
 
-	var created *purchase.Purchase
+	now := u.clock.Now()
+
+	var (
+		created       *purchase.Purchase
+		appliedCoupon *coupon.Coupon
+	)
 	// nested で最外 tx に乗る（tx 所有については docs/spec/usecase/purchase.md 冒頭を参照）。
 	if txErr := u.txm.Do(ctx, func(ctx context.Context) error {
-		// ロック順序（ユーザー行 → 商品行、id 昇順）は docs/spec/usecase/purchase.md の Workflow を参照。
-		if uerr := u.ensurePurchaserActive(ctx, params.UserID); uerr != nil {
-			return uerr
-		}
-
-		products, lerr := u.productRepo.LockByIDs(ctx, draft.productIDs)
-		if lerr != nil {
-			return lerr
-		}
-		locked := make([]purchase.LockedProduct, len(products))
-		for i, p := range products {
-			locked[i] = purchase.NewLockedProduct(p.ID(), p.Price(), p.Quantity())
-		}
-
-		entity, nerr := purchase.New(draft.purchaseID, draft.code, params.UserID, draft.inputs, locked)
-		if nerr != nil {
-			return nerr
-		}
-
-		// 充足（在庫超過が無いこと）は直前の purchase.New が locked と突き合わせて検証済み。
-		if serr := u.applyStockDelta(ctx, products, entity.Details(), -1); serr != nil {
-			return serr
-		}
-
-		if cerr := u.repo.Create(ctx, entity); cerr != nil {
+		entity, redeemed, cerr := u.createPurchaseInTx(ctx, params, draft, now)
+		if cerr != nil {
 			return cerr
 		}
+		created, appliedCoupon = entity, redeemed
 
-		payload, perr := event.BuildCreated(entity)
-		if perr != nil {
-			return perr
-		}
-		if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
-			AggregateType: aggregateType,
-			AggregateID:   draft.purchaseID.String(),
-			EventType:     event.TypeCreated,
-			Payload:       payload,
-			Channel:       outboxbndry.ChannelHTTP,
-		}); eerr != nil {
-			return eerr
-		}
-
-		// 書き込み後、Repository 経由で再検証する（README の Verifying infrastructure against the domain）。
-		reread, rerr := u.repo.FindByID(ctx, draft.purchaseID)
-		if rerr != nil {
-			return rerr
-		}
-		created = reread
 		return nil
 	}); txErr != nil {
 		return PurchaseView{}, txErr
 	}
 
-	return toPurchaseView(created), nil
+	return toPurchaseView(created, appliedCoupon), nil
+}
+
+// applyRedeemedCoupon は、引き換えたクーポンの値引きを購入へ適用します。
+// 対象明細の組み立てと拒否の条件は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照。
+func applyRedeemedCoupon(entity *purchase.Purchase, redeemed *coupon.Coupon, products product.Products) error {
+	if redeemed == nil {
+		return nil
+	}
+
+	categories := make(map[uuid.UUID]uuid.UUID, len(products))
+	for _, p := range products {
+		categories[p.ID()] = p.Category().ID()
+	}
+
+	details := entity.Details()
+	lines := make([]coupon.Line, len(details))
+	for i, d := range details {
+		lines[i] = coupon.NewLine(coupon.LineAttributes{
+			ProductID:  d.ProductID(),
+			CategoryID: categories[d.ProductID()],
+			Subtotal:   d.LineTotal(),
+		})
+	}
+
+	amount, err := redeemed.DiscountFor(lines)
+	if err != nil {
+		return err
+	}
+
+	return entity.ApplyCoupon(redeemed.ID(), amount)
 }
 
 func (u *usecase) CancelPurchase(ctx context.Context, params CancelPurchaseParams) (CancelPurchaseView, error) {
@@ -620,7 +630,22 @@ func (u *usecase) ensurePurchaserActive(ctx context.Context, userID uuid.UUID) e
 	return membership.EnsurePurchasable(purchaser)
 }
 
-func toPurchaseView(p *purchase.Purchase) PurchaseView {
+// toAppliedCouponView は、適用したクーポンを出力 DTO の語彙へ写します。未適用の場合は nil です。
+func toAppliedCouponView(c *coupon.Coupon) *AppliedCouponView {
+	if c == nil {
+		return nil
+	}
+
+	return &AppliedCouponView{
+		ID:            c.ID(),
+		DiscountKind:  c.Discount().Kind().Name(),
+		DiscountValue: c.Discount().Value(),
+		ScopeKind:     c.Scope().Kind().Name(),
+		ScopeTargetID: c.Scope().TargetID(),
+	}
+}
+
+func toPurchaseView(p *purchase.Purchase, applied *coupon.Coupon) PurchaseView {
 	details := p.Details()
 	views := make([]PurchaseDetailView, len(details))
 	for i, d := range details {
@@ -635,6 +660,8 @@ func toPurchaseView(p *purchase.Purchase) PurchaseView {
 		UserID:         p.UserID(),
 		StatusID:       p.StatusID(),
 		SubtotalAmount: p.SubtotalAmount(),
+		DiscountAmount: p.DiscountAmount(),
+		AppliedCoupon:  toAppliedCouponView(applied),
 		TaxAmount:      p.TaxAmount(),
 		ShippingFee:    p.ShippingFee(),
 		TotalAmount:    p.TotalAmount(),
@@ -753,6 +780,132 @@ func (u *usecase) restoreStock(ctx context.Context, details []purchase.PurchaseD
 	}
 
 	return u.applyStockDelta(ctx, products, details, 1)
+}
+
+// createPurchaseInTx は、購入作成のトランザクション本体です。
+//
+// ロック順序（ユーザー行 → クーポン行 → 商品行、id 昇順）は docs/spec/usecase/purchase.md の
+// § クーポンの適用（CreatePurchase）を参照。書き込み後は Repository 経由で再検証します
+// （internal/usecase/README.md の Verifying infrastructure against the domain）。
+func (u *usecase) createPurchaseInTx(
+	ctx context.Context, params CreatePurchaseParams, draft *purchaseDraft, now time.Time,
+) (*purchase.Purchase, *coupon.Coupon, error) {
+	if uerr := u.ensurePurchaserActive(ctx, params.UserID); uerr != nil {
+		return nil, nil, uerr
+	}
+
+	redeemed, rerr := u.redeemRequestedCoupon(ctx, params, now)
+	if rerr != nil {
+		return nil, nil, rerr
+	}
+
+	products, lerr := u.productRepo.LockByIDs(ctx, draft.productIDs)
+	if lerr != nil {
+		return nil, nil, lerr
+	}
+	locked := make([]purchase.LockedProduct, len(products))
+	for i, p := range products {
+		locked[i] = purchase.NewLockedProduct(p.ID(), p.Price(), p.Quantity())
+	}
+
+	entity, nerr := purchase.New(draft.purchaseID, draft.code, params.UserID, draft.inputs, locked)
+	if nerr != nil {
+		return nil, nil, nerr
+	}
+	if aerr := applyRedeemedCoupon(entity, redeemed, products); aerr != nil {
+		return nil, nil, aerr
+	}
+
+	// 充足（在庫超過が無いこと）は直前の purchase.New が locked と突き合わせて検証済み。
+	if serr := u.applyStockDelta(ctx, products, entity.Details(), -1); serr != nil {
+		return nil, nil, serr
+	}
+	if cerr := u.repo.Create(ctx, entity); cerr != nil {
+		return nil, nil, cerr
+	}
+	if uerr := u.markCouponUsed(ctx, redeemed, now); uerr != nil {
+		return nil, nil, uerr
+	}
+
+	if eerr := u.emitCreated(ctx, entity, draft.purchaseID); eerr != nil {
+		return nil, nil, eerr
+	}
+
+	reread, frerr := u.repo.FindByID(ctx, draft.purchaseID)
+	if frerr != nil {
+		return nil, nil, frerr
+	}
+
+	return reread, redeemed, nil
+}
+
+// emitCreated は、購入作成のイベントを outbox へ積みます。
+func (u *usecase) emitCreated(ctx context.Context, entity *purchase.Purchase, purchaseID uuid.UUID) error {
+	payload, err := event.BuildCreated(entity)
+	if err != nil {
+		return err
+	}
+
+	if _, eerr := u.emit.Emit(ctx, outbox.EmitInput{
+		AggregateType: aggregateType,
+		AggregateID:   purchaseID.String(),
+		EventType:     event.TypeCreated,
+		Payload:       payload,
+		Channel:       outboxbndry.ChannelHTTP,
+	}); eerr != nil {
+		return eerr
+	}
+
+	return nil
+}
+
+// redeemRequestedCoupon は、要求にクーポンの指定があればそれを引き換えます。指定が無ければ nil を返します。
+func (u *usecase) redeemRequestedCoupon(
+	ctx context.Context, params CreatePurchaseParams, now time.Time,
+) (*coupon.Coupon, error) {
+	if params.CouponID == nil {
+		return nil, nil //nolint:nilnil // 「クーポンの指定が無い」を表す正当な状態で、エラーではない
+	}
+
+	return u.redeemCoupon(ctx, *params.CouponID, params.UserID, now)
+}
+
+// markCouponUsed は、引き換えたクーポンを使用済みとして確定させます。購入行を書いたあとに呼びます
+// （順序の理由は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照）。
+func (u *usecase) markCouponUsed(ctx context.Context, redeemed *coupon.Coupon, now time.Time) error {
+	if redeemed == nil {
+		return nil
+	}
+
+	return u.couponRepo.UpdateUsed(ctx, redeemed.ID(), now)
+}
+
+// redeemCoupon は、指定されたクーポンを行ロックのもとで検証し、使用済みへ遷移させます。
+// エラーの畳み方は docs/spec/usecase/purchase.md の § クーポンの適用（CreatePurchase）を参照。
+func (u *usecase) redeemCoupon(
+	ctx context.Context, couponID, userID uuid.UUID, now time.Time,
+) (*coupon.Coupon, error) {
+	c, err := u.couponRepo.LockByID(ctx, couponID)
+	if err != nil {
+		if xerrors.Is(err, apperror.ErrNotFound) {
+			return nil, notHeldError()
+		}
+		return nil, err
+	}
+	if !c.IsHeldBy(userID) {
+		return nil, notHeldError()
+	}
+
+	if rerr := c.Redeem(now); rerr != nil {
+		return nil, apperror.WithDetails(rerr, coupon.FieldCouponID)
+	}
+
+	return c, nil
+}
+
+// notHeldError は、保有していないクーポンを指した場合のエラーを組み立てます。
+func notHeldError() error {
+	return apperror.WithDetails(coupon.ErrNotHeld, coupon.FieldCouponID)
 }
 
 // applyStockDelta は、明細の数量 × sign を対象商品の在庫へ適用して永続化します。

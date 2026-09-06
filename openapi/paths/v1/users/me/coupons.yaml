@@ -1,0 +1,30 @@
+get:
+  operationId: GetUsersMeCoupons
+  tags:
+    - v1/users/me/coupons
+  summary: 認証ユーザー自身の保有クーポンの取得
+  description: |
+    認証コンテキスト（Bearer トークン）の内部 UserID に該当するユーザーが保有するクーポンを取得します。
+    パスに他者の識別子を持たないため、他ユーザーのクーポンは取得できません。
+    **使用済み・失効済みも並びます。** この口が返すのは「使えるもの」ではなく「持っているもの」で、
+    いまのカートに対して使えるかどうかは `GET /v1/carts/me/coupons` が答えます。
+    発行日時の新しい順で、ページングは持ちません。1 枚も保有しない場合はエラーではなく空配列を返します。
+    本 op 自体は DB の SELECT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+    一時障害で応答不能となり得るため、認証必須 op の先例に倣い 503 を宣言します。
+  security:
+    - BearerAuth: []
+  responses:
+    '200':
+      description: 保有クーポンの取得に成功しました
+      content:
+        application/json:
+          schema:
+            $ref: '../../../../components/responses/coupons/CouponListResponse.yaml'
+    '401':
+      $ref: '../../../../components/schemas/errors/Unauthorized401.yaml'
+    '405':
+      $ref: '../../../../components/schemas/errors/MethodNotAllowed405.yaml'
+    '500':
+      $ref: '../../../../components/schemas/errors/InternalServerError500.yaml'
+    '503':
+      $ref: '../../../../components/schemas/errors/ServiceUnavailable503.yaml'

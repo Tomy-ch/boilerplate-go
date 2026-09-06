@@ -3,6 +3,7 @@ package testkit
 import (
 	"context"
 	"testing"
+	"time"
 
 	"go-boilerplate/internal/config"
 	"go-boilerplate/internal/logging"
@@ -15,6 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
+)
+
+// lockTimeoutProbeHold は、待機側の lock_timeout を確実に超える保持時間です。
+// waiterLockTimeout は、待機側が張る lock_timeout（無効化されなければここで 55P03 になる）です。
+const (
+	lockTimeoutProbeHold = 300 * time.Millisecond
+	waiterLockTimeout    = 50 * time.Millisecond
 )
 
 func TestNewTestDB(t *testing.T) {
@@ -144,6 +152,33 @@ func TestHoldSuiteSerialization(t *testing.T) {
 			require.NoError(t, row.Scan(&acquired))
 			assert.False(t, acquired)
 		})
+
+		t.Run("占有したテストが終わると解放される", func(t *testing.T) {
+			t.Parallel()
+
+			// 解放は t.Cleanup で行われるため、占有を子テストへ閉じ込めて完了させ、
+			// 親から解放後の状態を観測する。解放されないとスイート全体が止まる。
+			//nolint:paralleltest // Cleanup を親の観測より先に走らせるため逐次実行する
+			t.Run("占有", func(t *testing.T) {
+				HoldSuiteSerialization(t, db)
+			})
+
+			ctx := context.Background()
+			probe, err := db.Begin(ctx)
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = probe.Rollback(ctx) })
+
+			// 同じキーは他の並列テストの WithinTx も一時的に握るため、取得できるまで待つ。
+			// 解放されないなら永久に取得できず、ここで打ち切られる。
+			// probe 自身の解放漏れを避けるため、セッション単位ではなく tx 単位で取得する。
+			require.Eventually(t, func() bool {
+				var acquired bool
+				if err := probe.QueryRow(ctx, "SELECT pg_try_advisory_xact_lock($1)", txAdvisoryLockKey).Scan(&acquired); err != nil {
+					return false
+				}
+				return acquired
+			}, 15*time.Second, 50*time.Millisecond, "占有したテストが終わっても解放されない")
+		})
 	})
 }
 
@@ -163,7 +198,91 @@ func Test_lockSuiteSerialization(t *testing.T) {
 				require.NoError(t, lockSuiteSerialization(ctx, driver.New(ctx, db)))
 			})
 		})
+
+		t.Run("他トランザクションが保持中でも呼び出し側のlock_timeoutで打ち切られない", func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+
+			// 保持側。WithinTx はこの直列化に参加するため使えず、専用の tx で握る。
+			// 解放済みの tx への Rollback は ErrTxClosed を返すだけなので、後始末は無条件で行う。
+			holder, err := db.Begin(ctx)
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = holder.Rollback(ctx) })
+
+			// このキーは全パッケージが共有するため、保持側自身も接続既定の lock_timeout(10s)
+			// で打ち切られうる。検証対象と同じ理由でここでも無効化する。
+			_, err = holder.Exec(ctx, "SET LOCAL lock_timeout = 0")
+			require.NoError(t, err)
+			_, err = holder.Exec(ctx, "SELECT pg_advisory_xact_lock($1)", txAdvisoryLockKey)
+			require.NoError(t, err)
+
+			type waitResult struct {
+				err     error
+				elapsed time.Duration
+			}
+			waiterPID := make(chan int32, 1)
+			waiterDone := make(chan waitResult, 1)
+			go func() {
+				waiter, beginErr := db.Begin(ctx)
+				if beginErr != nil {
+					waiterDone <- waitResult{err: beginErr}
+					return
+				}
+				defer func() { _ = waiter.Rollback(ctx) }()
+
+				var pid int32
+				if scanErr := waiter.QueryRow(ctx, "SELECT pg_backend_pid()").Scan(&pid); scanErr != nil {
+					waiterDone <- waitResult{err: scanErr}
+					return
+				}
+				if _, execErr := waiter.Exec(ctx, "SET LOCAL lock_timeout = '50ms'"); execErr != nil {
+					waiterDone <- waitResult{err: execErr}
+					return
+				}
+
+				waiterPID <- pid
+				startedAt := time.Now()
+				waiterDone <- waitResult{err: lockSuiteSerialization(ctx, waiter), elapsed: time.Since(startedAt)}
+			}()
+
+			var pid int32
+			select {
+			case pid = <-waiterPID:
+			case got := <-waiterDone:
+				require.NoError(t, got.err, "待機側がロック待ちへ入る前に失敗した")
+			}
+
+			// 待機側がロック待ちへ入る前に解放すると、lock_timeout が効いたままでも
+			// 素通りして偽陽性で通る。待ちに入ったことを確認してから解放する。
+			requireAdvisoryLockWait(t, db, pid)
+			time.Sleep(lockTimeoutProbeHold)
+			require.NoError(t, holder.Rollback(ctx))
+
+			got := <-waiterDone
+			require.NoError(t, got.err, "無効化されていなければ lock_timeout(50ms) で 55P03 になる")
+			assert.Greater(t, got.elapsed, waiterLockTimeout, "解放を待たずに取得しており、待ち合わせを検証できていない")
+		})
 	})
+}
+
+// requireAdvisoryLockWait は、pid のセッションがスイート直列化キーの advisory lock 待ちへ
+// 入るまで待ちます。このキーは全パッケージが共有するため、pid で絞らないと無関係な
+// セッションの待ちを自分のものと取り違えます。
+func requireAdvisoryLockWait(t *testing.T, db driver.DatabaseDriver, pid int32) {
+	t.Helper()
+
+	ctx := context.Background()
+	require.Eventually(t, func() bool {
+		var waiting bool
+		if err := driver.New(ctx, db).QueryRow(ctx,
+			`SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND NOT granted
+				AND pid = $1 AND (classid::bigint << 32) + objid::bigint = $2 AND objsubid = 1)`,
+			pid, txAdvisoryLockKey).Scan(&waiting); err != nil {
+			return false
+		}
+		return waiting
+	}, 10*time.Second, 20*time.Millisecond, "advisory lock 待ちに入らなかった")
 }
 
 func Test_getTestDB(t *testing.T) {

@@ -9,6 +9,45 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CouponDiscountKind.
+const (
+	Flat CouponDiscountKind = "flat"
+	Rate CouponDiscountKind = "rate"
+)
+
+// Valid indicates whether the value is a known member of the CouponDiscountKind enum.
+func (e CouponDiscountKind) Valid() bool {
+	switch e {
+	case Flat:
+		return true
+	case Rate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CouponScopeKind.
+const (
+	All      CouponScopeKind = "all"
+	Category CouponScopeKind = "category"
+	Product  CouponScopeKind = "product"
+)
+
+// Valid indicates whether the value is a known member of the CouponScopeKind enum.
+func (e CouponScopeKind) Valid() bool {
+	switch e {
+	case All:
+		return true
+	case Category:
+		return true
+	case Product:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DisplayCurrencyParam.
 const (
 	DisplayCurrencyParamJPY DisplayCurrencyParam = "JPY"
@@ -38,6 +77,68 @@ func (e PostPurchasesParamsDisplayCurrency) Valid() bool {
 		return false
 	}
 }
+
+// AppliedCouponResponse 購入に適用したクーポン。値引きと適用範囲の 2 軸だけを返します。
+//
+// 控えへ写さず結合で解決した現在値です（`productName` と同じ扱い）。発行済みクーポンの値引きと
+// 適用範囲を書き換える口が無いため、結合で解決しても内容がぶれません。
+type AppliedCouponResponse struct {
+	// Discount クーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。
+	Discount CouponDiscount `json:"discount"`
+
+	// Id 適用したクーポンのID
+	//
+	// Example: 0193a1c0-0001-7000-8000-000000000002
+	Id openapi_types.UUID `json:"id"`
+
+	// Scope クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+	Scope CouponScope `json:"scope"`
+}
+
+// CouponDiscount クーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。
+type CouponDiscount struct {
+	// Kind 値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。
+	//
+	//
+	// Example: rate
+	Kind CouponDiscountKind `json:"kind"`
+
+	// Value 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、
+	// 正確な十進量を保つ decimal 文字列で表します（例 `"0.10"` は 10% 引き）。
+	// JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
+	//
+	//
+	// Example: 0.10
+	Value string `json:"value"`
+}
+
+// CouponDiscountKind 値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。
+//
+// Example: rate
+type CouponDiscountKind string
+
+// CouponScope クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+type CouponScope struct {
+	// Kind 適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+	// `product` は特定の商品の明細だけを対象とします。
+	//
+	//
+	// Example: category
+	Kind CouponScopeKind `json:"kind"`
+
+	// TargetId 範囲を絞る対象の識別子。`category` なら商品カテゴリID、`product` なら商品IDです。
+	// `all` では対象を持たないため null になります。
+	//
+	//
+	// Example: 5dd52d84-78eb-4a52-ba0b-2e11c95c2af2
+	TargetId *openapi_types.UUID `json:"targetId"`
+}
+
+// CouponScopeKind 適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+// `product` は特定の商品の明細だけを対象とします。
+//
+// Example: category
+type CouponScopeKind string
 
 // CursorPaginationMetadataResponse defines model for CursorPaginationMetadataResponse.
 type CursorPaginationMetadataResponse struct {
@@ -145,6 +246,9 @@ type PurchaseListResponse struct {
 // PurchaseResponse 購入情報のレスポンススキーマ。金額（subtotalAmount / taxAmount / shippingFee / totalAmount /
 // 明細 unitPrice）はすべて USD セント単位の整数です。
 type PurchaseResponse struct {
+	// AppliedCoupon 適用したクーポン。未使用の場合は null です。値引きと適用範囲は結合で解決した現在値です。
+	AppliedCoupon *AppliedCouponResponse `json:"appliedCoupon"`
+
 	// Code 購入コード（利用者へ注文番号として見せる一意の識別子）
 	//
 	// Example: 0190b0d4-7b1a-7c2e-9f3a-1b2c3d4e5f60
@@ -152,6 +256,14 @@ type PurchaseResponse struct {
 
 	// Details 購入明細の配列
 	Details []PurchaseDetailResponse `json:"details"`
+
+	// DiscountAmount クーポンによる値引き額。USD セント単位の整数です。
+	// **非 null で、クーポン未使用および過去の購入は 0** になります。
+	// 値引きが立っていることと appliedCoupon が入っていることは常に一致します。
+	//
+	//
+	// Example: 500
+	DiscountAmount int64 `json:"discountAmount"`
 
 	// OrderedAt 注文日時
 	//
@@ -249,7 +361,18 @@ type PurchaseSummaryResponse struct {
 
 // PurchasesPostRequest 購入作成リクエスト。明細（商品IDと数量）の配列を受け取ります。
 // 明細は 1 件以上必須で、同一 productId の重複は許可しません（いずれも 422）。
+// クーポンを 1 枚まで適用できます。併用はできません。
 type PurchasesPostRequest struct {
+	// CouponId 適用するクーポンのID。省略すると値引きを行いません。1 回の購入に適用できるのは高々 1 枚です。
+	//
+	// 失効済み・使用済み・保有していない（存在しない場合を含む）・値引きが 0 になる場合は、
+	// いずれも 422 + `details: ["couponId"]` を返します。次にすべきことがどれも同じ
+	// （別のクーポンを選ぶか外す）ため、呼び出し側からは区別しません。
+	//
+	//
+	// Example: 0193a1c0-0001-7000-8000-000000000002
+	CouponId *openapi_types.UUID `json:"couponId,omitempty"`
+
 	// Details 購入明細の配列。1 件以上必須で、同一 productId の重複は不可です。
 	// 空配列・重複はドメインで検証し 422 を返します（スキーマでは制約せず単一の検証責務に集約）。
 	Details []PurchaseDetailInput `json:"details"`

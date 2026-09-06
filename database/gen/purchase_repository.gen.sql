@@ -3,6 +3,7 @@
 -- name: InsertPurchase :exec
 -- 購入を 1 行 INSERT する。status_id は code から解決する（理由は docs/spec/domain/purchase.md の Notes）。
 -- ordered_at / created_at / updated_at は DB 既定（NOW()）に委ねる。
+-- coupon_id は未適用なら NULL。discount_amount との対応（NULL ⇔ 0）はドメインが課す。
 INSERT INTO purchases (
     id,
     code,
@@ -11,7 +12,9 @@ INSERT INTO purchases (
     subtotal_amount,
     tax_amount,
     shipping_fee,
-    total_amount
+    total_amount,
+    coupon_id,
+    discount_amount
 ) VALUES (
     @id,
     @code,
@@ -23,7 +26,9 @@ INSERT INTO purchases (
     @subtotal_amount,
     @tax_amount,
     @shipping_fee,
-    @total_amount
+    @total_amount,
+    sqlc.narg('coupon_id'),
+    @discount_amount
 );
 
 -- === source: database/dml/repository/purchase/insert_purchase_detail.sql ===
@@ -72,8 +77,7 @@ WHERE p.id = @id;
 -- ID から購入詳細（読み取りモデル）を 1 件取得する。ステータス名は購入ステータスマスタとの結合で
 -- 解決済み（JOIN の許容範囲は internal/infrastructure/rdb/repository/README.md の
 -- Reference-master exception）。
--- 支払い日時（paid_at）は未支払いなら NULL、キャンセル日時（canceled_at）は未キャンセルなら NULL、
--- 発送日時（shipped_at）は未発送なら NULL、配達日時（delivered_at）は未配達なら NULL。
+-- NULL 列の意味は docs/spec/domain/purchase.md の FindDetailByID を参照。
 -- 存在しない場合は 0 行（NotFound）。
 SELECT
     p.id,
@@ -90,7 +94,9 @@ SELECT
     p.paid_at,
     p.canceled_at,
     p.shipped_at,
-    p.delivered_at
+    p.delivered_at,
+    p.coupon_id,
+    p.discount_amount
 FROM purchases AS p
 INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 WHERE p.id = @id;

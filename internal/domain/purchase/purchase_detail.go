@@ -22,8 +22,12 @@ type Detail struct {
 	StatusCode int
 	// StatusName は、購入ステータスの名称（購入ステータスマスタで解決済み）です。
 	StatusName string
-	// SubtotalAmount は、小計（USD セント）です。
+	// SubtotalAmount は、小計（USD セント）です。値引き前の額です。
 	SubtotalAmount int
+	// CouponID は、適用したクーポンの ID です。未適用の場合は nil です。
+	CouponID *uuid.UUID
+	// DiscountAmount は、値引き額（USD セント）です。未適用の場合は 0 です。
+	DiscountAmount int
 	// TaxAmount は、税額（USD セント）です。
 	TaxAmount int
 	// ShippingFee は、送料（USD セント）です。

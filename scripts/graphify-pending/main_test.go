@@ -544,6 +544,47 @@ func Test_parseNumstat(t *testing.T) {
 }
 
 // t.Setenv がプロセス全体の環境を触るため、このテストは並列化しない。
+func Test_emitCounts(t *testing.T) {
+	t.Run("正常系", func(t *testing.T) {
+		t.Run("未処理量をステップ出力へ書く", func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "output.txt")
+			t.Setenv("GITHUB_OUTPUT", path)
+
+			require.NoError(t, emitCounts(3, 120))
+
+			body, err := os.ReadFile(path) //nolint:gosec // テスト内で組み立てた一時パス
+			require.NoError(t, err)
+			assert.Equal(t, "files=3\nlines=120\n", string(body))
+		})
+
+		t.Run("溜まっていなければ 0 を書く", func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "output.txt")
+			t.Setenv("GITHUB_OUTPUT", path)
+
+			require.NoError(t, emitCounts(0, 0))
+
+			body, err := os.ReadFile(path) //nolint:gosec // テスト内で組み立てた一時パス
+			require.NoError(t, err)
+			assert.Equal(t, "files=0\nlines=0\n", string(body))
+		})
+
+		t.Run("Actions の外では何も書かない", func(t *testing.T) {
+			t.Setenv("GITHUB_OUTPUT", "")
+
+			require.NoError(t, emitCounts(3, 120))
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Run("宛先を開けなければ失敗する", func(t *testing.T) {
+			t.Setenv("GITHUB_OUTPUT", filepath.Join(t.TempDir(), "missing", "output.txt"))
+
+			require.Error(t, emitCounts(3, 120))
+		})
+	})
+}
+
+// t.Setenv がプロセス全体の環境を触るため、このテストは並列化しない。
 func Test_report(t *testing.T) {
 	t.Run("正常系", func(t *testing.T) {
 		t.Run("閾値を超えていれば警告付きで job summary に書く", func(t *testing.T) {

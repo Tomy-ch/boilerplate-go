@@ -12,6 +12,7 @@ import (
 	"go-boilerplate/internal/domain/lexicon/money"
 	domainproduct "go-boilerplate/internal/domain/product"
 	"go-boilerplate/internal/infrastructure/rdb/driver"
+	"go-boilerplate/internal/infrastructure/rdb/pgerror"
 	"go-boilerplate/internal/infrastructure/rdb/sqlc/gen"
 	"go-boilerplate/internal/infrastructure/rdb/testkit"
 	"go-boilerplate/internal/infrastructure/system"
@@ -1879,9 +1880,13 @@ func Test_repository_UpdateStock(t *testing.T) {
 	})
 }
 
-//nolint:paralleltest // 両 tx から見える commit 済みの行を使うため非並列
 func Test_repository_UpdateStock_concurrentRowLock(t *testing.T) {
+	t.Parallel()
+
 	testDB := testkit.NewTestDB(t)
+	// 検証用商品の作成から 2 本の tx の完了までを、他パッケージの CASCADE TRUNCATE から守る。
+	testkit.HoldSuiteSerialization(t, testDB)
+
 	lt := observability.NewMockInfraLayerTracer(t)
 	repo := &repository{tracer: lt, db: testDB}
 
@@ -1946,6 +1951,7 @@ func Test_repository_UpdateStock_concurrentRowLock(t *testing.T) {
 		return err
 	})
 	require.ErrorIs(t, timeoutErr, apperror.ErrUnavailable, "ロック待ちのタイムアウト(55P03)は待てば解消しうる一時障害として扱う")
+	assert.True(t, pgerror.IsLockNotAvailable(timeoutErr), "ErrUnavailable は 40001 / 40P01 / 57014 とも共有するため、待ち合わせが 55P03 で失敗したことまで固定する")
 	require.NotErrorIs(t, timeoutErr, apperror.ErrInternal, "サーバ内部エラー(500)として露出させない")
 
 	contenderDone := make(chan error, 1)

@@ -14,6 +14,7 @@ import (
 	"go-boilerplate/internal/usecase/boundary/auth"
 	purchaseuc "go-boilerplate/internal/usecase/purchase"
 	mock_purchaseuc "go-boilerplate/internal/usecase/purchase/mock"
+	"go-boilerplate/pkg/decimal"
 	decimaltestkit "go-boilerplate/pkg/decimal/testkit"
 	"go-boilerplate/pkg/safecast"
 	"go-boilerplate/pkg/uuid"
@@ -199,6 +200,29 @@ func Test_toPurchaseGetDetailResponse(t *testing.T) {
 			assert.EqualValues(t, 2, r.Details[0].Quantity)
 		})
 
+		t.Run("クーポン適用済みビューは値引き額と適用クーポンをレスポンスへ写す", func(t *testing.T) {
+			t.Parallel()
+
+			couponID := uuidtestkit.NewTestFromSalt(t, "hd_coupon")
+			view := detailViewFixture(t)
+			view.DiscountAmount = 16000
+			view.AppliedCoupon = &purchaseuc.AppliedCouponView{
+				ID:            couponID,
+				DiscountKind:  "rate",
+				DiscountValue: decimaltestkit.MustParse(t, "0.10"),
+				ScopeKind:     "all",
+			}
+
+			r, err := toPurchaseGetDetailResponse(view)
+
+			require.NoError(t, err)
+			assert.Equal(t, int64(16000), r.DiscountAmount)
+			require.NotNil(t, r.AppliedCoupon)
+			assert.Equal(t, couponID.ToPrimitive(), r.AppliedCoupon.Id)
+			assert.Equal(t, gen.CouponDiscountKind("rate"), r.AppliedCoupon.Discount.Kind)
+			assert.Equal(t, gen.CouponScopeKind("all"), r.AppliedCoupon.Scope.Kind)
+		})
+
 		t.Run("キャンセル済みビューはcanceledAtを写像しpaidAtはnilになる", func(t *testing.T) {
 			t.Parallel()
 
@@ -226,6 +250,63 @@ func Test_toPurchaseGetDetailResponse(t *testing.T) {
 			view.Details[0].Quantity = math.MaxInt32 + 1
 			_, err := toPurchaseGetDetailResponse(view)
 			require.ErrorIs(t, err, safecast.ErrOverflow)
+		})
+	})
+}
+
+func Test_toAppliedCouponResponse(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("値引きと適用範囲を2軸のまま写す", func(t *testing.T) {
+			t.Parallel()
+
+			value, err := decimal.Parse("0.10")
+			require.NoError(t, err)
+			target := uuidtestkit.NewTestFromSalt(t, "applied_category")
+			view := &purchaseuc.AppliedCouponView{
+				ID:            uuidtestkit.NewTestFromSalt(t, "applied_coupon"),
+				DiscountKind:  "rate",
+				DiscountValue: value,
+				ScopeKind:     "category",
+				ScopeTargetID: &target,
+			}
+
+			got := toAppliedCouponResponse(view)
+
+			require.NotNil(t, got)
+			assert.Equal(t, view.ID.ToPrimitive(), got.Id)
+			assert.Equal(t, gen.CouponDiscountKind("rate"), got.Discount.Kind)
+			assert.Equal(t, "0.1", got.Discount.Value)
+			assert.Equal(t, gen.CouponScopeKind("category"), got.Scope.Kind)
+			require.NotNil(t, got.Scope.TargetId)
+			assert.Equal(t, target.ToPrimitive(), *got.Scope.TargetId)
+		})
+
+		t.Run("全体の適用範囲は対象IDをnilで返す", func(t *testing.T) {
+			t.Parallel()
+
+			value, err := decimal.Parse("5")
+			require.NoError(t, err)
+			view := &purchaseuc.AppliedCouponView{
+				ID:            uuidtestkit.NewTestFromSalt(t, "applied_all"),
+				DiscountKind:  "flat",
+				DiscountValue: value,
+				ScopeKind:     "all",
+			}
+
+			got := toAppliedCouponResponse(view)
+
+			require.NotNil(t, got)
+			assert.Nil(t, got.Scope.TargetId)
+		})
+
+		t.Run("未適用の場合はnilを返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Nil(t, toAppliedCouponResponse(nil))
 		})
 	})
 }

@@ -1,0 +1,22 @@
+type: object
+description: |
+  クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+required:
+  - kind
+  - targetId
+properties:
+  kind:
+    type: string
+    enum: [all, category, product]
+    description: |
+      適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+      `product` は特定の商品の明細だけを対象とします。
+    example: "category"
+  targetId:
+    type: string
+    format: uuid
+    nullable: true
+    description: |
+      範囲を絞る対象の識別子。`category` なら商品カテゴリID、`product` なら商品IDです。
+      `all` では対象を持たないため null になります。
+    example: "5dd52d84-78eb-4a52-ba0b-2e11c95c2af2"

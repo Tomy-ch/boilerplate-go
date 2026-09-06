@@ -1,0 +1,39 @@
+type: object
+description: |
+  クーポン。値引きと適用範囲という直交する 2 つの軸を持ちます。
+  1 枚のクーポンは 1 つの値引きと 1 つの適用範囲を持ち、複数枚の併用も複数範囲の合成も表しません。
+required:
+  - id
+  - discount
+  - scope
+  - expiresAt
+  - usedAt
+  - issuedAt
+properties:
+  id:
+    type: string
+    format: uuid
+    description: クーポンID
+    example: "0193a1c0-0001-7000-8000-000000000002"
+  discount:
+    $ref: './CouponDiscount.yaml'
+  scope:
+    $ref: './CouponScope.yaml'
+  expiresAt:
+    type: string
+    format: date-time
+    description: |
+      有効期限。この時刻ちょうどを含めて以降は失効として扱います。
+      失効を一括更新する機構は持たず、判定のたびに現在時刻と突き合わせます。
+    example: "2026-10-01T00:00:00Z"
+  usedAt:
+    type: string
+    format: date-time
+    nullable: true
+    description: 使用日時。未使用の場合は null です。使用済みへの遷移は一度きりで取り消せません。
+    example: null
+  issuedAt:
+    type: string
+    format: date-time
+    description: 発行日時
+    example: "2026-09-01T00:00:00Z"

@@ -42,6 +42,8 @@ input:
       type: uuid.UUID
     - name: Details
       type: "[]DetailParam"  # { ProductID uuid.UUID; Quantity int }
+    - name: CouponID
+      type: "*uuid.UUID"     # 適用するクーポン。nil なら値引きしない。1 回の購入に高々 1 枚
     - name: DisplayCurrency
       type: "*string"        # nil の場合は referenceAmount を返さない
 
@@ -214,6 +216,9 @@ workflow:
 JOIN でサーバー解決した現在名（live・非スナップショット）、ステータス名は購入ステータスマスタとの JOIN で解決する。所有権は QS 本体クエリの
 `WHERE p.code = @code AND p.user_id = @user_id` で担保し、他人の購入・不存在はいずれも 0 行 → NotFound（404）で存在を秘匿する（403 は用いない）。
 固定 2 クエリ（本体 + 明細 JOIN products）で N+1 を避ける。書き込みを伴わないため tx / authorizer は不要。
+
+適用したクーポンの値引き・適用範囲（`AppliedCoupon`）も商品名と同じ扱いで、控えへは写さず `coupons` との JOIN で解決した現在値を返す。
+発行済みのクーポンは値引き・適用範囲を書き換える口を持たないため、結合で解決しても内容がぶれない。未適用の購入は結合先が無く NULL になる。
 
 ```yaml
 input:
@@ -634,3 +639,41 @@ workflow:
 [ADR-0034 (commandservice-atomicity-criterion)]: ../../adr/0034-commandservice-atomicity-criterion.md
 [ADR-0036 (ordered-pessimistic-row-locks)]: ../../adr/0036-ordered-pessimistic-row-locks.md
 [ADR-0038 (two-scale-quantity-model)]: ../../adr/0038-two-scale-quantity-model.md
+
+## クーポンの適用（CreatePurchase）
+
+```yaml
+lock_order: [users（共有）, coupons（排他）, products（排他・id 昇順）]
+calls:
+  - coupon.Repository.LockByID       # 指定があるときだけ
+  - coupon.Coupon.IsHeldBy           # 受給者の判定
+  - coupon.Coupon.Redeem             # 失効・使用済みの判定と使用済みへの遷移
+  - coupon.Coupon.DiscountFor        # 値引き額（丸めはここ 1 箇所）
+  - purchase.Purchase.ApplyCoupon    # 購入への適用と税・合計の再計算
+  - coupon.Repository.UpdateUsed     # 使用済みの確定（購入行を書いたあと）
+behavior: |
+  クーポンの指定があれば、購入者の在籍確認のあと商品行より先にクーポン行をロックする。
+  失効・使用済みの判定はロックの下で行うため、判定から commit まで条件が覆らない。
+
+  対象明細は購入明細から組み立てる。購入明細は商品カテゴリを持たないため、適用範囲の判定に要る
+  カテゴリはロック済み商品から解決する。
+
+  使用済みへの遷移は購入行を書いたあとに確定させる。先に消費すると、購入の作成が失敗したときに
+  クーポンだけが消える窓が開く（同一トランザクションなので実際には巻き戻るが、順序を揃えるほうが明快）。
+invariants:
+  - 1 回の購入に適用できるクーポンは高々 1 枚。併用は表さない
+  - 値引きが 0 になる確定は拒む。クーポンを消費して何も引かれない状態を作らないため
+  - 課税の基礎は値引き後の額（docs/spec/domain/purchase.md の Cross-field Invariants）
+errors:
+  - 失効済み / 使用済み / 保有していない（存在しない場合を含む）/ 値引きが 0:
+      422 + `details: ["couponId"]`。次にすべきことがどれも同じ（別のクーポンを選ぶか外す）ため
+      呼び出し側からは区別しない。存在の有無を漏らさない狙いも兼ねる
+  - 並行での二重使用: 409（coupon.ErrUsedConcurrently）。
+      **通常経路では発火しない。** 行ロックの下では待った側が更新後の行を観測するため「使用済み」の
+      422 へ収束する。409 は条件付き更新（used_at IS NULL）が 0 行になったときの二重防御で、
+      ロックを取らずに呼ばれた場合にだけ立つ
+notes:
+  - 冪等キーの再送ではクーポンを二重に消費しない（idempotency.Run が保存済み応答を復元する）。
+    違う鍵での押し直しは、クーポン自身の使用済み状態を行ロック下で遷移させて弾く。2 つの別々の機構であり、
+    片方だけでは足りない
+```

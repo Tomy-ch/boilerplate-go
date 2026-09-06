@@ -138,8 +138,9 @@ ORDER BY page.ordered_at DESC, page.id DESC;
 -- === source: database/dml/query_service/purchase/select_purchase_detail_by_code.sql ===
 -- name: GetPurchaseDetailForUser :one
 -- 認証主体の購入本体 1 件を購入コードで取得する。
--- 所有権は WHERE 述語（user_id 一致）で担保し、他人・不存在はいずれも 0 行（NotFound で秘匿）。
--- 支払い日時（paid_at）は未支払いなら NULL、キャンセル日時（canceled_at）は未キャンセルなら NULL。
+-- 所有権・NULL 列・固定 2 クエリの扱いは docs/spec/usecase/purchase.md の GET 詳細を参照。
+-- 適用したクーポンの 2 軸（値引き・適用範囲）は結合で解決する（非スナップショットの理由は同節）。
+-- 未適用なら結合先が無く NULL。
 SELECT
     p.id,
     p.code,
@@ -153,9 +154,16 @@ SELECT
     p.total_amount,
     p.ordered_at,
     p.paid_at,
-    p.canceled_at
+    p.canceled_at,
+    p.discount_amount,
+    c.id AS coupon_id,
+    c.discount_kind AS coupon_discount_kind,
+    c.discount_value AS coupon_discount_value,
+    c.scope_kind AS coupon_scope_kind,
+    c.scope_target_id AS coupon_scope_target_id
 FROM purchases AS p
 INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
+LEFT JOIN coupons AS c ON p.coupon_id = c.id
 WHERE p.code = @code AND p.user_id = @user_id;
 
 -- name: ListPurchaseDetailItemsForUser :many

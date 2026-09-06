@@ -76,5 +76,72 @@ func TestBuildCreated(t *testing.T) {
 			assert.Equal(t, 2, decoded.Details[0].Quantity)
 			assert.Equal(t, "800", decoded.Details[0].UnitPrice)
 		})
+
+		t.Run("クーポンを適用した購入は値引き額とクーポンIDを載せ、金額が突き合う", func(t *testing.T) {
+			t.Parallel()
+
+			productA := uuidtestkit.NewTestFromSalt(t, "bpc_product")
+			entity, err := domainpurchase.New(
+				uuidtestkit.NewTestFromSalt(t, "bpc_id"),
+				"bpc-code",
+				uuidtestkit.NewTestFromSalt(t, "bpc_user"),
+				[]domainpurchase.DetailInput{{ID: uuidtestkit.NewTestFromSalt(t, "bpc_d"), ProductID: productA, Quantity: 2}},
+				[]domainpurchase.LockedProduct{domainpurchase.NewLockedProduct(productA, mustPrice(t, "800"), 20)},
+			)
+			require.NoError(t, err)
+			couponID := uuidtestkit.NewTestFromSalt(t, "bpc_coupon")
+			require.NoError(t, entity.ApplyCoupon(couponID, 16000))
+
+			payload, perr := event.BuildCreated(entity)
+			require.NoError(t, perr)
+
+			var decoded struct {
+				SubtotalAmount int     `json:"subtotalAmount"`
+				DiscountAmount int     `json:"discountAmount"`
+				TaxAmount      int     `json:"taxAmount"`
+				ShippingFee    int     `json:"shippingFee"`
+				TotalAmount    int     `json:"totalAmount"`
+				CouponID       *string `json:"couponId"`
+			}
+			require.NoError(t, json.Unmarshal(payload, &decoded))
+			require.NotNil(t, decoded.CouponID)
+			assert.Equal(t, couponID.String(), *decoded.CouponID)
+			// subtotal=160000 / discount=16000 / 課税基礎=144000 → tax=14400 / shipping=500 / total=158900
+			assert.Equal(t, 160000, decoded.SubtotalAmount)
+			assert.Equal(t, 16000, decoded.DiscountAmount)
+			assert.Equal(t, 14400, decoded.TaxAmount)
+			assert.Equal(t, 500, decoded.ShippingFee)
+			assert.Equal(t, 158900, decoded.TotalAmount)
+			// 購読側が snapshot だけで合計を組み立て直せることを固定する。
+			assert.Equal(t,
+				decoded.TotalAmount,
+				decoded.SubtotalAmount-decoded.DiscountAmount+decoded.TaxAmount+decoded.ShippingFee,
+			)
+		})
+
+		t.Run("クーポン無しの購入は値引き額 0 とクーポンID null を載せる", func(t *testing.T) {
+			t.Parallel()
+
+			productA := uuidtestkit.NewTestFromSalt(t, "bpn_product")
+			entity, err := domainpurchase.New(
+				uuidtestkit.NewTestFromSalt(t, "bpn_id"),
+				"bpn-code",
+				uuidtestkit.NewTestFromSalt(t, "bpn_user"),
+				[]domainpurchase.DetailInput{{ID: uuidtestkit.NewTestFromSalt(t, "bpn_d"), ProductID: productA, Quantity: 1}},
+				[]domainpurchase.LockedProduct{domainpurchase.NewLockedProduct(productA, mustPrice(t, "800"), 20)},
+			)
+			require.NoError(t, err)
+
+			payload, perr := event.BuildCreated(entity)
+			require.NoError(t, perr)
+
+			var decoded struct {
+				DiscountAmount int     `json:"discountAmount"`
+				CouponID       *string `json:"couponId"`
+			}
+			require.NoError(t, json.Unmarshal(payload, &decoded))
+			assert.Equal(t, 0, decoded.DiscountAmount)
+			assert.Nil(t, decoded.CouponID)
+		})
 	})
 }
