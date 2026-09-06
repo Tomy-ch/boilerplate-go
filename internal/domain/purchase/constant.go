@@ -16,6 +16,9 @@ const (
 	// 価格スケール（ドル decimal）から決済スケール（整数セント）へ切り捨てる際の桁数に用います。
 	minorUnitDigits = 2
 
+	// FieldCouponID は、クーポン ID フィールドの識別子です。
+	FieldCouponID = "couponId"
+
 	// minQuantity は、明細 1 件あたりの最小購入数量です。
 	minQuantity = 1
 

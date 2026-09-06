@@ -55,6 +55,8 @@ tags:
     description: 認証主体自身の購入集計（認証必須・自分絞り込み / query_service サンプル）。
   - name: v1/users/me/roles
     description: 認証主体自身のロール（認証必須・自分絞り込み / クライアントの楽観的な権限分岐用）。
+  - name: v1/users/me/coupons
+    description: 認証主体自身の保有クーポン（認証必須・使用済みや失効済みも並ぶ「持っているもの」の一覧）。
   - name: v1/prefectures
     description: 都道府県マスタ一覧（認証不要の参照系サンプル）。
   - name: v1/products
@@ -99,6 +101,8 @@ tags:
     description: カート明細の設定と削除（任意認証・自然キー upsert による冪等サンプル・Idempotency-Key を要さない）。
   - name: v1/carts/merge
     description: ログイン時のカート引き継ぎ（認証必須・所有権の遷移サンプル・Idempotency-Key を採る）。
+  - name: v1/carts/me/coupons
+    description: いまのカートに使えるクーポンと値引き額（認証必須・適用可否の判定を表現層へ漏らさないための読み）。
   - name: v1/inquiries
     description: 問い合わせ一覧（admin のみ・keyset ページング・本文を持たない要約）。
   - name: v1/inquiries/me/messages
@@ -573,6 +577,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserRolesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized401'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed405'
+        '500':
+          $ref: '#/components/responses/InternalServerError500'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable503'
+  /v1/users/me/coupons:
+    get:
+      operationId: GetUsersMeCoupons
+      tags:
+        - v1/users/me/coupons
+      summary: 認証ユーザー自身の保有クーポンの取得
+      description: |
+        認証コンテキスト（Bearer トークン）の内部 UserID に該当するユーザーが保有するクーポンを取得します。
+        パスに他者の識別子を持たないため、他ユーザーのクーポンは取得できません。
+        **使用済み・失効済みも並びます。** この口が返すのは「使えるもの」ではなく「持っているもの」で、
+        いまのカートに対して使えるかどうかは `GET /v1/carts/me/coupons` が答えます。
+        発行日時の新しい順で、ページングは持ちません。1 枚も保有しない場合はエラーではなく空配列を返します。
+        本 op 自体は DB の SELECT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+        一時障害で応答不能となり得るため、認証必須 op の先例に倣い 503 を宣言します。
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 保有クーポンの取得に成功しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized401'
         '405':
@@ -1983,6 +2018,46 @@ paths:
           $ref: '#/components/responses/Conflict409'
         '422':
           $ref: '#/components/responses/UnprocessableEntity422'
+        '500':
+          $ref: '#/components/responses/InternalServerError500'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable503'
+  /v1/carts/me/coupons:
+    get:
+      operationId: GetCartsMeCoupons
+      tags:
+        - v1/carts/me/coupons
+      summary: いまのカートに対して使えるクーポンの取得
+      description: |
+        認証コンテキスト（Bearer トークン）の内部 UserID に該当するユーザーのカートに対して、
+        使えるクーポンと、それぞれを適用した場合の値引き額を取得します。
+
+        **適用可否と値引き額を表現層に計算させないための口です。** どのクーポンがどの明細に効いて
+        いくら引かれるかを front が判定すると、金額の決定が表現層へ漏れます。
+
+        母集団は保有一覧（`GET /v1/users/me/coupons`）と異なります。使用済み・失効済みと、
+        いまのカートでは値引きが 0 になるクーポンは並びません。値引き額は購入確定時と同じ規則で決まります。
+
+        **ロックを取らないため、返した値は返した瞬間から古くなります。** 確定までの間にカートの中身や
+        クーポンの状態が変われば確定時の値引き額は変わり得るので、値引きが 0 になる確定は購入側が 422 で拒みます。
+
+        カートを持たない場合と、使えるクーポンが 1 枚も無い場合は、いずれもエラーではなく空配列を返します。
+        ゲストはクーポンの受給者になれないため、認証を必須とします。
+        本 op 自体は DB の SELECT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+        一時障害で応答不能となり得るため、認証必須 op の先例に倣い 503 を宣言します。
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 使えるクーポンの取得に成功しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartCouponListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized401'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed405'
         '500':
           $ref: '#/components/responses/InternalServerError500'
         '503':
@@ -3438,6 +3513,8 @@ components:
         - userId
         - statusId
         - subtotalAmount
+        - discountAmount
+        - appliedCoupon
         - taxAmount
         - shippingFee
         - totalAmount
@@ -3464,6 +3541,21 @@ components:
           format: int64
           description: 小計。明細（単価×数量）の合計。USD セント単位の整数です。
           example: 160000
+        discountAmount:
+          type: integer
+          format: int64
+          description: |
+            クーポンによる値引き額。USD セント単位の整数です。
+            **非 null で、クーポン未使用および過去の購入は 0** になります。
+            値引きが立っていることと appliedCoupon が入っていることは常に一致します。
+          example: 500
+        appliedCoupon:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AppliedCouponResponse'
+          description: |
+            適用したクーポン。未使用の場合は null です。値引きと適用範囲は結合で解決した現在値です。
         taxAmount:
           type: integer
           format: int64
@@ -3606,6 +3698,8 @@ components:
         - userId
         - status
         - subtotalAmount
+        - discountAmount
+        - appliedCoupon
         - taxAmount
         - shippingFee
         - totalAmount
@@ -3628,6 +3722,21 @@ components:
           format: int64
           description: 小計。明細（単価×数量）の合計。USD セント単位の整数です。
           example: 160000
+        discountAmount:
+          type: integer
+          format: int64
+          description: |
+            クーポンによる値引き額。USD セント単位の整数です。
+            **非 null で、クーポン未使用および過去の購入は 0** になります。
+            値引きが立っていることと appliedCoupon が入っていることは常に一致します。
+          example: 500
+        appliedCoupon:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/AppliedCouponResponse'
+          description: |
+            適用したクーポン。未使用の場合は null です。値引きと適用範囲は結合で解決した現在値です。
         taxAmount:
           type: integer
           format: int64
@@ -4290,6 +4399,109 @@ components:
           description: 認証ユーザー自身に割り当てられた全ロール。ロールが 1 つも割り当てられていない場合は空配列です。
           items:
             $ref: '#/components/schemas/RoleRef'
+    CouponDiscount:
+      type: object
+      description: |
+        クーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。
+      required:
+        - kind
+        - value
+      properties:
+        kind:
+          type: string
+          enum:
+            - flat
+            - rate
+          description: |
+            値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。
+          example: rate
+        value:
+          type: string
+          pattern: ^\d+(\.\d+)?$
+          description: |
+            種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、
+            正確な十進量を保つ decimal 文字列で表します（例 `"0.10"` は 10% 引き）。
+            JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
+          example: '0.10'
+    CouponScope:
+      type: object
+      description: |
+        クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+      required:
+        - kind
+        - targetId
+      properties:
+        kind:
+          type: string
+          enum:
+            - all
+            - category
+            - product
+          description: |
+            適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+            `product` は特定の商品の明細だけを対象とします。
+          example: category
+        targetId:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            範囲を絞る対象の識別子。`category` なら商品カテゴリID、`product` なら商品IDです。
+            `all` では対象を持たないため null になります。
+          example: 5dd52d84-78eb-4a52-ba0b-2e11c95c2af2
+    CouponResponse:
+      type: object
+      description: |
+        クーポン。値引きと適用範囲という直交する 2 つの軸を持ちます。
+        1 枚のクーポンは 1 つの値引きと 1 つの適用範囲を持ち、複数枚の併用も複数範囲の合成も表しません。
+      required:
+        - id
+        - discount
+        - scope
+        - expiresAt
+        - usedAt
+        - issuedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: クーポンID
+          example: 0193a1c0-0001-7000-8000-000000000002
+        discount:
+          $ref: '#/components/schemas/CouponDiscount'
+        scope:
+          $ref: '#/components/schemas/CouponScope'
+        expiresAt:
+          type: string
+          format: date-time
+          description: |
+            有効期限。この時刻ちょうどを含めて以降は失効として扱います。
+            失効を一括更新する機構は持たず、判定のたびに現在時刻と突き合わせます。
+          example: '2026-10-01T00:00:00Z'
+        usedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 使用日時。未使用の場合は null です。使用済みへの遷移は一度きりで取り消せません。
+          example: null
+        issuedAt:
+          type: string
+          format: date-time
+          description: 発行日時
+          example: '2026-09-01T00:00:00Z'
+    CouponListResponse:
+      type: object
+      description: |
+        保有クーポンの一覧。使用済み・失効済みも並びます。「使えるもの」ではなく「持っているもの」を返す口です。
+        発行日時の新しい順で、ページングは持ちません。
+      required:
+        - coupons
+      properties:
+        coupons:
+          type: array
+          description: 保有クーポンの配列。1 枚も持たない場合は空配列です。
+          items:
+            $ref: '#/components/schemas/CouponResponse'
     UsersSearchResponseItem:
       description: 検索条件に基づいて取得したユーザー情報
       allOf:
@@ -4714,6 +4926,7 @@ components:
       description: |
         購入作成リクエスト。明細（商品IDと数量）の配列を受け取ります。
         明細は 1 件以上必須で、同一 productId の重複は許可しません（いずれも 422）。
+        クーポンを 1 枚まで適用できます。併用はできません。
       additionalProperties: false
       required:
         - details
@@ -4725,6 +4938,37 @@ components:
             空配列・重複はドメインで検証し 422 を返します（スキーマでは制約せず単一の検証責務に集約）。
           items:
             $ref: '#/components/schemas/PurchaseDetailInput'
+        couponId:
+          type: string
+          format: uuid
+          description: |
+            適用するクーポンのID。省略すると値引きを行いません。1 回の購入に適用できるのは高々 1 枚です。
+
+            失効済み・使用済み・保有していない（存在しない場合を含む）・値引きが 0 になる場合は、
+            いずれも 422 + `details: ["couponId"]` を返します。次にすべきことがどれも同じ
+            （別のクーポンを選ぶか外す）ため、呼び出し側からは区別しません。
+          example: 0193a1c0-0001-7000-8000-000000000002
+    AppliedCouponResponse:
+      type: object
+      description: |
+        購入に適用したクーポン。値引きと適用範囲の 2 軸だけを返します。
+
+        控えへ写さず結合で解決した現在値です（`productName` と同じ扱い）。発行済みクーポンの値引きと
+        適用範囲を書き換える口が無いため、結合で解決しても内容がぶれません。
+      required:
+        - id
+        - discount
+        - scope
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 適用したクーポンのID
+          example: 0193a1c0-0001-7000-8000-000000000002
+        discount:
+          $ref: '#/components/schemas/CouponDiscount'
+        scope:
+          $ref: '#/components/schemas/CouponScope'
     PurchasesStatusesResponse:
       type: array
       description: 購入ステータスマスタの一覧。マスタが定める表示順で並べて全件を返し、ページネーションは行いません。
@@ -5028,6 +5272,42 @@ components:
             type: string
             format: uuid
           example: []
+    CartCouponResponse:
+      type: object
+      description: |
+        いまのカートに対して使えるクーポンと、そのクーポンを適用した場合の値引き額の組です。
+      required:
+        - coupon
+        - discountAmount
+      properties:
+        coupon:
+          $ref: '#/components/schemas/CouponResponse'
+        discountAmount:
+          type: integer
+          format: int64
+          description: |
+            このクーポンを適用した場合に差し引かれる額。USD セント単位の整数です。
+            対象明細の小計を合算してから一度だけ切り捨てるため、明細ごとの丸め落ちは起きません。
+            確定時に実際に引かれる額と同じ規則で決まりますが、ロックを取らないため一致は保証されません。
+          example: 332
+    CartCouponListResponse:
+      type: object
+      description: |
+        いまのカートに対して使えるクーポンの一覧。
+
+        **ロックを取らないため、返した値は返した瞬間から古くなります。** 確定までの間にカートの中身や
+        クーポンの状態が変われば、確定時の値引き額は変わり得ます。値引きが 0 になる確定は 422 で拒みます。
+
+        母集団は保有一覧（`GET /v1/users/me/coupons`）と異なります。使用済み・失効済みと、
+        いまのカートでは値引きが 0 になるクーポンは並びません。
+      required:
+        - coupons
+      properties:
+        coupons:
+          type: array
+          description: 使えるクーポンと値引き額の配列。1 枚も使えない場合は空配列です。
+          items:
+            $ref: '#/components/schemas/CartCouponResponse'
     InquirySummary:
       type: object
       description: |

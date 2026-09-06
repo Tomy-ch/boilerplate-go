@@ -1,16 +1,107 @@
 # Coupon — Usecase Spec
 
-> クーポンのユースケース spec。**本 spec の時点で、クーポンを能動的に操作する口は存在しない。**
-> 発行は廃番ジャーニーの副作用として起き（[`product.md`](product.md) の廃番）、引き換えは従属 issue
-> の射程である。ここが記述するのは、その発行が経由する CommandService の契約だけ。
+> クーポンのユースケース spec。読み取り（保有一覧・いまのカートに使えるもの）を持つ。
+> 発行は廃番ジャーニーの副作用として起き（[`product.md`](product.md) の廃番）、引き換えは購入確定の
+> 中で行う（[`purchase.md`](purchase.md) の CreatePurchase）。
 
 ## Overview
 
 クーポンの発行は、廃番のトランザクションの中で CommandService を通して行う。受給者が述語でしか
 決まらないため、usecase が集約を組み立てて Repository へ渡す形に分解できない。
 
-**この spec が Interface / DTO / Workflow を持たないのは意図である。** クーポン自体を主語にする
-ユースケースがまだ無く、置くと呼び出し側の無い契約になる。引き換えが入った時点でここへ追記する。
+読み取りは 2 つ。保有一覧は「持っているもの」を並べ、使えるかどうかで絞らない。もう 1 つは
+「いまのカートに使えるもの」で、使えるかどうかと値引き額を返す。
+
+**後者は集約をまたぐ読みだが QueryService に置かない。** 適用範囲の判定（`Scope.Covers`）と値引き額の
+計算（`Discount.Apply` / `Coupon.DiscountFor`）はドメインロジックであり、`docs/rules.md` の
+Repository / QueryService Rules が QueryService へ書くことを禁じている。SQL の結合で値引き額を出すと
+業務条件の著作権が infra へ移るため、Repository を束ねて usecase で結合し、判定はドメインへ渡す
+（`cart.GetCart` が同じ形の先例）。
+
+## Interface
+
+```yaml
+package: internal/usecase/coupon
+interface: Usecase
+methods:
+  - name: ListMyCoupons
+    signature: ListMyCoupons(ctx, authn) ([]CouponView, error)
+  - name: ListApplicableToMyCart
+    signature: ListApplicableToMyCart(ctx, authn) ([]CartCouponView, error)
+```
+
+## DTOs
+
+```yaml
+output:
+  struct: CouponView
+  fields:
+    - name: ID
+      type: uuid.UUID
+    - name: DiscountKind
+      type: string            # 値引きの決まり方の名前（code ではない）
+    - name: DiscountValue
+      type: decimal.Decimal   # 定額なら金額、定率なら率
+    - name: ScopeKind
+      type: string            # 適用範囲の決まり方の名前
+    - name: ScopeTargetID
+      type: "*uuid.UUID"      # 全体では nil
+    - name: ExpiresAt
+      type: time.Time
+    - name: UsedAt
+      type: "*time.Time"      # 未使用は nil
+    - name: IssuedAt
+      type: time.Time
+
+output:
+  struct: CartCouponView
+  fields:
+    - name: Coupon
+      type: CouponView
+    - name: DiscountAmount
+      type: int               # 適用した場合に差し引かれる額（USD セント）
+```
+
+## Dependencies
+
+```yaml
+- coupon.Repository    # FindByUserID
+- cart.Repository      # FindByOwnerID（対象明細の母集団）
+- product.Repository   # FindByIDs（単価と商品カテゴリの解決）
+- clock.Clock          # 失効判定の現在時刻
+```
+
+## Workflow
+
+```yaml
+- name: ListMyCoupons
+  tx_required: false
+  behavior: |
+    認証主体の保有クーポンを発行日時の新しい順で返す。使用済み・失効済みも並べる。
+    種別は code ではなく名前で出す。1 枚も持たない場合は空を返す。
+  errors:
+    - 未認証: 401
+
+- name: ListApplicableToMyCart
+  tx_required: false
+  calls:
+    - coupon.Repository.FindByUserID
+    - cart.Repository.FindByOwnerID
+    - product.Repository.FindByIDs
+    - cart.CartItem.Evaluate      # 購入できる明細だけを対象にする
+    - coupon.Coupon.DiscountFor   # 値引き額の算出（丸めはここ 1 箇所）
+  behavior: |
+    認証主体のカートに対して使えるクーポンと、それぞれの値引き額を返す。
+    使用済み・失効済みと、値引きが 0 になるクーポンは並べない。
+
+    対象にするのはいま購入できる明細だけ。カートの再評価が issue を立てた明細は購入へ進めないため、
+    値引きの対象にもしない。クーポンを 1 枚も持たない場合はカートを引かずに空を返す。
+    カートを持たない場合も空を返す。
+  invariants:
+    - 値引き額は購入確定と同じ規則（Coupon.DiscountFor）で決まる
+    - ロックを取らないため、返した値は返した瞬間から古くなる
+  errors:
+    - 未認証: 401
 
 ## Command Service
 

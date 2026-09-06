@@ -329,6 +329,10 @@ type Purchases struct {
 	CreatedAt time.Time
 	// 更新日時
 	UpdatedAt time.Time
+	// 適用したクーポンのID（未使用のときNULL）
+	CouponID *uuid.UUID
+	// 値引き額
+	DiscountAmount int64
 }
 
 // ストリーム採番（1 ストリーム 1 行、gap なし単調増加）

@@ -27,4 +27,16 @@ var (
 	ErrInvalidExpiresAt = xerrors.Wrap(errInvalid, "expiresAt failed")
 	// ErrInvalidIssuedAt は、発行日時の検証に失敗した場合のエラーです。
 	ErrInvalidIssuedAt = xerrors.Wrap(errInvalid, "issuedAt failed")
+	// ErrAlreadyUsed は、使用済みのクーポンを引き換えようとした場合のエラーです。
+	// 同じ内容の再送でも時間の経過でも解消しません。
+	ErrAlreadyUsed = xerrors.Wrap(errInvalid, "coupon is already used")
+	// ErrExpired は、失効したクーポンを引き換えようとした場合のエラーです。
+	ErrExpired = xerrors.Wrap(errInvalid, "coupon is expired")
+	// ErrNotHeld は、その利用者が保有していないクーポンを指した場合のエラーです。
+	// 存在しないクーポンもこのエラーに畳みます。区別できると保有していないクーポンの存在が漏れるためです
+	// （docs/spec/usecase/purchase.md の CreatePurchase）。
+	ErrNotHeld = xerrors.Wrap(errInvalid, "coupon is not held by the user")
+	// ErrUsedConcurrently は、引き換えの最中に他の書き手が同じクーポンを消費した場合のエラーです
+	// （到達条件は docs/spec/domain/coupon.md の Repository Methods > UpdateUsed を参照）。
+	ErrUsedConcurrently = xerrors.Wrap(apperror.ErrConflict, "coupon was used concurrently")
 )

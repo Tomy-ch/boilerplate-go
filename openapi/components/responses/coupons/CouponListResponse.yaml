@@ -1,0 +1,12 @@
+type: object
+description: |
+  保有クーポンの一覧。使用済み・失効済みも並びます。「使えるもの」ではなく「持っているもの」を返す口です。
+  発行日時の新しい順で、ページングは持ちません。
+required:
+  - coupons
+properties:
+  coupons:
+    type: array
+    description: 保有クーポンの配列。1 枚も持たない場合は空配列です。
+    items:
+      $ref: '../../schemas/coupons/CouponResponse.yaml'

@@ -360,3 +360,81 @@ func TestScope_IsZero(t *testing.T) {
 		})
 	})
 }
+
+func TestScope_Covers(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("全体はどの明細も対象にする", func(t *testing.T) {
+			t.Parallel()
+
+			line, _ := newTestLine(t, "10.00")
+
+			assert.True(t, NewAllScope().Covers(line))
+		})
+
+		t.Run("カテゴリ限定は明細のカテゴリが一致するときだけ対象にする", func(t *testing.T) {
+			t.Parallel()
+
+			line, attrs := newTestLine(t, "10.00")
+			scope, err := NewCategoryScope(attrs.CategoryID)
+			require.NoError(t, err)
+
+			assert.True(t, scope.Covers(line))
+		})
+
+		t.Run("カテゴリ限定は別のカテゴリの明細を対象にしない", func(t *testing.T) {
+			t.Parallel()
+
+			line, _ := newTestLine(t, "10.00")
+			scope, err := NewCategoryScope(newTestUUID(t))
+			require.NoError(t, err)
+
+			assert.False(t, scope.Covers(line))
+		})
+
+		t.Run("商品限定は明細の商品が一致するときだけ対象にする", func(t *testing.T) {
+			t.Parallel()
+
+			line, attrs := newTestLine(t, "10.00")
+			scope, err := NewProductScope(attrs.ProductID)
+			require.NoError(t, err)
+
+			assert.True(t, scope.Covers(line))
+		})
+
+		t.Run("商品限定は別の商品の明細を対象にしない", func(t *testing.T) {
+			t.Parallel()
+
+			line, _ := newTestLine(t, "10.00")
+			scope, err := NewProductScope(newTestUUID(t))
+			require.NoError(t, err)
+
+			assert.False(t, scope.Covers(line))
+		})
+
+		t.Run("カテゴリ限定は商品IDが一致していてもカテゴリが違えば対象にしない", func(t *testing.T) {
+			t.Parallel()
+
+			line, attrs := newTestLine(t, "10.00")
+			scope, err := NewCategoryScope(attrs.ProductID)
+			require.NoError(t, err)
+
+			assert.False(t, scope.Covers(line))
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("未設定の適用範囲はどの明細も対象にしない", func(t *testing.T) {
+			t.Parallel()
+
+			line, _ := newTestLine(t, "10.00")
+
+			assert.False(t, Scope{}.Covers(line))
+		})
+	})
+}

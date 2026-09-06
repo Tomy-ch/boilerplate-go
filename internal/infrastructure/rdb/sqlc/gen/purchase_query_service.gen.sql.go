@@ -27,9 +27,16 @@ SELECT
     p.total_amount,
     p.ordered_at,
     p.paid_at,
-    p.canceled_at
+    p.canceled_at,
+    p.discount_amount,
+    c.id AS coupon_id,
+    c.discount_kind AS coupon_discount_kind,
+    c.discount_value AS coupon_discount_value,
+    c.scope_kind AS coupon_scope_kind,
+    c.scope_target_id AS coupon_scope_target_id
 FROM purchases AS p
 INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
+LEFT JOIN coupons AS c ON p.coupon_id = c.id
 WHERE p.code = $1 AND p.user_id = $2
 `
 
@@ -39,25 +46,32 @@ type GetPurchaseDetailForUserParams struct {
 }
 
 type GetPurchaseDetailForUserRow struct {
-	ID             uuid.UUID
-	Code           string
-	UserID         uuid.UUID
-	StatusID       uuid.UUID
-	StatusCode     int16
-	StatusName     string
-	SubtotalAmount int64
-	TaxAmount      int64
-	ShippingFee    int64
-	TotalAmount    int64
-	OrderedAt      time.Time
-	PaidAt         *time.Time
-	CanceledAt     *time.Time
+	ID                  uuid.UUID
+	Code                string
+	UserID              uuid.UUID
+	StatusID            uuid.UUID
+	StatusCode          int16
+	StatusName          string
+	SubtotalAmount      int64
+	TaxAmount           int64
+	ShippingFee         int64
+	TotalAmount         int64
+	OrderedAt           time.Time
+	PaidAt              *time.Time
+	CanceledAt          *time.Time
+	DiscountAmount      int64
+	CouponID            *uuid.UUID
+	CouponDiscountKind  *int16
+	CouponDiscountValue *decimal.Decimal
+	CouponScopeKind     *int16
+	CouponScopeTargetID *uuid.UUID
 }
 
 // === source: database/dml/query_service/purchase/select_purchase_detail_by_code.sql ===
 // 認証主体の購入本体 1 件を購入コードで取得する。
-// 所有権は WHERE 述語（user_id 一致）で担保し、他人・不存在はいずれも 0 行（NotFound で秘匿）。
-// 支払い日時（paid_at）は未支払いなら NULL、キャンセル日時（canceled_at）は未キャンセルなら NULL。
+// 所有権・NULL 列・固定 2 クエリの扱いは docs/spec/usecase/purchase.md の GET 詳細を参照。
+// 適用したクーポンの 2 軸（値引き・適用範囲）は結合で解決する（非スナップショットの理由は同節）。
+// 未適用なら結合先が無く NULL。
 //
 //	SELECT
 //	    p.id,
@@ -72,9 +86,16 @@ type GetPurchaseDetailForUserRow struct {
 //	    p.total_amount,
 //	    p.ordered_at,
 //	    p.paid_at,
-//	    p.canceled_at
+//	    p.canceled_at,
+//	    p.discount_amount,
+//	    c.id AS coupon_id,
+//	    c.discount_kind AS coupon_discount_kind,
+//	    c.discount_value AS coupon_discount_value,
+//	    c.scope_kind AS coupon_scope_kind,
+//	    c.scope_target_id AS coupon_scope_target_id
 //	FROM purchases AS p
 //	INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
+//	LEFT JOIN coupons AS c ON p.coupon_id = c.id
 //	WHERE p.code = $1 AND p.user_id = $2
 func (q *Queries) GetPurchaseDetailForUser(ctx context.Context, arg *GetPurchaseDetailForUserParams) (*GetPurchaseDetailForUserRow, error) {
 	row := q.db.QueryRow(ctx, getPurchaseDetailForUser, arg.Code, arg.UserID)
@@ -93,6 +114,12 @@ func (q *Queries) GetPurchaseDetailForUser(ctx context.Context, arg *GetPurchase
 		&i.OrderedAt,
 		&i.PaidAt,
 		&i.CanceledAt,
+		&i.DiscountAmount,
+		&i.CouponID,
+		&i.CouponDiscountKind,
+		&i.CouponDiscountValue,
+		&i.CouponScopeKind,
+		&i.CouponScopeTargetID,
 	)
 	return &i, err
 }

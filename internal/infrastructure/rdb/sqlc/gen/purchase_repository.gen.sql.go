@@ -16,7 +16,7 @@ import (
 const getPurchaseByID = `-- name: GetPurchaseByID :one
 SELECT
     ps.code AS status_code,
-    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at
+    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at, p.coupon_id, p.discount_amount
 FROM purchases AS p
 INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 WHERE p.id = $1
@@ -34,7 +34,7 @@ type GetPurchaseByIDRow struct {
 //
 //	SELECT
 //	    ps.code AS status_code,
-//	    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at
+//	    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at, p.coupon_id, p.discount_amount
 //	FROM purchases AS p
 //	INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 //	WHERE p.id = $1
@@ -58,6 +58,8 @@ func (q *Queries) GetPurchaseByID(ctx context.Context, id uuid.UUID) (*GetPurcha
 		&i.Purchases.DeliveredAt,
 		&i.Purchases.CreatedAt,
 		&i.Purchases.UpdatedAt,
+		&i.Purchases.CouponID,
+		&i.Purchases.DiscountAmount,
 	)
 	return &i, err
 }
@@ -78,7 +80,9 @@ SELECT
     p.paid_at,
     p.canceled_at,
     p.shipped_at,
-    p.delivered_at
+    p.delivered_at,
+    p.coupon_id,
+    p.discount_amount
 FROM purchases AS p
 INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 WHERE p.id = $1
@@ -100,13 +104,14 @@ type GetPurchaseDetailByIDRow struct {
 	CanceledAt     *time.Time
 	ShippedAt      *time.Time
 	DeliveredAt    *time.Time
+	CouponID       *uuid.UUID
+	DiscountAmount int64
 }
 
 // ID から購入詳細（読み取りモデル）を 1 件取得する。ステータス名は購入ステータスマスタとの結合で
 // 解決済み（JOIN の許容範囲は internal/infrastructure/rdb/repository/README.md の
 // Reference-master exception）。
-// 支払い日時（paid_at）は未支払いなら NULL、キャンセル日時（canceled_at）は未キャンセルなら NULL、
-// 発送日時（shipped_at）は未発送なら NULL、配達日時（delivered_at）は未配達なら NULL。
+// NULL 列の意味は docs/spec/domain/purchase.md の FindDetailByID を参照。
 // 存在しない場合は 0 行（NotFound）。
 //
 //	SELECT
@@ -124,7 +129,9 @@ type GetPurchaseDetailByIDRow struct {
 //	    p.paid_at,
 //	    p.canceled_at,
 //	    p.shipped_at,
-//	    p.delivered_at
+//	    p.delivered_at,
+//	    p.coupon_id,
+//	    p.discount_amount
 //	FROM purchases AS p
 //	INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 //	WHERE p.id = $1
@@ -147,6 +154,8 @@ func (q *Queries) GetPurchaseDetailByID(ctx context.Context, id uuid.UUID) (*Get
 		&i.CanceledAt,
 		&i.ShippedAt,
 		&i.DeliveredAt,
+		&i.CouponID,
+		&i.DiscountAmount,
 	)
 	return &i, err
 }
@@ -160,7 +169,9 @@ INSERT INTO purchases (
     subtotal_amount,
     tax_amount,
     shipping_fee,
-    total_amount
+    total_amount,
+    coupon_id,
+    discount_amount
 ) VALUES (
     $1,
     $2,
@@ -172,7 +183,9 @@ INSERT INTO purchases (
     $5,
     $6,
     $7,
-    $8
+    $8,
+    $9,
+    $10
 )
 `
 
@@ -185,11 +198,14 @@ type InsertPurchaseParams struct {
 	TaxAmount      int64
 	ShippingFee    int64
 	TotalAmount    int64
+	CouponID       *uuid.UUID
+	DiscountAmount int64
 }
 
 // === source: database/dml/repository/purchase/insert_purchase.sql ===
 // 購入を 1 行 INSERT する。status_id は code から解決する（理由は docs/spec/domain/purchase.md の Notes）。
 // ordered_at / created_at / updated_at は DB 既定（NOW()）に委ねる。
+// coupon_id は未適用なら NULL。discount_amount との対応（NULL ⇔ 0）はドメインが課す。
 //
 //	INSERT INTO purchases (
 //	    id,
@@ -199,7 +215,9 @@ type InsertPurchaseParams struct {
 //	    subtotal_amount,
 //	    tax_amount,
 //	    shipping_fee,
-//	    total_amount
+//	    total_amount,
+//	    coupon_id,
+//	    discount_amount
 //	) VALUES (
 //	    $1,
 //	    $2,
@@ -211,7 +229,9 @@ type InsertPurchaseParams struct {
 //	    $5,
 //	    $6,
 //	    $7,
-//	    $8
+//	    $8,
+//	    $9,
+//	    $10
 //	)
 func (q *Queries) InsertPurchase(ctx context.Context, arg *InsertPurchaseParams) error {
 	_, err := q.db.Exec(ctx, insertPurchase,
@@ -223,6 +243,8 @@ func (q *Queries) InsertPurchase(ctx context.Context, arg *InsertPurchaseParams)
 		arg.TaxAmount,
 		arg.ShippingFee,
 		arg.TotalAmount,
+		arg.CouponID,
+		arg.DiscountAmount,
 	)
 	return err
 }
@@ -372,7 +394,7 @@ func (q *Queries) ListPurchaseDetailsByPurchaseIDs(ctx context.Context, purchase
 const listShippablePurchases = `-- name: ListShippablePurchases :many
 SELECT
     ps.code AS status_code,
-    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at
+    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at, p.coupon_id, p.discount_amount
 FROM purchases AS p
 INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 WHERE ps.code = $1
@@ -400,7 +422,7 @@ type ListShippablePurchasesRow struct {
 //
 //	SELECT
 //	    ps.code AS status_code,
-//	    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at
+//	    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at, p.coupon_id, p.discount_amount
 //	FROM purchases AS p
 //	INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 //	WHERE ps.code = $1
@@ -432,6 +454,8 @@ func (q *Queries) ListShippablePurchases(ctx context.Context, arg *ListShippable
 			&i.Purchases.DeliveredAt,
 			&i.Purchases.CreatedAt,
 			&i.Purchases.UpdatedAt,
+			&i.Purchases.CouponID,
+			&i.Purchases.DiscountAmount,
 		); err != nil {
 			return nil, err
 		}
@@ -479,7 +503,7 @@ func (q *Queries) ListUserIDsWithPurchases(ctx context.Context, userIds []uuid.U
 const lockPurchaseByCode = `-- name: LockPurchaseByCode :one
 SELECT
     ps.code AS status_code,
-    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at
+    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at, p.coupon_id, p.discount_amount
 FROM purchases AS p
 INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 WHERE p.code = $1
@@ -498,7 +522,7 @@ type LockPurchaseByCodeRow struct {
 //
 //	SELECT
 //	    ps.code AS status_code,
-//	    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at
+//	    p.id, p.code, p.user_id, p.status_id, p.subtotal_amount, p.tax_amount, p.shipping_fee, p.total_amount, p.ordered_at, p.paid_at, p.canceled_at, p.shipped_at, p.delivered_at, p.created_at, p.updated_at, p.coupon_id, p.discount_amount
 //	FROM purchases AS p
 //	INNER JOIN purchase_statuses AS ps ON p.status_id = ps.id
 //	WHERE p.code = $1
@@ -523,6 +547,8 @@ func (q *Queries) LockPurchaseByCode(ctx context.Context, code string) (*LockPur
 		&i.Purchases.DeliveredAt,
 		&i.Purchases.CreatedAt,
 		&i.Purchases.UpdatedAt,
+		&i.Purchases.CouponID,
+		&i.Purchases.DiscountAmount,
 	)
 	return &i, err
 }

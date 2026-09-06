@@ -14,6 +14,7 @@ import (
 	txbd "go-boilerplate/internal/usecase/boundary/tx"                       // sample-api:line
 	cartuc "go-boilerplate/internal/usecase/cart"                            // sample-api:line
 	checkoutuc "go-boilerplate/internal/usecase/checkout"                    // sample-api:line
+	couponuc "go-boilerplate/internal/usecase/coupon"                        // sample-api:line
 	dashboarduc "go-boilerplate/internal/usecase/dashboard"                  // sample-api:line
 	exchangerateuc "go-boilerplate/internal/usecase/exchangerate"            // sample-api:line
 	"go-boilerplate/internal/usecase/healthcheck"
@@ -75,6 +76,7 @@ func UsecaseModule() fx.Option {
 			productuc.NewImageGC,
 			purchaseuc.New,
 			purchasestatusuc.New,
+			couponuc.New, // sample-api:line
 			cartuc.New,
 			inquiryuc.New, // sample-api:line
 			checkoutuc.New,

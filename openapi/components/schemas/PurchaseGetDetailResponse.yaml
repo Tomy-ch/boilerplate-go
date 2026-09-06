@@ -9,6 +9,8 @@ required:
   - userId
   - status
   - subtotalAmount
+  - discountAmount
+  - appliedCoupon
   - taxAmount
   - shippingFee
   - totalAmount
@@ -31,6 +33,21 @@ properties:
     format: int64
     description: 小計。明細（単価×数量）の合計。USD セント単位の整数です。
     example: 160000
+  discountAmount:
+    type: integer
+    format: int64
+    description: |
+      クーポンによる値引き額。USD セント単位の整数です。
+      **非 null で、クーポン未使用および過去の購入は 0** になります。
+      値引きが立っていることと appliedCoupon が入っていることは常に一致します。
+    example: 500
+  appliedCoupon:
+    type: object
+    nullable: true
+    allOf:
+      - $ref: './coupons/AppliedCouponResponse.yaml'
+    description: |
+      適用したクーポン。未使用の場合は null です。値引きと適用範囲は結合で解決した現在値です。
   taxAmount:
     type: integer
     format: int64

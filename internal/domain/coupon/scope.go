@@ -35,8 +35,6 @@ type ScopeKind struct {
 //
 // 対象は商品カテゴリ ID または商品 ID で名指しします。クーポンは商品集約もカテゴリ集約も参照せず、
 // 識別子だけを持ちます（集約をまたぐ参照は識別子に限る。internal/domain/README.md の Aggregate Design）。
-//
-// 明細が範囲に入るかを判定するのは引き換えの関心なので、その振る舞いはここに持ちません。
 type Scope struct {
 	kind ScopeKind
 	// targetID は、カテゴリ限定なら商品カテゴリ ID、商品限定なら商品 ID です。全体では未設定です。
@@ -121,3 +119,21 @@ func (s Scope) TargetID() *uuid.UUID { return ptr.Copy(s.targetID) }
 
 // IsZero は、未設定の適用範囲かどうかを返します。
 func (s Scope) IsZero() bool { return s.kind.IsZero() }
+
+// Covers は、明細がこの適用範囲に入るかどうかを返します。
+//
+// 「どの明細が対象か」の定義はこのメソッドが持ちます。全体はすべての明細を対象とし、
+// カテゴリ限定は明細の商品カテゴリが、商品限定は明細の商品が、それぞれ対象と一致するときだけ対象です。
+// 未設定の適用範囲はどの明細も対象にしません。
+func (s Scope) Covers(line Line) bool {
+	switch s.kind {
+	case ScopeKindAll:
+		return true
+	case ScopeKindCategory:
+		return s.targetID != nil && *s.targetID == line.CategoryID()
+	case ScopeKindProduct:
+		return s.targetID != nil && *s.targetID == line.ProductID()
+	default:
+		return false
+	}
+}

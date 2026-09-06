@@ -317,3 +317,93 @@ func TestDiscount_IsZero(t *testing.T) {
 		})
 	})
 }
+
+func TestDiscount_Apply(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("定額は対象額から額面をそのまま引く", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewFlatDiscount(newTestDecimal(t, "5.00"))
+			require.NoError(t, err)
+
+			assert.Equal(t, "5", d.Apply(newTestDecimal(t, "20.00")).String())
+		})
+
+		t.Run("定額が対象額を超える場合は対象額まで切り詰める", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewFlatDiscount(newTestDecimal(t, "50.00"))
+			require.NoError(t, err)
+
+			assert.Equal(t, "20", d.Apply(newTestDecimal(t, "20.00")).String())
+		})
+
+		t.Run("定額が対象額ちょうどの場合は対象額を返す", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewFlatDiscount(newTestDecimal(t, "20.00"))
+			require.NoError(t, err)
+
+			assert.Equal(t, "20", d.Apply(newTestDecimal(t, "20.00")).String())
+		})
+
+		t.Run("定率は対象額に率を掛ける", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+			require.NoError(t, err)
+
+			assert.Equal(t, "2", d.Apply(newTestDecimal(t, "20.00")).String())
+		})
+
+		t.Run("定率は丸めずに十進量のまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+			require.NoError(t, err)
+
+			assert.Equal(t, "0.001", d.Apply(newTestDecimal(t, "0.01")).String())
+		})
+
+		t.Run("率が1の場合は対象額の全額を引く", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewRateDiscount(newTestDecimal(t, "1"))
+			require.NoError(t, err)
+
+			assert.Equal(t, "20", d.Apply(newTestDecimal(t, "20.00")).String())
+		})
+
+		t.Run("対象額が0の場合は0を返す", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewFlatDiscount(newTestDecimal(t, "5.00"))
+			require.NoError(t, err)
+
+			assert.True(t, d.Apply(newTestDecimal(t, "0")).IsZero())
+		})
+
+		t.Run("対象額が負の場合は0を返す", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewFlatDiscount(newTestDecimal(t, "5.00"))
+			require.NoError(t, err)
+
+			assert.True(t, d.Apply(newTestDecimal(t, "-1.00")).IsZero())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("未設定の値引きは0を返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.True(t, Discount{}.Apply(newTestDecimal(t, "20.00")).IsZero())
+		})
+	})
+}

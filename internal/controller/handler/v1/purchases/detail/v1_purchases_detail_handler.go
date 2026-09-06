@@ -15,6 +15,7 @@ import (
 	"go-boilerplate/pkg/xerrors"
 
 	"github.com/labstack/echo/v5"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 type server struct {
@@ -28,6 +29,31 @@ func BindHandler(e *echo.Echo, tf observability.TracerFactory, uc purchaseuc.Use
 		tracer: tf.Controller(),
 		uc:     uc,
 	}, nil))
+}
+
+// toAppliedCouponResponse は、適用したクーポンを応答の語彙へ写します。未適用の場合は nil です。
+func toAppliedCouponResponse(v *purchaseuc.AppliedCouponView) *gen.AppliedCouponResponse {
+	if v == nil {
+		return nil
+	}
+
+	var targetID *openapi_types.UUID
+	if v.ScopeTargetID != nil {
+		p := v.ScopeTargetID.ToPrimitive()
+		targetID = &p
+	}
+
+	return &gen.AppliedCouponResponse{
+		Id: v.ID.ToPrimitive(),
+		Discount: gen.CouponDiscount{
+			Kind:  gen.CouponDiscountKind(v.DiscountKind),
+			Value: v.DiscountValue.String(),
+		},
+		Scope: gen.CouponScope{
+			Kind:     gen.CouponScopeKind(v.ScopeKind),
+			TargetId: targetID,
+		},
+	}
 }
 
 // GetPurchasesDetail は、本人の購入 1 件を明細込みで取得します。認証必須。404: 不存在 / 他人の購入
@@ -82,6 +108,8 @@ func toPurchaseGetDetailResponse(v purchaseuc.PurchaseGetDetailView) (gen.Purcha
 			Name: v.StatusName,
 		},
 		SubtotalAmount: v.SubtotalAmount,
+		DiscountAmount: v.DiscountAmount,
+		AppliedCoupon:  toAppliedCouponResponse(v.AppliedCoupon),
 		TaxAmount:      v.TaxAmount,
 		ShippingFee:    v.ShippingFee,
 		TotalAmount:    v.TotalAmount,

@@ -1,0 +1,17 @@
+type: object
+description: |
+  いまのカートに対して使えるクーポンと、そのクーポンを適用した場合の値引き額の組です。
+required:
+  - coupon
+  - discountAmount
+properties:
+  coupon:
+    $ref: './../coupons/CouponResponse.yaml'
+  discountAmount:
+    type: integer
+    format: int64
+    description: |
+      このクーポンを適用した場合に差し引かれる額。USD セント単位の整数です。
+      対象明細の小計を合算してから一度だけ切り捨てるため、明細ごとの丸め落ちは起きません。
+      確定時に実際に引かれる額と同じ規則で決まりますが、ロックを取らないため一致は保証されません。
+    example: 332

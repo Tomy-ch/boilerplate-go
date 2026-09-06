@@ -1,0 +1,17 @@
+type: object
+description: |
+  いまのカートに対して使えるクーポンの一覧。
+
+  **ロックを取らないため、返した値は返した瞬間から古くなります。** 確定までの間にカートの中身や
+  クーポンの状態が変われば、確定時の値引き額は変わり得ます。値引きが 0 になる確定は 422 で拒みます。
+
+  母集団は保有一覧（`GET /v1/users/me/coupons`）と異なります。使用済み・失効済みと、
+  いまのカートでは値引きが 0 になるクーポンは並びません。
+required:
+  - coupons
+properties:
+  coupons:
+    type: array
+    description: 使えるクーポンと値引き額の配列。1 枚も使えない場合は空配列です。
+    items:
+      $ref: '../../schemas/carts/CartCouponResponse.yaml'

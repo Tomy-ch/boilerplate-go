@@ -57,4 +57,11 @@ var (
 	// ErrDeliverNotAllowed は、配達不可の状態（未払い相当・処理中・支払い済み・完了・キャンセル済み）から配達完了に
 	// しようとした場合のエラーです。
 	ErrDeliverNotAllowed = xerrors.Wrap(apperror.ErrConflict, "purchase cannot be delivered in the current state")
+	// ErrInvalidCouponID は、適用するクーポン ID の検証に失敗した場合のエラーです。
+	ErrInvalidCouponID = xerrors.Wrap(errInvalid, "couponID failed")
+	// ErrZeroDiscount は、クーポンを適用しても値引きが立たない場合のエラーです。
+	// クーポンを消費して何も引かれない確定を作らないために拒みます。
+	ErrZeroDiscount = xerrors.Wrap(errInvalid, "the coupon does not reduce this purchase")
+	// ErrCouponAlreadyApplied は、既にクーポンを適用した購入へ再適用しようとした場合のエラーです。
+	ErrCouponAlreadyApplied = xerrors.Wrap(errInvalid, "a coupon is already applied")
 )

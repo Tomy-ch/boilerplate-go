@@ -49,6 +49,8 @@ type CreatePurchaseParams struct {
 	Details []purchaseuc.DetailParam
 	// DisplayCurrency は、参考換算額の表示通貨です。nil の場合は参考換算額を返しません。
 	DisplayCurrency *string
+	// CouponID は、適用するクーポンの ID です。nil の場合は値引きを行いません。
+	CouponID *uuid.UUID
 }
 
 // Usecase は、購入と参考換算を組み合わせるユースケースを定義します。
@@ -83,8 +85,9 @@ func (u *usecase) CreatePurchase(ctx context.Context, params CreatePurchaseParam
 	defer endSpan()
 
 	created, err := u.purchase.CreatePurchase(ctx, purchaseuc.CreatePurchaseParams{
-		UserID:  params.UserID,
-		Details: params.Details,
+		UserID:   params.UserID,
+		Details:  params.Details,
+		CouponID: params.CouponID,
 	})
 	if err != nil {
 		return PurchaseView{}, err

@@ -416,3 +416,255 @@ func TestCoupon_IsExpired(t *testing.T) {
 		})
 	})
 }
+
+// newScopedCoupon は、指定した適用範囲と値引きを持つクーポンを組み立てます。
+func newScopedCoupon(t *testing.T, discount Discount, scope Scope) *Coupon {
+	t.Helper()
+
+	attrs := validCouponArgs(t)
+	attrs.Discount = discount
+	attrs.Scope = scope
+	c, err := New(newTestUUID(t), attrs)
+	require.NoError(t, err)
+
+	return c
+}
+
+func TestCoupon_IsHeldBy(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("受給者本人の場合はtrueを返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+
+			assert.True(t, c.IsHeldBy(c.UserID()))
+		})
+
+		t.Run("別の利用者の場合はfalseを返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+
+			assert.False(t, c.IsHeldBy(newTestUUID(t)))
+		})
+	})
+}
+
+func TestCoupon_DiscountFor(t *testing.T) {
+	t.Parallel()
+
+	flat := func(t *testing.T, v string) Discount {
+		t.Helper()
+		d, err := NewFlatDiscount(newTestDecimal(t, v))
+		require.NoError(t, err)
+
+		return d
+	}
+	rate := func(t *testing.T, v string) Discount {
+		t.Helper()
+		d, err := NewRateDiscount(newTestDecimal(t, v))
+		require.NoError(t, err)
+
+		return d
+	}
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("全体の適用範囲は全明細の小計を対象にする", func(t *testing.T) {
+			t.Parallel()
+
+			c := newScopedCoupon(t, rate(t, "0.10"), NewAllScope())
+			a, _ := newTestLine(t, "10.00")
+			b, _ := newTestLine(t, "20.00")
+
+			got, err := c.DiscountFor([]Line{a, b})
+
+			require.NoError(t, err)
+			assert.Equal(t, 300, got)
+		})
+
+		t.Run("カテゴリ限定は対象カテゴリの明細だけを合算する", func(t *testing.T) {
+			t.Parallel()
+
+			target, targetAttrs := newTestLine(t, "20.00")
+			other, _ := newTestLine(t, "30.00")
+			scope, err := NewCategoryScope(targetAttrs.CategoryID)
+			require.NoError(t, err)
+			c := newScopedCoupon(t, rate(t, "0.10"), scope)
+
+			got, derr := c.DiscountFor([]Line{target, other})
+
+			require.NoError(t, derr)
+			assert.Equal(t, 200, got)
+		})
+
+		t.Run("対象の明細が1件も無い場合は0を返す", func(t *testing.T) {
+			t.Parallel()
+
+			scope, err := NewProductScope(newTestUUID(t))
+			require.NoError(t, err)
+			c := newScopedCoupon(t, flat(t, "5.00"), scope)
+			line, _ := newTestLine(t, "20.00")
+
+			got, derr := c.DiscountFor([]Line{line})
+
+			require.NoError(t, derr)
+			assert.Zero(t, got)
+		})
+
+		t.Run("明細が空の場合は0を返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newScopedCoupon(t, flat(t, "5.00"), NewAllScope())
+
+			got, err := c.DiscountFor(nil)
+
+			require.NoError(t, err)
+			assert.Zero(t, got)
+		})
+
+		t.Run("最小単位に満たない値引きは切り捨てで0になる", func(t *testing.T) {
+			t.Parallel()
+
+			c := newScopedCoupon(t, rate(t, "0.10"), NewAllScope())
+			line, _ := newTestLine(t, "0.05")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.NoError(t, err)
+			assert.Zero(t, got)
+		})
+
+		t.Run("端数は切り捨てる", func(t *testing.T) {
+			t.Parallel()
+
+			c := newScopedCoupon(t, rate(t, "0.10"), NewAllScope())
+			line, _ := newTestLine(t, "19.99")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.NoError(t, err)
+			assert.Equal(t, 199, got)
+		})
+
+		t.Run("定額が対象小計を超える場合は対象小計まで切り詰める", func(t *testing.T) {
+			t.Parallel()
+
+			c := newScopedCoupon(t, flat(t, "50.00"), NewAllScope())
+			line, _ := newTestLine(t, "20.00")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.NoError(t, err)
+			assert.Equal(t, 2000, got)
+		})
+
+		t.Run("合算してから丸めるため明細ごとの丸め落ちが起きない", func(t *testing.T) {
+			t.Parallel()
+
+			c := newScopedCoupon(t, rate(t, "0.10"), NewAllScope())
+			a, _ := newTestLine(t, "0.05")
+			b, _ := newTestLine(t, "0.05")
+
+			got, err := c.DiscountFor([]Line{a, b})
+
+			require.NoError(t, err)
+			assert.Equal(t, 1, got)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("値引き額が決済スケールの整数に収まらない場合、ErrInvalidDiscountValueを返す", func(t *testing.T) {
+			t.Parallel()
+
+			// Line.Subtotal は観測値であって検証を持たないため、決済スケールへ落とすと
+			// int64 を超える小計がドメインへ届き得る。
+			c := newScopedCoupon(t, rate(t, "1"), NewAllScope())
+			line, _ := newTestLine(t, "100000000000000000000")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.ErrorIs(t, err, ErrInvalidDiscountValue)
+			assert.Zero(t, got)
+		})
+	})
+}
+
+func TestCoupon_Redeem(t *testing.T) {
+	t.Parallel()
+
+	usableAt := testExpiresAt.Add(-time.Hour)
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("未使用かつ有効期限内なら使用日時を刻む", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+
+			require.NoError(t, c.Redeem(usableAt))
+
+			assert.True(t, c.IsUsed())
+			require.NotNil(t, c.UsedAt())
+			assert.Equal(t, usableAt, *c.UsedAt())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("使用済みの場合はErrAlreadyUsedを返し状態を変えない", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+			require.NoError(t, c.Redeem(usableAt))
+
+			err := c.Redeem(usableAt.Add(time.Minute))
+
+			require.ErrorIs(t, err, ErrAlreadyUsed)
+			require.NotNil(t, c.UsedAt())
+			assert.Equal(t, usableAt, *c.UsedAt())
+		})
+
+		t.Run("有効期限ちょうどの場合はErrExpiredを返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+
+			err := c.Redeem(testExpiresAt)
+
+			require.ErrorIs(t, err, ErrExpired)
+			assert.False(t, c.IsUsed())
+		})
+
+		t.Run("有効期限を過ぎている場合はErrExpiredを返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+
+			err := c.Redeem(testExpiresAt.Add(time.Hour))
+
+			require.ErrorIs(t, err, ErrExpired)
+			assert.False(t, c.IsUsed())
+		})
+
+		t.Run("使用済みかつ失効している場合は使用済みを先に返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+			require.NoError(t, c.Redeem(usableAt))
+
+			err := c.Redeem(testExpiresAt.Add(time.Hour))
+
+			require.ErrorIs(t, err, ErrAlreadyUsed)
+		})
+	})
+}

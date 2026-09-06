@@ -63,6 +63,8 @@ tags:
     description: 認証主体自身の購入集計（認証必須・自分絞り込み / query_service サンプル）。
   - name: v1/users/me/roles
     description: 認証主体自身のロール（認証必須・自分絞り込み / クライアントの楽観的な権限分岐用）。
+  - name: v1/users/me/coupons
+    description: 認証主体自身の保有クーポン（認証必須・使用済みや失効済みも並ぶ「持っているもの」の一覧）。
   - name: v1/prefectures
     description: 都道府県マスタ一覧（認証不要の参照系サンプル）。
   - name: v1/products
@@ -107,6 +109,8 @@ tags:
     description: カート明細の設定と削除（任意認証・自然キー upsert による冪等サンプル・Idempotency-Key を要さない）。
   - name: v1/carts/merge
     description: ログイン時のカート引き継ぎ（認証必須・所有権の遷移サンプル・Idempotency-Key を採る）。
+  - name: v1/carts/me/coupons
+    description: いまのカートに使えるクーポンと値引き額（認証必須・適用可否の判定を表現層へ漏らさないための読み）。
   - name: v1/inquiries
     description: 問い合わせ一覧（admin のみ・keyset ページング・本文を持たない要約）。
   - name: v1/inquiries/me/messages
@@ -147,6 +151,8 @@ paths:
     $ref: './paths/v1/users/me/purchases/summary.yaml'
   /v1/users/me/roles:
     $ref: './paths/v1/users/me/roles.yaml'
+  /v1/users/me/coupons:
+    $ref: './paths/v1/users/me/coupons.yaml'
   /v1/users/search:
     $ref: './paths/v1/users/search.yaml'
   /v1/users/feed:
@@ -205,6 +211,8 @@ paths:
     $ref: './paths/v1/carts/me/items/productId.yaml'
   /v1/carts/me/merge:
     $ref: './paths/v1/carts/me/merge.yaml'
+  /v1/carts/me/coupons:
+    $ref: './paths/v1/carts/me/coupons.yaml'
   /v1/inquiries:
     $ref: './paths/v1/inquiries.yaml'
   /v1/inquiries/me/messages:
