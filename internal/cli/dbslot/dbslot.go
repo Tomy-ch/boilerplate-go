@@ -29,6 +29,8 @@ type Config struct {
 	DlvBase       int    // DLV_HOST_PORT のベース
 	PprofBase     int    // PPROF_HOST_PORT のベース
 	APPEnv        string // 実行環境ラベル（deploy 系ガードに使用）
+
+	Realtime RealtimeBase // Realtime Delivery の資源名の基底（LoadRealtimeBase が埋め込み env から読む）
 }
 
 // Pool は、リース・DB 管理・compose 起動を統合するオーケストレータです。

@@ -48,6 +48,9 @@ slot-acquire:
 	@# db-reinit が 1 度しか実行されない。個別の make 呼び出しに分け、各 worktree DB を作り直す。
 	@set -a; . ./.gobp-db-slot; set +a; \
 		$(MAKE) db-reinit DB=$$DB_NAME_LOCAL && $(MAKE) db-reinit DB=$$DB_NAME_TEST
+	@# PostgreSQL の採番と DynamoDB EventLog は寿命を揃える必要があり、db-reinit と対で呼ぶ
+	@# （理由は docs/maintenance/db-worktree-pool.md「A slot's two stores are reset together」）。
+	@$(MAKE) realtime-reset
 	@go run ./cmd/ db-slot heartbeat
 	@echo "✅ DB スロットを取得しました。make test は自 worktree DB(wt<N>_test)、make serve は共有 DB の wt<N>_local を使います。"
 

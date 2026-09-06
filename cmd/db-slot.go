@@ -112,7 +112,12 @@ func newSlotPool() (*dbslot.Pool, error) {
 		envStr("GOBP_DB_POOL_PGPASSWORD", "postgres-password"),
 		envStr("GOBP_DB_POOL_PGMAINTDB", "postgres"),
 	)
-	return dbslot.NewPool(newSlotRegistry(root), admin, dbslot.ExecCompose{}, slotConfig(root), os.Stdout, os.Stderr), nil
+	cfg, err := slotConfig(root)
+	if err != nil {
+		return nil, err
+	}
+
+	return dbslot.NewPool(newSlotRegistry(root), admin, dbslot.ExecCompose{}, cfg, os.Stdout, os.Stderr), nil
 }
 
 // newSlotRegistry は、ホスト上のリースレジストリを配線して生成します。
@@ -133,12 +138,19 @@ func newSlotResolver(out io.Writer) (*dbslot.Resolver, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := slotConfig(root)
+	if err != nil {
+		return nil, err
+	}
+
 	// スロットの保持はレジストリのリースで判定する（.gobp-db-slot は解放されず残ることがある）。
-	return dbslot.NewResolver(slotConfig(root), nil, newSlotRegistry(root), out), nil
+	lease := &dbslot.LeaseProbe{OwnedBySelf: newSlotRegistry(root).OwnedBySelf}
+
+	return dbslot.NewResolver(cfg, nil, lease, out), nil
 }
 
-func slotConfig(root string) dbslot.Config {
-	return dbslot.Config{
+func slotConfig(root string) (dbslot.Config, error) {
+	cfg := dbslot.Config{
 		Root:          root,
 		SharedProject: envStr("GOBP_DB_SHARED_PROJECT", "gobp-shared"),
 		APIBasePort:   envInt("GOBP_API_POOL_BASE", defaultPoolAPIBasePort),
@@ -147,6 +159,17 @@ func slotConfig(root string) dbslot.Config {
 		PprofBase:     envInt("GOBP_PPROF_POOL_BASE", defaultPoolPprofBasePort),
 		APPEnv:        os.Getenv("APP_ENV"),
 	}
+
+	// 読めなければここで止める。空のまま渡すと compose の既定値 `${VAR:-local}` が主 checkout の
+	// 名前へ黙って置き換え、worktree 間で混線する。
+	base, err := dbslot.LoadRealtimeBase()
+	if err != nil {
+		return dbslot.Config{}, err
+	}
+
+	cfg.Realtime = base
+
+	return cfg, nil
 }
 
 func poolDir() string {

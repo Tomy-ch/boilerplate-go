@@ -39,6 +39,12 @@ const (
 	// mockAuthIssuerPath は、mock 認証サーバーが issuer を生やすパスです。値は
 	// docker/mock-auth-server/config.json の issuerId と一致していなければなりません。
 	mockAuthIssuerPath = "/default"
+
+	// slotInfixTable / slotInfixName は、基底名とスロット番号の間に入る区切りです。
+	// table だけ `_` なのは REALTIME_TABLE_SUFFIX の使用可能文字に合わせるためで、
+	// queue と topic は `-` です。
+	slotInfixTable = "_wt"
+	slotInfixName  = "-wt"
 )
 
 var (
@@ -64,11 +70,11 @@ type GitProbe struct {
 	HasGitEntry func(root string) bool
 }
 
-// LeaseOwnership は、レジストリのリース所有権の判定点です（*Registry が実装。テストで差し替えます）。
+// LeaseProbe は、リース所有権の判定に使う外部依存の注入点です（テストで差し替えます）。
 // .gobp-db-slot は解放されないまま残ることがあるので、ファイルの存在だけでは所有を名乗れません。
-type LeaseOwnership interface {
+type LeaseProbe struct {
 	// OwnedBySelf は、そのスロットのリースを自 worktree が保持しているかを返します。
-	OwnedBySelf(slot int) bool
+	OwnedBySelf func(slot int) bool
 }
 
 // Values は、スロットから導かれる解決済みの値です。
@@ -82,6 +88,12 @@ type Values struct {
 	AppProject      string // app 層の compose プロジェクト名
 	AuthIssuer      string // mock 認証サーバーのホスト公開 URL（トークンの iss）
 	InfraNoRecreate string // 共有インフラへ渡す --no-recreate（不要なら空）
+
+	// Realtime Delivery の資源名。共有の DynamoDB Local / GoAWS 上でスロット毎に名前空間を分けます
+	// （docs/maintenance/db-worktree-pool.md「The Realtime Delivery emulators are shared instances」）。
+	RealtimeTableSuffix string // table 名の末尾（realtime_event_log_<suffix> の suffix）
+	RealtimeQueuePrefix string // serve instance ごとの queue 名の先頭
+	RealtimeTopic       string // fan-out topic の ARN
 }
 
 // Resolver は、スロットから導かれる値の解決と所有者判定を担います。
@@ -89,7 +101,7 @@ type Values struct {
 type Resolver struct {
 	cfg   Config
 	probe GitProbe
-	lease LeaseOwnership
+	lease LeaseProbe
 	out   io.Writer
 }
 
@@ -112,13 +124,18 @@ func (c GitContext) String() string {
 // NewResolver は Resolver を生成します。probe が nil の場合はホストの git を使います。
 // lease が nil のときはリースを確認できないため、どのスロットも保持していないものとして解決します
 // （所有を騙るより、スロットの取り直しを案内して止まるほうが安全なため）。
-func NewResolver(cfg Config, probe *GitProbe, lease LeaseOwnership, out io.Writer) *Resolver {
+func NewResolver(cfg Config, probe *GitProbe, lease *LeaseProbe, out io.Writer) *Resolver {
 	p := realGitProbe()
 	if probe != nil {
 		p = *probe
 	}
 
-	return &Resolver{cfg: cfg, probe: p, lease: lease, out: out}
+	var l LeaseProbe
+	if lease != nil {
+		l = *lease
+	}
+
+	return &Resolver{cfg: cfg, probe: p, lease: l, out: out}
 }
 
 // Resolve は、git 文脈と .gobp-db-slot から解決済みの値を組み立てます。
@@ -135,17 +152,25 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 		DBTest:     defaultDBTest,
 		AppProject: "gobp-app-" + filepath.Base(r.cfg.Root),
 		AuthIssuer: mockAuthIssuer(r.cfg.MockAuthBase),
+
+		RealtimeTableSuffix: r.cfg.Realtime.TableSuffix,
+		RealtimeQueuePrefix: r.cfg.Realtime.QueuePrefix,
+		RealtimeTopic:       r.cfg.Realtime.Topic,
 	}
 
 	// リースを保持しているスロットの値だけを採用する。導出はスロット番号から行い、
 	// .gobp-db-slot が並べている DB 名やプロジェクト名は読まない。レジストリで裏が取れるのは
 	// 番号だけで、他のフィールドは手編集や別 worktree のファイルの写しで食い違い得る。
 	if slot, held := r.heldSlot(); held {
+		num := strconv.Itoa(slot)
 		values.SlotHeld = true
 		values.DBLocal = dbLocal(slot)
 		values.DBTest = dbTest(slot)
 		values.AppProject = serveProject(slot)
 		values.AuthIssuer = mockAuthIssuer(r.cfg.MockAuthBase + slot)
+		values.RealtimeTableSuffix = realtimeName(r.cfg.Realtime.TableSuffix, num, slotInfixTable)
+		values.RealtimeQueuePrefix = realtimeName(r.cfg.Realtime.QueuePrefix, num, slotInfixName)
+		values.RealtimeTopic = realtimeName(r.cfg.Realtime.Topic, num, slotInfixName)
 	}
 
 	// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。
@@ -209,7 +234,7 @@ func (r *Resolver) PrintValues(ctx context.Context) error {
 // 宣言が壊れている（スロット番号や DB 名が読めない）場合と、リースを確認できない場合は保持なしとします。
 func (r *Resolver) heldSlot() (int, bool) {
 	slot := readSlotFile(filepath.Join(r.cfg.Root, ".gobp-db-slot"))
-	if slot["DB_NAME_LOCAL"] == "" || r.lease == nil {
+	if slot["DB_NAME_LOCAL"] == "" || r.lease.OwnedBySelf == nil {
 		return 0, false
 	}
 
@@ -268,6 +293,9 @@ func RenderEnv(v Values) string {
 		{"APP_PROJECT", v.AppProject},
 		{"AUTH_ISSUER", v.AuthIssuer},
 		{"INFRA_NO_RECREATE", v.InfraNoRecreate},
+		{"REALTIME_TABLE_SUFFIX", v.RealtimeTableSuffix},
+		{"REALTIME_QUEUE_PREFIX", v.RealtimeQueuePrefix},
+		{"REALTIME_TOPIC", v.RealtimeTopic},
 	}
 
 	var sb strings.Builder
@@ -290,6 +318,9 @@ func RenderValues(v Values) string {
 	fmt.Fprintf(&sb, "APP_PROJECT       : %s\n", v.AppProject)
 	fmt.Fprintf(&sb, "AUTH_ISSUER       : %s\n", v.AuthIssuer)
 	fmt.Fprintf(&sb, "INFRA_NO_RECREATE : %s\n", orDefault(v.InfraNoRecreate, "（渡さない）"))
+	fmt.Fprintf(&sb, "REALTIME_TABLE    : %s\n", v.RealtimeTableSuffix)
+	fmt.Fprintf(&sb, "REALTIME_QUEUE    : %s\n", v.RealtimeQueuePrefix)
+	fmt.Fprintf(&sb, "REALTIME_TOPIC    : %s\n", v.RealtimeTopic)
 
 	return sb.String()
 }
@@ -355,6 +386,18 @@ func readSlotFile(path string) map[string]string {
 // mockAuthIssuer は、mock 認証サーバーのホスト公開ポートから issuer URL を組み立てます。
 func mockAuthIssuer(port int) string {
 	return "http://localhost:" + strconv.Itoa(port) + mockAuthIssuerPath
+}
+
+// realtimeName は、基底名にスロット番号を継いだ資源名を返します（基底の出所は Config.Realtime）。
+//
+// 基底が空なら継ぎません。空の topic は「fan-out を配線すると起動に失敗する」という env の契約で、
+// そこへスロット番号だけを継ぐと `-wt2` のような、契約でも正しい名前でもない値になります。
+func realtimeName(base, slot, infix string) string {
+	if base == "" || slot == "" {
+		return base
+	}
+
+	return base + infix + slot
 }
 
 // orDefault は、value が空なら def を返します。
