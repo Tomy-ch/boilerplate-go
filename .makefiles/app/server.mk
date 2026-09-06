@@ -2,6 +2,7 @@
 .PHONY: serve ## 開発環境(API/mock認証)を起動する
 .PHONY: serve-build ## キャッシュを利用したビルド後、開発環境を起動する
 .PHONY: serve-build-clean ## キャッシュ無効・base image を pull したクリーンビルド後、開発環境を起動する
+.PHONY: app-up ## app コンテナを起動し API が応答するまで待つ（serve 系から呼ぶ内部用）
 .PHONY: serve-stop ## この checkout の app コンテナを停止する
 .PHONY: infra-up ## 共有インフラを起動する
 .PHONY: infra-down ## 共有インフラを停止する
@@ -40,7 +41,7 @@ serve: require-db-owner
 	@echo "🔄 開発環境を起動します。"
 	@$(MAKE) infra-up
 	@$(MAKE) realtime-provision
-	@$(COMPOSE_APP) up -d $(APP_SERVICES)
+	@$(MAKE) app-up
 	@# スロット保持時のみ heartbeat を更新する（未取得なら何もしない）。
 	@go run ./cmd/ db-slot heartbeat
 	@$(LOAD_SLOT); $(DB_SLOT_ENV); echo "✅ 開発環境の起動が完了しました。API: http://localhost:$${API_HOST_PORT:-8080} (project=$$APP_PROJECT)"
@@ -53,7 +54,7 @@ serve-build: require-db-owner
 	@$(COMPOSE_APP) build $(APP_SERVICES)
 	@$(MAKE) infra-up
 	@$(MAKE) realtime-provision
-	@$(COMPOSE_APP) up -d $(APP_SERVICES)
+	@$(MAKE) app-up
 	@$(LOAD_SLOT); echo "✅ 開発環境の起動が完了しました。API: http://localhost:$${API_HOST_PORT:-8080}"
 
 serve-build-clean: require-db-owner
@@ -61,8 +62,26 @@ serve-build-clean: require-db-owner
 	@$(COMPOSE_APP) build --no-cache --pull $(APP_SERVICES)
 	@$(MAKE) infra-up
 	@$(MAKE) realtime-provision
-	@$(COMPOSE_APP) up -d $(APP_SERVICES)
+	@$(MAKE) app-up
 	@$(LOAD_SLOT); echo "✅ 開発環境の起動が完了しました。API: http://localhost:$${API_HOST_PORT:-8080}"
+
+# 失敗時に出す api_server ログの行数。fx の起動ログは Provided 行が数十行続き、失敗本体と
+# dlv の終了理由はその末尾に集中する。全文が要るときは make serve APP_LOG_TAIL=200 と上書きする。
+APP_LOG_TAIL ?= 50
+
+# air はアプリが落ちてもコンテナを生かしたままにするため、up -d の終了コードに起動の成否は現れない。
+# api_server の healthcheck（docker-compose.yaml）を --wait で待って初めて成否になる。
+# --wait-timeout は付けない。待ちの上限は healthcheck の start_period + retries × interval が既に
+# 持っており、ここにも持つと片方だけ伸ばしたとき compose が先に切れ、まだビルド中のログを失敗として
+# 見せることになる。compose の失敗メッセージは "container ... is unhealthy" までしか言わないので、
+# 次に読むログをここで出す。$$APP_PROJECT は直前の $(COMPOSE_APP) が同じシェルで eval した値。
+app-up: require-db-owner
+	@$(COMPOSE_APP) up -d --wait $(APP_SERVICES) || { \
+		echo "❌ API の起動に失敗しました。api_server のログ末尾 $(APP_LOG_TAIL) 行:"; \
+		$(COMPOSE_APP) logs --no-log-prefix --tail=$(APP_LOG_TAIL) api_server; \
+		echo "   全文: docker logs $$APP_PROJECT-api_server-1 ／ 停止: make serve-stop"; \
+		exit 1; \
+	}
 
 serve-stop:
 	@$(DB_SLOT_ENV); echo "🛑 app コンテナを停止します... (project=$$APP_PROJECT)"

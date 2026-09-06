@@ -38,6 +38,21 @@ services:
         condition: service_healthy
       garage_init:
         condition: service_completed_successfully
+    healthcheck:
+      # 開発コンテナが使う tooling ステージは runtime ステージと別の FROM なので、
+      # docker/server/Dockerfile の HEALTHCHECK を継承しない。判定はここが唯一で、見るパスは
+      # runtime 側と同じ /health に揃える（片方を変えたときにもう片方を見に行かせるため）。
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 2s
+      timeout: 2s
+      # retries が他サービスの 30 でなく 10 なのは、api_server に restart が無く落ちたら戻らない
+      # ため長い retries は検知を遅らせるだけである一方、ホットリロードの再ビルド中は /health が
+      # 落ちるので、短すぎると保存のたびに unhealthy へ振れるから。
+      retries: 10
+      # air の初回ビルドを吸収する。Go のビルドキャッシュはコンテナ寿命なので、コンテナを
+      # 作り直すたびにコールドビルドになる。この間の失敗は retries に数えないため正常起動の
+      # 待ちは伸びず、縮めると高負荷時に正常起動を失敗と誤判定する側へ倒れる。
+      start_period: 90s
     profiles:
       - development
 

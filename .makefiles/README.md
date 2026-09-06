@@ -46,9 +46,10 @@ per-checkout **app** layer (`api_server` / `mock_auth_server`) runs in this chec
 
 | Command | Description | Main Use |
 | --- | --- | --- |
-| `make serve` | Brings up the shared infra (`infra-up`), then starts this checkout's app services in the background and refreshes the DB slot heartbeat. | Start normal local development |
-| `make serve-build` | Rebuilds the app images (cache enabled), brings up the shared infra, then starts the app services. | Reflect Dockerfile or dependency changes |
-| `make serve-build-clean` | Cleanly rebuilds the app images with `--no-cache --pull`, brings up the shared infra, then starts the app services. | Pick up base image updates (e.g., Go version upgrade) |
+| `make serve` | Brings up the shared infra (`infra-up`), then starts this checkout's app services through `app-up` and refreshes the DB slot heartbeat. | Start normal local development |
+| `make serve-build` | Rebuilds the app images (cache enabled), brings up the shared infra, then starts the app services through `app-up`. | Reflect Dockerfile or dependency changes |
+| `make serve-build-clean` | Cleanly rebuilds the app images with `--no-cache --pull`, brings up the shared infra, then starts the app services through `app-up`. | Pick up base image updates (e.g., Go version upgrade) |
+| `make app-up` | Starts this checkout's app services and waits for the `api_server` healthcheck (`up --wait`), so the caller's success message means the API can answer rather than that a container exists. On failure prints the last `APP_LOG_TAIL` (default `50`) lines of the `api_server` log and exits non-zero. | Internal — called by the three `serve` targets. Useful on its own to restart just the app after a startup failure, skipping the infra and provisioning steps |
 | `make serve-stop` | Stops this checkout's app project only. | Stop the API without touching the shared infra or other checkouts |
 | `make infra-up` | Starts the shared infra services (`--wait`) plus the one-shot `garage_init` in the `gobp-shared` project. | Bring up the shared infra alone (called idempotently by `serve` / `job` / `worker`). In a worktree it also passes `INFRA_NO_RECREATE`, keeping a running container another checkout may be using — a definition change then takes `infra-down` followed by `infra-up` |
 | `make infra-down` | Stops the shared infra project (named volumes are kept). | Shut the infra down — **affects every checkout / worktree** |
@@ -308,6 +309,7 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | `COMPOSE_INFRA` | `docker compose -p $(INFRA_PROJECT)` | Compose invocation for the infra layer. |
 | `INFRA_NO_RECREATE` | `--no-recreate` in a worktree, empty otherwise | Keeps a shared-infra container another checkout is using instead of re-creating it. Empty in a single checkout, where compose re-converges on a definition change as usual. Set it explicitly for a topology the worktree test misses, such as several independent clones. Resolved inside the recipe by `db-slot env`, not at make's parse time. |
 | `COMPOSE_APP` | `docker compose -p $(APP_PROJECT) -f docker-compose.yaml -f docker-compose.attach.yaml --profile development` | Compose invocation for the app layer. `docker-compose.attach.yaml` points the app services at the shared infra via `host.docker.internal`. |
+| `APP_LOG_TAIL` | `50` | Lines of the `api_server` log `app-up` prints when the API fails to come up. Raise it when the failure is older than the tail. |
 | `API_HOST_PORT` / `MOCK_AUTH_HOST_PORT` | `8080` / `2010` | Published host ports of the API / mock auth server. |
 | `DLV_HOST_PORT` / `PPROF_HOST_PORT` | `2345` / `6060` | Published host ports of the dlv debug / pprof endpoints. |
 | `COMPOSE_PROJECT_NAME` | `$(INFRA_PROJECT)` | Default project for compose calls that don't pass `-p`, so DB tooling shares the infra network. |

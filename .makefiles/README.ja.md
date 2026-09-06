@@ -45,9 +45,10 @@ checkout 毎の **app 層**（`api_server` / `mock_auth_server`）は自 checkou
 
 | コマンド | 説明 | 主な用途 |
 | --- | --- | --- |
-| `make serve` | 共有インフラを起動（`infra-up`）したうえで、自 checkout の app サービスをバックグラウンド起動し、DB スロットの heartbeat を更新します。 | 通常のローカル開発開始 |
-| `make serve-build` | app イメージをキャッシュ利用で再ビルドし、共有インフラを起動したうえで app サービスを起動します。 | Dockerfile や依存変更の反映 |
-| `make serve-build-clean` | app イメージを `--no-cache --pull` でクリーンビルドし、共有インフラを起動したうえで app サービスを起動します。 | base image 更新の取り込み（例: Go バージョンアップ） |
+| `make serve` | 共有インフラを起動（`infra-up`）したうえで、自 checkout の app サービスを `app-up` 経由で起動し、DB スロットの heartbeat を更新します。 | 通常のローカル開発開始 |
+| `make serve-build` | app イメージをキャッシュ利用で再ビルドし、共有インフラを起動したうえで app サービスを `app-up` 経由で起動します。 | Dockerfile や依存変更の反映 |
+| `make serve-build-clean` | app イメージを `--no-cache --pull` でクリーンビルドし、共有インフラを起動したうえで app サービスを `app-up` 経由で起動します。 | base image 更新の取り込み（例: Go バージョンアップ） |
+| `make app-up` | 自 checkout の app サービスを起動し、`api_server` の healthcheck が通るまで待ちます（`up --wait`）。呼び出し元の成功メッセージが「コンテナが存在する」ではなく「API が応答できる」を意味するようになります。失敗時は `api_server` ログの末尾 `APP_LOG_TAIL` 行（既定 `50`）を出して非ゼロで終了します。 | 内部用 — 3 つの `serve` 系ターゲットが呼びます。起動失敗後にインフラ起動と provisioning を飛ばして app だけ上げ直すのにも使えます |
 | `make serve-stop` | 自 checkout の app プロジェクトだけを停止します。 | 共有インフラや他 checkout に触れず API を止める |
 | `make infra-up` | 共有インフラのサービス（`--wait`）と one-shot の `garage_init` を `gobp-shared` プロジェクトで起動します。 | 共有インフラだけを起動する（`serve` / `job` / `worker` が冪等に呼びます）。worktree では `INFRA_NO_RECREATE` も渡し、他の checkout が使っている可能性のある稼働中コンテナは残します。このとき定義変更の反映は `infra-down` → `infra-up` になります |
 | `make infra-down` | 共有インフラのプロジェクトを停止します（名前付きボリュームは保持）。 | インフラを落とす。**全 checkout / worktree に影響します** |
@@ -307,6 +308,7 @@ hadolint により Dockerfile を lint し、`FROM` の base image を不変の 
 | `COMPOSE_INFRA` | `docker compose -p $(INFRA_PROJECT)` | infra 層向けの compose 呼び出し。 |
 | `INFRA_NO_RECREATE` | worktree では `--no-recreate`、それ以外は空 | 他の checkout が使っている共有インフラのコンテナを作り直さずそのまま使います。単一 checkout では空で、compose は従来どおり定義変更へ再収束します。独立した clone を複数持つなど worktree 判定で拾えない構成では明示的に指定してください。解決は make のパース時ではなく、レシピ内の `db-slot env` が行います。 |
 | `COMPOSE_APP` | `docker compose -p $(APP_PROJECT) -f docker-compose.yaml -f docker-compose.attach.yaml --profile development` | app 層向けの compose 呼び出し。`docker-compose.attach.yaml` が app サービスの接続先を `host.docker.internal` 経由の共有インフラへ差し替えます。 |
+| `APP_LOG_TAIL` | `50` | API が起動できなかったとき `app-up` が出す `api_server` ログの行数。失敗が末尾より古いときに増やす。 |
 | `API_HOST_PORT` / `MOCK_AUTH_HOST_PORT` | `8080` / `2010` | API / mock 認証サーバーのホスト公開ポート。 |
 | `DLV_HOST_PORT` / `PPROF_HOST_PORT` | `2345` / `6060` | dlv デバッグ / pprof のホスト公開ポート。 |
 | `COMPOSE_PROJECT_NAME` | `$(INFRA_PROJECT)` | `-p` を渡さない compose 呼び出しの既定プロジェクト。DB ツーリングが共有インフラのネットワークで動くようにします。 |
