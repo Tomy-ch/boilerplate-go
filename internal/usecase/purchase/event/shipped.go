@@ -11,7 +11,8 @@ import (
 // TypeShipped は、購入発送の outbox イベント種別（version 込み）です。
 const TypeShipped = "purchase.shipped.v1"
 
-// shipped は、purchase.shipped.v1 の自己完結 snapshot payload です。
+// shipped は、purchase.shipped.v1 の通知 payload です。識別子と、起きた事実の時刻だけを運びます
+// （payload_parity.yaml の kind: notification）。
 type shipped struct {
 	PurchaseID string `json:"purchaseId"`
 	Code       string `json:"code"`
@@ -20,7 +21,7 @@ type shipped struct {
 	ShippedAt  string `json:"shippedAt"`
 }
 
-// BuildShipped は、購入集約から purchase.shipped.v1 の自己完結 snapshot payload を marshal します。
+// BuildShipped は、購入集約から purchase.shipped.v1 の通知 payload を marshal します。
 func BuildShipped(p *purchase.Purchase) ([]byte, error) {
 	var shippedAt string
 	if at := p.ShippedAt(); at != nil {

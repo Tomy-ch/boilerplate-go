@@ -232,7 +232,7 @@ The subsystem ships the **full machinery**: emit/relay/gc/replay usecases, the R
 ```mermaid
 flowchart LR
     EM["① call Emit in the business tx<br/>(alongside the domain change)"]:::need
-    PL["② define payload + event_type<br/>(snapshot + version, self-contained)"]:::need
+    PL["② define payload + event_type<br/>(declare the kind, then version it)"]:::need
     RC["③ build the receiver endpoint<br/>(idempotent on Idempotency-Key)"]:::need
     CF["④ set ENDPOINT_OUTBOX (+ tuning)"]:::need
     DP["⑤ deploy the relay process<br/>(cmd outbox-relay --channel, one per channel)"]:::need
@@ -245,7 +245,7 @@ flowchart LR
 | # | Required implementation | Location / how | Reference |
 | --- | --- | --- | --- |
 | ① | call `EmitUsecase.Emit` inside the same `tx.Manager.Do` as the domain write, naming the `Channel` (there is no default; an ordered channel also supplies `OrderingKey` + `OrderingSequence`) | the usecase that mutates the aggregate | `emit.go` `EmitInput` |
-| ② | choose `EventType` (`+version`) and marshal a **self-contained snapshot** payload; do NOT put `Authorization`/`Cookie` in `Headers` (a denylist drops known-sensitive names before send, but that is defense-in-depth, not the contract) | caller of `Emit` | `EmitInput.Payload` / `.Headers` doc |
+| ② | choose `EventType` (`+version`), declare the payload's kind in `payload_parity.yaml` (see below) and marshal it; do NOT put `Authorization`/`Cookie` in `Headers` (a denylist drops known-sensitive names before send, but that is defense-in-depth, not the contract) | caller of `Emit` | `EmitInput.Payload` / `.Headers` doc |
 | ③ | a receiving endpoint that **dedupes on `Idempotency-Key`** (= `message_id`) and returns 2xx only on durable accept | external service | `httpPublisher.Publish` |
 | ④ | `ENDPOINT_OUTBOX` (required; empty/invalid URL = relay refuses to start) + optional `OUTBOX_POLL_INTERVAL` / `OUTBOX_ERROR_BACKOFF` / `OUTBOX_BATCH_SIZE` | `env/` & IaC | `OutboxConfig` defaults |
 | ⑤ | run `cmd outbox-relay --channel=<channel>` as a resident process, one per delivery channel in use (it stays up until SIGTERM, drains on stop) | deployment / IaC | `cmd/outbox_relay.go` |
@@ -253,6 +253,25 @@ flowchart LR
 | ⑦ | alert on `outbox.dead`, on `outbox.lag_seconds` per channel (the age alert that replaces the old try-count backstop, [ADR-0058](../adr/0058-outbox-dead-on-permanent-error.md)) and on `outbox.blocked_streams`, then run `outbox-relay replay [--message-id=<uuid>]` to recover | runbook | `cmd outbox-relay replay` |
 
 > The relay, GC, and replay all reuse the shared infra wiring; only the resident relay process carries the non-standard HTTP publisher profile. The GC job lives in the main server's job group, so `cmd job outbox-gc` is available from the same binary — it does not run on its own.
+
+### Payload kinds and the parity declaration
+
+"Self-contained" is not a criterion. Every payload can claim it, and most do, so the word cannot tell
+a payload that must carry the aggregate's state from one that only reports what happened. Two kinds
+are declared instead, per payload, in `payload_parity.yaml` beside the `Build*` that produces it:
+
+| Kind | What it promises | Consequence |
+| --- | --- | --- |
+| `snapshot` | the aggregate's state at the moment of the fact, so a subscriber need not call back | every field of the source struct is classified — carried (with its JSON name) or omitted (with a reason) |
+| `notification` | what happened, when, and to which identifier | no field-level correspondence; the declaration itself records that the payload does not track the aggregate |
+
+`TestOutboxPayloadParity` reconciles the declaration with the code in both directions, so a field
+added to an aggregate cannot leave a `snapshot` payload silently behind
+([ADR-0113](../adr/0113-outbox-payload-kinds-and-parity-declaration.md)).
+
+A `snapshot` that carries a breakdown — amounts that a subscriber is expected to add up — additionally
+pins the arithmetic in its own unit test, with every term non-zero. Field-level parity proves the
+fields are present; only the arithmetic proves they still agree.
 
 ---
 

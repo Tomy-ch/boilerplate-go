@@ -47,6 +47,14 @@ cross-cutting structure rules (`t.Parallel()`, subtest groups, assertions) still
 Allowlists are deliberately avoided: an allowlist is itself a drift source, so an exception is either
 expressed as a structural carve-out with a test pinning it, or it is a failure.
 
+A **complete declaration owned by the subject** is not an allowlist, and the difference is worth
+stating because the two look alike from here. An allowlist lives on the checking side and enumerates
+what the check agrees to ignore, so nothing fails when it goes stale. A declaration lives beside the
+code it describes, covers that code exhaustively rather than by exception, and is itself checked in
+both directions — a stale entry and an unclassified one both fail. `payload_parity.yaml` next to each
+`Build*` is the current instance: it does not exempt a payload from the check, it is what the check
+reads to know what that payload promised.
+
 ## Notes
 
 - `depguard` forbids `go/ast` here, so detection is text scanning over gofmt-normalised sources.

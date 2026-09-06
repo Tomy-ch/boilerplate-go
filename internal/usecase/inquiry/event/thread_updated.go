@@ -14,7 +14,8 @@ const TypeThreadUpdated = "inquiry.thread.updated.v1"
 // SchemaVersionThreadUpdated は、threadUpdated payload の schema 版です。
 const SchemaVersionThreadUpdated = 1
 
-// threadUpdated は、inquiry.thread.updated.v1 の自己完結 snapshot payload です。
+// threadUpdated は、inquiry.thread.updated.v1 の通知 payload です。識別子と、起きた事実の時刻だけを運びます
+// （payload_parity.yaml の kind: notification）。
 // 一覧画面の更新に要るものだけを載せ、本文は持ちません。
 type threadUpdated struct {
 	InquiryID string `json:"inquiryId"`

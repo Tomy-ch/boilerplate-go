@@ -228,7 +228,7 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     EM["① 業務 tx 内で Emit を呼ぶ<br/>（ドメイン変更と一緒に）"]:::need
-    PL["② payload + event_type を定義<br/>（snapshot + version の自己完結）"]:::need
+    PL["② payload + event_type を定義<br/>（種別を宣言してから版を付ける）"]:::need
     RC["③ 受信エンドポイントを作る<br/>（Idempotency-Key で冪等）"]:::need
     CF["④ ENDPOINT_OUTBOX を設定（+ tuning）"]:::need
     DP["⑤ relay プロセスをデプロイ<br/>（cmd outbox-relay --channel・チャネルごとに常駐）"]:::need
@@ -241,7 +241,7 @@ flowchart LR
 | # | 必要な実装 | 箇所 / やり方 | 参照 |
 | --- | --- | --- | --- |
 | ① | ドメイン書き込みと同じ `tx.Manager.Do` の中で `EmitUsecase.Emit` を呼び、`Channel` を明示する（既定値は無い。順序を持つチャネルでは `OrderingKey` + `OrderingSequence` も渡す） | 集約を変更する usecase | `emit.go` `EmitInput` |
-| ② | `EventType`（`+version`）を選び、**自己完結 snapshot** payload を marshal。`Headers` に `Authorization`/`Cookie` を入れない（既知の機微ヘッダ名は送出前に denylist で落とすが、それは defense-in-depth であって契約ではない） | `Emit` の呼び出し側 | `EmitInput.Payload` / `.Headers` doc |
+| ② | `EventType`（`+version`）を選び、payload の種別を `payload_parity.yaml` へ宣言（後述）して marshal。`Headers` に `Authorization`/`Cookie` を入れない（既知の機微ヘッダ名は送出前に denylist で落とすが、それは defense-in-depth であって契約ではない） | `Emit` の呼び出し側 | `EmitInput.Payload` / `.Headers` doc |
 | ③ | **`Idempotency-Key`（= `message_id`）で dedup** し、永続受理時のみ 2xx を返す受信エンドポイント | 外部サービス | `httpPublisher.Publish` |
 | ④ | `ENDPOINT_OUTBOX`（必須。空/不正 URL は relay が起動拒否）+ 任意の `OUTBOX_POLL_INTERVAL` / `OUTBOX_ERROR_BACKOFF` / `OUTBOX_BATCH_SIZE` | `env/` & IaC | `OutboxConfig` 既定値 |
 | ⑤ | `cmd outbox-relay --channel=<channel>` を常駐プロセスとして、使用する配送チャネルごとに 1 つ起動（SIGTERM まで常駐・stop で drain） | デプロイ / IaC | `cmd/outbox_relay.go` |
@@ -249,6 +249,25 @@ flowchart LR
 | ⑦ | `outbox.dead`・チャネル別の `outbox.lag_seconds`（旧来の試行回数の歯止めを置き換える経過時間 alert。[ADR-0058](../adr/0058-outbox-dead-on-permanent-error.md)）・`outbox.blocked_streams` で alert し `outbox-relay replay [--message-id=<uuid>]` で回復 | runbook | `cmd outbox-relay replay` |
 
 > relay・GC・replay は共有 infra 結線を再利用し、非標準 HTTP publisher profile を持つのは常駐 relay プロセスだけ。GC job は main server の job group に在るため `cmd job outbox-gc` は同一バイナリから使える — 単独では走らない。
+
+### payload の種別と対応宣言
+
+「自己完結」は判別式にならない。どの payload も名乗れるし実際ほとんどが名乗っているので、集約の状態を
+運ばなければならない payload と、起きた事実を報せるだけの payload をこの語では区別できない。代わりに
+2 つの種別を、payload ごとに、それを組み立てる `Build*` の隣の `payload_parity.yaml` で宣言する。
+
+| 種別 | 約束すること | 帰結 |
+| --- | --- | --- |
+| `snapshot` | 事実が起きた時点の集約の状態。購読側が問い合わせ返さずに済む | 写し元 struct の全フィールドを分類する — 運ぶ（JSON 名つき）か、運ばない（理由つき）か |
+| `notification` | 何が・いつ・どの識別子に起きたか | フィールド単位の対応は持たない。宣言そのものが「この payload は集約を追随しない」という記録になる |
+
+`TestOutboxPayloadParity` が宣言とコードを双方向で突き合わせるため、集約にフィールドが増えたとき
+`snapshot` payload が黙って取り残されることは無くなる
+（[ADR-0113](../adr/0113-outbox-payload-kinds-and-parity-declaration.md)）。
+
+内訳を運ぶ `snapshot`（購読側が足し合わせることを期待される金額など）は、さらに算術を自分の単体テストで
+固定する。全項を非 0 にすること。フィールド単位の対応が示すのは項目が在ることまでで、
+それらが依然として噛み合っているかは算術でしか示せない。
 
 ---
 

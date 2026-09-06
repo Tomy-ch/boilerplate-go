@@ -23,7 +23,8 @@ type messageAuthor struct {
 	Kind string `json:"kind"`
 }
 
-// messageCreated は、inquiry.message.created.v1 の自己完結 snapshot payload です。
+// messageCreated は、inquiry.message.created.v1 の snapshot payload です。
+// 運ぶ項目と落とす項目の対応は payload_parity.yaml が宣言します。
 type messageCreated struct {
 	MessageID string        `json:"messageId"`
 	InquiryID string        `json:"inquiryId"`
