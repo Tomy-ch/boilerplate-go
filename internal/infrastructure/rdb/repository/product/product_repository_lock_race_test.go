@@ -26,8 +26,10 @@ const (
 	readCompletionGracePeriod = 3 * time.Second
 
 	// raceBlockedGracePeriod は、後続役が先行役のロック解放を待たされていることを確認するために待つ時間です。
-	// 待たされた事実は所要時間でも確かめます。最終状態の一致だけを見ると、ロックが外れていても
-	// 後続役の往復がこの時間を超えれば同じ観測になり、退行を見逃します。
+	// 待たされた事実は、後続役がロックを取れた時刻が先行役の解放より後であることでも確かめます。
+	// 最終状態の一致だけを見ると、ロックが外れていても後続役の往復がこの時間を超えれば同じ観測になり、
+	// 退行を見逃します。所要時間そのものを閾値と比べないのは、後続役の計測開始が先行役の待機開始より
+	// 遅れるぶん、ロックが効いていても閾値を下回るためです。
 	// 高負荷でこの時間内に完了しない場合も「まだ完了していない」側へ倒れるため、負荷は偽陽性を生みません。
 	raceBlockedGracePeriod = 300 * time.Millisecond
 )
@@ -154,7 +156,8 @@ func Test_lockByIDsSerializesConcurrentUpdates(t *testing.T) {
 		lockHeld         = make(chan struct{})
 		secondDone       = make(chan struct{})
 		holderEnd        = make(chan struct{})
-		secondBlockedFor = make(chan time.Duration, 1)
+		secondAcquiredAt = make(chan time.Time, 1)
+		holderReleasedAt = make(chan time.Time, 1)
 	)
 
 	// 後続役: 先行役が商品行を押さえている間にロックを取りに行き、解放まで待たされる。
@@ -162,9 +165,8 @@ func Test_lockByIDsSerializesConcurrentUpdates(t *testing.T) {
 		defer close(secondDone)
 		<-lockHeld
 		_ = newTxManager().Do(ctx, func(txCtx context.Context) error {
-			startedAt := time.Now()
 			_, lockErr := repo.LockByIDs(txCtx, []uuid.UUID{targetUUID})
-			secondBlockedFor <- time.Since(startedAt)
+			secondAcquiredAt <- time.Now()
 			if lockErr != nil {
 				return xerrors.Join(errRollbackHolderTx, lockErr)
 			}
@@ -187,12 +189,14 @@ func Test_lockByIDsSerializesConcurrentUpdates(t *testing.T) {
 				t.Error("後続役が先行役のロックを待たずに完了した")
 			case <-time.After(raceBlockedGracePeriod):
 			}
+			holderReleasedAt <- time.Now()
+
 			return errRollbackHolderTx
 		})
 	}()
 
 	<-holderEnd
 	<-secondDone
-	// 後続役が完了したのがロック待ちの結果であることを、待機時間で裏づける。
-	assert.GreaterOrEqual(t, <-secondBlockedFor, raceBlockedGracePeriod)
+	// 後続役が完了したのがロック待ちの結果であることを、取得時刻の前後で裏づける。
+	assert.True(t, (<-secondAcquiredAt).After(<-holderReleasedAt))
 }

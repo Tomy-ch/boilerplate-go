@@ -23,8 +23,10 @@ import (
 
 // raceBlockedGracePeriod は、購入役が退会役のロック解放を待たされていることを確認するために待つ時間です。
 // 高負荷でこの時間内に問い合わせが届かない場合も「まだ完了していない」側に倒れるため、負荷は偽陽性を生みません。
-// 待たされた事実は所要時間でも確かめます。最終状態の一致だけを見ると、ロックが外れていても
-// 後続役の往復がこの時間を超えれば同じ観測になり、退行を見逃します。
+// 待たされた事実は、後続役がロックを取れた時刻が先行役の解放より後であることでも確かめます。
+// 最終状態の一致だけを見ると、ロックが外れていても後続役の往復がこの時間を超えれば同じ観測になり、
+// 退行を見逃します。所要時間そのものを閾値と比べないのは、後続役の計測開始が先行役の待機開始より
+// 遅れるぶん、ロックが効いていても閾値を下回るためです。
 const raceBlockedGracePeriod = 300 * time.Millisecond
 
 var (
@@ -90,16 +92,16 @@ func Test_lockSerializesWithdrawalAgainstPurchase(t *testing.T) {
 	withdrawalLocked := make(chan struct{})
 	guardDone := make(chan struct{})
 	guardResult := make(chan error, 1)
-	guardBlockedFor := make(chan time.Duration, 1)
+	guardAcquiredAt := make(chan time.Time, 1)
+	var withdrawalReleasedAt time.Time
 
 	// 購入役: 退会役がユーザー行を押さえている間に在籍ガードへ入り、退会の確定まで待たされる。
 	go func() {
 		defer close(guardDone)
 		<-withdrawalLocked
 		guardResult <- newTxManager().Do(ctx, func(txCtx context.Context) error {
-			startedAt := time.Now()
 			purchaser, guardErr := lockRepo.LockShareByID(txCtx, targetID)
-			guardBlockedFor <- time.Since(startedAt)
+			guardAcquiredAt <- time.Now()
 			if guardErr != nil {
 				return xerrors.Join(errRollbackRaceTx, guardErr)
 			}
@@ -125,6 +127,7 @@ func Test_lockSerializesWithdrawalAgainstPurchase(t *testing.T) {
 			t.Error("購入役が退会役のロックを待たずに完了した")
 		case <-time.After(raceBlockedGracePeriod):
 		}
+		withdrawalReleasedAt = time.Now()
 
 		if markErr := withdrawing.MarkAsDeleted(time.Now().UTC()); markErr != nil {
 			return markErr
@@ -135,6 +138,6 @@ func Test_lockSerializesWithdrawalAgainstPurchase(t *testing.T) {
 	<-guardDone
 	// 退会が確定した以上、待たされていた購入が読み出す購入者は退会済みになっている。
 	require.ErrorIs(t, <-guardResult, errPurchaserWithdrawn)
-	// 退会済みを観測できたのがロック待ちの結果であることを、待機時間で裏づける。
-	assert.GreaterOrEqual(t, <-guardBlockedFor, raceBlockedGracePeriod)
+	// 退会済みを観測できたのがロック待ちの結果であることを、取得時刻の前後で裏づける。
+	assert.True(t, (<-guardAcquiredAt).After(withdrawalReleasedAt))
 }

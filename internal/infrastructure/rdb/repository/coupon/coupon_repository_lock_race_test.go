@@ -22,8 +22,10 @@ import (
 
 // raceBlockedGracePeriod は、引き換え役が返却役のロック解放を待たされていることを確認するために待つ時間です。
 // 高負荷でこの時間内に問い合わせが届かない場合も「まだ完了していない」側に倒れるため、負荷は偽陽性を生みません。
-// 待たされた事実は所要時間でも確かめます。最終状態の一致だけを見ると、ロックが外れていても
-// 後続役の往復がこの時間を超えれば同じ観測になり、退行を見逃します。
+// 待たされた事実は、後続役がロックを取れた時刻が先行役の解放より後であることでも確かめます。
+// 最終状態の一致だけを見ると、ロックが外れていても後続役の往復がこの時間を超えれば同じ観測になり、
+// 退行を見逃します。所要時間そのものを閾値と比べないのは、後続役の計測開始が先行役の待機開始より
+// 遅れるぶん、ロックが効いていても閾値を下回るためです。
 const raceBlockedGracePeriod = 300 * time.Millisecond
 
 var (
@@ -74,16 +76,16 @@ func Test_lockByIDSerializesRestoreAgainstRedeem(t *testing.T) {
 	restoreLocked := make(chan struct{})
 	redeemDone := make(chan struct{})
 	redeemResult := make(chan error, 1)
-	redeemBlockedFor := make(chan time.Duration, 1)
+	redeemAcquiredAt := make(chan time.Time, 1)
+	var restoreReleasedAt time.Time
 
 	// 引き換え役: 返却役がクーポン行を押さえている間にロックへ入り、返却の確定まで待たされる。
 	go func() {
 		defer close(redeemDone)
 		<-restoreLocked
 		redeemResult <- newTxManager().Do(ctx, func(txCtx context.Context) error {
-			startedAt := time.Now()
 			redeeming, lockErr := repo.LockByID(txCtx, targetID)
-			redeemBlockedFor <- time.Since(startedAt)
+			redeemAcquiredAt <- time.Now()
 			if lockErr != nil {
 				return xerrors.Join(errRollbackRaceTx, lockErr)
 			}
@@ -109,6 +111,7 @@ func Test_lockByIDSerializesRestoreAgainstRedeem(t *testing.T) {
 			t.Error("引き換え役が返却役のロックを待たずに完了した")
 		case <-time.After(raceBlockedGracePeriod):
 		}
+		restoreReleasedAt = time.Now()
 
 		restored, restoreErr := restoring.Restore(time.Now().UTC())
 		if restoreErr != nil {
@@ -124,6 +127,6 @@ func Test_lockByIDSerializesRestoreAgainstRedeem(t *testing.T) {
 	<-redeemDone
 	// 返却が確定した以上、待たされていた引き換えが読み出すクーポンは未使用になっている。
 	require.ErrorIs(t, <-redeemResult, errCouponRestored)
-	// 未使用を観測できたのがロック待ちの結果であることを、待機時間で裏づける。
-	assert.GreaterOrEqual(t, <-redeemBlockedFor, raceBlockedGracePeriod)
+	// 未使用を観測できたのがロック待ちの結果であることを、取得時刻の前後で裏づける。
+	assert.True(t, (<-redeemAcquiredAt).After(restoreReleasedAt))
 }
