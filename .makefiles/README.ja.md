@@ -320,6 +320,7 @@ hadolint により Dockerfile を lint し、`FROM` の base image を不変の 
 | --- | --- | --- |
 | `make docker-lint` | `docker/*/Dockerfile` を hadolint で lint します。 | `go_tool_runner` コンテナ内で `make docker-lint-ci` を呼び出します。 |
 | `make docker-lint-ci` | `hadolint docker/*/Dockerfile` を直接実行します。 | CI 用ターゲット。無効化ルールは `.hadolint.yaml`。 |
+| `make compose-lint` | compose のサービス宣言を [`scripts/compose-lint`](../scripts/README.md) の規則に照らして検査します。現在の規則は「`APP_SERVICES` の各サービスが `healthcheck` を宣言していること」。 | 判定が導入した linter ではなく自前ツールなので、`migration-lint` と同じくホストで実行します（`go run`）。CI でも走ります（`compose-lint.yaml`）。 |
 | `make pin-images-resolve` | registry を指す参照すべて——`FROM`、`docker-compose*.yaml` の `image:`、workflow の `uses: docker://` と `services.*.image`——を現在の digest へ解決し `docker/images-pin.toml` lockfile を更新します。 | `PIN_IMAGES_MIN_AGE_DAYS`（既定 14、0 で無効）より新しい digest は quarantine します。registry への到達（`docker`）が要ります。 |
 | `make pin-images-apply` | 同じ 4 種の参照を lockfile を元に `image:tag@sha256:...` へ固定します（quarantine 中の image は tag のまま）。 | なし |
 | `make pin-images-check` | 同じ 4 種の参照が lockfile 通り固定済みか検証します（書き換えなし）。`${{ }}` で組み立てた `image:` は固定できる参照ではないので対象外です。 | CI / pre-commit gate。 |

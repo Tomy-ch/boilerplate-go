@@ -321,6 +321,7 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | --- | --- | --- |
 | `make docker-lint` | Lints `docker/*/Dockerfile` with hadolint. | Invokes `make docker-lint-ci` inside the `go_tool_runner` container. |
 | `make docker-lint-ci` | Runs `hadolint docker/*/Dockerfile` directly. | CI target. Ignored rules are in `.hadolint.yaml`. |
+| `make compose-lint` | Checks the compose service declarations against the rules in [`scripts/compose-lint`](../scripts/README.md) — currently that every `APP_SERVICES` member declares a `healthcheck`. | Runs on the host (`go run`), like `migration-lint`, because the decision is our own tool rather than an installed linter. Also runs in CI (`compose-lint.yaml`). |
 | `make pin-images-resolve` | Resolves every registry reference — `FROM`, `docker-compose*.yaml` `image:`, and a workflow's `uses: docker://` and `services.*.image` — to its current digest and updates the `docker/images-pin.toml` lockfile. | Quarantines digests younger than `PIN_IMAGES_MIN_AGE_DAYS` (default 14; 0 disables). Needs registry access (`docker`). |
 | `make pin-images-apply` | Pins those same four reference forms to `image:tag@sha256:...` from the lockfile (quarantined images stay tag-only). | None |
 | `make pin-images-check` | Verifies those same four reference forms are pinned per the lockfile (no write). An `image:` built from a `${{ }}` expression is not a fixable reference and is skipped. | CI / pre-commit gate. |
