@@ -103,9 +103,17 @@ func (p *Pool) Release(ctx context.Context) error {
 		p.logf("no slot held by this worktree")
 		return nil
 	}
+	// 所有権の確認から down までを acquire の走査と直列化する。間に他 worktree が stale 回収で
+	// このスロットを取ると、確認では自分の保持でも down する頃には現保持者のコンテナになる。
+	// ロックを取れないときは実行する（後始末を取り下げるほうが孤児を残す分だけ損害が大きい）。
+	if unlock, err := p.reg.Lock(); err != nil {
+		p.logf("failed to take the scan lock for slot %d; releasing without it: %v", slot, err)
+	} else {
+		defer unlock()
+	}
 	// リースが stale 回収で他 worktree へ渡っていれば、そのスロットの app コンテナは現保持者のもの。
 	// down すれば他人の serve を落とすため compose には触れず、失効した .gobp-db-slot だけを片付ける。
-	if !p.reg.OwnedBySelf(slot) {
+	if p.reg.HeldByOther(slot) {
 		_ = os.Remove(p.slotFilePath())
 		p.logf("slot %d is held by another worktree; dropped the stale slot file only", slot)
 		return nil

@@ -158,6 +158,14 @@ func (r *Registry) OwnedBySelf(slot int) bool {
 	return ok && m.Owner == r.owner
 }
 
+// HeldByOther は、meta を読み取れて、かつ保持者が自分でないことを返します。
+// 読み取れなかった場合は false です。「他 worktree が保持している」と「判定できなかった」を
+// 同じ真に畳むと、レジストリを一度読めなかっただけで自分の後始末を取り下げることになります。
+func (r *Registry) HeldByOther(slot int) bool {
+	m, ok := r.ReadMeta(slot)
+	return ok && m.Owner != r.owner
+}
+
 // IsStale は、他 worktree のリースが heartbeat TTL を超過しているかを返します（自分の保持は常に非 stale）。
 func (r *Registry) IsStale(slot int) bool {
 	m, ok := r.ReadMeta(slot)

@@ -12,6 +12,11 @@ import (
 	"go-boilerplate/pkg/xerrors"
 )
 
+// appProfile は、app 層のサービス（api_server / mock_auth_server）が属する compose の profile です。
+// 全サービスが profile 配下にあるため、これを渡さない down は対象ゼロのまま exit 0 で返ります。
+// 値は .makefiles/docker/compose.mk の COMPOSE_APP と一致していなければなりません。
+const appProfile = "development"
+
 // Compose は、docker compose 操作を抽象化します（テストでフェイク可能）。
 type Compose interface {
 	// UpSharedDB は、共有 DB コンテナを固定プロジェクトで起動し healthcheck 完了まで待ちます。
@@ -21,11 +26,6 @@ type Compose interface {
 	// RunningContainers は、指定プロジェクトで稼働中のコンテナ数を返します。
 	RunningContainers(ctx context.Context, project string) (int, error)
 }
-
-// appProfile は、app 層のサービス（api_server / mock_auth_server）が属する compose の profile です。
-// 全サービスが profile 配下にあるため、これを渡さない down は対象ゼロのまま exit 0 で返ります。
-// 値は .makefiles/docker/compose.mk の COMPOSE_APP と一致していなければなりません。
-const appProfile = "development"
 
 // ExecCompose は、docker compose をホストで実行する Compose 実装です。
 // 出力（進捗ログ）は stderr へ流します。

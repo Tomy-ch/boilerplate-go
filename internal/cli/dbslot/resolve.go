@@ -129,22 +129,23 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 		return Values{}, err
 	}
 
-	slot := readSlotFile(filepath.Join(r.cfg.Root, ".gobp-db-slot"))
-
-	// リースを持たないスロット定義は失効している。そこから値を導くと他 worktree が所有する
-	// データベースとホスト公開ポートを指すため、ファイルが無いときと同じ既定へ落とす。
-	held := r.holdsLease(slot)
-	if !held {
-		slot = nil
-	}
-
 	values := Values{
 		Git:        gitCtx,
-		SlotHeld:   held,
-		DBLocal:    orDefault(slot["DB_NAME_LOCAL"], defaultDBLocal),
-		DBTest:     orDefault(slot["DB_NAME_TEST"], defaultDBTest),
-		AppProject: orDefault(slot["SERVE_PROJECT"], "gobp-app-"+filepath.Base(r.cfg.Root)),
-		AuthIssuer: "http://localhost:" + orDefault(slot["MOCK_AUTH_HOST_PORT"], strconv.Itoa(r.cfg.MockAuthBase)) + mockAuthIssuerPath,
+		DBLocal:    defaultDBLocal,
+		DBTest:     defaultDBTest,
+		AppProject: "gobp-app-" + filepath.Base(r.cfg.Root),
+		AuthIssuer: mockAuthIssuer(r.cfg.MockAuthBase),
+	}
+
+	// リースを保持しているスロットの値だけを採用する。導出はスロット番号から行い、
+	// .gobp-db-slot が並べている DB 名やプロジェクト名は読まない。レジストリで裏が取れるのは
+	// 番号だけで、他のフィールドは手編集や別 worktree のファイルの写しで食い違い得る。
+	if slot, held := r.heldSlot(); held {
+		values.SlotHeld = true
+		values.DBLocal = dbLocal(slot)
+		values.DBTest = dbTest(slot)
+		values.AppProject = serveProject(slot)
+		values.AuthIssuer = mockAuthIssuer(r.cfg.MockAuthBase + slot)
 	}
 
 	// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。
@@ -153,21 +154,6 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 	}
 
 	return values, nil
-}
-
-// holdsLease は、スロット定義が宣言するスロットのリースを自 worktree が保持しているかを返します。
-// 宣言が壊れている（スロット番号や DB 名が読めない）場合も保持していないものとして扱います。
-func (r *Resolver) holdsLease(slot map[string]string) bool {
-	if slot["DB_NAME_LOCAL"] == "" || r.lease == nil {
-		return false
-	}
-
-	n, err := strconv.Atoi(slot["SLOT"])
-	if err != nil {
-		return false
-	}
-
-	return r.lease.OwnedBySelf(n)
 }
 
 // RequireOwner は、所有データベースを持たない状態（リンク worktree かつスロット未取得）を
@@ -217,6 +203,22 @@ func (r *Resolver) PrintValues(ctx context.Context) error {
 	_, _ = fmt.Fprint(r.out, RenderValues(values))
 
 	return nil
+}
+
+// heldSlot は、.gobp-db-slot が宣言するスロットのうち、自 worktree がリースを保持しているものを返します。
+// 宣言が壊れている（スロット番号や DB 名が読めない）場合と、リースを確認できない場合は保持なしとします。
+func (r *Resolver) heldSlot() (int, bool) {
+	slot := readSlotFile(filepath.Join(r.cfg.Root, ".gobp-db-slot"))
+	if slot["DB_NAME_LOCAL"] == "" || r.lease == nil {
+		return 0, false
+	}
+
+	n, err := strconv.Atoi(slot["SLOT"])
+	if err != nil {
+		return 0, false
+	}
+
+	return n, r.lease.OwnedBySelf(n)
 }
 
 // inspectGit は、git 文脈を判定します。
@@ -348,6 +350,11 @@ func readSlotFile(path string) map[string]string {
 	}
 
 	return values
+}
+
+// mockAuthIssuer は、mock 認証サーバーのホスト公開ポートから issuer URL を組み立てます。
+func mockAuthIssuer(port int) string {
+	return "http://localhost:" + strconv.Itoa(port) + mockAuthIssuerPath
 }
 
 // orDefault は、value が空なら def を返します。
