@@ -39,6 +39,12 @@ const (
 	// mockAuthIssuerPath は、mock 認証サーバーが issuer を生やすパスです。値は
 	// docker/mock-auth-server/config.json の issuerId と一致していなければなりません。
 	mockAuthIssuerPath = "/default"
+
+	// slotInfixTable / slotInfixName は、基底名とスロット番号の間に入る区切りです。
+	// table だけ `_` なのは REALTIME_TABLE_SUFFIX の使用可能文字に合わせるためで、
+	// queue と topic は `-` です。
+	slotInfixTable = "_wt"
+	slotInfixName  = "-wt"
 )
 
 var (
@@ -75,6 +81,12 @@ type Values struct {
 	AppProject      string // app 層の compose プロジェクト名
 	AuthIssuer      string // mock 認証サーバーのホスト公開 URL（トークンの iss）
 	InfraNoRecreate string // 共有インフラへ渡す --no-recreate（不要なら空）
+
+	// Realtime Delivery の資源名。共有の DynamoDB Local / GoAWS 上でスロット毎に名前空間を分けます
+	// （docs/maintenance/db-worktree-pool.md「The Realtime Delivery emulators are shared instances」）。
+	RealtimeTableSuffix string // table 名の末尾（realtime_event_log_<suffix> の suffix）
+	RealtimeQueuePrefix string // serve instance ごとの queue 名の先頭
+	RealtimeTopic       string // fan-out topic の ARN
 }
 
 // Resolver は、スロットから導かれる値の解決と所有者判定を担います。
@@ -128,6 +140,10 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 		DBTest:     orDefault(slot["DB_NAME_TEST"], defaultDBTest),
 		AppProject: orDefault(slot["SERVE_PROJECT"], "gobp-app-"+filepath.Base(r.cfg.Root)),
 		AuthIssuer: "http://localhost:" + orDefault(slot["MOCK_AUTH_HOST_PORT"], strconv.Itoa(r.cfg.MockAuthBase)) + mockAuthIssuerPath,
+
+		RealtimeTableSuffix: realtimeName(r.cfg.Realtime.TableSuffix, slot["SLOT"], slotInfixTable),
+		RealtimeQueuePrefix: realtimeName(r.cfg.Realtime.QueuePrefix, slot["SLOT"], slotInfixName),
+		RealtimeTopic:       realtimeName(r.cfg.Realtime.Topic, slot["SLOT"], slotInfixName),
 	}
 
 	// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。
@@ -233,6 +249,9 @@ func RenderEnv(v Values) string {
 		{"APP_PROJECT", v.AppProject},
 		{"AUTH_ISSUER", v.AuthIssuer},
 		{"INFRA_NO_RECREATE", v.InfraNoRecreate},
+		{"REALTIME_TABLE_SUFFIX", v.RealtimeTableSuffix},
+		{"REALTIME_QUEUE_PREFIX", v.RealtimeQueuePrefix},
+		{"REALTIME_TOPIC", v.RealtimeTopic},
 	}
 
 	var sb strings.Builder
@@ -255,6 +274,9 @@ func RenderValues(v Values) string {
 	fmt.Fprintf(&sb, "APP_PROJECT       : %s\n", v.AppProject)
 	fmt.Fprintf(&sb, "AUTH_ISSUER       : %s\n", v.AuthIssuer)
 	fmt.Fprintf(&sb, "INFRA_NO_RECREATE : %s\n", orDefault(v.InfraNoRecreate, "（渡さない）"))
+	fmt.Fprintf(&sb, "REALTIME_TABLE    : %s\n", v.RealtimeTableSuffix)
+	fmt.Fprintf(&sb, "REALTIME_QUEUE    : %s\n", v.RealtimeQueuePrefix)
+	fmt.Fprintf(&sb, "REALTIME_TOPIC    : %s\n", v.RealtimeTopic)
 
 	return sb.String()
 }
@@ -315,6 +337,18 @@ func readSlotFile(path string) map[string]string {
 	}
 
 	return values
+}
+
+// realtimeName は、基底名にスロット番号を継いだ資源名を返します（基底の出所は Config.Realtime）。
+//
+// 基底が空なら継ぎません。空の topic は「fan-out を配線すると起動に失敗する」という env の契約で、
+// そこへスロット番号だけを継ぐと `-wt2` のような、契約でも正しい名前でもない値になります。
+func realtimeName(base, slot, infix string) string {
+	if base == "" || slot == "" {
+		return base
+	}
+
+	return base + infix + slot
 }
 
 // orDefault は、value が空なら def を返します。

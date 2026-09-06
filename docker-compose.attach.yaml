@@ -26,14 +26,13 @@ services:
       # fan-out（goaws）も同じく共有インフラ側。store と別に要る — SNS / SQS は別のホストに載り得るため
       # 接続先が 2 本に分かれており、片方だけ差し替えるとコンテナ名 goaws の解決に落ちる。
       ENDPOINT_REALTIME_PUBSUB: http://host.docker.internal:4100
-      # GoAWS と DynamoDB Local は 1 インスタンスを全 worktree で共有するため、fan-out と store の
-      # 名前空間をスロットで分ける。分けないと失効通知が窓を越えて別の窓の SSE 接続を閉じ、
-      # 片方の窓が書いた stream がもう片方から見える。スロット未取得なら既定の名前のまま。
-      # 区切りが table だけ `_` なのは suffix の使用可能文字による。
+      # 共有の GoAWS / DynamoDB Local を worktree 間で分ける名前。導出は internal/cli/dbslot が持ち、
+      # ここは db-slot env が撒いた値を読むだけ。既定値（スロット未取得のときの名前）だけはホスト公開
+      # ポートと同じくこちらの責務。
       # 詳細: docs/maintenance/db-worktree-pool.md「Realtime Delivery emulators are shared instances」
-      REALTIME_TOPIC: arn:aws:sns:us-east-1:000000000000:realtime-fanout-local${SLOT:+-wt$SLOT}
-      REALTIME_QUEUE_PREFIX: realtime-local${SLOT:+-wt$SLOT}
-      REALTIME_TABLE_SUFFIX: local${SLOT:+_wt$SLOT}
+      REALTIME_TOPIC: ${REALTIME_TOPIC:-arn:aws:sns:us-east-1:000000000000:realtime-fanout-local}
+      REALTIME_QUEUE_PREFIX: ${REALTIME_QUEUE_PREFIX:-realtime-local}
+      REALTIME_TABLE_SUFFIX: ${REALTIME_TABLE_SUFFIX:-local}
       # token の iss は mock 認証サーバーのホスト公開 URL（Host ヘッダ由来）。スロット毎にポートが
       # ずれるため追従させる。mock 側は iss を保持しないので、追従先はここ 1 箇所で足りる。
       AUTH_ISSUER: http://localhost:${MOCK_AUTH_HOST_PORT:-2010}/default
