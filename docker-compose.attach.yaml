@@ -11,11 +11,11 @@ services:
     depends_on: !override # 共有インフラは infra 層が先に起動済み（上記参照）
       mock_auth_server:
         condition: service_healthy
-    # 共有インフラへの接続先（ホスト公開ポート経由）。
-    # 詳細: docs/maintenance/local-environment.md「Compose layering (infra / app)」。
+    # 共有インフラへの接続先（ホスト公開ポート経由）と、db-slot env が撒く解決値。
+    # 詳細: docker/README.md「Compose Layering (infra / app)」。
     environment:
       DB_HOST: host.docker.internal
-      DB_NAME: ${DB_NAME_LOCAL:-local}
+      DB_NAME: ${DB_LOCAL:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
       ENDPOINT_OTLP: http://host.docker.internal:4318
       ENDPOINT_OBJECT_STORAGE: http://host.docker.internal:3900
       # SQS クライアントは BaseEndpoint を優先するため、ここを差し替えれば OUTBOX_QUEUE_URL /
@@ -27,8 +27,7 @@ services:
       # fan-out（goaws）も同じく共有インフラ側。store と別に要る — SNS / SQS は別のホストに載り得るため
       # 接続先が 2 本に分かれており、片方だけ差し替えるとコンテナ名 goaws の解決に落ちる。
       ENDPOINT_REALTIME_PUBSUB: http://host.docker.internal:4100
-      # 共有の GoAWS / DynamoDB Local を worktree 間で分ける名前。db-slot env が撒いた値を読むだけで、
-      # 既定値は置かない — :- は空値の受け皿になり、この checkout が主 checkout の資源を掴む。
+      # 共有の GoAWS / DynamoDB Local を worktree 間で分ける名前。
       # 詳細: docs/maintenance/db-worktree-pool.md「Realtime Delivery emulators are shared instances」
       REALTIME_TOPIC: ${REALTIME_TOPIC:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
       REALTIME_QUEUE_PREFIX: ${REALTIME_QUEUE_PREFIX:?db-slot env が撒く値。make serve など COMPOSE_APP 経由で起動すること}
