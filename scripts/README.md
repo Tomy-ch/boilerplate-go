@@ -1,6 +1,12 @@
 # scripts
 
-`scripts/` contains **utility scripts** for code generation, documentation, versioning, and initial project setup.
+`scripts/` holds the **development tooling** this repository runs beside the application: generators,
+gates, one-off operations, and the setup that turns this template into a project. The line is that
+nothing here is reachable from the built application — a tool may write code the binary compiles, but
+the binary never calls into `scripts/`. What lives under `cmd/` + `internal/cli/` instead is the
+opposite side of that line: an operation the deployed application itself has to be able to perform.
+
+*Script Categories* below is the current inventory, not the definition. Read it as a list that grows.
 
 ## Directory Structure
 
@@ -148,11 +154,29 @@ See [genctxkey/README.md](genctxkey/README.md) for details.
 |`migration-lint/`|Check the sequence numbers under `database/migrations` for duplicates (`-check duplicate`) and gaps (`-check gap`), reading the number before the first `_` of `<seq>_<name>.<kind>.sql` and selecting up / down with `-kind`. Called from the lefthook pre-commit gate. The decision lives in Go rather than in the shell recipe because this check fails towards *inspecting nothing*, which a test can pin and a shell pipeline cannot.|`make check-migration-up-version` / `check-migration-down-version` / `check-migration-up-gap` / `check-migration-down-gap`|
 |`cover-gate/`|Compare the total coverage `go tool cover -func` reports against the `-threshold` value and exit non-zero below it. Extracting the `total:` line and judging it are separate pure functions, so both are pinned by tests — the `awk` pipeline this replaced coerced any non-numeric percentage to `0` through `t+0`, which reported a malformed profile as a coverage failure rather than as the tooling failure it is.|`make cover-gate`|
 
-### Local Environment Verification
+### Local Environment Reset (destructive, emulator-only)
+
+A tool here **deletes resources the checkout's own configuration names**, which is why it is separated
+from the verification tools below rather than filed beside them: the two are read against the same
+local stack, but only one of them can take something away.
+
+Such a tool stays in `scripts/` even when the application already owns the creating half of the same
+resource — `realtime-init` creates the Realtime Delivery tables as a `cmd/` subcommand ([`internal/cli/README.md`](../internal/cli/README.md)),
+and `realtime-reset` deletes them from here. That asymmetry is deliberate and load-bearing, not an
+oversight in the placement rule. The creating half is an operation a deployed environment genuinely
+performs, so it belongs to the application. The deleting half is not, and keeping it out of the
+application binary is what allows it to sign with a credential real AWS rejects — a second, independent
+guard behind the endpoint check. Moving it to `cmd/` would hand it the app's `REALTIME_*` credentials
+and leave `validateEndpoint` as the only thing between a mistyped flag and a production table.
 
 |Script|Description|Invoked By|
 |---|---|---|
 |`realtime-reset/`|Delete this checkout's three Realtime Delivery tables and wait until each is gone, so the slot's PostgreSQL and its DynamoDB EventLog are rebuilt together. Fills the gap that `slot-acquire` rebuilds only PostgreSQL: sequence allocation restarts at 1 while the EventLog still holds items at those positions, and the conditional write refuses the collision — correctly — leaving the stream stopped behind the relay's head-of-line blocking. Table names come from the same `REALTIME_TABLE_SUFFIX` the app reads, so the script cannot drift from what serve uses. Creation stays with `realtime-init`; this one only deletes, and a missing table counts as success. Two independent controls keep it off real DynamoDB: `-endpoint` must name an emulator — a host-less value is refused as a misconfiguration and an AWS host is refused outright, while loopback is not required because a self-hosted emulator is a supported setup — and the client signs with a fixed dummy credential that real AWS rejects, so the tool must never borrow the app's `REALTIME_*` credentials; doing so would leave the endpoint check as the only guard. That dummy credential sees the app's tables only because `dynamodb_local` runs `-sharedDb`. Waiting for the table to disappear is what keeps a following `realtime-init` from hitting `ResourceInUseException`.|`make realtime-reset` / `make slot-acquire`|
+
+### Local Environment Verification
+
+|Script|Description|Invoked By|
+|---|---|---|
 |`realtime-smoke/`|Check that DynamoDB Local and GoAWS accept, over the AWS SDK Go v2, the calls Realtime Delivery makes in production — DynamoDB conditional put / `ConsistentRead` query / pagination / TTL, and SNS topic → N SQS queues with `RawMessageDelivery` plus the queue policy — and print one verdict per call: 互換 (accepted and the postcondition holds), 非互換 (accepted but the postcondition fails, or refused), 未対応 (the emulator says it is not implemented), 検証不能 (transport failure, or a halted prerequisite). Only the 非互換 / 未対応 rows are the scope of a local compatibility implementation, and the summary lists just those. Resources carry a per-run random name and are deleted on exit (`-keep` retains them for inspection). A 検証不能 row makes the exit code non-zero — a run that looked at nothing must not read as clean — and `-strict` extends that to 非互換 / 未対応 for CI use. The wire-protocol probe (`ListQueues` over AWS JSON 1.0) runs first because every later call depends on it, and a failed prerequisite leaves its dependants in the table as 検証不能 rather than dropping them.|`make realtime-smoke`|
 
 ### AI Feedback Loop (`closed-loop/`)

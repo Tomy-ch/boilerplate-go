@@ -39,4 +39,7 @@ var (
 	// ErrUsedConcurrently は、引き換えの最中に他の書き手が同じクーポンを消費した場合のエラーです
 	// （到達条件は docs/spec/domain/coupon.md の Repository Methods > UpdateUsed を参照）。
 	ErrUsedConcurrently = xerrors.Wrap(apperror.ErrConflict, "coupon was used concurrently")
+	// ErrNotUsed は、未使用のクーポンを返却しようとした場合のエラーです。適用済みと言う購入と
+	// 未使用と言うクーポンの食い違いを表すため、要求の不正ではなく状態の衝突として扱います。
+	ErrNotUsed = xerrors.Wrap(apperror.ErrConflict, "coupon is not used")
 )

@@ -12,6 +12,11 @@ import (
 	"go-boilerplate/pkg/xerrors"
 )
 
+// appProfile は、app 層のサービス（api_server / mock_auth_server）が属する compose の profile です。
+// 値は .makefiles/docker/compose.mk の COMPOSE_APP と一致していなければなりません
+// （渡さない down が空振りする理由は README.md「Compose」）。
+const appProfile = "development"
+
 // Compose は、docker compose 操作を抽象化します（テストでフェイク可能）。
 type Compose interface {
 	// UpSharedDB は、共有 DB コンテナを固定プロジェクトで起動し healthcheck 完了まで待ちます。
@@ -33,10 +38,11 @@ func (c ExecCompose) UpSharedDB(ctx context.Context, project string) error {
 	return c.run(ctx, project, "--profile", "database", "up", "-d", "--wait", "--no-recreate", "database")
 }
 
-// DownServe は `docker compose -f docker-compose.yaml -f docker-compose.attach.yaml down` を実行します。
+// DownServe は、app 層の compose プロジェクトを down します。
 // docker compose down はコンテナ不在でも exit 0 のため、返るエラーは docker 未起動・権限不足などの実失敗のみです。
 func (c ExecCompose) DownServe(ctx context.Context, project string) error {
-	return c.run(ctx, project, "-f", "docker-compose.yaml", "-f", "docker-compose.attach.yaml", "down")
+	return c.run(ctx, project,
+		"--profile", appProfile, "-f", "docker-compose.yaml", "-f", "docker-compose.attach.yaml", "down")
 }
 
 // RunningContainers は `docker compose ps -q --status running` の出力行数を返します。

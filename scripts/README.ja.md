@@ -1,6 +1,12 @@
 # scripts
 
-`scripts/` には、コード生成・ドキュメント・バージョニング・プロジェクト初期設定のための**ユーティリティスクリプト**が格納されています。
+`scripts/` には、アプリケーションの傍らで動かす**開発用ツール**が入る。生成器・ゲート・一度きりの操作、
+そしてこのテンプレートをプロジェクトへ変える初期設定である。線引きは、ここにあるものが**ビルド済みの
+アプリケーションから到達しない**こと。ツールがバイナリのコンパイル対象になるコードを書くことはあるが、
+バイナリが `scripts/` を呼ぶことはない。代わりに `cmd/` + `internal/cli/` に置かれるのは、その線の反対側
+—— デプロイされたアプリケーション自身が実行できなければならない操作である。
+
+下の *スクリプトカテゴリ* は現時点の目録であって定義ではない。増えていく一覧として読むこと。
 
 ## ディレクトリ構成
 
@@ -105,11 +111,27 @@ make ターゲットやパスと違い、採番し直された節は参照を構
 |`migration-lint/`|`database/migrations` の連番について、重複（`-check duplicate`）と欠番（`-check gap`）を検査する。読むのは `<連番>_<名前>.<kind>.sql` の最初の `_` より前で、up / down は `-kind` で切り替える。lefthook の pre-commit ゲートから呼ばれる。判定がシェルのレシピではなく Go に在るのは、この検査の壊れ方が「何も検査しなくなる」方向に出るためで、そこはテストで固定できるがシェルのパイプラインでは固定できない。|`make check-migration-up-version` / `check-migration-down-version` / `check-migration-up-gap` / `check-migration-down-gap`|
 |`cover-gate/`|`go tool cover -func` が報告する総カバレッジを `-threshold` の値と比較し、下回れば非 0 で終了する。`total:` 行の抽出と判定を別々の純粋関数に分けてあるため双方をテストで固定できる。置き換え前の `awk` パイプラインは数値でないパーセント表記を `t+0` で `0` に丸めていたため、壊れたプロファイルを「ツールの失敗」ではなく「カバレッジ不足」として報告していた。|`make cover-gate`|
 
-### ローカル環境の検証
+### ローカル環境のリセット（破壊的・emulator 専用）
+
+ここに置くツールは、**その checkout の設定が名指しする資源を削除する**。下の検証用ツールと同じローカル
+スタックを相手にするが、取り去ることができるのは一方だけなので、並べずに分けてある。
+
+同じ資源の作成側をアプリケーションが既に持っていても、削除側はここに残る —— `realtime-init` は
+Realtime Delivery の table を `cmd/` のサブコマンドとして作り（[`internal/cli/README.md`](../internal/cli/README.md)）、
+`realtime-reset` はそれをここから削除する。この非対称は配置規則の見落としではなく、意図的で、かつ効いて
+いる。作成側はデプロイ先の環境が実際に行う操作なのでアプリケーションに属する。削除側はそうではなく、
+アプリケーションのバイナリの外に置いてあることが、実 AWS が拒む資格情報で署名できる理由になっている
+—— endpoint の検査の背後にある、独立した 2 つ目の防御である。`cmd/` へ寄せると app の `REALTIME_*`
+資格情報が渡り、打ち間違えた flag と本番 table の間に立つのは `validateEndpoint` だけになる。
 
 |スクリプト|説明|実行元|
 |---|---|---|
 |`realtime-reset/`|この checkout の Realtime Delivery の 3 table を削除し、消え切るまで待つ。スロットの PostgreSQL と DynamoDB EventLog を一緒に作り直すためである。`slot-acquire` が PostgreSQL しか作り直さない穴を埋める: 採番が 1 から再開する一方 EventLog には同じ位置の item が残っており、条件付き書き込みはその衝突を — 正しく — 拒否するので、relay の head-of-line blocking の裏で stream が止まったままになる。table 名は app が読むのと同じ `REALTIME_TABLE_SUFFIX` から取るため、serve が使う名前とずれようがない。作成は `realtime-init` の担当のままで、こちらは削除だけを行い、無い table は成功として数える。本番 DynamoDB へ届かせない制御は独立に 2 つある。`-endpoint` は emulator を名指すこと（host を持たない値は設定ミスとして拒否し、AWS の host は正面から拒否する。自前ホストの emulator を使う構成があるので loopback には限定しない）と、実 AWS が拒むダミー鍵で署名すること —— したがって app の `REALTIME_*` 資格情報へ寄せてはならず、寄せると endpoint の検査だけが唯一の防御になる。そのダミー鍵で app の table が見えるのは `dynamodb_local` が `-sharedDb` で動くためである。消えるまで待つのは、後続の `realtime-init` が `ResourceInUseException` を踏まないようにするためである。|`make realtime-reset` / `make slot-acquire`|
+
+### ローカル環境の検証
+
+|スクリプト|説明|実行元|
+|---|---|---|
 |`realtime-smoke/`|Realtime Delivery が production で行う呼び出し — DynamoDB の conditional put / `ConsistentRead` query / pagination / TTL、SNS topic → N 個の SQS queue への `RawMessageDelivery` 配送と queue policy — を AWS SDK Go v2 で DynamoDB Local と GoAWS に投げ、呼び出しごとに 互換（受理され事後条件も成立）/ 非互換（受理されたが事後条件が不成立、または拒否）/ 未対応（エミュレータが未実装を明示）/ 検証不能（transport 失敗、または先行検査の失敗）を表にする。local compatibility implementation の範囲になるのは 非互換 / 未対応 の行だけで、末尾の要約はそれだけを列挙する。resource は実行ごとの乱数名で作り終了時に削除する（`-keep` で残せる）。検証不能が 1 件でもあれば非 0 で終了し（何も見ていない実行がクリーンに読めてはならない）、`-strict` は CI 向けにそれを 非互換 / 未対応 へ広げる。wire protocol の probe（AWS JSON 1.0 での `ListQueues`）を最初に置くのは後続の全呼び出しがそれに依存するためで、先行検査の失敗は依存する行を落とさず 検証不能 として表に残す。|`make realtime-smoke`|
 
 ### AI フィードバックループ（`closed-loop/`）

@@ -40,16 +40,14 @@ const (
 	// docker/mock-auth-server/config.json の issuerId と一致していなければなりません。
 	mockAuthIssuerPath = "/default"
 
-	// slotInfixTable / slotInfixName は、基底名とスロット番号の間に入る区切りです。
-	// table だけ `_` なのは REALTIME_TABLE_SUFFIX の使用可能文字に合わせるためで、
-	// queue と topic は `-` です。
+	// slotInfixTable / slotInfixName は、基底名とスロット番号の間に入る区切りです
+	// （table だけ `_` である理由は docs/maintenance/db-worktree-pool.md）。
 	slotInfixTable = "_wt"
 	slotInfixName  = "-wt"
 )
 
 var (
 	// errGitLayoutUnreadable は、git リポジトリではあるのにその構成を読み取れなかったことを表します。
-	// 「リンク worktree かどうか」を判定できないため、所有者判定はここで止まります。
 	errGitLayoutUnreadable = xerrors.New("git repository exists but its layout could not be read")
 
 	// errNoDatabaseOwner は、リンク worktree がスロットを取得しておらず所有データベースが無いことを表します。
@@ -57,7 +55,7 @@ var (
 )
 
 // GitContext は、この checkout がどの git 文脈にあるかを表します。
-// 「所有データベースが無い状態を検出できるか」はこの区別で決まります。
+// 文脈ごとの扱いは RequireOwner を参照。
 type GitContext int
 
 // GitProbe は、git 文脈の判定に使う外部依存の注入点です（テストで差し替えます）。
@@ -70,12 +68,18 @@ type GitProbe struct {
 	HasGitEntry func(root string) bool
 }
 
-// Values は、スロットから導かれる解決済みの値です。
-// 一箇所で導いて env（make が eval する KEY=VALUE）と status（人間向けの表示）の両方へ流すため、
-// 「make が使う値」と「デバッグで読む値」が食い違いません。
+// LeaseProbe は、リース所有権の判定に使う外部依存の注入点です（テストで差し替えます。
+// ファイルの存在が所有の証明にならない理由は README.md「Slot file」）。
+type LeaseProbe struct {
+	// OwnedBySelf は、そのスロットのリースを自 worktree が保持しているかを返します。
+	OwnedBySelf func(slot int) bool
+}
+
+// Values は、スロットから導かれる解決済みの値です
+// （env / status の双方へ同一の導出を流す理由は README.md「Resolved values」）。
 type Values struct {
 	Git             GitContext
-	SlotHeld        bool   // .gobp-db-slot が所有データベースを宣言しているか
+	SlotHeld        bool   // .gobp-db-slot が宣言するスロットのリースを実際に保持しているか
 	DBLocal         string // 所有する local 系データベース
 	DBTest          string // 所有する test 系データベース
 	AppProject      string // app 層の compose プロジェクト名
@@ -94,6 +98,7 @@ type Values struct {
 type Resolver struct {
 	cfg   Config
 	probe GitProbe
+	lease LeaseProbe
 	out   io.Writer
 }
 
@@ -114,13 +119,20 @@ func (c GitContext) String() string {
 }
 
 // NewResolver は Resolver を生成します。probe が nil の場合はホストの git を使います。
-func NewResolver(cfg Config, probe *GitProbe, out io.Writer) *Resolver {
+// lease が nil のときはリースを確認できないため、どのスロットも保持していないものとして解決します
+// （所有を騙るより、スロットの取り直しを案内して止まるほうが安全なため）。
+func NewResolver(cfg Config, probe *GitProbe, lease *LeaseProbe, out io.Writer) *Resolver {
 	p := realGitProbe()
 	if probe != nil {
 		p = *probe
 	}
 
-	return &Resolver{cfg: cfg, probe: p, out: out}
+	var l LeaseProbe
+	if lease != nil {
+		l = *lease
+	}
+
+	return &Resolver{cfg: cfg, probe: p, lease: l, out: out}
 }
 
 // Resolve は、git 文脈と .gobp-db-slot から解決済みの値を組み立てます。
@@ -131,19 +143,30 @@ func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
 		return Values{}, err
 	}
 
-	slot := readSlotFile(filepath.Join(r.cfg.Root, ".gobp-db-slot"))
-
 	values := Values{
 		Git:        gitCtx,
-		SlotHeld:   slot["DB_NAME_LOCAL"] != "",
-		DBLocal:    orDefault(slot["DB_NAME_LOCAL"], defaultDBLocal),
-		DBTest:     orDefault(slot["DB_NAME_TEST"], defaultDBTest),
-		AppProject: orDefault(slot["SERVE_PROJECT"], "gobp-app-"+filepath.Base(r.cfg.Root)),
-		AuthIssuer: "http://localhost:" + orDefault(slot["MOCK_AUTH_HOST_PORT"], strconv.Itoa(r.cfg.MockAuthBase)) + mockAuthIssuerPath,
+		DBLocal:    defaultDBLocal,
+		DBTest:     defaultDBTest,
+		AppProject: "gobp-app-" + filepath.Base(r.cfg.Root),
+		AuthIssuer: mockAuthIssuer(r.cfg.MockAuthBase),
 
-		RealtimeTableSuffix: realtimeName(r.cfg.Realtime.TableSuffix, slot["SLOT"], slotInfixTable),
-		RealtimeQueuePrefix: realtimeName(r.cfg.Realtime.QueuePrefix, slot["SLOT"], slotInfixName),
-		RealtimeTopic:       realtimeName(r.cfg.Realtime.Topic, slot["SLOT"], slotInfixName),
+		RealtimeTableSuffix: r.cfg.Realtime.TableSuffix,
+		RealtimeQueuePrefix: r.cfg.Realtime.QueuePrefix,
+		RealtimeTopic:       r.cfg.Realtime.Topic,
+	}
+
+	// リースを保持しているスロットの値だけを、その番号から導く
+	// （.gobp-db-slot の他フィールドを読まない理由は README.md「Resolved values」）。
+	if slot, held := r.heldSlot(); held {
+		num := strconv.Itoa(slot)
+		values.SlotHeld = true
+		values.DBLocal = dbLocal(slot)
+		values.DBTest = dbTest(slot)
+		values.AppProject = serveProject(slot)
+		values.AuthIssuer = mockAuthIssuer(r.cfg.MockAuthBase + slot)
+		values.RealtimeTableSuffix = realtimeName(r.cfg.Realtime.TableSuffix, num, slotInfixTable)
+		values.RealtimeQueuePrefix = realtimeName(r.cfg.Realtime.QueuePrefix, num, slotInfixName)
+		values.RealtimeTopic = realtimeName(r.cfg.Realtime.Topic, num, slotInfixName)
 	}
 
 	// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。
@@ -169,7 +192,8 @@ func (r *Resolver) RequireOwner(ctx context.Context) error {
 		return nil
 	}
 
-	_, _ = fmt.Fprint(r.out, "❌ この worktree は DB スロットを取得していないため、所有するデータベースがありません。\n"+
+	_, _ = fmt.Fprint(r.out, "❌ この worktree は DB スロットを取得していない（または取得したスロットが\n"+
+		"   他 worktree に回収されている）ため、所有するデータベースがありません。\n"+
 		"   1 つのデータベースを複数の checkout から触らないよう、既定の local / test へは\n"+
 		"   フォールバックしません。\n"+
 		"   → make slot-acquire でスロットを取得してください（make slot-status で空きを確認）。\n")
@@ -200,6 +224,22 @@ func (r *Resolver) PrintValues(ctx context.Context) error {
 	_, _ = fmt.Fprint(r.out, RenderValues(values))
 
 	return nil
+}
+
+// heldSlot は、.gobp-db-slot が宣言するスロットのうち、自 worktree がリースを保持しているものを返します。
+// 宣言が壊れている（スロット番号や DB 名が読めない）場合と、リースを確認できない場合は保持なしとします。
+func (r *Resolver) heldSlot() (int, bool) {
+	slot := readSlotFile(filepath.Join(r.cfg.Root, ".gobp-db-slot"))
+	if slot["DB_NAME_LOCAL"] == "" || r.lease.OwnedBySelf == nil {
+		return 0, false
+	}
+
+	n, err := strconv.Atoi(slot["SLOT"])
+	if err != nil {
+		return 0, false
+	}
+
+	return n, r.lease.OwnedBySelf(n)
 }
 
 // inspectGit は、git 文脈を判定します。
@@ -337,6 +377,11 @@ func readSlotFile(path string) map[string]string {
 	}
 
 	return values
+}
+
+// mockAuthIssuer は、mock 認証サーバーのホスト公開ポートから issuer URL を組み立てます。
+func mockAuthIssuer(port int) string {
+	return "http://localhost:" + strconv.Itoa(port) + mockAuthIssuerPath
 }
 
 // realtimeName は、基底名にスロット番号を継いだ資源名を返します（基底の出所は Config.Realtime）。

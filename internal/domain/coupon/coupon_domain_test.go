@@ -668,3 +668,97 @@ func TestCoupon_Redeem(t *testing.T) {
 		})
 	})
 }
+
+func TestCoupon_Restore(t *testing.T) {
+	t.Parallel()
+
+	usableAt := testExpiresAt.Add(-time.Hour)
+
+	redeemed := func(t *testing.T) *Coupon {
+		t.Helper()
+		c := newTestCoupon(t)
+		require.NoError(t, c.Redeem(usableAt))
+
+		return c
+	}
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("使用済みかつ有効期限内なら未使用へ戻す", func(t *testing.T) {
+			t.Parallel()
+
+			c := redeemed(t)
+
+			restored, err := c.Restore(usableAt.Add(time.Minute))
+
+			require.NoError(t, err)
+			assert.True(t, restored)
+			assert.False(t, c.IsUsed())
+			assert.Nil(t, c.UsedAt())
+		})
+
+		t.Run("戻したクーポンは再び引き換えられる", func(t *testing.T) {
+			t.Parallel()
+
+			c := redeemed(t)
+			_, err := c.Restore(usableAt.Add(time.Minute))
+			require.NoError(t, err)
+
+			require.NoError(t, c.Redeem(usableAt.Add(2*time.Minute)))
+			assert.True(t, c.IsUsed())
+		})
+
+		t.Run("有効期限ちょうどの場合は戻さず使用日時を保つ", func(t *testing.T) {
+			t.Parallel()
+
+			c := redeemed(t)
+
+			restored, err := c.Restore(testExpiresAt)
+
+			require.NoError(t, err)
+			assert.False(t, restored)
+			require.NotNil(t, c.UsedAt())
+			assert.Equal(t, usableAt, *c.UsedAt())
+		})
+
+		t.Run("有効期限を過ぎている場合は戻さず使用日時を保つ", func(t *testing.T) {
+			t.Parallel()
+
+			c := redeemed(t)
+
+			restored, err := c.Restore(testExpiresAt.Add(time.Hour))
+
+			require.NoError(t, err)
+			assert.False(t, restored)
+			require.NotNil(t, c.UsedAt())
+			assert.Equal(t, usableAt, *c.UsedAt())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("未使用の場合はErrNotUsedを返し状態を変えない", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+
+			restored, err := c.Restore(usableAt)
+
+			require.ErrorIs(t, err, ErrNotUsed)
+			assert.False(t, restored)
+			assert.False(t, c.IsUsed())
+		})
+
+		t.Run("未使用かつ失効している場合も未使用を先に返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newTestCoupon(t)
+
+			_, err := c.Restore(testExpiresAt.Add(time.Hour))
+
+			require.ErrorIs(t, err, ErrNotUsed)
+		})
+	})
+}

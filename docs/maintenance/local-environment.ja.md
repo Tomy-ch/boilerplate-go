@@ -72,7 +72,7 @@ compose のサービスは 2 層に分かれており、主 checkout と任意�
 
 | サービス | 層 | 由来 | ホストポート | 役割 |
 | --- | --- | --- | --- | --- |
-| `api_server` | app | build `docker/server/Dockerfile` | `${API_HOST_PORT:-8080}:8080` / dlv `${DLV_HOST_PORT:-2345}:2345` / pprof `${PPROF_HOST_PORT:-6060}:6060`（内部ポートは固定） | アプリ本体。dev target は **air** で起動しホットリロード＋delve デバッグ |
+| `api_server` | app | build `docker/server/Dockerfile` | `${API_HOST_PORT:-8080}:8080` / dlv `${DLV_HOST_PORT:-2345}:2345` / pprof `${PPROF_HOST_PORT:-6060}:6060`（内部ポートは固定） | アプリ本体。dev target は **air** で起動しホットリロード＋delve デバッグ。compose 側に自前の healthcheck（`/health`）を持つ — dev の `tooling` ステージは別の `FROM` なので、Dockerfile の `runtime` ステージの `HEALTHCHECK` は届かない |
 | `mock_auth_server` | app | image `ghcr.io/navikt/mock-oauth2-server`（設定: `docker/mock-auth-server/config.json`） | `${MOCK_AUTH_HOST_PORT:-2010}:4000`（内部 4000） | 疑似 OIDC プロバイダ。RS 側の JWKS 検証相手 |
 | `database` | infra | `postgres:18.4-trixie` | `5432` 固定 | 全 checkout 共有の**単一**インスタンス（並列化は DB 名で行う。下記スロットリング参照） |
 | `observability` | infra | `grafana/otel-lgtm` | `3000`（Grafana UI）/ `4317`（OTLP gRPC）/ `4318`（OTLP HTTP）/ `3200`（Tempo API） | 全 checkout の traces / metrics / logs の受け皿。profile: `development` |
@@ -192,6 +192,17 @@ docker compose -p gobp-shared exec garage /garage -c /etc/garage.toml meta snaps
 `internal` / `cmd` / `pkg` 配下の `.go` 変更を監視し、`go build`（`-gcflags='all=-N -l'` でデバッグ情報を保持）
 → `tmp/main` を生成 → **delve**（`dlv --listen=:2345 --headless … exec --continue`）で `serve` を起動する。
 ソース保存で自動再ビルド・再起動され、公開された dlv ポート（`2345+N`）に IDE のリモートデバッガをアタッチできる。
+
+air は中のアプリが死んでもコンテナを生かしたままにするため、コンテナが存在することは API が
+上がっていることを何も意味しない。`api_server` の healthcheck はそのためにある。`make serve` は
+それを待ち（`up --wait`）、成功メッセージは「API が応答する」を意味する。バイナリが起動できないとき
+（ビルドエラー、起動時に到達できない依存）は `docker ps` が `unhealthy` を示し、`make serve` は
+成功を名乗らずに `api_server` ログの末尾を出して失敗する。
+
+healthcheck はサービスに属するため、それを再利用する使い捨てコンテナ（`docker compose run api_server`
+で走る `make job` / `worker` / `outbox-relay`）も probe される。これらは HTTP を提供しないので、長く走る
+ものは 2 分ほどで `docker ps` 上に `(unhealthy)` と出る。この判定を待つものは何も無く、種類の違う
+コンテナに付いたラベルであって失敗ではない。
 
 ## コード生成 runner（tool-runner）
 
