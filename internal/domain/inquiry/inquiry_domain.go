@@ -13,6 +13,7 @@ package inquiry
 import (
 	"time"
 
+	"go-boilerplate/internal/apperror"
 	"go-boilerplate/pkg/uuid"
 	"go-boilerplate/pkg/xerrors"
 )
@@ -112,6 +113,12 @@ func (i *Inquiry) AppendMessage(id uuid.UUID, attrs MessageAttributes, now time.
 	if now.Before(i.updatedAt) {
 		return nil, xerrors.Wrap(ErrInvalidTime, "now must be at or after updatedAt")
 	}
+	// validateBody を先に呼ぶのは本文の違反だけを名指しするためです。newMessage が併せて検証する
+	// 項目は利用者が直せる入力ではありません（internal/domain/README.md の Validation を参照）。
+	if err := validateBody(attrs.Body); err != nil {
+		return nil, apperror.WithDetails(err, FieldBody)
+	}
+
 	m, err := newMessage(id, attrs)
 	if err != nil {
 		return nil, err

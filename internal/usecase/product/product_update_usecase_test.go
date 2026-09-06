@@ -609,6 +609,9 @@ func Test_parseOptionalPrice(t *testing.T) {
 			actual, err := parseOptionalPrice(ptr.To("-0.01"))
 			require.ErrorIs(t, err, money.ErrNegativePrice)
 			assert.Nil(t, actual)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{domainproduct.FieldPrice}, meta.Details())
 		})
 	})
 }

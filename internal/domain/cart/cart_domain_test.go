@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"go-boilerplate/internal/apperror"
 	"go-boilerplate/internal/domain/lexicon/money"
 	"go-boilerplate/pkg/ptr"
 	"go-boilerplate/pkg/uuid"
@@ -784,6 +785,25 @@ func TestCart_SetItem(t *testing.T) {
 
 			require.ErrorIs(t, err, ErrTooManyItems)
 			assert.Len(t, c.Items(), maxItems)
+		})
+
+		t.Run("数量が範囲外の場合、quantity を名指しする", func(t *testing.T) {
+			t.Parallel()
+			c := newTestGuestCart(t)
+
+			err := c.SetItem(
+				SetItemAttributes{
+					ItemID:    uuidtestkit.NewTestFromSalt(t, "item_bad_quantity"),
+					ProductID: uuidtestkit.NewTestFromSalt(t, "product_bad_quantity"),
+					Quantity:  0,
+				},
+				baseTime,
+			)
+
+			require.ErrorIs(t, err, ErrInvalidQuantity)
+			meta, ok := apperror.MetaFrom(err)
+			require.True(t, ok)
+			assert.Equal(t, []string{FieldQuantity}, meta.Details())
 		})
 	})
 }

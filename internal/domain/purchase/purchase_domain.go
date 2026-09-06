@@ -238,12 +238,18 @@ func New(
 	if userID.IsNil() {
 		return nil, xerrors.Wrap(ErrInvalidUserID, "userID is required")
 	}
+	// 名指しするのは検証エラーだけです。buildDetails は在庫不足（409）と採番済み明細 ID の不正
+	// （サーバ内部）も返し、どちらも「送った項目が不正」ではありません（付与の一般形は
+	// internal/domain/README.md の Validation を参照）。
 	if len(inputs) == 0 {
-		return nil, ErrEmptyDetails
+		return nil, apperror.WithDetails(ErrEmptyDetails, FieldDetails)
 	}
 
 	details, subtotalDollars, err := buildDetails(inputs, locked)
 	if err != nil {
+		if xerrors.Is(err, apperror.ErrValidation) && !xerrors.Is(err, ErrInvalidID) {
+			return nil, apperror.WithDetails(err, FieldDetails)
+		}
 		return nil, err
 	}
 

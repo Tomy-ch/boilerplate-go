@@ -426,6 +426,24 @@ request property names; the reason text stays in the wrapped error message (log-
 Server-internal invariants (id, timestamps) keep first-error return —
 they are not user-correctable input.
 
+**The identifier is attached by whoever knows which request field the value came from**,
+which is not always the code that detects the violation. Three shapes recur:
+
+- **The aggregate validates its own attributes.** It knows the request field, so it attaches
+  the identifier itself. This is the common case above.
+- **A shared value object raises the error.** A cross-aggregate lexicon type such as
+  `money.NewPrice` is reached from several request fields and cannot know which one it is
+  serving, so the identifier belongs to its caller — the Usecase that read the field.
+- **Another aggregate raises the error.** A referenced aggregate (a coupon named by a purchase
+  request) sees only its own invariant, never that it is being named as this request's
+  `couponId`. Its caller attaches the identifier, for the same reason.
+
+A validator shared with the reconstruction path needs no special handling here: a stored row that
+violates an invariant is a data-integrity failure, and the Repository flattens it to
+`apperror.ErrInternal` — dropping the sentinel and the `Meta` with it — so it never reaches a client
+as a `422` naming a request field. That flatten is load-bearing and lives in
+[`pgerror`](../infrastructure/rdb/pgerror/README.md), not here.
+
 ### Invariants (Domain Invariant)
 
 Entities must **always satisfy invariants**.

@@ -174,7 +174,7 @@ func parseOptionalPrice(v *string) (*money.Price, error) {
 	}
 	price, err := money.NewPrice(parsed)
 	if err != nil {
-		return nil, err
+		return nil, apperror.WithDetails(err, product.FieldPrice)
 	}
 
 	return &price, nil

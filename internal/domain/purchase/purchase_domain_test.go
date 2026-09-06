@@ -368,6 +368,88 @@ func TestNew(t *testing.T) {
 			assert.Nil(t, actual)
 			require.ErrorIs(t, err, ErrInvalidAmount)
 		})
+
+		t.Run("明細に由来するエラーの識別子", func(t *testing.T) {
+			t.Parallel()
+
+			t.Run("明細が空", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, _, locked := validNewArgs(t)
+
+				_, err := New(id, code, userID, nil, locked)
+
+				require.ErrorIs(t, err, ErrEmptyDetails)
+				meta, ok := apperror.MetaFrom(err)
+				require.True(t, ok)
+				assert.Equal(t, []string{FieldDetails}, meta.Details())
+			})
+
+			t.Run("数量が0以下", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, inputs, locked := validNewArgs(t)
+				inputs[0].Quantity = 0
+
+				_, err := New(id, code, userID, inputs, locked)
+
+				require.ErrorIs(t, err, ErrInvalidQuantity)
+				meta, ok := apperror.MetaFrom(err)
+				require.True(t, ok)
+				assert.Equal(t, []string{FieldDetails}, meta.Details())
+			})
+
+			t.Run("在庫不足は状態の衝突なので識別子を付けない", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, inputs, _ := validNewArgs(t)
+				locked := make([]LockedProduct, 0, len(inputs))
+				for _, in := range inputs {
+					locked = append(locked, NewLockedProduct(in.ProductID, mustPrice(t, "800"), in.Quantity-1))
+				}
+
+				_, err := New(id, code, userID, inputs, locked)
+
+				require.ErrorIs(t, err, ErrInsufficientStock)
+				_, ok := apperror.MetaFrom(err)
+				assert.False(t, ok)
+			})
+
+			t.Run("明細IDの欠落はサーバ内部の不正なので識別子を付けない", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, inputs, locked := validNewArgs(t)
+				inputs[0].ID = uuid.UUID{}
+
+				_, err := New(id, code, userID, inputs, locked)
+
+				require.ErrorIs(t, err, ErrInvalidID)
+				_, ok := apperror.MetaFrom(err)
+				assert.False(t, ok)
+			})
+
+			t.Run("同一productIDの重複", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, inputs, locked := validNewArgs(t)
+				inputs[1].ProductID = inputs[0].ProductID
+
+				_, err := New(id, code, userID, inputs, locked)
+
+				require.ErrorIs(t, err, ErrDuplicateProductID)
+				meta, ok := apperror.MetaFrom(err)
+				require.True(t, ok)
+				assert.Equal(t, []string{FieldDetails}, meta.Details())
+			})
+
+			t.Run("対応するロック済み商品が無い", func(t *testing.T) {
+				t.Parallel()
+				id, code, userID, inputs, _ := validNewArgs(t)
+				locked := []LockedProduct{NewLockedProduct(inputs[0].ProductID, mustPrice(t, "800"), 20)}
+
+				_, err := New(id, code, userID, inputs, locked)
+
+				require.ErrorIs(t, err, ErrProductNotFound)
+				meta, ok := apperror.MetaFrom(err)
+				require.True(t, ok)
+				assert.Equal(t, []string{FieldDetails}, meta.Details())
+			})
+		})
 	})
 }
 

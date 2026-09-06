@@ -46,7 +46,7 @@ func (u *usecase) UpdateProductStock(
 		entity = locked
 
 		if err = entity.AdjustStock(params.Delta); err != nil {
-			return err
+			return apperror.WithDetails(err, product.FieldDelta)
 		}
 
 		updatedVersion, err = u.repo.UpdateStock(ctx, entity)

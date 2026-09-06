@@ -106,26 +106,56 @@ func newProduct(id uuid.UUID, attrs Attributes, version int, createdAt time.Time
 }
 
 // validateAttributes は、商品属性の不変条件を検証します。生成時と更新時で同一の条件を課します。
+// 最初の違反で打ち切らず、利用者が直せる項目をすべて検証してから束ねて返します。
+// 違反した項目の識別子を付けるのはこの関数だけで、個別の検証関数は項目を名指ししないエラーを
+// 返します。複数項目にまたがる違反でどれを名指しするか、採番済みの値の違反を名指ししないことも
+// ここで決めます（internal/domain/README.md の Validation を参照）。
 func validateAttributes(attrs Attributes) error {
+	var errs []error
+	var fields []string
+
 	if ok, msg := stringkit.ValidateInRange(attrs.Name, minNameLength, maxNameLength); !ok {
-		return xerrors.Wrap(ErrInvalidName, msg)
+		errs = append(errs, xerrors.Wrap(ErrInvalidName, msg))
+		fields = append(fields, FieldName)
 	}
 	if err := validateQuantity(int64(attrs.Quantity)); err != nil {
-		return err
+		errs = append(errs, err)
+		fields = append(fields, FieldQuantity)
 	}
 	if err := validateStockWarningThreshold(attrs.StockWarningThreshold); err != nil {
-		return err
+		errs = append(errs, err)
+		fields = append(fields, FieldStockWarningThreshold)
 	}
 	if attrs.Status.id.IsNil() {
-		return xerrors.Wrap(ErrInvalidStatusID, "status is required")
+		errs = append(errs, xerrors.Wrap(ErrInvalidStatusID, "status is required"))
+		fields = append(fields, FieldStatusID)
 	}
 	if attrs.Category.id.IsNil() {
-		return xerrors.Wrap(ErrInvalidCategoryID, "category is required")
+		errs = append(errs, xerrors.Wrap(ErrInvalidCategoryID, "category is required"))
+		fields = append(fields, FieldCategoryID)
 	}
+	// 名指しするのは publishedAt（理由は docs/spec/domain/product.md の Cross-field Invariants）。
 	if err := validateDiscontinuedAt(attrs.DiscontinuedAt, attrs.PublishedAt); err != nil {
-		return err
+		errs = append(errs, err)
+		fields = append(fields, FieldPublishedAt)
 	}
-	return validateImages(attrs.Images)
+	if err := validateImages(attrs.Images); err != nil {
+		errs = append(errs, err)
+		// 画像 ID は採番済み（サーバ内部）で、利用者が直せる項目ではないため名指ししません。
+		if !xerrors.Is(err, ErrInvalidID) {
+			fields = append(fields, FieldImages)
+		}
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+	// 名指しする項目が 1 つも無いときは Meta を付けません。空の details を付けると、
+	// 「利用者が直せる項目がある」と偽って伝えることになります。
+	if len(fields) == 0 {
+		return xerrors.Join(errs...)
+	}
+	return apperror.WithDetails(xerrors.Join(errs...), fields...)
 }
 
 // Update は、商品の属性を更新します。生成時と同一の不変条件を課し、違反する場合はエンティティを
@@ -296,14 +326,10 @@ func (p *Product) IsDiscontinued() bool { return IsDiscontinued(p.discontinuedAt
 func IsDiscontinued(discontinuedAt *time.Time) bool { return discontinuedAt != nil }
 
 // validateDiscontinuedAt は、廃番と公開が同時に成り立たないことを検証します。
-// 違反したフィールドとして publishedAt を報告します。理由は docs/spec/domain/product.md の
-// Cross-field Invariants を参照してください。
+// 項目の名指しは validateAttributes が行います。
 func validateDiscontinuedAt(discontinuedAt, publishedAt *time.Time) error {
 	if IsDiscontinued(discontinuedAt) && IsPublished(publishedAt) {
-		return apperror.WithDetails(
-			xerrors.Wrap(ErrDiscontinuedCannotBePublished, "publishedAt must be nil for a discontinued product"),
-			FieldPublishedAt,
-		)
+		return xerrors.Wrap(ErrDiscontinuedCannotBePublished, "publishedAt must be nil for a discontinued product")
 	}
 	return nil
 }

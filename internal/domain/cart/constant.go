@@ -17,3 +17,9 @@ const (
 	// 256 ビットを base64url（パディング無し）で表現した長さに一致します。
 	sessionTokenLength = 43
 )
+
+// カートフィールドの識別子。API リクエストのプロパティ名と一致させ、どの項目が不正かを呼び出し側へ返します。
+const (
+	// FieldQuantity は、数量フィールドの識別子です。
+	FieldQuantity = "quantity"
+)

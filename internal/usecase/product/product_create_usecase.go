@@ -58,7 +58,7 @@ func (u *usecase) CreateProduct(ctx context.Context, authn *auth.Authn, params C
 	}
 	productPrice, err := money.NewPrice(price)
 	if err != nil {
-		return ProductView{}, err
+		return ProductView{}, apperror.WithDetails(err, product.FieldPrice)
 	}
 
 	id, err := uuid.New()
