@@ -1,0 +1,23 @@
+type: object
+description: |
+  販促クーポン一括発行のリクエスト（application/json）。admin のみ実行できます（非 admin は 403）。
+  値引き・適用範囲・有効期限を指定すると、退会していないすべての利用者へ同一条件のクーポンが
+  1 枚ずつ発行されます。**受給者は指定できません。** 不特定多数への配布がこの API の形であり、
+  受給者を名指しする発行は別の操作です。
+additionalProperties: false
+required:
+  - discount
+  - scope
+  - expiresAt
+properties:
+  discount:
+    $ref: '../../schemas/coupons/CouponDiscountInput.yaml'
+  scope:
+    $ref: '../../schemas/coupons/CouponScopeInput.yaml'
+  expiresAt:
+    type: string
+    format: date-time
+    description: >-
+      発行するクーポンの有効期限。キャンペーンの終了日を名指しする操作なので、日数ではなく絶対時刻で
+      受け取ります。現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
+    example: "2026-12-31T14:59:59Z"

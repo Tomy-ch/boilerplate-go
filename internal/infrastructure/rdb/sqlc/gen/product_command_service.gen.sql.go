@@ -7,9 +7,7 @@ package gen
 
 import (
 	"context"
-	"time"
 
-	decimal "go-boilerplate/pkg/decimal"
 	uuid "go-boilerplate/pkg/uuid"
 )
 
@@ -31,97 +29,6 @@ func (q *Queries) CountDiscontinueAffectedCarts(ctx context.Context, productID u
 	var count int64
 	err := row.Scan(&count)
 	return count, err
-}
-
-const insertDiscontinueCoupons = `-- name: InsertDiscontinueCoupons :execrows
-INSERT INTO coupons (
-    id,
-    user_id,
-    discount_kind,
-    discount_value,
-    scope_kind,
-    scope_target_id,
-    expires_at,
-    issued_at
-)
-SELECT
-    ids.id,
-    ids.user_id,
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
-FROM (
-    SELECT
-        i.id,
-        u.user_id
-    FROM UNNEST($7::UUID[]) WITH ORDINALITY AS i (id, ord)
-    INNER JOIN UNNEST($8::UUID[]) WITH ORDINALITY AS u (user_id, ord)
-        ON i.ord = u.ord
-) AS ids
-`
-
-type InsertDiscontinueCouponsParams struct {
-	DiscountKind  int16
-	DiscountValue decimal.Decimal
-	ScopeKind     int16
-	ScopeTargetID *uuid.UUID
-	ExpiresAt     time.Time
-	IssuedAt      time.Time
-	Ids           []uuid.UUID
-	UserIds       []uuid.UUID
-}
-
-// === source: database/dml/command_service/product/insert_discontinue_coupons.sql ===
-// 採番済みの id と受給者 user_id を 1 対 1 で zip し、同じ条件のクーポンを一括発行する
-// （2 文に分かれる理由と往復コストは ADR-0034 の Worked instances を参照）。
-// 2 つの配列は WITH ORDINALITY の行番号で突き合わせる（sqlc が 2 引数形の unnest を解決できない）。
-// 長さが食い違うと内部結合で余った側が落ちるため、呼び出し側が必ず同じ長さで渡す。
-//
-//	INSERT INTO coupons (
-//	    id,
-//	    user_id,
-//	    discount_kind,
-//	    discount_value,
-//	    scope_kind,
-//	    scope_target_id,
-//	    expires_at,
-//	    issued_at
-//	)
-//	SELECT
-//	    ids.id,
-//	    ids.user_id,
-//	    $1,
-//	    $2,
-//	    $3,
-//	    $4,
-//	    $5,
-//	    $6
-//	FROM (
-//	    SELECT
-//	        i.id,
-//	        u.user_id
-//	    FROM UNNEST($7::UUID[]) WITH ORDINALITY AS i (id, ord)
-//	    INNER JOIN UNNEST($8::UUID[]) WITH ORDINALITY AS u (user_id, ord)
-//	        ON i.ord = u.ord
-//	) AS ids
-func (q *Queries) InsertDiscontinueCoupons(ctx context.Context, arg *InsertDiscontinueCouponsParams) (int64, error) {
-	result, err := q.db.Exec(ctx, insertDiscontinueCoupons,
-		arg.DiscountKind,
-		arg.DiscountValue,
-		arg.ScopeKind,
-		arg.ScopeTargetID,
-		arg.ExpiresAt,
-		arg.IssuedAt,
-		arg.Ids,
-		arg.UserIds,
-	)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
 }
 
 const selectDiscontinueCouponRecipients = `-- name: SelectDiscontinueCouponRecipients :many

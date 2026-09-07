@@ -1,0 +1,26 @@
+type: object
+description: |
+  発行するクーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
+  応答側の CouponScope と同じ形ですが、要求として受け取る側は宣言に無いフィールドを拒むため別に持ちます。
+additionalProperties: false
+required:
+  - kind
+  - targetId
+properties:
+  kind:
+    type: string
+    enum: [all, category, product]
+    description: |
+      適用範囲の決まり方。`all` は対象を絞らない全体、`category` は特定の商品カテゴリに属する明細だけ、
+      `product` は特定の商品の明細だけを対象とします。
+    example: "category"
+  targetId:
+    type: string
+    format: uuid
+    nullable: true
+    description: >-
+      範囲を絞る対象の識別子。`category` なら商品カテゴリ ID、`product` なら商品 ID です。
+      `all` では対象を持たないため null を送ります。
+      `category` / `product` で存在しない識別子を指した場合は 404 を返します。誰にも使えないクーポンを
+      発行してから気づくことになるためです。
+    example: "5dd52d84-78eb-4a52-ba0b-2e11c95c2af2"

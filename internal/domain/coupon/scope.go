@@ -57,6 +57,18 @@ func NewScopeKind(code int) (ScopeKind, error) {
 	return ScopeKind{}, xerrors.Wrap(ErrInvalidScopeKind, fmt.Sprintf("unknown scope kind code: %d", code))
 }
 
+// NewScopeKindByName は、外部から渡された名前から適用範囲種別を解決します。
+// 既知でない名前は ErrInvalidScopeKind を返します。閉じた集合の権威は allScopeKinds ただ 1 つで、
+// code からの解決（[NewScopeKind]）と同じ一覧を走査します。
+func NewScopeKindByName(name string) (ScopeKind, error) {
+	for _, k := range allScopeKinds() {
+		if k.name == name {
+			return k, nil
+		}
+	}
+	return ScopeKind{}, xerrors.Wrap(ErrInvalidScopeKind, fmt.Sprintf("unknown scope kind name: %q", name))
+}
+
 // Code は、永続化と外部公開に用いる業務キーを返します。
 func (k ScopeKind) Code() int { return k.code }
 

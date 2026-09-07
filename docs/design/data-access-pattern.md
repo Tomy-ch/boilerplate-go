@@ -132,16 +132,20 @@ exist today.
 
 Without this gate the seam degrades into "where I put SQL I want to write directly".
 
-### Gate 2 — Atomicity: does the multi-aggregate write require a single transaction?
+### Gate 2 — Indivisibility: does a non-functional requirement forbid decomposing the write?
 
-For an operation that crosses an aggregate boundary, two independent questions decide. They are
-independent because one is about reading and the other about writing, and one operation may answer yes
-to both.
+Three independent questions decide. They are independent because they ask about different things —
+reading, writing across a boundary, and the shape of the write itself — and one operation may answer yes
+to more than one.
 
 1. Does a condition read from another aggregate have to **hold for the rest of the transaction**? — can
    a concurrent operation invalidate it between the check and the commit?
 2. Does the multi-aggregate write require **single-transaction atomicity**? Immediacy — all effects
    visible at API response time — is the typical reason this arises.
+3. Can the rows to be written be **named by identity**? — or are they fixed only by a predicate, so that
+   decomposing the write into one aggregate at a time would make round trips grow with the population?
+   Unlike the first two, this question does not depend on crossing a boundary at all, so it is asked of
+   every write that reaches this gate, including one that stays inside a single aggregate.
 
 The procedure:
 
@@ -150,11 +154,23 @@ The procedure:
    consequence as an outbox event ([ADR-0054](../adr/0054-transactional-outbox.md)). No other aggregate
    is held inside the transaction.
 2. **Guard (synchronous row lock; still a regular usecase).** See §5.
-3. **Atomicity (CommandService; exception, must be justified).** Only when single-transaction atomicity
-   of the multi-aggregate *write* remains as a requirement.
+3. **Indivisibility (CommandService; exception, must be justified).** Two paths reach it, and they are
+   independent — an operation may arrive by either alone:
+   - **(3a) Multi-aggregate atomicity.** Single-transaction atomicity of the multi-aggregate *write*
+     remains as a requirement. This path widens the transaction boundary, and §9 records the departure.
+   - **(3b) Predicate-defined set write.** The rows to be written cannot be named by identity, so they
+     can be neither enumerated nor locked and have no upper bound; decomposing the write would mean
+     reconstructing one aggregate per row, and round trips would grow with the population. This is the
+     write-side mirror of §3.3 — the read side asks whether decomposition materializes an aggregate the
+     operation does not need, and this asks whether it materializes one per row written. **It does not
+     widen the transaction boundary**: the write may stay inside a single aggregate, and 3b says nothing
+     about how many aggregates are touched. Decided in
+     [ADR-0114](../adr/0114-predicate-defined-set-writes-on-commandservice.md).
 
 Two justifications are not acceptable: "it spans multiple aggregates, therefore CommandService", and
-"it is only a read, therefore nothing is needed".
+"it is only a read, therefore nothing is needed". A third is not acceptable either: **"the set is
+large, therefore CommandService"** — 3b asks whether the rows can be *named*, not how many there are. A
+thousand rows named by identity still decompose; three rows chosen by a predicate do not.
 
 ### The Repository write contract
 
@@ -283,9 +299,14 @@ cross-aggregate write of its own has nothing to register, and an empty sub-modul
 
 ## 9. Departure from "1 Aggregate = 1 Transaction Boundary"
 
-The guard branch (§5) and CommandService (§4 gate 2, branch 3) both put rows belonging to more than one
-aggregate inside a single transaction, departing from the principle
+The guard branch (§5) and CommandService reached by **branch 3a** (§4 gate 2) both put rows belonging to
+more than one aggregate inside a single transaction, departing from the principle
 [`internal/domain/README.md`](../../internal/domain/README.md) (§ Aggregate Boundary) states. Exactly
 those two widenings are admitted, and no others; the reasoning is recorded in
 [ADR-0034](../adr/0034-commandservice-atomicity-criterion.md) § Departure from "1 Aggregate = 1
 Transaction Boundary".
+
+**Branch 3b is not a third widening.** It reaches the same construct by a different question — whether
+the rows can be named, not whether the write spans aggregates — and the write it admits may touch one
+aggregate only. A CommandService is therefore no longer evidence that the transaction boundary was
+widened; branch 3a is ([ADR-0114](../adr/0114-predicate-defined-set-writes-on-commandservice.md)).

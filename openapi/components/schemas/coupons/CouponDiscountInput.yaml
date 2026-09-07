@@ -1,0 +1,24 @@
+type: object
+description: |
+  発行するクーポンの値引き。いくら引くかを表します。適用範囲（どの明細が対象か）とは独立した軸です。
+  応答側の CouponDiscount と同じ形ですが、要求として受け取る側は宣言に無いフィールドを拒むため別に持ちます。
+additionalProperties: false
+required:
+  - kind
+  - value
+properties:
+  kind:
+    type: string
+    enum: [flat, rate]
+    description: |
+      値引きの決まり方。`flat` は金額を直接差し引く定額、`rate` は対象額に率を掛ける定率です。
+    example: "rate"
+  value:
+    type: string
+    pattern: '^\d+(\.\d+)?$'
+    description: >-
+      種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、
+      正確な十進量を保つ decimal 文字列で表します（例 `"0.15"` は 15% 引き）。
+      ドメインの検証に落ちる値（定率で 0 以下または 1 超など）は 422 を返します。
+      JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
+    example: "0.15"

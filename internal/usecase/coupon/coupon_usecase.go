@@ -1,6 +1,6 @@
 //go:generate mockgen -source=$GOFILE -destination=mock/mock_$GOFILE.gen.go -package=mock_$GOPACKAGE
 
-// Package coupon は、クーポンの読み取りユースケースを提供します。
+// Package coupon は、クーポンの発行と読み取りのユースケースを提供します。
 //
 // 「いまのカートに使えるか」と「いくら引かれるか」は集約をまたぐ問いですが、判定そのものは
 // クーポンのドメインが持ちます。そのため QueryService ではなく、Repository を束ねて
@@ -15,9 +15,14 @@ import (
 	"go-boilerplate/internal/domain/cart"
 	"go-boilerplate/internal/domain/coupon"
 	"go-boilerplate/internal/domain/product"
+	"go-boilerplate/internal/domain/product/category"
+	"go-boilerplate/internal/domain/user"
 	"go-boilerplate/internal/observability"
 	"go-boilerplate/internal/usecase/boundary/auth"
+	"go-boilerplate/internal/usecase/boundary/authz"
 	"go-boilerplate/internal/usecase/boundary/clock"
+	"go-boilerplate/internal/usecase/boundary/tx"
+	"go-boilerplate/internal/usecase/coupon/command"
 	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/uuid"
 	"go-boilerplate/pkg/xerrors"
@@ -51,7 +56,7 @@ type CartCouponView struct {
 	DiscountAmount int
 }
 
-// Usecase は、クーポンの読み取りユースケースを定義します。
+// Usecase は、クーポンの発行と読み取りのユースケースを定義します。
 type Usecase interface {
 	// ListMyCoupons は、認証主体が保有するクーポンを発行日時の新しい順で返します。
 	// 使用済み・失効済みも含みます。1 枚も持たない場合は空を返します。
@@ -60,30 +65,50 @@ type Usecase interface {
 	// 使用済み・失効済みと、値引きが 0 になるクーポンは含みません。
 	// カートを持たない場合も空を返します。
 	ListApplicableToMyCart(ctx context.Context, authn *auth.Authn) ([]CartCouponView, error)
+	// IssuePromotionalCoupons は、退会していないすべての利用者へ同一条件のクーポンを 1 枚ずつ発行し、
+	// その実行が起こしたことを件数で返します。admin のみ実行できます。
+	IssuePromotionalCoupons(
+		ctx context.Context, authn *auth.Authn, params IssuePromotionalCouponsParams,
+	) (IssuePromotionalCouponsView, error)
 }
 
 type usecase struct {
-	tracer      observability.LayerTracer
-	couponRepo  coupon.Repository
-	cartRepo    cart.Repository
-	productRepo product.Repository
-	clock       clock.Clock
+	tracer       observability.LayerTracer
+	couponRepo   coupon.Repository
+	cartRepo     cart.Repository
+	productRepo  product.Repository
+	categoryRepo category.Repository
+	userRepo     user.Repository
+	clock        clock.Clock
+	txm          tx.Manager
+	authorizer   authz.Authorizer
+	bulkIssueCmd command.CommandService
 }
 
-// New は、クーポンの読み取りユースケースを生成して返します。
+// New は、クーポンの発行と読み取りのユースケースを生成して返します。
 func New(
 	couponRepo coupon.Repository,
 	cartRepo cart.Repository,
 	productRepo product.Repository,
+	categoryRepo category.Repository,
+	userRepo user.Repository,
 	clk clock.Clock,
+	txm tx.Manager,
+	authorizer authz.Authorizer,
+	bulkIssueCmd command.CommandService,
 	tf observability.TracerFactory,
 ) Usecase {
 	return &usecase{
-		tracer:      tf.Usecase(),
-		couponRepo:  couponRepo,
-		cartRepo:    cartRepo,
-		productRepo: productRepo,
-		clock:       clk,
+		tracer:       tf.Usecase(),
+		couponRepo:   couponRepo,
+		cartRepo:     cartRepo,
+		productRepo:  productRepo,
+		categoryRepo: categoryRepo,
+		userRepo:     userRepo,
+		clock:        clk,
+		txm:          txm,
+		authorizer:   authorizer,
+		bulkIssueCmd: bulkIssueCmd,
 	}
 }
 

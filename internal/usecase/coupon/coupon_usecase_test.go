@@ -11,10 +11,15 @@ import (
 	mock_coupon "go-boilerplate/internal/domain/coupon/mock"
 	"go-boilerplate/internal/domain/lexicon/money"
 	"go-boilerplate/internal/domain/product"
+	mock_category "go-boilerplate/internal/domain/product/category/mock"
 	mock_product "go-boilerplate/internal/domain/product/mock"
+	mock_user "go-boilerplate/internal/domain/user/mock"
 	"go-boilerplate/internal/observability"
 	"go-boilerplate/internal/usecase/boundary/auth"
+	mock_authz "go-boilerplate/internal/usecase/boundary/authz/mock"
 	mock_clock "go-boilerplate/internal/usecase/boundary/clock/mock"
+	mock_tx "go-boilerplate/internal/usecase/boundary/tx/mock"
+	mock_command "go-boilerplate/internal/usecase/coupon/command/mock"
 	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/ptr"
 	"go-boilerplate/pkg/uuid"
@@ -32,10 +37,15 @@ var (
 )
 
 type testDeps struct {
-	couponRepo  *mock_coupon.MockRepository
-	cartRepo    *mock_cart.MockRepository
-	productRepo *mock_product.MockRepository
-	clock       *mock_clock.MockClock
+	couponRepo   *mock_coupon.MockRepository
+	cartRepo     *mock_cart.MockRepository
+	productRepo  *mock_product.MockRepository
+	categoryRepo *mock_category.MockRepository
+	userRepo     *mock_user.MockRepository
+	clock        *mock_clock.MockClock
+	txm          *mock_tx.MockManager
+	authorizer   *mock_authz.MockAuthorizer
+	bulkIssueCmd *mock_command.MockCommandService
 }
 
 func newTestUsecase(t *testing.T) (*usecase, *testDeps) {
@@ -43,17 +53,27 @@ func newTestUsecase(t *testing.T) (*usecase, *testDeps) {
 
 	ctrl := gomock.NewController(t)
 	deps := &testDeps{
-		couponRepo:  mock_coupon.NewMockRepository(ctrl),
-		cartRepo:    mock_cart.NewMockRepository(ctrl),
-		productRepo: mock_product.NewMockRepository(ctrl),
-		clock:       mock_clock.NewMockClock(ctrl),
+		couponRepo:   mock_coupon.NewMockRepository(ctrl),
+		cartRepo:     mock_cart.NewMockRepository(ctrl),
+		productRepo:  mock_product.NewMockRepository(ctrl),
+		categoryRepo: mock_category.NewMockRepository(ctrl),
+		userRepo:     mock_user.NewMockRepository(ctrl),
+		clock:        mock_clock.NewMockClock(ctrl),
+		txm:          mock_tx.NewMockManager(ctrl),
+		authorizer:   mock_authz.NewMockAuthorizer(ctrl),
+		bulkIssueCmd: mock_command.NewMockCommandService(ctrl),
 	}
 	u := &usecase{
-		tracer:      observability.NewMockUsecaseLayerTracer(t),
-		couponRepo:  deps.couponRepo,
-		cartRepo:    deps.cartRepo,
-		productRepo: deps.productRepo,
-		clock:       deps.clock,
+		tracer:       observability.NewMockUsecaseLayerTracer(t),
+		couponRepo:   deps.couponRepo,
+		cartRepo:     deps.cartRepo,
+		productRepo:  deps.productRepo,
+		categoryRepo: deps.categoryRepo,
+		userRepo:     deps.userRepo,
+		clock:        deps.clock,
+		txm:          deps.txm,
+		authorizer:   deps.authorizer,
+		bulkIssueCmd: deps.bulkIssueCmd,
 	}
 
 	return u, deps
@@ -182,15 +202,28 @@ func TestNew(t *testing.T) {
 			couponRepo := mock_coupon.NewMockRepository(ctrl)
 			cartRepo := mock_cart.NewMockRepository(ctrl)
 			productRepo := mock_product.NewMockRepository(ctrl)
+			categoryRepo := mock_category.NewMockRepository(ctrl)
+			userRepo := mock_user.NewMockRepository(ctrl)
 			clk := mock_clock.NewMockClock(ctrl)
+			txm := mock_tx.NewMockManager(ctrl)
+			authorizer := mock_authz.NewMockAuthorizer(ctrl)
+			bulkIssueCmd := mock_command.NewMockCommandService(ctrl)
 
-			u, ok := New(couponRepo, cartRepo, productRepo, clk, observability.NewNoopTracerFactory(t)).(*usecase)
+			u, ok := New(
+				couponRepo, cartRepo, productRepo, categoryRepo, userRepo,
+				clk, txm, authorizer, bulkIssueCmd, observability.NewNoopTracerFactory(t),
+			).(*usecase)
 
 			require.True(t, ok)
 			assert.Equal(t, couponRepo, u.couponRepo)
 			assert.Equal(t, cartRepo, u.cartRepo)
 			assert.Equal(t, productRepo, u.productRepo)
+			assert.Equal(t, categoryRepo, u.categoryRepo)
+			assert.Equal(t, userRepo, u.userRepo)
 			assert.Equal(t, clk, u.clock)
+			assert.Equal(t, txm, u.txm)
+			assert.Equal(t, authorizer, u.authorizer)
+			assert.Equal(t, bulkIssueCmd, u.bulkIssueCmd)
 		})
 	})
 }
@@ -233,7 +266,7 @@ func Test_usecase_ListMyCoupons(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Len(t, got, 1)
-			require.NotNil(t, got[0].UsedAt)
+			assert.NotNil(t, got[0].UsedAt)
 		})
 
 		t.Run("1枚も持たない場合は空を返す", func(t *testing.T) {

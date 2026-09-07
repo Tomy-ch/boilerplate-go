@@ -10,6 +10,7 @@ import (
 	cartscouponshandler "go-boilerplate/internal/controller/handler/v1/carts/coupons"                      // sample-api:line
 	cartsitemshandler "go-boilerplate/internal/controller/handler/v1/carts/items"                          // sample-api:line
 	cartsmergehandler "go-boilerplate/internal/controller/handler/v1/carts/merge"                          // sample-api:line
+	couponsbulkissuehandler "go-boilerplate/internal/controller/handler/v1/coupons/bulkissue"              // sample-api:line
 	dashboardhandler "go-boilerplate/internal/controller/handler/v1/dashboard"                             // sample-api:line
 	exchangeratehandler "go-boilerplate/internal/controller/handler/v1/exchangerate"                       // sample-api:line
 	inquirieshandler "go-boilerplate/internal/controller/handler/v1/inquiries"                             // sample-api:line
@@ -84,7 +85,8 @@ func ControllerModule() fx.Option {
 			cartshandler.BindHandler,
 			cartsitemshandler.BindHandler,
 			cartsmergehandler.BindHandler,
-			cartscouponshandler.BindHandler, // sample-api:line
+			cartscouponshandler.BindHandler,     // sample-api:line
+			couponsbulkissuehandler.BindHandler, // sample-api:line
 			inquirieshandler.BindHandler,
 			inquirymemessageshandler.BindHandler,
 			inquirymetickethandler.BindHandler,

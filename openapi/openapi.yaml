@@ -111,6 +111,8 @@ tags:
     description: ログイン時のカート引き継ぎ（認証必須・所有権の遷移サンプル・Idempotency-Key を採る）。
   - name: v1/carts/me/coupons
     description: いまのカートに使えるクーポンと値引き額（認証必須・適用可否の判定を表現層へ漏らさないための読み）。
+  - name: v1/coupons/bulk-issue
+    description: 販促クーポンの一括発行（admin のみ・述語で決まる集合書き込み / CommandService サンプル・非 admin は 403）。
   - name: v1/inquiries
     description: 問い合わせ一覧（admin のみ・keyset ページング・本文を持たない要約）。
   - name: v1/inquiries/me/messages
@@ -213,6 +215,8 @@ paths:
     $ref: './paths/v1/carts/me/merge.yaml'
   /v1/carts/me/coupons:
     $ref: './paths/v1/carts/me/coupons.yaml'
+  /v1/coupons/bulk-issue:
+    $ref: './paths/v1/coupons/bulk-issue.yaml'
   /v1/inquiries:
     $ref: './paths/v1/inquiries.yaml'
   /v1/inquiries/me/messages:

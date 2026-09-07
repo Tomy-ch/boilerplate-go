@@ -58,7 +58,7 @@ findings** — 業務が使っていてモデルが使っていない語は、�
 | 商品ステータス | 商品を今どう取り扱っているかの区分 | product-status / ProductStatus | `status.Status` | `ProductStatusResponse` |
 | 公開中 | 顧客がその商品を見つけて購入できる状態 | product / Product | `product.IsPublished` | — |
 | 廃番 | その商品の取り扱いを終えた状態。取り消せず、廃番の商品は公開中になれない | product / Product | `product.IsDiscontinued` | `discontinuedAt` |
-| クーポン | 利用者に生じた事情への補償として発行される値引きの権利。受給者は発行時に確定し移らない | coupon / Coupon | `coupon.Coupon` | — |
+| クーポン | 特定の利用者が持つ値引きの権利。受給者は発行時に確定し、以後移らない | coupon / Coupon | `coupon.Coupon` | — |
 | 値引き | クーポンがいくら引くかの決まり方と、その値の組。定額と定率がある | coupon / Coupon | `coupon.Discount` | — |
 | 適用範囲 | クーポンがどの明細を対象にするか。全体・カテゴリ限定・商品限定がある | coupon / Coupon | `coupon.Scope` | — |
 | 引き換え | 保有するクーポンを購入へ適用し、使用済みにする行為 | coupon / Coupon | `coupon.Coupon.Redeem` | `usedAt` |

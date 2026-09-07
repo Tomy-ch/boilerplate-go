@@ -531,12 +531,18 @@ procedure:
   and the commit. The guard row is locked before the condition is evaluated, and held to the commit
   ([ADR-0036 (ordered-pessimistic-row-locks)](../../docs/adr/0036-ordered-pessimistic-row-locks.md)). The other aggregate is
   observed, never mutated, and the operation stays a regular usecase.
-- **A multi-aggregate write that must be atomic** (branch 3). The requirements say an intermediate
+- **A multi-aggregate write that must be atomic** (branch 3a). The requirements say an intermediate
   state must never be observable, so the writes run in one transaction through a CommandService
   ([ADR-0032 (lightweight-cqrs)](../../docs/adr/0032-lightweight-cqrs.md)).
 
 Everything else decomposes: a single-aggregate write plus an eventually consistent cascade, which is
 the branch this principle describes without exception.
+
+A CommandService is reached by one further branch — 3b, a write whose target rows are named only by a
+predicate ([ADR-0114 (predicate-defined-set-writes-on-commandservice)](../../docs/adr/0114-predicate-defined-set-writes-on-commandservice.md)).
+It is absent from the two above because it departs from nothing: the write it admits may stay inside a
+single aggregate. **Seeing a CommandService is therefore not evidence that this principle was
+departed from** — branch 3a is.
 
 > **Departure from Evans.** Evans makes the aggregate the boundary of *immediate* consistency — one
 > transaction changes one aggregate, and anything beyond it is reconciled afterwards. This model

@@ -438,3 +438,50 @@ func TestScope_Covers(t *testing.T) {
 		})
 	})
 }
+
+func TestNewScopeKindByName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("全体の名前から種別を解決する", func(t *testing.T) {
+			t.Parallel()
+
+			got, err := NewScopeKindByName(ScopeKindAll.Name())
+
+			require.NoError(t, err)
+			assert.Equal(t, ScopeKindAll, got)
+		})
+
+		t.Run("カテゴリ限定の名前から種別を解決する", func(t *testing.T) {
+			t.Parallel()
+
+			got, err := NewScopeKindByName(ScopeKindCategory.Name())
+
+			require.NoError(t, err)
+			assert.Equal(t, ScopeKindCategory, got)
+		})
+
+		t.Run("商品限定の名前から種別を解決する", func(t *testing.T) {
+			t.Parallel()
+
+			got, err := NewScopeKindByName(ScopeKindProduct.Name())
+
+			require.NoError(t, err)
+			assert.Equal(t, ScopeKindProduct, got)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("未知の名前は検証エラーになる", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := NewScopeKindByName("unknown")
+
+			require.ErrorIs(t, err, ErrInvalidScopeKind)
+		})
+	})
+}
