@@ -222,7 +222,9 @@ nothing else, so no atomicity requirement puts it here; its recipients are likew
 predicate, and that alone is why it cannot decompose. It is the worked instance of branch 3b in
 [ADR-0114 (predicate-defined-set-writes-on-commandservice)](../../../docs/adr/0114-predicate-defined-set-writes-on-commandservice.md).
 **Read the two together:** the category is not "writes that span aggregates", and the second
-implementation is what shows it.
+implementation is what shows it. Both call the same generated `InsertCoupons` query: the table and the
+columns are the same, so duplicating the statement per issuing reason would leave one copy behind the
+next column that is added.
 
 The parameters of both are the issuing conditions rather than a decided aggregate, because the
 aggregates cannot exist before the recipients are read. The rule the shape rule protects is kept all

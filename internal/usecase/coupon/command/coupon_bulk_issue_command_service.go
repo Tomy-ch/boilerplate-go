@@ -49,8 +49,5 @@ type CommandService interface {
 	// ADR-0114 (predicate-defined-set-writes-on-commandservice) を参照。原子性ではなく受給者を
 	// 識別子で名指しできないことがこの構造の理由です。
 	// 個々の Coupon は受給者を読んだあとにドメインのコンストラクタを通して組み立てます。
-	//
-	// 発行枚数の上限は強制しません。上限はドメイン不変条件ではなく application policy であり、
-	// 呼び出し側の usecase が書き込み前に判定します。
 	IssuePromotionalCoupons(ctx context.Context, params IssuePromotionalCouponsParams) (IssuePromotionalCouponsResult, error)
 }

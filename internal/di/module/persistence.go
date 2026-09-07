@@ -71,11 +71,10 @@ func persistenceModule() fx.Option {
 		fx.Module("command_service",
 			fx.Provide(
 				// sample-api:begin
-				// productdiscontinuecs: 廃番に伴う代替クーポンの一括発行。商品の書き込みと原子的でなければ
-				// ならないため CommandService に置く（docs/spec/usecase/product.md § 廃番、ADR-0034 の branch 3a）
+				// productdiscontinuecs: 廃番に伴う代替クーポンの一括発行
+				// （docs/spec/usecase/product.md § 廃番、ADR-0034 の branch 3a）
 				productdiscontinuecs.New,
-				// couponbulkissuecs: 販促クーポンの一括発行。書くのは coupons だけで原子性の要求は無いが、
-				// 受給者を識別子で名指しできないため分解できない
+				// couponbulkissuecs: 販促クーポンの一括発行
 				// （docs/spec/usecase/coupon.md § 販促一括発行、ADR-0114 の branch 3b）
 				couponbulkissuecs.New,
 				// sample-api:end

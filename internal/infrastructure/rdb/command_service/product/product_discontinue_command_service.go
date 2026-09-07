@@ -32,11 +32,10 @@ func New(
 
 // IssueDiscontinuationCoupons は、対象商品の明細を持つカートの所有者へクーポンを一括発行します。
 //
-// 受給者の取得と挿入の 2 文で構成し、挿入する行は必ず coupon.New を通して組み立てます。
-// 分割の正当性と往復回数の議論は ADR-0034 (commandservice-atomicity-criterion) の
-// Worked instances を参照。
+// 分割の正当性・往復回数・行構築の契約は docs/spec/usecase/coupon.md の Command Service と
+// ADR-0034 (commandservice-atomicity-criterion) の Worked instances を参照。
 //
-// 受給者が 0 人の場合は挿入を行いません。空配列を unnest しても 0 行ですが、無駄な往復を避けます。
+// 空配列を unnest しても 0 行ですが、無駄な往復を避けるため受給者が 0 人なら早期に返します。
 func (s *commandService) IssueDiscontinuationCoupons(
 	ctx context.Context,
 	params command.IssueDiscontinuationCouponsParams,
@@ -82,8 +81,8 @@ func (s *commandService) IssueDiscontinuationCoupons(
 		ids[i] = issuedCoupon.ID()
 	}
 
-	// 全員に同じ条件で配るため、共有の列は先頭の集約から取ります。素の params ではなく検証を
-	// 通った集約を出所にすることで、書き込む値と検証した値が同じであることが保証されます。
+	// 共有列は検証済みの集約から取ります。素の params は使いません
+	// （理由は internal/infrastructure/rdb/README.md の command_service を参照）。
 	template := coupons[0]
 
 	discountKind, err := safecast.IntToInt16(template.Discount().Kind().Code())

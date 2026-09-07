@@ -15,19 +15,15 @@ import (
 	"go-boilerplate/pkg/xerrors"
 )
 
-// maxPromotionRecipients は、1 回の一括発行で配れる上限です。
-//
-// これは application policy であってドメイン不変条件ではありません。クーポン集約は「何枚まで配ってよいか」
-// を知らず、知る必要もありません。上限が要るのは、誤った条件での配布が取り消せないためです。
-// 値は placeholder で、実要件が立った時点で改めます。
+// maxPromotionRecipients は、1 回の一括発行で配れる上限です。placeholder であり、実要件が立った
+// 時点で改めます。application policy としての位置づけは docs/spec/usecase/coupon.md の
+// IssuePromotionalCoupons invariants を参照。
 const maxPromotionRecipients int64 = 10_000
 
-// maxPromotionFlatDiscount は、1 回の一括発行で配れる定額値引きの上限です。
-//
-// これも application policy です。定率は 1 を超えられないという上限をドメインが持ちますが（値引きが
-// 対象額を超えるのは値引きではないため）、定額の上限は業務が決める額であってクーポン集約の不変条件では
-// ありません。上限が要るのは、この操作が取り消せず、誤った桁を 1 つ多く打つだけで全利用者へ届くためです。
-// 値は placeholder で、実要件が立った時点で改めます。
+// maxPromotionFlatDiscount は、1 回の一括発行で配れる定額値引きの上限です。placeholder であり、
+// 実要件が立った時点で改めます。定率との非対称の理由は [ensureFlatDiscountWithinCap]、
+// application policy としての位置づけは docs/spec/usecase/coupon.md の
+// IssuePromotionalCoupons invariants を参照。
 var maxPromotionFlatDiscount = decimal.FromInt(100_000)
 
 // ErrFlatDiscountTooLarge は、定額値引きが maxPromotionFlatDiscount を超えたことを表します。
@@ -66,9 +62,8 @@ type IssuePromotionalCouponsView struct {
 // IssuePromotionalCoupons は、admin が退会していないすべての利用者へクーポンを一括発行し、
 // 何が起きたかを件数で返します。
 //
-// 受給者は述語でしか決まらないため書き込みは CommandService が担います。原子性ではなく受給者を
-// 識別子で名指しできないことがその理由で、判別根拠は
-// ADR-0114 (predicate-defined-set-writes-on-commandservice) を参照。
+// 受給者は述語でしか決まらないため、書き込みは [command.CommandService.IssuePromotionalCoupons]
+// が担います。
 func (u *usecase) IssuePromotionalCoupons(
 	ctx context.Context,
 	authn *auth.Authn,
@@ -111,8 +106,8 @@ func (u *usecase) IssuePromotionalCoupons(
 			return serr
 		}
 
-		// 上限は書き込みの前に判定します。CommandService の SQL では強制しません
-		// （ドメイン不変条件から導出されない条件を CommandService へ持ち込まないため）。
+		// 上限は書き込みの前に判定します（分類は docs/spec/usecase/coupon.md の
+		// IssuePromotionalCoupons invariants を参照）。
 		recipients, cerr := u.userRepo.CountByActive(ctx, ptr.To(true))
 		if cerr != nil {
 			return cerr
@@ -131,8 +126,8 @@ func (u *usecase) IssuePromotionalCoupons(
 			return ierr
 		}
 
-		// users 行はロックしないため、件数を数えてから挿入するまでの間に登録された利用者のぶんだけ
-		// 上限を超え得ます。事前判定だけでは上限が破れるので、実際に書いた枚数で締めます。
+		// 事前判定だけでは上限が破れるため、実際に書いた枚数で締めます
+		// （母集団の性質は docs/spec/usecase/coupon.md の IssuePromotionalCoupons invariants を参照）。
 		if result.IssuedCouponCount > maxPromotionRecipients {
 			return ErrTooManyRecipients
 		}
