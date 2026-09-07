@@ -42,6 +42,21 @@ func (m *MockUsecase) EXPECT() *MockUsecaseMockRecorder {
 	return m.recorder
 }
 
+// IssueCoupon mocks base method.
+func (m *MockUsecase) IssueCoupon(ctx context.Context, authn *auth.Authn, params coupon.IssueCouponParams) (coupon.CouponView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IssueCoupon", ctx, authn, params)
+	ret0, _ := ret[0].(coupon.CouponView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IssueCoupon indicates an expected call of IssueCoupon.
+func (mr *MockUsecaseMockRecorder) IssueCoupon(ctx, authn, params any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IssueCoupon", reflect.TypeOf((*MockUsecase)(nil).IssueCoupon), ctx, authn, params)
+}
+
 // IssuePromotionalCoupons mocks base method.
 func (m *MockUsecase) IssuePromotionalCoupons(ctx context.Context, authn *auth.Authn, params coupon.IssuePromotionalCouponsParams) (coupon.IssuePromotionalCouponsView, error) {
 	m.ctrl.T.Helper()

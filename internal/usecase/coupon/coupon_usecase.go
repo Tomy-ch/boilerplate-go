@@ -65,6 +65,10 @@ type Usecase interface {
 	// 使用済み・失効済みと、値引きが 0 になるクーポンは含みません。
 	// カートを持たない場合も空を返します。
 	ListApplicableToMyCart(ctx context.Context, authn *auth.Authn) ([]CartCouponView, error)
+	// IssueCoupon は、受給者を名指ししてクーポンを 1 枚発行し、発行したクーポンを返します。
+	// admin のみ実行できます。受給者は退会していない利用者に限り、存在しない場合と退会済みの場合は
+	// いずれも NotFound を返します。適用範囲が指す対象が存在しない場合も NotFound です。
+	IssueCoupon(ctx context.Context, authn *auth.Authn, params IssueCouponParams) (CouponView, error)
 	// IssuePromotionalCoupons は、退会していないすべての利用者へ同一条件のクーポンを 1 枚ずつ発行し、
 	// その実行が起こしたことを件数で返します。admin のみ実行できます。
 	IssuePromotionalCoupons(
