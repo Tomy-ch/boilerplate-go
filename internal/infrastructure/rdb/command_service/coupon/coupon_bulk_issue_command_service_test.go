@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"go-boilerplate/internal/apperror"
 	domaincoupon "go-boilerplate/internal/domain/coupon"
 	"go-boilerplate/internal/infrastructure/rdb/driver"
 	"go-boilerplate/internal/infrastructure/rdb/testkit"
@@ -93,6 +94,15 @@ func Test_commandService_IssuePromotionalCoupons(t *testing.T) {
 	testDB := testkit.NewTestDB(t)
 	txm := testkit.NewTestTransactionRunner(t)
 	svc := &commandService{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+
+	countCoupons := func(ctx context.Context, t *testing.T, db driver.DBTX) int {
+		t.Helper()
+		var count int
+		row := db.QueryRow(ctx, "SELECT COUNT(*) FROM coupons")
+		require.NoError(t, row.Scan(&count))
+
+		return count
+	}
 
 	countCouponsOf := func(ctx context.Context, t *testing.T, db driver.DBTX, userID uuid.UUID) int {
 		t.Helper()
@@ -210,10 +220,41 @@ func Test_commandService_IssuePromotionalCoupons(t *testing.T) {
 				assert.Equal(t, categoryID, got)
 			})
 		})
+
+		t.Run("受給者が 0 人の場合は挿入せず件数 0 を返す", func(t *testing.T) {
+			t.Parallel()
+
+			txm.WithinTx(func(ctx context.Context) {
+				drv := driver.New(ctx, testDB)
+				// seed が確定済みユーザーを持つため、母集団を 0 にするには全員を退会させる必要がある。
+				_, err := drv.Exec(ctx, "UPDATE users SET deleted_at = NOW() WHERE deleted_at IS NULL")
+				require.NoError(t, err)
+
+				before := countCoupons(ctx, t, drv)
+
+				got, err := svc.IssuePromotionalCoupons(ctx, newBulkIssueParams(t))
+
+				require.NoError(t, err)
+				assert.Zero(t, got.RecipientCount)
+				assert.Zero(t, got.IssuedCouponCount)
+				assert.Equal(t, before, countCoupons(ctx, t, drv))
+			})
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
 		t.Parallel()
+
+		t.Run("キャンセル済みコンテキストではErrCanceledへ正規化して返す", func(t *testing.T) {
+			t.Parallel()
+
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+
+			_, err := svc.IssuePromotionalCoupons(ctx, newBulkIssueParams(t))
+
+			require.ErrorIs(t, err, apperror.ErrCanceled)
+		})
 
 		t.Run("値引きが未設定の場合、ドメインの検証に落ちて発行しない", func(t *testing.T) {
 			t.Parallel()

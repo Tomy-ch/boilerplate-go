@@ -144,7 +144,7 @@ func Test_server_PostCouponsBulkIssue(t *testing.T) {
 				Body: newRequestBody(),
 			})
 
-			require.Error(t, err)
+			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
 		})
 
 		t.Run("値引きの値が十進数として解釈できない場合、ユースケースを呼ばずエラーを返す", func(t *testing.T) {
@@ -158,7 +158,7 @@ func Test_server_PostCouponsBulkIssue(t *testing.T) {
 
 			_, err := s.PostCouponsBulkIssue(authnContext(t), gen.PostCouponsBulkIssueRequestObject{Body: body})
 
-			require.Error(t, err)
+			require.ErrorIs(t, err, apperror.ErrInvalidArgument)
 		})
 
 		t.Run("ユースケースが失敗した場合、そのままエラーを返す", func(t *testing.T) {

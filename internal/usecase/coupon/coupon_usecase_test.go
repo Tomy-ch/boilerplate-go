@@ -266,7 +266,7 @@ func Test_usecase_ListMyCoupons(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Len(t, got, 1)
-			require.NotNil(t, got[0].UsedAt)
+			assert.NotNil(t, got[0].UsedAt)
 		})
 
 		t.Run("1枚も持たない場合は空を返す", func(t *testing.T) {

@@ -6,6 +6,9 @@ import (
 
 	"go-boilerplate/internal/apperror"
 	domaincoupon "go-boilerplate/internal/domain/coupon"
+	"go-boilerplate/internal/domain/lexicon/money"
+	"go-boilerplate/internal/domain/product"
+	"go-boilerplate/internal/domain/product/category"
 	"go-boilerplate/internal/usecase/boundary/auth"
 	"go-boilerplate/internal/usecase/boundary/authz"
 	"go-boilerplate/internal/usecase/coupon/command"
@@ -20,6 +23,40 @@ import (
 
 func runBulkIssueInTx(ctx context.Context, fn func(ctx context.Context) error) error {
 	return fn(ctx)
+}
+
+// newTestCategoryEntity は、適用範囲の対象確認が返す商品カテゴリを組み立てます。
+// Repository の契約上、見つかった場合は必ず実体が返るため mock でも実体を返します。
+func newTestCategoryEntity(t *testing.T, id uuid.UUID) *category.Category {
+	t.Helper()
+
+	c, err := category.New(id, category.Attributes{Name: "食品", Code: 4, SortKey: 4})
+	require.NoError(t, err)
+
+	return c
+}
+
+// newTestProductEntity は、適用範囲の対象確認が返す商品を組み立てます。
+func newTestProductEntity(t *testing.T, id uuid.UUID) *product.Product {
+	t.Helper()
+
+	status, err := product.NewStatusRef(uuidtestkit.NewTestFromSalt(t, "bulk_issue_status"), "販売中")
+	require.NoError(t, err)
+	cat, err := product.NewCategoryRef(uuidtestkit.NewTestFromSalt(t, "bulk_issue_category_ref"), "食品")
+	require.NoError(t, err)
+	amount, err := money.NewPrice(newDecimal(t, "100"))
+	require.NoError(t, err)
+
+	p, err := product.New(id, product.Attributes{
+		Name:     "テスト商品",
+		Price:    amount,
+		Quantity: 1,
+		Status:   status,
+		Category: cat,
+	}, testIssuedAt)
+	require.NoError(t, err)
+
+	return p
 }
 
 func newBulkIssueParams(t *testing.T) IssuePromotionalCouponsParams {
@@ -91,6 +128,30 @@ func Test_usecase_IssuePromotionalCoupons(t *testing.T) {
 			assert.Equal(t, int64(0), view.IssuedCouponCount)
 		})
 
+		t.Run("事後の枚数がちょうど上限の場合は成功として扱う", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+
+			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			deps.clock.EXPECT().Now().Return(testNow)
+			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runBulkIssueInTx)
+			deps.userRepo.EXPECT().
+				CountByActive(gomock.Any(), ptr.To(true)).
+				Return(maxPromotionRecipients, nil)
+			deps.bulkIssueCmd.EXPECT().
+				IssuePromotionalCoupons(gomock.Any(), gomock.Any()).
+				Return(command.IssuePromotionalCouponsResult{
+					RecipientCount:    maxPromotionRecipients,
+					IssuedCouponCount: maxPromotionRecipients,
+				}, nil)
+
+			view, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, newBulkIssueParams(t))
+
+			require.NoError(t, err)
+			assert.Equal(t, maxPromotionRecipients, view.IssuedCouponCount)
+		})
+
 		t.Run("適用範囲がカテゴリの場合、対象の存在を確かめてから発行する", func(t *testing.T) {
 			t.Parallel()
 
@@ -103,7 +164,7 @@ func Test_usecase_IssuePromotionalCoupons(t *testing.T) {
 
 			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			deps.clock.EXPECT().Now().Return(testNow)
-			deps.categoryRepo.EXPECT().FindByID(gomock.Any(), categoryID).Return(nil, nil)
+			deps.categoryRepo.EXPECT().FindByID(gomock.Any(), categoryID).Return(newTestCategoryEntity(t, categoryID), nil)
 			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runBulkIssueInTx)
 			deps.userRepo.EXPECT().CountByActive(gomock.Any(), ptr.To(true)).Return(int64(1), nil)
 			deps.bulkIssueCmd.EXPECT().
@@ -132,12 +193,17 @@ func Test_usecase_IssuePromotionalCoupons(t *testing.T) {
 
 			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			deps.clock.EXPECT().Now().Return(testNow)
-			deps.productRepo.EXPECT().FindByID(gomock.Any(), productID).Return(nil, nil)
+			deps.productRepo.EXPECT().FindByID(gomock.Any(), productID).Return(newTestProductEntity(t, productID), nil)
 			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runBulkIssueInTx)
 			deps.userRepo.EXPECT().CountByActive(gomock.Any(), ptr.To(true)).Return(int64(1), nil)
 			deps.bulkIssueCmd.EXPECT().
 				IssuePromotionalCoupons(gomock.Any(), gomock.Any()).
-				Return(command.IssuePromotionalCouponsResult{RecipientCount: 1, IssuedCouponCount: 1}, nil)
+				DoAndReturn(func(_ any, p command.IssuePromotionalCouponsParams) (command.IssuePromotionalCouponsResult, error) {
+					assert.Equal(t, domaincoupon.ScopeKindProduct, p.Scope.Kind())
+					assert.Equal(t, productID, *p.Scope.TargetID())
+
+					return command.IssuePromotionalCouponsResult{RecipientCount: 1, IssuedCouponCount: 1}, nil
+				})
 
 			_, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, params)
 
@@ -187,6 +253,46 @@ func Test_usecase_IssuePromotionalCoupons(t *testing.T) {
 			_, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, newBulkIssueParams(t))
 
 			require.ErrorIs(t, err, authz.ErrForbidden)
+		})
+
+		t.Run("定額の値引きが上限を超える場合、書き込みを行わず検証エラーを返す", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+
+			params := newBulkIssueParams(t)
+			params.DiscountKind = domaincoupon.DiscountKindFlat.Name()
+			params.DiscountValue = newDecimal(t, "100001")
+
+			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			// 時刻も取らずトランザクションも開かないことを、EXPECT を置かないことで表す。
+
+			_, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, params)
+
+			require.ErrorIs(t, err, ErrFlatDiscountTooLarge)
+			require.ErrorIs(t, err, apperror.ErrValidation)
+		})
+
+		t.Run("定額の値引きがちょうど上限の場合は受理する", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+
+			params := newBulkIssueParams(t)
+			params.DiscountKind = domaincoupon.DiscountKindFlat.Name()
+			params.DiscountValue = newDecimal(t, "100000")
+
+			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			deps.clock.EXPECT().Now().Return(testNow)
+			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runBulkIssueInTx)
+			deps.userRepo.EXPECT().CountByActive(gomock.Any(), ptr.To(true)).Return(int64(1), nil)
+			deps.bulkIssueCmd.EXPECT().
+				IssuePromotionalCoupons(gomock.Any(), gomock.Any()).
+				Return(command.IssuePromotionalCouponsResult{RecipientCount: 1, IssuedCouponCount: 1}, nil)
+
+			_, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, params)
+
+			require.NoError(t, err)
 		})
 
 		t.Run("未知の値引き種別を渡した場合、検証エラーを返す", func(t *testing.T) {
@@ -309,7 +415,9 @@ func Test_usecase_IssuePromotionalCoupons(t *testing.T) {
 
 			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			deps.clock.EXPECT().Now().Return(testNow)
+			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runBulkIssueInTx)
 			deps.categoryRepo.EXPECT().FindByID(gomock.Any(), categoryID).Return(nil, apperror.ErrNotFound)
+			// 上限判定にも発行にも進まないことを、EXPECT を置かないことで表す。
 
 			_, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, params)
 
@@ -328,7 +436,9 @@ func Test_usecase_IssuePromotionalCoupons(t *testing.T) {
 
 			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			deps.clock.EXPECT().Now().Return(testNow)
+			deps.txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(runBulkIssueInTx)
 			deps.productRepo.EXPECT().FindByID(gomock.Any(), productID).Return(nil, apperror.ErrNotFound)
+			// 上限判定にも発行にも進まないことを、EXPECT を置かないことで表す。
 
 			_, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, params)
 
@@ -410,6 +520,45 @@ func Test_usecase_IssuePromotionalCoupons(t *testing.T) {
 			_, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, newBulkIssueParams(t))
 
 			require.ErrorIs(t, err, apperror.ErrInternal)
+		})
+	})
+}
+
+func Test_ensureFlatDiscountWithinCap(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("定率は上限の対象外なので常に通す", func(t *testing.T) {
+			t.Parallel()
+
+			discount, err := domaincoupon.NewRateDiscount(newDecimal(t, "1"))
+			require.NoError(t, err)
+
+			require.NoError(t, ensureFlatDiscountWithinCap(discount))
+		})
+
+		t.Run("上限以下の定額は通す", func(t *testing.T) {
+			t.Parallel()
+
+			discount, err := domaincoupon.NewFlatDiscount(maxPromotionFlatDiscount)
+			require.NoError(t, err)
+
+			require.NoError(t, ensureFlatDiscountWithinCap(discount))
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上限を超える定額は検証エラーになる", func(t *testing.T) {
+			t.Parallel()
+
+			discount, err := domaincoupon.NewFlatDiscount(newDecimal(t, "100001"))
+			require.NoError(t, err)
+
+			require.ErrorIs(t, ensureFlatDiscountWithinCap(discount), ErrFlatDiscountTooLarge)
 		})
 	})
 }

@@ -367,6 +367,9 @@ than covered with a contrived test.
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|`uuid.New()` error|`crypto/rand` failure only|
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|`safecast.IntToInt16(...Kind().Code())` error|`DiscountKind` / `ScopeKind` are closed sets whose codes are single digits|
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|FK 23503 normalization|recipients come from an inner join on `users`, so the reference cannot be missing within the same transaction|
+|`command_service/coupon/coupon_bulk_issue_command_service.go`|`IssuePromotionalCoupons`|`uuid.New()` error|`crypto/rand` failure only|
+|`command_service/coupon/coupon_bulk_issue_command_service.go`|`IssuePromotionalCoupons`|`safecast.IntToInt16(...Kind().Code())` error|`DiscountKind` / `ScopeKind` are closed sets whose codes are single digits|
+|`command_service/coupon/coupon_bulk_issue_command_service.go`|`IssuePromotionalCoupons`|FK 23503 normalization|recipients are selected from `users` in the same transaction, so the reference cannot be missing|
 <!-- sample-api:replace-with -->
 <!-- = |File|Function|Uncovered branch|Why unreachable| -->
 <!-- = |---|---|---|---| -->
