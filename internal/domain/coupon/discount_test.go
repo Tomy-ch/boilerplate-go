@@ -407,3 +407,60 @@ func TestDiscount_Apply(t *testing.T) {
 		})
 	})
 }
+
+func TestNewDiscountKindByName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("定額の名前から種別を解決する", func(t *testing.T) {
+			t.Parallel()
+
+			got, err := NewDiscountKindByName(DiscountKindFlat.Name())
+
+			require.NoError(t, err)
+			assert.Equal(t, DiscountKindFlat, got)
+		})
+
+		t.Run("定率の名前から種別を解決する", func(t *testing.T) {
+			t.Parallel()
+
+			got, err := NewDiscountKindByName(DiscountKindRate.Name())
+
+			require.NoError(t, err)
+			assert.Equal(t, DiscountKindRate, got)
+		})
+
+		t.Run("code からの解決と同じ一覧を走査する", func(t *testing.T) {
+			t.Parallel()
+
+			for _, want := range allDiscountKinds() {
+				got, err := NewDiscountKindByName(want.Name())
+
+				require.NoError(t, err)
+				assert.Equal(t, want, got)
+			}
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("未知の名前は検証エラーになる", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := NewDiscountKindByName("unknown")
+
+			require.ErrorIs(t, err, ErrInvalidDiscountKind)
+		})
+
+		t.Run("code を名前として渡しても解決しない", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := NewDiscountKindByName("1")
+
+			require.ErrorIs(t, err, ErrInvalidDiscountKind)
+		})
+	})
+}

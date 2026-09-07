@@ -58,6 +58,18 @@ func NewDiscountKind(code int) (DiscountKind, error) {
 	return DiscountKind{}, xerrors.Wrap(ErrInvalidDiscountKind, fmt.Sprintf("unknown discount kind code: %d", code))
 }
 
+// NewDiscountKindByName は、外部から渡された名前から値引き種別を解決します。
+// 既知でない名前は ErrInvalidDiscountKind を返します。閉じた集合の権威は allDiscountKinds ただ 1 つで、
+// code からの解決（[NewDiscountKind]）と同じ一覧を走査します。
+func NewDiscountKindByName(name string) (DiscountKind, error) {
+	for _, k := range allDiscountKinds() {
+		if k.name == name {
+			return k, nil
+		}
+	}
+	return DiscountKind{}, xerrors.Wrap(ErrInvalidDiscountKind, fmt.Sprintf("unknown discount kind name: %q", name))
+}
+
 // Code は、永続化と外部公開に用いる業務キーを返します。
 func (k DiscountKind) Code() int { return k.code }
 

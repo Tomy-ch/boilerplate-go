@@ -61,6 +61,25 @@ func Reconstruct(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, er
 	return newCoupon(id, attrs, usedAt)
 }
 
+// ValidateValidity は、発行日時と有効期限の組を検証します。有効期限は発行日時より後である必要があります
+// （理由は docs/spec/domain/coupon.md の Cross-field Invariants を参照）。
+//
+// 1 枚も構築せずにこの規則だけを問いたい呼び出し側のために公開しています。集合発行では受給者が 0 人だと
+// [New] へ一度も到達せず、同じ要求が母集団の大きさによって受理されたり弾かれたりするためです。
+func ValidateValidity(issuedAt, expiresAt time.Time) error {
+	if issuedAt.IsZero() {
+		return xerrors.Wrap(ErrInvalidIssuedAt, "issuedAt is required")
+	}
+	if expiresAt.IsZero() {
+		return xerrors.Wrap(ErrInvalidExpiresAt, "expiresAt is required")
+	}
+	if !expiresAt.After(issuedAt) {
+		return xerrors.Wrap(ErrInvalidExpiresAt, "expiresAt must be after issuedAt")
+	}
+
+	return nil
+}
+
 // newCoupon は、生成・再構築に共通の検証を行いクーポンエンティティを構築します。
 func newCoupon(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, error) {
 	if id.IsNil() {
@@ -75,14 +94,8 @@ func newCoupon(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, erro
 	if attrs.Scope.IsZero() {
 		return nil, ErrInvalidScope
 	}
-	if attrs.IssuedAt.IsZero() {
-		return nil, xerrors.Wrap(ErrInvalidIssuedAt, "issuedAt is required")
-	}
-	if attrs.ExpiresAt.IsZero() {
-		return nil, xerrors.Wrap(ErrInvalidExpiresAt, "expiresAt is required")
-	}
-	if !attrs.ExpiresAt.After(attrs.IssuedAt) {
-		return nil, xerrors.Wrap(ErrInvalidExpiresAt, "expiresAt must be after issuedAt")
+	if err := ValidateValidity(attrs.IssuedAt, attrs.ExpiresAt); err != nil {
+		return nil, err
 	}
 
 	used := ptr.Copy(usedAt)
