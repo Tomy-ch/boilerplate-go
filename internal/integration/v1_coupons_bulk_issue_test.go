@@ -45,19 +45,20 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 		return headers
 	}
 
-	// キーが必須になったことで冪等機構が必ず動くため、どのケースでも動く Deps を配線する。
-	// 呼び出し回数は AnyTimes にする。異常系は Complete まで到達しないが、そこは各ケースの主題ではない。
-	newIdempotencyDeps := func(t *testing.T) idempotency.Deps {
+	// キーが必須になったことで冪等機構が必ず動く。claims / completes に期待回数を渡し、
+	// 「実際に claim → complete まで走ったか」を検証する。AnyTimes にすると、middleware の配線が
+	// 壊れて idempotency.Run が素通りしても 200 が返るため、退行を検出できない。
+	newIdempotencyDeps := func(t *testing.T, claims, completes int) idempotency.Deps {
 		t.Helper()
 
 		ctrl := gomock.NewController(t)
 		store := mock_idempotency.NewMockStore(ctrl)
-		store.EXPECT().Claim(gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
-		store.EXPECT().Complete(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		store.EXPECT().Claim(gomock.Any(), gomock.Any()).Return(true, nil).Times(claims)
+		store.EXPECT().Complete(gomock.Any(), gomock.Any()).Return(nil).Times(completes)
 		txm := mock_tx.NewMockManager(ctrl)
 		txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(
 			func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) },
-		).AnyTimes()
+		).Times(claims)
 
 		return idempotency.Deps{
 			Txm:   txm,
@@ -101,7 +102,7 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 				},
 			)
 
-			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t, 1, 1))
 
 			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsBulkIssuePath, newBody(), availableAdmin(t, e, "ok-basic"))
 			assert.Equal(t, http.StatusOK, actual.StatusCode)
@@ -129,7 +130,7 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 			mockUC.EXPECT().IssuePromotionalCoupons(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(couponuc.IssuePromotionalCouponsView{IssuedAt: issuedAt, ExpiresAt: expiresAt}, nil)
 
-			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t, 1, 1))
 
 			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsBulkIssuePath, newBody(), availableAdmin(t, e, "ok-zero"))
 			assert.Equal(t, http.StatusOK, actual.StatusCode)
@@ -151,9 +152,10 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 			UseAppErrorHandler(t, e)
 			mockUC := mock_coupon.NewMockUsecase(gomock.NewController(t))
 			mockUC.EXPECT().IssuePromotionalCoupons(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-			couponsbulkissue.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 
-			// キーは付ける。欠くと生成コードの束縛段で 400 になり、認証まで到達しないため。
+			// キーは付ける。このテストは spec 検証を通さないため、欠くと生成コードの束縛段で
+			// 400 になり認証まで到達しない。本番は spec 検証が Security を先に見るので順序は逆。
 			headers := http.Header{}
 			headers.Set("Idempotency-Key", "unauthenticated")
 
@@ -172,7 +174,7 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 			mockUC.EXPECT().IssuePromotionalCoupons(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(couponuc.IssuePromotionalCouponsView{}, apperror.ErrPermissionDenied)
 
-			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t, 1, 0))
 
 			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, "integration_bulk_issue_member"))
 			headers.Set("Idempotency-Key", "forbidden-member")
@@ -191,7 +193,7 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 			mockUC.EXPECT().IssuePromotionalCoupons(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(couponuc.IssuePromotionalCouponsView{}, couponuc.ErrTooManyRecipients)
 
-			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t, 1, 0))
 
 			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsBulkIssuePath, newBody(), availableAdmin(t, e, "forbidden"))
 			AssertErrorResponse(t, actual, http.StatusConflict)
@@ -208,7 +210,7 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 			mockUC.EXPECT().IssuePromotionalCoupons(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(couponuc.IssuePromotionalCouponsView{}, apperror.ErrNotFound)
 
-			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, tf, mockUC, newIdempotencyDeps(t, 1, 0))
 
 			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsBulkIssuePath, newBody(), availableAdmin(t, e, "too-many"))
 			AssertErrorResponse(t, actual, http.StatusNotFound)
@@ -221,7 +223,7 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 			UseAppErrorHandler(t, e)
 			mockUC := mock_coupon.NewMockUsecase(gomock.NewController(t))
 			mockUC.EXPECT().IssuePromotionalCoupons(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-			couponsbulkissue.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 			headers := availableAdmin(t, e, "not-found")
 			useOpenAPIValidation(t, e)
 
@@ -243,7 +245,7 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 			UseAppErrorHandler(t, e)
 			mockUC := mock_coupon.NewMockUsecase(gomock.NewController(t))
 			mockUC.EXPECT().IssuePromotionalCoupons(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-			couponsbulkissue.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 			// キーを持たない admin ヘッダを作る。この操作ではキーが必須なので spec 検証で弾かれる。
 			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, "integration_bulk_issue_admin"))
 			useOpenAPIValidation(t, e)
@@ -259,7 +261,7 @@ func TestV1CouponsBulkIssue_Integration(t *testing.T) {
 			UseAppErrorHandler(t, e)
 			mockUC := mock_coupon.NewMockUsecase(gomock.NewController(t))
 			mockUC.EXPECT().IssuePromotionalCoupons(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-			couponsbulkissue.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t))
+			couponsbulkissue.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 
 			body := newBody()
 			body.Discount.Value = "fifteen-percent"

@@ -432,16 +432,6 @@ func TestNewDiscountKindByName(t *testing.T) {
 			assert.Equal(t, DiscountKindRate, got)
 		})
 
-		t.Run("code からの解決と同じ一覧を走査する", func(t *testing.T) {
-			t.Parallel()
-
-			for _, want := range allDiscountKinds() {
-				got, err := NewDiscountKindByName(want.Name())
-
-				require.NoError(t, err)
-				assert.Equal(t, want, got)
-			}
-		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {

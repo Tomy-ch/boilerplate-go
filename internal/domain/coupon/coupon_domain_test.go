@@ -763,7 +763,7 @@ func TestCoupon_Restore(t *testing.T) {
 	})
 }
 
-func TestValidateValidity(t *testing.T) {
+func Test_validateValidity(t *testing.T) {
 	t.Parallel()
 
 	issuedAt := time.Date(2026, time.September, 1, 0, 0, 0, 0, time.UTC)
@@ -774,7 +774,7 @@ func TestValidateValidity(t *testing.T) {
 		t.Run("有効期限が発行日時より後なら通す", func(t *testing.T) {
 			t.Parallel()
 
-			require.NoError(t, ValidateValidity(issuedAt, issuedAt.Add(time.Nanosecond)))
+			require.NoError(t, validateValidity(issuedAt, issuedAt.Add(time.Nanosecond)))
 		})
 	})
 
@@ -784,25 +784,25 @@ func TestValidateValidity(t *testing.T) {
 		t.Run("発行日時がゼロ値なら検証エラーになる", func(t *testing.T) {
 			t.Parallel()
 
-			require.ErrorIs(t, ValidateValidity(time.Time{}, issuedAt.Add(time.Hour)), ErrInvalidIssuedAt)
+			require.ErrorIs(t, validateValidity(time.Time{}, issuedAt.Add(time.Hour)), ErrInvalidIssuedAt)
 		})
 
 		t.Run("有効期限がゼロ値なら検証エラーになる", func(t *testing.T) {
 			t.Parallel()
 
-			require.ErrorIs(t, ValidateValidity(issuedAt, time.Time{}), ErrInvalidExpiresAt)
+			require.ErrorIs(t, validateValidity(issuedAt, time.Time{}), ErrInvalidExpiresAt)
 		})
 
 		t.Run("有効期限が発行日時と同時刻なら検証エラーになる", func(t *testing.T) {
 			t.Parallel()
 
-			require.ErrorIs(t, ValidateValidity(issuedAt, issuedAt), ErrInvalidExpiresAt)
+			require.ErrorIs(t, validateValidity(issuedAt, issuedAt), ErrInvalidExpiresAt)
 		})
 
 		t.Run("有効期限が発行日時より前なら検証エラーになる", func(t *testing.T) {
 			t.Parallel()
 
-			require.ErrorIs(t, ValidateValidity(issuedAt, issuedAt.Add(-time.Hour)), ErrInvalidExpiresAt)
+			require.ErrorIs(t, validateValidity(issuedAt, issuedAt.Add(-time.Hour)), ErrInvalidExpiresAt)
 		})
 	})
 }

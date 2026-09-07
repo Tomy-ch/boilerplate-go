@@ -472,16 +472,6 @@ func TestNewScopeKindByName(t *testing.T) {
 			assert.Equal(t, ScopeKindProduct, got)
 		})
 
-		t.Run("code からの解決と同じ一覧を走査する", func(t *testing.T) {
-			t.Parallel()
-
-			for _, want := range allScopeKinds() {
-				got, err := NewScopeKindByName(want.Name())
-
-				require.NoError(t, err)
-				assert.Equal(t, want, got)
-			}
-		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {

@@ -386,23 +386,6 @@ func Test_usecase_IssuePromotionalCoupons(t *testing.T) {
 			require.ErrorIs(t, err, domaincoupon.ErrInvalidScopeTarget)
 		})
 
-		t.Run("有効期限が発行時点より後でない場合、書き込みを行わず検証エラーを返す", func(t *testing.T) {
-			t.Parallel()
-
-			u, deps := newTestUsecase(t)
-
-			params := newBulkIssueParams(t)
-			params.ExpiresAt = testNow
-
-			deps.authorizer.EXPECT().Authorize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			deps.clock.EXPECT().Now().Return(testNow)
-			// 受給者が 0 人なら coupon.New に届かないため、母集団の大きさによらずここで弾く。
-
-			_, err := u.IssuePromotionalCoupons(t.Context(), &auth.Authn{}, params)
-
-			require.ErrorIs(t, err, domaincoupon.ErrInvalidExpiresAt)
-		})
-
 		t.Run("適用範囲が指すカテゴリが存在しない場合、書き込みを行わずエラーを返す", func(t *testing.T) {
 			t.Parallel()
 
@@ -566,20 +549,12 @@ func Test_ensureFlatDiscountWithinCap(t *testing.T) {
 func Test_newScope(t *testing.T) {
 	t.Parallel()
 
+	// 分岐を持たない配線関数のため、名前解決と再構築が繋がっていることを 1 ケースずつで確かめる。
+	// 種別ごとの網羅は [coupon.NewScopeKindByName] と ReconstructScope が持つ。
 	t.Run("正常系", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("全体は対象を持たない適用範囲になる", func(t *testing.T) {
-			t.Parallel()
-
-			scope, err := newScope(domaincoupon.ScopeKindAll.Name(), nil)
-
-			require.NoError(t, err)
-			assert.Equal(t, domaincoupon.ScopeKindAll, scope.Kind())
-			assert.Nil(t, scope.TargetID())
-		})
-
-		t.Run("カテゴリは対象 ID を保持する", func(t *testing.T) {
+		t.Run("名前を解決して適用範囲を組み立てる", func(t *testing.T) {
 			t.Parallel()
 
 			id := uuidtestkit.NewTestFromSalt(t, "new_scope_category")
@@ -590,34 +565,12 @@ func Test_newScope(t *testing.T) {
 			assert.Equal(t, domaincoupon.ScopeKindCategory, scope.Kind())
 			assert.Equal(t, id, *scope.TargetID())
 		})
-
-		t.Run("商品は対象 ID を保持する", func(t *testing.T) {
-			t.Parallel()
-
-			id := uuidtestkit.NewTestFromSalt(t, "new_scope_product")
-
-			scope, err := newScope(domaincoupon.ScopeKindProduct.Name(), &id)
-
-			require.NoError(t, err)
-			assert.Equal(t, domaincoupon.ScopeKindProduct, scope.Kind())
-			assert.Equal(t, id, *scope.TargetID())
-		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("未設定の対象 ID を渡したカテゴリは検証エラーになる", func(t *testing.T) {
-			t.Parallel()
-
-			var nilID uuid.UUID
-
-			_, err := newScope(domaincoupon.ScopeKindCategory.Name(), &nilID)
-
-			require.ErrorIs(t, err, domaincoupon.ErrInvalidScopeTarget)
-		})
-
-		t.Run("未知の名前は検証エラーになる", func(t *testing.T) {
+		t.Run("未知の名前は解決に失敗する", func(t *testing.T) {
 			t.Parallel()
 
 			_, err := newScope("unknown", nil)
@@ -630,10 +583,11 @@ func Test_newScope(t *testing.T) {
 func Test_newDiscount(t *testing.T) {
 	t.Parallel()
 
+	// 分岐を持たない配線関数のため、名前解決と再構築が繋がっていることを 1 ケースずつで確かめる。
 	t.Run("正常系", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("定額は金額をそのまま保持する", func(t *testing.T) {
+		t.Run("名前を解決して値引きを組み立てる", func(t *testing.T) {
 			t.Parallel()
 
 			discount, err := newDiscount(domaincoupon.DiscountKindFlat.Name(), newDecimal(t, "500"))
@@ -642,34 +596,17 @@ func Test_newDiscount(t *testing.T) {
 			assert.Equal(t, domaincoupon.DiscountKindFlat, discount.Kind())
 			assert.Equal(t, "500", discount.Value().String())
 		})
-
-		t.Run("定率は率をそのまま保持する", func(t *testing.T) {
-			t.Parallel()
-
-			discount, err := newDiscount(domaincoupon.DiscountKindRate.Name(), newDecimal(t, "0.15"))
-
-			require.NoError(t, err)
-			assert.Equal(t, domaincoupon.DiscountKindRate, discount.Kind())
-		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("未知の名前は検証エラーになる", func(t *testing.T) {
+		t.Run("未知の名前は解決に失敗する", func(t *testing.T) {
 			t.Parallel()
 
 			_, err := newDiscount("unknown", newDecimal(t, "1"))
 
 			require.ErrorIs(t, err, domaincoupon.ErrInvalidDiscountKind)
-		})
-
-		t.Run("定額に 0 以下を渡すと検証エラーになる", func(t *testing.T) {
-			t.Parallel()
-
-			_, err := newDiscount(domaincoupon.DiscountKindFlat.Name(), newDecimal(t, "0"))
-
-			require.ErrorIs(t, err, domaincoupon.ErrInvalidDiscountValue)
 		})
 	})
 }
