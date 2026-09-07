@@ -97,9 +97,10 @@ func NewRateDiscount(rate decimal.Decimal) (Discount, error) {
 	return Discount{kind: DiscountKindRate, value: rate}, nil
 }
 
-// ReconstructDiscount は、永続化されている種別と値から値引きを再構築します。
-// 検証は生成時と同一です。
-func ReconstructDiscount(kind DiscountKind, value decimal.Decimal) (Discount, error) {
+// NewDiscount は、解決済みの種別と値から値引きを生成します。種別ごとの生成関数へ振り分けるだけで、
+// 検証はその先が行います。永続化された行からの復元も、要求が渡した名前からの構築も、
+// 種別を解決したあとはこの入口を通ります。
+func NewDiscount(kind DiscountKind, value decimal.Decimal) (Discount, error) {
 	switch kind {
 	case DiscountKindFlat:
 		return NewFlatDiscount(value)

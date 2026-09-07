@@ -155,7 +155,7 @@ func newDiscount(kindName string, value decimal.Decimal) (coupon.Discount, error
 		return coupon.Discount{}, err
 	}
 
-	return coupon.ReconstructDiscount(kind, value)
+	return coupon.NewDiscount(kind, value)
 }
 
 // ensureFlatDiscountWithinCap は、定額値引きが一括発行の上限に収まることを確かめます。
@@ -180,7 +180,7 @@ func newScope(kindName string, targetID *uuid.UUID) (coupon.Scope, error) {
 		return coupon.Scope{}, err
 	}
 
-	return coupon.ReconstructScope(kind, targetID)
+	return coupon.NewScope(kind, targetID)
 }
 
 // ensureScopeTargetExists は、適用範囲が指す対象の存在を確かめます。

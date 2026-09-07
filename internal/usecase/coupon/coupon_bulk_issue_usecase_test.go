@@ -550,7 +550,7 @@ func Test_newScope(t *testing.T) {
 	t.Parallel()
 
 	// 分岐を持たない配線関数のため、名前解決と再構築が繋がっていることを 1 ケースずつで確かめる。
-	// 種別ごとの網羅は [coupon.NewScopeKindByName] と ReconstructScope が持つ。
+	// 種別ごとの網羅は [coupon.NewScopeKindByName] と NewScope が持つ。
 	t.Run("正常系", func(t *testing.T) {
 		t.Parallel()
 

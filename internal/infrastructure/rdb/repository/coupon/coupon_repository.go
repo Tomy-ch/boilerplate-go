@@ -111,7 +111,7 @@ func rowToCoupon(row gen.Coupons) (*coupon.Coupon, error) {
 	if err != nil {
 		return nil, pgerror.NormalizeReconstructError(err)
 	}
-	discount, err := coupon.ReconstructDiscount(discountKind, row.DiscountValue)
+	discount, err := coupon.NewDiscount(discountKind, row.DiscountValue)
 	if err != nil {
 		return nil, pgerror.NormalizeReconstructError(err)
 	}
@@ -120,7 +120,7 @@ func rowToCoupon(row gen.Coupons) (*coupon.Coupon, error) {
 	if err != nil {
 		return nil, pgerror.NormalizeReconstructError(err)
 	}
-	scope, err := coupon.ReconstructScope(scopeKind, row.ScopeTargetID)
+	scope, err := coupon.NewScope(scopeKind, row.ScopeTargetID)
 	if err != nil {
 		return nil, pgerror.NormalizeReconstructError(err)
 	}

@@ -213,7 +213,7 @@ func TestNewRateDiscount(t *testing.T) {
 	})
 }
 
-func TestReconstructDiscount(t *testing.T) {
+func TestNewDiscount(t *testing.T) {
 	t.Parallel()
 
 	t.Run("正常系", func(t *testing.T) {
@@ -222,7 +222,7 @@ func TestReconstructDiscount(t *testing.T) {
 		t.Run("定額を再構築する", func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := ReconstructDiscount(DiscountKindFlat, newTestDecimal(t, "5.00"))
+			actual, err := NewDiscount(DiscountKindFlat, newTestDecimal(t, "5.00"))
 
 			require.NoError(t, err)
 			assert.Equal(t, DiscountKindFlat, actual.Kind())
@@ -231,7 +231,7 @@ func TestReconstructDiscount(t *testing.T) {
 		t.Run("定率を再構築する", func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := ReconstructDiscount(DiscountKindRate, newTestDecimal(t, "0.10"))
+			actual, err := NewDiscount(DiscountKindRate, newTestDecimal(t, "0.10"))
 
 			require.NoError(t, err)
 			assert.Equal(t, DiscountKindRate, actual.Kind())
@@ -244,7 +244,7 @@ func TestReconstructDiscount(t *testing.T) {
 		t.Run("種別が未設定の場合、ErrInvalidDiscountKindを返す", func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := ReconstructDiscount(DiscountKind{}, newTestDecimal(t, "5.00"))
+			actual, err := NewDiscount(DiscountKind{}, newTestDecimal(t, "5.00"))
 
 			require.ErrorIs(t, err, ErrInvalidDiscountKind)
 			assert.True(t, actual.IsZero())
@@ -253,7 +253,7 @@ func TestReconstructDiscount(t *testing.T) {
 		t.Run("永続化されている値が範囲外の場合、生成時と同じ検証エラーを返す", func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := ReconstructDiscount(DiscountKindRate, newTestDecimal(t, "1.01"))
+			actual, err := NewDiscount(DiscountKindRate, newTestDecimal(t, "1.01"))
 
 			require.ErrorIs(t, err, ErrInvalidDiscountValue)
 			assert.True(t, actual.IsZero())

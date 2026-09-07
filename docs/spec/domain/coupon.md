@@ -111,9 +111,11 @@ fields:
 - name: DiscountKind
   underlying_type: struct    # code int / name string
   validation: |
-    既知の集合（定額 / 定率）だけを許す。永続化されている code からの解決は NewDiscountKind が行い、
-    既知でない code は ErrInvalidDiscountKind（永続化状態の破損を再構築時に弾く）。
-  factory: NewDiscountKind
+    既知の集合（定額 / 定率）だけを許す。永続化されている code からの解決は NewDiscountKind、
+    外部が渡す名前からの解決は NewDiscountKindByName が行う。いずれも既知でなければ
+    ErrInvalidDiscountKind（前者は永続化状態の破損を再構築時に弾き、後者は要求の不正を弾く）。
+    2 つの入口は同じ一覧を走査する。閉じた集合の権威を 2 つに割らないため。
+  factory: NewDiscountKind / NewDiscountKindByName
   methods:
     - name: Code
       returns: int
@@ -126,9 +128,12 @@ fields:
   underlying_type: struct    # kind DiscountKind / value decimal.Decimal
   validation: |
     定額は正の金額、定率は 0 より大きく 1 以下。範囲外は ErrInvalidDiscountValue。
+    解決済みの種別から作る入口は NewDiscount で、種別ごとの生成関数へ振り分けるだけ。永続化された行
+    からの復元も、要求が渡した名前からの構築も、種別を解決したあとはここを通る（値オブジェクトは
+    永続化固有の状態を持たないため、復元と構築を分ける理由がない）。
     1 を超える率は対象額より多く差し引くことになり、値引きの意味を失うため許さない。
     適用範囲は関知しない。どの明細が対象かは Scope が答える。
-  factory: NewFlatDiscount / NewRateDiscount / ReconstructDiscount
+  factory: NewFlatDiscount / NewRateDiscount / NewDiscount
   methods:
     - name: Kind
       returns: DiscountKind
@@ -140,8 +145,9 @@ fields:
 - name: ScopeKind
   underlying_type: struct    # code int / name string
   validation: |
-    既知の集合（全体 / カテゴリ限定 / 商品限定）だけを許す。扱いは DiscountKind と同じ。
-  factory: NewScopeKind
+    既知の集合（全体 / カテゴリ限定 / 商品限定）だけを許す。扱いは DiscountKind と同じで、
+    code からの解決は NewScopeKind、名前からの解決は NewScopeKindByName が行う。
+  factory: NewScopeKind / NewScopeKindByName
   methods:
     - name: Code
       returns: int
@@ -168,9 +174,10 @@ fields:
   underlying_type: struct    # kind ScopeKind / targetID *uuid.UUID
   validation: |
     カテゴリ限定・商品限定は対象 ID を必須とし、全体は対象を持ってはならない（ErrInvalidScopeTarget）。
+    この要否を課す入口は NewScope で、扱いは Discount と同じ。
     対象は識別子だけを持ち、商品集約もカテゴリ集約も参照しない
     （集約をまたぐ参照は識別子に限る。internal/domain/README.md の Aggregate Design）。
-  factory: NewAllScope / NewCategoryScope / NewProductScope / ReconstructScope
+  factory: NewAllScope / NewCategoryScope / NewProductScope / NewScope
   methods:
     - name: Kind
       returns: ScopeKind
