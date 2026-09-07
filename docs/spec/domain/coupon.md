@@ -111,9 +111,11 @@ fields:
 - name: DiscountKind
   underlying_type: struct    # code int / name string
   validation: |
-    既知の集合（定額 / 定率）だけを許す。永続化されている code からの解決は NewDiscountKind が行い、
-    既知でない code は ErrInvalidDiscountKind（永続化状態の破損を再構築時に弾く）。
-  factory: NewDiscountKind
+    既知の集合（定額 / 定率）だけを許す。永続化されている code からの解決は NewDiscountKind、
+    外部が渡す名前からの解決は NewDiscountKindByName が行う。いずれも既知でなければ
+    ErrInvalidDiscountKind（前者は永続化状態の破損を再構築時に弾き、後者は要求の不正を弾く）。
+    2 つの入口は同じ一覧を走査する。閉じた集合の権威を 2 つに割らないため。
+  factory: NewDiscountKind / NewDiscountKindByName
   methods:
     - name: Code
       returns: int
@@ -140,8 +142,9 @@ fields:
 - name: ScopeKind
   underlying_type: struct    # code int / name string
   validation: |
-    既知の集合（全体 / カテゴリ限定 / 商品限定）だけを許す。扱いは DiscountKind と同じ。
-  factory: NewScopeKind
+    既知の集合（全体 / カテゴリ限定 / 商品限定）だけを許す。扱いは DiscountKind と同じで、
+    code からの解決は NewScopeKind、名前からの解決は NewScopeKindByName が行う。
+  factory: NewScopeKind / NewScopeKindByName
   methods:
     - name: Code
       returns: int
