@@ -471,7 +471,6 @@ func TestNewScopeKindByName(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, ScopeKindProduct, got)
 		})
-
 	})
 
 	t.Run("異常系", func(t *testing.T) {

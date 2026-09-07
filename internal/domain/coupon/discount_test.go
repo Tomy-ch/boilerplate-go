@@ -431,7 +431,6 @@ func TestNewDiscountKindByName(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, DiscountKindRate, got)
 		})
-
 	})
 
 	t.Run("異常系", func(t *testing.T) {
