@@ -20,11 +20,15 @@ import (
 // IssuePromotionalCoupons invariants を参照。
 const maxPromotionRecipients int64 = 10_000
 
+// maxPromotionFlatDiscountValue は、[maxPromotionFlatDiscount] の値です。decimal は const に
+// できないため、数値だけを const として持ちます（[coupon.maxDiscountRate] と同じ形）。
+const maxPromotionFlatDiscountValue int64 = 100_000
+
 // maxPromotionFlatDiscount は、1 回の一括発行で配れる定額値引きの上限です。placeholder であり、
 // 実要件が立った時点で改めます。定率との非対称の理由は [ensureFlatDiscountWithinCap]、
 // application policy としての位置づけは docs/spec/usecase/coupon.md の
 // IssuePromotionalCoupons invariants を参照。
-var maxPromotionFlatDiscount = decimal.FromInt(100_000)
+var maxPromotionFlatDiscount = decimal.FromInt(maxPromotionFlatDiscountValue)
 
 // ErrFlatDiscountTooLarge は、定額値引きが maxPromotionFlatDiscount を超えたことを表します。
 var ErrFlatDiscountTooLarge = xerrors.Wrap(apperror.ErrValidation, "coupon: flat discount exceeds the bulk issuance cap")

@@ -57,8 +57,8 @@ type InsertCouponsParams struct {
 // === source: database/dml/command_service/coupon/insert_coupons.sql ===
 // 採番済みの id と受給者 user_id を 1 対 1 で zip し、同じ条件のクーポンを一括発行する
 // （2 文に分かれる理由と往復コストは ADR-0114 と ADR-0034 の Worked instances を参照）。
-// 受給者が述語でしか決まらない一括発行はいずれもこの 1 文を共有する。書き込む表と列が同じである以上、
-// 発行の事由ごとに複製すると片方だけが列の追加に追随しないドリフト経路になる。
+// 発行経路ごとに複製せずこの 1 文を再利用する
+// （internal/infrastructure/rdb/README.md の command_service を参照）。
 // 2 つの配列は WITH ORDINALITY の行番号で突き合わせる（sqlc が 2 引数形の unnest を解決できない）。
 // 長さが食い違うと内部結合で余った側が落ちるため、呼び出し側が必ず同じ長さで渡す。
 //
@@ -115,8 +115,7 @@ WHERE u.deleted_at IS NULL
 // === source: database/dml/command_service/coupon/select_bulk_issue_recipients.sql ===
 // 退会していないすべての利用者を受給者として返す。
 // 述語が退会の除外だけなのは、この操作が不特定多数への配布であるため。絞り込みの表現力は持たない
-// （docs/spec/usecase/coupon.md の Workflow — IssuePromotionalCoupons を参照）。
-// 退会の除外は廃番の一括発行と同一の述語で、受給者の母集団を 2 つの発行経路で揃える。
+// （述語と母集団は docs/spec/usecase/coupon.md の IssuePromotionalCoupons invariants を参照）。
 //
 //	SELECT u.id::UUID AS user_id
 //	FROM users AS u
