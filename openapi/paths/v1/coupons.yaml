@@ -1,0 +1,54 @@
+post:
+  operationId: PostCoupons
+  tags:
+    - v1/coupons
+  summary: クーポンの発行
+  description: |
+    受給者を名指しして、クーポンを 1 枚発行します。認証必須で、管理者（admin）のみ実行できます
+    （非 admin は 403）。
+    **受給者は 1 人です。** 不特定多数への配布は別の操作であり、POST /v1/coupons/bulk-issue が
+    その形です。この API を全員へ繰り返し呼ぶ用途は想定していません。
+    受給者は退会していない利用者に限ります。存在しない、または退会済みの `userId` は 404 を返します。
+    適用範囲に `category` / `product` を指定した場合も、その対象が存在しなければ 404 を返します。
+    存在しない対象を範囲にしたクーポンは誰にも使えないため、発行してから気づくことを避けます。
+    発行されたクーポンは未使用の状態で作られ、GET /v1/users/me/coupons に並びます。
+    他の発行経路のクーポンと区別されません。
+    再送による二重発行を避けられるよう `Idempotency-Key` を受け付けます。同一キーの再送は初回の
+    結果をそのまま返します。キーを付けない呼び出しも通りますが、その場合は再送のたびに発行されます。
+    本 op は DB の SELECT / INSERT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+    一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+  security:
+    - BearerAuth: []
+  parameters:
+    - $ref: '../../components/parameters/idempotency/IdempotencyKeyParam.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/requests/coupons/CouponsPostRequest.yaml'
+  responses:
+    '201':
+      description: クーポンの発行に成功しました
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/coupons/CouponResponse.yaml'
+    '400':
+      $ref: '../../components/schemas/errors/BadRequest400.yaml'
+    '401':
+      $ref: '../../components/schemas/errors/Unauthorized401.yaml'
+    '403':
+      $ref: '../../components/schemas/errors/Forbidden403.yaml'
+    '404':
+      $ref: '../../components/schemas/errors/NotFound404.yaml'
+    '405':
+      $ref: '../../components/schemas/errors/MethodNotAllowed405.yaml'
+    '409':
+      $ref: '../../components/schemas/errors/Conflict409.yaml'
+    '422':
+      $ref: '../../components/schemas/errors/UnprocessableEntity422.yaml'
+    '500':
+      $ref: '../../components/schemas/errors/InternalServerError500.yaml'
+    '503':
+      $ref: '../../components/schemas/errors/ServiceUnavailable503.yaml'
