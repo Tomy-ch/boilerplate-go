@@ -99,9 +99,10 @@ func NewProductScope(productID uuid.UUID) (Scope, error) {
 	return Scope{kind: ScopeKindProduct, targetID: &productID}, nil
 }
 
-// ReconstructScope は、永続化されている種別と対象 ID から適用範囲を再構築します。
-// 検証は生成時と同一です。全体の適用範囲は対象 ID を持ってはなりません。
-func ReconstructScope(kind ScopeKind, targetID *uuid.UUID) (Scope, error) {
+// NewScope は、解決済みの種別と対象 ID から適用範囲を生成します。種別ごとの生成関数へ振り分け、
+// 対象 ID の要否だけをここで課します（全体は対象を持ってはなりません）。
+// 永続化された行からの復元も、要求が渡した名前からの構築も、種別を解決したあとはこの入口を通ります。
+func NewScope(kind ScopeKind, targetID *uuid.UUID) (Scope, error) {
 	switch kind {
 	case ScopeKindAll:
 		if targetID != nil {

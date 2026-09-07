@@ -128,9 +128,12 @@ fields:
   underlying_type: struct    # kind DiscountKind / value decimal.Decimal
   validation: |
     定額は正の金額、定率は 0 より大きく 1 以下。範囲外は ErrInvalidDiscountValue。
+    解決済みの種別から作る入口は NewDiscount で、種別ごとの生成関数へ振り分けるだけ。永続化された行
+    からの復元も、要求が渡した名前からの構築も、種別を解決したあとはここを通る（値オブジェクトは
+    永続化固有の状態を持たないため、復元と構築を分ける理由がない）。
     1 を超える率は対象額より多く差し引くことになり、値引きの意味を失うため許さない。
     適用範囲は関知しない。どの明細が対象かは Scope が答える。
-  factory: NewFlatDiscount / NewRateDiscount / ReconstructDiscount
+  factory: NewFlatDiscount / NewRateDiscount / NewDiscount
   methods:
     - name: Kind
       returns: DiscountKind
@@ -171,9 +174,10 @@ fields:
   underlying_type: struct    # kind ScopeKind / targetID *uuid.UUID
   validation: |
     カテゴリ限定・商品限定は対象 ID を必須とし、全体は対象を持ってはならない（ErrInvalidScopeTarget）。
+    この要否を課す入口は NewScope で、扱いは Discount と同じ。
     対象は識別子だけを持ち、商品集約もカテゴリ集約も参照しない
     （集約をまたぐ参照は識別子に限る。internal/domain/README.md の Aggregate Design）。
-  factory: NewAllScope / NewCategoryScope / NewProductScope / ReconstructScope
+  factory: NewAllScope / NewCategoryScope / NewProductScope / NewScope
   methods:
     - name: Kind
       returns: ScopeKind

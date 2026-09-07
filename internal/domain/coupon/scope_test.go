@@ -216,7 +216,7 @@ func TestNewProductScope(t *testing.T) {
 	})
 }
 
-func TestReconstructScope(t *testing.T) {
+func TestNewScope(t *testing.T) {
 	t.Parallel()
 
 	t.Run("正常系", func(t *testing.T) {
@@ -225,7 +225,7 @@ func TestReconstructScope(t *testing.T) {
 		t.Run("全体を再構築する", func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := ReconstructScope(ScopeKindAll, nil)
+			actual, err := NewScope(ScopeKindAll, nil)
 
 			require.NoError(t, err)
 			assert.Equal(t, ScopeKindAll, actual.Kind())
@@ -236,7 +236,7 @@ func TestReconstructScope(t *testing.T) {
 
 			categoryID := newTestUUID(t)
 
-			actual, err := ReconstructScope(ScopeKindCategory, &categoryID)
+			actual, err := NewScope(ScopeKindCategory, &categoryID)
 
 			require.NoError(t, err)
 			require.NotNil(t, actual.TargetID())
@@ -248,7 +248,7 @@ func TestReconstructScope(t *testing.T) {
 
 			productID := newTestUUID(t)
 
-			actual, err := ReconstructScope(ScopeKindProduct, &productID)
+			actual, err := NewScope(ScopeKindProduct, &productID)
 
 			require.NoError(t, err)
 			require.NotNil(t, actual.TargetID())
@@ -264,7 +264,7 @@ func TestReconstructScope(t *testing.T) {
 
 			targetID := newTestUUID(t)
 
-			actual, err := ReconstructScope(ScopeKindAll, &targetID)
+			actual, err := NewScope(ScopeKindAll, &targetID)
 
 			require.ErrorIs(t, err, ErrInvalidScopeTarget)
 			assert.True(t, actual.IsZero())
@@ -273,7 +273,7 @@ func TestReconstructScope(t *testing.T) {
 		t.Run("カテゴリ限定が対象を持たない場合、ErrInvalidScopeTargetを返す", func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := ReconstructScope(ScopeKindCategory, nil)
+			actual, err := NewScope(ScopeKindCategory, nil)
 
 			require.ErrorIs(t, err, ErrInvalidScopeTarget)
 			assert.True(t, actual.IsZero())
@@ -282,7 +282,7 @@ func TestReconstructScope(t *testing.T) {
 		t.Run("商品限定が対象を持たない場合、ErrInvalidScopeTargetを返す", func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := ReconstructScope(ScopeKindProduct, nil)
+			actual, err := NewScope(ScopeKindProduct, nil)
 
 			require.ErrorIs(t, err, ErrInvalidScopeTarget)
 			assert.True(t, actual.IsZero())
@@ -291,7 +291,7 @@ func TestReconstructScope(t *testing.T) {
 		t.Run("種別が未設定の場合、ErrInvalidScopeKindを返す", func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := ReconstructScope(ScopeKind{}, nil)
+			actual, err := NewScope(ScopeKind{}, nil)
 
 			require.ErrorIs(t, err, ErrInvalidScopeKind)
 			assert.True(t, actual.IsZero())
