@@ -394,6 +394,7 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
       "openapi/components/schemas/coupons",
       "openapi/components/responses/coupons",
       "openapi/components/requests/coupons",
+      "openapi/components/parameters/idempotency/IdempotencyKeyRequiredParam.yaml",
 
       // 販促クーポンの一括発行。受給者を識別子で名指しできない書き込みの実例なので、
       // クーポン集約と生死を共にする（ADR-0114 の branch 3b）。

@@ -2078,9 +2078,10 @@ paths:
         書き込むのはクーポンだけで、他の集約は変更しません。往復は受給者数に比例せず、発行枚数によらず
         一定です。
         **配布の記録は残りません。** 同じ条件で二度実行すれば、同じ利用者へ 2 枚発行されます。
-        同じ配布を二度走らせない責務は呼び出し側にあり、**Idempotency-Key を受け付けます**。同一キーの
-        再送は初回の結果をそのまま返し、クーポンが二重に発行されることはありません。キーを付けずに、
-        あるいは別のキーで再実行した場合は、別の配布として全員へ改めて発行されます。
+        同じ配布を二度走らせない責務は呼び出し側にあるため、**Idempotency-Key は必須です**（欠くと 400）。
+        同一キーの再送は初回の結果をそのまま返し、クーポンが二重に発行されることはありません。
+        **別のキーで再実行した場合は、別の配布として全員へ改めて発行されます。**意図しない再配布を防ぐのは
+        キーの管理だけなので、リトライでは必ず同じキーを送ってください。
         適用範囲に `category` / `product` を指定した場合、その対象が存在しなければ 404 を返します。
         存在しない対象を範囲にしたクーポンは誰にも使えないため、発行してから気づくことを避けます。
         受給対象の人数が上限を超える場合は 409 を返します。409 はこの一義で、要求の形が原因になることは
@@ -2091,7 +2092,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/IdempotencyKeyParam'
+        - $ref: '#/components/parameters/IdempotencyKeyRequiredParam'
       requestBody:
         required: true
         content:
@@ -2881,6 +2882,24 @@ components:
         minLength: 43
         maxLength: 43
         example: b3JnLWV4YW1wbGUtc2Vzc2lvbi10b2tlbi1zYW1wbGU
+    IdempotencyKeyRequiredParam:
+      name: Idempotency-Key
+      in: header
+      description: |
+        冪等キー。同一 (認証主体, キー) の再送を初回結果のリプレイとして扱う。
+        このヘッダを宣言する操作は、ハンドラが必ず idempotency.Run 経由で処理する契約（完全性テストで機械検証）。
+
+        **この操作では必須です。** 他の非冪等操作は再実行しても状態が収束するか（自然キーの upsert）、
+        対象の状態が二度目を弾く（廃番済みの商品は再度廃番にならない）ため任意で足りますが、この操作は
+        配布の記録を持たず、二度目の実行が一度目と同じだけの新しいクーポンを配ります。取り消す経路も無いため、
+        再送を安全にする手段がキーしかありません。
+      required: true
+      schema:
+        type: string
+        pattern: ^[\x21-\x7E]+$
+        minLength: 1
+        maxLength: 255
+      example: 3f0c2d21-6c1e-4a2f-9f8b-4b1e7f0a2c11
     AfterSequenceParam:
       name: afterSequence
       in: query

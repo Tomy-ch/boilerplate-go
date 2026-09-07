@@ -107,7 +107,7 @@ output:
 - cart.Repository      # FindByOwnerID（対象明細の母集団）
 - product.Repository   # FindByIDs（単価と商品カテゴリの解決）/ FindByID（適用範囲の対象確認）
 - category.Repository  # FindByID（適用範囲の対象確認）
-- user.Repository      # CountActiveUsers（発行枚数の上限判定）
+- user.Repository      # CountByActive（発行枚数の上限判定）
 - clock.Clock          # 失効判定の現在時刻 / 発行日時
 - tx.Manager           # 一括発行のトランザクション境界
 - authz.Authorizer     # ActionCouponBulkIssue
@@ -152,16 +152,17 @@ output:
     - authz.Authorizer.Authorize          # ActionCouponBulkIssue（admin のみ）
     - coupon.NewFlatDiscount / NewRateDiscount
     - coupon.NewAllScope / NewCategoryScope / NewProductScope
-    - category.Repository.FindByID        # 適用範囲がカテゴリのときだけ
-    - product.Repository.FindByID         # 適用範囲が商品のときだけ
     - clock.Clock.Now
-    - user.Repository.CountActiveUsers    # 上限判定（書き込み前）
+    - category.Repository.FindByID        # 適用範囲がカテゴリのときだけ（トランザクション内）
+    - product.Repository.FindByID         # 適用範囲が商品のときだけ（トランザクション内）
+    - user.Repository.CountByActive        # 上限判定（書き込み前）
     - command.CommandService.IssuePromotionalCoupons
   behavior: |
     退会していない全ユーザーへ、同一条件のクーポンを 1 枚ずつ発行する。値引き・適用範囲・有効期限を
     受け取り、発行日時と発行枚数を返す。
 
-    値引きと適用範囲はドメインのコンストラクタで検証してから CommandService へ渡す。適用範囲が
+    値引きと適用範囲は、名前の解決も値の検証もドメインへ委ねてから CommandService へ渡す
+    （閉じた集合の権威は `allDiscountKinds` / `allScopeKinds` ただ 1 つ）。適用範囲が
     カテゴリ・商品を指す場合はその存在を確認する。存在しない対象を範囲にしたクーポンは誰にも使えず、
     発行してから気づくことになるため。
 
@@ -176,11 +177,16 @@ output:
     - 上限は書き込み前の件数で判定し、トランザクション内の事後検証で確定する。users 行はロックしないため、
       判定と挿入の間に登録された利用者のぶんだけ超過しうる
     - 配布の記録を持たない。同じ配布を二度走らせない責務は呼び出し側の Idempotency-Key にある
-    - 往復は件数取得・受給者取得・挿入の 3 回で、発行枚数に比例して増えない
+    - 往復は件数取得・受給者取得・挿入の 3 回（適用範囲が対象を持つ場合はその確認で 1 回増える）で、
+      発行枚数には比例しない
+    - 適用範囲の対象確認は書き込みと同一トランザクションで行う。Idempotency-Key の有無で外側の
+      トランザクションが開くかどうかが変わるため、外に置くと境界が要求次第になる
+    - 定額の値引きには上限がある。定率はドメインが 1 を上限に持つが、定額は際限なく大きくなり得るため
   errors:
     - 未認証: 401
     - admin 以外: 403
     - 値引き・適用範囲がドメインの検証に落ちる: 422
+    - 定額の値引きが上限を超える: 422
     - 適用範囲が指すカテゴリ・商品が存在しない: 404
     - 受給者数が上限を超える: 409
 ```
