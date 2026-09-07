@@ -15,19 +15,19 @@ import (
 	"go-boilerplate/pkg/xerrors"
 )
 
-// maxPromotionRecipients は、1 回の一括発行で配れる上限です。placeholder であり、実要件が立った
-// 時点で改めます。application policy としての位置づけは docs/spec/usecase/coupon.md の
-// IssuePromotionalCoupons invariants を参照。
+// maxPromotionRecipients は、1 回の一括発行で配れる上限です。この操作は取り消せないため、誤った
+// 条件のまま事故的に配り切ることを防ぎます。placeholder であり、実要件が立った時点で改めます
+// （分類は docs/spec/usecase/coupon.md の Workflow — IssuePromotionalCoupons の invariants を参照）。
 const maxPromotionRecipients int64 = 10_000
 
 // maxPromotionFlatDiscountValue は、[maxPromotionFlatDiscount] の値です。decimal は const に
-// できないため、数値だけを const として持ちます（[coupon.maxDiscountRate] と同じ形）。
+// できないため、数値だけを const として持ちます（ドメインの maxDiscountRate と同じ形）。
 const maxPromotionFlatDiscountValue int64 = 100_000
 
-// maxPromotionFlatDiscount は、1 回の一括発行で配れる定額値引きの上限です。placeholder であり、
-// 実要件が立った時点で改めます。定率との非対称の理由は [ensureFlatDiscountWithinCap]、
-// application policy としての位置づけは docs/spec/usecase/coupon.md の
-// IssuePromotionalCoupons invariants を参照。
+// maxPromotionFlatDiscount は、1 回の一括発行で配れる定額値引きの上限です。取り消せない操作で
+// 桁を 1 つ多く打つだけで全利用者へ届くため、件数と同じく上限を置きます。placeholder であり、
+// 実要件が立った時点で改めます（定率との非対称は [ensureFlatDiscountWithinCap]、分類は
+// docs/spec/usecase/coupon.md の Workflow — IssuePromotionalCoupons の invariants を参照）。
 var maxPromotionFlatDiscount = decimal.FromInt(maxPromotionFlatDiscountValue)
 
 // ErrFlatDiscountTooLarge は、定額値引きが maxPromotionFlatDiscount を超えたことを表します。
@@ -96,11 +96,6 @@ func (u *usecase) IssuePromotionalCoupons(
 	}
 
 	now := u.clock.Now()
-	// 受給者が 0 人だとクーポンが 1 枚も構築されず coupon.New へ到達しないため、同じ規則をここでも
-	// 問います。規則そのものはドメインが持ち、母集団の大きさで答えが変わらないことだけを保証します。
-	if err = coupon.ValidateValidity(now, params.ExpiresAt); err != nil {
-		return IssuePromotionalCouponsView{}, err
-	}
 
 	var view IssuePromotionalCouponsView
 	err = u.txm.Do(ctx, func(ctx context.Context) error {
@@ -111,7 +106,7 @@ func (u *usecase) IssuePromotionalCoupons(
 		}
 
 		// 上限は書き込みの前に判定します（分類は docs/spec/usecase/coupon.md の
-		// IssuePromotionalCoupons invariants を参照）。
+		// Workflow — IssuePromotionalCoupons の invariants を参照）。
 		recipients, cerr := u.userRepo.CountByActive(ctx, ptr.To(true))
 		if cerr != nil {
 			return cerr
@@ -130,8 +125,8 @@ func (u *usecase) IssuePromotionalCoupons(
 			return ierr
 		}
 
-		// 事前判定だけでは上限が破れるため、実際に書いた枚数で締めます
-		// （母集団の性質は docs/spec/usecase/coupon.md の IssuePromotionalCoupons invariants を参照）。
+		// 事前判定だけでは上限が破れるため、実際に書いた枚数で締めます（母集団の性質は
+		// docs/spec/usecase/coupon.md の Workflow — IssuePromotionalCoupons の invariants を参照）。
 		if result.IssuedCouponCount > maxPromotionRecipients {
 			return ErrTooManyRecipients
 		}

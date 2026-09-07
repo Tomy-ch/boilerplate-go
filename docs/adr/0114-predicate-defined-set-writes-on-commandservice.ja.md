@@ -143,6 +143,14 @@ Repository に属する。
 
 ## 補足
 
+<!-- sample-api:replace-begin -->
+- **この分岐の 2 つの実例は、書き込み文を 1 本共有してよい。** 行も表も列も同じであるとき、操作ごとに
+  文を複製するのではなく共有する。複製は、片方にだけ列が足されたときもう一方が取り残される。共有は
+  その文について 2 つの呼び出し箇所を結合するが、結合しているのはスキーマそのもの——どのみち両方を
+  変えることになるもの——なので受け入れる。操作を統合するわけではない。CommandService の
+  インターフェースも、受給者を選ぶクエリも、ここに来た理由も、それぞれが持ち続ける。
+<!-- sample-api:replace-with -->
+<!-- sample-api:replace-end -->
 - 基準とその手順は [`docs/design/data-access-pattern.md`](../design/data-access-pattern.ja.md) §4 に
   一度だけ記述する。本 ADR が記録するのは決定と、比較検討した選択肢である。
   [`docs/rules.md`](../rules.ja.md) § Repository / QueryService Rules に従い、基準はここでは

@@ -40,7 +40,7 @@ type IssuePromotionalCouponsResult struct {
 // CommandService は、販促クーポンの一括発行を定義します。
 //
 // 載せてよい書き込みの基準と、強制する条件がドメイン不変条件からの導出でなければならない規律は
-// ADR-0034 (commandservice-atomicity-criterion) の Eligibility / Derivation を参照。
+// ADR-0032 (lightweight-cqrs) の Eligibility / Derivation を参照。
 type CommandService interface {
 	// IssuePromotionalCoupons は、退会していないすべての利用者へ、同一条件のクーポンを 1 枚ずつ
 	// 発行します。渡された ctx のトランザクション内で実行します。
@@ -49,5 +49,7 @@ type CommandService interface {
 	// ADR-0114 (predicate-defined-set-writes-on-commandservice) を参照。原子性ではなく受給者を
 	// 識別子で名指しできないことがこの構造の理由です。
 	// 個々の Coupon は受給者を読んだあとにドメインのコンストラクタを通して組み立てます。
+	// 発行枚数の上限は強制しません。呼び出し側が書き込み前に判定します
+	// （docs/spec/usecase/coupon.md の Command Service を参照）。
 	IssuePromotionalCoupons(ctx context.Context, params IssuePromotionalCouponsParams) (IssuePromotionalCouponsResult, error)
 }

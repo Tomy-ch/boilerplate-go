@@ -226,6 +226,11 @@ implementation is what shows it. Both call the same generated `InsertCoupons` qu
 columns are the same, so duplicating the statement per issuing reason would leave one copy behind the
 next column that is added.
 
+Each method also takes its shared columns from the validated aggregate it has just built, never from
+the raw params it was handed. The constructor is what turned those params into something known to
+satisfy the aggregate's invariants, so reading the columns back off it keeps the written values and the
+validated values the same object rather than two copies that can drift.
+
 The parameters of both are the issuing conditions rather than a decided aggregate, because the
 aggregates cannot exist before the recipients are read. The rule the shape rule protects is kept all
 the same: each method reads the recipients and then builds every row through the Domain constructor, so

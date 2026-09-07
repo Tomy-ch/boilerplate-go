@@ -72,10 +72,10 @@ func persistenceModule() fx.Option {
 			fx.Provide(
 				// sample-api:begin
 				// productdiscontinuecs: 廃番に伴う代替クーポンの一括発行
-				// （docs/spec/usecase/product.md § 廃番、ADR-0034 の branch 3a）
+				// （docs/spec/usecase/product.md § Workflow — DiscontinueProduct、ADR-0034 の branch 3a）
 				productdiscontinuecs.New,
 				// couponbulkissuecs: 販促クーポンの一括発行
-				// （docs/spec/usecase/coupon.md § 販促一括発行、ADR-0114 の branch 3b）
+				// （docs/spec/usecase/coupon.md § Workflow — IssuePromotionalCoupons、ADR-0114 の branch 3b）
 				couponbulkissuecs.New,
 				// sample-api:end
 			),

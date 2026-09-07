@@ -147,6 +147,16 @@ the next operation of this shape would re-derive the argument from scratch or la
 
 ## Notes
 
+<!-- sample-api:replace-begin -->
+- **Two instances of this branch may share one write statement.** Where the rows, the table and the
+  columns are identical, the statement is shared rather than copied per operation: a duplicate falls
+  behind the next column that is added to only one of its copies. Sharing couples the two call sites
+  for that statement, which is accepted because the coupling is the schema itself — the thing that
+  would have to change in both anyway. It does not merge the operations: each keeps its own
+  CommandService interface, its own recipient query, and its own reason for being here.
+<!-- sample-api:replace-with -->
+<!-- sample-api:replace-end -->
+
 - The criterion and its procedure are stated once, in
   [`docs/design/data-access-pattern.md`](../design/data-access-pattern.md) §4; this ADR records the
   decision and the options weighed. Per [`docs/rules.md`](../rules.md) § Repository / QueryService

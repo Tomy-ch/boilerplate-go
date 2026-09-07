@@ -61,11 +61,9 @@ func Reconstruct(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, er
 	return newCoupon(id, attrs, usedAt)
 }
 
-// ValidateValidity は、発行日時と有効期限の組を検証します。有効期限は発行日時より後である必要があります
+// validateValidity は、発行日時と有効期限の組を検証します。有効期限は発行日時より後である必要があります
 // （理由は docs/spec/domain/coupon.md の Cross-field Invariants を参照）。
-//
-// [New] を経ずにこの検証だけを行いたい呼び出し側のために公開しています。
-func ValidateValidity(issuedAt, expiresAt time.Time) error {
+func validateValidity(issuedAt, expiresAt time.Time) error {
 	if issuedAt.IsZero() {
 		return xerrors.Wrap(ErrInvalidIssuedAt, "issuedAt is required")
 	}
@@ -93,7 +91,7 @@ func newCoupon(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, erro
 	if attrs.Scope.IsZero() {
 		return nil, ErrInvalidScope
 	}
-	if err := ValidateValidity(attrs.IssuedAt, attrs.ExpiresAt); err != nil {
+	if err := validateValidity(attrs.IssuedAt, attrs.ExpiresAt); err != nil {
 		return nil, err
 	}
 
