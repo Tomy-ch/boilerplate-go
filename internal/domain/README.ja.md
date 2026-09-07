@@ -512,12 +512,18 @@ flowchart TB
   評価する前にロックし、commit まで保持します
   （[ADR-0036 (ordered-pessimistic-row-locks)](../../docs/adr/0036-ordered-pessimistic-row-locks.ja.md)）。他の集約は観測する
   だけで変更せず、操作は通常の usecase のままです。
-- **原子的でなければならない複数集約書き込み**（分岐 3）。中間状態が観測されてはならないと要件が
+- **原子的でなければならない複数集約書き込み**（分岐 3a）。中間状態が観測されてはならないと要件が
   述べる場合で、書き込みは CommandService を通して 1 トランザクションで走ります
   （[ADR-0032 (lightweight-cqrs)](../../docs/adr/0032-lightweight-cqrs.ja.md)）。
 
 それ以外はすべて分解します。単一集約への書き込みと、結果整合のカスケードです。この原則が例外なく
 記述しているのは、その分岐です。
+
+CommandService にはもう一つ、分岐 3b — 書き込む対象行が述語でしか名指しできない書き込み
+（[ADR-0114 (predicate-defined-set-writes-on-commandservice)](../../docs/adr/0114-predicate-defined-set-writes-on-commandservice.ja.md)）
+— を通る経路があります。これが上記 2 つに含まれないのは、何からも逸脱しないからです。この分岐が
+認める書き込みは単一の集約内に留まってもよいものです。**したがって CommandService が存在すること
+自体は、この原則から逸脱した証拠にはなりません** — その証拠になるのは分岐 3a です。
 
 > **Evans からの逸脱。** Evans は集約を *即時* 整合の境界とする — 1 トランザクションは 1 集約を
 > 変更し、その外側は後から調停される。このモデルは上記 2 つの状況でその境界を広げており、その
