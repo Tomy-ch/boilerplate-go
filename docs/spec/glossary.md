@@ -61,6 +61,7 @@ findings** — 業務が使っていてモデルが使っていない語は、�
 | クーポン | 特定の利用者が持つ値引きの権利。受給者は発行時に確定し、以後移らない | coupon / Coupon | `coupon.Coupon` | — |
 | 値引き | クーポンがいくら引くかの決まり方と、その値の組。定額と定率がある | coupon / Coupon | `coupon.Discount` | — |
 | 適用範囲 | クーポンがどの明細を対象にするか。全体・カテゴリ限定・商品限定がある | coupon / Coupon | `coupon.Scope` | — |
+| 発行 | 受給者を定めてクーポンを 1 枚生み出す行為。生まれた時点では未使用である | coupon / Coupon | `coupon.New` | `issuedAt` |
 | 引き換え | 保有するクーポンを購入へ適用し、使用済みにする行為 | coupon / Coupon | `coupon.Coupon.Redeem` | `usedAt` |
 | 返却 | 購入のキャンセルに伴い、有効期限内のクーポンを未使用へ戻す行為。失効していれば戻さない | coupon / Coupon | `coupon.Coupon.Restore` | `usedAt` |
 | 対象明細 | クーポンの適用範囲に入る明細。値引き額はこの小計から決まる | coupon / Coupon | `coupon.Line` | — |

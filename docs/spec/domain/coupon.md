@@ -196,6 +196,14 @@ fields:
 ## Repository Methods
 
 ```yaml
+- name: Create
+  signature: Create(ctx context.Context, c *Coupon) error
+  behavior: |
+    発行したクーポンを 1 枚永続化する。対象は New が生成した未使用の集約で、使用状態は書かない。
+    呼び出し元のトランザクションがあればそれに参加する。
+    受給者が在籍するかどうかは判定しない。発行の可否は呼び出し元が確かめる条件であり、
+    ここに置くと登録直後で在籍が自明な経路まで問い合わせを背負う。
+    在籍しない受給者は外部キー違反として現れ、ErrInvalidArgument へ正規化される。
 - name: FindByUserID
   signature: FindByUserID(ctx context.Context, userID uuid.UUID) (Coupons, error)
   behavior: |
