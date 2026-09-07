@@ -90,7 +90,7 @@ func (s *commandService) IssuePromotionalCoupons(
 		return command.IssuePromotionalCouponsResult{}, err
 	}
 
-	issued, err := db.InsertBulkIssueCoupons(ctx, &gen.InsertBulkIssueCouponsParams{
+	issued, err := db.InsertCoupons(ctx, &gen.InsertCouponsParams{
 		Ids:           ids,
 		UserIds:       recipients,
 		DiscountKind:  discountKind,

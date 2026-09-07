@@ -13,7 +13,7 @@ import (
 	uuid "go-boilerplate/pkg/uuid"
 )
 
-const insertBulkIssueCoupons = `-- name: InsertBulkIssueCoupons :execrows
+const insertCoupons = `-- name: InsertCoupons :execrows
 INSERT INTO coupons (
     id,
     user_id,
@@ -43,7 +43,7 @@ FROM (
 ) AS ids
 `
 
-type InsertBulkIssueCouponsParams struct {
+type InsertCouponsParams struct {
 	DiscountKind  int16
 	DiscountValue decimal.Decimal
 	ScopeKind     int16
@@ -54,9 +54,11 @@ type InsertBulkIssueCouponsParams struct {
 	UserIds       []uuid.UUID
 }
 
-// === source: database/dml/command_service/coupon/insert_bulk_issue_coupons.sql ===
+// === source: database/dml/command_service/coupon/insert_coupons.sql ===
 // 採番済みの id と受給者 user_id を 1 対 1 で zip し、同じ条件のクーポンを一括発行する
 // （2 文に分かれる理由と往復コストは ADR-0114 と ADR-0034 の Worked instances を参照）。
+// 受給者が述語でしか決まらない一括発行はいずれもこの 1 文を共有する。書き込む表と列が同じである以上、
+// 発行の事由ごとに複製すると片方だけが列の追加に追随しないドリフト経路になる。
 // 2 つの配列は WITH ORDINALITY の行番号で突き合わせる（sqlc が 2 引数形の unnest を解決できない）。
 // 長さが食い違うと内部結合で余った側が落ちるため、呼び出し側が必ず同じ長さで渡す。
 //
@@ -87,8 +89,8 @@ type InsertBulkIssueCouponsParams struct {
 //	    INNER JOIN UNNEST($8::UUID[]) WITH ORDINALITY AS u (user_id, ord)
 //	        ON i.ord = u.ord
 //	) AS ids
-func (q *Queries) InsertBulkIssueCoupons(ctx context.Context, arg *InsertBulkIssueCouponsParams) (int64, error) {
-	result, err := q.db.Exec(ctx, insertBulkIssueCoupons,
+func (q *Queries) InsertCoupons(ctx context.Context, arg *InsertCouponsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertCoupons,
 		arg.DiscountKind,
 		arg.DiscountValue,
 		arg.ScopeKind,

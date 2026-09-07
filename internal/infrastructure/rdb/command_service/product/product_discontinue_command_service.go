@@ -95,7 +95,7 @@ func (s *commandService) IssueDiscontinuationCoupons(
 		return command.IssueDiscontinuationCouponsResult{}, err
 	}
 
-	issued, err := db.InsertDiscontinueCoupons(ctx, &gen.InsertDiscontinueCouponsParams{
+	issued, err := db.InsertCoupons(ctx, &gen.InsertCouponsParams{
 		Ids:           ids,
 		UserIds:       recipients,
 		DiscountKind:  discountKind,
