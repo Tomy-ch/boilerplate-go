@@ -1,5 +1,7 @@
 -- 値引き 2 種（定額 / 定率）× 適用範囲 3 種（全体 / カテゴリ限定 / 商品限定）の 6 組み合わせを 1 件ずつ置く。
--- 廃番ジャーニーが発行するのは「定率 × カテゴリ限定」だけなので、残りの組み合わせはここでしか現れない。
+-- 廃番ジャーニーが発行するのは「定率 × カテゴリ限定」だけで、残りの組み合わせへ到達するのは発行 API
+-- （POST /v1/coupons と POST /v1/coupons/bulk-issue）。読み・引き換え側のテストが 6 組み合わせを
+-- 固定で参照できるよう、ここに揃えて置く。
 -- discount_kind / scope_kind の値はドメインが持つ業務キー（coupon.DiscountKind / coupon.ScopeKind）。
 INSERT INTO coupons (id, user_id, discount_kind, discount_value, scope_kind, scope_target_id, expires_at, issued_at) VALUES
 ('0193a1c0-0001-7000-8000-000000000001', '090f5b51-37ac-4413-b326-1709ae4661f4', 1, '5.00', 1, NULL, NOW() + INTERVAL '30 days', NOW() - INTERVAL '1 days') ON CONFLICT (id) DO NOTHING;
