@@ -43,6 +43,20 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 	return m.recorder
 }
 
+// Create mocks base method.
+func (m *MockRepository) Create(ctx context.Context, c *coupon.Coupon) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, c)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockRepositoryMockRecorder) Create(ctx, c any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRepository)(nil).Create), ctx, c)
+}
+
 // FindByUserID mocks base method.
 func (m *MockRepository) FindByUserID(ctx context.Context, userID uuid.UUID) (coupon.Coupons, error) {
 	m.ctrl.T.Helper()

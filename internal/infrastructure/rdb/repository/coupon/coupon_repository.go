@@ -10,6 +10,7 @@ import (
 	"go-boilerplate/internal/infrastructure/rdb/pgerror"
 	"go-boilerplate/internal/infrastructure/rdb/sqlc/gen"
 	"go-boilerplate/internal/observability"
+	"go-boilerplate/pkg/safecast"
 	"go-boilerplate/pkg/uuid"
 )
 
@@ -27,6 +28,38 @@ func New(
 		db:     db,
 		tracer: tf.Infra(),
 	}
+}
+
+// Create は、発行済みの集約をそのまま 1 行へ写します。受給者が存在しない場合は
+// 外部キー違反が正規化された結果を返します。
+func (r *repository) Create(ctx context.Context, c *coupon.Coupon) error {
+	ctx, endSpan := r.tracer.Start(ctx)
+	defer endSpan()
+
+	discountKind, err := safecast.IntToInt16(c.Discount().Kind().Code())
+	if err != nil {
+		return err
+	}
+	scopeKind, err := safecast.IntToInt16(c.Scope().Kind().Code())
+	if err != nil {
+		return err
+	}
+
+	db := gen.New(driver.New(ctx, r.db))
+	if err = db.CreateCoupon(ctx, &gen.CreateCouponParams{
+		ID:            c.ID(),
+		UserID:        c.UserID(),
+		DiscountKind:  discountKind,
+		DiscountValue: c.Discount().Value(),
+		ScopeKind:     scopeKind,
+		ScopeTargetID: c.Scope().TargetID(),
+		ExpiresAt:     c.ExpiresAt(),
+		IssuedAt:      c.IssuedAt(),
+	}); err != nil {
+		return pgerror.NormalizeError(err)
+	}
+
+	return nil
 }
 
 // FindByUserID は、発行日時の降順で取得します。

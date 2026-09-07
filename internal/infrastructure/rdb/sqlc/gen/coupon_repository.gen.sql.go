@@ -9,8 +9,79 @@ import (
 	"context"
 	"time"
 
+	decimal "go-boilerplate/pkg/decimal"
 	uuid "go-boilerplate/pkg/uuid"
 )
+
+const createCoupon = `-- name: CreateCoupon :exec
+INSERT INTO coupons (
+    id,
+    user_id,
+    discount_kind,
+    discount_value,
+    scope_kind,
+    scope_target_id,
+    expires_at,
+    issued_at
+) VALUES
+(
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+`
+
+type CreateCouponParams struct {
+	ID            uuid.UUID
+	UserID        uuid.UUID
+	DiscountKind  int16
+	DiscountValue decimal.Decimal
+	ScopeKind     int16
+	ScopeTargetID *uuid.UUID
+	ExpiresAt     time.Time
+	IssuedAt      time.Time
+}
+
+// === source: database/dml/repository/coupon/insert_coupon.sql ===
+//
+//	INSERT INTO coupons (
+//	    id,
+//	    user_id,
+//	    discount_kind,
+//	    discount_value,
+//	    scope_kind,
+//	    scope_target_id,
+//	    expires_at,
+//	    issued_at
+//	) VALUES
+//	(
+//	    $1,
+//	    $2,
+//	    $3,
+//	    $4,
+//	    $5,
+//	    $6,
+//	    $7,
+//	    $8
+//	)
+func (q *Queries) CreateCoupon(ctx context.Context, arg *CreateCouponParams) error {
+	_, err := q.db.Exec(ctx, createCoupon,
+		arg.ID,
+		arg.UserID,
+		arg.DiscountKind,
+		arg.DiscountValue,
+		arg.ScopeKind,
+		arg.ScopeTargetID,
+		arg.ExpiresAt,
+		arg.IssuedAt,
+	)
+	return err
+}
 
 const listCouponsByUserID = `-- name: ListCouponsByUserID :many
 SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at
