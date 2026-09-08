@@ -5,7 +5,7 @@ import (
 
 	authbd "go-boilerplate/internal/usecase/boundary/auth"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
 )
 
@@ -20,8 +20,7 @@ func Test_identityModule(t *testing.T) {
 
 			// 型を要求しないと fx.ValidateApp はコンストラクタを検査しないため、Populate で名指しする。
 			var registrar authbd.IdentityRegistrar
-			opts := append(commonDeps(), identityModule(), fx.Populate(&registrar), fx.NopLogger)
-			assert.NoError(t, fx.ValidateApp(opts...))
+			validateGraph(t, append(commonDeps(), identityModule(), fx.Populate(&registrar))...)
 		})
 	})
 
@@ -33,7 +32,7 @@ func Test_identityModule(t *testing.T) {
 
 			var registrar authbd.IdentityRegistrar
 			opts := append(commonDeps(), fx.Populate(&registrar), fx.NopLogger)
-			assert.Error(t, fx.ValidateApp(opts...))
+			require.Error(t, fx.ValidateApp(opts...))
 		})
 	})
 }

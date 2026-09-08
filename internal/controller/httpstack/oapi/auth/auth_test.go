@@ -91,7 +91,7 @@ func TestNewAuthenticator(t *testing.T) {
 			require.NoError(t, err)
 
 			got, ok := ctxhelper.GetAuthn(req.Context())
-			require.True(t, ok)
+			assert.True(t, ok)
 			assert.Equal(t, want.Subject(), got.Subject())
 			assert.False(t, got.HasUserID())
 		})
@@ -124,7 +124,7 @@ func TestNewAuthenticator(t *testing.T) {
 			require.NoError(t, err)
 
 			got, ok := ctxhelper.GetAuthn(req.Context())
-			require.True(t, ok)
+			assert.True(t, ok)
 			assert.True(t, got.HasUserID())
 		})
 

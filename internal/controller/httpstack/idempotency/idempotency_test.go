@@ -157,7 +157,7 @@ func Test_handle(t *testing.T) {
 
 			res, err := Middleware()(next, "PostUsers")(ec, spyRequest{})
 			require.NoError(t, err)
-			require.True(t, called)
+			assert.True(t, called)
 			assert.Equal(t, sentinel, res, "後段の戻り値がそのまま透過されること")
 
 			ctrl := gomock.NewController(t)
