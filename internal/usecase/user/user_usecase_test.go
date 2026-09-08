@@ -141,6 +141,26 @@ func Test_usecase_ListUsers(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, expected, actual)
 		})
+
+		t.Run("該当ユーザーが0件の場合、エラーではなく空リストが返る", func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+
+			userRepo := mock_user.NewMockRepository(ctrl)
+			userRepo.EXPECT().FindByActive(gomock.Any(), nil, p.Limit32(), p.Offset32()).Return(user.Users{}, nil)
+			pftRepo := mock_prefecture.NewMockRepository(ctrl)
+			pftRepo.EXPECT().FindByIDs(gomock.Any(), []uuid.UUID{}).Return(prefecture.Prefectures{}, nil)
+			uc := &usecase{
+				authorizer: newAllowAuthorizer(ctrl),
+				tracer:     lt,
+				userRepo:   userRepo,
+				pftRepo:    pftRepo,
+			}
+
+			actual, err := uc.ListUsers(ctx, newTestAuthn(t), nil, p)
+			require.NoError(t, err)
+			assert.Empty(t, actual)
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
@@ -620,6 +640,25 @@ func Test_usecase_ListUsersWithTotal(t *testing.T) {
 			require.NoError(t, err)
 			assert.Len(t, actual.Items, 1)
 			assert.Equal(t, int64(1), actual.Total)
+		})
+
+		t.Run("該当ユーザーが0件の場合、空リストと総件数0が返る", func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+
+			userRepo := mock_user.NewMockRepository(ctrl)
+			userRepo.EXPECT().FindByActive(gomock.Any(), nil, p.Limit32(), p.Offset32()).Return(user.Users{}, nil)
+			userRepo.EXPECT().CountByActive(gomock.Any(), nil).Return(int64(0), nil)
+			pftRepo := mock_prefecture.NewMockRepository(ctrl)
+			pftRepo.EXPECT().FindByIDs(gomock.Any(), []uuid.UUID{}).Return(prefecture.Prefectures{}, nil)
+
+			uc := &usecase{tracer: lt, userRepo: userRepo, pftRepo: pftRepo, authorizer: newAllowAuthorizer(ctrl)}
+
+			// 該当なしはエラーではなく空リスト。NotFound にすると呼出元の分岐が変わる。
+			actual, err := uc.ListUsersWithTotal(ctx, newTestAuthn(t), nil, p)
+			require.NoError(t, err)
+			assert.Empty(t, actual.Items)
+			assert.Equal(t, int64(0), actual.Total)
 		})
 	})
 
@@ -1222,6 +1261,27 @@ func Test_usecase_toUserViews(t *testing.T) {
 			require.Len(t, actual, 1)
 			assert.Equal(t, prefectureDomain.Name(), actual[0].PrefectureName)
 			assert.Equal(t, userDomain.Email(), actual[0].Email)
+		})
+
+		t.Run("ユーザーが0件の場合、空リストが返り都道府県の解決も空で行われる", func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+
+			// 0 件でも解決自体は空スライスで呼ばれる。呼ばない最適化に変えると
+			// 呼び出し回数が変わるため、ここで現在の契約を固定する。
+			pftRepo := mock_prefecture.NewMockRepository(ctrl)
+			pftRepo.EXPECT().FindByIDs(gomock.Any(), []uuid.UUID{}).Return(prefecture.Prefectures{}, nil)
+
+			uc := &usecase{
+				tracer:  observability.NewNoopTracerFactory(t).Usecase(),
+				pftRepo: pftRepo,
+			}
+
+			actual, err := uc.toUserViews(ctx, user.Users{})
+			require.NoError(t, err)
+			assert.Empty(t, actual)
+			// 一覧は「該当なし」を空リストで表す。nil にすると JSON が null になり契約が変わる。
+			assert.NotNil(t, actual)
 		})
 	})
 

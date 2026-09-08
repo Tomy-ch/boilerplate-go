@@ -153,6 +153,42 @@ func Test_server_GetUsers(t *testing.T) {
 			t.Parallel()
 			exec(t, []user.UserView{}, 0)
 		})
+
+		// active はハンドラが素通しするだけだが、期待値を要求と同じ変数から読むと
+		// 握り潰しても nil 同士の比較で通ってしまう。渡した値そのものを期待値に置く。
+		execActive := func(t *testing.T, active bool) {
+			t.Helper()
+			ctx := testauth.MakeAvailableAuthn(context.Background(), t, listSubject)
+			ctrl := gomock.NewController(t)
+			lt := observability.NewMockControllerLayerTracer(t)
+
+			params := gen.GetUsersRequestObject{
+				Params: gen.GetUsersParams{
+					Page:    mockParams.Params.Page,
+					PerPage: mockParams.Params.PerPage,
+					Active:  &active,
+				},
+			}
+
+			mockApp := mock_user.NewMockUsecase(ctrl)
+			mockApp.EXPECT().
+				ListUsersWithTotal(gomock.Any(), gomock.Any(), &active, mockPage).
+				Return(&user.UserListView{Items: []user.UserView{expectedDTO1}, Total: 1}, nil)
+
+			s := &server{tracer: lt, uc: mockApp}
+			_, err := s.GetUsers(ctx, params)
+			require.NoError(t, err)
+		}
+
+		t.Run("activeにtrueが指定された場合、そのままユースケースへ渡される", func(t *testing.T) {
+			t.Parallel()
+			execActive(t, true)
+		})
+
+		t.Run("activeにfalseが指定された場合、そのままユースケースへ渡される", func(t *testing.T) {
+			t.Parallel()
+			execActive(t, false)
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {

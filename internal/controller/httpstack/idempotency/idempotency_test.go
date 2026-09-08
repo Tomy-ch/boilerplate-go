@@ -196,7 +196,7 @@ func Test_handle(t *testing.T) {
 
 			res, err := Middleware()(next, "PostUsers")(ec, spyRequest{Name: "alice"})
 			require.NoError(t, err)
-			require.True(t, called)
+			assert.True(t, called)
 			assert.Equal(t, sentinel, res, "後段の戻り値がそのまま透過されること")
 
 			// middleware は ec.SetRequest で stash 済み。その ctx を Run に渡し Claim の引数を検証する。
