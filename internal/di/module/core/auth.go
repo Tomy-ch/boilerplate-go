@@ -57,6 +57,7 @@ func AuthnModule() fx.Option {
 			provideAuthenticator,
 			// sample-api:replace-begin
 			useridentity.New,
+			useridentity.NewRegistrar,
 			// sample-api:replace-with
 			// = identity.New,
 			// sample-api:replace-end

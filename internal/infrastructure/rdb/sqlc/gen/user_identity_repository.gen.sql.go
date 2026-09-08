@@ -12,6 +12,52 @@ import (
 	uuid "go-boilerplate/pkg/uuid"
 )
 
+const createUserIdentity = `-- name: CreateUserIdentity :exec
+INSERT INTO user_identities (
+    id,
+    user_id,
+    issuer,
+    subject
+) VALUES
+(
+    $1,
+    $2,
+    $3,
+    $4
+)
+`
+
+type CreateUserIdentityParams struct {
+	ID      uuid.UUID
+	UserID  uuid.UUID
+	Issuer  string
+	Subject string
+}
+
+// === source: database/dml/repository/user_identity/insert_user_identity.sql ===
+//
+//	INSERT INTO user_identities (
+//	    id,
+//	    user_id,
+//	    issuer,
+//	    subject
+//	) VALUES
+//	(
+//	    $1,
+//	    $2,
+//	    $3,
+//	    $4
+//	)
+func (q *Queries) CreateUserIdentity(ctx context.Context, arg *CreateUserIdentityParams) error {
+	_, err := q.db.Exec(ctx, createUserIdentity,
+		arg.ID,
+		arg.UserID,
+		arg.Issuer,
+		arg.Subject,
+	)
+	return err
+}
+
 const resolveUserByIdentity = `-- name: ResolveUserByIdentity :one
 SELECT
     u.id,

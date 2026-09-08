@@ -76,13 +76,16 @@ func (s *server) PostUsers(ctx context.Context, request gen.PostUsersRequestObje
 	ctx, endSpan := s.tracer.Start(ctx)
 	defer endSpan()
 
-	userID, err := ctxhelper.RequireUserID(ctx)
+	// 登録の入口は内部ユーザーが未解決のまま到達する（securityScheme は BearerAuthRegistration）。
+	// 内部ユーザー ID はユースケースが採番するため、ここで渡すのは主体を指す issuer + subject だけ。
+	authn, err := ctxhelper.RequireAuthn(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	createParams := &user.CreateParamsDTO{
-		UserID:         userID,
+		Issuer:         authn.Issuer(),
+		Subject:        authn.Subject(),
 		FirstName:      request.Body.FirstName,
 		LastName:       request.Body.LastName,
 		Email:          conv.Email(request.Body.Email),

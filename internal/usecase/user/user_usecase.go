@@ -76,10 +76,15 @@ type UpdateProfileParams struct {
 }
 
 // CreateParamsDTO は、ユーザー作成に必要なパラメータを表します。
+// 内部ユーザー ID は登録時に採番するため受け取りません。呼出元が渡すのは、認証済みの主体を
+// 指す外部アイデンティティ（Issuer + Subject）と本人の属性だけです。
 type CreateParamsDTO struct {
 	UpdateProfileParams
 
-	UserID uuid.UUID
+	// Issuer は、認証したトークンの発行者です。
+	Issuer string
+	// Subject は、認証したトークンの主体です。
+	Subject string
 }
 
 // PatchParamsDTO は、ユーザー部分更新（PATCH）に必要なパラメータを表します。nil のフィールドは更新しません。
@@ -105,6 +110,7 @@ type usecase struct {
 	pftRepo      prefecture.Repository
 	purchaseRepo purchase.Repository
 	couponRepo   coupon.Repository
+	identities   authbd.IdentityRegistrar
 	emit         outbox.EmitUsecase
 }
 
@@ -119,8 +125,9 @@ type Usecase interface {
 	// ListUsersFeed は、認可を確認したうえで未削除ユーザーを作成日時の降順（cursor ページネーション）で
 	// 取得します。認可条件は ListUsers と同じく admin 限定です。
 	ListUsersFeed(ctx context.Context, authn *authbd.Authn, cursor *paging.Cursor) (*UserFeedView, error)
-	// CreateUser は、ユーザーを作成し、同一トランザクションでウェルカムクーポンを 1 枚発行します。
-	// 登録が失敗した場合はクーポンも残りません。
+	// CreateUser は、認証済みの主体を内部ユーザーとして登録します。ユーザーの作成・外部アイデンティティの
+	// 結び付け・ウェルカムクーポンの発行を単一トランザクションで行います。
+	// 既に登録済みの主体からの呼び出しは apperror.ErrConflict を返し、何も残しません。
 	CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserView, error)
 	// CountUsers は、ユーザーの総件数を返します。件数のみを返し個々のユーザーを開示しないため、
 	// 認可を要求しません。
@@ -153,6 +160,7 @@ func New(
 	prefectureRepo prefecture.Repository,
 	purchaseRepo purchase.Repository,
 	couponRepo coupon.Repository,
+	identities authbd.IdentityRegistrar,
 	emit outbox.EmitUsecase,
 ) Usecase {
 	return &usecase{
@@ -165,6 +173,7 @@ func New(
 		pftRepo:      prefectureRepo,
 		purchaseRepo: purchaseRepo,
 		couponRepo:   couponRepo,
+		identities:   identities,
 		emit:         emit,
 	}
 }
@@ -186,18 +195,23 @@ func (u *usecase) CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserVie
 
 	now := u.clock.Now()
 
+	userID, err := uuid.New()
+	if err != nil {
+		return UserView{}, xerrors.Wrap(err, "failed to generate user id")
+	}
+
 	var (
 		userEntity *user.User
 		pftName    string
 	)
-	err := u.txm.Do(ctx, func(ctx context.Context) error {
+	err = u.txm.Do(ctx, func(ctx context.Context) error {
 		pftDomain, err := u.pftRepo.FindByName(ctx, dto.PrefectureName)
 		if err != nil {
 			return err
 		}
 		pftName = pftDomain.Name()
 
-		userEntity, err = user.New(dto.UserID, user.Attributes{
+		userEntity, err = user.New(userID, user.Attributes{
 			FirstName:    dto.FirstName,
 			LastName:     dto.LastName,
 			Email:        dto.Email,
@@ -218,9 +232,15 @@ func (u *usecase) CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserVie
 			return err
 		}
 
+		// 二重登録を止めるのはこの結び付けです。issuer + subject の一意制約が、同じ主体からの
+		// 2 回目を Conflict にし、同じトランザクションのユーザーとクーポンごと巻き戻します。
+		if err = u.identities.Register(ctx, userID, dto.Issuer, dto.Subject); err != nil {
+			return err
+		}
+
 		// 登録という業務イベントの副作用としての発行。登録と同じトランザクションに置くことで、
 		// 登録者は必ず 1 枚持つか 1 枚も持たないかのどちらかになります。
-		welcome, err := newWelcomeCoupon(userEntity.ID(), now)
+		welcome, err := newWelcomeCoupon(userID, now)
 		if err != nil {
 			return err
 		}
