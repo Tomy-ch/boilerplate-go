@@ -1,8 +1,8 @@
 ---
 name: impl-issue
 description: >-
-  Drive a GitHub issue from environment setup to a merged PR as a semi-automatic pipeline whose stopping points are enumerated rather than judged. Use whenever the user hands over an issue URL or number to be worked end-to-end ("この issue やって", "wt 上で解決しよう", "着手して PR まで"), or asks to resume such a run. It owns three things — progress orchestration, reconciling the approved plan against what was actually built, and mechanically detecting the moments needing a human call — and no implementation judgment: the work is delegated to `commit` / `submit-pr` and to the three peer review skills `impl-review` / `test-review` / `comment-sweep`, and design decisions are surfaced, never taken. It sets up an isolated worktree and DB slot, has a different model draft a written plan the user approves before coding, then watches five mechanical trip-wires so drift becomes visible instead of silent. The plan's approval covers the whole run, and the skill carries a closed list of the five places it may stop — everywhere else it continues and records the call for the PR. Runtime verification (`make serve` + curl + LGTM traces) runs after the PR is opened and gates the merge; green CI is not a substitute. Three modes are confirmed once: review mode, issue mode, and flow mode. Do NOT use for a change with no issue behind it (`commit` + `submit-pr`), for reviewing an existing diff (`impl-review` / `test-review` / `comment-sweep`), or for authoring skills (`manage-skill`).
-argument-hint: '<issue-url-or-number> [--review-mode=all|harmful|issues] [--issue-mode=search|file] [--flow=record-on-tripwire|halt-on-tripwire]'
+  Drive a GitHub issue from environment setup to a merged PR as a semi-automatic pipeline whose stopping points are enumerated rather than judged. Use whenever the user hands over an issue URL or number to be worked end-to-end ("この issue やって", "wt 上で解決しよう", "着手して PR まで"), or asks to resume such a run. It owns three things — progress orchestration, reconciling the approved plan against what was actually built, and mechanically detecting the moments needing a human call — and no implementation judgment: the work is delegated to `commit` / `submit-pr` and to the three peer review skills `impl-review` / `test-review` / `comment-sweep`, and design decisions are surfaced, never taken. It sets up an isolated worktree and DB slot, then builds the written plan in three stages — framing, research and draft, and a review whose necessity is derived from one invariant: the plan is seen by a model that is not the implementer's — and holds it for the user's approval before coding, then watches five mechanical trip-wires so drift becomes visible instead of silent. The plan's approval covers the whole run, and the skill carries a closed list of the five places it may stop — everywhere else it continues and records the call for the PR. Every call it records — a trip-wire it continued past, a gate it skipped, a finding it rejected — is appended to a run record file as it happens, so a long run outliving its own context still produces a complete closing comment and can be resumed. Runtime verification (`make serve` + curl + LGTM traces) runs after the PR is opened and gates the merge; green CI is not a substitute. Four modes are confirmed once, in two back-to-back calls that are still one stop: review mode, issue mode, flow mode, and a plan mode that prices the planning phase so a one-line fix and a cross-layer feature do not buy the same budget. Do NOT use for a change with no issue behind it (`commit` + `submit-pr`), for reviewing an existing diff (`impl-review` / `test-review` / `comment-sweep`), or for authoring skills (`manage-skill`).
+argument-hint: '<issue-url-or-number> [--review-mode=all|harmful|issues] [--issue-mode=search|file] [--flow=record-on-tripwire|halt-on-tripwire] [--plan=full|draft-review|single]'
 ---
 
 # Impl Issue
@@ -42,7 +42,7 @@ Where this pipeline stops is a specification, not a judgment. It stops here and 
 
 | # | Where | What is decided |
 | --- | --- | --- |
-| 1 | Step 0 | The three modes, in one call, before anything else |
+| 1 | Step 0 | The four modes, in two back-to-back calls, before anything else |
 | 2 | Step 3 | Approval of the written plan |
 | 3 | Step 4 | A trip-wire whose row says halt |
 | 4 | Step 7 | Which of the three peer review skills to run, each with its estimated return |
@@ -52,7 +52,9 @@ Three moments look like stopping points and are not. Each is where an unlisted s
 in:
 
 - **A phase boundary.** The Step 3 approval covers Steps 4–9, because the plan enumerates the whole
-  run and that is what was approved. A phase ending is not an event.
+  run and that is what was approved. A phase ending is not an event — and neither is a seam, where
+  the run writes its record, recommends compacting, and continues; the PR seam asks first, but what
+  it asks about is not the work.
 - **A subagent's completion notification.** Reviews and audits fan out; a report arriving is where
   work resumes, not where it pauses.
 - **A mode settled in Step 0.** That is spent authority. Re-confirming a fix which review mode already
@@ -105,9 +107,17 @@ Hard-protected even during this skill (never touch, regardless of what the issue
 - Anything under `permissions.deny` in `.claude/settings.json`
 - Existing files under `database/migrations/**` (new migration files only)
 
-## Step 0 — Confirm the three modes (one `AskUserQuestion`)
+## Step 0 — Confirm the four modes (two consecutive `AskUserQuestion` calls)
 
-Ask once, before anything else, in a single call. Defaults are marked; the user's choice always wins.
+Ask before anything else, in two back-to-back calls: the three run-policy modes, then the plan mode.
+Two calls rather than one because they answer different questions — how the run behaves, and what the
+planning phase costs — and because a single call caps at four questions, which would leave no room to
+ever add a fifth mode. **This is still one stopping point.** The user answers both without the run
+doing anything in between; a second dialog is not a second stop.
+
+Defaults are marked; the user's choice always wins.
+
+### First call — run policy
 
 **Review mode** — what happens to a review finding.
 
@@ -141,6 +151,91 @@ policy decisions, which `AGENTS.md` keeps behind a human gate unconditionally. T
 what happens at the remaining rows: `record-on-tripwire` continues and records them,
 `halt-on-tripwire` asks about them too — worth picking when the user is present and wants scope
 growth surfaced as it happens rather than at the end.
+
+### Second call — plan mode
+
+**Plan mode** — how much the planning phase spends. Step 3 has three stages; this decides which of
+them run. **Every mode satisfies Step 3's invariant** (the plan is seen by a model that is not the
+implementer's) — that is not what is being traded away here. What varies is how many passes the plan
+gets, and how many of those land on a frontier tier.
+
+| Mode | Stages | Cost |
+| --- | --- | --- |
+| `full` *(default)* | 3a + 3b + 3c | Three passes — the drafter's, plus two more on a top tier |
+| `draft-review` | 3b + 3c | Two passes; the framing stage is skipped |
+| `single` | 3b only, drafted by a model that is not the implementer's | One pass |
+
+**Say what the mode costs when you ask, not just what it does.** This is the one mode whose price is
+paid every run regardless of the issue's size, so a default that is never priced is a default that
+gets paid by accident. A one-line documentation fix and a cross-layer feature do not deserve the same
+planning budget, and the user is the only one who knows which this is before Step 3 has read anything.
+
+Recommend `full` when the issue spans layers, changes a contract, or names a design decision;
+`draft-review` when the shape is already settled and only the details need working out; `single` when
+the change is small enough that the plan is a formality — and say which one you are recommending and
+why, rather than presenting three unpriced options.
+
+## The run record — where "record the call" writes to
+
+This pipeline is told to record things: a trip-wire it continued past, a gate it skipped, a reviewer
+finding it rejected, a judgment it deferred. Step 9 owes all of them to a PR comment at the end.
+
+**They go in a file, appended as they happen** — beside the plan, under the gitignored `tmp/`, named
+for the issue. Not into the conversation.
+
+A long run outlives its own context. Whatever is only remembered gets summarized away somewhere in
+the middle, and the failure is silent in both directions: Step 9 still writes a confident PR comment,
+and nothing in it says an entry went missing. A file is also what makes the run resumable — a session
+that picks this up later can recover which modes were settled and what has fired since, which no
+amount of inspecting the worktree will tell it.
+
+Append one line per event, each carrying what happened and what was decided:
+
+| Written at | Entry |
+| --- | --- |
+| Step 0 | the four settled modes |
+| Step 3 | the plan file's path, and whether 3a / 3c ran |
+| Step 4 | every trip-wire that fired — its number, what triggered it, and the call taken |
+| Step 6 | every gate that did not run, and why |
+| Step 7 | every finding rejected, or fixed differently than proposed, with the reason |
+| Step 8 | what runtime verification covered, and what it did not |
+
+Write the entry when the event happens, not in a batch at the end — a batch is exactly the thing a
+compaction eats. Step 9 then builds its comment by reading this file, never by recalling the run.
+
+## Seams — where compacting is cheap
+
+Two points in the run carry almost nothing forward, because everything that matters is already on
+disk. They are worth naming, because compaction that happens on its own lands wherever the window
+happens to fill, which is routinely mid-implementation.
+
+| Seam | Everything downstream needs | Where it already lives |
+| --- | --- | --- |
+| After Step 5 (implementation reconciled) | the approved plan, the diff, the calls taken so far | the plan file, `git diff`, the run record |
+| After the PR is opened (Step 8, before runtime verification and while CI runs) | the PR, the branch, the calls taken so far | GitHub, `git`, the run record |
+
+At either seam: **write the run record first, then recommend compacting, then keep going.** Recommend
+it rather than merely mentioning it — a seam that announces an option nobody acts on saves nothing,
+and the record has already made everything downstream recoverable, so there is no case for holding
+context here.
+
+**At the PR seam, ask.** Everything after it — `make serve`, the curl transcripts, the traces, the CI
+logs — is the heaviest reading left in the run, so this is where compacting pays most and where an
+unread notice costs most. The one exception is a run under standing full delegation with the user
+away: there, announce it and continue, because a question nobody is present to answer stalls the run
+at the moment it was told to finish on its own.
+
+The Step 5 seam recommends without asking. It sits in front of work the run can get on with, so
+blocking there buys nothing the PR seam does not already buy better.
+
+**Neither seam is a stopping point, and the list stays at five.** That list enumerates where a
+decision about the *work* is the user's to make; compaction decides nothing about the work and the run
+proceeds either way. Asking at the PR seam does halt progress until it is answered — say so when the
+run is unattended rather than treating the halt as free.
+
+The implementation phase is the one that cannot be delegated to a subagent, so it is where a window
+actually fills; the planning stages and the reviews already run as subagents and their windows never
+reach this one. That asymmetry is why the seams sit where they do.
 
 ## Step 1 — Kickoff
 
@@ -205,6 +300,11 @@ a deliberate backport target is the one case the resolver cannot know about.
 
 Setup already happened. Observe it and report what you found; do not re-run any of it.
 
+**Read the run record before anything else.** Inspecting the worktree recovers where the work is, not
+what has been decided about it — the settled modes, the trip-wires that fired, the gates that were
+skipped are in that file and nowhere else. A resume that skips it silently restarts with a blank
+decision history and loses every one of them from Step 9's comment.
+
 The session-start environment line (`[agent-env] checkout=… branch=… vendor=… db-slot=…`) already
 carries the three facts that matter — which checkout this is, whether `vendor/` exists, and which DB
 slot is held. When it is present, state those back before continuing rather than re-deriving them.
@@ -229,9 +329,46 @@ destroys the state belonging to the very run it is resuming.
 
 ## Step 3 — Plan, then wait
 
-Have a **different model** draft the plan — a second model catches what the implementer's own blind
-spots would otherwise carry straight into the code. Give it the issue, your Step 1 corrections, and
-the paths you have already read. Tell it to verify your summary rather than trust it.
+**The invariant: the plan is seen by a model that is not the implementer's.** The three stages below
+are one default way of satisfying it, not the rule — read the rule off the session's own model rather
+than off a model name written here.
+
+No later gate re-opens the plan: `impl-review` / `test-review` / `comment-sweep` all take the finished
+change as their subject, so whether the plan solves the issue at all is checked here or nowhere.
+Drafting it well and drafting it unbiased are different jobs, so they run as separate stages. **The
+three add no stopping point** — the approval at the end is the same single wait.
+
+| Stage | Runs on | Produces | Runs in |
+| --- | --- | --- | --- |
+| 3a Framing | a tier at or near the top, on a family that is not the implementer's | the questions the plan must answer — nothing else | `full` |
+| 3b Research and draft | the strongest tier available for research and drafting, as a subagent | the plan file | every mode |
+| 3c Plan review | the same model as 3a; in `single`, the invariant is carried by 3b instead | findings, appended to the plan file as their own section | `full`, `draft-review` |
+
+**Resolve each stage's model at runtime; do not read one off this file.** Model ids here are
+`<family><generation>`, and the session states which model is running it, so both facts this section
+needs — which family is the implementer's, and which tier is above which — are available when Step 3
+executes. A name written into a skill is a snapshot of a roster that changes; the properties above do
+not. Under `single`, 3b's model must be a family that is not the implementer's, because it is then
+the only pass the plan gets.
+
+### 3a — Framing
+
+Hand it the issue body, the Step 1 issue-vs-base discrepancies, and the paths you have already read.
+
+**It returns open questions, not answers.** It has read almost nothing of the repository at this
+point, so anything it asserts is a generality — and a generality handed to a stronger drafter anchors
+rather than widens. Ask it what must be decided and where a plan of this shape usually misses
+something. Refuse a draft plan, a recommendation, or a
+direction if it returns one.
+
+### 3b — Research and draft
+
+Run it as a subagent, so the research happens in a window that carries none of the orchestrator's
+accumulated framing. Give it the issue, your Step 1 corrections, the paths you have already read, and
+3a's questions. Tell it to verify your summary rather than trust it.
+
+It owes an answer to **every** 3a question — either how it decided, or that the question does not
+apply here.
 
 The plan is a written artifact, not a chat message, because Step 5 compares against it mechanically.
 Write it under the repo's gitignored `tmp/` (it may be a symlink to a directory outside the repo if
@@ -243,6 +380,23 @@ the operator prefers). It must contain:
 | Per-step deliverables | Lets a partially-finished run be resumed or handed over |
 | Chosen options **and rejected ones, with reasons** | Trip-wire 2 fires when a rejected option is later adopted |
 | Gate table | Fixes at plan time whether runtime verification is required, so it cannot be quietly dropped |
+
+### 3c — Plan review
+
+Whether it is required is derived, never assumed:
+
+- **3b's model is the implementer's** — the ordinary case, where the strongest tier for drafting is
+  also the one running this session. The plan has been seen by no other model yet, so **3c is
+  required.**
+- **3b's model already differs from the implementer's** — the session runs on a family that is not
+  the strongest drafter. The invariant is satisfied the moment 3b finishes, and 3c is optional: run
+  it when the change is large enough to be worth a second pass, skip it when it is not.
+
+Append its findings to the plan file as their own section and **present them beside the plan, not
+folded into it** — a reviewer that silently rewrote the plan would hide the disagreement at the moment
+the user is being asked to approve it. The user arbitrates each finding at the approval below.
+
+### Then wait
 
 Present the plan and **wait for approval. Do not implement before it.**
 
@@ -273,8 +427,9 @@ a decision was significant is exactly how drift goes unreported.
 
 **Halt rows halt under either flow mode** — they are the human gate `AGENTS.md` places on architecture,
 domain and policy decisions. When one fires, present the situation with your recommendation.
-`halt-on-tripwire` extends that treatment to the Record rows; `record-on-tripwire` logs them and
-continues, and Step 9 surfaces every recorded call in one PR comment.
+`halt-on-tripwire` extends that treatment to the Record rows; `record-on-tripwire` appends them to
+the run record and continues, and Step 9 surfaces every recorded call in one PR comment — built by
+reading that file, not by recalling the run.
 
 ### When code generation is blocked
 
@@ -437,7 +592,8 @@ the one being read (middleware, DI wiring, the database) already handles the cas
 stage is usually enough to check.
 
 Finally, record in a PR comment any call not already visible in a commit message or the PR
-description. Every trip-wire recorded rather than halted on lands here.
+description. **Read the run record and work down it**; every trip-wire recorded rather than halted on
+lands here, and the file is the only place they all survive.
 
 ## Delegating without double-asking
 
@@ -465,8 +621,12 @@ decision points this skill exists to create.
 - ✅ On resume, inspect the worktree and report what you found — path, `vendor/`, slot.
 - ✅ Verify the issue's claims against the actual base, and put the discrepancies in the kickoff comment.
 - ✅ Get the plan approved before implementing, and keep it as a file so Step 5 can diff against it.
+- ✅ Put the plan through a model that is not the implementer's, and present that review's findings
+      beside the plan rather than folded into it.
 - ✅ Treat the five trip-wires as mechanical triggers, not as things to notice.
-- ✅ Stop only at the five listed places; record every other call for the PR comment.
+- ✅ Stop only at the five listed places; append every other call to the run record as it happens.
+- ✅ At a seam, write the record and recommend compacting — asking at the PR seam, announcing at the
+  Step 5 one, and announcing at both when the user has delegated and left.
 - ✅ Pass every sub-skill its settled answers, apply mode included.
 - ✅ Say explicitly which gates ran and which did not.
 - ✅ Read the traces, not just the status code.
@@ -475,21 +635,29 @@ decision points this skill exists to create.
 - ❌ Present green CI as runtime verification.
 - ❌ Auto-apply a fix that changes the design, in any mode.
 - ❌ Ask for approval at a phase boundary, or treat a subagent's completion as one.
+- ❌ Let the framing stage return a plan, a recommendation, or a direction instead of questions.
 - ❌ Pick which review skills run, or run one on the assumption another chains it.
 - ❌ File an issue without checking for an existing one, unless issue mode says to.
 - ❌ Release the DB slot, or ask about releasing it, unprompted.
 - ❌ Acquire a slot or reinitialize a database merely because a session resumed.
 - ❌ Poll CI in a foreground sleep loop.
+- ❌ Carry the run's decisions in context alone, or build Step 9's comment by recalling them.
+- ❌ Treat a seam as a stopping point, or wait at one.
 
 ## Checklist
 
-- [ ] Modes confirmed in one `AskUserQuestion`.
+- [ ] Four modes confirmed in Step 0's two calls, with plan mode's cost stated when it was asked.
 - [ ] Kickoff comment posted, including issue-vs-base discrepancies.
 - [ ] Environment secured on the right half of Step 2: a new worktree created from a freshly fetched
       base with a slot leased and `go mod vendor` run — or an existing one observed and reported,
       with no slot acquired and no database reinitialized just because the session resumed.
-- [ ] Plan drafted by a different model, all four sections present, approved before implementation.
-- [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed.
+- [ ] Plan built through the stages plan mode selected, every 3a question answered when 3a ran, all
+      four sections present, seen by a model that is not the implementer's, and approved before
+      implementation.
+- [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed, every
+      call appended to the run record when it happened.
+- [ ] Both seams taken: record written, compaction recommended, and the PR seam asked unless the run
+      was unattended under standing delegation.
 - [ ] No stop outside the five listed places.
 - [ ] Plan reconciled against the actual diff.
 - [ ] Local gates run, or their delegation to CI stated in the PR.
