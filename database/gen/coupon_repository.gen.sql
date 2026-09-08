@@ -1,4 +1,27 @@
 
+-- === source: database/dml/repository/coupon/insert_coupon.sql ===
+-- name: CreateCoupon :exec
+INSERT INTO coupons (
+    id,
+    user_id,
+    discount_kind,
+    discount_value,
+    scope_kind,
+    scope_target_id,
+    expires_at,
+    issued_at
+) VALUES
+(
+    sqlc.arg('id'),
+    sqlc.arg('user_id'),
+    sqlc.arg('discount_kind'),
+    sqlc.arg('discount_value'),
+    sqlc.arg('scope_kind'),
+    sqlc.arg('scope_target_id'),
+    sqlc.arg('expires_at'),
+    sqlc.arg('issued_at')
+);
+
 -- === source: database/dml/repository/coupon/lock_coupon_by_id.sql ===
 -- name: LockCouponByID :one
 -- ID からクーポンを 1 件、悲観ロック（FOR UPDATE）して取得する。不存在は 0 行（NotFound）。

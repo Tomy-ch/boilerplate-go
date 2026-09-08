@@ -25,7 +25,7 @@ const (
 	// ActionProductListLowStock は、在庫僅少商品一覧の参照操作（admin）を表します。
 	ActionProductListLowStock Action = "product:low-stock:list"
 	// ActionProductReadUnpublished は、未公開商品を含む商品の参照操作（admin）を表します。
-	// 一覧・一致件数・詳細が同じ能力を共有するため、3 つの経路で同一の Action を用います。
+	// 3 経路が同一の Action を共有する理由は docs/spec/usecase/product.md の Overview を参照。
 	ActionProductReadUnpublished Action = "product:unpublished:read"
 	// ActionPurchaseReadAll は、購入者を問わない購入の参照操作（admin）を表します。
 	ActionPurchaseReadAll Action = "purchase:all:read"
@@ -45,9 +45,10 @@ const (
 	ActionInquiryReply Action = "inquiry:reply"
 	// ActionInquiryFeedSubscribe は、問い合わせ更新フィードの購読操作（admin）を表します。
 	ActionInquiryFeedSubscribe Action = "inquiry-feed:subscribe"
+	// ActionCouponIssue は、受給者を名指ししたクーポンの発行（admin）を表します。
+	ActionCouponIssue Action = "coupon:issue"
 	// ActionCouponBulkIssue は、販促クーポンの一括発行（admin）を表します。
-	// 受給者を名指しする発行とは別の Action です。1 枚の発行と不特定多数への配布では影響範囲が
-	// 桁で違い、片方だけを許す運用が成り立つためです。
+	// 受給者を名指しする発行とは別の Action です。理由は docs/spec/usecase/coupon.md の Overview を参照。
 	ActionCouponBulkIssue Action = "coupon:bulk-issue"
 )
 

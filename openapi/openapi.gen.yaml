@@ -103,6 +103,8 @@ tags:
     description: ログイン時のカート引き継ぎ（認証必須・所有権の遷移サンプル・Idempotency-Key を採る）。
   - name: v1/carts/me/coupons
     description: いまのカートに使えるクーポンと値引き額（認証必須・適用可否の判定を表現層へ漏らさないための読み）。
+  - name: v1/coupons
+    description: クーポンの発行（admin のみ・受給者を名指しする単発発行・非 admin は 403）。
   - name: v1/coupons/bulk-issue
     description: 販促クーポンの一括発行（admin のみ・述語で決まる集合書き込み / CommandService サンプル・非 admin は 403）。
   - name: v1/inquiries
@@ -2060,6 +2062,64 @@ paths:
           $ref: '#/components/responses/Unauthorized401'
         '405':
           $ref: '#/components/responses/MethodNotAllowed405'
+        '500':
+          $ref: '#/components/responses/InternalServerError500'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable503'
+  /v1/coupons:
+    post:
+      operationId: PostCoupons
+      tags:
+        - v1/coupons
+      summary: クーポンの発行
+      description: |
+        受給者を名指しして、クーポンを 1 枚発行します。認証必須で、管理者（admin）のみ実行できます
+        （非 admin は 403）。
+        **受給者は 1 人です。** 不特定多数への配布は別の操作であり、POST /v1/coupons/bulk-issue が
+        その形です。この API を全員へ繰り返し呼ぶ用途は想定していません。
+        受給者は退会していない利用者に限ります。存在しない、または退会済みの `userId` は 404 を返します。
+        適用範囲に `category` / `product` を指定した場合も、その対象が存在しなければ 404 を返します。
+        存在しない対象を範囲にしたクーポンは誰にも使えないため、発行してから気づくことを避けます。
+        発行されたクーポンは未使用の状態で作られ、GET /v1/users/me/coupons に並びます。
+        他の発行経路のクーポンと区別されません。
+        **発行は取り消せません。** 使用済み・失効済みのいずれもクーポンの行は残り、無効化する経路も
+        ありません。二度目の実行は一度目と同じだけの新しいクーポンを配るため、再送を安全にする手段が
+        キーしかありません。そのため **`Idempotency-Key` は必須です**（欠くと 400）。
+        同一キーの再送は初回の結果をそのまま返し、クーポンが二重に発行されることはありません。
+        **別のキーで再実行した場合は、別の発行として改めて 1 枚配られます。**
+        本 op は DB の SELECT / INSERT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+        一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyRequiredParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponsPostRequest'
+      responses:
+        '201':
+          description: クーポンの発行に成功しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest400'
+        '401':
+          $ref: '#/components/responses/Unauthorized401'
+        '403':
+          $ref: '#/components/responses/Forbidden403'
+        '404':
+          $ref: '#/components/responses/NotFound404'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed405'
+        '409':
+          $ref: '#/components/responses/Conflict409'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity422'
         '500':
           $ref: '#/components/responses/InternalServerError500'
         '503':
@@ -5437,6 +5497,33 @@ components:
           nullable: true
           description: 範囲を絞る対象の識別子。`category` なら商品カテゴリ ID、`product` なら商品 ID です。 `all` では対象を持たないため null を送ります。 `category` / `product` で存在しない識別子を指した場合は 404 を返します。誰にも使えないクーポンを 発行してから気づくことになるためです。
           example: 5dd52d84-78eb-4a52-ba0b-2e11c95c2af2
+    CouponsPostRequest:
+      type: object
+      description: |
+        クーポン発行のリクエスト（application/json）。admin のみ実行できます（非 admin は 403）。
+        受給者・値引き・適用範囲・有効期限を指定すると、その利用者へクーポンが 1 枚発行されます。
+        **受給者は 1 人だけです。** 不特定多数への配布は別の操作（POST /v1/coupons/bulk-issue）です。
+      additionalProperties: false
+      required:
+        - userId
+        - discount
+        - scope
+        - expiresAt
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: 受給者の利用者 ID。退会していない利用者に限ります。存在しない、または退会済みの ID を 指定した場合は 404 を返します。受給者は発行時に確定し、以後移りません。
+          example: 0193a1c0-0000-7000-8000-000000000001
+        discount:
+          $ref: '#/components/schemas/CouponDiscountInput'
+        scope:
+          $ref: '#/components/schemas/CouponScopeInput'
+        expiresAt:
+          type: string
+          format: date-time
+          description: 発行するクーポンの有効期限。締切を名指しする操作なので、日数ではなく絶対時刻で受け取ります。 現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
+          example: '2026-12-31T14:59:59Z'
     CouponBulkIssuePostRequest:
       type: object
       description: |

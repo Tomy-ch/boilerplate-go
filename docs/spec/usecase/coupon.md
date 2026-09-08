@@ -1,7 +1,7 @@
 # Coupon — Usecase Spec
 
-> クーポンのユースケース spec。読み取り（保有一覧・いまのカートに使えるもの）と、不特定多数への
-> 販促一括発行を持つ。廃番に伴う発行は廃番ジャーニーの副作用として起き（[`product.md`](product.md) の廃番）、
+> クーポンのユースケース spec。読み取り（保有一覧・いまのカートに使えるもの）と、受給者を名指しする
+> 発行、不特定多数への販促一括発行を持つ。廃番に伴う発行は廃番ジャーニーの副作用として起き（[`product.md`](product.md) の廃番）、
 > 引き換えは購入確定の中で行う（[`purchase.md`](purchase.md) の CreatePurchase）。
 
 ## Overview
@@ -18,6 +18,10 @@
 
 **受給者を名指しできる発行はこの限りではない** — 名指しできる行は分解できるので Repository に載る。
 分けているのは発行枚数ではなく、行を名指しできるかどうかである。
+
+名指しの発行と販促一括発行は authz の Action も分ける（`ActionCouponIssue` / `ActionCouponBulkIssue`）。
+1 枚を受給者へ配る操作と不特定多数へ配る操作は影響範囲が桁で異なり、運用上どちらか一方だけを許可
+できる必要があるため、実装経路の分岐（Repository / CommandService）とは独立に権限も分けている。
 
 読み取りは 2 つ。保有一覧は「持っているもの」を並べ、使えるかどうかで絞らない。もう 1 つは
 「いまのカートに使えるもの」で、使えるかどうかと値引き額を返す。
@@ -38,6 +42,8 @@ methods:
     signature: ListMyCoupons(ctx, authn) ([]CouponView, error)
   - name: ListApplicableToMyCart
     signature: ListApplicableToMyCart(ctx, authn) ([]CartCouponView, error)
+  - name: IssueCoupon
+    signature: IssueCoupon(ctx, authn, params IssueCouponParams) (CouponView, error)
   - name: IssuePromotionalCoupons
     signature: IssuePromotionalCoupons(ctx, authn, params IssuePromotionalCouponsParams) (IssuePromotionalCouponsView, error)
 ```
@@ -74,6 +80,22 @@ output:
       type: int               # 適用した場合に差し引かれる額（USD セント）
 
 input:
+  struct: IssueCouponParams
+  fields:
+    - name: UserID
+      type: uuid.UUID         # 受給者。在籍する利用者に限る
+    - name: DiscountKind
+      type: string            # 値引きの決まり方の名前（code ではない）
+    - name: DiscountValue
+      type: decimal.Decimal   # 定額なら金額、定率なら率
+    - name: ScopeKind
+      type: string            # 適用範囲の決まり方の名前
+    - name: ScopeTargetID
+      type: "*uuid.UUID"      # 全体では nil
+    - name: ExpiresAt
+      type: time.Time         # 絶対時刻。締切を名指しする
+
+input:
   struct: IssuePromotionalCouponsParams
   fields:
     - name: DiscountKind
@@ -103,14 +125,14 @@ output:
 ## Dependencies
 
 ```yaml
-- coupon.Repository    # FindByUserID
+- coupon.Repository    # FindByUserID / Create（名指しの発行）
 - cart.Repository      # FindByOwnerID（対象明細の母集団）
 - product.Repository   # FindByIDs（単価と商品カテゴリの解決）/ FindByID（適用範囲の対象確認）
 - category.Repository  # FindByID（適用範囲の対象確認）
-- user.Repository      # CountByActive（発行枚数の上限判定）
+- user.Repository      # FindByID（受給者の在籍確認）/ CountByActive（発行枚数の上限判定）
 - clock.Clock          # 失効判定の現在時刻 / 発行日時
-- tx.Manager           # 一括発行のトランザクション境界
-- authz.Authorizer     # ActionCouponBulkIssue
+- tx.Manager           # 発行のトランザクション境界
+- authz.Authorizer     # ActionCouponIssue / ActionCouponBulkIssue
 - command.CommandService  # internal/usecase/coupon/command（一括発行）
 ```
 
@@ -145,6 +167,46 @@ output:
     - ロックを取らないため、返した値は返した瞬間から古くなる
   errors:
     - 未認証: 401
+
+- name: IssueCoupon
+  tx_required: true
+  calls:
+    - authz.Authorizer.Authorize          # ActionCouponIssue（admin のみ）
+    - coupon.NewDiscountKindByName / coupon.NewDiscount
+    - coupon.NewScopeKindByName / coupon.NewScope
+    - clock.Clock.Now
+    - category.Repository.FindByID        # 適用範囲がカテゴリのときだけ（トランザクション内）
+    - product.Repository.FindByID         # 適用範囲が商品のときだけ（トランザクション内）
+    - user.Repository.FindByID            # 受給者の在籍確認（トランザクション内）
+    - coupon.New
+    - coupon.Repository.Create
+  behavior: |
+    admin が受給者を名指しして、クーポンを 1 枚発行する。値引き・適用範囲・有効期限を受け取り、
+    発行したクーポンを返す。発行直後は未使用。
+
+    値引きと適用範囲は、名前の解決も値の検証もドメインへ委ねる（一括発行と同じ入口を使う）。
+    適用範囲がカテゴリ・商品を指す場合はその存在を確認する。存在しない対象を範囲にしたクーポンは
+    誰にも使えないため。
+
+    書くのは coupons の 1 行だけで、受給者を識別子で名指しできる。load-mutate-save に分解できるので
+    `docs/design/data-access-pattern.md` §4 Gate 1 により Repository へ載り、CommandService へ落ちる
+    branch 3a / 3b のいずれにも当たらない。
+  invariants:
+    - 退会済みの利用者は受給者にならない。user.Repository.FindByID は在籍者だけを返すため、
+      不存在と退会済みは同じ NotFound になる
+    - 在籍行はロックしない（ADR-0034 の分岐 1）。在籍条件が判定後に失効しても、発行済みクーポンは
+      害を生まない — 退会は保有クーポンを見ず、購入時は在籍ガードが働き、物理削除では従属行ごと消える
+    - 受給者と適用範囲の対象の存在確認は書き込みと同一トランザクションで行う。Idempotency-Key の
+      有無で外側のトランザクションが開くかどうかが変わるため、外に置くと境界が要求次第になる
+    - 一括発行が持つ件数・定額の上限は適用しない。母集団を持たず、影響範囲が受給者 1 人に閉じるため
+    - Idempotency-Key は必須。発行を取り消す経路が無く、再実行しても状態が収束せず、対象の状態が
+      二度目を弾くこともないため、再送を安全にする手段がキーしかない（一括発行と同じ理由）
+  errors:
+    - 未認証: 401
+    - admin 以外: 403
+    - 受給者が存在しない、または退会済み: 404
+    - 適用範囲が指すカテゴリ・商品が存在しない: 404
+    - 値引き・適用範囲・有効期限がドメインの検証に落ちる: 422
 
 - name: IssuePromotionalCoupons
   tx_required: true

@@ -10,6 +10,7 @@ import (
 	"go-boilerplate/internal/infrastructure/rdb/driver"
 	"go-boilerplate/internal/infrastructure/rdb/testkit"
 	"go-boilerplate/internal/observability"
+	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/uuid"
 
 	"github.com/stretchr/testify/assert"
@@ -48,6 +49,147 @@ func TestNew(t *testing.T) {
 			require.True(t, ok)
 			assert.Equal(t, testDB, repo.db)
 			assert.NotNil(t, repo.tracer)
+		})
+	})
+}
+
+func Test_repository_Create(t *testing.T) {
+	t.Parallel()
+
+	testDB := testkit.NewTestDB(t)
+	txm := testkit.NewTestTransactionRunner(t)
+	repo := &repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+
+	newID := func(t *testing.T) uuid.UUID {
+		t.Helper()
+		id, err := uuid.New()
+		require.NoError(t, err)
+
+		return id
+	}
+
+	newCoupon := func(t *testing.T, discount domaincoupon.Discount, scope domaincoupon.Scope) *domaincoupon.Coupon {
+		t.Helper()
+
+		issuedAt := time.Now().UTC().Truncate(time.Microsecond)
+		c, err := domaincoupon.New(newID(t), domaincoupon.Attributes{
+			UserID:    mustParse(t, seedAliceUserID),
+			Discount:  discount,
+			Scope:     scope,
+			ExpiresAt: issuedAt.Add(24 * time.Hour),
+			IssuedAt:  issuedAt,
+		})
+		require.NoError(t, err)
+
+		return c
+	}
+
+	findIssued := func(ctx context.Context, t *testing.T, id uuid.UUID) *domaincoupon.Coupon {
+		t.Helper()
+
+		coupons, err := repo.FindByUserID(ctx, mustParse(t, seedAliceUserID))
+		require.NoError(t, err)
+		for _, c := range coupons {
+			if c.ID() == id {
+				return c
+			}
+		}
+		require.FailNow(t, "発行したクーポンが保有一覧に現れなかった")
+
+		return nil
+	}
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("定額かつ全体のクーポンを未使用として永続化する", func(t *testing.T) {
+			t.Parallel()
+
+			discount, err := domaincoupon.NewDiscount(domaincoupon.DiscountKindFlat, decimal.FromInt(500))
+			require.NoError(t, err)
+			scope, err := domaincoupon.NewScope(domaincoupon.ScopeKindAll, nil)
+			require.NoError(t, err)
+
+			txm.WithinTx(func(ctx context.Context) {
+				want := newCoupon(t, discount, scope)
+
+				require.NoError(t, repo.Create(ctx, want))
+
+				got := findIssued(ctx, t, want.ID())
+				assert.Equal(t, domaincoupon.DiscountKindFlat, got.Discount().Kind())
+				assert.True(t, want.Discount().Value().Equal(got.Discount().Value()))
+				assert.Equal(t, domaincoupon.ScopeKindAll, got.Scope().Kind())
+				assert.Nil(t, got.Scope().TargetID())
+				assert.Nil(t, got.UsedAt())
+				assert.WithinDuration(t, want.ExpiresAt(), got.ExpiresAt(), time.Millisecond)
+				assert.WithinDuration(t, want.IssuedAt(), got.IssuedAt(), time.Millisecond)
+			})
+		})
+
+		t.Run("定率かつ商品限定のクーポンは適用範囲の対象も往復する", func(t *testing.T) {
+			t.Parallel()
+
+			value, err := decimal.Parse("0.15")
+			require.NoError(t, err)
+			discount, err := domaincoupon.NewDiscount(domaincoupon.DiscountKindRate, value)
+			require.NoError(t, err)
+			targetID := mustParse(t, seedCategoryID)
+			scope, err := domaincoupon.NewScope(domaincoupon.ScopeKindProduct, &targetID)
+			require.NoError(t, err)
+
+			txm.WithinTx(func(ctx context.Context) {
+				want := newCoupon(t, discount, scope)
+
+				require.NoError(t, repo.Create(ctx, want))
+
+				got := findIssued(ctx, t, want.ID())
+				assert.Equal(t, domaincoupon.DiscountKindRate, got.Discount().Kind())
+				assert.True(t, want.Discount().Value().Equal(got.Discount().Value()))
+				assert.Equal(t, domaincoupon.ScopeKindProduct, got.Scope().Kind())
+				require.NotNil(t, got.Scope().TargetID())
+				assert.Equal(t, targetID, *got.Scope().TargetID())
+			})
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("在籍しない受給者の外部キー違反はErrInvalidArgumentへ正規化して返す", func(t *testing.T) {
+			t.Parallel()
+
+			discount, err := domaincoupon.NewDiscount(domaincoupon.DiscountKindFlat, decimal.FromInt(500))
+			require.NoError(t, err)
+			scope, err := domaincoupon.NewScope(domaincoupon.ScopeKindAll, nil)
+			require.NoError(t, err)
+
+			issuedAt := time.Now().UTC()
+			c, err := domaincoupon.New(newID(t), domaincoupon.Attributes{
+				UserID:    newID(t),
+				Discount:  discount,
+				Scope:     scope,
+				ExpiresAt: issuedAt.Add(24 * time.Hour),
+				IssuedAt:  issuedAt,
+			})
+			require.NoError(t, err)
+
+			txm.WithinTx(func(ctx context.Context) {
+				require.ErrorIs(t, repo.Create(ctx, c), apperror.ErrInvalidArgument)
+			})
+		})
+
+		t.Run("キャンセル済みコンテキストではErrCanceledへ正規化して返す", func(t *testing.T) {
+			t.Parallel()
+
+			discount, err := domaincoupon.NewDiscount(domaincoupon.DiscountKindFlat, decimal.FromInt(500))
+			require.NoError(t, err)
+			scope, err := domaincoupon.NewScope(domaincoupon.ScopeKindAll, nil)
+			require.NoError(t, err)
+
+			ctx, cancel := context.WithCancel(t.Context())
+			cancel()
+
+			require.ErrorIs(t, repo.Create(ctx, newCoupon(t, discount, scope)), apperror.ErrCanceled)
 		})
 	})
 }

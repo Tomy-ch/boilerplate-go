@@ -656,7 +656,7 @@ func Test_usecase_ensureScopeTargetExists(t *testing.T) {
 	t.Run("異常系", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("対象が存在しない場合、取得のエラーをそのまま返す", func(t *testing.T) {
+		t.Run("カテゴリが存在しない場合、取得のエラーをそのまま返す", func(t *testing.T) {
 			t.Parallel()
 
 			u, deps := newTestUsecase(t)
@@ -665,6 +665,19 @@ func Test_usecase_ensureScopeTargetExists(t *testing.T) {
 			require.NoError(t, err)
 
 			deps.categoryRepo.EXPECT().FindByID(gomock.Any(), id).Return(nil, apperror.ErrNotFound)
+
+			require.ErrorIs(t, u.ensureScopeTargetExists(t.Context(), scope), apperror.ErrNotFound)
+		})
+
+		t.Run("商品が存在しない場合、取得のエラーをそのまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+			id := uuidtestkit.NewTestFromSalt(t, "ensure_scope_missing_product")
+			scope, err := domaincoupon.NewProductScope(id)
+			require.NoError(t, err)
+
+			deps.productRepo.EXPECT().FindByID(gomock.Any(), id).Return(nil, apperror.ErrNotFound)
 
 			require.ErrorIs(t, u.ensureScopeTargetExists(t.Context(), scope), apperror.ErrNotFound)
 		})

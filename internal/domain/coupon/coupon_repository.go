@@ -10,6 +10,10 @@ import (
 
 // Repository は、クーポンの永続化操作を定義するドメインリポジトリインターフェースです。
 type Repository interface {
+	// Create は、発行したクーポンを 1 枚永続化します。対象は [New] が生成した未使用のクーポンです。
+	// 呼び出し元のトランザクションがあればそれに参加します。
+	// 受給者が在籍するかどうかは判定しません。発行の可否は呼び出し元が先に確かめます。
+	Create(ctx context.Context, c *Coupon) error
 	// FindByUserID は、指定利用者が保有するクーポンを発行日時の新しい順で返します。
 	// 使用済み・失効済みも含みます。1 枚も持たない場合は空を返します。
 	FindByUserID(ctx context.Context, userID uuid.UUID) (Coupons, error)
