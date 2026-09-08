@@ -99,6 +99,7 @@ export function findDanglingReferences(danglingHits: string): string[] {
  */
 export const ORPHAN_EXCLUDED_PATHS: readonly string[] = [
   "openapi/components/schemas/BearerAuth.yaml",
+  "openapi/components/schemas/BearerAuthRegistration.yaml",
   "openapi/components/schemas/errors/",
   "openapi/components/schemas/PaginationMetadataResponse.yaml",
   "openapi/components/schemas/CursorPaginationMetadataResponse.yaml",
