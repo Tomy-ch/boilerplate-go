@@ -1,7 +1,7 @@
 ---
 name: impl-issue
 description: >-
-  Drive a GitHub issue from environment setup to a merged PR as a semi-automatic pipeline whose stopping points are enumerated rather than judged. Use whenever the user hands over an issue URL or number to be worked end-to-end ("この issue やって", "wt 上で解決しよう", "着手して PR まで"), or asks to resume such a run. It owns three things — progress orchestration, reconciling the approved plan against what was actually built, and mechanically detecting the moments needing a human call — and no implementation judgment: the work is delegated to `commit` / `submit-pr` and to the three peer review skills `impl-review` / `test-review` / `comment-sweep`, and design decisions are surfaced, never taken. It sets up an isolated worktree and DB slot, has a different model draft a written plan the user approves before coding, then watches five mechanical trip-wires so drift becomes visible instead of silent. The plan's approval covers the whole run, and the skill carries a closed list of the five places it may stop — everywhere else it continues and records the call for the PR. Runtime verification (`make serve` + curl + LGTM traces) runs after the PR is opened and gates the merge; green CI is not a substitute. Three modes are confirmed once: review mode, issue mode, and flow mode. Do NOT use for a change with no issue behind it (`commit` + `submit-pr`), for reviewing an existing diff (`impl-review` / `test-review` / `comment-sweep`), or for authoring skills (`manage-skill`).
+  Drive a GitHub issue from environment setup to a merged PR as a semi-automatic pipeline whose stopping points are enumerated rather than judged. Use whenever the user hands over an issue URL or number to be worked end-to-end ("この issue やって", "wt 上で解決しよう", "着手して PR まで"), or asks to resume such a run. It owns three things — progress orchestration, reconciling the approved plan against what was actually built, and mechanically detecting the moments needing a human call — and no implementation judgment: the work is delegated to `commit` / `submit-pr` and to the three peer review skills `impl-review` / `test-review` / `comment-sweep`, and design decisions are surfaced, never taken. It sets up an isolated worktree and DB slot, then builds the written plan in three stages — framing, research and draft, and a review whose necessity is derived from one invariant: the plan is seen by a model that is not the implementer's — and holds it for the user's approval before coding, then watches five mechanical trip-wires so drift becomes visible instead of silent. The plan's approval covers the whole run, and the skill carries a closed list of the five places it may stop — everywhere else it continues and records the call for the PR. Runtime verification (`make serve` + curl + LGTM traces) runs after the PR is opened and gates the merge; green CI is not a substitute. Three modes are confirmed once: review mode, issue mode, and flow mode. Do NOT use for a change with no issue behind it (`commit` + `submit-pr`), for reviewing an existing diff (`impl-review` / `test-review` / `comment-sweep`), or for authoring skills (`manage-skill`).
 argument-hint: '<issue-url-or-number> [--review-mode=all|harmful|issues] [--issue-mode=search|file] [--flow=record-on-tripwire|halt-on-tripwire]'
 ---
 
@@ -229,9 +229,39 @@ destroys the state belonging to the very run it is resuming.
 
 ## Step 3 — Plan, then wait
 
-Have a **different model** draft the plan — a second model catches what the implementer's own blind
-spots would otherwise carry straight into the code. Give it the issue, your Step 1 corrections, and
-the paths you have already read. Tell it to verify your summary rather than trust it.
+**The invariant: the plan is seen by a model that is not the implementer's.** The three stages below
+are one default way of satisfying it, not the rule — read the rule off the session's own model rather
+than off a model name written here.
+
+No later gate re-opens the plan: `impl-review` / `test-review` / `comment-sweep` all take the finished
+change as their subject, so whether the plan solves the issue at all is checked here or nowhere.
+Drafting it well and drafting it unbiased are different jobs, so they run as separate stages. **The
+three add no stopping point** — the approval at the end is the same single wait.
+
+| Stage | Runs on | Produces |
+| --- | --- | --- |
+| 3a Framing | a model ≠ the implementer's (default `fable`) | the questions the plan must answer — nothing else |
+| 3b Research and draft | whichever model is strongest for it (default `opus`), as a subagent | the plan file |
+| 3c Plan review | the same model as 3a | findings, appended to the plan file as their own section |
+
+### 3a — Framing
+
+Hand it the issue body, the Step 1 issue-vs-base discrepancies, and the paths you have already read.
+
+**It returns open questions, not answers.** It has read almost nothing of the repository at this
+point, so anything it asserts is a generality — and a generality handed to a stronger drafter anchors
+rather than widens. Ask it what must be decided and where a plan of this shape usually misses
+something. Refuse a draft plan, a recommendation, or a
+direction if it returns one.
+
+### 3b — Research and draft
+
+Run it as a subagent, so the research happens in a window that carries none of the orchestrator's
+accumulated framing. Give it the issue, your Step 1 corrections, the paths you have already read, and
+3a's questions. Tell it to verify your summary rather than trust it.
+
+It owes an answer to **every** 3a question — either how it decided, or that the question does not
+apply here.
 
 The plan is a written artifact, not a chat message, because Step 5 compares against it mechanically.
 Write it under the repo's gitignored `tmp/` (it may be a symlink to a directory outside the repo if
@@ -243,6 +273,22 @@ the operator prefers). It must contain:
 | Per-step deliverables | Lets a partially-finished run be resumed or handed over |
 | Chosen options **and rejected ones, with reasons** | Trip-wire 2 fires when a rejected option is later adopted |
 | Gate table | Fixes at plan time whether runtime verification is required, so it cannot be quietly dropped |
+
+### 3c — Plan review
+
+Whether it is required is derived, never assumed:
+
+- **3b's model is the implementer's** (the ordinary case — an Opus session drafting on `opus`). The
+  plan has been seen by no other model yet. **3c is required.**
+- **3b's model already differs from the implementer's** (a `fable` session drafting on `opus`, say).
+  The invariant is satisfied the moment 3b finishes, and 3c is optional — run it when the change is
+  large enough to be worth a second pass, skip it when it is not.
+
+Append its findings to the plan file as their own section and **present them beside the plan, not
+folded into it** — a reviewer that silently rewrote the plan would hide the disagreement at the moment
+the user is being asked to approve it. The user arbitrates each finding at the approval below.
+
+### Then wait
 
 Present the plan and **wait for approval. Do not implement before it.**
 
@@ -465,6 +511,8 @@ decision points this skill exists to create.
 - ✅ On resume, inspect the worktree and report what you found — path, `vendor/`, slot.
 - ✅ Verify the issue's claims against the actual base, and put the discrepancies in the kickoff comment.
 - ✅ Get the plan approved before implementing, and keep it as a file so Step 5 can diff against it.
+- ✅ Put the plan through a model that is not the implementer's, and present that review's findings
+      beside the plan rather than folded into it.
 - ✅ Treat the five trip-wires as mechanical triggers, not as things to notice.
 - ✅ Stop only at the five listed places; record every other call for the PR comment.
 - ✅ Pass every sub-skill its settled answers, apply mode included.
@@ -475,6 +523,7 @@ decision points this skill exists to create.
 - ❌ Present green CI as runtime verification.
 - ❌ Auto-apply a fix that changes the design, in any mode.
 - ❌ Ask for approval at a phase boundary, or treat a subagent's completion as one.
+- ❌ Let the framing stage return a plan, a recommendation, or a direction instead of questions.
 - ❌ Pick which review skills run, or run one on the assumption another chains it.
 - ❌ File an issue without checking for an existing one, unless issue mode says to.
 - ❌ Release the DB slot, or ask about releasing it, unprompted.
@@ -488,7 +537,8 @@ decision points this skill exists to create.
 - [ ] Environment secured on the right half of Step 2: a new worktree created from a freshly fetched
       base with a slot leased and `go mod vendor` run — or an existing one observed and reported,
       with no slot acquired and no database reinitialized just because the session resumed.
-- [ ] Plan drafted by a different model, all four sections present, approved before implementation.
+- [ ] Plan built through Steps 3a-3c with every 3a question answered, all four sections present, seen
+      by a model that is not the implementer's, and approved before implementation.
 - [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed.
 - [ ] No stop outside the five listed places.
 - [ ] Plan reconciled against the actual diff.
