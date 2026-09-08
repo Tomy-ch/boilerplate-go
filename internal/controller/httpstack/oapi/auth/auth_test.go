@@ -445,7 +445,7 @@ func Test_authExtractor(t *testing.T) {
 			req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 			req.Header.Set("Authorization", "Bearer tok")
 
-			got, err := authExtractor(context.Background(), req, m, mr)
+			got, err := authExtractor(context.Background(), req, m, mr, true)
 			require.NoError(t, err)
 			require.NotNil(t, got)
 			assert.Equal(t, want.Subject(), got.Subject())
@@ -453,11 +453,31 @@ func Test_authExtractor(t *testing.T) {
 			assert.True(t, got.HasUserID())
 		})
 
+		t.Run("resolveIdentityがfalseなら解決せずUserID未解決のまま返す", func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			m := mock_auth.NewMockAuthenticator(ctrl)
+			// 解決器を渡しても呼ばれないことを、EXPECT を置かないことで固定する。
+			// 登録の入口は内部ユーザーがまだ無い主体を通すため、ここで解決してはならない。
+			mr := mock_auth.NewMockIdentityResolver(ctrl)
+			want, _ := authbd.New("subj", "mock", nil, nil)
+			m.EXPECT().Authenticate(gomock.Any(), gomock.Any()).Return(want, nil)
+			ctx := context.Background()
+			req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
+			req.Header.Set("Authorization", "Bearer tok")
+
+			got, err := authExtractor(context.Background(), req, m, mr, false)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			assert.Equal(t, want.Subject(), got.Subject())
+			assert.False(t, got.HasUserID())
+		})
+
 		t.Run("トークンが空なら認証スキップとしてnil,nilを返す", func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 
-			authn, err := authExtractor(ctx, httptest.NewRequestWithContext(ctx, http.MethodGet, "/", nil), nil, nil)
+			authn, err := authExtractor(ctx, httptest.NewRequestWithContext(ctx, http.MethodGet, "/", nil), nil, nil, true)
 			require.NoError(t, err)
 			assert.Nil(t, authn)
 		})
@@ -476,7 +496,7 @@ func Test_authExtractor(t *testing.T) {
 			req := httptest.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 			req.Header.Set("Authorization", "Bearer tok")
 
-			authn, err := authExtractor(context.Background(), req, m, mr)
+			authn, err := authExtractor(context.Background(), req, m, mr, true)
 			require.ErrorIs(t, err, ErrUnauthorizedInvalidToken)
 			assert.Nil(t, authn)
 		})
@@ -490,7 +510,7 @@ func Test_authExtractor(t *testing.T) {
 			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 			req.Header.Set("Authorization", "Bearer tok")
 
-			authn, err := authExtractor(context.Background(), req, m, mr)
+			authn, err := authExtractor(context.Background(), req, m, mr, true)
 			assert.Nil(t, authn)
 			require.ErrorIs(t, err, apperror.ErrUnavailable)
 			require.NotErrorIs(t, err, apperror.ErrUnauthenticated)
@@ -506,7 +526,7 @@ func Test_authExtractor(t *testing.T) {
 			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 			req.Header.Set("Authorization", "Bearer tok")
 
-			authn, err := authExtractor(context.Background(), req, m, mr)
+			authn, err := authExtractor(context.Background(), req, m, mr, true)
 			assert.Nil(t, authn)
 			require.ErrorIs(t, err, bad)
 			require.NotErrorIs(t, err, apperror.ErrUnauthenticated)
@@ -523,7 +543,7 @@ func Test_authExtractor(t *testing.T) {
 			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 			req.Header.Set("Authorization", "Bearer tok")
 
-			authn, err := authExtractor(context.Background(), req, m, mr)
+			authn, err := authExtractor(context.Background(), req, m, mr, true)
 			assert.Nil(t, authn)
 			require.ErrorIs(t, err, apperror.ErrInternal)
 		})
@@ -539,7 +559,7 @@ func Test_authExtractor(t *testing.T) {
 			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 			req.Header.Set("Authorization", "Bearer tok")
 
-			authn, err := authExtractor(context.Background(), req, m, mr)
+			authn, err := authExtractor(context.Background(), req, m, mr, true)
 			assert.Nil(t, authn)
 			require.ErrorIs(t, err, authbd.ErrIdentityNotFound)
 			var he *echo.HTTPError
@@ -557,7 +577,7 @@ func Test_authExtractor(t *testing.T) {
 			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 			req.Header.Set("Authorization", "Bearer tok")
 
-			authn, err := authExtractor(context.Background(), req, m, mr)
+			authn, err := authExtractor(context.Background(), req, m, mr, true)
 			assert.Nil(t, authn)
 			require.ErrorIs(t, err, authbd.ErrIdentityNotFound)
 		})

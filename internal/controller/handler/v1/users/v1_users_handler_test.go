@@ -12,6 +12,7 @@ import (
 	"go-boilerplate/internal/controller/handler/testkit/testauth"
 	"go-boilerplate/internal/controller/handler/v1/users/gen"
 	"go-boilerplate/internal/observability"
+	authbd "go-boilerplate/internal/usecase/boundary/auth"
 	"go-boilerplate/internal/usecase/idempotency"
 	"go-boilerplate/internal/usecase/tools/paging"
 	"go-boilerplate/internal/usecase/user"
@@ -280,7 +281,8 @@ func Test_server_PostUsers(t *testing.T) {
 			require.NoError(t, err)
 
 			expectedParams := &user.CreateParamsDTO{
-				UserID:              userID,
+				Issuer:              authbd.IssuerMock,
+				Subject:             userID.String(),
 				UpdateProfileParams: wantParams,
 			}
 			assert.Equal(t, expectedParams, gotParams)

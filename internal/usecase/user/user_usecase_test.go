@@ -15,6 +15,7 @@ import (
 	mock_user "go-boilerplate/internal/domain/user/mock"
 	"go-boilerplate/internal/observability"
 	authbd "go-boilerplate/internal/usecase/boundary/auth"
+	mock_auth "go-boilerplate/internal/usecase/boundary/auth/mock"
 	"go-boilerplate/internal/usecase/boundary/authz"
 	mock_authz "go-boilerplate/internal/usecase/boundary/authz/mock"
 	clocktest "go-boilerplate/internal/usecase/boundary/clock/testkit"
@@ -47,6 +48,7 @@ func TestNew(t *testing.T) {
 		pftRepo := mock_prefecture.NewMockRepository(ctrl)
 		purchaseRepo := mock_purchase.NewMockRepository(ctrl)
 		couponRepo := mock_coupon.NewMockRepository(ctrl)
+		identities := mock_auth.NewMockIdentityRegistrar(ctrl)
 		emit := mock_outbox.NewMockEmitUsecase(ctrl)
 
 		expected := &usecase{
@@ -59,9 +61,10 @@ func TestNew(t *testing.T) {
 			pftRepo:      pftRepo,
 			purchaseRepo: purchaseRepo,
 			couponRepo:   couponRepo,
+			identities:   identities,
 			emit:         emit,
 		}
-		actual := New(tf, mockTxManager, clock, authorizer, userRepo, userLock, pftRepo, purchaseRepo, couponRepo, emit)
+		actual := New(tf, mockTxManager, clock, authorizer, userRepo, userLock, pftRepo, purchaseRepo, couponRepo, identities, emit)
 
 		assert.Equal(t, expected, actual)
 	})
@@ -300,8 +303,9 @@ func Test_usecase_CreateUser(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			createDTO := newCreateDTO(userDomain, prefectureName)
+			// ID はユースケースが採番するため、期待値は Create が受け取った実物から取る。
+			var issuedUserID uuid.UUID
 			expected := UserView{
-				ID:             createDTO.UserID,
 				FirstName:      createDTO.FirstName,
 				LastName:       createDTO.LastName,
 				Email:          createDTO.Email,
@@ -317,6 +321,7 @@ func Test_usecase_CreateUser(t *testing.T) {
 			userRepo := mock_user.NewMockRepository(ctrl)
 			pftRepo := mock_prefecture.NewMockRepository(ctrl)
 			couponRepo := mock_coupon.NewMockRepository(ctrl)
+			identities := mock_auth.NewMockIdentityRegistrar(ctrl)
 
 			gomock.InOrder(
 				pftRepo.EXPECT().FindByName(
@@ -325,7 +330,8 @@ func Test_usecase_CreateUser(t *testing.T) {
 				).Return(pftDomain, nil),
 				userRepo.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, u *user.User) error {
-						assert.Equal(t, createDTO.UserID, u.ID())
+						assert.False(t, u.ID().IsNil())
+						issuedUserID = u.ID()
 						assert.Equal(t, createDTO.FirstName, u.FirstName())
 						assert.Equal(t, createDTO.LastName, u.LastName())
 						assert.Equal(t, createDTO.Email, u.Email())
@@ -341,9 +347,16 @@ func Test_usecase_CreateUser(t *testing.T) {
 						return nil
 					},
 				),
+				identities.EXPECT().Register(gomock.Any(), gomock.Any(), createDTO.Issuer, createDTO.Subject).DoAndReturn(
+					func(_ context.Context, id uuid.UUID, _, _ string) error {
+						// 結び付ける先は、いま作ったユーザーそのものでなければならない。
+						assert.Equal(t, issuedUserID, id)
+						return nil
+					},
+				),
 				couponRepo.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, c *domaincoupon.Coupon) error {
-						assert.Equal(t, createDTO.UserID, c.UserID())
+						assert.Equal(t, issuedUserID, c.UserID())
 						assert.Equal(t, domaincoupon.DiscountKindFlat, c.Discount().Kind())
 						assert.True(t, welcomeAmount.Equal(c.Discount().Value()))
 						assert.Equal(t, domaincoupon.ScopeKindAll, c.Scope().Kind())
@@ -363,10 +376,13 @@ func Test_usecase_CreateUser(t *testing.T) {
 				userRepo:   userRepo,
 				pftRepo:    pftRepo,
 				couponRepo: couponRepo,
+				identities: identities,
 			}
 
 			actual, err := uc.CreateUser(ctx, createDTO)
 			require.NoError(t, err)
+
+			expected.ID = issuedUserID
 			assert.Equal(t, expected, actual)
 		})
 	})
@@ -427,30 +443,44 @@ func Test_usecase_CreateUser(t *testing.T) {
 			require.ErrorIs(t, err, user.ErrInvalidFirstName)
 		})
 
-		t.Run("UserIDがゼロ値でドメイン生成に失敗した場合、ErrInvalidIDが返される", func(t *testing.T) {
+		t.Run("既に登録済みの主体からの2回目は、Conflictが返りクーポンも発行されない", func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 
 			createDTO := newCreateDTO(userDomain, prefectureName)
-			createDTO.UserID = uuid.UUID{} // 呼出元の配線ミス等でゼロ UUID が渡ると New が ErrInvalidID を返す
 
 			clock := clocktest.NewMockClockOnce(t, now)
+			userRepo := mock_user.NewMockRepository(ctrl)
+			userRepo.EXPECT().Create(
+				gomock.Any(),
+				gomock.AssignableToTypeOf(userDomain),
+			).Return(nil)
 			pftRepo := mock_prefecture.NewMockRepository(ctrl)
 			pftRepo.EXPECT().FindByName(
 				gomock.Any(),
 				prefectureName,
 			).Return(pftDomain, nil)
+			// 二重登録を止めるのは issuer + subject の一意制約。ここで落ちるため、
+			// クーポンの発行までは到達しない（couponRepo に EXPECT を置かないことで固定する）。
+			identities := mock_auth.NewMockIdentityRegistrar(ctrl)
+			identities.EXPECT().Register(
+				gomock.Any(), gomock.Any(), createDTO.Issuer, createDTO.Subject,
+			).Return(apperror.ErrConflict)
+			couponRepo := mock_coupon.NewMockRepository(ctrl)
 
 			uc := &usecase{
-				tracer:  lt,
-				txm:     mockTxManager,
-				clock:   clock,
-				pftRepo: pftRepo,
+				tracer:     lt,
+				txm:        mockTxManager,
+				clock:      clock,
+				userRepo:   userRepo,
+				pftRepo:    pftRepo,
+				couponRepo: couponRepo,
+				identities: identities,
 			}
 
 			actual, err := uc.CreateUser(ctx, createDTO)
 			assert.Equal(t, UserView{}, actual)
-			require.ErrorIs(t, err, user.ErrInvalidID)
+			require.ErrorIs(t, err, apperror.ErrConflict)
 		})
 
 		t.Run("ユーザー作成に失敗した場合、エラーが返される", func(t *testing.T) {
@@ -505,6 +535,8 @@ func Test_usecase_CreateUser(t *testing.T) {
 				gomock.Any(),
 				prefectureName,
 			).Return(pftDomain, nil)
+			identities := mock_auth.NewMockIdentityRegistrar(ctrl)
+			identities.EXPECT().Register(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 			// 発行が失敗したらユーザー登録ごと巻き戻る。片方だけ成立させないための経路。
 			couponRepo := mock_coupon.NewMockRepository(ctrl)
 			couponRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(expectedErr)
@@ -516,6 +548,7 @@ func Test_usecase_CreateUser(t *testing.T) {
 				userRepo:   userRepo,
 				pftRepo:    pftRepo,
 				couponRepo: couponRepo,
+				identities: identities,
 			}
 
 			actual, err := uc.CreateUser(ctx, createDTO)
@@ -1244,7 +1277,8 @@ func Test_usecase_toUserViews(t *testing.T) {
 // newCreateDTO は、テスト用のCreateParamsDTOを生成するヘルパー関数です。
 func newCreateDTO(u *user.User, pName string) *CreateParamsDTO {
 	return &CreateParamsDTO{
-		UserID:         u.ID(),
+		Issuer:         "https://issuer.example.com",
+		Subject:        "subject-" + u.ID().String(),
 		FirstName:      u.FirstName(),
 		LastName:       u.LastName(),
 		Email:          u.Email(),
