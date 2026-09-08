@@ -342,15 +342,21 @@ to skip one.
 ## Recommended Commands
 
 The **full `make` target registry** is `.makefiles/README.md` (targets grouped by area;
-every target is self-documenting, so `make help` lists them). Common ones:
+every target is self-documenting, so `make help` lists them).
 
-**Run a noisy target as `ai-<target>`.** `make ai-lint` runs `make lint` with all output captured
-to `tmp/ai-logs/lint.txt`: nothing is printed on success, the exit code passes through, and a
-failure names the log in one line so you read only what broke. Do this by default — a command's
-output is otherwise read into your context in full, and a *failing* command is excerpted with no
-file to recover the rest, which cuts exactly the diagnosis you ran it for. Not for targets whose
-output is itself the answer (`help`, `load-status`, `base-branch`) or that never return (`serve`,
-`worker`, `outbox-relay`). Convention and `make clean-ai-logs`: `.makefiles/README.md`.
+**Invoke every `make` target as `ai-<target>`, never as `<target>`.** `make ai-lint` runs
+`make lint` with all output captured to `tmp/ai-logs/lint.txt`: nothing is printed on success, the
+exit code passes through, and a failure names the log in one line so you read only what broke.
+
+This is the default, not a judgment call about which targets look noisy — a command's output is
+otherwise read into your context in full, and a *failing* command is excerpted with no file to
+recover the rest, which cuts exactly the diagnosis you ran it for. **The exceptions are a closed
+list**: targets whose output is itself the answer (`help`, `load-status`, `base-branch`), and
+targets that never return, where buffering would hang the caller (`serve`, `worker`,
+`outbox-relay`). Convention and `make clean-ai-logs`: `.makefiles/README.md`.
+
+The names below are the registered target names, so reach each one as `ai-<name>`.
+Common ones:
 
 Code generation:
 
