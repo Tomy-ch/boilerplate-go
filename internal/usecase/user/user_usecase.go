@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go-boilerplate/internal/apperror"
+	"go-boilerplate/internal/domain/coupon"
 	"go-boilerplate/internal/domain/prefecture"
 	"go-boilerplate/internal/domain/purchase"
 	"go-boilerplate/internal/domain/service/membership"
@@ -103,6 +104,7 @@ type usecase struct {
 	userLock     user.LockRepository
 	pftRepo      prefecture.Repository
 	purchaseRepo purchase.Repository
+	couponRepo   coupon.Repository
 	emit         outbox.EmitUsecase
 }
 
@@ -117,7 +119,8 @@ type Usecase interface {
 	// ListUsersFeed は、認可を確認したうえで未削除ユーザーを作成日時の降順（cursor ページネーション）で
 	// 取得します。認可条件は ListUsers と同じく admin 限定です。
 	ListUsersFeed(ctx context.Context, authn *authbd.Authn, cursor *paging.Cursor) (*UserFeedView, error)
-	// CreateUser は、ユーザーを作成します。
+	// CreateUser は、ユーザーを作成し、同一トランザクションでウェルカムクーポンを 1 枚発行します。
+	// 登録が失敗した場合はクーポンも残りません。
 	CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserView, error)
 	// CountUsers は、ユーザーの総件数を返します。件数のみを返し個々のユーザーを開示しないため、
 	// 認可を要求しません。
@@ -149,6 +152,7 @@ func New(
 	userLock user.LockRepository,
 	prefectureRepo prefecture.Repository,
 	purchaseRepo purchase.Repository,
+	couponRepo coupon.Repository,
 	emit outbox.EmitUsecase,
 ) Usecase {
 	return &usecase{
@@ -160,6 +164,7 @@ func New(
 		userLock:     userLock,
 		pftRepo:      prefectureRepo,
 		purchaseRepo: purchaseRepo,
+		couponRepo:   couponRepo,
 		emit:         emit,
 	}
 }
@@ -209,7 +214,18 @@ func (u *usecase) CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserVie
 			return err
 		}
 
-		return u.userRepo.Create(ctx, userEntity)
+		if err = u.userRepo.Create(ctx, userEntity); err != nil {
+			return err
+		}
+
+		// 登録という業務イベントの副作用としての発行。登録と同じトランザクションに置くことで、
+		// 登録者は必ず 1 枚持つか 1 枚も持たないかのどちらかになります。
+		welcome, err := newWelcomeCoupon(userEntity.ID(), now)
+		if err != nil {
+			return err
+		}
+
+		return u.couponRepo.Create(ctx, welcome)
 	})
 	if err != nil {
 		return UserView{}, err
