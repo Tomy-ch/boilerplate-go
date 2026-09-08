@@ -1,8 +1,8 @@
 ---
 name: impl-issue
 description: >-
-  Drive a GitHub issue from environment setup to a merged PR as a semi-automatic pipeline whose stopping points are enumerated rather than judged. Use whenever the user hands over an issue URL or number to be worked end-to-end ("この issue やって", "wt 上で解決しよう", "着手して PR まで"), or asks to resume such a run. It owns three things — progress orchestration, reconciling the approved plan against what was actually built, and mechanically detecting the moments needing a human call — and no implementation judgment: the work is delegated to `commit` / `submit-pr` and to the three peer review skills `impl-review` / `test-review` / `comment-sweep`, and design decisions are surfaced, never taken. It sets up an isolated worktree and DB slot, then builds the written plan in three stages — framing, research and draft, and a review whose necessity is derived from one invariant: the plan is seen by a model that is not the implementer's — and holds it for the user's approval before coding, then watches five mechanical trip-wires so drift becomes visible instead of silent. The plan's approval covers the whole run, and the skill carries a closed list of the five places it may stop — everywhere else it continues and records the call for the PR. Runtime verification (`make serve` + curl + LGTM traces) runs after the PR is opened and gates the merge; green CI is not a substitute. Three modes are confirmed once: review mode, issue mode, and flow mode. Do NOT use for a change with no issue behind it (`commit` + `submit-pr`), for reviewing an existing diff (`impl-review` / `test-review` / `comment-sweep`), or for authoring skills (`manage-skill`).
-argument-hint: '<issue-url-or-number> [--review-mode=all|harmful|issues] [--issue-mode=search|file] [--flow=record-on-tripwire|halt-on-tripwire]'
+  Drive a GitHub issue from environment setup to a merged PR as a semi-automatic pipeline whose stopping points are enumerated rather than judged. Use whenever the user hands over an issue URL or number to be worked end-to-end ("この issue やって", "wt 上で解決しよう", "着手して PR まで"), or asks to resume such a run. It owns three things — progress orchestration, reconciling the approved plan against what was actually built, and mechanically detecting the moments needing a human call — and no implementation judgment: the work is delegated to `commit` / `submit-pr` and to the three peer review skills `impl-review` / `test-review` / `comment-sweep`, and design decisions are surfaced, never taken. It sets up an isolated worktree and DB slot, then builds the written plan in three stages — framing, research and draft, and a review whose necessity is derived from one invariant: the plan is seen by a model that is not the implementer's — and holds it for the user's approval before coding, then watches five mechanical trip-wires so drift becomes visible instead of silent. The plan's approval covers the whole run, and the skill carries a closed list of the five places it may stop — everywhere else it continues and records the call for the PR. Runtime verification (`make serve` + curl + LGTM traces) runs after the PR is opened and gates the merge; green CI is not a substitute. Four modes are confirmed once, in two back-to-back calls that are still one stop: review mode, issue mode, flow mode, and a plan mode that prices the planning phase so a one-line fix and a cross-layer feature do not buy the same budget. Do NOT use for a change with no issue behind it (`commit` + `submit-pr`), for reviewing an existing diff (`impl-review` / `test-review` / `comment-sweep`), or for authoring skills (`manage-skill`).
+argument-hint: '<issue-url-or-number> [--review-mode=all|harmful|issues] [--issue-mode=search|file] [--flow=record-on-tripwire|halt-on-tripwire] [--plan=full|draft-review|single]'
 ---
 
 # Impl Issue
@@ -42,7 +42,7 @@ Where this pipeline stops is a specification, not a judgment. It stops here and 
 
 | # | Where | What is decided |
 | --- | --- | --- |
-| 1 | Step 0 | The three modes, in one call, before anything else |
+| 1 | Step 0 | The four modes, in two back-to-back calls, before anything else |
 | 2 | Step 3 | Approval of the written plan |
 | 3 | Step 4 | A trip-wire whose row says halt |
 | 4 | Step 7 | Which of the three peer review skills to run, each with its estimated return |
@@ -105,9 +105,17 @@ Hard-protected even during this skill (never touch, regardless of what the issue
 - Anything under `permissions.deny` in `.claude/settings.json`
 - Existing files under `database/migrations/**` (new migration files only)
 
-## Step 0 — Confirm the three modes (one `AskUserQuestion`)
+## Step 0 — Confirm the four modes (two consecutive `AskUserQuestion` calls)
 
-Ask once, before anything else, in a single call. Defaults are marked; the user's choice always wins.
+Ask before anything else, in two back-to-back calls: the three run-policy modes, then the plan mode.
+Two calls rather than one because they answer different questions — how the run behaves, and what the
+planning phase costs — and because a single call caps at four questions, which would leave no room to
+ever add a fifth mode. **This is still one stopping point.** The user answers both without the run
+doing anything in between; a second dialog is not a second stop.
+
+Defaults are marked; the user's choice always wins.
+
+### First call — run policy
 
 **Review mode** — what happens to a review finding.
 
@@ -141,6 +149,29 @@ policy decisions, which `AGENTS.md` keeps behind a human gate unconditionally. T
 what happens at the remaining rows: `record-on-tripwire` continues and records them,
 `halt-on-tripwire` asks about them too — worth picking when the user is present and wants scope
 growth surfaced as it happens rather than at the end.
+
+### Second call — plan mode
+
+**Plan mode** — how much the planning phase spends. Step 3 has three stages; this decides which of
+them run. **Every mode satisfies Step 3's invariant** (the plan is seen by a model that is not the
+implementer's) — that is not what is being traded away here. What varies is how many passes the plan
+gets, and how many of those land on a frontier tier.
+
+| Mode | Stages | Cost |
+| --- | --- | --- |
+| `full` *(default)* | 3a + 3b + 3c | Three passes — the drafter's, plus two more on a top tier |
+| `draft-review` | 3b + 3c | Two passes; the framing stage is skipped |
+| `single` | 3b only, drafted by a model that is not the implementer's | One pass |
+
+**Say what the mode costs when you ask, not just what it does.** This is the one mode whose price is
+paid every run regardless of the issue's size, so a default that is never priced is a default that
+gets paid by accident. A one-line documentation fix and a cross-layer feature do not deserve the same
+planning budget, and the user is the only one who knows which this is before Step 3 has read anything.
+
+Recommend `full` when the issue spans layers, changes a contract, or names a design decision;
+`draft-review` when the shape is already settled and only the details need working out; `single` when
+the change is small enough that the plan is a formality — and say which one you are recommending and
+why, rather than presenting three unpriced options.
 
 ## Step 1 — Kickoff
 
@@ -238,11 +269,18 @@ change as their subject, so whether the plan solves the issue at all is checked 
 Drafting it well and drafting it unbiased are different jobs, so they run as separate stages. **The
 three add no stopping point** — the approval at the end is the same single wait.
 
-| Stage | Runs on | Produces |
-| --- | --- | --- |
-| 3a Framing | a model ≠ the implementer's (default `fable`) | the questions the plan must answer — nothing else |
-| 3b Research and draft | whichever model is strongest for it (default `opus`), as a subagent | the plan file |
-| 3c Plan review | the same model as 3a | findings, appended to the plan file as their own section |
+| Stage | Runs on | Produces | Runs in |
+| --- | --- | --- | --- |
+| 3a Framing | a tier at or near the top, on a family that is not the implementer's | the questions the plan must answer — nothing else | `full` |
+| 3b Research and draft | the strongest tier available for research and drafting, as a subagent | the plan file | every mode |
+| 3c Plan review | the same model as 3a; in `single`, the invariant is carried by 3b instead | findings, appended to the plan file as their own section | `full`, `draft-review` |
+
+**Resolve each stage's model at runtime; do not read one off this file.** Model ids here are
+`<family><generation>`, and the session states which model is running it, so both facts this section
+needs — which family is the implementer's, and which tier is above which — are available when Step 3
+executes. A name written into a skill is a snapshot of a roster that changes; the properties above do
+not. Under `single`, 3b's model must be a family that is not the implementer's, because it is then
+the only pass the plan gets.
 
 ### 3a — Framing
 
@@ -278,11 +316,12 @@ the operator prefers). It must contain:
 
 Whether it is required is derived, never assumed:
 
-- **3b's model is the implementer's** (the ordinary case — an Opus session drafting on `opus`). The
-  plan has been seen by no other model yet. **3c is required.**
-- **3b's model already differs from the implementer's** (a `fable` session drafting on `opus`, say).
-  The invariant is satisfied the moment 3b finishes, and 3c is optional — run it when the change is
-  large enough to be worth a second pass, skip it when it is not.
+- **3b's model is the implementer's** — the ordinary case, where the strongest tier for drafting is
+  also the one running this session. The plan has been seen by no other model yet, so **3c is
+  required.**
+- **3b's model already differs from the implementer's** — the session runs on a family that is not
+  the strongest drafter. The invariant is satisfied the moment 3b finishes, and 3c is optional: run
+  it when the change is large enough to be worth a second pass, skip it when it is not.
 
 Append its findings to the plan file as their own section and **present them beside the plan, not
 folded into it** — a reviewer that silently rewrote the plan would hide the disagreement at the moment
@@ -532,13 +571,14 @@ decision points this skill exists to create.
 
 ## Checklist
 
-- [ ] Modes confirmed in one `AskUserQuestion`.
+- [ ] Four modes confirmed in Step 0's two calls, with plan mode's cost stated when it was asked.
 - [ ] Kickoff comment posted, including issue-vs-base discrepancies.
 - [ ] Environment secured on the right half of Step 2: a new worktree created from a freshly fetched
       base with a slot leased and `go mod vendor` run — or an existing one observed and reported,
       with no slot acquired and no database reinitialized just because the session resumed.
-- [ ] Plan built through Steps 3a-3c with every 3a question answered, all four sections present, seen
-      by a model that is not the implementer's, and approved before implementation.
+- [ ] Plan built through the stages plan mode selected, every 3a question answered when 3a ran, all
+      four sections present, seen by a model that is not the implementer's, and approved before
+      implementation.
 - [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed.
 - [ ] No stop outside the five listed places.
 - [ ] Plan reconciled against the actual diff.
