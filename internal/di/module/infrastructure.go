@@ -10,6 +10,7 @@ import (
 func InfrastructureModule() fx.Option {
 	return fx.Module("infrastructure",
 		persistenceModule(),
+		identityModule(), // sample-api:line
 		clockModule(),
 		tokenModule(), // sample-api:line
 		httpClientModule(),
