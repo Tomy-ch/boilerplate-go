@@ -60,6 +60,8 @@ include .makefiles/markdown/lint.mk
 include .makefiles/node/scripts.mk
 # AI 開発フィードバック（Closed Loop）関連
 include .makefiles/agents/closed-loop.mk
+# エージェント向けの静音実行
+include .makefiles/agents/quiet.mk
 # Python関連
 include .makefiles/python/lock.mk
 # Graphify関連
