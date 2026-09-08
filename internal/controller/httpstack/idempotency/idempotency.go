@@ -52,13 +52,9 @@ func handle(ec *echo.Context, request any, operationID string, next NextFunc) (a
 		return nil, err
 	}
 
-	// 未認証、または UserID 未解決なら安全側で素通しする。
+	// 未認証なら安全側で素通しする。
 	authn, ok := ctxhelper.GetAuthn(r.Context())
 	if !ok {
-		return next(ec, request)
-	}
-	userID, err := authn.UserID()
-	if err != nil {
 		return next(ec, request)
 	}
 
@@ -68,7 +64,10 @@ func handle(ec *echo.Context, request any, operationID string, next NextFunc) (a
 	}
 
 	reqCtx := idempotencyuc.WithRequest(r.Context(), idempotencyuc.Request{
-		Scope:       userID.String(),
+		// スコープは認証主体そのもの（ADR-0063 (idempotency-scope-required)）。内部ユーザー ID ではない。
+		// 内部ユーザーがまだ無い主体（登録）や、内部ユーザーへ解決しない構成でも、
+		// 認証さえ済んでいればスコープが定まる。
+		Scope:       authn.Subject(),
 		Key:         key,
 		Fingerprint: fp,
 		Method:      r.Method,
