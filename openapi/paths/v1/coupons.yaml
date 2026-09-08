@@ -13,14 +13,17 @@ post:
     存在しない対象を範囲にしたクーポンは誰にも使えないため、発行してから気づくことを避けます。
     発行されたクーポンは未使用の状態で作られ、GET /v1/users/me/coupons に並びます。
     他の発行経路のクーポンと区別されません。
-    再送による二重発行を避けられるよう `Idempotency-Key` を受け付けます。同一キーの再送は初回の
-    結果をそのまま返します。キーを付けない呼び出しも通りますが、その場合は再送のたびに発行されます。
+    **発行は取り消せません。** 使用済み・失効済みのいずれもクーポンの行は残り、無効化する経路も
+    ありません。二度目の実行は一度目と同じだけの新しいクーポンを配るため、再送を安全にする手段が
+    キーしかありません。そのため **`Idempotency-Key` は必須です**（欠くと 400）。
+    同一キーの再送は初回の結果をそのまま返し、クーポンが二重に発行されることはありません。
+    **別のキーで再実行した場合は、別の発行として改めて 1 枚配られます。**
     本 op は DB の SELECT / INSERT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
     一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
   security:
     - BearerAuth: []
   parameters:
-    - $ref: '../../components/parameters/idempotency/IdempotencyKeyParam.yaml'
+    - $ref: '../../components/parameters/idempotency/IdempotencyKeyRequiredParam.yaml'
   requestBody:
     required: true
     content:

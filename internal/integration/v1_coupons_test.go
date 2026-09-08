@@ -37,22 +37,20 @@ func TestV1Coupons_Integration(t *testing.T) {
 	expiresAt := time.Date(2026, time.December, 31, 0, 0, 0, 0, time.UTC)
 	recipientID := uuidtestkit.NewTestFromSalt(t, "integration_issue_recipient")
 
-	// Idempotency-Key はこの操作では任意なので、付ける場合だけ key を渡す。
+	// Idempotency-Key はこの操作では必須なので、admin のヘッダには必ず載せる。
 	// key はケースごとに変えて、リプレイが混ざらないようにする。
 	availableAdmin := func(t *testing.T, e *echo.Echo, key string) http.Header {
 		t.Helper()
 
 		headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, "integration_issue_admin"))
-		if key != "" {
-			headers.Set("Idempotency-Key", key)
-		}
+		headers.Set("Idempotency-Key", key)
 
 		return headers
 	}
 
-	// claims / completes に期待回数を渡し、キーを伴う要求で実際に claim → complete まで
-	// 走ったかを検証する。AnyTimes にすると middleware の配線が壊れて idempotency.Run が
-	// 素通りしても 201 が返るため、退行を検出できない。
+	// claims / completes に期待回数を渡し、実際に claim → complete まで走ったかを検証する。
+	// AnyTimes にすると middleware の配線が壊れて idempotency.Run が素通りしても 201 が
+	// 返るため、退行を検出できない。
 	newIdempotencyDeps := func(t *testing.T, claims, completes int) idempotency.Deps {
 		t.Helper()
 
@@ -141,22 +139,6 @@ func TestV1Coupons_Integration(t *testing.T) {
 			assert.Equal(t, expiresAt, captured.ExpiresAt)
 		})
 
-		t.Run("Idempotency-Key を欠く要求も 201 を返す", func(t *testing.T) {
-			t.Parallel()
-
-			e := echo.New()
-			tf := observability.NewNoopTracerFactory(t)
-
-			mockUC := mock_coupon.NewMockUsecase(gomock.NewController(t))
-			mockUC.EXPECT().IssueCoupon(gomock.Any(), gomock.Any(), gomock.Any()).Return(newView(t), nil)
-
-			coupons.BindHandler(e, tf, mockUC, newIdempotencyDeps(t, 0, 0))
-			useOpenAPIValidation(t, e)
-
-			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsPath, newBody(), availableAdmin(t, e, ""))
-			assert.Equal(t, http.StatusCreated, actual.StatusCode)
-		})
-
 		t.Run("適用範囲の対象IDをユースケースへ渡す", func(t *testing.T) {
 			t.Parallel()
 
@@ -201,7 +183,12 @@ func TestV1Coupons_Integration(t *testing.T) {
 			mockUC.EXPECT().IssueCoupon(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			coupons.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 
-			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsPath, newBody(), http.Header{})
+			// キーは付ける。このテストは spec 検証を通さないため、欠くと生成コードの束縛段で
+			// 400 になり認証まで到達しない。本番は spec 検証が Security を先に見るので順序は逆。
+			headers := http.Header{}
+			headers.Set("Idempotency-Key", "unauthenticated")
+
+			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsPath, newBody(), headers)
 			AssertErrorResponse(t, actual, http.StatusUnauthorized)
 		})
 
@@ -264,6 +251,22 @@ func TestV1Coupons_Integration(t *testing.T) {
 			AssertErrorResponse(t, actual, http.StatusBadRequest)
 		})
 
+		t.Run("Idempotency-Key を欠く要求は400で拒まれユースケースへ届かない", func(t *testing.T) {
+			t.Parallel()
+
+			e := echo.New()
+			UseAppErrorHandler(t, e)
+			mockUC := mock_coupon.NewMockUsecase(gomock.NewController(t))
+			mockUC.EXPECT().IssueCoupon(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
+			coupons.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
+			// キーを持たない admin ヘッダを作る。この操作ではキーが必須なので spec 検証で弾かれる。
+			headers := MakeAvailableUserID(t, e, uuidtestkit.NewTestFromSalt(t, "integration_issue_admin"))
+			useOpenAPIValidation(t, e)
+
+			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsPath, newBody(), headers)
+			AssertErrorResponse(t, actual, http.StatusBadRequest)
+		})
+
 		t.Run("値引きの値が形式に合わない要求は400で拒まれユースケースへ届かない", func(t *testing.T) {
 			t.Parallel()
 
@@ -276,7 +279,7 @@ func TestV1Coupons_Integration(t *testing.T) {
 			body := newBody()
 			body.Discount.Value = "five-hundred"
 
-			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsPath, body, availableAdmin(t, e, ""))
+			actual := StartServer(t, e).DoJSON(http.MethodPost, couponsPath, body, availableAdmin(t, e, "bad-decimal"))
 			AssertErrorResponse(t, actual, http.StatusBadRequest)
 		})
 	})

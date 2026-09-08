@@ -268,8 +268,8 @@ type ErrorResponseWithDetails struct {
 	RequestId string `json:"requestId"`
 }
 
-// IdempotencyKeyParam Example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-type IdempotencyKeyParam = string
+// IdempotencyKeyRequiredParam defines model for IdempotencyKeyRequiredParam.
+type IdempotencyKeyRequiredParam = string
 
 // BadRequest400 エラーレスポンスの共通スキーマ（base）。 details は返さない。details を返すエンドポイントは ErrorResponseWithDetails を参照する。
 type BadRequest400 = ErrorResponse
@@ -300,10 +300,14 @@ type UnprocessableEntity422 = ErrorResponseWithDetails
 
 // PostCouponsParams defines parameters for PostCoupons.
 type PostCouponsParams struct {
-	// IdempotencyKey 冪等キー。非冪等な変更操作（作成系など）で、同一キーによるリトライを重複実行なく
-	// 安全にするための識別子。サーバは同一 (認証主体, キー) の再送を初回結果のリプレイとして扱う。
+	// IdempotencyKey 冪等キー。同一 (認証主体, キー) の再送を初回結果のリプレイとして扱う。
 	// このヘッダを宣言する操作は、ハンドラが必ず idempotency.Run 経由で処理する契約（完全性テストで機械検証）。
-	IdempotencyKey *IdempotencyKeyParam `json:"Idempotency-Key,omitempty"`
+	//
+	// **この操作では必須です。** 他の非冪等操作は再実行しても状態が収束するか（自然キーの upsert）、
+	// 対象の状態が二度目を弾く（廃番済みの商品は再度廃番にならない）ため任意で足りますが、この操作は
+	// 配布の記録を持たず、二度目の実行が一度目と同じだけの新しいクーポンを配ります。取り消す経路も無いため、
+	// 再送を安全にする手段がキーしかありません。
+	IdempotencyKey IdempotencyKeyRequiredParam `json:"Idempotency-Key"`
 }
 
 // PostCouponsJSONRequestBody defines body for PostCoupons for application/json ContentType.
