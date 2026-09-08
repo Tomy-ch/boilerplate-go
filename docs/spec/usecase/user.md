@@ -8,7 +8,7 @@
 
 ユーザーユースケースは、ユーザー一覧取得・作成・件数取得を提供するアプリケーションサービス。ドメインの `user.Repository` と `prefecture.Repository` をオーケストレーションし、ドメインエンティティを外側に晒さず DTO（出力 `UserView` / 更新入力 `UpdateProfileParams`）へ変換して返す。
 
-都道府県は ID 参照のみを保持する設計のため、一覧・作成ともに `prefecture.Repository` から都道府県名を解決して DTO に詰める。作成時はトランザクション境界内で都道府県解決・エンティティ生成・永続化を行う。
+都道府県は ID 参照のみを保持する設計のため、一覧・作成ともに `prefecture.Repository` から都道府県名を解決して DTO に詰める。作成時はトランザクション境界内で都道府県解決・エンティティ生成・永続化を行い、同じ境界で外部アイデンティティの結び付けとウェルカムクーポンの発行を行う。
 
 認可は 2 通りに分かれる。詳細系（GetUser / UpdateUser / UpdateUserPartially / DeleteUser）は対象ユーザーを所有者とするリソースとして問い合わせるため admin または本人が通る。列挙系（ListUsers / ListUsersWithTotal / ListUsersFeed）は他ユーザーを開示する操作であり、所有者を持たないリソース（`ownerID = nil`）として問い合わせて所有者フォールバックを成立させないことで admin 限定にする。いずれも認可はリポジトリ呼び出しより前に置き、拒否された呼出元がデータへ到達しないようにする。
 
@@ -154,6 +154,8 @@ methods:
 - user_lock_repository   # domain/user.LockRepository（退会時の対象行の排他ロック。[ADR-0036 (ordered-pessimistic-row-locks)]）
 - prefecture_repository  # domain/prefecture.Repository
 - purchase_repository    # domain/purchase.Repository（退会時の進行中購入の確認）
+- coupon_repository      # domain/coupon.Repository（登録時のウェルカムクーポンの発行）
+- identity_registrar     # boundary/auth.IdentityRegistrar（外部アイデンティティと内部ユーザーの結び付け）
 - domain/service/membership        # EnsureWithdrawable（退会可否の判定）
 - outbox_emit       # usecase/outbox.EmitUsecase（退会イベントの発行）
 ```
@@ -224,10 +226,13 @@ errors:
 tx_required: true
 steps:
   - clock.Now で現在時刻を取得
+  - uuid.New で内部ユーザー ID を採番
   - トランザクション内で
       - pftRepo.FindByName で都道府県を名前解決
       - user.New でエンティティ生成（不変条件検証）
       - userRepo.Create で永続化
+      - identities.Register で issuer + subject を内部ユーザーへ結び付け
+      - coupon.New でウェルカムクーポンを生成し、couponRepo.Create で永続化
   - 生成したエンティティと都道府県名から UserView を構築して返す
 calls:
   - clock.Now
@@ -235,8 +240,31 @@ calls:
   - prefecture_repository.FindByName
   - user.New
   - user_repository.Create
+  - identity_registrar.Register
+  - coupon.New
+  - coupon_repository.Create
 errors:
   - FindByName / user.New / Create のエラーを伝播
+  - 登録済みの主体からの 2 回目は identity_registrar.Register が Conflict を返す
+  - ウェルカムクーポンの生成・永続化のエラーも伝播し、登録ごと巻き戻す
+notes:
+  - 内部ユーザー ID は呼出元から受け取らずここで採番する。登録の入口には内部ユーザーがまだ無い主体が
+    到達するため（securityScheme は BearerAuthRegistration。docs/design/auth.md を参照）、
+    呼出元が渡せるのは主体を指す issuer + subject だけである。
+  - 登録という業務イベントの副作用としてクーポンを 1 枚発行する。受給者は登録者本人で、
+    値引きは定額・適用範囲は全体に固定。金額と有効期間は要求では受けず、ユースケースが定数で持つ
+    （クーポン集約は発行事由を保持しないため、「ウェルカム」であることを表すのはこの配線だけ）。
+  - 廃番（docs/spec/usecase/product.md の DiscontinueProduct）が代替クーポンの率と有効期間を要求で
+    受けるのに対し、こちらを定数にするのは受け手が違うためである。廃番を実行するのは admin で、
+    何をどれだけ補償するかはその都度の業務判断になる。登録を実行するのは受給者自身であり、
+    自分が受け取る値引きを指定できてはならない。
+  - 発行を登録と同じトランザクションに置くことで、登録者は必ず 1 枚持つか 1 枚も持たないかのどちらかになる。
+  - 二重登録を防ぐ専用の判定は置かない。user_identities の issuer + subject の一意制約が
+    同じ主体からの 2 回目を Conflict にし、同じトランザクションのユーザーとクーポンごと巻き戻す。
+invariants:
+  - 受給者は登録されたユーザー本人である
+  - 発行されたクーポンは未使用で、有効期限は発行日時より後である
+  - 1 つの外部アイデンティティ（issuer + subject）に対応する内部ユーザーは高々 1 つである
 ```
 
 ### CountUsers

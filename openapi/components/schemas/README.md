@@ -12,6 +12,7 @@
 |`CursorPaginationMetadataResponse.yaml`|Response|Cursor (keyset) pagination metadata (nextCursor / hasNext)|
 |`BasicAuth.yaml`|Security|HTTP Basic authentication scheme|
 |`BearerAuth.yaml`|Security|HTTP Bearer (JWT) authentication scheme|
+|`BearerAuthRegistration.yaml`|Security|HTTP Bearer (JWT) scheme for the one route that creates its own internal user — verified identically to `BearerAuth`, but identity resolution is skipped so a subject with no internal user yet can reach it (`docs/design/auth.md`)|
 |`StreamCursor.yaml`|Value|Stream position as a decimal string (SSE `id`, `after`, `Last-Event-ID`)|
 |`DeliveryEvent.yaml`|Event|Feature-neutral SSE business-event envelope|
 |`ControlEvent.yaml`|Event|In-band SSE control instruction (`action` / `reason` / `retryAfterMs`)|
@@ -47,7 +48,7 @@ properties:
 |File name|PascalCase|`ErrorResponse.yaml`, `UserBaseInputRequest.yaml`|
 |Request schemas|`*Request.yaml`|`UserBaseInputRequest.yaml`|
 |Response schemas|`*Response.yaml`|`UserResponse.yaml`, `ErrorResponse.yaml`|
-|Security schemes|Descriptive name|`BasicAuth.yaml`, `BearerAuth.yaml` (the `StreamTicket` scheme is declared inline in `openapi.yaml` so a Spectral override can target it by JSON pointer)|
+|Security schemes|Descriptive name|`BasicAuth.yaml`, `BearerAuth.yaml`, `BearerAuthRegistration.yaml` (the `StreamTicket` scheme is declared inline in `openapi.yaml` so a Spectral override can target it by JSON pointer)|
 
 ### Payloads are schemas, organized by role across three folders
 

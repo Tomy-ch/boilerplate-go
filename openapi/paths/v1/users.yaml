@@ -34,9 +34,12 @@ post:
   tags:
     - v1/users
   summary: ユーザーの作成
-  description: 新しいユーザーを作成します。必要な情報をリクエストボディに含めてください。
+  description: |
+    認証済みの主体を内部ユーザーとして登録します。認証したトークンの issuer と subject を
+    そのまま外部アイデンティティとして結び付けるため、リクエストボディには本人の属性だけを含めます。
+    同じ主体で 2 回目を呼ぶと 409 を返します。
   security:
-    - BearerAuth: []
+    - BearerAuthRegistration: []
   parameters:
     - $ref: '../../components/parameters/idempotency/IdempotencyKeyParam.yaml'
   requestBody:

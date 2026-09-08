@@ -21,8 +21,34 @@ Responsibility split (who owns what):
 | **Authenticator** (`infrastructure/auth/jwt`) | RS / infrastructure | verify signature (RS256 allowlist) + claims (`iss`/`aud`/`exp`/`nbf`/`sub`) + `typ=at+jwt`; resolve the key by `kid` | key issuance, identity, HTTP policy |
 | **JWKS resolver** (`jwt/jwks.go`) | RS / infrastructure | fetch the JWK Set via the resilient `httpclient` substrate, cache `kid → RSA key` (TTL), refresh on unknown `kid` under a cooldown, suppress re-fetch of confirmed-absent `kid`s (negative cache), tolerate key rotation | claim verification |
 | **IdentityResolver** (`usecase/boundary/auth`) | RS / usecase boundary | map `(issuer, subject)` → internal `userID`; `401` on unknown / deleted | token verification |
+| **IdentityRegistrar** (`usecase/boundary/auth`) | RS / usecase boundary | create the `(issuer, subject)` → `userID` link the resolver later reads; join the caller's transaction; `409` when the pair is already linked | deciding who may register |
 | **mock provider** | provider (dev) | issue access / id tokens, serve JWKS + discovery, run Authorization Code Flow + PKCE | production use; anything the RS's own tests must be able to drive deterministically |
 | **`AUTH_*` config** | config | issuer / audience / JWKS URL / algorithms / clock-skew / cache-TTL | logic |
+
+### Registration: the one route that skips identity resolution
+
+Resolution is enforced for every authenticated route, which creates a bootstrap problem: a subject with
+no internal user yet is rejected with `401`, so it can never reach the endpoint that would create one.
+`user_identities.user_id` carries a non-deferrable foreign key to `users(id)`, so the link cannot be
+provisioned ahead of the user either.
+
+The exception is declared in the spec rather than inferred in code. A route that creates its own
+internal user declares the `BearerAuthRegistration` security scheme instead of `BearerAuth`; the
+middleware verifies the token identically and skips only the resolution step, leaving `Authn` with an
+unresolved `UserID`. Every other route keeps `BearerAuth` and stays fail-closed.
+
+Two consequences worth stating:
+
+- **The handler cannot use `RequireUserID`** — there is no internal user yet. It reads `Issuer()` and
+  `Subject()` from `Authn` and hands them to the usecase, which mints the internal ID itself.
+- **Re-registration is refused by the database, not by a pre-check.** The usecase writes the user and
+  the identity link in one transaction, so a second attempt by the same subject violates the
+  `(issuer, subject)` unique constraint and rolls the whole registration back. A read-then-write guard
+  would be both redundant and racy.
+
+Declaring `BearerAuthRegistration` on a route that does *not* create an internal user would hand an
+unresolved — and therefore unauthorized — subject to a handler expecting one, so the scheme belongs
+only on registration.
 
 Design principles (invariants):
 

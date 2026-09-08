@@ -304,9 +304,12 @@ paths:
       tags:
         - v1/users
       summary: ユーザーの作成
-      description: 新しいユーザーを作成します。必要な情報をリクエストボディに含めてください。
+      description: |
+        認証済みの主体を内部ユーザーとして登録します。認証したトークンの issuer と subject を
+        そのまま外部アイデンティティとして結び付けるため、リクエストボディには本人の属性だけを含めます。
+        同じ主体で 2 回目を呼ぶと 409 を返します。
       security:
-        - BearerAuth: []
+        - BearerAuthRegistration: []
       parameters:
         - $ref: '#/components/parameters/IdempotencyKeyParam'
       requestBody:
@@ -2988,6 +2991,19 @@ components:
         認証にBearerトークンを使用することを示します。
         JWT の検証は RFC8725（JSON Web Token Best Current Practices）に従います。
         署名アルゴリズムは許可リストで固定し、`alg: none` と鍵の混同を拒否します。
+      scheme: bearer
+      bearerFormat: JWT
+    BearerAuthRegistration:
+      type: http
+      description: |
+        内部ユーザーがまだ存在しない主体を受け付ける Bearer トークン認証です。
+        トークンの検証は BearerAuth と同一で、JWT の検証は RFC8725（JSON Web Token Best Current
+        Practices）に従います。署名アルゴリズムは許可リストで固定し、`alg: none` と鍵の混同を拒否します。
+        BearerAuth との違いは、外部アイデンティティ（issuer + subject）を内部ユーザーへ解決しない点だけです。
+
+        新規登録は「認証は済んでいるが内部ユーザーはまだ無い」状態から始まります。BearerAuth は
+        解決できない主体を 401 で拒むため、登録の入口をそれで守ると登録が永久に成立しません。
+        このスキームを宣言してよいのは、内部ユーザーを自ら作る操作だけです。
       scheme: bearer
       bearerFormat: JWT
     BasicAuth:

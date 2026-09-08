@@ -12,6 +12,7 @@ import (
 	"go-boilerplate/internal/controller/handler/testkit/testauth"
 	"go-boilerplate/internal/controller/handler/v1/users/gen"
 	"go-boilerplate/internal/observability"
+	authbd "go-boilerplate/internal/usecase/boundary/auth"
 	"go-boilerplate/internal/usecase/idempotency"
 	"go-boilerplate/internal/usecase/tools/paging"
 	"go-boilerplate/internal/usecase/user"
@@ -152,6 +153,42 @@ func Test_server_GetUsers(t *testing.T) {
 			t.Parallel()
 			exec(t, []user.UserView{}, 0)
 		})
+
+		// active はハンドラが素通しするだけだが、期待値を要求と同じ変数から読むと
+		// 握り潰しても nil 同士の比較で通ってしまう。渡した値そのものを期待値に置く。
+		execActive := func(t *testing.T, active bool) {
+			t.Helper()
+			ctx := testauth.MakeAvailableAuthn(context.Background(), t, listSubject)
+			ctrl := gomock.NewController(t)
+			lt := observability.NewMockControllerLayerTracer(t)
+
+			params := gen.GetUsersRequestObject{
+				Params: gen.GetUsersParams{
+					Page:    mockParams.Params.Page,
+					PerPage: mockParams.Params.PerPage,
+					Active:  &active,
+				},
+			}
+
+			mockApp := mock_user.NewMockUsecase(ctrl)
+			mockApp.EXPECT().
+				ListUsersWithTotal(gomock.Any(), gomock.Any(), &active, mockPage).
+				Return(&user.UserListView{Items: []user.UserView{expectedDTO1}, Total: 1}, nil)
+
+			s := &server{tracer: lt, uc: mockApp}
+			_, err := s.GetUsers(ctx, params)
+			require.NoError(t, err)
+		}
+
+		t.Run("activeにtrueが指定された場合、そのままユースケースへ渡される", func(t *testing.T) {
+			t.Parallel()
+			execActive(t, true)
+		})
+
+		t.Run("activeにfalseが指定された場合、そのままユースケースへ渡される", func(t *testing.T) {
+			t.Parallel()
+			execActive(t, false)
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
@@ -280,7 +317,8 @@ func Test_server_PostUsers(t *testing.T) {
 			require.NoError(t, err)
 
 			expectedParams := &user.CreateParamsDTO{
-				UserID:              userID,
+				Issuer:              authbd.IssuerMock,
+				Subject:             userID.String(),
 				UpdateProfileParams: wantParams,
 			}
 			assert.Equal(t, expectedParams, gotParams)
@@ -316,31 +354,6 @@ func Test_server_PostUsers(t *testing.T) {
 
 			require.Nil(t, resp)
 			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
-		})
-
-		t.Run("認証データのsubjectにuuidが含まれない場合、エラーが返る", func(t *testing.T) {
-			t.Parallel()
-
-			ctx := context.Background()
-			ctx = testauth.MakeAvailableAuthn(ctx, t, "invalid-subject")
-
-			ctrl := gomock.NewController(t)
-			lt := observability.NewMockControllerLayerTracer(t)
-			req := gen.PostUsersRequestObject{
-				Body: &gen.PostUsersJSONRequestBody{
-					FirstName: "A",
-					LastName:  "B",
-					Email:     types.Email("err@example.com"),
-				},
-			}
-
-			mockApp := mock_user.NewMockUsecase(ctrl)
-
-			s := &server{tracer: lt, uc: mockApp}
-			resp, err := s.PostUsers(ctx, req)
-
-			require.Nil(t, resp)
-			require.ErrorContains(t, err, "failed to get user ID from authenticator")
 		})
 
 		t.Run("Usecaseがエラーを返す", func(t *testing.T) {

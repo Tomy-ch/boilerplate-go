@@ -17,7 +17,6 @@ import (
 	mock_tx "go-boilerplate/internal/usecase/boundary/tx/mock"
 	idempotencyuc "go-boilerplate/internal/usecase/idempotency"
 	mock_idempotencyuc "go-boilerplate/internal/usecase/idempotency/mock"
-	"go-boilerplate/pkg/uuid"
 	"go-boilerplate/pkg/xerrors"
 
 	"github.com/labstack/echo/v5"
@@ -32,8 +31,8 @@ const (
 	testPath = "/v1/resources"
 	// sentinel は、後段ハンドラが呼ばれたことを示す戻り値です。
 	sentinel = "SENTINEL"
-	// testUserID は、内部 UserID 解決済みの Authn を作るためのテスト用 UUID subject です。
-	testUserID = "550e8400-e29b-41d4-a716-446655440000"
+	// testSubject は、冪等性スコープになる認証主体です（ADR-0063 (idempotency-scope-required)）。
+	testSubject = "user-john-doe"
 	// testOperationID は、operationID の伝播を追うための任意値です。
 	testOperationID = "PostResources"
 )
@@ -46,8 +45,8 @@ type spyRequest struct {
 type strictHandlerFunc func(ec *echo.Context, request any) (any, error)
 
 // newEcho は、テスト用の *echo.Context（POST testPath）を生成します。key 非空ならヘッダを付与し、
-// withAuthn なら subject を持つ Authn を ctx に仕込みます。subject が UUID として解釈できる場合は
-// 内部 UserID も解決済みにします（冪等性スコープは内部 UserID を使うため）。
+// withAuthn なら subject を持つ Authn を ctx に仕込みます。内部 UserID は解決しません
+// （冪等性スコープは認証主体そのもので、内部ユーザーへの解決を要求しないため）。
 func newEcho(t *testing.T, key string, withAuthn bool, subject string) *echo.Context {
 	t.Helper()
 
@@ -56,10 +55,6 @@ func newEcho(t *testing.T, key string, withAuthn bool, subject string) *echo.Con
 		ctx = ctxhelper.WithAuthn(ctx)
 		a, err := auth.New(subject, "test", nil, nil)
 		require.NoError(t, err)
-		if id, perr := uuid.Parse(subject); perr == nil {
-			a, err = a.WithUserID(id)
-			require.NoError(t, err)
-		}
 		ctxhelper.SetAuthn(ctx, *a)
 	}
 	req := httptest.NewRequestWithContext(ctx, http.MethodPost, testPath, nil)
@@ -150,35 +145,58 @@ func Test_handle(t *testing.T) {
 			assert.Equal(t, sentinel, res)
 		})
 
-		t.Run("認証ありでも内部UserID未解決なら冪等性は発動せず素通しする", func(t *testing.T) {
+		t.Run("内部UserIDが未解決でも認証済みなら冪等性が発動する", func(t *testing.T) {
 			t.Parallel()
 			called := false
 			next := NextFunc(func(*echo.Context, any) (any, error) {
 				called = true
 				return sentinel, nil
 			})
-			// subject が UUID でないため UserID は未解決。冪等性スコープを作れないので素通しする。
-			ec := newEcho(t, "key-1", true, "not-a-uuid")
+			const unresolved = "user-not-yet-registered"
+			ec := newEcho(t, "key-unresolved", true, unresolved)
 
 			res, err := Middleware()(next, "PostUsers")(ec, spyRequest{})
-
 			require.NoError(t, err)
 			assert.True(t, called)
-			assert.Equal(t, sentinel, res)
+			assert.Equal(t, sentinel, res, "後段の戻り値がそのまま透過されること")
+
+			ctrl := gomock.NewController(t)
+			store := mock_idempotency.NewMockStore(ctrl)
+			txm := mock_tx.NewMockManager(ctrl)
+			clk := clocktest.NewMockClock(t, time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC))
+			txm.EXPECT().Do(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) },
+			)
+
+			var got idempotencybndry.ClaimParams
+			store.EXPECT().Claim(gomock.Any(), gomock.Any()).DoAndReturn(
+				func(_ context.Context, p idempotencybndry.ClaimParams) (bool, error) {
+					got = p
+					return true, nil
+				},
+			)
+			store.EXPECT().Complete(gomock.Any(), gomock.Any()).Return(nil)
+
+			deps := idempotencyuc.Deps{Txm: txm, Store: store, Clock: clk}
+			_, _, runErr := idempotencyuc.Run(ec.Request().Context(), deps, 201,
+				func(context.Context) (string, error) { return "ok", nil })
+			require.NoError(t, runErr)
+
+			assert.Equal(t, unresolved, got.Scope, "内部 UserID の解決を待たずにスコープが定まること")
 		})
 
-		t.Run("有効キー+UserID解決済みなら Request を ctx に載せて後段へ渡す", func(t *testing.T) {
+		t.Run("有効キーと認証があれば Request を ctx に載せて後段へ渡す", func(t *testing.T) {
 			t.Parallel()
 			called := false
 			next := NextFunc(func(*echo.Context, any) (any, error) {
 				called = true
 				return sentinel, nil
 			})
-			ec := newEcho(t, "key-abc", true, testUserID)
+			ec := newEcho(t, "key-abc", true, testSubject)
 
 			res, err := Middleware()(next, "PostUsers")(ec, spyRequest{Name: "alice"})
 			require.NoError(t, err)
-			require.True(t, called)
+			assert.True(t, called)
 			assert.Equal(t, sentinel, res, "後段の戻り値がそのまま透過されること")
 
 			// middleware は ec.SetRequest で stash 済み。その ctx を Run に渡し Claim の引数を検証する。
@@ -205,7 +223,7 @@ func Test_handle(t *testing.T) {
 				func(context.Context) (string, error) { return "ok", nil })
 			require.NoError(t, runErr)
 
-			assert.Equal(t, testUserID, got.Scope)
+			assert.Equal(t, testSubject, got.Scope)
 			assert.Equal(t, "key-abc", got.Key)
 			assert.Equal(t, http.MethodPost, got.Method)
 			assert.Equal(t, testPath, got.Path)
@@ -253,7 +271,7 @@ func Test_handle(t *testing.T) {
 				called = true
 				return sentinel, nil
 			})
-			ec := newEcho(t, "key-1", true, testUserID)
+			ec := newEcho(t, "key-1", true, testSubject)
 
 			// chan は json.Marshal できず、弱い指紋を作らずエラーになる。
 			_, err := Middleware()(next, "PostUsers")(ec, make(chan int))
@@ -375,7 +393,7 @@ func TestMiddleware(t *testing.T) {
 				called = true
 				return sentinel, nil
 			})
-			ec := newEcho(t, "key-mw", true, testUserID)
+			ec := newEcho(t, "key-mw", true, testSubject)
 
 			res, err := Middleware()(next, testOperationID)(ec, spyRequest{Name: "alice"})
 			require.NoError(t, err)
@@ -422,9 +440,9 @@ func TestMiddleware(t *testing.T) {
 				return "SECOND", nil
 			}), "PutResources")
 
-			gotFirst, err := first(newEcho(t, "key-1", true, testUserID), spyRequest{})
+			gotFirst, err := first(newEcho(t, "key-1", true, testSubject), spyRequest{})
 			require.NoError(t, err)
-			gotSecond, err := second(newEcho(t, "key-2", true, testUserID), spyRequest{})
+			gotSecond, err := second(newEcho(t, "key-2", true, testSubject), spyRequest{})
 			require.NoError(t, err)
 
 			assert.Equal(t, "FIRST", gotFirst)
@@ -443,7 +461,7 @@ func TestMiddleware(t *testing.T) {
 			boom := xerrors.New("handler boom")
 			next := NextFunc(func(*echo.Context, any) (any, error) { return nil, boom })
 
-			_, err := Middleware()(next, "PostResources")(newEcho(t, "key-1", true, testUserID), spyRequest{})
+			_, err := Middleware()(next, "PostResources")(newEcho(t, "key-1", true, testSubject), spyRequest{})
 
 			require.ErrorIs(t, err, boom)
 		})
