@@ -94,6 +94,7 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
     paths: [
       "internal/infrastructure/auth/useridentity",
       "internal/di/module/identity.go",
+      "internal/di/module/identity_test.go",
       "database/dml/repository/user_identity",
       "database/migrations/000007_create_user_identities.up.sql",
       "database/migrations/000007_create_user_identities.down.sql",
