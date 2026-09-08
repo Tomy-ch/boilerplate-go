@@ -90,11 +90,14 @@ the windows stay pending and the next run picks them up.
 USAGE
 }
 
-# Claude Code names a project directory after the checkout path with the separators replaced:
-# `/Users/x/repo` -> `-Users-x-repo`. Resolving it from this checkout rather than from a fixed
-# name is what gives a worktree its own directory.
+# Claude Code names a project directory after the checkout path, with every character that cannot
+# appear in the name replaced: `/Users/x/repo` -> `-Users-x-repo`, and `/Users/x/repo/.claude/wt`
+# -> `-Users-x-repo--claude-wt`. Replacing only the separator silently misses any checkout whose
+# path contains a dot, which is where a worktree parked under a dot-directory lives — and a missed
+# directory reads as "no transcripts", not as an error. Resolving the name from this checkout
+# rather than from a fixed one is what gives a worktree its own directory.
 transcripts_dir() {
-  printf '%s/.claude/projects/%s' "${HOME}" "$(printf '%s' "${REPO_ROOT}" | tr '/' '-')"
+  printf '%s/.claude/projects/%s' "${HOME}" "$(printf '%s' "${REPO_ROOT}" | tr -c 'A-Za-z0-9-' '-')"
 }
 
 run() {
