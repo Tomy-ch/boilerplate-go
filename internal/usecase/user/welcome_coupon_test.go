@@ -84,19 +84,23 @@ func Test_newWelcomeCoupon(t *testing.T) {
 func Test_welcomeCouponConstants(t *testing.T) {
 	t.Parallel()
 
-	t.Run("定額の金額はドメインが受け付ける正の値である", func(t *testing.T) {
+	t.Run("正常系", func(t *testing.T) {
 		t.Parallel()
 
-		amount, err := decimal.Parse(welcomeCouponAmount)
-		require.NoError(t, err)
+		t.Run("定額の金額はドメインが受け付ける正の値である", func(t *testing.T) {
+			t.Parallel()
 
-		_, err = domaincoupon.NewFlatDiscount(amount)
-		require.NoError(t, err)
-	})
+			amount, err := decimal.Parse(welcomeCouponAmount)
+			require.NoError(t, err)
 
-	t.Run("有効期間は正の長さである", func(t *testing.T) {
-		t.Parallel()
+			_, err = domaincoupon.NewFlatDiscount(amount)
+			require.NoError(t, err)
+		})
 
-		assert.Positive(t, welcomeCouponValidity)
+		t.Run("有効期間は正の長さである", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Positive(t, welcomeCouponValidity)
+		})
 	})
 }

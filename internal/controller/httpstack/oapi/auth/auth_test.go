@@ -66,6 +66,69 @@ func TestNewAuthenticator(t *testing.T) {
 			assert.Equal(t, want.Subject(), got.Subject())
 		})
 
+		t.Run("登録スキームを宣言したoperationではアイデンティティ解決を行わない", func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			m := mock_auth.NewMockAuthenticator(ctrl)
+			// 解決器に EXPECT を置かないことで「呼ばれない」ことを固定する。ここが逆に倒れると
+			// 内部ユーザーがまだ無い主体が 401 で弾かれ、新規登録が誰にもできなくなる。
+			mr := mock_auth.NewMockIdentityResolver(ctrl)
+			want, _ := authbd.New("user123", "mock", nil, nil)
+			m.EXPECT().Authenticate(gomock.Any(), gomock.Any()).Return(want, nil)
+
+			fn, err := NewAuthenticator(m, mr, nil)
+			require.NoError(t, err)
+
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
+			req.Header.Set("Authorization", "Bearer user123")
+			req = req.WithContext(ctxhelper.WithAuthn(req.Context()))
+
+			in := &openapi3filter.AuthenticationInput{
+				RequestValidationInput: &openapi3filter.RequestValidationInput{Request: req},
+				SecuritySchemeName:     SchemeBearerRegistration,
+			}
+
+			err = fn(context.Background(), in)
+			require.NoError(t, err)
+
+			got, ok := ctxhelper.GetAuthn(req.Context())
+			require.True(t, ok)
+			assert.Equal(t, want.Subject(), got.Subject())
+			assert.False(t, got.HasUserID())
+		})
+
+		t.Run("登録スキーム以外のoperationではアイデンティティ解決を行う", func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+			m := mock_auth.NewMockAuthenticator(ctrl)
+			mr := mock_auth.NewMockIdentityResolver(ctrl)
+			want, _ := authbd.New("user123", "mock", nil, nil)
+			resolved, rerr := want.WithUserID(uuidtestkit.NewTestFromSalt(t, "scheme_resolved"))
+			require.NoError(t, rerr)
+			m.EXPECT().Authenticate(gomock.Any(), gomock.Any()).Return(want, nil)
+			// 解決の免除が登録スキーム以外へ漏れていないことを、対照として固定する。
+			mr.EXPECT().Resolve(gomock.Any(), gomock.Any()).Return(resolved, nil)
+
+			fn, err := NewAuthenticator(m, mr, nil)
+			require.NoError(t, err)
+
+			req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
+			req.Header.Set("Authorization", "Bearer user123")
+			req = req.WithContext(ctxhelper.WithAuthn(req.Context()))
+
+			in := &openapi3filter.AuthenticationInput{
+				RequestValidationInput: &openapi3filter.RequestValidationInput{Request: req},
+				SecuritySchemeName:     "BearerAuth",
+			}
+
+			err = fn(context.Background(), in)
+			require.NoError(t, err)
+
+			got, ok := ctxhelper.GetAuthn(req.Context())
+			require.True(t, ok)
+			assert.True(t, got.HasUserID())
+		})
+
 		t.Run("AuthenticateとResolveがバリデータの引数ではなくリクエストのcontextを受け取る", func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
