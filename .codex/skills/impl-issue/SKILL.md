@@ -53,7 +53,9 @@ in:
 
 - **A phase boundary.** The Step 3 approval covers Steps 4–9, because the plan enumerates the whole
   run and that is what was approved. A phase ending is not an event. Neither is a seam: write the
-  run record, say that compacting is cheap there, and continue without waiting.
+  run record, recommend compacting, and continue. At the PR seam, ask first through Codex's explicit
+  user-input interaction, but that question is about context rather than the work; under standing
+  full delegation while the user is away, announce the recommendation and continue instead.
 - **A delegated agent's completion notification.** Reviews and audits fan out; a report arriving is
   where work resumes, not where it pauses.
 - **A mode settled in Step 0.** That is spent authority. Re-confirming a fix which review mode already
@@ -206,9 +208,14 @@ Two points carry almost nothing forward because everything downstream needs is a
 | After Step 5 (implementation reconciled) | The approved plan, the diff, the calls taken so far | The plan file, `git diff`, the run record |
 | After the PR is opened (Step 8, before runtime verification and while CI runs) | The PR, the branch, the calls taken so far | GitHub, `git`, the run record |
 
-At a seam, **write the run record first, then say that this is a cheap place to compact, then keep
-going. Do not wait for an answer.** A seam decides nothing, and a run that stalls there dies when the
-user has stepped away. **It is not a stopping point and does not belong on the list of five.**
+At either seam, **write the run record first, then recommend compacting, then keep going.** After
+Step 5, announce the recommendation without asking and continue: blocking there buys nothing the PR
+seam does not buy better. After the PR opens, use Codex's `ask the user explicitly` interaction to
+ask whether to compact before runtime verification. That question pauses progress until answered,
+but it decides nothing about the work; continue either way once answered. Under standing full
+delegation while the user is away, announce the recommendation and continue without asking at both
+seams, because an unanswered question would stall the run it was told to finish autonomously. **A
+seam is not a stopping point and does not belong on the list of five.**
 
 These seams sit here because the implementation phase cannot be delegated to a sub-agent and is
 therefore where an orchestrator's window actually fills. Planning stages and reviews already run in
@@ -595,7 +602,9 @@ decision points this skill exists to create.
 - ✅ Put the plan through a model that is not the implementer's, and present that review's findings beside the plan rather than folded into it.
 - ✅ Treat the five trip-wires as mechanical triggers, not as things to notice.
 - ✅ Stop only at the five listed places and append every other call to the run record as it happens;
-  at a seam, write the record, say compacting is cheap there, and continue without waiting.
+  at a seam, write the record and recommend compacting: announce at the Step 5 seam, ask through
+  Codex's explicit user-input interaction at the PR seam, and announce at both under standing full
+  delegation while the user is away.
 - ✅ Pass every sub-skill its settled answers, apply mode included.
 - ✅ Say explicitly which gates ran and which did not.
 - ✅ Read the traces, not just the status code.
@@ -621,7 +630,10 @@ decision points this skill exists to create.
 - [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed, and
       every call appended to the run record when it happened.
 - [ ] No stop outside the five listed places.
-- [ ] Both seams taken: run record written, compaction offered, and the run continued without waiting.
+- [ ] Both seams taken: run record written and compaction recommended; the Step 5 seam announced and
+      continued, and the PR seam asked through Codex's explicit user-input interaction unless the run
+      was under standing full delegation while the user was away, in which case it announced and
+      continued.
 - [ ] Plan reconciled against the actual diff.
 - [ ] Local gates run, or their delegation to CI stated in the PR.
 - [ ] The three review skills each estimated and put to the user; the approved ones run with their
