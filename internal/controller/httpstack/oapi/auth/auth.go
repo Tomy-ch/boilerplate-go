@@ -31,6 +31,7 @@ const (
 	// SchemeBearerRegistration は、内部ユーザーが未登録の主体を受け付ける securityScheme の名前です
 	// （spec の securitySchemes のキー）。この名前を宣言した operation だけ、外部アイデンティティを
 	// 内部ユーザーへ解決せずに通します。宣言できるのは内部ユーザーを自ら作る操作だけです。
+	//nolint:gosec // G101: securityScheme の名前であって資格情報ではない
 	SchemeBearerRegistration = "BearerAuthRegistration"
 )
 
@@ -80,13 +81,13 @@ func NewAuthenticator(
 			return failure
 		}
 
-		// OpenAPI バリデータが渡す context は context.Background() から組み立てられており、
-		// スパン・deadline・キャンセルのいずれも持たない。認証は request の予算の内側で行う。
-		//nolint:contextcheck // 引数の context ではなく input が内包する request の context を用いるため
 		// 登録の入口だけは解決を省く。解決できない主体を拒むと、内部ユーザーがまだ無い主体は
 		// 登録に到達できず、登録が永久に成立しないため。
 		resolveIdentity := input.SecuritySchemeName != SchemeBearerRegistration
 
+		// OpenAPI バリデータが渡す context は context.Background() から組み立てられており、
+		// スパン・deadline・キャンセルのいずれも持たない。認証は request の予算の内側で行う。
+		//nolint:contextcheck // 引数の context ではなく input が内包する request の context を用いるため
 		authn, err := authExtractor(req.Context(), req, authenticator, resolver, resolveIdentity)
 		if err != nil {
 			failure := withHTTPStatus(err)
