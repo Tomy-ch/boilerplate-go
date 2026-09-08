@@ -28,6 +28,10 @@ const (
 	securitySchemeTypeHTTP = "http"
 	// securitySchemeBearer は、HTTP 認証の scheme のうち Bearer を表す値です。
 	securitySchemeBearer = "bearer"
+	// SchemeBearerRegistration は、内部ユーザーが未登録の主体を受け付ける securityScheme の名前です
+	// （spec の securitySchemes のキー）。この名前を宣言した operation だけ、外部アイデンティティを
+	// 内部ユーザーへ解決せずに通します。宣言できるのは内部ユーザーを自ら作る操作だけです。
+	SchemeBearerRegistration = "BearerAuthRegistration"
 )
 
 // SchemeAuthenticator は、Bearer 以外の 1 つの securityScheme を担当する認証器です。
@@ -79,7 +83,11 @@ func NewAuthenticator(
 		// OpenAPI バリデータが渡す context は context.Background() から組み立てられており、
 		// スパン・deadline・キャンセルのいずれも持たない。認証は request の予算の内側で行う。
 		//nolint:contextcheck // 引数の context ではなく input が内包する request の context を用いるため
-		authn, err := authExtractor(req.Context(), req, authenticator, resolver)
+		// 登録の入口だけは解決を省く。解決できない主体を拒むと、内部ユーザーがまだ無い主体は
+		// 登録に到達できず、登録が永久に成立しないため。
+		resolveIdentity := input.SecuritySchemeName != SchemeBearerRegistration
+
+		authn, err := authExtractor(req.Context(), req, authenticator, resolver, resolveIdentity)
 		if err != nil {
 			failure := withHTTPStatus(err)
 			// 記録するのは資格情報が提示されたうえでの失敗だけ。未提示は失敗ではない。
@@ -126,11 +134,13 @@ func withHTTPStatus(err error) error {
 
 // authExtractor は、Bearer トークンを検証して内部ユーザーを解決した Authn を返します。
 // トークンが無い場合は nil, nil を返します。
+// resolveIdentity が false の場合は解決を行わず、UserID 未解決の Authn を返します。
 func authExtractor(
 	ctx context.Context,
 	req *http.Request,
 	authenticator authbd.Authenticator,
 	resolver authbd.IdentityResolver,
+	resolveIdentity bool,
 ) (*authbd.Authn, error) {
 	scheme, token := extractBearerToken(req)
 	if token == "" {
@@ -155,6 +165,10 @@ func authExtractor(
 	if authn == nil {
 		//nolint:nilnil // Authenticate が nil,nil を返した場合は未提供として扱い、呼び出し側で ErrUnauthorizedTokenNotProvided へ変換する
 		return nil, nil
+	}
+
+	if !resolveIdentity {
+		return authn, nil
 	}
 
 	// 認証済みの外部アイデンティティ（issuer + subject）を内部ユーザーへ解決する。
