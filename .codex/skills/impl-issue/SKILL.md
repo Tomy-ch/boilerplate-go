@@ -1,7 +1,7 @@
 ---
 name: impl-issue
 description: >-
-  Drive a GitHub issue from environment setup to a merged PR as a semi-automatic pipeline whose stopping points are enumerated rather than judged. Use whenever the user hands over an issue URL or number to be worked end-to-end ("この issue やって", "wt 上で解決しよう", "着手して PR まで"), or asks to resume such a run. It owns three things — progress orchestration, reconciling the approved plan against what was actually built, and mechanically detecting the moments needing a human call — and no implementation judgment: the work is delegated to `commit` / `submit-pr` and to the three peer review skills `impl-review` / `test-review` / `comment-sweep`, and design decisions are surfaced, never taken. It sets up an isolated worktree and DB slot, has a different model draft a written plan the user approves before coding, then watches five mechanical trip-wires so drift becomes visible instead of silent. The plan's approval covers the whole run, and the skill carries a closed list of the five places it may stop — everywhere else it continues and records the call for the PR. Runtime verification (`make serve` + curl + LGTM traces) runs after the PR is opened and gates the merge; green CI is not a substitute. Three modes are confirmed once: review mode, issue mode, and flow mode. Do NOT use for a change with no issue behind it (`commit` + `submit-pr`), for reviewing an existing diff (`impl-review` / `test-review` / `comment-sweep`), or for authoring skills (`manage-skill`).
+  Drive a GitHub issue from environment setup to a merged PR as a semi-automatic pipeline whose stopping points are enumerated rather than judged. Use whenever the user hands over an issue URL or number to be worked end-to-end ("この issue やって", "wt 上で解決しよう", "着手して PR まで"), or asks to resume such a run. It owns three things — progress orchestration, reconciling the approved plan against what was actually built, and mechanically detecting the moments needing a human call — and no implementation judgment: the work is delegated to `commit` / `submit-pr` and to the three peer review skills `impl-review` / `test-review` / `comment-sweep`, and design decisions are surfaced, never taken. It sets up an isolated worktree and DB slot, then builds the written plan in three stages — framing, research and draft, and a review whose necessity is derived from one invariant: the plan is seen by a model that is not the implementer's — and holds it for the user's approval before coding. It then watches five mechanical trip-wires so drift becomes visible instead of silent. The plan's approval covers the whole run, and the skill carries a closed list of the five places it may stop — everywhere else it continues and records the call for the PR. Runtime verification (`make serve` + curl + LGTM traces) runs after the PR is opened and gates the merge; green CI is not a substitute. Three modes are confirmed once: review mode, issue mode, and flow mode. Do NOT use for a change with no issue behind it (`commit` + `submit-pr`), for reviewing an existing diff (`impl-review` / `test-review` / `comment-sweep`), or for authoring skills (`manage-skill`).
 argument-hint: '<issue-url-or-number> [--review-mode=all|harmful|issues] [--issue-mode=search|file] [--flow=record-on-tripwire|halt-on-tripwire]'
 ---
 
@@ -221,12 +221,36 @@ If the user's instruction named a release version **other than the resolved one*
 
 ## Step 3 — Plan, then wait
 
-Use Codex's agent delegation mechanism to have a **different model** draft the plan — a second model
-catches what the implementer's own blind spots would otherwise carry straight into the code. Give it
-the issue, your Step 1 corrections, and the paths you have already read. Tell it to verify your
-summary rather than trust it. If the current Codex surface cannot dispatch an agent on a different
-model, state that limitation explicitly: draft the plan yourself, then make a separate critique pass
-against the issue and code before presenting it. Do not silently drop the different-model requirement.
+**The invariant: the plan is seen by a model that is not the implementer's.** The three stages below
+are one default way of satisfying it, not the rule — read the rule off the session's own model rather
+than off a model name written here.
+
+No later gate re-opens the plan: `impl-review` / `test-review` / `comment-sweep` all take the finished
+change as their subject, so whether the plan solves the issue at all is checked here or nowhere.
+Drafting it well and drafting it unbiased are different jobs, so run them as separate stages. **The
+three stages add no stopping point.** The approval at the end is the same single wait.
+
+| Stage | Runs on | Produces |
+| --- | --- | --- |
+| 3a — Framing | A model that is not the implementer's | Open questions only |
+| 3b — Research and draft | Whichever model is strongest for research and drafting, delegated to a sub-agent | The plan file |
+| 3c — Plan review | The same model as 3a, when required or worthwhile | Findings appended as their own section |
+
+### 3a — Framing
+
+Use Codex's agent delegation mechanism to give a model that is not the implementer's the issue body,
+the Step 1 issue-vs-base discrepancies, and the paths already read. Require **open questions only**:
+the questions the plan must answer. Refuse a draft plan, a recommendation, or a direction if the
+stage returns one. At this point it has read almost nothing of the repository, so anything it asserts
+is a generality — and a generality handed to a stronger drafter anchors rather than widens.
+
+### 3b — Research and draft
+
+Delegate this stage to a sub-agent on whichever model is strongest for research and drafting, so the
+research happens in a window carrying none of the orchestrator's accumulated framing. Give it the
+issue, the Step 1 corrections, the paths already read, and 3a's questions. Tell it to verify your
+summary rather than trust it. Require an answer to **every** 3a question: either how it decided or
+that the question does not apply here.
 
 The plan is a written artifact, not a chat message, because Step 5 compares against it mechanically.
 Write it under the repo's gitignored `tmp/` (it may be a symlink to a directory outside the repo if
@@ -238,6 +262,24 @@ the operator prefers). It must contain:
 | Per-step deliverables | Lets a partially-finished run be resumed or handed over |
 | Chosen options **and rejected ones, with reasons** | Trip-wire 2 fires when a rejected option is later adopted |
 | Gate table | Fixes at plan time whether runtime verification is required, so it cannot be quietly dropped |
+
+### 3c — Plan review
+
+Derive whether this stage is required; never assume it. If 3b's model is the implementer's, no other
+model has seen the plan yet, so 3c is required. If 3b's model differs from the implementer's, the
+invariant is satisfied when 3b finishes; run 3c when the change is large enough to merit a second
+pass, and skip it when it is not. Run 3c on the same model as 3a. Append its findings to the plan file
+as their own section and present them beside the plan, not folded into it. A reviewer that silently
+rewrites the plan hides the disagreement at the moment the user is asked to approve it; the user
+arbitrates each finding at approval.
+
+If the current Codex surface cannot dispatch an agent on a different model, state explicitly which
+of 3a and 3c could not run on a distinct model. Run 3a yourself while enforcing its questions-only
+contract, delegate 3b when possible or draft it yourself, then make a separate self-critique pass as
+3c and append those findings as above. State that this fallback does not satisfy the invariant. Do
+not silently drop the invariant or make the self-critique stand in for all of Step 3.
+
+### Then wait
 
 Present the plan and **wait for approval. Do not implement before it.**
 
@@ -461,6 +503,7 @@ decision points this skill exists to create.
 - ✅ Secure the worktree and slot before touching code.
 - ✅ Verify the issue's claims against the actual base, and put the discrepancies in the kickoff comment.
 - ✅ Get the plan approved before implementing, and keep it as a file so Step 5 can diff against it.
+- ✅ Put the plan through a model that is not the implementer's, and present that review's findings beside the plan rather than folded into it.
 - ✅ Treat the five trip-wires as mechanical triggers, not as things to notice.
 - ✅ Stop only at the five listed places; record every other call for the PR comment.
 - ✅ Pass every sub-skill its settled answers, apply mode included.
@@ -472,6 +515,7 @@ decision points this skill exists to create.
 - ❌ Auto-apply a fix that changes the design, in any mode.
 - ❌ Ask for approval at a phase boundary, or treat a delegated agent's completion as one.
 - ❌ Pick which review skills run, or run one on the assumption another chains it.
+- ❌ Let the framing stage return a plan, a recommendation, or a direction instead of questions.
 - ❌ File an issue without checking for an existing one, unless issue mode says to.
 - ❌ Release the DB slot, or ask about releasing it, unprompted.
 - ❌ Poll CI in a foreground sleep loop.
@@ -481,7 +525,7 @@ decision points this skill exists to create.
 - [ ] Modes confirmed in one `ask the user explicitly` interaction.
 - [ ] Kickoff comment posted, including issue-vs-base discrepancies.
 - [ ] Worktree created from a freshly fetched base; DB slot leased only when DB work begins; `go mod vendor` run when needed.
-- [ ] Plan drafted by a different model, all four sections present, approved before implementation.
+- [ ] Plan built through 3a–3c with every 3a question answered, all four sections present, seen by a model that is not the implementer's, and approved before implementation.
 - [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed.
 - [ ] No stop outside the five listed places.
 - [ ] Plan reconciled against the actual diff.
