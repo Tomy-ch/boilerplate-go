@@ -90,9 +90,10 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
 
   userIdentity: {
     description:
-      "サンプル 認証アイデンティティ連携（user_identities テーブル + IdentityResolver の DB 実装）。user サンプルに同梱削除され、削除後は DI が passthrough resolver（core）へ差し替わる",
+      "サンプル 認証アイデンティティ連携（user_identities テーブル + IdentityResolver / IdentityRegistrar の DB 実装）。user サンプルに同梱削除され、削除後は DI が passthrough resolver（core）へ差し替わる。passthrough は解決だけを担い、結び付ける先のユーザーストアを持たないため、結び付けを配線する DI モジュールごと消える",
     paths: [
       "internal/infrastructure/auth/useridentity",
+      "internal/di/module/identity.go",
       "database/dml/repository/user_identity",
       "database/migrations/000007_create_user_identities.up.sql",
       "database/migrations/000007_create_user_identities.down.sql",

@@ -1,7 +1,7 @@
 package module
 
 import (
-	useridentity "go-boilerplate/internal/infrastructure/auth/useridentity" // sample-api:line
+	useridentity "go-boilerplate/internal/infrastructure/auth/useridentity"
 
 	"go.uber.org/fx"
 )
@@ -13,9 +13,7 @@ import (
 func identityModule() fx.Option {
 	return fx.Module("identity",
 		fx.Provide(
-			// sample-api:begin
 			useridentity.NewRegistrar,
-			// sample-api:end
 		),
 	)
 }
