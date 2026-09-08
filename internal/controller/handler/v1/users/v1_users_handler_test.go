@@ -320,11 +320,12 @@ func Test_server_PostUsers(t *testing.T) {
 			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
 		})
 
-		t.Run("認証データのsubjectにuuidが含まれない場合、エラーが返る", func(t *testing.T) {
+		t.Run("認証されていない場合、ユースケースを呼ばずにエラーが返る", func(t *testing.T) {
 			t.Parallel()
 
+			// 登録の入口は内部ユーザーを解決しないが、認証そのものは必須。
+			// 認証主体が無ければ結び付ける相手を決められないため、ここで止まる。
 			ctx := context.Background()
-			ctx = testauth.MakeAvailableAuthn(ctx, t, "invalid-subject")
 
 			ctrl := gomock.NewController(t)
 			lt := observability.NewMockControllerLayerTracer(t)
@@ -336,13 +337,14 @@ func Test_server_PostUsers(t *testing.T) {
 				},
 			}
 
+			// ユースケースへ到達しないことを、EXPECT を置かないことで固定する。
 			mockApp := mock_user.NewMockUsecase(ctrl)
 
 			s := &server{tracer: lt, uc: mockApp}
 			resp, err := s.PostUsers(ctx, req)
 
 			require.Nil(t, resp)
-			require.ErrorContains(t, err, "failed to get user ID from authenticator")
+			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
 		})
 
 		t.Run("Usecaseがエラーを返す", func(t *testing.T) {

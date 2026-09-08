@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"go-boilerplate/internal/apperror"
-	"go-boilerplate/internal/config"
 	"go-boilerplate/internal/infrastructure/rdb/testkit"
 	"go-boilerplate/internal/observability"
 	authbd "go-boilerplate/internal/usecase/boundary/auth"
@@ -43,6 +42,8 @@ func Test_registrar_Register(t *testing.T) {
 	lt := observability.NewMockInfraLayerTracer(t)
 	txm := testkit.NewTestTransactionRunner(t)
 
+	// user_identities は (issuer, subject) に加えて (user_id, issuer) にも一意制約を持つ。
+	// seed 済みの利用者は既に本番相当の issuer で 1 行持つため、テストごとに issuer を分ける。
 	reg := &registrar{
 		tracer: lt,
 		db:     testDB,
@@ -59,7 +60,7 @@ func Test_registrar_Register(t *testing.T) {
 			t.Parallel()
 
 			txm.WithinTx(func(ctx context.Context) {
-				issuer := config.ResolvedAuthIssuer(t)
+				issuer := "https://registrar-test.example.com/roundtrip"
 				subject := "user-registrar-roundtrip"
 
 				userID, err := uuid.Parse(johnUserID)
@@ -87,7 +88,7 @@ func Test_registrar_Register(t *testing.T) {
 			t.Parallel()
 
 			txm.WithinTx(func(ctx context.Context) {
-				issuer := config.ResolvedAuthIssuer(t)
+				issuer := "https://registrar-test.example.com/duplicate"
 				subject := "user-registrar-duplicate"
 
 				userID, err := uuid.Parse(johnUserID)
@@ -107,7 +108,7 @@ func Test_registrar_Register(t *testing.T) {
 				unknown, err := uuid.New()
 				require.NoError(t, err)
 
-				err = reg.Register(ctx, unknown, config.ResolvedAuthIssuer(t), "user-registrar-orphan")
+				err = reg.Register(ctx, unknown, "https://registrar-test.example.com/orphan", "user-registrar-orphan")
 				require.ErrorIs(t, err, apperror.ErrInvalidArgument)
 			})
 		})
