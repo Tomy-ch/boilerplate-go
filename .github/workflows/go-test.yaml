@@ -242,10 +242,10 @@ jobs:
         run: go run ./cmd/ db-seed --database "$DB"
 
       # The console gets the filtered stream, not the raw one. `test-cover-ci` hands every target
-      # package to `-coverpkg`, and `go test` repeats that whole list on each coverage report, so a
-      # passing run prints ~3.9 MB of which ~86% is lines that say only "this package passed". That
-      # is what anyone reading the run log pays, `gh run view` included -- `::group::` folds in the
-      # browser but leaves every byte in the fetched log, so folding would not have helped.
+      # package to `-coverpkg`, and `go test` repeats that whole list on each coverage report, so
+      # most of a passing run's output is lines that say only "this package passed". That is what
+      # anyone reading the run log pays, `gh run view` included -- `::group::` folds in the browser
+      # but leaves every byte in the fetched log, so folding would not have helped.
       #
       # `tee` keeps the raw log for the comment step below, which reads it from disk. Nothing unique
       # is dropped from the console: the per-package percentages live in `coverage.out`, which
@@ -367,19 +367,10 @@ jobs:
               return
             fi
 
-            # `make test-fails` owns this filter; the same rule ran inline here until the two
-            # copies drifted. The inline one dropped only the `ok` and `[no test files]` forms, so
-            # every standalone `coverage: ... in <every target package>` line survived — one of
-            # them is over 13 KB against an 18 KB section budget, which meant two failing packages
-            # could push the `FAIL <pkg>` lines past the truncation below and leave a comment that
-            # never named what broke.
-            #
-            # It drops only lines that report success, so build errors, panics and race reports
-            # still come through: those are the other reasons a run fails and none of them takes
-            # the `--- FAIL` shape a narrower filter would look for. `cover-gate`'s own verdict is
-            # unaffected — it prints a Japanese total, not a `coverage: N% of statements` line.
-            # Its notice for a log with nothing left goes to stderr, so this file stays empty and
-            # the emptiness check below still decides.
+            # `make test-fails` owns the filter semantics — which lines are dropped, and why
+            # dropping them is safe — see `.makefiles/README.md`. What matters here is that it
+            # writes its nothing-left notice to stderr, so this file stays empty and the
+            # emptiness check below is what decides.
             local filtered=/tmp/go-test-section.log
             make test-fails LOG="$src" > "$filtered"
 
