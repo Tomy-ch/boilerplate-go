@@ -8,6 +8,7 @@
 .PHONY: test-scripts-cached ## ローカル用の scripts 配下ツールのテスト実行（キャッシュ有効・pre-commit向け）
 .PHONY: cover-scripts ## scripts 配下ツールの総カバレッジを計測し、下限割れを警告する（失敗させない）
 .PHONY: build-scripts ## scripts 配下ツールを scripts/bin/ へビルドする（手元で実バイナリを動かす用）
+.PHONY: test-fails ## go test のログから失敗だけを抜き出す（LOG= でログ指定、LOG=- で標準入力）
 
 # カバレッジ対象外パッケージ（test / test-cached / gen-test-repo / test-cover-ci で共有）
 #
@@ -96,3 +97,54 @@ cover-scripts:
 	@go run ./scripts/cover-gate -profile coverage-scripts.out -threshold $(SCRIPTS_COVERAGE_THRESHOLD) \
 		-warn $(if $(GITHUB_ACTIONS),-github,)
 	@rm -f coverage-scripts.out
+
+# go test のログから、診断に要らない行を落として表示する。
+#
+# `-v` は付けていないので出力は 1 パッケージ 1 行になる。テスト対象は 266 パッケージあり、
+# 1 件落ちたときでも通過分の `ok` 行が 265 行ぶら下がってくる。読む側（特にエージェント）は
+# その全部をコンテキストへ載せることになるので、通過行と no test files 行だけを捨てる。
+#
+# 落とすのは「通った」ことしか言っていない行に限る。許可リストにして失敗行の形を列挙すると、
+# 想定外の壊れ方（panic / build failed / race detector の報告）が黙って消える。捨てる側を
+# 列挙するほうが、知らない出力は素通しされるぶん安全。元ログはディスクに残る。
+#
+# カバレッジ行は 3 つの形で出る。test-cover-ci / gen-test-repo は -coverpkg に対象パッケージを
+# カンマ連結して渡すため（このリポジトリでは 13KB 超の 1 引数）、go test はカバレッジを報告する
+# たびにその全リストを `of statements in ...` として行末へ複製する。
+#   1. `ok  <pkg> <時間>  coverage: X% of statements in <全リスト>`  … 通過。ok で落ちる
+#   2. `coverage: X% of statements in <全リスト>`                     … 失敗パッケージぶん。単独行
+#   3. `<TAB><pkg><TAB><TAB>coverage: 0.0% of statements`             … テストの無いパッケージ
+# 落ちたときに残るのは 2 と 3 なので、行頭の ok / ? だけを見ていると最大の行が素通りする。
+# カバレッジしか言っていない行はまとめて捨てる。総量の判定は cover-gate が profile から行う
+# ので、ここで数値を残す意味はない。
+#
+# 最初の sed は `gh run view --log` が各行へ付ける `<job>TAB<step>TAB<時刻> ` を剥がす。剥がさないと
+# 行頭アンカーが外れて ok 行が残るうえ、接頭辞そのものが 1 行 50 バイト前後を占める（実測の CI
+# ログでは絞り込み後の 553KB のうち 211KB）。時刻の手前の `[^0-9]*` は BOM を吸うため。ローカルの
+# go test 出力にも TAB はあるが、2 つ目の TAB の後が日付にならないので当たらない。
+#
+# grep の -a は必須。ログに NUL が 1 バイトでも混ざると grep はバイナリとみなし、一致内容を
+# 出さずに終わる。落ちた回ほど壊れた出力が混ざりやすく、そこで黙って空になるのが一番まずい。
+#
+# そのうえで、生き残った行に対しても `of statements in <リスト>` を畳む。捨て漏れが出ても
+# 1 行が 13KB に膨らまないための保険で、削除ではなく省略なので判断材料は失われない。
+#
+# 絶対パスはリポジトリ相対へ縮める。testify の Error Trace はフルパスで出るため、worktree だと
+# 1 行の大半がプレフィックスで埋まる。モジュール接頭辞（go-boilerplate/）のほうは残す。
+# ok 行が消えた後に残るのは FAIL 数行で、そこはパッケージパスが失敗箇所の手掛かりになる。
+#
+# 残る行が無いときの報せは stderr へ出す。呼び出し側が `> file` で受けたときに空ファイルとなり、
+# 「中身が無い＝失敗行が無い」の判定がそのまま効く。CI のコメント生成がこの形で読む。
+#
+# LOG= で対象を差し替える。既定は `make ai-test` が残すログ。CI のログにも同じ絞り込みが要る
+# ので（`gh run view --log-failed` はステップ単位で、テストの全パッケージ行を含む）、
+# LOG=- で標準入力を読む: gh run view --log-failed | make test-fails LOG=-
+LOG ?= $(AI_LOG_DIR)/test.txt
+
+test-fails:
+	@out="$$(cat $(LOG) \
+		| sed -E -e 's|^[^	]*	[^	]*	[^0-9]*[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z ||' \
+		| sed -e 's|$(CURDIR)/||g' -e 's|\(of statements\) in .*|\1 in ...|' \
+		| grep -avE '^(ok|\?)[[:space:]]' \
+		| grep -avE 'coverage: [0-9.]+% of statements')"; \
+	if [ -z "$$out" ]; then echo "✅ 失敗行はありません（$(LOG)）" >&2; else printf '%s\n' "$$out"; fi
