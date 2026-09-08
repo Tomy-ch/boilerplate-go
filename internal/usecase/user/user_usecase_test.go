@@ -654,7 +654,6 @@ func Test_usecase_ListUsersWithTotal(t *testing.T) {
 
 			uc := &usecase{tracer: lt, userRepo: userRepo, pftRepo: pftRepo, authorizer: newAllowAuthorizer(ctrl)}
 
-			// 該当なしはエラーではなく空リスト。NotFound にすると呼出元の分岐が変わる。
 			actual, err := uc.ListUsersWithTotal(ctx, newTestAuthn(t), nil, p)
 			require.NoError(t, err)
 			assert.Empty(t, actual.Items)
@@ -1267,8 +1266,7 @@ func Test_usecase_toUserViews(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 
-			// 0 件でも解決自体は空スライスで呼ばれる。呼ばない最適化に変えると
-			// 呼び出し回数が変わるため、ここで現在の契約を固定する。
+			// 呼ばない最適化に変えると呼び出し回数が変わるため、ここで現在の契約を固定する。
 			pftRepo := mock_prefecture.NewMockRepository(ctrl)
 			pftRepo.EXPECT().FindByIDs(gomock.Any(), []uuid.UUID{}).Return(prefecture.Prefectures{}, nil)
 
@@ -1280,7 +1278,6 @@ func Test_usecase_toUserViews(t *testing.T) {
 			actual, err := uc.toUserViews(ctx, user.Users{})
 			require.NoError(t, err)
 			assert.Empty(t, actual)
-			// 一覧は「該当なし」を空リストで表す。nil にすると JSON が null になり契約が変わる。
 			assert.NotNil(t, actual)
 		})
 	})
