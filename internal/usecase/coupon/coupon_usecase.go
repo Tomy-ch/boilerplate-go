@@ -58,8 +58,8 @@ type CartCouponView struct {
 
 // Usecase は、クーポンの発行と読み取りのユースケースを定義します。
 type Usecase interface {
-	// ListMyCoupons は、認証主体が保有するクーポンを発行日時の新しい順で返します。
-	// 使用済み・失効済みも含みます。1 枚も持たない場合は空を返します。
+	// ListMyCoupons は、認証主体が保有するクーポンを [coupon.Repository.FindByUserID] と
+	// 同じ結果で返します。
 	ListMyCoupons(ctx context.Context, authn *auth.Authn) ([]CouponView, error)
 	// ListApplicableToMyCart は、認証主体のカートに対して使えるクーポンと、それぞれの値引き額を返します。
 	// 使用済み・失効済みと、値引きが 0 になるクーポンは含みません。

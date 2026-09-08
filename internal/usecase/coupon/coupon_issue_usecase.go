@@ -30,8 +30,7 @@ type IssueCouponParams struct {
 
 // IssueCoupon は、admin が受給者を名指ししてクーポンを 1 枚発行します。
 //
-// 書くのは coupons の 1 行だけで、受給者を identity で名指しできるため、Repository への
-// 書き込みで足ります（判定は docs/spec/usecase/coupon.md の Workflow — IssueCoupon を参照）。
+// Repository への書き込みで足りる理由は docs/spec/usecase/coupon.md の Workflow — IssueCoupon を参照。
 func (u *usecase) IssueCoupon(
 	ctx context.Context,
 	authn *auth.Authn,
@@ -65,9 +64,8 @@ func (u *usecase) IssueCoupon(
 
 	var issued *coupon.Coupon
 	err = u.txm.Do(ctx, func(ctx context.Context) error {
-		// 受給者と適用範囲の対象の存在確認は書き込みと同じトランザクションで行います。
-		// Idempotency-Key の有無で idempotency.Run がトランザクションを開くかどうかが変わるため、
-		// 外に置くと境界が要求次第になります。
+		// 存在確認をトランザクションの外へ出さないこと。理由は docs/spec/usecase/coupon.md の
+		// Workflow — IssueCoupon の invariants を参照。
 		if serr := u.ensureScopeTargetExists(ctx, scope); serr != nil {
 			return serr
 		}
