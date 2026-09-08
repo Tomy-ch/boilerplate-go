@@ -23,7 +23,6 @@ import (
 	mock_outbox "go-boilerplate/internal/usecase/outbox/mock"
 	"go-boilerplate/internal/usecase/testkit"
 	"go-boilerplate/internal/usecase/tools/paging"
-	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/uuid"
 	uuidtestkit "go-boilerplate/pkg/uuid/testkit"
 
@@ -292,9 +291,6 @@ func Test_usecase_CreateUser(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	welcomeAmount, err := decimal.Parse(welcomeCouponAmount)
-	require.NoError(t, err)
-
 	t.Run("正常系", func(t *testing.T) {
 		t.Parallel()
 
@@ -356,14 +352,11 @@ func Test_usecase_CreateUser(t *testing.T) {
 				),
 				couponRepo.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(_ context.Context, c *domaincoupon.Coupon) error {
+						// このユースケースが担うのは受給者と発行日時を渡すところまで。
+						// 値引き・適用範囲・有効期限の中身は newWelcomeCoupon の契約で、
+						// welcome_coupon_test.go が別に固定している。
 						assert.Equal(t, issuedUserID, c.UserID())
-						assert.Equal(t, domaincoupon.DiscountKindFlat, c.Discount().Kind())
-						assert.True(t, welcomeAmount.Equal(c.Discount().Value()))
-						assert.Equal(t, domaincoupon.ScopeKindAll, c.Scope().Kind())
-						assert.Nil(t, c.Scope().TargetID())
 						assert.Equal(t, now, c.IssuedAt())
-						assert.Equal(t, now.Add(welcomeCouponValidity), c.ExpiresAt())
-						assert.Nil(t, c.UsedAt())
 						return nil
 					},
 				),

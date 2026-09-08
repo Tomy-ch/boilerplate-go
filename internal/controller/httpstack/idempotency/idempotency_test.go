@@ -147,13 +147,19 @@ func Test_handle(t *testing.T) {
 
 		t.Run("内部UserIDが未解決でも認証済みなら冪等性が発動する", func(t *testing.T) {
 			t.Parallel()
-			next := NextFunc(func(*echo.Context, any) (any, error) { return sentinel, nil })
+			called := false
+			next := NextFunc(func(*echo.Context, any) (any, error) {
+				called = true
+				return sentinel, nil
+			})
 			// 登録の入口のように内部ユーザーがまだ無い主体でも、認証さえ済んでいればスコープは定まる。
 			const unresolved = "user-not-yet-registered"
 			ec := newEcho(t, "key-unresolved", true, unresolved)
 
-			_, err := Middleware()(next, "PostUsers")(ec, spyRequest{})
+			res, err := Middleware()(next, "PostUsers")(ec, spyRequest{})
 			require.NoError(t, err)
+			require.True(t, called)
+			assert.Equal(t, sentinel, res, "後段の戻り値がそのまま透過されること")
 
 			ctrl := gomock.NewController(t)
 			store := mock_idempotency.NewMockStore(ctrl)

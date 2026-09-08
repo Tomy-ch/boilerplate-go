@@ -24,4 +24,16 @@ func Test_identityModule(t *testing.T) {
 			assert.NoError(t, fx.ValidateApp(opts...))
 		})
 	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("未配線では IdentityRegistrar が解決できずグラフ検証に失敗する", func(t *testing.T) {
+			t.Parallel()
+
+			var registrar authbd.IdentityRegistrar
+			opts := append(commonDeps(), fx.Populate(&registrar), fx.NopLogger)
+			assert.Error(t, fx.ValidateApp(opts...))
+		})
+	})
 }

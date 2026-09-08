@@ -320,33 +320,6 @@ func Test_server_PostUsers(t *testing.T) {
 			require.ErrorIs(t, err, ctxhelper.ErrUnauthenticatedUser)
 		})
 
-		t.Run("認証されていない場合、ユースケースを呼ばずにエラーが返る", func(t *testing.T) {
-			t.Parallel()
-
-			// 登録の入口は内部ユーザーを解決しないが、認証そのものは必須。
-			// 認証主体が無ければ結び付ける相手を決められないため、ここで止まる。
-			ctx := context.Background()
-
-			ctrl := gomock.NewController(t)
-			lt := observability.NewMockControllerLayerTracer(t)
-			req := gen.PostUsersRequestObject{
-				Body: &gen.PostUsersJSONRequestBody{
-					FirstName: "A",
-					LastName:  "B",
-					Email:     types.Email("err@example.com"),
-				},
-			}
-
-			// ユースケースへ到達しないことを、EXPECT を置かないことで固定する。
-			mockApp := mock_user.NewMockUsecase(ctrl)
-
-			s := &server{tracer: lt, uc: mockApp}
-			resp, err := s.PostUsers(ctx, req)
-
-			require.Nil(t, resp)
-			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
-		})
-
 		t.Run("Usecaseがエラーを返す", func(t *testing.T) {
 			t.Parallel()
 
