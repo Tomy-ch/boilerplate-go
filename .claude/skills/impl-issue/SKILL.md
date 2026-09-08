@@ -53,7 +53,8 @@ in:
 
 - **A phase boundary.** The Step 3 approval covers Steps 4–9, because the plan enumerates the whole
   run and that is what was approved. A phase ending is not an event — and neither is a seam, where
-  the run writes its record, says compacting is cheap here, and continues without waiting.
+  the run writes its record, recommends compacting, and continues; the PR seam asks first, but what
+  it asks about is not the work.
 - **A subagent's completion notification.** Reviews and audits fan out; a report arriving is where
   work resumes, not where it pauses.
 - **A mode settled in Step 0.** That is spent authority. Re-confirming a fix which review mode already
@@ -213,9 +214,24 @@ happens to fill, which is routinely mid-implementation.
 | After Step 5 (implementation reconciled) | the approved plan, the diff, the calls taken so far | the plan file, `git diff`, the run record |
 | After the PR is opened (Step 8, before runtime verification and while CI runs) | the PR, the branch, the calls taken so far | GitHub, `git`, the run record |
 
-At a seam: **write the run record first, then say that this is a cheap place to compact, then keep
-going.** Do not wait for an answer — a seam decides nothing, and a run that stalls here dies for a
-user who has stepped away. It is not a stopping point and does not belong on the list of five.
+At either seam: **write the run record first, then recommend compacting, then keep going.** Recommend
+it rather than merely mentioning it — a seam that announces an option nobody acts on saves nothing,
+and the record has already made everything downstream recoverable, so there is no case for holding
+context here.
+
+**At the PR seam, ask.** Everything after it — `make serve`, the curl transcripts, the traces, the CI
+logs — is the heaviest reading left in the run, so this is where compacting pays most and where an
+unread notice costs most. The one exception is a run under standing full delegation with the user
+away: there, announce it and continue, because a question nobody is present to answer stalls the run
+at the moment it was told to finish on its own.
+
+The Step 5 seam recommends without asking. It sits in front of work the run can get on with, so
+blocking there buys nothing the PR seam does not already buy better.
+
+**Neither seam is a stopping point, and the list stays at five.** That list enumerates where a
+decision about the *work* is the user's to make; compaction decides nothing about the work and the run
+proceeds either way. Asking at the PR seam does halt progress until it is answered — say so when the
+run is unattended rather than treating the halt as free.
 
 The implementation phase is the one that cannot be delegated to a subagent, so it is where a window
 actually fills; the planning stages and the reviews already run as subagents and their windows never
@@ -609,7 +625,8 @@ decision points this skill exists to create.
       beside the plan rather than folded into it.
 - ✅ Treat the five trip-wires as mechanical triggers, not as things to notice.
 - ✅ Stop only at the five listed places; append every other call to the run record as it happens.
-- ✅ At a seam, write the record, say compacting is cheap here, and continue without waiting.
+- ✅ At a seam, write the record and recommend compacting — asking at the PR seam, announcing at the
+  Step 5 one, and announcing at both when the user has delegated and left.
 - ✅ Pass every sub-skill its settled answers, apply mode included.
 - ✅ Say explicitly which gates ran and which did not.
 - ✅ Read the traces, not just the status code.
@@ -639,7 +656,8 @@ decision points this skill exists to create.
       implementation.
 - [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed, every
       call appended to the run record when it happened.
-- [ ] Both seams taken: record written, compaction offered, run continued without waiting.
+- [ ] Both seams taken: record written, compaction recommended, and the PR seam asked unless the run
+      was unattended under standing delegation.
 - [ ] No stop outside the five listed places.
 - [ ] Plan reconciled against the actual diff.
 - [ ] Local gates run, or their delegation to CI stated in the PR.
