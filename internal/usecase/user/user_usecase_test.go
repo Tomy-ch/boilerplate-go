@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"go-boilerplate/internal/apperror"
+	domaincoupon "go-boilerplate/internal/domain/coupon"
+	mock_coupon "go-boilerplate/internal/domain/coupon/mock"
 	"go-boilerplate/internal/domain/prefecture"
 	mock_prefecture "go-boilerplate/internal/domain/prefecture/mock"
 	mock_purchase "go-boilerplate/internal/domain/purchase/mock"
@@ -20,6 +22,7 @@ import (
 	mock_outbox "go-boilerplate/internal/usecase/outbox/mock"
 	"go-boilerplate/internal/usecase/testkit"
 	"go-boilerplate/internal/usecase/tools/paging"
+	"go-boilerplate/pkg/decimal"
 	"go-boilerplate/pkg/uuid"
 	uuidtestkit "go-boilerplate/pkg/uuid/testkit"
 
@@ -43,6 +46,7 @@ func TestNew(t *testing.T) {
 		userLock := mock_user.NewMockLockRepository(ctrl)
 		pftRepo := mock_prefecture.NewMockRepository(ctrl)
 		purchaseRepo := mock_purchase.NewMockRepository(ctrl)
+		couponRepo := mock_coupon.NewMockRepository(ctrl)
 		emit := mock_outbox.NewMockEmitUsecase(ctrl)
 
 		expected := &usecase{
@@ -54,9 +58,10 @@ func TestNew(t *testing.T) {
 			userLock:     userLock,
 			pftRepo:      pftRepo,
 			purchaseRepo: purchaseRepo,
+			couponRepo:   couponRepo,
 			emit:         emit,
 		}
-		actual := New(tf, mockTxManager, clock, authorizer, userRepo, userLock, pftRepo, purchaseRepo, emit)
+		actual := New(tf, mockTxManager, clock, authorizer, userRepo, userLock, pftRepo, purchaseRepo, couponRepo, emit)
 
 		assert.Equal(t, expected, actual)
 	})
@@ -284,6 +289,9 @@ func Test_usecase_CreateUser(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	welcomeAmount, err := decimal.Parse(welcomeCouponAmount)
+	require.NoError(t, err)
+
 	t.Run("正常系", func(t *testing.T) {
 		t.Parallel()
 
@@ -308,6 +316,7 @@ func Test_usecase_CreateUser(t *testing.T) {
 			clock := clocktest.NewMockClockOnce(t, now)
 			userRepo := mock_user.NewMockRepository(ctrl)
 			pftRepo := mock_prefecture.NewMockRepository(ctrl)
+			couponRepo := mock_coupon.NewMockRepository(ctrl)
 
 			gomock.InOrder(
 				pftRepo.EXPECT().FindByName(
@@ -332,14 +341,28 @@ func Test_usecase_CreateUser(t *testing.T) {
 						return nil
 					},
 				),
+				couponRepo.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(_ context.Context, c *domaincoupon.Coupon) error {
+						assert.Equal(t, createDTO.UserID, c.UserID())
+						assert.Equal(t, domaincoupon.DiscountKindFlat, c.Discount().Kind())
+						assert.True(t, welcomeAmount.Equal(c.Discount().Value()))
+						assert.Equal(t, domaincoupon.ScopeKindAll, c.Scope().Kind())
+						assert.Nil(t, c.Scope().TargetID())
+						assert.Equal(t, now, c.IssuedAt())
+						assert.Equal(t, now.Add(welcomeCouponValidity), c.ExpiresAt())
+						assert.Nil(t, c.UsedAt())
+						return nil
+					},
+				),
 			)
 
 			uc := &usecase{
-				tracer:   lt,
-				txm:      mockTxManager,
-				clock:    clock,
-				userRepo: userRepo,
-				pftRepo:  pftRepo,
+				tracer:     lt,
+				txm:        mockTxManager,
+				clock:      clock,
+				userRepo:   userRepo,
+				pftRepo:    pftRepo,
+				couponRepo: couponRepo,
 			}
 
 			actual, err := uc.CreateUser(ctx, createDTO)
@@ -456,6 +479,43 @@ func Test_usecase_CreateUser(t *testing.T) {
 				clock:    clock,
 				userRepo: userRepo,
 				pftRepo:  pftRepo,
+			}
+
+			actual, err := uc.CreateUser(ctx, createDTO)
+			assert.Equal(t, UserView{}, actual)
+			require.ErrorIs(t, err, expectedErr)
+		})
+
+		t.Run("ウェルカムクーポンの発行に失敗した場合、エラーが返される", func(t *testing.T) {
+			t.Parallel()
+			ctrl := gomock.NewController(t)
+
+			expectedErr := testkit.ExpectedDBError()
+
+			createDTO := newCreateDTO(userDomain, prefectureName)
+
+			clock := clocktest.NewMockClockOnce(t, now)
+			userRepo := mock_user.NewMockRepository(ctrl)
+			userRepo.EXPECT().Create(
+				gomock.Any(),
+				gomock.AssignableToTypeOf(userDomain),
+			).Return(nil)
+			pftRepo := mock_prefecture.NewMockRepository(ctrl)
+			pftRepo.EXPECT().FindByName(
+				gomock.Any(),
+				prefectureName,
+			).Return(pftDomain, nil)
+			// 発行が失敗したらユーザー登録ごと巻き戻る。片方だけ成立させないための経路。
+			couponRepo := mock_coupon.NewMockRepository(ctrl)
+			couponRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(expectedErr)
+
+			uc := &usecase{
+				tracer:     lt,
+				txm:        mockTxManager,
+				clock:      clock,
+				userRepo:   userRepo,
+				pftRepo:    pftRepo,
+				couponRepo: couponRepo,
 			}
 
 			actual, err := uc.CreateUser(ctx, createDTO)
