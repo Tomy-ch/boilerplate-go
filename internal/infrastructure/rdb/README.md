@@ -371,6 +371,9 @@ than covered with a contrived test.
 |`repository/product/product_repository.go`|`UpdateStock`|`safecast.IntToInt32(p.Quantity())` error|同上|
 |`repository/product/product_repository.go`|`insertImages`|`safecast.IntToInt16(img.DisplaySort())` error|`product` validates `displaySort` into `[1, math.MaxInt16]`|
 |`repository/product/product_repository.go`|`syncImages`|`safecast.IntToInt16(img.DisplaySort())` error|同上|
+|`repository/cart/cart_repository.go`|`Create`|`safecast.IntToInt32(item.Quantity())` error|`cart` validates each item's `quantity` into `[1, 99]`|
+|`repository/cart/cart_repository.go`|`Update`|`safecast.IntToInt32(item.Quantity())` error|同上|
+|`repository/coupon/coupon_repository.go`|`Create`|`safecast.IntToInt16(...Kind().Code())` error|`DiscountKind` / `ScopeKind` are closed sets whose codes are single digits|
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|`uuid.New()` error|`crypto/rand` failure only|
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|`safecast.IntToInt16(...Kind().Code())` error|`DiscountKind` / `ScopeKind` are closed sets whose codes are single digits|
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|FK 23503 normalization|recipients come from an inner join on `users`, so the reference cannot be missing within the same transaction|
