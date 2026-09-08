@@ -8,7 +8,7 @@
 
 ユーザーユースケースは、ユーザー一覧取得・作成・件数取得を提供するアプリケーションサービス。ドメインの `user.Repository` と `prefecture.Repository` をオーケストレーションし、ドメインエンティティを外側に晒さず DTO（出力 `UserView` / 更新入力 `UpdateProfileParams`）へ変換して返す。
 
-都道府県は ID 参照のみを保持する設計のため、一覧・作成ともに `prefecture.Repository` から都道府県名を解決して DTO に詰める。作成時はトランザクション境界内で都道府県解決・エンティティ生成・永続化を行う。
+都道府県は ID 参照のみを保持する設計のため、一覧・作成ともに `prefecture.Repository` から都道府県名を解決して DTO に詰める。作成時はトランザクション境界内で都道府県解決・エンティティ生成・永続化を行い、同じ境界でウェルカムクーポンを 1 枚発行する。
 
 認可は 2 通りに分かれる。詳細系（GetUser / UpdateUser / UpdateUserPartially / DeleteUser）は対象ユーザーを所有者とするリソースとして問い合わせるため admin または本人が通る。列挙系（ListUsers / ListUsersWithTotal / ListUsersFeed）は他ユーザーを開示する操作であり、所有者を持たないリソース（`ownerID = nil`）として問い合わせて所有者フォールバックを成立させないことで admin 限定にする。いずれも認可はリポジトリ呼び出しより前に置き、拒否された呼出元がデータへ到達しないようにする。
 
@@ -154,6 +154,7 @@ methods:
 - user_lock_repository   # domain/user.LockRepository（退会時の対象行の排他ロック。[ADR-0036 (ordered-pessimistic-row-locks)]）
 - prefecture_repository  # domain/prefecture.Repository
 - purchase_repository    # domain/purchase.Repository（退会時の進行中購入の確認）
+- coupon_repository      # domain/coupon.Repository（登録時のウェルカムクーポンの発行）
 - domain/service/membership        # EnsureWithdrawable（退会可否の判定）
 - outbox_emit       # usecase/outbox.EmitUsecase（退会イベントの発行）
 ```
@@ -228,6 +229,7 @@ steps:
       - pftRepo.FindByName で都道府県を名前解決
       - user.New でエンティティ生成（不変条件検証）
       - userRepo.Create で永続化
+      - coupon.New でウェルカムクーポンを生成し、couponRepo.Create で永続化
   - 生成したエンティティと都道府県名から UserView を構築して返す
 calls:
   - clock.Now
@@ -235,8 +237,21 @@ calls:
   - prefecture_repository.FindByName
   - user.New
   - user_repository.Create
+  - coupon.New
+  - coupon_repository.Create
 errors:
   - FindByName / user.New / Create のエラーを伝播
+  - ウェルカムクーポンの生成・永続化のエラーも伝播し、登録ごと巻き戻す
+notes:
+  - 登録という業務イベントの副作用としてクーポンを 1 枚発行する。受給者は登録者本人で、
+    値引きは定額・適用範囲は全体に固定。金額と有効期間は要求では受けず、ユースケースが定数で持つ
+    （クーポン集約は発行事由を保持しないため、「ウェルカム」であることを表すのはこの配線だけ）。
+  - 発行を登録と同じトランザクションに置くことで、登録者は必ず 1 枚持つか 1 枚も持たないかのどちらかになる。
+  - 二重発行を防ぐ専用の判定は置かない。入口の PostUsers が認証主体の ID をそのまま PK に使うため、
+    同一主体の 2 回目は user_repository.Create が一意制約で落ち、同じトランザクションのクーポンも巻き戻る。
+invariants:
+  - 受給者は登録されたユーザー本人である
+  - 発行されたクーポンは未使用で、有効期限は発行日時より後である
 ```
 
 ### CountUsers
