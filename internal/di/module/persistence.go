@@ -1,6 +1,7 @@
 package module
 
 import (
+	useridentity "go-boilerplate/internal/infrastructure/auth/useridentity"                       // sample-api:line
 	couponbulkissuecs "go-boilerplate/internal/infrastructure/rdb/command_service/coupon"         // sample-api:line
 	productdiscontinuecs "go-boilerplate/internal/infrastructure/rdb/command_service/product"     // sample-api:line
 	dashboardqs "go-boilerplate/internal/infrastructure/rdb/query_service/dashboard"              // sample-api:line
@@ -46,6 +47,10 @@ func persistenceModule() fx.Option {
 				cartrepo.New,
 				couponrepo.New,  // sample-api:line
 				inquiryrepo.New, // sample-api:line
+				// 外部アイデンティティの結び付けは登録ユースケースが使うため、認証ミドルウェアだけが
+				// 使う IdentityResolver（core.AuthnModule）とは別に、永続化側で提供する。
+				// AuthnModule は server にしか入らず、job / worker も user ユースケースを組み立てる。
+				useridentity.NewRegistrar, // sample-api:line
 				// sample-api:end
 			),
 		),
