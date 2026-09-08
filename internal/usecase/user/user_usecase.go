@@ -232,14 +232,10 @@ func (u *usecase) CreateUser(ctx context.Context, dto *CreateParamsDTO) (UserVie
 			return err
 		}
 
-		// 二重登録を止めるのはこの結び付けです。issuer + subject の一意制約が、同じ主体からの
-		// 2 回目を Conflict にし、同じトランザクションのユーザーとクーポンごと巻き戻します。
 		if err = u.identities.Register(ctx, userID, dto.Issuer, dto.Subject); err != nil {
 			return err
 		}
 
-		// 登録という業務イベントの副作用としての発行。登録と同じトランザクションに置くことで、
-		// 登録者は必ず 1 枚持つか 1 枚も持たないかのどちらかになります。
 		welcome, err := newWelcomeCoupon(userID, now)
 		if err != nil {
 			return err

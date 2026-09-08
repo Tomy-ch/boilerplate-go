@@ -13,5 +13,6 @@ type IdentityRegistrar interface {
 	// Register は、issuer と subject の組を userID へ結び付けます。
 	// 呼び出し元のトランザクションがあればそれに参加します。
 	// 同じ組が既に結び付いている場合は apperror.ErrConflict を返します。
+	// 在籍しない userID への結び付けは apperror.ErrInvalidArgument を返します。
 	Register(ctx context.Context, userID uuid.UUID, issuer, subject string) error
 }

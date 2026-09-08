@@ -81,8 +81,6 @@ func NewAuthenticator(
 			return failure
 		}
 
-		// 登録の入口だけは解決を省く。解決できない主体を拒むと、内部ユーザーがまだ無い主体は
-		// 登録に到達できず、登録が永久に成立しないため。
 		resolveIdentity := input.SecuritySchemeName != SchemeBearerRegistration
 
 		// OpenAPI バリデータが渡す context は context.Background() から組み立てられており、

@@ -29,7 +29,7 @@ func NewRegistrar(
 }
 
 // Register は、issuer と subject の組を 1 行として書きます。同じ組が既にある場合は
-// 一意制約違反が正規化され、Conflict として返ります。
+// 一意制約違反が、在籍しない利用者への結び付けは外部キー違反が、それぞれ正規化されて返ります。
 func (r *registrar) Register(ctx context.Context, userID uuid.UUID, issuer, subject string) error {
 	ctx, endSpan := r.tracer.Start(ctx)
 	defer endSpan()

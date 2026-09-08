@@ -76,8 +76,8 @@ func (s *server) PostUsers(ctx context.Context, request gen.PostUsersRequestObje
 	ctx, endSpan := s.tracer.Start(ctx)
 	defer endSpan()
 
-	// 登録の入口は内部ユーザーが未解決のまま到達する（securityScheme は BearerAuthRegistration）。
-	// 内部ユーザー ID はユースケースが採番するため、ここで渡すのは主体を指す issuer + subject だけ。
+	// 登録の入口には内部ユーザーが未解決のまま到達する（docs/design/auth.md）。
+	// 内部ユーザー ID はユースケースが採番するため、渡すのは主体を指す issuer + subject だけ。
 	authn, err := ctxhelper.RequireAuthn(ctx)
 	if err != nil {
 		return nil, err

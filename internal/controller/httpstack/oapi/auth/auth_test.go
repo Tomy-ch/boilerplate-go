@@ -70,8 +70,7 @@ func TestNewAuthenticator(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			m := mock_auth.NewMockAuthenticator(ctrl)
-			// 解決器に EXPECT を置かないことで「呼ばれない」ことを固定する。ここが逆に倒れると
-			// 内部ユーザーがまだ無い主体が 401 で弾かれ、新規登録が誰にもできなくなる。
+			// 解決器に EXPECT を置かないことで「呼ばれない」ことを固定する。
 			mr := mock_auth.NewMockIdentityResolver(ctrl)
 			want, _ := authbd.New("user123", "mock", nil, nil)
 			m.EXPECT().Authenticate(gomock.Any(), gomock.Any()).Return(want, nil)

@@ -453,7 +453,6 @@ func Test_usecase_CreateUser(t *testing.T) {
 				gomock.Any(),
 				prefectureName,
 			).Return(pftDomain, nil)
-			// 二重登録を止めるのは issuer + subject の一意制約。ここで落ちるため、
 			// クーポンの発行までは到達しない（couponRepo に EXPECT を置かないことで固定する）。
 			identities := mock_auth.NewMockIdentityRegistrar(ctrl)
 			identities.EXPECT().Register(
@@ -530,7 +529,6 @@ func Test_usecase_CreateUser(t *testing.T) {
 			).Return(pftDomain, nil)
 			identities := mock_auth.NewMockIdentityRegistrar(ctrl)
 			identities.EXPECT().Register(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-			// 発行が失敗したらユーザー登録ごと巻き戻る。片方だけ成立させないための経路。
 			couponRepo := mock_coupon.NewMockRepository(ctrl)
 			couponRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(expectedErr)
 

@@ -9,11 +9,8 @@ import (
 	"go-boilerplate/pkg/xerrors"
 )
 
-// ウェルカムクーポンの条件です。登録という業務イベントが配るものなので、要求では受けずにここで決めます。
-// クーポン集約は発行事由を保持しないため（docs/spec/domain/coupon.md）、
-// 「ウェルカム」であることを表すのはこの配線だけです。
-//
-// template 先が金額や期間を自分の要件へ差し替える場所は、この 2 つに閉じています。
+// ウェルカムクーポンの条件です。金額と期間を差し替える場所はこの 2 つに閉じています
+// （なぜ要求で受けず定数に置くかは docs/spec/usecase/user.md）。
 const (
 	// welcomeCouponValidity は、発行日時からの有効期間です。
 	welcomeCouponValidity = 30 * 24 * time.Hour

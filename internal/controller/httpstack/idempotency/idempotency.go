@@ -65,8 +65,6 @@ func handle(ec *echo.Context, request any, operationID string, next NextFunc) (a
 
 	reqCtx := idempotencyuc.WithRequest(r.Context(), idempotencyuc.Request{
 		// スコープは認証主体そのもの（ADR-0063 (idempotency-scope-required)）。内部ユーザー ID ではない。
-		// 内部ユーザーがまだ無い主体（登録）や、内部ユーザーへ解決しない構成でも、
-		// 認証さえ済んでいればスコープが定まる。
 		Scope:       authn.Subject(),
 		Key:         key,
 		Fingerprint: fp,

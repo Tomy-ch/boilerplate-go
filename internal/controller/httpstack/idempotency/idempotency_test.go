@@ -152,7 +152,6 @@ func Test_handle(t *testing.T) {
 				called = true
 				return sentinel, nil
 			})
-			// 登録の入口のように内部ユーザーがまだ無い主体でも、認証さえ済んでいればスコープは定まる。
 			const unresolved = "user-not-yet-registered"
 			ec := newEcho(t, "key-unresolved", true, unresolved)
 
