@@ -146,13 +146,14 @@ backend、ツールキー、候補バージョン、**`mise.toml` で現在ピ�
 - `mise.toml` 内の該当行を特定する
 - バージョンリテラルだけを置換する。key（`aqua:owner/repo` / `go:path/to/module` / 短い名前）と、もとが `v` prefix を使っていた場合はその慣習を保持する
 - key の並び順を変えない、無関係な key を触らない、`[settings]` table も触らない
+- **pin が最新より前で止まっている理由を書き残さない。見かけたら消す。** 上流の最新版とその齢を名指しするメモは、[ADR-0095](../../../docs/adr/0095-malicious-package-detection-via-cooldown.ja.md) が述べ `tool-cooldown` が機械で強制している方針の再掲であり、添えた 2 つの事実はどちらも腐る。齢は翌日に、名指しした最新は次の上流リリースで嘘になる。同じ問いには `mise outdated --bump` が毎回腐らずに答える。残るのは版に依存しない制約 — なぜその backend を選んだか、下限とそれを要求しているもの — で、そちらは残す
 
 全承認分の置換を memory 上で計算したあと、`mise.toml` を **1 回だけ書き出す**（atomic single-pass）。
 
 `python/*.in` で宣言されている承認済みツールについて:
 
 - `==` の後ろのバージョンだけを置換する。パッケージ名と extras（`graphifyy[sql]`）は保持する
-- pin の上のコメントが「最新より前で止めている理由」（過去の run が書いた隔離のメモ）を述べている場合は、実態に合わせて書き換えるか消す。「新しすぎるので見送った」というメモは、その条件が消えたあとも残り、次の run では方針として読まれてしまう
+- pin の上に「最新より前で止めている理由」を述べたメモがあれば消す。判断基準は上の `mise.toml` に述べたものと同じ
 - そのうえで lockfile を再生成する:
 
   ```sh
@@ -238,7 +239,8 @@ pin と lockfile が一致しているかを見る検査であり、いま宣言
 - [ ] 勧告が run の契機なら pending リリースを `/supply-chain-triage` でトリアージ（baseline = `mise.toml` のピン済みバージョン）。そうでなければ実行せず提示にとどめる
 - [ ] eligible が非空なら、per-tool 適用候補を `AskUserQuestion` で確定。早期採用する pending は別枠・既定未選択・バンド付きで提示
 - [ ] `mise.toml` を承認分のみ atomic に書き換え、key 形式と `v` prefix 慣習を保持
-- [ ] 承認された `python/*.in` の pin を書き換え（パッケージ名と extras を保持し、古い隔離コメントを是正）、`make py-lock` を実行し、両方のファイルを残す。`.txt` は手書きしない
+- [ ] 承認された `python/*.in` の pin を書き換え（パッケージ名と extras を保持）、`make py-lock` を実行し、両方のファイルを残す。`.txt` は手書きしない
+- [ ] pin が最新より前で止まっている理由を書き残していない。途中で見かけたものは消した。版に依存しない制約はそのまま残した
 - [ ] `python/*.in` の pin を変えたなら `make tool-cooldown-audit` を実行
 - [ ] go / node / python が更新されたなら `make sync-versions` を実行
 - [ ] ランタイム bump 時は base image digest を再固定（`make pin-images-resolve` + `pin-images-apply` + `pin-images-check`）。公開直後のイメージでは新 tag に対するルール 3 の fail-closed が想定どおりの結果であり、結合（トリアージのうえ `days=0` でブートストラップするか bump を保留するか）とともに提示する。無理に通さず、tag と digest の食い違いを残さない

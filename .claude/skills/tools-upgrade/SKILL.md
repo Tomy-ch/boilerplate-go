@@ -149,13 +149,14 @@ For each approved tool declared in `mise.toml`:
 - Locate the exact line in `mise.toml`
 - Replace the version literal only — preserve the original key (`aqua:owner/repo` / `go:path/to/module` / short name) and the original `v`-prefix convention if any
 - Do not reorder keys, do not touch unrelated keys, do not touch the `[settings]` table
+- **Never record why a pin sits below latest, and delete such a note when you meet one.** A note naming the upstream latest and its age restates a policy [ADR-0095](../../../docs/adr/0095-malicious-package-detection-via-cooldown.md) already states and `tool-cooldown` already enforces, and both of its facts rot: the age is wrong tomorrow, the named latest at the next upstream release. `mise outdated --bump` answers the same question every time without going stale. What survives is a constraint that does not depend on a version — why a backend was chosen over another, a floor and the thing that requires it — and those stay.
 
 After computing all approved changes, write `mise.toml` **once** (atomic single-pass write). Read the file → apply all replacements in memory → write.
 
 For each approved tool declared in `python/*.in`:
 
 - Replace the version after `==` only — preserve the package name and its extras (`graphifyy[sql]`)
-- If the comment above the pin explains why the tool is held below latest (a quarantine note from an earlier run), rewrite or drop that comment to match reality. A stale "held back because it is too new" note outlives the condition it describes and reads as policy on the next run.
+- Delete any note above the pin that says why the tool is held below latest, by the rule stated for `mise.toml` above.
 - Then regenerate the lockfiles:
 
   ```sh
@@ -241,7 +242,8 @@ Confirm the following before reporting completion:
 - [ ] Pending releases triaged via `/supply-chain-triage` when an advisory drove the run (baseline = the version pinned in `mise.toml`); otherwise offered, not spent
 - [ ] If eligible set non-empty: user confirmed per-tool update set via `AskUserQuestion`; any early-adopted pending tool listed separately and deselected by default with its band
 - [ ] `mise.toml` rewritten atomically with only approved changes, preserving key formats and `v`-prefix convention
-- [ ] Approved `python/*.in` pins rewritten (package name and extras preserved, stale quarantine comments corrected), `make py-lock` run, and both files left in the tree; no `.txt` hand-edited
+- [ ] Approved `python/*.in` pins rewritten (package name and extras preserved), `make py-lock` run, and both files left in the tree; no `.txt` hand-edited
+- [ ] No note recording why a pin sits below latest was written, and any met along the way was deleted; version-independent constraints left in place
 - [ ] `make tool-cooldown-audit` run if a `python/*.in` pin changed
 - [ ] `make sync-versions` run if go / node / python was updated
 - [ ] If a runtime was bumped: base image digests re-pinned (`make pin-images-resolve` + `pin-images-apply` + `pin-images-check`). A rule 3 fail-closed on the new tag is the expected outcome for a just-published image — surfaced with the coupling (bootstrap via `days=0` after triage, or hold the bump), never forced through, and never left as a tag/digest mismatch
