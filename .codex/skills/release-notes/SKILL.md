@@ -1,7 +1,7 @@
 ---
 name: release-notes
 description: >-
-  Generate a Japanese release note Markdown file under `.github/release/` summarizing changes between a specified `origin` git tag and `HEAD`. Confirms both the FROM tag and the new release version with the user via `ask the user explicitly`, gathers commit history / diff statistics, categorizes changes, and writes the document in the project's canonical `v2.1.0`-style sectioned format. Triggers: "リリースノートを作成", "release notes", "v1.x.y のリリースノート".
+  Generate a Japanese release note Markdown file under `.github/release/` summarizing changes between a specified `origin` git tag and `HEAD`, in the project's canonical sectioned format. Both the FROM tag and the new release version are confirmed with the user. Triggers: 「リリースノートを作成」, "release notes", 「v1.x.y のリリースノート」.
 ---
 
 # Release Notes Generation Procedure

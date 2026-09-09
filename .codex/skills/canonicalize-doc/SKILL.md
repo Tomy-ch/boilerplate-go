@@ -1,6 +1,7 @@
 ---
 name: canonicalize-doc
-description: Create or synchronize a canonical English Markdown document and its Japanese translation. Use for `README.md`/`README.ja.md`, `SKILL.md`/`SKILL.ja.md`, generic co-located `*.ja.md` pairs, or the same pairs under `docs/`. Confirm the source and direction when they are not explicit, preserve technical tokens and structure, and modify only the selected pair.
+description: >-
+  Create or synchronize a canonical English Markdown document and its Japanese translation. Use for `README.md`/`README.ja.md`, `SKILL.md`/`SKILL.ja.md`, generic co-located `*.ja.md` pairs, or the same pairs under `docs/`. Modifies only the selected pair, confirming the source and direction when they are not explicit.
 ---
 
 # Canonical Document Sync

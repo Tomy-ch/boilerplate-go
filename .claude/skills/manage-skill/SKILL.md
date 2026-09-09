@@ -1,7 +1,7 @@
 ---
 name: manage-skill
 description: >-
-  Create, update, evaluate, and optimize skills under this repository's `.claude/skills/`, wrapping Anthropic's official `skill-creator` methodology and layering this repo's conventions on top (English-canonical SKILL.md + mandatory `SKILL.ja.md` translation pair, dense "pushy" description frontmatter, AGENTS.md scope + hard-protected paths, eval artifacts kept out of version control). This is the single entry point for ANY change to an existing skill under `.claude/skills/`; ALWAYS use it before hand-editing a `SKILL.md` or `SKILL.ja.md`. Use this WHENEVER the user wants to update / modify / change / edit / fix / improve / refactor / rename / extend / adjust / tune an existing skill — its steps, `description`, frontmatter, or behavior — or to build a new skill, author/scaffold a `/<name>` command, turn a repeated workflow into a skill, tune a skill's triggering description, or run evals/benchmarks on a skill — even if they don't say the word "skill-creator". Japanese triggers also apply, e.g. 「スキルを更新したい」「スキルを修正して」「このスキルの手順 / description / 挙動を変えて」. Do NOT use it for editing canonical docs (`docs/**`, per-package `README.md` — those have `sync-readme` / `canonicalize-doc` / `back-prop`), other AI-tool configs (`.cursor/`, `.gemini/`, Copilot), or generated files.
+  Create, update, evaluate, and optimize skills under this repository's `.claude/skills/`, wrapping Anthropic's official `skill-creator` methodology and layering this repo's conventions on top. This is the single entry point for ANY change to an existing skill under `.claude/skills/`; ALWAYS use it before hand-editing a `SKILL.md` or `SKILL.ja.md`. Use this WHENEVER the user wants to update / modify / change / edit / fix / improve / refactor / rename / extend / adjust / tune an existing skill — its steps, `description`, frontmatter, or behavior — or to build a new skill, author/scaffold a `/<name>` command, turn a repeated workflow into a skill, tune a skill's triggering description, compress descriptions that have grown into restatements of the body, normalize ones that have gone stale against it, or run evals/benchmarks on a skill — even if they don't say the word "skill-creator". Japanese triggers also apply, e.g. 「スキルを更新したい」「スキルを修正して」「このスキルの手順 / description / 挙動を変えて」「description が長い / 古い」. Do NOT use it for editing canonical docs (`docs/**`, per-package `README.md` — those have `sync-readme` / `canonicalize-doc` / `back-prop`), other AI-tool configs (`.cursor/`, `.gemini/`, Copilot), or generated files.
 argument-hint: '[skill-name] [--update|--new|--optimize]'
 allowed-tools: Bash(ls:*), Bash(bash .claude/scripts/bootstrap-plugins.sh:*), Bash(make md-skill-lint:*), Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill, Agent
 ---
@@ -32,7 +32,9 @@ Use this skill when the user wants to:
   <!-- doc-pair:replace-with -->
   <!-- = `SKILL.md`. -->
   <!-- doc-pair:replace-end -->
-- Optimize a skill's `description` for better triggering, or run evals/benchmarks on a skill.
+- Optimize a skill's `description` for better triggering, compress one that has grown into a
+  restatement of the body, or normalize one that has gone stale against it.
+- Run evals/benchmarks on a skill.
 
 Do NOT use it for:
 
@@ -104,6 +106,27 @@ these win, because a skill that ignores them won't fit this repo.
 - `description`: **one dense paragraph**, English, following the official "pushy" triggering guidance
   (state what it does AND concrete when-to-use contexts, plus explicit *when NOT* to trigger). Study
   the descriptions of `commit` / `new-env` for the density and tone this repo uses — match it.
+- **The admission test for a `description` is invocation, not completeness.** Every skill's
+  `description` is loaded at the start of every session whether or not that skill is ever called, so
+  a line earns its place only by helping decide *whether to call this skill*. Admit five things:
+  what it does, when to use it (Japanese trigger phrases included), when NOT to and which sibling
+  owns that subject instead, the prerequisites a caller must already have met, and the flags a user
+  would name when asking for it. Everything else belongs in the body, which costs nothing until the
+  skill actually runs — internal mechanism (subagent names, model defaults, fan-out shape, pipeline
+  stages), the rules the skill enforces, the commands it verifies with, its output format, and the
+  reasoning behind any of those. "Dense" is about the trigger surface, not about restating the body.
+- **Before deleting a line from a `description`, confirm the body already carries it.** The two
+  drift apart precisely because a fact gets written to only one of them; a delete that is really a
+  move is a silent loss of instruction.
+- **Normalize a rotted `description` whenever you touch a skill** — it is the one part of a skill
+  that is never read while the skill runs, so nothing fails when it lies and no gate catches it.
+  Check every claim in it against the body and against the siblings it names: a chaining
+  relationship that no longer exists, a lens / mode / flag that was renamed or removed, a subject
+  another skill has since taken over, a path that moved. Correct those in the same edit rather than
+  filing them.
+- Both of the above apply as a **sweep** too: run them across every `.claude/skills/*/SKILL.md` when
+  descriptions have accumulated, not only on the skill in front of you. The saving is per session
+  and repo-wide, and the criterion is the same one, applied file by file.
 - Optional: `argument-hint` and `allowed-tools` when the skill is a `/command` that takes args or runs
   a fixed tool set (see `commit` for the pattern). Omit them when not needed (most skills do).
 
@@ -212,6 +235,9 @@ powering this session (see the environment/system prompt) so triggering matches 
 - The official `skill-creator` resolved (project-scope plugin; ensured via the plugin bootstrap if
   missing) and its methodology is loaded.
 - `.claude/skills/<name>/SKILL.md` present, kebab `name` = dir, dense English "pushy" `description`.
+- The `description` passes the admission test in §2: nothing in it that fails to help decide whether
+  to invoke, no claim the body no longer supports, and nothing deleted from it that the body does
+  not already carry.
 - `SKILL.ja.md` generated/synced from the canonical `SKILL.md` and in sync.
 - No eval artifacts committed (workspace under gitignored `tmp/`).
 - No hard-protected path touched; only `.claude/skills/**` modified.

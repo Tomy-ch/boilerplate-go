@@ -1,7 +1,7 @@
 ---
 name: full-verify
 description: >-
-  Verify a whole repository's architecture and the validity of all implementation code in the background, generating a set of Markdown findings (tmp/skills/reviews/architecture.md / mod_*.md / _index.md). The skill itself detects and adapts to the language, structure, and presence of design documents. Use it when asked for a whole-repository structural verification / implementation-soundness review / overall review / full verify — NOT a diff review. Changes no code; read-only plus Markdown generation only.
+  Verify a whole repository's architecture and the validity of all implementation code in the background, generating Markdown findings under `tmp/skills/reviews/`. Adapts to the repository's language, structure and design documents. Use it when asked for a whole-repository structural verification / implementation-soundness review / overall review / full verify — NOT a diff review, which is `impl-review`. Changes no code. Its counterpart `full-apply` fixes what it finds.
 argument-hint: '[--inline] [--granularity module|file] [--module-depth N] [--parallel N] [--include-tests] [--exclude-ext csv] [--exclude-path csv] [--out <dir>] [--no-index] [--effort high|xhigh] [--timeout <min>]'
 allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(find:*), Bash(grep:*), Bash(mkdir:*), Bash(mv:*), Bash(git ls-files:*), Bash(bash .claude/skills/full-verify/scripts/run.sh:*), Bash(nohup bash .claude/skills/full-verify/scripts/run.sh:*)
 ---

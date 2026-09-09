@@ -1,6 +1,7 @@
 ---
 name: back-prop
-description: Detect and reconcile drift between implementation, canonical README files, repository skills, the DDD pattern ledger, and business vocabulary. Use after a multi-layer refactor, before a major review, or for documentation hygiene. Audit changed files by default, classify README-to-code drift, undocumented recurring code patterns, skill-to-README duplication, DDD-ledger-to-ADR/README-corpus drift, and glossary terms leaked into layer READMEs, ADRs, or rules. Propose only individually approvable documentation changes; ADR/rules glossary leaks are report-only. Never change implementation code with this skill.
+description: >-
+  Detect and reconcile drift between implementation, canonical README files, repository skills, the DDD pattern ledger, and business vocabulary — README-to-code drift, undocumented recurring code patterns, skill-to-README duplication, DDD-ledger-to-corpus drift, and glossary terms leaked into layer READMEs, ADRs, or rules. Use after a multi-layer refactor, before a major review, or for documentation hygiene. Every documentation change is individually approvable; ADR and rules glossary leaks are report-only. Never change implementation code with this skill.
 ---
 
 # Documentation Drift Review

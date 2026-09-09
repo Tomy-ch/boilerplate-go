@@ -1,6 +1,7 @@
 ---
 name: arch-check
-description: Audit this repository's architectural compliance before review or merge. Use for changed Go files, one or more specified layers, or the full repository; a full-repository or domain-layer scope also fans out `ddd-modeling-reviewer` without a diff, making this the entry point for questions about the current aggregate boundaries or rule placement when no change exists. Run the shared lint baseline once, inspect the applicable onion-architecture layers against their runtime READMEs, and report violations separately from advisory suggestions. For changed-files review, leave DDD modeling to `impl-review` so the same finding is not reported twice. Make source changes only when the user explicitly asks to add TODO hand-offs.
+description: >-
+  Audit this repository's architectural compliance before review or merge, reporting violations separately from advisory suggestions. Use for changed Go files, one or more specified layers, or the full repository; a full-repository or domain-layer scope also fans out `ddd-modeling-reviewer` without a diff, making this the entry point for questions about the current aggregate boundaries or rule placement when no change exists. For changed-files review, leave DDD modeling to `impl-review` so the same finding is not reported twice. Make source changes only when the user explicitly asks to add TODO hand-offs.
 ---
 
 # Architecture Compliance Check
