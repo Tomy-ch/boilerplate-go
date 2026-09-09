@@ -44,6 +44,20 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Drop apt sources this job does not use
+      if: ${{ inputs.install_psql == 'true' }}
+      shell: bash
+      run: |
+        # The runner image ships third-party apt sources (Chrome, Microsoft) this job never installs
+        # from. `apt-get update` fetches them anyway and exits 100 when any one source fails, so an
+        # outage in either takes down a step that needs only Ubuntu and pgdg. Match on the host, not
+        # the filename: the image is free to rename a list, and a stale name would silently match
+        # nothing. No match is the normal case on an image that ships neither, so it is not an error.
+        lists="$(sudo grep -rlE 'dl\.google\.com|packages\.microsoft\.com' /etc/apt/sources.list.d/ || true)"
+        if [ -n "$lists" ]; then
+          printf '%s\n' "$lists" | sudo xargs -r rm -f
+        fi
+
     - name: Update apt and install postgresql client dependencies
       if: ${{ inputs.install_psql == 'true' }}
       shell: bash
