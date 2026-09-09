@@ -1,17 +1,11 @@
 # Agents Documentation
 
-This file is the **agent operational contract** for this repository — what an AI agent may
-touch, how it must behave, and where the canonical detail lives. Architecture / rules /
-flows are **not restated here**; they live under `docs/` and are linked below. Keep this file
-lean: it is loaded every turn.
-
 This repository is a lightweight Onion Architecture RESTful-API scaffold
 (`controller → usecase → domain`; infrastructure implements domain interfaces). Do not
-introduce new architectural patterns unless explicitly instructed.
+introduce new architectural patterns unless explicitly instructed. Architecture, rules and flows
+are not restated here — the table below says which document owns each.
 
-**AI-assisted development is this repository's standard path**; manual development stays available
-as a not-recommended compatibility path. Three constraints bound what that means, and they apply to
-every task below:
+Three constraints apply to every task:
 
 1. A **deterministic check** — test, lint, CI, architecture rule — outranks an agent's judgment
    wherever one exists. Report what it said, not what you concluded.
@@ -21,8 +15,7 @@ every task below:
    contract, the DB schema and the ordinary CI checks must succeed with no agent available. AI
    dependence is confined to development workflow, navigation, automation, feedback and review.
 
-Rationale: `docs/adr/0007-agents-md-operational-contract.md`. The agent environment is not
-append-only — its controls are observed and re-evaluated rather than only added:
+Rationale: `docs/adr/0007-agents-md-operational-contract.md` and
 `docs/adr/0008-agent-environment-alignment.md`.
 
 ## Instruction Priority
@@ -84,52 +77,50 @@ names **three** subjects this repository ships a skill for, not one:
 | `/test-review` | the tests that pin the change down |
 | `/comment-sweep` | the comment stock carried by the files the change touched |
 
-Do not silently pick one. **Estimate each skill's return from the context you already hold** — which
-layers the change touched, whether tests or comments moved at all, what an earlier skill in this
-session already covered — then **ask the user per skill whether to run it, stating that estimate and
-its reason**, and run what they approve.
+Do not silently pick one, and do not ask 「三つとも回しますか」 — that hands the cost back unpriced.
+**Estimate each skill's return from the context you already hold** — which layers the change touched,
+whether tests or comments moved at all, what an earlier skill in this session already covered — then
+**ask per skill whether to run it, saying which pass you expect to pay off, which you expect to return
+nothing, and why**, and run what they approve.
 
-The estimate is the work. 「三つとも回しますか」 is not a question; it hands the cost back to the user
-unpriced. Say which pass you expect to pay off, which you expect to return nothing, and why.
-
-The three are **peers, and none of them invokes another.** Each is asked for, decided, and run beside
-the others — one subject to one skill, and that skill is the only place its subject is audited. So
-`/impl-review` audits the change and nothing else, owning no test lens and no comment lens; the other
-two are invoked in their own right, whether or not it runs.
-
-Chaining them would look like convenience and cost more than it saves: the subjects stop being
-independently answerable, and a drift in the entry skill's question silently drops the other two from
-every flow that went through it. The coupling belongs in the *asking*, not in the skills.
-
-**This holds inside a pipeline too.** A skill that drives an issue to a merged PR reaches a review
-phase like any other flow, so it asks these three questions there rather than choosing for the user —
-and never on the assumption that running one of them brings the others along.
+The three are **peers, and none of them invokes another.** One subject to one skill, and that skill is
+the only place its subject is audited: `/impl-review` owns no test lens and no comment lens, and the
+other two are invoked in their own right whether or not it runs. The coupling belongs in the *asking*,
+not in the skills. **This holds inside a pipeline too** — a skill that drives an issue to a merged PR
+asks these three questions at its review phase rather than choosing for the user.
 <!-- boilerplate-only:end -->
 
-## Layer Rules (hard constraints — enforced by `golangci-lint` depguard)
+## Layer Rules
 
-Boundaries are enforced in CI, not just documented. Full table + rationale: `docs/rules.md`.
+Import direction is a deterministic gate, not something to hold in your head: `depguard`'s
+`maintain_a_sound_*` and `independent_pkg` rules fail the build on a crossed layer boundary, and
+`internal/architest`'s `TestDomainAggregateImportIsolation` on a cross-aggregate import; `forbidigo`
+rejects `time.Now` inside `internal/(domain|usecase)` and `time.Local` everywhere. The full table
+and its rationale are in `docs/rules.md`; the domain lexicon and the `internal/domain/service/<name>/`
+exception carry their admission criteria in `internal/domain/README.md`.
 
-- **Dependencies point inward.** `controller → usecase → domain`; `infrastructure` implements domain interfaces; never bypass a layer.
-- **Domain** is pure: no framework / infrastructure / logging / DI; no env / I/O / DB clients; no dependence on time, randomness, or system state directly (abstract via domain interfaces implemented in outer layers). **No `context.Context` in domain logic** (Repository interface signatures may declare it for propagation only). The only permitted `internal/` dependencies are `internal/apperror` and the domain lexicon `internal/domain/lexicon` (cross-aggregate business-semantic value objects that cannot live in `pkg/`; admission is narrow, and failing `pkg/`'s entry bar is not an argument for admission here — see `docs/rules.md` / ADR-0039 (domain-lexicon)); a domain package must not import another aggregate. The one exception is `internal/domain/service/<name>/`, where a rule that is the natural responsibility of no entity and no value object lives — whether it spans aggregates or stays inside one: that path has its own depguard rule permitting aggregate imports while repeating every other domain deny, and admission is narrow (see `internal/domain/README.md`). Otherwise use `pkg/`.
-- **`pkg/`** must not depend on infrastructure or framework-specific packages, must stay framework-agnostic, must not import `internal/**`, and holds no feature-specific business logic.
-- **Usecase** depends only on domain interfaces (never infrastructure), owns transaction boundaries, and maps domain models to DTOs — never exposes domain entities to outer layers.
-- **Controller** handlers stay lightweight: request/response only, no business logic, no infrastructure imports.
+No gate catches the rest, so hold it yourself:
+
+- **No `context.Context` in domain logic.** A Repository interface signature may declare one for
+  propagation; nothing else in the domain takes one.
+- **The domain depends on no ambient state beyond what those gates already block.** Time is gated and
+  `uuid` is forced through `pkg/uuid`, but `math/rand` and every other environment read are yours to
+  abstract behind a domain interface implemented in an outer layer.
+- **Usecase owns the transaction boundary and maps domain models to DTOs** — a domain entity never
+  reaches an outer layer.
+- **Controller handlers are request / response only** — no business logic.
+- **`pkg/` carries no feature-specific business logic** and stays framework-agnostic.
 
 ## Forbidden Shortcuts
 
-AI agents MUST NOT:
-
-- Call infrastructure directly from a handler
-- Put business logic in a handler
-- Skip the OpenAPI definition for a new API
-- Modify generated files
-- Introduce new architectural patterns without instruction
-- Install anything on their own initiative (see below)
+This file does not enumerate them. What can be decided mechanically is caught by `depguard`, the
+architecture tests in `internal/architest`, and the generated-file denials in `.claude/settings.json`;
+the rest is stated by the `README.md` of the package you are touching — which is why step 3 of the
+*Task Execution Protocol* is not optional. A rule this file does not repeat is still a rule.
 
 ## Installing Things
 
-This covers every `install` surface, not one tool: package managers (`brew`, `npm i -g`, `pip`,
+This covers every `install` surface, not one tool: package managers (`brew`, `pnpm add -g`, `pip`,
 `go install`), toolchain managers (`mise use -g`), IDE / agent integrations (`<tool> <platform>
 install`), plugins, and extensions.
 
@@ -149,9 +140,7 @@ install`), plugins, and extensions.
 
 The permission layer backs this up rather than replacing it: install-shaped commands are routed to
 `ask` in `.claude/settings.json`, so they surface for a human decision instead of running silently.
-Those entries are written as patterns (`Bash(<tool> * install*)`) precisely because an enumeration of
-platform names goes stale every time upstream adds one, and a stale enumeration opens holes nobody is
-notified about.
+Why those entries are patterns rather than named platforms: `docs/design/security.md`.
 
 ## Conflicting Authority
 
@@ -178,20 +167,15 @@ second is not yours to start.
 <!-- boilerplate-only:begin -->
 ## What to Recommend
 
-This section governs what you **recommend**, never what you may change. Authority to act is
-untouched: *Conflicting Authority* above, `docs/rules.md`, and the modification scope below still
-decide that.
+This section governs what you **recommend**, never what you may change — *Conflicting Authority*
+above, `docs/rules.md`, and the modification scope below still decide that.
 
-While this repository is distributed as the boilerplate source, its product is **the state a project
-receives at `useTemplate` time** — not the history that produced it. So when you weigh options and
-state a preference, weigh them for that snapshot: what reads as coherent to someone who has never
-seen this repository and will never read its git log.
-
-**On that axis, quality and consistency outrank the cost of reaching them.** A numbering that
-contradicts the order it teaches, a convention followed everywhere but here, a name that survives
-only because renaming it is work — recommend fixing them. State the cost plainly instead of letting
-the cost pick the answer; "it already shipped" carries little weight while nobody has instantiated
-from this in production.
+This repository's product is **the state a project receives at `useTemplate` time**, not the history
+that produced it, so weigh options for that snapshot: what reads as coherent to someone who has never
+seen this repository and will never read its git log. **On that axis, quality and consistency outrank
+the cost of reaching them** — a numbering that contradicts the order it teaches, a convention followed
+everywhere but here, a name that survives only because renaming it is work: recommend fixing them.
+"It already shipped" carries little weight while nobody has instantiated from this in production.
 
 Give the cost with the recommendation — files touched, what breaks for whom, what must be rebuilt —
 so a human can decline the scope while keeping the direction.
@@ -208,18 +192,10 @@ so a human can decline the scope while keeping the direction.
   through its current caller, extract the logic into a testable unit and cover every branch rather
   than deleting it. Never drop a meaningful safeguard just because it is currently unreached — make
   it testable and add the regression test.
-- **Coverage % is a proxy, not the goal**: a test's worth is the contract it locks against
-  regression, not the number it moves. A meaningful test can add 0 % (e.g. exercising an empty
-  no-op default — an `{}` body has zero coverable statements, so its `0.0%` is a Go display artifact,
-  NOT a gap). Do NOT chase whole-function `0.0%` that are empty/no-statement bodies, and do NOT
-  delete a test that verifies a real contract just because it doesn't raise coverage. Conversely,
-  code run only to hit lines with no meaningful assertion is coverage theater — that IS meaningless.
-- **A test is meaningful only if** the contract it protects (correctness / invariant / boundary /
-  safety) (1) can actually regress, (2) is not already locked elsewhere, and (3) is owned by that
-  layer. The meaningless-test forms are the inverses: **wrong semantics** (tautology, asserting an
-  incidental implementation detail, or coverage-only), **redundant duplication** (same path verified
-  2×/3× across layers with no new viewpoint; re-testing a dependency / generated code), or **wrong
-  layer** (verifying a concern the layer does not own).
+- **Coverage % is a proxy, not the goal**, and a test is meaningful only if the contract it protects
+  can actually regress, is not already locked elsewhere, and is owned by that layer.
+  `docs/testing-conventions.md` (sections 8 and 10) is the single source for test quality — both
+  `scaffold-test` and `test-review` read it, so a criterion kept anywhere else goes unapplied.
 
 ## AI Modification Scope
 
@@ -269,52 +245,37 @@ for the paths the skill's defined procedure needs. Conditions:
 ## Git Rules for AI Agents
 
 1. **NEVER commit directly** to `production`, `develop`, `staging`, or any `release/*` branch. Always cut a feature branch from the branch `make base-branch` resolves: the latest `release/*` line, where **"latest" is the numeric comparison of `major` / `minor` / `patch`**, read from `origin`'s live state.
-   - **Take the base from nowhere else.** The local `refs/remotes/origin/HEAD` is fixed at clone time and `git fetch` never updates it (only `git remote set-head` does, and that only copies the GitHub default); the GitHub default branch (`gh repo view --json defaultBranchRef`) lags behind the active release line; a harness-supplied "Main branch" value reads that same stale local symref. All three answer without warning, and a feature branch cut from a generation-old base stays invisible until the files everyone expects turn out to be missing.
+   - **Take the base from nowhere else.** The local `refs/remotes/origin/HEAD`, the GitHub default branch (`gh repo view --json defaultBranchRef`), and a harness-supplied "Main branch" value are each stale or lagging, and all three answer without warning — a feature branch cut from a generation-old base stays invisible until the files everyone expects turn out to be missing.
    - **Where a pull request already exists, its `baseRefName` is the authority** and the resolver is the fallback. A PR's base is what it is already merging into; nothing may re-resolve it.
-   - **During a hotfix, resolve nothing — ask.** `make hotfix-patch` cuts a `hotfix/vX.Y.Z` and makes it the GitHub default, so the branch under active development is then not the latest `release/*`, and `make base-branch` — which considers `release/*` only — will not name it. That scope is deliberate: a hotfix is an emergency, its base is a human decision taken on the spot, and an agent inferring one from branch names would be guessing at the moment guessing is most expensive.
+   - **During a hotfix, resolve nothing — ask.** `make hotfix-patch` cuts a `hotfix/vX.Y.Z` and makes it the GitHub default, so the branch under active development is then not the latest `release/*` and `make base-branch` — which considers `release/*` only — will not name it. A hotfix's base is a human decision taken on the spot.
 2. Do NOT rebase, squash, or force-push unless the user explicitly requests it.
 3. After amending an existing PR branch, do NOT auto-push — ask first: 「変更はローカルにコミット済みです。これらの変更をプルリクエストにプッシュしますか？」
 4. **Syncing a feature branch with an advanced base — merge, never rebase (see rule 2).** When the base `release/*` has moved ahead and the feature branch must catch up, fast-forward the local base to its remote and **merge** it into the feature branch (`git merge origin/release/vX.Y.0`), rather than rebasing / force-pushing. The branch to merge is the one this feature branch was cut from — the pull request's base — **not** whatever `make base-branch` resolves today: if a newer release line has opened since, merging that would retarget the branch instead of catching it up. Resolve conflicts in generated artifacts (`**/*.gen.*`, `docs/openapi/**`, `openapi/openapi.gen.yaml`, …) by **regenerating from the source of truth** (`make gen-api` / `make gen-query`), not by hand-editing the generated output. Rebase only when the user explicitly requests it.
 
 **Commit / PR execution:** split into scoped commits using the prefix convention
-(Feat / Fix / Refactor / Perf / Docs / Test / Build / CI / Chore / Style / Revert), bypass
-per-commit hooks during the split then run verification (lint / test / sql-lint / migration
-checks) once at the end, add the `Co-Authored-By` footer, and never commit to protected
-branches. If your agent provides a dedicated command/skill for this workflow, prefer it over
-manual steps (keep the concrete names in your own agent config, not here).
+(Feat / Fix / Refactor / Perf / Docs / Test / Build / CI / Chore / Style / Revert — the enum
+`commitlint.config.js` verifies) and add the `Co-Authored-By` footer. If your agent provides a
+dedicated command/skill for this workflow, prefer it over manual steps; the hook handling and the
+ordering of verification belong to that procedure, not here.
 
 **Branch naming:** include the issue number when provided (`feature/1234-description`);
 otherwise a descriptive hyphenated name (`feature/add-authentication-check`).
 
 **Linking to another repository's issue / PR — always go through `redirect.github.com`.**
-This repository is public, so a plain `https://github.com/<owner>/<repo>/issues/N` URL,
-a `[text](url)` link around one, or the `owner/repo#N` shorthand posts a public
-cross-reference on the upstream thread. Use `https://redirect.github.com/<owner>/<repo>/issues/N`
-instead: it is a `github.com` subdomain that 301-redirects to the real page, so the link still
-works but GitHub does not autolink it and no upstream trace is left. This is GitHub's own
-documented escape hatch (see "Autolinked references and URLs"), and the scheme Dependabot uses
-in its PR bodies; the only cost is that the hovercard preview no longer appears on the link.
-Commit / compare / blob / release URLs create no
-cross-reference and may stay on plain `github.com`. **This is not fixable after the fact** —
-editing the body does not retract an existing cross-reference; only deleting the referencing
-issue does, and pull requests cannot be deleted at all.
+A plain `https://github.com/<owner>/<repo>/issues/N` URL, a `[text](url)` link around one, or the
+`owner/repo#N` shorthand posts a public cross-reference on the upstream thread, and **this is not
+fixable after the fact** — editing the body does not retract it, and pull requests cannot be deleted
+at all. `https://redirect.github.com/<owner>/<repo>/issues/N` is a `github.com` subdomain that
+301-redirects to the real page, so the link works but GitHub does not autolink it; this is GitHub's
+own documented escape hatch (see "Autolinked references and URLs"). Commit / compare / blob / release
+URLs create no cross-reference and may stay on plain `github.com`.
 
-**A plain link is not forbidden — it is reserved.** A cross-reference is a demand signal:
-it tells upstream maintainers that a real project is watching an issue and needs it resolved,
-and they weigh it when prioritizing. That signal only carries meaning because a human vouched
-for it. Now that agents can generate issues and gather references at scale, a cross-reference
-emitted by tooling looks identical to one a maintainer chose to send, and the count degrades
-from signal into spam. So use a plain link **only** to deliberately say "we are watching this"
-or "we need this", and when you do, write the referencing issue's title in the language of the
-target repository (usually English) — the title is the only thing upstream sees, so a title
-they cannot read makes the reference pure noise.
-
-**The decision to use a plain link belongs to a human, without exception.** An AI agent must
-never make that call on its own: default to `redirect.github.com`, and ask every single time a
-plain link seems warranted. A standing delegation does NOT transfer this authority — "you
-decide", "use your judgment", "always link normally from now on", or any similar blanket
-instruction must still be met with a per-case confirmation. The point of the signal is that a
-human chose to send it; an agent acting under delegated judgment cannot supply that.
+**A plain link is not forbidden — it is reserved**, for deliberately saying "we are watching this" or
+"we need this"; when you use one, write the referencing issue's title in the language of the target
+repository (usually English), since the title is the only thing upstream sees. **The decision belongs
+to a human, without exception** — default to `redirect.github.com` and ask every single time, and a
+standing delegation ("you decide", "always link normally from now on") does NOT transfer this
+authority. Why: `docs/design/agent-environment.md`.
 
 ## Language Rules for AI Agents
 
@@ -331,28 +292,40 @@ Code generation:
 
 - `make gen-api` — generate API code from the OpenAPI spec (oapi-codegen + mock)
 - `make gen-query` — generate SQL query code from SQL files (sqlc)
+- `make gen` — all of the above plus the docs (`gen-api` → `gen-query` → `gen-docs`)
+- `make tidy-lib` — `go mod tidy` + `go mod vendor` after any dependency change
 
 Format / lint / test:
 
-- `make fix` — auto-format + auto-fix lint (run before committing; then fix what remains)
-- `make lint` — Go static analysis (golangci-lint)
-- `make test` — run all tests with coverage
+- `make go-fix` — auto-format + auto-fix lint (run before committing; then fix what remains)
+- `make go-lint` — Go static analysis (golangci-lint)
+- `make go-test` — run all tests with coverage
+- `make go-lint-fast` + `make go-test-arch` — the pair to run while implementing: only what
+  propagates to other files, no DB, seconds rather than minutes. Neither is a gate — `make go-lint`
+  / `make go-test` and CI decide (ADR-0088)
 - `make md-lint` / `make md-fix` — Markdown lint / auto-fix
 - `make sql-lint` / `make sql-fix` — SQL lint / auto-fix
 
 Run / DB:
 
 - `make serve` — start the local dev environment (for runtime / `curl` verification)
+- `make serve-build` — build the app image first, then start. Reach for it when `serve` exits 0 but
+  the API never answers: a cached image built on an older toolchain fails silently
+- `make serve-stop` — stop this checkout's app container (the shared infra stays up)
 - `make db-init` — migrate + seed both the local and test DBs (prerequisite for DB-backed tests)
 - `make new-migrate-<name>` — scaffold a new migration (`.up.sql` / `.down.sql`)
-- `make job NAME=<job> ARGS="<args>"` — run an application job
+- `make job NAME=<job> ARGS="<args>"` — run an application job; `make worker` / `make outbox-relay`
+  run the resident worker / outbox relay (Ctrl-C to stop)
 
-**Graphify (standard equipment):** a queryable knowledge graph of this repository. The version is
-declared in `python/graphify.in` and locked with hashes in `python/graphify.txt` — **not in
-`mise.toml`** — and the skill is written into each assistant's config by
-`bash .claude/scripts/bootstrap-external-skills.sh`. It indexes **structure**, which is what makes it
-reach the two things text search cannot: a caller that shares no vocabulary with its callee, and a
-document named for the concern it owns rather than for the words in your question.
+Git:
+
+- `make base-branch` — print the latest `release/*` line from `origin`'s live state (the only
+  admissible base, per the Git rules above)
+
+**Graphify (standard equipment):** a queryable knowledge graph of this repository, pinned in
+`python/graphify.in` — **not in `mise.toml`**. It indexes **structure**, which is what makes it reach
+the two things text search cannot: a caller that shares no vocabulary with its callee, and a document
+named for the concern it owns rather than for the words in your question.
 
 ```bash
 GRAPHIFY="${XDG_CACHE_HOME:-$HOME/.cache}/go-boilerplate/graphify/bin/graphify"   # 固定版。bootstrap が作る venv
@@ -363,58 +336,48 @@ node .claude/scripts/graph-affected.ts <symbol> --depth 2   # 影響範囲・呼
 make graphify-update              # グラフを現在のコードへ更新（コンテナ内、固定版）
 ```
 
-- **`affected` is the paying command.** Reverse traversal returns each call site with a relation
-  label and `file:line` — which is the evidence a claim of scope ("only X does this") requires, and
-  the number a blast-radius estimate should be replaced by. It takes a node **id**, not a symbol
-  name, so go through the wrapper; `path` / `explain` / `god-nodes` take ids straight from
-  `graphify-out/graph.json`.
-- **Raise `--budget`.** The default (~2000 tokens) truncates on a repo this size and says so; the
-  answer may be in the cut part.
-- **Ignore `god-nodes` here.** It ranks by edge count, and this repo's 1:1 test-mapping rule puts
-  test scaffolding (`Any()`, `NewTestFromSalt()`, …) above production code.
 - **State freshness whenever you used it.** Compare `Built from commit:` in
-  `graphify-out/GRAPH_REPORT.md` against `git rev-parse HEAD`. For a question about *uncommitted*
-  work the graph is blind — refresh with `make graphify-update` (deterministic, no API key) or use
-  `grep`, which for a small diff is the cheaper of the two.
+  `graphify-out/GRAPH_REPORT.md` against `git rev-parse HEAD`, and say so in the answer. For a
+  question about *uncommitted* work the graph is blind.
 - **The graph is a way to reach a file, never the evidence itself.** Open what it points at and cite
   that. A graph result carries no separation of fact from inference.
-- **AST-only commands are free and local.** `update` / `query` / `affected` / `path` / `explain` need
-  no API key. Docs / PDF / image extraction, `extract`, `label`, community *naming*, `add`, and
-  `--wiki` call an LLM API and send content off the machine — those stay opt-in.
-- **Use the pinned binary, not `mise exec pipx:…`.** `python/graphify.txt` is installed twice from
-  the same hashes — into `python_tool_runner` (what `make graphify-*` runs) and into the
-  bootstrap's venv (the `$GRAPHIFY` path above). A bare `mise exec "pipx:graphifyy[sql]"` resolves
-  whatever pipx hands back instead, which on this machine is *behind* the lock. Anything that
-  **writes** the graph goes through `make graphify-update`: `docker/tools/Dockerfile` explains why —
-  extraction results and the cache namespace depend on the prompt bundled with the tool, so the
-  version has to be the fixed one. Read-only queries against an existing `graphify-out/graph.json`
-  only need to be at the pinned version, not in the container.
-- `make graphify-check` verifies the tracked artifacts, `make graphify-pending` reports how much
-  semantic extraction is outstanding, and `.graphifyignore` declares what the graph excludes
-  (changing it requires a full re-extraction; an incremental `update` is fail-closed).
+- **Keep the LLM-calling commands opt-in.** The commands above are AST-only and local; docs / PDF /
+  image extraction, `extract`, `label`, community *naming*, `add` and `--wiki` send content off the
+  machine.
 
-Measured behaviour on this repository, and what does *not* pay off here:
+Which commands pay here and which do not, the pinned-binary discipline, and what the graph excludes:
 `.claude/README.md`.
 
-**Working in a `git worktree` (DB + serve isolation):** a single shared Postgres (fixed compose
-project `gobp-shared`, host 5432) is shared by all worktrees; each leases a slot = its own
-databases (`wt<N>_local` / `wt<N>_test`) inside that instance. Before DB-backed tasks or `make serve`
-in a worktree, `make slot-acquire` to lease a slot (creates + rebuilds `wt<N>_local` / `wt<N>_test`,
-propagates `DB_NAME_LOCAL` / `DB_NAME_TEST` / `API_HOST_PORT` `8080+N` / `MOCK_AUTH_HOST_PORT` `2010+N`),
-then `make test` connects to `wt<N>_test` on localhost:5432, `make serve` isolates the app in
-`gobp-wt-N` (curl `localhost:$API_HOST_PORT`) against the shared DB, and `make slot-free` when done —
-do NOT start a duplicate DB stack or hijack another checkout's containers. To retire the worktree
-entirely, `make slot-release` stops the app + removes its local images, frees the slot, and removes
-the worktree, in that order. Without `slot-acquire`,
-targets default to `local` / `test` on 5432 / 8080 / 2010 (single-stack, unchanged).
+**Token proxy (`rtk`, standard equipment):** compresses shell output before it reaches your context.
+The version is pinned in `mise.toml`; nothing in build / test / CI invokes it, so a checkout without it
+behaves identically.
+
+**Prefer it by default** — a command it cannot compress is passthrough, so there is nothing to weigh
+per command. Three places using it is wrong:
+
+- **Never read source through `rtk read`.** Its default level is lossless and therefore saves nothing;
+  every other level drops lines, and a filtered file that still looks complete is worse to reason from
+  than a long one.
+- **Never report a deterministic check through it.** Constraint 1 above requires reporting what the
+  test / lint / gate said, and `rtk` shows failures only, dropping counts and coverage. When the
+  number itself is the subject, take the raw output with `rtk run <command>`.
+- **`rtk diff <rev>` returns empty** — it takes file paths, not git revisions. Use `rtk git diff`.
+
+The exclusion criterion, and the machine-local setup the pin does not reach: `.claude/README.md`.
+
+**Working in a `git worktree` (DB + serve isolation):** all worktrees share one Postgres, and each
+leases a slot for its own databases. Before DB-backed tasks or `make serve` in a worktree, run
+`make slot-acquire` (`make slot-status` shows what the pool holds, and is the first thing to check
+when acquire fails); `make slot-free` when done, or `make slot-release` to retire the worktree
+entirely. `make serve` then isolates the app per worktree — curl `localhost:$API_HOST_PORT`. **Do NOT
+start a duplicate DB stack or hijack another checkout's containers.** Without `slot-acquire`, targets
+default to `local` / `test` on 5432 / 8080 / 2010 (single-stack, unchanged).
 Details: `docs/maintenance/db-worktree-pool.md`.
 
 **DB clean-up (worktree slot pool):** the pool shares one Postgres instance, so tables from another
-branch's migrations can linger in a DB you reuse. As part of clean-up — at the start of DB-backed
-work, and whenever the shared DB carries stale tables — rebuild your DB from THIS branch's migrations
-so you always work against a clean, migration-faithful schema: `make slot-acquire` re-creates the
-slot's `wt<N>` DBs this way, and `make db-local-reinit` / `db-test-reinit` drop every `public` table
-then migrate-up + seed the shared `local` / `test`.
+branch's migrations can linger in a DB you reuse. At the start of DB-backed work, and whenever the
+shared DB carries stale tables, rebuild from THIS branch's migrations: `make slot-acquire` for a
+slot's DBs, `make db-local-reinit` / `db-test-reinit` for the shared `local` / `test`.
 
 ## Protected Documentation
 
