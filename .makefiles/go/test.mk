@@ -9,6 +9,7 @@
 .PHONY: go-test-scripts-cached ## ローカル用の scripts 配下ツールのテスト実行（キャッシュ有効・pre-commit向け）
 .PHONY: cover-scripts ## scripts 配下ツールの総カバレッジを計測し、下限割れを警告する（失敗させない）
 .PHONY: build-scripts ## scripts 配下ツールを scripts/bin/ へビルドする（手元で実バイナリを動かす用）
+.PHONY: go-test-fails ## go test のログから失敗だけを抜き出す（LOG= でログ指定、LOG=- で標準入力）
 
 # カバレッジ対象外パッケージ（test / go-test-cached / gen-test-repo / go-test-cover-ci で共有）
 #
@@ -102,3 +103,29 @@ cover-scripts:
 	@go run ./scripts/cover-gate -profile coverage-scripts.out -threshold $(SCRIPTS_COVERAGE_THRESHOLD) \
 		-warn $(if $(GITHUB_ACTIONS),-github,)
 	@rm -f coverage-scripts.out
+
+# go test のログから、成功しか報告していない行を落とす。何を落とすか・なぜ捨てて安全かは
+# .makefiles/README.md の go-test-fails 行が所管する。ここに残すのは各段の前提だけ。
+#
+# カバレッジ行は 3 つの形で出る（-coverpkg へ渡した全リストが報告ごとに行末へ複製される）。
+#   1. `ok  <pkg> <時間>  coverage: X% ... in <全リスト>`   … 通過。ok で落ちる
+#   2. `coverage: X% ... in <全リスト>`                      … 失敗パッケージぶん。単独行
+#   3. `<TAB><pkg><TAB><TAB>coverage: 0.0% of statements`   … テストの無いパッケージ
+# 落ちたときに残るのは 2 と 3 なので、行頭の ok / ? だけを見ていると最大の行が素通りする。
+#
+# 1 つ目の sed は `gh run view --log` の行接頭辞を剥がす。剥がさないと行頭アンカーが外れる。
+# 時刻手前の `[^0-9]*` は BOM を吸うため。ローカルの go test 出力は 2 つ目の TAB の後が日付に
+# ならないので当たらない。`of statements in <リスト>` の畳み込みは捨て漏れたときの保険で、
+# 絶対パスはリポジトリ相対へ縮めるが、モジュール接頭辞は失敗箇所の手掛かりなので残す。
+#
+# grep の -a は必須。NUL が 1 バイト混ざると grep はバイナリとみなし、何も出さずに終わる。
+# 失敗行が無いときの報せは stderr へ出す。呼び出し側が `> file` で受けて空判定できるように。
+LOG ?= $(AI_LOG_DIR)/test.txt
+
+go-test-fails:
+	@out="$$(cat $(LOG) \
+		| sed -E -e 's|^[^	]*	[^	]*	[^0-9]*[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z ||' \
+		| sed -e 's|$(CURDIR)/||g' -e 's|\(of statements\) in .*|\1 in ...|' \
+		| grep -avE '^(ok|\?)[[:space:]]' \
+		| grep -avE 'coverage: [0-9.]+% of statements')"; \
+	if [ -z "$$out" ]; then echo "✅ 失敗行はありません（$(LOG)）" >&2; else printf '%s\n' "$$out"; fi

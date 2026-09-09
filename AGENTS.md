@@ -283,10 +283,41 @@ Internal reasoning may be in English. **All visible outputs must be in Japanese*
 user explicitly requests English — test case names, code comments, PR messages, inline
 documentation, and responses to the user.
 
+## Response Discipline
+
+Governs what you write back, not what you may do. It relaxes no gate above: a
+confirmation this file requires is still required, and brevity is never the reason
+to skip one.
+
+- **Answer first.** The result, then the reasoning only where it is not obvious.
+  No preamble, no restatement of the request, no closing recap of what was just said.
+- **Never assert a verifiable fact you did not read.** API names, flags, versions,
+  paths, symbols, commit SHAs, package names — open the code or the doc first.
+  「確認できていない」 is an answer; a plausible-looking invention is not.
+- **Report the scope asked for, plus what blocks it.** Anything adjacent you noticed
+  is one line or an issue, never an unrequested section.
+- **Generated artifacts carry no decorative Unicode** — code, config, commit messages
+  and SQL use plain hyphens and straight quotes so diffs and parsers stay honest.
+  Prose written for humans, including this file, keeps ordinary typography.
+
 ## Recommended Commands
 
 The **full `make` target registry** is `.makefiles/README.md` (targets grouped by area;
-every target is self-documenting, so `make help` lists them). Common ones:
+every target is self-documenting, so `make help` lists them).
+
+**Invoke every `make` target as `ai-<target>`, never as `<target>`.** `make ai-go-lint` runs
+`make go-lint` with all output captured to `tmp/ai-logs/go-lint.txt`: nothing is printed on success, the
+exit code passes through, and a failure names the log in one line so you read only what broke.
+
+This is the default, not a judgment call about which targets look noisy — a command's output is
+otherwise read into your context in full, and a *failing* command is excerpted with no file to
+recover the rest, which cuts exactly the diagnosis you ran it for. **The exceptions are a closed
+list**: targets whose output is itself the answer (`help`, `load-status`, `base-branch`), and
+targets that never return, where buffering would hang the caller (`serve`, `worker`,
+`outbox-relay`). Convention and `make clean-ai-logs`: `.makefiles/README.md`.
+
+The names below are the registered target names, so reach each one as `ai-<name>`.
+Common ones:
 
 Code generation:
 

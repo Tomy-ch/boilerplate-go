@@ -15,6 +15,8 @@ Make ターゲットは主に以下の単位で整理されています。
 - `.makefiles/openapi` : OpenAPI バンドル / API ドキュメント生成
 - `.makefiles/go` : Go コード生成 / フォーマット / Lint / テスト / ツール管理
 - `.makefiles/python` : PyPI ツールの lockfile 生成
+- `.makefiles/agents` : Closed Loop 開発フィードバック / エージェント向け静音実行のログ
+- `.makefiles/graphify` : ナレッジグラフのエクスポート / 追跡成果物の可搬性チェック
 - `.makefiles/docs` : Portal / ツール情報などのドキュメント生成
 - `.makefiles/gen` : 各種生成処理の一括実行
 - `.makefiles/github` : GitHub 初期設定 / リリース / ラベル / ルール設定
@@ -25,10 +27,12 @@ Make ターゲットは主に以下の単位で整理されています。
 - ターゲットは 2 種類:
   - **通常ターゲット**: 開発者がローカルで呼ぶ。再現性のため Docker コンテナ経由で実行。ただし一部はホスト上のツールを解決する（`lint` / `fix` の `golangci-lint`、`actions-zizmor` の `zizmor`、`go-cooldown-gate` / `go-cooldown-audit`、`tool-cooldown-gate` / `tool-cooldown-audit`、`pnpm-cooldown-check`）。tool-runner が Alpine であり、上流が musl ビルドを配布していないためである。これは規約の例外ではなく [ツールチェイン実行ルール](../docs/rules.ja.md#ツールチェイン実行ルール) が定める最終手段であり、供給は `make install-tools` が担い、イメージが担うはずだった再現性は `mise.toml` のピンが引き受ける
   - **`-ci` ターゲット**: CI ランナー、またはツールをローカルインストール済みの開発者向け低レベルコマンド
+  - **`ai-` ターゲット**: 上記のいずれをも包む `ai-%` パターンルール。`make ai-<target>` は `<target>` を実行し、出力をすべて `tmp/ai-logs/<target>.txt` へ退避する。成功時は何も表示せず、終了コードはそのまま返し、失敗したときだけログの場所を 1 行で示す。AI エージェントがコマンドの出力を全文コンテキストへ読み込むうえ、ハーネスは*失敗した*コマンドを保存せず抜粋するため、ノイズは毎回支払われ、切り落とされるのは診断そのものになる。`ai-` が前に付くのには理由がある。接尾辞 `%-ai` は基底が既にパターンルールのターゲットだと一致先が割れ（`new-migrate-add-ai` は `new-migrate-%` にも `%-ai` にも当たる）、どちらが勝つかは競合ルールの前提条件が満たせるかで変わり、外れたほうはエラーにならず黙って別のことをする。出力そのものが成果物のターゲット（`help` / `load-status` / `base-branch`）や、完了しないターゲット（`serve` / `worker` / `outbox-relay`）には使わない。また新規ターゲット名に `ai-` 接頭辞を付けないこと
 - すべて `.PHONY` 指定し、末尾 `##` コメントで `make help` 出力に載せること
 
 ## 補足
 
+- `tmp/ai-logs/` は gitignore 済みで worktree ごとに独立しており、`make clean-ai-logs` が空にする。成功時もログを残すため、生成系の実行内容を回し直さずに読み返せる
 - 既存グループファイルへのターゲット追加ならトップレベル編集は不要。ただし新規 `.mk` ファイルを追加する場合は、トップレベル `makefile` へ `include` 行の追記が必要（ワイルドカードではなく個別 include のため）
 - ファイル直接作成より `make new-migrate-<name>` 等のヘルパーを優先（命名規約と番号採番を自動化）
 - 一回限りの運用コマンド（`make setup-repo` 等）は `.makefiles/github/operation/` 配下に置き、開発者向けターゲットと分離する
@@ -120,6 +124,8 @@ make outbox-relay ARGS="replay --message-id=<id>"
 | `make realtime-init` | 共有インフラを起動し、app コンテナ内から Realtime Delivery の table（EventLog / StreamTicket / InstanceLease）を DynamoDB Local に、fan-out の topic を GoAWS に作ります（`go run ./cmd/ realtime-init`）。冪等 — 何度実行しても同じ状態に収束します。 | app を起動せずに資源だけ用意したいとき。`make serve` は同じ one-shot（`realtime-provision`）を自分で走らせるので、通常の経路では個別に呼ぶ必要はありません |
 | `make realtime-reset` | `dynamodb_local` を起動し、host から `scripts/realtime-reset` を実行してこの checkout の 3 つの table を削除し、消え切るまで待ちます。作成は `realtime-provision` の担当のままです。データベースの所有者であることを要求し、host を持たない `-endpoint` と AWS の host を拒否します（ダミー署名鍵が第 2 の制御なので、この deny だけが防御ではありません）。 | local データベースを作り直す経路すべて（`slot-acquire` / `db-local-reinit` / `db-init-local`）から呼ばれ、採番と EventLog を一緒に作り直すため（[db-worktree-pool.md](../docs/maintenance/db-worktree-pool.ja.md) を参照）。古い採番で stream が詰まったときに手で叩くのにも使えます |
 | `make realtime-smoke` | 共有インフラを起動し、`scripts/realtime-smoke` を AWS SDK Go v2 で DynamoDB Local / GoAWS に対して実行して、呼び出しごとの判定（互換 / 非互換 / 未対応 / 検証不能）を表にします。resource は実行ごとの乱数名で作り終了時に削除します。`ARGS` で flag を渡します（`-format markdown` / `-subscribers N` / `-keep` / `-strict`）。 | Realtime Delivery が行う呼び出しをエミュレータが今も受け付けるかの確認（image を上げたときなど） |
+| `make realtime-provision` | 共有インフラが起動済みであることを前提に、Realtime Delivery の資源だけを用意します。 | 内部用。`serve` が呼びます。`api_server` コンテナで `go run ./cmd/ realtime-init` を実行し、その出力は捨てます。データベースの所有を必要とします。 |
+| `make realtime-contract-test` | Realtime Delivery の contract test を実行します。 | ホスト上で `go test` を走らせます。既定の接続先は DynamoDB Local / GoAWS で、`REALTIME_TEST_*` を指定すると実 AWS へ向け直します。`ARGS` でフラグを渡せます。 |
 
 ## `.makefiles/database` 系
 
@@ -133,6 +139,10 @@ DB 操作全般を扱うターゲット群です。
 | `make db-init` | 所有している local / test データベースの初期化をまとめて実行します。 | `db-init-local` と `db-init-test` を順に呼び出します。 |
 | `make db-init-local` | 所有している local データベースを初期化します。 | `db-local-migrate-down` → `db-local-migrate-up` → `db-local-seed` を実行します。 |
 | `make db-init-test` | 所有している test データベースを初期化します。 | `db-test-migrate-down` → `db-test-migrate-up` → `db-test-seed` を実行します。 |
+| `make db-reinit` | `DB` が指すデータベースを `db-drop-tables` → `db-migrate-up` → `db-seed` で再構築します。 | `migrate-down` を経由しないため、マイグレーション履歴がこのブランチと食い違ったデータベースでも復旧できます。 |
+| `make db-local-reinit` | 共有 `local` データベースを同じ手順で再構築し、続けて `realtime-reset` を実行します。 | `DB=$(DB_LOCAL)`。 |
+| `make db-test-reinit` | 共有 `test` データベースを同じ手順で再構築します。 | `DB=$(DB_TEST)`。 |
+| `make db-drop-tables` | `public` の全テーブルを削除します（拡張は残します）。 | `database/maintenance/drop-all-tables.sql` を `ON_ERROR_STOP=1` 付きの `psql` へ流します。`migrate-down` が使えない状況の保守用です。データベースの所有を必要とします。 |
 | `make require-db-owner` | この checkout が所有するデータベースがあることを検証します。 | データベース名を解決する全ターゲットの前提条件です。DB スロットを持たないリンク worktree では、主 checkout の `local` / `test` へフォールバックせず失敗します。`docs/maintenance/db-worktree-pool.ja.md` を参照。判定の実体は `internal/cli/dbslot` にあり、git 実行ファイルが無い場合と git リポジトリでない場合は素通り、git リポジトリではあるのに構成を読み取れない場合は失敗します。 |
 
 ### DB マイグレーション関連
@@ -188,6 +198,7 @@ make db-migrate-up-10 DB=local
 | `make dump-schema-ci` | Docker を介さず、直接 `cmd/main.go dump-schema` を実行します。 | CI 用ターゲットです。 |
 | `make sql-fix-collation` | データベースのコラテーションを修正します。 | なし |
 | `make sql-fix-collation-ci` | Docker を介さず、直接コラテーション修正処理を実行します。 | CI 用ターゲットです。 |
+| `make db-ensure` | `DB` が指すデータベースを、無ければ作成し、`pg_trgm` 拡張を初期化します。 | 冪等です。データベースの所有を必要とします。 |
 
 ### DML マージ関連
 
@@ -212,6 +223,17 @@ make db-migrate-up-10 DB=local
 make merge-dml-core type="repository" work-dir="/app"
 ```
 
+### DB スロットプール（worktree）関連
+
+共有 Postgres 1 インスタンスをすべてのチェックアウトが使い、worktree はそこに**スロット**を貸与されます。スロットの実体は専用の `wt<N>_local` / `wt<N>_test` データベースと、アプリが bind するホストポートです。貸与を受けていない場合、各ターゲットは既定ポートの `local` / `test` へ落ちます。これが単一チェックアウトの構成です。不変条件は [db-worktree-pool.md](../docs/maintenance/db-worktree-pool.ja.md) が持ちます。
+
+| コマンド | 説明 | 備考 |
+| --- | --- | --- |
+| `make slot-acquire` | DB スロットを取得し、貸与されたデータベースを作り直します。 | `go run ./cmd/ db-slot acquire` を実行したのち、スロットのデータベースごとに `db-reinit` を呼びます。2 回の再構築を別々の `make` 呼び出しに分けているのは意図的です。両者は `db-reinit` という共通の前提条件を持つため、1 回の呼び出しにまとめると `db-reinit` が一度しか実行されず、2 つ目のデータベースが手つかずで残ります。 |
+| `make slot-free` | 保持中のスロットだけを解放します。worktree は残します。 | データベースは保持されるため、取り直しは warm な状態から始まります。 |
+| `make slot-release` | worktree を撤収します。app の停止とローカルイメージの削除 → スロット解放 → worktree 削除の順で実行します。 | 主 checkout では実行を拒否します。`--git-dir` と `--git-common-dir` を比較し、一致する場合は非ゼロで終了します。 |
+| `make slot-status` | スロットプールの現在の占有状況を表示します。 | `slot-acquire` が失敗した後に有用です。再構築が失敗していても、貸与自体は成功していることが多いためです。 |
+
 ## `.makefiles/sql` 系
 
 SQL ファイルに対する静的検査と自動修正を扱うターゲット群です。
@@ -225,6 +247,7 @@ SQL ファイルに対する静的検査と自動修正を扱うターゲット�
 | `make sql-lint-migrations` | マイグレーション SQL の Lint を実行します。 | なし |
 | `make sql-lint-dml` | DML SQL の Lint を実行します。 | なし |
 | `make sql-lint-seed` | シードデータ SQL の Lint を実行します。 | なし |
+| `make sql-lint-ci` | 全カテゴリの SQL Lint を 1 コンテナで実行します。 | CI 用ターゲット。`sql-lint-migrations-ci` / `sql-lint-dml-ci` / `sql-lint-seed-ci` に依存します。 |
 | `make sql-lint-migrations-ci` | `database/migrations/` に対して `sqlfluff lint` を実行します。 | CI 用ターゲットです。 |
 | `make sql-lint-dml-ci` | `database/dml/` に対して `sqlfluff lint` を実行します。 | CI 用ターゲットです。 |
 | `make sql-lint-seed-ci` | `database/seed/` に対して `sqlfluff lint` を実行します。 | CI 用ターゲットです。 |
@@ -237,6 +260,7 @@ SQL ファイルに対する静的検査と自動修正を扱うターゲット�
 | `make sql-fix-migrations` | マイグレーション SQL の自動修正を実行します。 | なし |
 | `make sql-fix-dml` | DML SQL の自動修正を実行します。 | なし |
 | `make sql-fix-seed` | シードデータ SQL の自動修正を実行します。 | なし |
+| `make sql-fix-ci` | 全カテゴリの SQL 自動修正を 1 コンテナで実行します。 | CI 用ターゲット。`sql-fix-migrations-ci` / `sql-fix-dml-ci` / `sql-fix-seed-ci` に依存します。 |
 | `make sql-fix-migrations-ci` | `database/migrations/` に対して `sqlfluff fix` を実行します。 | CI 用ターゲットです。 |
 | `make sql-fix-dml-ci` | `database/dml/` に対して `sqlfluff fix` を実行します。 | CI 用ターゲットです。 |
 | `make sql-fix-seed-ci` | `database/seed/` に対して `sqlfluff fix` を実行します。 | CI 用ターゲットです。 |
@@ -252,7 +276,10 @@ Markdown ファイルに対する Lint と自動修正を扱うターゲット�
 | `make md-mermaid-lint` | ` ```mermaid ` フェンスのみを構文検証します。 | `node_tool_runner` コンテナ内で `make md-mermaid-lint-ci` を呼び出します。 |
 | `make md-skill-lint` | `.claude/**` のスキル / エージェント定義と、その `.codex/**` 対応のみを検証します。 | `node_tool_runner` コンテナ内で `make md-skill-lint-ci` を呼び出します。 |
 | `make md-premise-lint` | テンプレート作成後も残る文書が、作成とともに失効する前提に乗っていないことのみを検査します。 | `node_tool_runner` コンテナ内で `make md-premise-lint-ci` を呼び出します。  <!-- boilerplate-only:line --> |
+| `make md-doc-ref-lint` | ADR 参照と対訳ペアが実在するかを検査します。 | `node_tool_runner` コンテナ内で `make md-doc-ref-lint-ci` を呼びます。 |
+| `make md-doc-ref-fix` | ADR 参照に canonical slug を補います。 | `node_tool_runner` コンテナ内で `make md-doc-ref-fix-ci` を呼びます。 |
 | `make md-lint-ci` | `markdownlint-cli2` を実行後、mermaid 構文 Lint、スキル定義 Lint の順に実行します。 | CI 用ターゲットです。`vendor/`、`node_modules/`、`.git/` を除外します。 |
+| `make md-markdownlint-ci` | `MD_GLOBS` に対して `markdownlint-cli2` を直接実行します。 | CI 用ターゲット |
 | `make md-mermaid-lint-ci` | `scripts/mermaid-lint/index.ts`（実 `mermaid.parse`）で ` ```mermaid ` フェンスを検証します。 | CI 用ターゲット。markdownlint は図の文法を見ません。 |
 | `make md-skill-lint-ci` | `scripts/skill-lint/index.ts` で `.claude/**` の定義（frontmatter / 対訳ペアの構造 / 参照の実在性）と、`.codex/**` との対応（skill / agent の存在対応、Codex skill の構造）を検証します。 | CI 用ターゲット。markdownlint は記述と実態の一致を見ず、片側の環境にだけ入った skill も他の誰も気づきません。 |
 | `make md-premise-lint-ci` | [docs/rules.md](../docs/rules.md) の *No premise the document will outlive* を `scripts/premise-lint/index.ts` で機械化したものです。テンプレート作成後も残る文書に、そこでは真でなくなる自己参照があると落ちます。探す言い回しは `scripts/premise-lint/rules.ts` が宣言します。 | CI 用ターゲット。前提を書いてよいのは、セットアップが書き換え・削除する `README*` / `docs/get-started/**` と、`boilerplate-only` / `sample-api` マーカーで囲った領域だけです。同じ語の別語義は `scripts/premise-lint/allowances.ts` へ理由付きで宣言します。  <!-- boilerplate-only:line --> |
@@ -367,6 +394,7 @@ hadolint により Dockerfile を lint し、`FROM` の base image を不変の 
 | `make gate-go` | `pre-commit` の Go ゲート（`lint` + `go-test-cached`）。帯が並列/逐次/委譲を決められるよう束ねてあります。 | lefthook が呼びます |
 | `make gate-go-push` | `pre-push` の Go ゲート（`test` + `go-test-scripts`）。同じく束ねてあります。 | lefthook が呼びます |
 | `make gate-heavy-skip` | lefthook の `skip:` から呼ぶ述語。exit 0 が「CI がやる」を意味します。 | 終了コードだけが interface です |
+| `make gate-fix` | 自動フォーマットの委譲先です。毎回走る経路は `fix` を直接呼ばずこちらを呼びます。 | 負荷帯が `ci-first` でなければ `make go-fix` を実行し、`ci-first` のときは委譲した旨だけを表示します。フォーマットのずれは CI の lint が曖昧さなく捕まえられる数少ない対象であり、それがここを委譲してよい理由です。 |
 
 帯は `GOBP_LOAD=full|low|ci-first` で明示的に上書きできます（例: 残りは委譲したまま重いゲートを 1 つだけ
 手で回すなら `make go-lint GOBP_LOAD=low`）。閾値は `GOBP_LOW_THRESHOLD` と `GOBP_CI_FIRST_THRESHOLD` です。
@@ -416,7 +444,10 @@ Trivy スキャン）は放置します。ループで回すものではない�
 | `make go-test-cover-ci` | カバレッジ付きでテストを実行します。 | CI 用ターゲットで、`coverage.out` を出力します。 |
 | `make cover-gate` | 総カバレッジが閾値を下回ると fail します。 | CI ゲート。`COVERAGE_THRESHOLD`（既定 90）。`coverage.out` が必要（先に `go-test-cover-ci`）。 |
 | `make go-test-scripts` | CI 用に `scripts/` 配下ツールのテストを実行します。 | `scripts/` は上記のカバレッジ対象から除外されているため、専用の実行経路が必要です。`cover-gate` の対象には入りません。`actions-shellcheck` のテストは host の `shellcheck`（`install-tools` が導入）を必要とし、無ければ自分で skip します。CI は `REQUIRE_SHELLCHECK` を立てて、その skip を失敗に変えます。 |
+| `make go-test-fails` | `go test` のログから、成功しか報告していない行 — `ok` 行 / `[no test files]` 行 / 単独の `coverage:` 行 — をすべて落として表示します。絶対パスはリポジトリ相対へ縮め、`gh run view --log` が各行へ付ける `<job>/<step>/<timestamp>` 接頭辞も剥がします（1 行が短くなるうえ、接頭辞に潰されていた行頭アンカーが復活します）。`LOG=` でログを指定でき（既定は `make ai-go-test` が残す `tmp/ai-logs/go-test.txt`）、`LOG=-` は標準入力を読むため、`gh run view --log-failed \| make go-test-fails LOG=-` で CI のログにも同じ絞り込みを当てられます。 | `coverage:` 行こそがこのターゲットの存在理由です。`go-test-cover-ci` と `gen-test-repo` は対象パッケージ全部を `-coverpkg` に渡すため、`go test` はカバレッジを報告するたびにそのリスト全体を複製します。結果として 1 回の失敗 run が数 MB を出力し、そのなかで失敗は数十バイトしかありません。捨てても失うものはありません — `cover-gate` が読むのは標準出力ではなく `coverage.out` です。許可リストではなく拒否リストなので、落とすのは「通った」としか言っていない行だけであり、想定外の panic / ビルドエラー / race レポートはそのまま通ります。元のログもディスクに残ります。ログを読むだけで、何も実行しません。 |
 | `make go-test-scripts-cached` | ローカル用にテストキャッシュを有効にして `scripts/` 配下ツールのテストを実行します。 | pre-commit のローカル実行向け。対象パッケージは `go-test-scripts` と同じで、`-race -count=1` は付けません。 |
+| `make cover-scripts` | `scripts/` 配下ツールの総カバレッジを計測し、`SCRIPTS_COVERAGE_THRESHOLD` を下回ったら警告します。 | 失敗させず警告に留めます（`-warn`）。開発ツールのカバレッジが出荷物のマージを止めないためです。Actions 上では `-github` が付きます。プロファイルは実行後に削除されます。 |
+| `make build-scripts` | `scripts/` 配下のツールを `scripts/bin/` へビルドします。 | `-o scripts/bin/` を固定しているのは、リポジトリ直下で `go build ./scripts/<tool>` を叩くとパッケージ名の実行ファイルが数十 MB のまま追跡対象外でルートに落ちるためです。出力先は gitignore 済みです。 |
 
 ### Go ツールインストール関連
 
@@ -450,6 +481,42 @@ Trivy スキャン）は放置します。ループで回すものではない�
 | --- | --- | --- |
 | `make py-lock` | `python/*.in` から `python/*.txt` をすべて再生成します。 | `python_tool_runner` コンテナ内で `make py-lock-ci` を実行します。pin を変えたら実行し、両方のファイルをコミットしてください。 |
 | `make py-lock-ci` | 宣言ごとに `uv pip compile --generate-hashes --universal` を実行します。解決の対象は `mise.toml` が宣言する Python のバージョンです。 | CI 用ターゲットです。 |
+
+## `.makefiles/agents` 系
+
+アプリケーションではなく AI 支援開発そのものに奉仕するターゲット群です。Closed Loop のフィードバックサイクルと、[命名規約](#命名規約)で述べた `ai-` ターゲットが書き込むログディレクトリを扱います。
+
+打刻は `.agents/closed-loop/marks.sh` が hook / スキル / git フックから行い、ここのターゲットは読む側と送る側です。コンテナ実行なのは `closed-loop-report` だけで、理由はそれぞれの見に行く先が違うことにあります。report が読む打刻はリポジトリ内にあり既にマウントされていますが、`send` が読むトランスクリプトは利用者のホーム配下にあり、`weekly` が叩く `gh` は利用者の認証を要します。どちらもコンテナからは届きません。
+
+| コマンド | 説明 | 備考 |
+| --- | --- | --- |
+| `make closed-loop-report` | 打刻された開発の窓について、フェーズ区間と異常を報告します。 | `node_tool_runner` コンテナ内で `make closed-loop-report-ci` を呼びます。 |
+| `make closed-loop-send` | 閉じたが未送出の窓を Feedback Issue へ送ります。 | ホスト上で `.agents/closed-loop/send.sh` を実行します。 |
+| `make closed-loop-send-dry` | 送出せず、送る内容だけを表示します。 | `send.sh --dry-run`。 |
+| `make closed-loop-weekly` | 期間内の Feedback Issue を集計し、そこから挙がる検討課題を並べます。期間は `FROM=` / `TO=` で指定します。 | ホスト実行。利用者の認証で `gh` を叩くためです。 |
+| `make closed-loop-report-ci` | `tsx scripts/closed-loop` を直接実行します。 | CI 用ターゲット |
+| `make clean-ai-logs` | `tmp/ai-logs/` を削除します。`make ai-<target>` がコンソールへ出さずに退避した出力の置き場です。 | このディレクトリは gitignore 済みで worktree ごとに独立するため、影響は実行したチェックアウトに限られます。 |
+
+## `.makefiles/graphify` 系
+
+[graphify](https://github.com/graphify/graphify) はリポジトリを `graphify-out/` 配下のナレッジグラフへ変換します。このディレクトリには 2 種類のファイルが混ざります。どのチェックアウトでも同じ意味を持つ成果物と、生成したマシン上でしか意味を持たない状態です。抽出キャッシュは渡されたパスからノード ID を組み立てるため、絶対パスでの実行はホストのユーザー名を ID へ焼き込みます。そのため `.gitignore` は無視する対象を列挙するのではなく成果物をホワイトリストで許可しており、ここのターゲット群がその 2 つを分けて扱います。
+
+セマンティックキャッシュは `cache/` のうち唯一共有される部分です。キーが内容ハッシュなので、フルリビルド時に LLM 抽出をやり直さずに済みます。一方でキーになって*いない*のが、その内容を生んだ抽出プロンプトです。プロンプトは graphify に同梱されるため、ビルドをピン留めすることが「誰がたまたま実行したか」ではなく `python/graphify.in` の性質へと変えます。決定的な側は `python_tool_runner` イメージが、抽出ワークフローは lockfile を指した `UV_CONSTRAINT` が担います（後者のスキルは、放っておくと PyPI の最新リリースから自前のインタプリタを解決してしまいます）。[`.agents/graphify/spec-pin.toml`](../.agents/graphify/spec-pin.toml) が結果のフィンガープリントを記録するので、CI は graphify を一切インストールせずにコミット済みキャッシュを検査でき、`graphify-check` はそれ以外で焼かれたキャッシュを拒否します。
+
+ビルドはモデルを要するかどうかで分かれ、2 つの半分は別々の場所で生成されます。`graphify update` は変更されたコードを tree-sitter で再抽出するもので、決定的であり、リリースラインで無人実行されます（`graphify-sync.yaml`）。ドキュメントに対するセマンティック抽出はモデルを要しアシスタントが駆動するため手動です。`Graphify Extract` ワークフローをディスパッチしてください。これが正規の経路で、リポジトリ自身のトークンで走ります。
+
+ローカルで走らせるのは既定ではなく逃げ道です。抽出の実体は自分のアシスタントセッションでの `/graphify --update` であり、プロジェクトではなく*あなたの*プラン枠を消費します。make はアシスタントのコマンドを呼び出せないので、そのための make ターゲットは意図的に存在しません。ローカル実行が更新するのは自分の作業コピーだけで、`graphify-check BASE=<ref>` が出力を抱えたフィーチャーブランチを弾くため、共有グラフはリリースラインから来続けます。マニフェストがファイルごとに `ast_hash` と `semantic_hash` を持つのはまさにこのためで、決定的な側は何度走ってもセマンティック側に判を押しません。保留中のドキュメント作業は隠されるのではなく積み上がります。`make graphify-pending` はその蓄積を読み、ファイル数ではなく変更行数で報告します。誤字修正と書き直された ADR とでは、再抽出の手間が同じではないからです。
+
+| コマンド | 説明 | 備考 |
+| --- | --- | --- |
+| `make graphify-update` | 内容が変わったコードファイルを `graph.json` へ再抽出します。決定的でモデルを必要としません。 | `python_tool_runner` コンテナ内で `make graphify-update-ci` を呼びます。リリースライン上のグラフは `graphify-sync.yaml` が更新するため、ローカル実行は自分の作業コピーを最新に保つためのものです。 |
+| `make graphify-export` | `graphify-out/graph.json` を決定的な `nodes.json` / `edges.json` / `metadata.json` の 3 点へ変換します。 | `go_tool_runner` コンテナ内で `make graphify-export-ci` を呼びます。 |
+| `make graphify-check` | ホワイトリスト外のファイルが追跡されていないこと、追跡成果物が生成マシンの絶対パスを抱えていないこと、追跡されたセマンティックキャッシュが `.agents/graphify/spec-pin.toml` のピンする抽出プロンプトに属することを検証します。 | ホストで実行します。対象がツールチェインではなく git インデックスだからです。`pre-commit` フックと `Graphify Check` ワークフローから呼ばれます。 |
+| `make graphify-check SPEC=<path>` | 指定された `extraction-spec.md` のフィンガープリントも取り、ピンと異なれば失敗します。 | 抽出の前に実行します。プロンプトはアシスタントのスキルディレクトリにあり、`bootstrap-external-skills.sh` がチェックアウトへ書き込むため、抽出ワークフローもそこで検証します。 |
+| `make graphify-check BASE=<ref>` | `<ref>` との差分が出力ディレクトリに触れている場合も失敗します。 | プルリクエストのゲートが使います。グラフは単一の blob で並行ブランチ間で衝突するため、その更新はリリースラインに留めます。 |
+| `make graphify-pending` | セマンティック抽出がどれだけ待っているかを報告します。前回の抽出以降に変更されたドキュメントと、その変更行数です。 | 報告のみで、失敗させることはありません。しきい値は `GRAPHIFY_PENDING_THRESHOLD`（既定 3000 変更行。約 92,500 行のドキュメント群に対しておよそ 3%）で、`/graphify --update` を走らせる判断のために存在します。これはここのどのワークフローも起動できないモデルを必要とします。件数とファイル別の内訳は毎回必ず表示されるため、小さくとも重要な書き換えはしきい値以下でも見えます。 |
+| `make graphify-update-ci` | `graphify update .` を直接実行します。 | CI 用ターゲット。スキャンのルートを明示的に渡しているのは、渡さないと graphify が `graphify-out/.graphify_root` から復元してしまうためです。これはホストのパスを保持しており、追跡対象ではありません。 |
+| `make graphify-export-ci` | `go run ./scripts/graphify-export` でエクスポートを直接実行します。 | CI 用ターゲット |
 
 ## `.makefiles/docs` 系
 
@@ -492,6 +559,9 @@ Trivy スキャン）は放置します。ループで回すものではない�
 | `make actions-comment-fence-lint` | PR コメント本文の固定長フェンス検査のみを実行します。 | `node_tool_runner` コンテナ内で `make actions-comment-fence-lint-ci` を呼び出します。 |
 | `make actions-cutoff-lint` | ジョブ打ち切り時の振る舞い検査のみを実行します。 | `node_tool_runner` コンテナ内で `make actions-cutoff-lint-ci` を呼び出します。 |
 | `make actions-shellcheck` | `.github/actions/**` の composite action から `runs.steps[].run` を抽出し、`bash` / `sh` のスクリプトを `shellcheck` で検査します。それ以外の shell のステップは skip として報告します（`scripts/actions-shellcheck`）。 | `go_tool_runner` コンテナ内で `make actions-shellcheck-ci` を呼び出します。`actionlint` は `.github/workflows` しか走査せず、`action.yaml` を直接渡すとワークフローとして解釈するため、その死角を埋めます。`run:` をブロック折り畳み（`>`）で書いた場合はエラーになります（リテラル `\|` で書いてください）。折り畳みは指摘の位置を写し戻す基準である改行を落とすためです。 |
+| `make shell-lint` | リポジトリ内のすべての `*.sh` を shellcheck で検査します。 | `go_tool_runner` コンテナ内で `make shell-lint-ci` を呼びます。 |
+| `make actions-mise-pin-lint` | `setup-mise` の版 / digest / キャッシュキーが互いに整合しているかを検査します。 | `node_tool_runner` コンテナ内で `make actions-mise-pin-lint-ci` を呼びます。 |
+| `make required-check-lint` | Ruleset の required context を報告する job と、それを起動する `pull_request` の条件を検査します。 | `node_tool_runner` コンテナ内で `make required-check-lint-ci` を呼びます。 |
 | `make actions-lint-ci` | actionlint、composite action の shellcheck、束ねた node 検査をこの順で直接実行します。 | CI 用ターゲット。actionlint を先に置くのは意図的で、node 側の検査はワークフロー構造を桁で読むため、入力がそもそも YAML としてパースできることに依存します。 |
 | `make actions-node-lint-ci` | node の 3 検査（secret / フェンス / 打ち切り）を直接実行します。 | CI 用ターゲット。 |
 | `make actions-actionlint-ci` | `actionlint` を直接実行します。 | CI 用ターゲット。 |
@@ -499,6 +569,9 @@ Trivy スキャン）は放置します。ループで回すものではない�
 | `make actions-comment-secret-lint-ci` | `upsert-pr-comment` を使うジョブに `GITHUB_TOKEN` 以外の secret が渡っていれば失敗します（`scripts/pr-comment-secret-lint/index.ts`）。 | CI 用ターゲット。規約の理由は [`.github/workflows/README.ja.md`](../.github/workflows/README.ja.md) を参照。 |
 | `make actions-comment-fence-lint-ci` | `run:` ブロックが PR コメント本文を固定長 Markdown フェンスで囲んでいる場合、または複製された `fence_for` の実装が食い違う場合に失敗します（`scripts/pr-comment-fence-lint/index.ts`）。 | CI 用ターゲット。規約の理由は [`.github/workflows/README.ja.md`](../.github/workflows/README.ja.md) を参照。 |
 | `make actions-cutoff-lint-ci` | ジョブに `timeout-minutes` が無い場合、または `upsert-pr-comment` を呼ぶステップの `if:` がキャンセルされたジョブから到達できない場合に失敗します（`scripts/actions-cutoff-lint/index.ts`）。 | CI 用ターゲット。規約の理由は [`.github/workflows/README.ja.md`](../.github/workflows/README.ja.md) を参照。 |
+| `make shell-lint-ci` | `go run ./scripts/shell-lint` を直接実行します。 | CI 用ターゲット |
+| `make actions-mise-pin-lint-ci` | `tsx scripts/actions-mise-pin-lint` を直接実行します。 | CI 用ターゲット |
+| `make required-check-lint-ci` | `tsx scripts/required-check-lint` を直接実行します。 | CI 用ターゲット |
 | `make pin-actions-resolve` | 各 `uses:` のタグを commit SHA に解決し `.github/actions-pin.toml` lockfile を更新します。 | `PIN_ACTIONS_MIN_AGE_DAYS`（既定 14・0 で無効）より新しい解決先を quarantine。 |
 | `make pin-actions-apply` | lockfile を元に `uses:` を `@<sha> # <tag>` へ固定します。 | なし |
 | `make pin-actions-check` | `uses:` が lockfile 通り固定済みか検証します（書き換えなし）。 | CI / pre-commit ゲート。 |
@@ -556,6 +629,7 @@ Trivy スキャン）は放置します。ループで回すものではない�
 | `make setup-remove-boilerplate-identity` | ボイラープレートである間だけ成り立つ記述を削除します。 | `node_tool_runner` でリポジトリを走査して `boilerplate-only` マーカーをすべて解決し、ボイラープレート限定の規約ドキュメントを削除したうえで、ツール自身も撤去します。`DRY_RUN=1` でプレビューできます。 <!-- boilerplate-only:line --> |
 | `make setup-remove-sample-api` | サンプルAPI(`user`/`product`/`order`)を一括削除します。 | `node_tool_runner` で削除後、`db-local-reinit` / `db-test-reinit` → `gen-api` → `gen-query` → `tidy-lib` → `fix` → `lint` を実行します。DB 再構築により削除済みテーブルが生成モデルに残らず、`tidy-lib` によりサンプルAPIだけが使っていた直接依存が go.mod から落ちます。**DB コンテナ(`database`)の起動が必要**（`gen-query` がライブスキーマをダンプ）。`DRY_RUN=1` で変更せずプレビューできます（`0` を含む空でない値はすべてプレビュー扱いになるため、実行時は変数自体を付けません）。 <!-- sample-api:line --> |
 | `make setup-remove-doc-language` | ドキュメント / スキルの対訳ペアを `LANG_CHOICE` で解決します。`en` / `ja` はその 1 言語へ畳み、`both` は対訳を残してマーカーだけを解決します。 | ツールランナーを経由せずホストで実行します（撤去を 1 コミットに畳むためホストの git が要る）。他のすべての撤去より**先**に実行してください。各撤去ツールは正本と対訳の対で宣言を持ち、畳みが解決した時点で自分の対の宣言を刈ります。逆に Phase 12 はこのツールが文字列を宣言している workflow を削除するため、その後に畳もうとすると中止します。`DRY_RUN=1` でプレビューできます（作業ツリーが汚れていても動作し、実行時はクリーンが必要）。 <!-- lang-choice:line --> |
+| `make setup-remove-licensed-scanners` | 資格情報または課金を要するスキャナ 2 件を撤去し、製品ごとにコミットします。 | `SETUP_DRY_RUN_FLAG` を渡すと、書き込まずに撤去内容だけを報告します。 |
 
 ### ベースブランチ解決関連
 
