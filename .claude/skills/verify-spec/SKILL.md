@@ -20,7 +20,7 @@ To validate a single spec, run this integrator — it detects which of the domai
 
 Do NOT use for:
 
-- Verifying generated code — that's `make test`.
+- Verifying generated code — that's `make go-test`.
 - Implementation ↔ spec drift — that's `arch-check`.
 - Fixing inconsistencies — read-only, reports only.
 

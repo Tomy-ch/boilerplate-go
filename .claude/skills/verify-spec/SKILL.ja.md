@@ -14,7 +14,7 @@ spec 検証の統合スキル。2 つの spec ツリー（`docs/spec/domain/**/*
 
 以下の用途には使いません:
 
-- 生成コードの検証 — `make test`
+- 生成コードの検証 — `make go-test`
 - 実装 ↔ spec drift — `arch-check`
 - 不整合の修正 — read-only、レポートのみ
 

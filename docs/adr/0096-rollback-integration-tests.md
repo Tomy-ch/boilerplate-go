@@ -64,7 +64,7 @@ the shared DB connection.
 ### Negative Consequences
 
 - A running PostgreSQL instance is required for both local development and CI. This adds an
-  infrastructure dependency to the test environment (`make db-init` must run before `make test`).
+  infrastructure dependency to the test environment (`make db-init` must run before `make go-test`).
 - `WithinTx` cannot be used for tests that intentionally verify committed state (e.g.,
   background jobs that read data written by a separate transaction). Such tests must manage
   their own teardown.

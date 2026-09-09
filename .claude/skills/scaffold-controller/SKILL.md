@@ -1,7 +1,7 @@
 ---
 name: scaffold-controller
 description: >-
-  Implement the controller (HTTP handler) layer for one feature, derived from OpenAPI gen + usecase Interface (lean A — no spec file). Reads the OpenAPI-generated `ServerInterface` at `internal/controller/handler/<path>/gen/server.gen.go` for operationIds, the target usecase Interface for available methods, and `internal/usecase/README.md` for naming convention. Derives the mapping operationId → usecase method via name-match heuristic. For any operationId without a derivable mapping, **halts with hand-off message** (user resolves: add usecase method, rename for convention, or accept hand-write). Reads `internal/controller/README.md` + `internal/controller/handler/README.md` (which carries the canonical reference snippet — `server` struct + `BindHandler` constructor + `gen.NewStrictHandler` + `gen.RegisterHandlers` pattern). Existing handler packages are secondary reference only; README wins on any drift. Invokes a test-perspective subagent (HTTP I/O conversion, validation paths, apperror→status mapping, middleware integration). Generates: `server` struct + `BindHandler(echo, tracerFactory, usecase)` constructor + one method per operationId matching `ServerInterface` (tracer span → request parse → usecase call → response conversion), plus a handler test file using `testkit/testecho` + `testkit/testassert`. Updates `internal/di/module/controller.go` with `fx.Invoke(<pkg>.BindHandler)`. Verifies with `make fix` + `make test`, then chains `scaffold-integration-test` as its final step to generate the feature's HTTP-boundary integration test under `internal/integration/`. Prerequisites: (1) OpenAPI YAML written and `make gen-api` run; (2) target usecase implemented + mock exists. Standalone-callable; chained from `scaffold-endpoint` runs as the fourth (last) scaffold step.
+  Implement the controller (HTTP handler) layer for one feature, derived from OpenAPI gen + usecase Interface (lean A — no spec file). Reads the OpenAPI-generated `ServerInterface` at `internal/controller/handler/<path>/gen/server.gen.go` for operationIds, the target usecase Interface for available methods, and `internal/usecase/README.md` for naming convention. Derives the mapping operationId → usecase method via name-match heuristic. For any operationId without a derivable mapping, **halts with hand-off message** (user resolves: add usecase method, rename for convention, or accept hand-write). Reads `internal/controller/README.md` + `internal/controller/handler/README.md` (which carries the canonical reference snippet — `server` struct + `BindHandler` constructor + `gen.NewStrictHandler` + `gen.RegisterHandlers` pattern). Existing handler packages are secondary reference only; README wins on any drift. Invokes a test-perspective subagent (HTTP I/O conversion, validation paths, apperror→status mapping, middleware integration). Generates: `server` struct + `BindHandler(echo, tracerFactory, usecase)` constructor + one method per operationId matching `ServerInterface` (tracer span → request parse → usecase call → response conversion), plus a handler test file using `testkit/testecho` + `testkit/testassert`. Updates `internal/di/module/controller.go` with `fx.Invoke(<pkg>.BindHandler)`. Verifies with `make go-fix` + `make go-test`, then chains `scaffold-integration-test` as its final step to generate the feature's HTTP-boundary integration test under `internal/integration/`. Prerequisites: (1) OpenAPI YAML written and `make gen-api` run; (2) target usecase implemented + mock exists. Standalone-callable; chained from `scaffold-endpoint` runs as the fourth (last) scaffold step.
 ---
 
 # Scaffold Controller
@@ -44,7 +44,7 @@ Do NOT use for:
 
 **Triggers (via `make`)**:
 
-- `make fix` + `make test` — final verification
+- `make go-fix` + `make go-test` — final verification
 
 **Never touches**:
 
@@ -164,17 +164,17 @@ Test file conventions:
 ## Step 6. Verify
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
 Confirm handler package coverage. Handler tests target 100% (per project convention). On failure surface + TODO + FB.
 
-> **DI verification (runtime):** `go build` / `make test` do NOT construct the Fx graph — a missing provider, an unregistered `BindHandler`, or a mismatched constructor signature only fails at **app startup**, not at compile/test time. After the DI registration (`fx.Invoke(<pkg>.BindHandler)`), confirm the app actually boots: with `make serve` running, `air` rebuilds on save — verify the `api_server` logs reach `[Fx] RUNNING` ("http server started") with no Fx `provide` / `invoke` errors. Fresh-env caveat: the container builds in **vendor mode**, so run `make tidy-lib` (generates `vendor/`) first — otherwise it fails with `inconsistent vendoring` before Fx even runs.
+> **DI verification (runtime):** `go build` / `make go-test` do NOT construct the Fx graph — a missing provider, an unregistered `BindHandler`, or a mismatched constructor signature only fails at **app startup**, not at compile/test time. After the DI registration (`fx.Invoke(<pkg>.BindHandler)`), confirm the app actually boots: with `make serve` running, `air` rebuilds on save — verify the `api_server` logs reach `[Fx] RUNNING` ("http server started") with no Fx `provide` / `invoke` errors. Fresh-env caveat: the container builds in **vendor mode**, so run `make tidy-lib` (generates `vendor/`) first — otherwise it fails with `inconsistent vendoring` before Fx even runs.
 
 ## Step 7. Chain Integration Test
 
-Once the handler compiles and `make test` passes, invoke `scaffold-integration-test` (via the `Skill` tool) as the final step, passing the feature name + handler package path + usecase package in context so it skips its own identity `AskUserQuestion`. It generates the feature's HTTP-boundary test under `internal/integration/<feature>_test.go` (Router → Middleware → Handler → Presenter, usecase mocked).
+Once the handler compiles and `make go-test` passes, invoke `scaffold-integration-test` (via the `Skill` tool) as the final step, passing the feature name + handler package path + usecase package in context so it skips its own identity `AskUserQuestion`. It generates the feature's HTTP-boundary test under `internal/integration/<feature>_test.go` (Router → Middleware → Handler → Presenter, usecase mocked).
 
 - If `internal/integration/<feature>_test.go` already exists, `scaffold-integration-test` aborts (hand back to manual editing) — surface that and continue to closing.
 - A failure inside `scaffold-integration-test` does NOT roll back the handler; surface its FB and let the user decide.
@@ -183,7 +183,7 @@ Once the handler compiles and `make test` passes, invoke `scaffold-integration-t
 ## Step 8. Closing
 
 ```text
-<Feature> controller 層を生成しました。<N> ファイル作成 + DI 1 行追加、make test OK、coverage <X>%。
+<Feature> controller 層を生成しました。<N> ファイル作成 + DI 1 行追加、make go-test OK、coverage <X>%。
 HTTP 境界 integration テストも internal/integration/<feature>_test.go に生成しました（scaffold-integration-test）。
 全層が揃いました — `make serve` + curl での実機ランタイム確認に進めます。
 ```
@@ -235,7 +235,7 @@ Remains protected:
 - [ ] Implementation file written; method signatures match generated interface exactly
 - [ ] Test file written with testkit/testecho + testkit/testassert patterns
 - [ ] `internal/di/module/controller.go` updated with new `BindHandler` entry inside `fx.Invoke(...)`
-- [ ] `make fix` + `make test` run; coverage reported (or failure surfaced with TODO + FB)
+- [ ] `make go-fix` + `make go-test` run; coverage reported (or failure surfaced with TODO + FB)
 - [ ] `scaffold-integration-test` chained as the final step (its skip-if-exists / failure surfaced, no rollback)
 - [ ] No commits / pushes
 - [ ] Final summary in Japanese

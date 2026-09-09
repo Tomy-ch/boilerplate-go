@@ -514,12 +514,12 @@ in
 **Goal:** prove the rebuilt feature is correct, formatted, and meets the coverage gate.
 
 ```bash
-make fix    # gofmt + golangci-lint --fix
-make lint   # golangci-lint (full config)
-make test   # all tests, no cache; needs the test DB migrated
+make go-fix    # gofmt + golangci-lint --fix
+make go-lint   # golangci-lint (full config)
+make go-test   # all tests, no cache; needs the test DB migrated
 ```
 
-**Coverage:** `make test` must not drop coverage; new/modified packages must exceed **90%**
+**Coverage:** `make go-test` must not drop coverage; new/modified packages must exceed **90%**
 (`make cover-gate` enforces the floor in CI). Generated packages (`gen`, `cmd`, `mock`,
 `apperror`, `scripts`) are excluded from the calculation.
 
@@ -540,10 +540,10 @@ the Definition of Done, not an optional polish.
 |5|infra|`internal/infrastructure/rdb/repository/user/**`|`pgerror.NormalizeError` + tracer span + no type leak|`go test ./…/user/...` (DB)|
 |6|usecase|`internal/usecase/user/**`|DTOs out; time/tx via boundaries; orchestrate only|`go test ./internal/usecase/user/...`|
 |7|controller|`internal/controller/handler/v1/users/**`, `job/usercount/**`|One method per operationId; handler is a pure template|`go test ./…/users/...`|
-|8|DI|`internal/di/module/*.go`|The only place layers meet; marker blocks keep it removable|`make lint`|
+|8|DI|`internal/di/module/*.go`|The only place layers meet; marker blocks keep it removable|`make go-lint`|
 |9|integration|`internal/integration/v1_users*_test.go`|HTTP boundary with usecase mocked|`go test ./internal/integration/...`|
 |9.5|worker|`internal/controller/worker/withdrawalarchive/**`|A second entry point into the usecase layer; the operation itself is idempotent|`make worker NAME=withdrawal-archive`|
-|10|verify|`make fix` / `make lint` / `make test`|90% floor is part of Done|`make cover-gate`|
+|10|verify|`make go-fix` / `make go-lint` / `make go-test`|90% floor is part of Done|`make cover-gate`|
 
 ---
 

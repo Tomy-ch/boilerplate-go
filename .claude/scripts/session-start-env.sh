@@ -102,7 +102,7 @@ fi
 
 if [ -z "${slot_id}" ] && [ "${kind}" = 'worktree' ]; then
   # shellcheck disable=SC2016 # 同上
-  add_notice 'DB スロットは未取得です。DB を使う作業（`make test` / `make db-init` / `make serve`）を始める直前に `make slot-acquire` を実行してください。スロット取得は DB を作り直すため、このフックは実行しません。'
+  add_notice 'DB スロットは未取得です。DB を使う作業（`make go-test` / `make db-init` / `make serve`）を始める直前に `make slot-acquire` を実行してください。スロット取得は DB を作り直すため、このフックは実行しません。'
 fi
 
 emit_hook() {

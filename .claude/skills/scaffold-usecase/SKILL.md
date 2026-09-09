@@ -1,7 +1,7 @@
 ---
 name: scaffold-usecase
 description: >-
-  Implement the usecase (Application Service) layer for one feature, driven by `docs/spec/usecase/<pkgpath>.md` (`<pkgpath>` = the package path under `internal/usecase/`). The skill reads the spec + `internal/usecase/README.md` + `internal/usecase/boundary/README.md` + an existing usecase package as structural template, then invokes a test-perspective subagent to enumerate usecase-layer test viewpoints (workflow ordering, mock strategy for repository/boundary, transaction-boundary correctness, error propagation, DTO conversion) BEFORE writing code. Generates: Usecase interface with `//go:generate mockgen` directive, `usecase` struct with all dependencies injected, `New(...)` constructor, per-method body with tracer span / boundary calls / domain calls / repository calls / DTO mapping per the spec's Workflow section, DTO struct definitions, and a test file using gomock-based mocks for repository + boundaries with real domain entities. Runs `make gen-api` to regenerate the Usecase mock, then updates `internal/di/module/usecase.go` to register the new provider. Verifies with `make fix` + `make test`, target 100% coverage for the package. On failure leaves TODO + FB; no auto-rollback. Prerequisites: the domain layer's Repository interface + entity exist, and the boundary interfaces the spec depends on (clock, tx, security, etc.) are already defined under `internal/usecase/boundary/`. Standalone-callable; when chained from `scaffold-endpoint`, runs as the third scaffold step.
+  Implement the usecase (Application Service) layer for one feature, driven by `docs/spec/usecase/<pkgpath>.md` (`<pkgpath>` = the package path under `internal/usecase/`). The skill reads the spec + `internal/usecase/README.md` + `internal/usecase/boundary/README.md` + an existing usecase package as structural template, then invokes a test-perspective subagent to enumerate usecase-layer test viewpoints (workflow ordering, mock strategy for repository/boundary, transaction-boundary correctness, error propagation, DTO conversion) BEFORE writing code. Generates: Usecase interface with `//go:generate mockgen` directive, `usecase` struct with all dependencies injected, `New(...)` constructor, per-method body with tracer span / boundary calls / domain calls / repository calls / DTO mapping per the spec's Workflow section, DTO struct definitions, and a test file using gomock-based mocks for repository + boundaries with real domain entities. Runs `make gen-api` to regenerate the Usecase mock, then updates `internal/di/module/usecase.go` to register the new provider. Verifies with `make go-fix` + `make go-test`, target 100% coverage for the package. On failure leaves TODO + FB; no auto-rollback. Prerequisites: the domain layer's Repository interface + entity exist, and the boundary interfaces the spec depends on (clock, tx, security, etc.) are already defined under `internal/usecase/boundary/`. Standalone-callable; when chained from `scaffold-endpoint`, runs as the third scaffold step.
 ---
 
 # Scaffold Usecase
@@ -43,7 +43,7 @@ Do NOT use this skill for:
 **Triggers (via `make`)**:
 
 - `make gen-api` — regenerates Usecase mock under `internal/usecase/<package>/mock/`
-- `make fix` + `make test` — final verification
+- `make go-fix` + `make go-test` — final verification
 
 **Never touches**:
 
@@ -156,20 +156,20 @@ Processes the `//go:generate mockgen` directive in the new usecase file and prod
 ## Step 6. Verify
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
 Confirm `internal/usecase/<package>` coverage line. Target 100% per project convention. If below, identify untested error / branch paths and recommend test additions.
 
 On failure: TODO + FB summary; no auto-rollback.
 
-> **DI verification (runtime):** `go build` / `make test` do NOT construct the Fx graph — a missing provider, an unregistered `New`, or a mismatched constructor signature only fails at **app startup**, not at compile/test time. After the DI registration (`fx.Provide(<package>.New)`), confirm the app actually boots: with `make serve` running, `air` rebuilds on save — verify the `api_server` logs reach `[Fx] RUNNING` ("http server started") with no Fx `provide` / `invoke` errors. Fresh-env caveat: the container builds in **vendor mode**, so run `make tidy-lib` (generates `vendor/`) first — otherwise it fails with `inconsistent vendoring` before Fx even runs.
+> **DI verification (runtime):** `go build` / `make go-test` do NOT construct the Fx graph — a missing provider, an unregistered `New`, or a mismatched constructor signature only fails at **app startup**, not at compile/test time. After the DI registration (`fx.Provide(<package>.New)`), confirm the app actually boots: with `make serve` running, `air` rebuilds on save — verify the `api_server` logs reach `[Fx] RUNNING` ("http server started") with no Fx `provide` / `invoke` errors. Fresh-env caveat: the container builds in **vendor mode**, so run `make tidy-lib` (generates `vendor/`) first — otherwise it fails with `inconsistent vendoring` before Fx even runs.
 
 ## Step 7. Closing
 
 ```text
-<Package> usecase 層を生成しました。<N> ファイル作成 + DI 1 行追加、make test OK、coverage <X>%。
+<Package> usecase 層を生成しました。<N> ファイル作成 + DI 1 行追加、make go-test OK、coverage <X>%。
 次は scaffold-controller で handler、または scaffold-endpoint で残層を続行できます。
 ```
 
@@ -220,6 +220,6 @@ Before reporting completion, confirm:
 - [ ] Test file written with gomock setup + subagent viewpoints
 - [ ] `internal/di/module/usecase.go` updated with new `fx.Provide`
 - [ ] `make gen-api` executed; mock file present
-- [ ] `make fix` + `make test` run; coverage reported (or failure surfaced with TODO + FB)
+- [ ] `make go-fix` + `make go-test` run; coverage reported (or failure surfaced with TODO + FB)
 - [ ] No commits / pushes
 - [ ] Final summary in Japanese

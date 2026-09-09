@@ -29,6 +29,12 @@ Escalate a matter when it changes an approved decision, crosses an architectural
 
 The `ci-first` load band delegates heavy local gates to CI when host saturation would make their failures unreliable. It does not permit verification to be skipped: the authoritative check still runs remotely, while local work keeps fast, trustworthy checks.
 
+## Signals whose meaning depends on a human sending them
+
+Some artifacts carry weight only because a human chose to create them, so an agent producing the identical artifact destroys that weight rather than supplying it. A public cross-reference to another repository's issue is the worked example: it tells upstream maintainers that a real project is watching an issue and needs it resolved, and they weigh it when prioritizing. Now that agents can file issues and gather references at scale, a reference emitted by tooling is indistinguishable from one a maintainer chose to send, and the count degrades from signal into spam.
+
+A control over such a signal cannot be satisfied by a better-informed agent, and a standing grant of autonomy does not transfer it. That is why [AGENTS.md](../../AGENTS.md) requires a per-case human confirmation rather than a rule an agent can evaluate, and why the default is the form that leaves no upstream trace.
+
 ## Improving the environment itself
 
 The steps above describe one change. The environment that guides and checks it is under a loop of

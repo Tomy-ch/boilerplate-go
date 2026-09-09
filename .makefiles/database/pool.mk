@@ -52,7 +52,7 @@ slot-acquire:
 	@# （理由は docs/maintenance/db-worktree-pool.md「A slot's two stores are reset together」）。
 	@$(MAKE) realtime-reset
 	@go run ./cmd/ db-slot heartbeat
-	@echo "✅ DB スロットを取得しました。make test は自 worktree DB(wt<N>_test)、make serve は共有 DB の wt<N>_local を使います。"
+	@echo "✅ DB スロットを取得しました。make go-test は自 worktree DB(wt<N>_test)、make serve は共有 DB の wt<N>_local を使います。"
 
 slot-free:
 	@go run ./cmd/ db-slot release

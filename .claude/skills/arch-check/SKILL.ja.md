@@ -14,7 +14,7 @@ layer 別アーキ適合性チェックの統合スキル。scope に応じて 1
 
 以下の用途には使いません:
 
-- formatting / style — `make fix` / `make lint`
+- formatting / style — `make go-fix` / `make go-lint`
 - general code review — `/review` / `/ultrareview` / `impl-review`
 - spec validation — `verify-spec`
 
@@ -132,12 +132,12 @@ git diff --name-only "origin/${BASE}...HEAD" -- 'docs/adr/*.md' 'docs/rules.md' 
 
 layer 検出なし（changed-files で Go 変更無し） → 明示メッセージで exit。
 
-## Step 2. `make lint` を1回だけ実行（共有ベースライン）
+## Step 2. `make go-lint` を1回だけ実行（共有ベースライン）
 
-`make lint` はリポジトリ全体を対象とするため1回だけ実行し、出力を全 auditor で共有する。各 auditor に再実行させない（N 並列で full-repo lint が重複するため）:
+`make go-lint` はリポジトリ全体を対象とするため1回だけ実行し、出力を全 auditor で共有する。各 auditor に再実行させない（N 並列で full-repo lint が重複するため）:
 
 ```sh
-make lint 2>&1 | tee /tmp/arch-check-lint.out
+make go-lint 2>&1 | tee /tmp/arch-check-lint.out
 ```
 
 監査対象 layer と無関係な理由で lint が失敗したら、verbatim 出力を提示して停止（壊れたベースラインに対して auditor を fan-out しない）。
@@ -182,7 +182,7 @@ Agent(subagent_type="ddd-modeling-reviewer",   prompt=<scope/files for domain>) 
 arch-check 統合結果（スコープ: <scope>）
 
 [lint baseline]
-  make lint: OK / FAIL (<n>件)
+  make go-lint: OK / FAIL (<n>件)
 
 [domain] violations: N, suggestions: K
   internal/domain/foo/bar.go:12 ...
@@ -243,13 +243,13 @@ TODO hand-off: 追加 <sum> 件, スキップ <sum> 件（既存コメント）
 
 ## AI 修正スコープ
 
-- 読み込み: 各 layer の README + 関連ファイル（auditor サブエージェントが実施）、`make lint`（integrator が1回実行、`/tmp/arch-check-lint.out`）
+- 読み込み: 各 layer の README + 関連ファイル（auditor サブエージェントが実施）、`make go-lint`（integrator が1回実行、`/tmp/arch-check-lint.out`）
 - 書き込み: user opt 時のみ、`internal/{domain,controller,infrastructure}/**/*.go` の suggestion 位置への `// TODO:` hand-off コメント追加（**integrator が単一スレッドで実施**）。auditor サブエージェントは一切書き込まない。
 
 ## 制約事項
 
 - ❌ auditor を逐次起動（必ず1メッセージ内で複数 Agent 呼び出し＝並列）
-- ❌ 各 auditor に `make lint` を再実行させる（共有 `lintOutput` を渡す）
+- ❌ 各 auditor に `make go-lint` を再実行させる（共有 `lintOutput` を渡す）
 - ❌ scope + TODO opt `AskUserQuestion` をスキップ
 - ❌ heuristic findings (handler bloat 等) を hard violation 扱い（auditor が `suggestion` ラベル付け、integrator は respect）
 - ❌ `[ddd-origin]` の差異を violation に合算する / TODO hand-off の対象にする（裁定しない検出なので defer 先も無い）
@@ -266,7 +266,7 @@ TODO hand-off: 追加 <sum> 件, スキップ <sum> 件（既存コメント）
 
 - [ ] scope + TODO opt を `AskUserQuestion` で確認
 - [ ] 変更ファイル or full repo で layer + per-layer ファイルリスト解決
-- [ ] `make lint` を1回だけ実行し `/tmp/arch-check-lint.out` に保存
+- [ ] `make go-lint` を1回だけ実行し `/tmp/arch-check-lint.out` に保存
 - [ ] touched layer の `arch-auditor-*` を **1メッセージ内で並列起動**（scope / files / baseRef / lintOutput を渡す）
 - [ ] domain / ADR / README が touched なら `ddd-origin-auditor` を同じメッセージで並列起動（`quick`、選択パターンごとに1つ）
 - [ ] 各 auditor が自身の README + lean A 規則を適用（read-only）

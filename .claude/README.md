@@ -124,6 +124,43 @@ Measured on this repository, not inherited from upstream's claims:
 - **The graph is only as fresh as the last `update`.** For a question about uncommitted work,
   rebuild first or use `grep` — for a small diff, `grep` is the cheaper of the two.
 
+## Token proxy: `rtk`
+
+`rtk` compresses shell output before it reaches the agent's context. Its version is pinned in
+`mise.toml` like every other mise-resolved tool (`mise install rtk`). Nothing in the build, test, or
+CI path invokes it, so a checkout without it behaves identically — only the agent's context is larger.
+
+### What pays here, and what does not
+
+- **`rtk read` saves nothing by default.** Its default `--level none` is full content; the reduction
+  comes from `-l minimal` / `-l aggressive`, which drop lines. Do not read source that way — a
+  filtered file that still looks complete is worse to reason from than a long one.
+- **`rtk diff <rev>` returns an empty result.** It takes file paths, not git revisions. Use
+  `rtk git diff`.
+- **`go test` / `golangci-lint` are unmeasured here.** Both run inside the tool-runners through
+  `make`, where `rtk` never sees the real invocation; upstream's filters describe a bare one.
+- **Never report a deterministic check through a lossy filter.** `AGENTS.md` requires reporting what
+  the test / lint / gate said, and `rtk` shows failures only, dropping counts and coverage. When the
+  number itself is the subject, take the raw output with `rtk run <command>`.
+
+### Machine-local setup, and why the pin does not reach it
+
+The auto-rewrite hook (`rtk init -g`) and the exclusion list live in the user's home directory, not in
+the checkout, so neither ships with the repo. Two consequences:
+
+- **The hook resolves `rtk` from `PATH`, so it does not honor the `mise.toml` pin.** A separately
+  installed `rtk` will differ from the pinned version; invoke the pinned build where the version
+  matters.
+- **The exclusion criterion is not how verbose a command is, but whether its output is read as an
+  exact value.** What this repository excludes, and why:
+
+  | Excluded | Why |
+  | --- | --- |
+  | `gh` | `--json` output drives decisions (`mergeable`, `baseRefName`, `state`) |
+  | `make` | Some targets' output *is* the value (`base-branch`, `slot-status`), and the tool-runners hide the real tool from `rtk` anyway, so excluding costs nothing |
+  | `psql` | Row values are what is being verified |
+  | `curl` | API response bodies are verified against the spec |
+
 ## Conventions
 
 - **English is canonical.** Skill/README bodies are written in imperative English; the paired

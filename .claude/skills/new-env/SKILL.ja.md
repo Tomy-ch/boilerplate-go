@@ -214,27 +214,27 @@ opt-in されたときだけ。
 ## Step 4. 検証
 
 ```sh
-make fix    # フォーマットを吸収
-make test   # config ロード + getter のコンパイル、テスト通過、カバレッジ維持を確認
+make go-fix    # フォーマットを吸収
+make go-test   # config ロード + getter のコンパイル、テスト通過、カバレッジ維持を確認
 ```
 
-`make test` 失敗時は surface して停止。自動 rollback はしない（ユーザーが fix-forward を判断）。
+`make go-test` 失敗時は surface して停止。自動 rollback はしない（ユーザーが fix-forward を判断）。
 
-`make fix` が編集対象外を変更した場合も diff を surface。
+`make go-fix` が編集対象外を変更した場合も diff を surface。
 
 ### カバレッジ確認
 
-`make test` 成功後、テスト出力内の `internal/config` パッケージのカバレッジ行を確認。期待値: `go-boilerplate/internal/config <時間>  coverage: 100.0% of statements`。100% を下回った場合:
+`make go-test` 成功後、テスト出力内の `internal/config` パッケージのカバレッジ行を確認。期待値: `go-boilerplate/internal/config <時間>  coverage: 100.0% of statements`。100% を下回った場合:
 
 1. テスト未到達の新コードパスを特定（典型的には新 getter または `New()` 内の新マッピング行）
 2. Step 3 のテスト更新（`config_test.go`, `model_test.go`, `config_testing_mock_test.go`）が全て新フィールドを含むか確認
-3. 漏れがあれば追加して `make test` 再実行
+3. 漏れがあれば追加して `make go-test` 再実行
 
 mock + テスト更新を opt-out した場合を除き、カバレッジ低下のままスキル完了報告をしない。
 
 ## Step 5. クロージング
 
-- 1 行サマリ: 「<VAR_NAME> を追加。<N> ファイル更新。make test OK。」
+- 1 行サマリ: 「<VAR_NAME> を追加。<N> ファイル更新。make go-test OK。」
 - スキルは commit しない。レビュー後に `/commit` 推奨
 - `internal/config/README.md` も更新したい場合（個別変数の説明ではなく package 全体）は `/sync-readme` を推奨
 
@@ -261,7 +261,7 @@ CLAUDE.md / AGENTS.md の "Exception: Skill Execution" により、本スキル�
 - ✅ ユーザー向け出力は日本語
 - ✅ env ファイルのフォーマット維持（列整列、コメントスタイル）
 - ✅ README テーブルのフォーマット維持（列数と順序）
-- ✅ 書き込み後に `make fix` + `make test` を実行
+- ✅ 書き込み後に `make go-fix` + `make go-test` を実行
 - ✅ 検証失敗を surface、自動 rollback しない
 
 ## チェックリスト
@@ -278,7 +278,7 @@ CLAUDE.md / AGENTS.md の "Exception: Skill Execution" により、本スキル�
 - [ ] 6 env ファイル全てを該当サブシステムコメント配下に追加
 - [ ] `env/README.md`, `env/README.ja.md` にテーブル行追加
 - [ ] `config_testing_setter.go` は明示要求時のみ更新
-- [ ] `make fix`, `make test` を実行し結果を報告
+- [ ] `make go-fix`, `make go-test` を実行し結果を報告
 - [ ] テスト出力で `internal/config` のカバレッジ 100.0% を確認（mock スコープ skip 時は明示低下記録）
 - [ ] commit / push を行っていない
 - [ ] 最終サマリは日本語

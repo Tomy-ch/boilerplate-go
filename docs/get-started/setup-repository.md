@@ -166,8 +166,8 @@ tools (this one and the sample remover) runs last.
 Confirm that basic functionality works correctly, including tests, static analysis, code generation, and health checks.
 
 ```sh
-make test
-make lint
+make go-test
+make go-lint
 make gen
 curl http://localhost:8080/health
 curl http://localhost:8080/ready

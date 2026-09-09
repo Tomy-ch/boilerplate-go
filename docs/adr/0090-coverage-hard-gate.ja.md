@@ -31,7 +31,7 @@ accepted
 - `COVERAGE_THRESHOLD := 90` が下限の単一情報源である。
 - 除外パッケージ（`GO_TEST_EXCLUDE`）は `gen`、`cmd`、`mock`、`apperror`、`scripts`——
   生成済み、DI ワイヤリング、または単独ではユニットテストが意味をなさないユーティリティのパッケージ。
-- `make test-cover-ci` は同じフィルタされたパッケージリストに対して `-coverpkg` を設定してテストを実行し
+- `make go-test-cover-ci` は同じフィルタされたパッケージリストに対して `-coverpkg` を設定してテストを実行し
   `coverage.out` を書き込む。
 - `make cover-gate` は `coverage.out` を読み込み、`go tool cover -func` から合計行を抽出し、
   合計がしきい値を下回った場合に非ゼロで終了する（`cover-gate` ターゲット）。

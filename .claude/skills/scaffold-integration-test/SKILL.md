@@ -1,7 +1,7 @@
 ---
 name: scaffold-integration-test
 description: >-
-  Generate HTTP-boundary integration tests for one feature under `internal/integration/`. These are NOT DB/usecase integration tests — they boot an Echo server via `httptest` and verify only the HTTP path (Router → Middleware → Handler → Presenter) with the usecase MOCKED, per `internal/integration/README.md`'s test strategy. Hardcodes no helper API: reads `internal/integration/README.md` (test strategy + scope) and `internal/integration/helper_test.go` (the package's test helpers — HTTP server bootstrap, request execution, JSON-response assertion, auth-header injection) at runtime to learn their current names + signatures, plus a sibling `<feature>_test.go` as the structural template, the target handler package's `BindHandler` signature, its generated `gen` request/response types, and the usecase mock package. Derives one subtest per operationId (HTTP method + path from the handler `gen`), each: boot Echo → mock the mapped usecase method → bind the handler → drive the endpoint through whatever request/assert helpers `helper_test.go` exposes → assert status (+ JSON body on happy path); auth-required operations use the auth-header helper. Writes ONLY `internal/integration/<feature>_test.go`. Verifies with `make fix` + `make test`. Prerequisite: the controller handler for the feature exists and compiles (its `BindHandler` + `gen` are importable) and the usecase mock exists. Standalone-callable; chained from `scaffold-controller` as its final step (so `scaffold-endpoint` gets it transitively).
+  Generate HTTP-boundary integration tests for one feature under `internal/integration/`. These are NOT DB/usecase integration tests — they boot an Echo server via `httptest` and verify only the HTTP path (Router → Middleware → Handler → Presenter) with the usecase MOCKED, per `internal/integration/README.md`'s test strategy. Hardcodes no helper API: reads `internal/integration/README.md` (test strategy + scope) and `internal/integration/helper_test.go` (the package's test helpers — HTTP server bootstrap, request execution, JSON-response assertion, auth-header injection) at runtime to learn their current names + signatures, plus a sibling `<feature>_test.go` as the structural template, the target handler package's `BindHandler` signature, its generated `gen` request/response types, and the usecase mock package. Derives one subtest per operationId (HTTP method + path from the handler `gen`), each: boot Echo → mock the mapped usecase method → bind the handler → drive the endpoint through whatever request/assert helpers `helper_test.go` exposes → assert status (+ JSON body on happy path); auth-required operations use the auth-header helper. Writes ONLY `internal/integration/<feature>_test.go`. Verifies with `make go-fix` + `make go-test`. Prerequisite: the controller handler for the feature exists and compiles (its `BindHandler` + `gen` are importable) and the usecase mock exists. Standalone-callable; chained from `scaffold-controller` as its final step (so `scaffold-endpoint` gets it transitively).
 ---
 
 # Scaffold Integration Test
@@ -20,7 +20,7 @@ A Japanese reference translation of this skill is available at `SKILL.ja.md` in 
 
 Do NOT use for:
 
-- DB / Repository / usecase-logic verification — those are unit tests (domain/usecase) and the repository's own `make test` (real DB). Integration here stops at the HTTP boundary.
+- DB / Repository / usecase-logic verification — those are unit tests (domain/usecase) and the repository's own `make go-test` (real DB). Integration here stops at the HTTP boundary.
 - Modifying the handler, usecase, or generated files.
 - Adding a single case to an existing `<feature>_test.go` — edit by hand.
 
@@ -41,7 +41,7 @@ Do NOT use for:
 
 **Triggers (via `make`)**:
 
-- `make fix` + `make test` — final verification
+- `make go-fix` + `make go-test` — final verification
 
 **Never touches**:
 
@@ -125,11 +125,11 @@ Write `internal/integration/<feature>_test.go`:
 ## Step 6. Verify
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
-> **Environment note:** `make test` requires the dev environment to be running for the DB-backed suites in the same run; bring it up with the dedicated make targets (`make serve` → **`make db-init`**, which migrates **and seeds** both local & test DBs — seed data is assumed by the suite), **not raw `docker compose`** and not a bare `db-*-migrate-up`. If `make fix` / `make test` fails on a tool version mismatch (e.g. `golangci-lint` v1/v2 config error), realign with `make install-tools` (`make sync-versions` first if `mise.toml` changed) rather than hand-editing `PATH`.
+> **Environment note:** `make go-test` requires the dev environment to be running for the DB-backed suites in the same run; bring it up with the dedicated make targets (`make serve` → **`make db-init`**, which migrates **and seeds** both local & test DBs — seed data is assumed by the suite), **not raw `docker compose`** and not a bare `db-*-migrate-up`. If `make go-fix` / `make go-test` fails on a tool version mismatch (e.g. `golangci-lint` v1/v2 config error), realign with `make install-tools` (`make sync-versions` first if `mise.toml` changed) rather than hand-editing `PATH`.
 
 On failure: surface the failing test output + leave a `// TODO:` at the problem case + FB summary. No auto-rollback.
 
@@ -137,7 +137,7 @@ On failure: surface the failing test output + leave a `// TODO:` at the problem 
 
 ```text
 <Feature> の HTTP 境界 integration テストを internal/integration/<feature>_test.go に生成しました。
-<N> 件の subtest、make test OK。
+<N> 件の subtest、make go-test OK。
 ```
 
 Do NOT commit.
@@ -176,6 +176,6 @@ Remains protected:
 - [ ] Test-perspective subagent invoked; viewpoints captured before any write
 - [ ] Plan displayed and confirmed via `AskUserQuestion`
 - [ ] `internal/integration/<feature>_test.go` written using existing helpers, Japanese subtest names, `t.Parallel()`
-- [ ] `make fix` + `make test` run (or failure surfaced with TODO + FB)
+- [ ] `make go-fix` + `make go-test` run (or failure surfaced with TODO + FB)
 - [ ] No commits / pushes
 - [ ] Final summary in Japanese

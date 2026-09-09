@@ -274,7 +274,7 @@ payload 下で standalone と挙動が変わるのは次の2点だけ:
 ## 制約（サマリ）
 
 - ❌ ファイル編集（read-only）。
-- ❌ `make test` 実行（本スキルはレビュー、実行は `make test` 別途）。
+- ❌ `make go-test` 実行（本スキルはレビュー、実行は `make go-test` 別途）。
 - ❌ verifier を通さず finder 出力をそのまま信頼（`skip_verifier: true` 親指定以外、verifier は必須）。
 - ❌ 観点リストのハードコード（SSOT は層 README の Test Strategy 節、`pkg/` は明文化された例外）。
 - ❌ 意味的品質アンチパターンのカタログ（Lens 3）や意味網羅バー（Lens 4 軸B）のハードコード — SSOT は `docs/testing-conventions.md` section 10、runtime 読み込み。

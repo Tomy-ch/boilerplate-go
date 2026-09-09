@@ -35,7 +35,7 @@ const domainImportPrefix = "go-boilerplate/internal/domain/"
 const lexiconAggregate = "lexicon"
 
 // serviceAggregate は、Domain Service の置き場。集約の import を許されており本規約の対象外
-// （.golangci-full.yaml の maintain_a_sound_domain_service が受け持つ）。
+// （.golangci.yaml の maintain_a_sound_domain_service が受け持つ）。
 const serviceAggregate = "service"
 
 // subEntityMarker は、sub-entity のパッケージを他集約から隔離する目印。Go 自身が

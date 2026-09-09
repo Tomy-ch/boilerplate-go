@@ -482,7 +482,7 @@ Applies to standalone **documentation prose** — `README*` / `docs/**` / guides
 
 > The concrete *how* of writing tests (structure, `正常系` / `異常系` naming, `t.Parallel()`, `require` vs `assert`, no table-driven `for` loops, mock policy, coverage-exception governance) lives in [`testing-conventions.md`](testing-conventions.md). This section defines only the non-negotiable *definition of done*.
 
-- Co-locate tests with each layer's implementation and verify them **per layer** — write that layer's tests and run `make test` (with coverage) before moving on. Do not batch all testing into a final step; deferred tests hide coverage gaps until late.
+- Co-locate tests with each layer's implementation and verify them **per layer** — write that layer's tests and run `make go-test` (with coverage) before moving on. Do not batch all testing into a final step; deferred tests hide coverage gaps until late.
 - A change is "done" only when it is **tested and meets the coverage bar** (new / modified packages > 90%, handlers ~100%), not when it merely compiles. `go build` success is **not** a completion signal.
 - "Compiles ≠ done" also applies to wiring: verify the DI graph at **runtime** (the app boots and reaches `[Fx] RUNNING`), not by build / unit tests alone.
 - Intentionally unreachable defensive branches (an impossible `switch` default, a `panic` guarding a precondition that cannot fail, a hard-to-force infrastructure error path) are acceptable as uncovered lines — keep them as assertions instead of contorting tests to reach them.

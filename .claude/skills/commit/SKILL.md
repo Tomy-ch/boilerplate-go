@@ -1,9 +1,9 @@
 ---
 name: commit
 description: >-
-  Analyze the current working-tree changes (staged + unstaged), group them into appropriately-scoped commits with the project's prefix convention (Feat / Fix / Refactor / Perf / Docs / Test / Build / CI / Chore / Style / Revert), and execute each commit in Japanese after user approval. Pre-flight also checks whether the current branch's PR is already merged and, if so, recommends cutting a fresh branch from the base before committing. Commits are made with `git commit --no-verify` to skip lefthook during the split; after all commits succeed, the command runs the full lefthook pre-commit hook (`lefthook run pre-commit --force`) plus `make fix` as a final verification gate. Respects CLAUDE.md's git rules (no direct commits to protected branches, no force-push, no auto-push after PR amend, Co-Authored-By footer, HEREDOC commit messages).
+  Analyze the current working-tree changes (staged + unstaged), group them into appropriately-scoped commits with the project's prefix convention (Feat / Fix / Refactor / Perf / Docs / Test / Build / CI / Chore / Style / Revert), and execute each commit in Japanese after user approval. Pre-flight also checks whether the current branch's PR is already merged and, if so, recommends cutting a fresh branch from the base before committing. Commits are made with `git commit --no-verify` to skip lefthook during the split; after all commits succeed, the command runs the full lefthook pre-commit hook (`lefthook run pre-commit --force`) plus `make go-fix` as a final verification gate. Respects CLAUDE.md's git rules (no direct commits to protected branches, no force-push, no auto-push after PR amend, Co-Authored-By footer, HEREDOC commit messages).
 argument-hint: '[--dry-run] [--scope=staged|all]'
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git reset:*), Bash(git fetch:*), Bash(git switch:*), Bash(gh pr view:*), Bash(make fix:*), Bash(make gate-fix:*), Bash(make load-status:*), Bash(make lint:*), Bash(make test:*), Bash(make sql-lint:*), Bash(make check-migration-up-version:*), Bash(make check-migration-down-version:*), Bash(make check-migration-up-gap:*), Bash(make check-migration-down-gap:*), Read, AskUserQuestion
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git reset:*), Bash(git fetch:*), Bash(git switch:*), Bash(gh pr view:*), Bash(make go-fix:*), Bash(make gate-fix:*), Bash(make load-status:*), Bash(make go-lint:*), Bash(make go-test:*), Bash(make sql-lint:*), Bash(make check-migration-up-version:*), Bash(make check-migration-down-version:*), Bash(make check-migration-up-gap:*), Bash(make check-migration-down-gap:*), Read, AskUserQuestion
 ---
 
 # Commit
@@ -14,7 +14,7 @@ A Japanese reference translation of this skill is available at `SKILL.ja.md` in 
 
 This command analyzes uncommitted changes in the working tree and produces one or more git commits with appropriate granularity and the project's prefix convention. All commit messages are in Japanese, per `CLAUDE.md`.
 
-This command intentionally bypasses lefthook on every commit (`git commit --no-verify`) so that pre-commit checks (`make lint` / `make test` / `make sql-lint` / migration checks) do not fire N times during multi-commit splits. Instead, after all commits succeed, Step 6 runs the whole pre-commit hook once via `lefthook run pre-commit --force` plus `make fix` as a single verification pass. The `--force` flag is what makes this work: after this command stages and commits everything the working tree is clean, so a bare `lefthook run pre-commit` would skip every command ("no matching staged files") — `--force` runs the hook anyway. Driving the real hook keeps the gate in sync with `.lefthook.yaml` and runs the commands in parallel.
+This command intentionally bypasses lefthook on every commit (`git commit --no-verify`) so that pre-commit checks (`make go-lint` / `make go-test` / `make sql-lint` / migration checks) do not fire N times during multi-commit splits. Instead, after all commits succeed, Step 6 runs the whole pre-commit hook once via `lefthook run pre-commit --force` plus `make go-fix` as a single verification pass. The `--force` flag is what makes this work: after this command stages and commits everything the working tree is clean, so a bare `lefthook run pre-commit` would skip every command ("no matching staged files") — `--force` runs the hook anyway. Driving the real hook keeps the gate in sync with `.lefthook.yaml` and runs the commands in parallel.
 
 ## Step 0. Auto-format
 
@@ -24,7 +24,7 @@ Run `make gate-fix` once at the very start to absorb formatting fixes (gofmt / g
 make gate-fix
 ```
 
-`gate-fix` rather than `fix`, because this runs on every `/commit` and `fix` drives the same full-config golangci-lint as `lint`. `.makefiles/load.mk` therefore defers it in the `ci-first` band along with the other heavy gates (`repo-ops` §19) and CI's lint reports the formatting drift instead. A bare `make fix` still runs unconditionally — an explicitly typed command does what it says.
+`gate-fix` rather than `fix`, because this runs on every `/commit` and `fix` drives the same full-config golangci-lint as `lint`. `.makefiles/load.mk` therefore defers it in the `ci-first` band along with the other heavy gates (`repo-ops` §19) and CI's lint reports the formatting drift instead. A bare `make go-fix` still runs unconditionally — an explicitly typed command does what it says.
 
 If `make gate-fix` itself fails, abort and report the failure to the user. Do not continue. Any changes it produces are folded into the working tree and become part of the candidate change set inspected in Step 2. When the band deferred it, it produces no changes by design — do not read that as evidence the tree was already formatted.
 
@@ -81,7 +81,7 @@ Interpret the result:
     - 「このブランチのまま続ける」 — the user accepts committing on the merged branch; continue on the current branch.
 - **`state` is `CLOSED`** (closed without merge) → not blocked, but note it to the user once (the branch's PR was closed) and continue.
 
-Read `.lefthook.yaml` (if present) and extract the list of `pre-commit:` command entries. The list is displayed in Step 4 so the user knows what is being skipped during the split; Step 6 then re-runs the whole hook via `lefthook run pre-commit --force`. If `.lefthook.yaml` is absent, note that and continue (Step 6 will fall back to running only `make fix`).
+Read `.lefthook.yaml` (if present) and extract the list of `pre-commit:` command entries. The list is displayed in Step 4 so the user knows what is being skipped during the split; Step 6 then re-runs the whole hook via `lefthook run pre-commit --force`. If `.lefthook.yaml` is absent, note that and continue (Step 6 will fall back to running only `make go-fix`).
 
 Parse `$ARGUMENTS`:
 
@@ -124,7 +124,7 @@ Use exactly **one** of the following prefixes per commit (capitalized, English, 
 | `Build:` | Build system, dependencies, tooling | `Dockerfile`, `go.mod` / `go.sum`, `makefile`, `.makefiles/**`, `mise.toml` |
 | `CI:` | CI/CD configuration | `.github/workflows/**`, `.lefthook.yaml`, GitHub Actions related |
 | `Chore:` | Miscellaneous chores | `.gitignore`, editor settings, `.claude/**`, other small tasks |
-| `Style:` | Formatting-only changes that do not affect logic | Output of `make fix`, `gofmt`, `goimports` |
+| `Style:` | Formatting-only changes that do not affect logic | Output of `make go-fix`, `gofmt`, `goimports` |
 | `Revert:` | Undoing an existing commit | Output of `git revert`, or an equivalent manual revert |
 
 Do not invent prefixes outside this list. When ambiguous, choose the closest match (most cases are one of `Feat` / `Fix` / `Refactor`).
@@ -160,7 +160,7 @@ Build a list of proposed commits with appropriate granularity. Each item:
 - **One semantic change = one commit.** Do not mix feature + refactor + fix into a single commit.
 - **Tests may co-locate with the implementation they cover** (a new handler and its tests belong together). If you are only adding tests for existing code, that goes into a standalone `Test:` commit.
 - **Generated artifacts co-locate with their source change.** When `openapi/*.yaml` changes, the regenerated `*.gen.go` files belong in the same commit. The output of `make gen-api` / `make gen-query` follows the same rule.
-- **Formatting-only changes are standalone `Style:` commits.** Output produced by Step 0's `make fix` may be folded into the appropriate existing group when it is clearly part of the same change; if it is unrelated, surface it as a separate `Style:` commit.
+- **Formatting-only changes are standalone `Style:` commits.** Output produced by Step 0's `make go-fix` may be folded into the appropriate existing group when it is clearly part of the same change; if it is unrelated, surface it as a separate `Style:` commit.
 - **`Docs:` is standalone by default.** Exception: when documentation is part of a new feature (e.g., a README added alongside a new package), they may co-locate.
 - **One prefix per commit.** If you feel the urge to write two, the grouping is wrong.
 
@@ -172,12 +172,12 @@ Along with the grouping proposal, display the lefthook commands that will be **s
 This command will run `git commit --no-verify` on every commit.
 The following lefthook pre-commit commands will be SKIPPED during commits but
 re-run together in Step 6 via `lefthook run pre-commit --force` after all commits succeed:
-  - lint                    (make lint)
-  - test                    (make test)
+  - lint                    (make go-lint)
+  - test                    (make go-test)
   - sql-lint                (make sql-lint)
   - migration-check-version (make check-migration-up-version check-migration-down-version)
   - migration-check-gap     (make check-migration-up-gap check-migration-down-gap)
-Plus `make fix` as a final formatting pass.
+Plus `make go-fix` as a final formatting pass.
 ```
 
 ### Confirmation
@@ -239,17 +239,17 @@ If `git add` or `git commit` fails for any group (file-path typo, mid-operation 
 
 ## Step 6. Verification
 
-After all commits succeed, run the full lefthook `pre-commit` hook once with `lefthook run pre-commit --force`, then `make fix` as a final formatting pass. The `--force` flag is essential: the commits were made with `--no-verify` and the working tree is now clean, so a bare `lefthook run pre-commit` skips every command ("no matching staged files"); `--force` runs the whole hook regardless of staging. Driving the real hook (instead of a hand-enumerated command list) keeps this gate in sync with `.lefthook.yaml` — newly added `pre-commit` commands are picked up automatically — and lefthook runs them in parallel (`parallel: true`), which is much faster than a sequential re-run.
+After all commits succeed, run the full lefthook `pre-commit` hook once with `lefthook run pre-commit --force`, then `make go-fix` as a final formatting pass. The `--force` flag is essential: the commits were made with `--no-verify` and the working tree is now clean, so a bare `lefthook run pre-commit` skips every command ("no matching staged files"); `--force` runs the whole hook regardless of staging. Driving the real hook (instead of a hand-enumerated command list) keeps this gate in sync with `.lefthook.yaml` — newly added `pre-commit` commands are picked up automatically — and lefthook runs them in parallel (`parallel: true`), which is much faster than a sequential re-run.
 
-The hook decides for itself how hard to run. `.makefiles/load.mk` sizes the heavy Go gates from the number of open worktrees, and in the `ci-first` band it defers them to CI rather than running them here (`make load-status` reports the current band; `repo-ops` §19 explains it). Do not fight that decision by invoking `make lint` / `make test` directly to "really" verify — with several windows open, a full local lint costs minutes of saturated host and CI re-runs it identically anyway. Report what the band did and let the push carry the rest.
+The hook decides for itself how hard to run. `.makefiles/load.mk` sizes the heavy Go gates from the number of open worktrees, and in the `ci-first` band it defers them to CI rather than running them here (`make load-status` reports the current band; `repo-ops` §19 explains it). Do not fight that decision by invoking `make go-lint` / `make go-test` directly to "really" verify — with several windows open, a full local lint costs minutes of saturated host and CI re-runs it identically anyway. Report what the band did and let the push carry the rest.
 
 ### Procedure
 
 0. Run `make -s load-status` and note the resolved band. It tells you, before anything runs, whether the heavy gates will execute locally (`full` / `low`) or be deferred to CI (`ci-first`), so the summary in step 4 can say which verification actually happened.
-1. Run `lefthook run pre-commit --force`. It executes every command under `pre-commit.commands.*` against the working tree (which reflects the committed state) and exits non-zero if any command fails. If `.lefthook.yaml` is absent or `lefthook` is not installed, skip to step 3 (run only `make fix`) and note it.
+1. Run `lefthook run pre-commit --force`. It executes every command under `pre-commit.commands.*` against the working tree (which reflects the committed state) and exits non-zero if any command fails. If `.lefthook.yaml` is absent or `lefthook` is not installed, skip to step 3 (run only `make go-fix`) and note it.
 2. Read lefthook's per-command summary — it lists each command with ✔️ / ❌ and a timing.
 3. Run `make gate-fix`. If it modifies any tracked file, surface the diff to the user — it indicates the committed state was not fully formatted, and the user must decide whether to stage and commit those fixes.
-4. Summarize the outcome to the user: lefthook's pass/fail summary (or the note that lefthook was unavailable) plus whether `make fix` produced changes. When the band was `ci-first`, say plainly which gates were deferred and that CI is what verifies them — a summary that reads "検証が通りました" without that qualifier overstates what was checked.
+4. Summarize the outcome to the user: lefthook's pass/fail summary (or the note that lefthook was unavailable) plus whether `make go-fix` produced changes. When the band was `ci-first`, say plainly which gates were deferred and that CI is what verifies them — a summary that reads "検証が通りました" without that qualifier overstates what was checked.
 5. If `lefthook run pre-commit --force` exits non-zero (any command failed), report the failing command (from lefthook's summary) and stop. Do NOT roll back commits — the failure is informational; the user decides whether to add fix-up commits or amend. Tell the user explicitly:
 
    ```txt
@@ -257,7 +257,7 @@ The hook decides for itself how hard to run. `.makefiles/load.mk` sizes the heav
    失敗したコマンド: <lefthook が ❌ を出したコマンド名>
    ```
 
-6. If lefthook passes and `make fix` produced no changes, proceed to Step 7.
+6. If lefthook passes and `make go-fix` produced no changes, proceed to Step 7.
 
 > The repo's `pre-commit` commands are whole-repo `make` targets, so `--force` (which feeds an empty / `{all_files}` set) runs them correctly. If a future command relies on the `{staged_files}` template, revisit this — `--force` would pass it no files.
 
@@ -314,18 +314,18 @@ If the user passes `--no-verify` to `/commit` itself (a future-compatible flag),
 - ✅ `Co-Authored-By` footer
 - ✅ `--no-verify` on every commit produced by this command
 - ✅ Stage only the files in the current group
-- ✅ `make fix` once at Step 0 before inspection
+- ✅ `make go-fix` once at Step 0 before inspection
 - ✅ Capture `ORIGINAL_HEAD` at Step 1 for safe rollback
 - ✅ At Step 1, detect a current branch whose PR is already merged (`gh pr view`) and recommend cutting a fresh branch from the base before committing (degrade gracefully when `gh` is unavailable)
 - ✅ On failure, propose `git reset --mixed <ORIGINAL_HEAD>` via `AskUserQuestion`
-- ✅ Step 6 runs the whole pre-commit hook via `lefthook run pre-commit --force` + `make fix`
+- ✅ Step 6 runs the whole pre-commit hook via `lefthook run pre-commit --force` + `make go-fix`
 - ✅ Always pass `--force` to `lefthook run pre-commit` in Step 6 — without it, lefthook skips every command against the now-clean post-commit tree
 
 ## Checklist
 
 Before reporting completion, confirm:
 
-- [ ] `make fix` ran successfully at Step 0
+- [ ] `make go-fix` ran successfully at Step 0
 - [ ] `ORIGINAL_HEAD` captured before any commit
 - [ ] Commits were made on a non-protected branch
 - [ ] Checked whether the current branch's PR is already merged; if so, recommended cutting a fresh branch (and acted on the user's choice)
@@ -337,6 +337,6 @@ Before reporting completion, confirm:
 - [ ] Each commit used `--no-verify` and was passed via HEREDOC
 - [ ] `git add` named files explicitly (no `-A` / `.`)
 - [ ] Generated artifacts co-located with their source change
-- [ ] Step 6 verification ran `lefthook run pre-commit --force` plus `make fix` (or fell back to `make fix` when lefthook / `.lefthook.yaml` was unavailable)
+- [ ] Step 6 verification ran `lefthook run pre-commit --force` plus `make go-fix` (or fell back to `make go-fix` when lefthook / `.lefthook.yaml` was unavailable)
 - [ ] Verification results (OK / FAIL / no changes) were surfaced to the user
 - [ ] No automatic push was performed

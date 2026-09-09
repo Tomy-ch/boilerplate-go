@@ -69,7 +69,7 @@ func run(args []string, total func(profile string) (float64, error)) error {
 	}
 
 	if _, err := os.Stat(*profile); err != nil {
-		return xerrors.Wrap(err, "❌ "+*profile+" がありません（先に make test-cover-ci を実行）")
+		return xerrors.Wrap(err, "❌ "+*profile+" がありません（先に make go-test-cover-ci を実行）")
 	}
 
 	value, err := total(*profile)

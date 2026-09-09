@@ -49,7 +49,7 @@ controller / infra の "規約通り" は `arch-check`（controller / infra 監�
 6. scaffold-usecase         (domain entity + repository IF + usecase spec の Workflow から実装)
 7. scaffold-controller      (OpenAPI gen + usecase IF から handler を導出)
 8. arch-check               (全 layer の規約適合性チェック)
-9. make test                (build / test の cross-layer 整合性確認)
+9. make go-test                (build / test の cross-layer 整合性確認)
 ```
 
 `back-prop` は scaffold-endpoint の chain には含まれない。実装フローの **後段** に位置する独立 hygiene skill で、推奨 trigger は次の通り:

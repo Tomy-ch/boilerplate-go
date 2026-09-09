@@ -87,7 +87,7 @@ format + cross-layer 参照整合性まで。sqlc gen 関数が実在するか�
 
 ## scaffold-X skill 内では pre-check しない
 
-scaffold-X 内では入力の有効性を仮定する。事前検証は `verify-spec` の責務、事後検証は `make test` の責務。`scaffold-endpoint` から起動された場合は `verify-spec` が違反検出時に下流 chain を中断する。
+scaffold-X 内では入力の有効性を仮定する。事前検証は `verify-spec` の責務、事後検証は `make go-test` の責務。`scaffold-endpoint` から起動された場合は `verify-spec` が違反検出時に下流 chain を中断する。
 
 ## 参照する spec format
 

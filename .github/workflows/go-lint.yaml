@@ -60,7 +60,8 @@ jobs:
               - 'go.mod'
               - 'go.sum'
               - '.golangci.yaml'
-              - '.golangci-full.yaml'
+              - '.golangci-fast.yaml'
+              - '.golangci-min.yaml'
               - 'makefile'
               - '.makefiles/go/golangci-lint.mk'
 
@@ -154,6 +155,10 @@ jobs:
           go version
           golangci-lint version
 
+      # Before the heavy lint so a broken config fails in seconds; see .makefiles/go/golangci-lint.mk.
+      - name: Verify golangci configs
+        run: make go-lint-config-check
+
       - name: Run golangci-lint
         id: golangci
         shell: bash
@@ -162,7 +167,7 @@ jobs:
 
           # Go through make so the timeout budget lives in one place (see timeout-minutes above).
           # print-issued-lines / print-linter-name default to true in golangci-lint v2.
-          make lint GOLANGCI_LINT_TIMEOUT=0 2>&1 | tee /tmp/golangci-lint.log
+          make go-lint GOLANGCI_LINT_TIMEOUT=0 2>&1 | tee /tmp/golangci-lint.log
 
           code=${PIPESTATUS[0]}
 

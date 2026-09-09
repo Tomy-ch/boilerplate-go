@@ -33,7 +33,7 @@
 - ビジネスロジックを含めてはならない
 - `internal/` のパッケージに依存してはならない
 - infrastructure やフレームワーク固有のパッケージに依存してはならない
-- 他の `pkg/` パッケージに依存してはならない。例外は 2 つあり、いずれも `.golangci-full.yaml` の depguard `independent_pkg` で強制される。`pkg/xerrors` はどのパッケージからも import してよく、`testkit` サブパッケージは自身の親を import してよい（ルールのファイルパターンが `**/pkg/**/testkit/**.go` を除外している）
+- 他の `pkg/` パッケージに依存してはならない。例外は 2 つあり、いずれも `.golangci.yaml` の depguard `independent_pkg` で強制される。`pkg/xerrors` はどのパッケージからも import してよく、`testkit` サブパッケージは自身の親を import してよい（ルールのファイルパターンが `**/pkg/**/testkit/**.go` を除外している）
 - 1パッケージ = 1責務を守ること
 
 ### doc コメントも状況非依存であること

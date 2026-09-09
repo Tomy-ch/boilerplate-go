@@ -65,8 +65,8 @@ exercises the Fx DI graph, HTTP middleware (authentication, OpenAPI validation),
 real database — none of which mocked unit tests reach.
 
 **Comment fix stage:** Confirmed comment quality findings are applied to the working tree by
-the orchestrator (not a subagent) after user confirmation, followed by `make fix` and
-`make lint`. The four code lenses are read-only; their surviving findings are posted to the
+the orchestrator (not a subagent) after user confirmation, followed by `make go-fix` and
+`make go-lint`. The four code lenses are read-only; their surviving findings are posted to the
 branch PR as inline review comments by default.
 
 **Allocation between deterministic and probabilistic checks.** A check is placed by whether it
@@ -136,7 +136,7 @@ to human review, not a replacement.
 
 ### Automated linting only
 
-`make lint` and `make fix` catch formatting and static analysis errors but do not reason
+`make go-lint` and `make go-fix` catch formatting and static analysis errors but do not reason
 about correctness semantics, authorization, architecture violations, or runtime behavior.
 Rejected as insufficient for a full code review pass.
 

@@ -64,9 +64,9 @@ Feat | Fix | Refactor | Perf | Docs | Test | Build | CI | Chore | Style | Revert
 自分で通したものです:
 
 ```sh
-make fix     # フォーマット + lint 自動修正
-make lint    # 権威ある golangci-lint ゲート
-make test    # カバレッジ付きテスト（先に `make db-init`）
+make go-fix     # フォーマット + lint 自動修正
+make go-lint    # 権威ある golangci-lint ゲート
+make go-test    # カバレッジ付きテスト（先に `make db-init`）
 make gen     # OpenAPI・SQL など生成対象を変更したときだけ
 ```
 

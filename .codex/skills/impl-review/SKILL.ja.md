@@ -12,7 +12,7 @@
 
 以下には使わない:
 
-- formatting / style — `make fix` / `make lint`
+- formatting / style — `make go-fix` / `make go-lint`
 - 網羅的なレイヤ適合監査 — `arch-check`（本スキルの `architecture` lens は高シグナルな違反のみ）
 - spec 検証 — `verify-spec`
 - 修正の適用 — 本スキルはソースに対し read-only。指摘するだけで直すのはユーザー。
@@ -200,7 +200,7 @@ Step 5 では `/test-review` へ `reviewer_model` payload として渡す。
 
 **Step 1 でエンドポイントが触られた場合のみ** 実行し、subagent ではなく **オーケストレーター（メインセッション）** が行う（対話的 bash・実 DB/状態・ログ読み・ユーザー確認が要るため）。`scaffold-endpoint` Phase 7 に倣う:
 
-1. `make test`（モック）は実 Fx グラフを組まず、auth/OpenAPI middleware も DB も通らない。だから本ステージは Step 2 の `runtime-gap` lens が *予測* したものを実地で拾う場。
+1. `make go-test`（モック）は実 Fx グラフを組まず、auth/OpenAPI middleware も DB も通らない。だから本ステージは Step 2 の `runtime-gap` lens が *予測* したものを実地で拾う場。
 2. 既知状態の対象行を用意/seed。認証/状態依存の検査は平文/状態を自分で握る行を作る。
 3. 対象エンドポイントを `curl`（ローカル認証: `Authorization: Bearer debug:<subject>`）し検証: 正常系 / 主要異常系（404 / 400 / 422）/ — **operation が `security:` 宣言を持つなら** トークン無し ⇒ 401（実際に保護されているか証明）。IDOR 形の finding は *別の* subject で curl し他 subject のリソースに到達できないことを検証。
 4. **共有スキーマ波及:** 共有 `components/*` を編集した場合（Step 1）、変更分だけでなく **全 consumer** を curl。spec を `$ref` で grep し各々を叩く。
@@ -282,8 +282,8 @@ Step 1 のテスト観点判定式が真 **かつ** Step 0 でユーザーが委
 
 編集後に検証する:
 
-1. `make fix` — フォーマット / 自動修正を吸収する。
-2. `make lint` — `revive exported` が通ることを確認し（必須 doc コメントの誤削除を検出）、他に劣化が無いことを見る。
+1. `make go-fix` — フォーマット / 自動修正を吸収する。
+2. `make go-lint` — `revive exported` が通ることを確認し（必須 doc コメントの誤削除を検出）、他に劣化が無いことを見る。
 3. 触れたファイルを `git diff` し、散文コメントだけが変わったことを確認する（機能ディレクティブを巻き込んでいないか）。非 Go は変更ハンクを読み直す。
 4. 失敗したら提示して停止する — 自動 revert はせず、ユーザーが判断する。コミットはしない — 変更はユーザー（または後の `/commit`）に委ねる。
 
@@ -360,7 +360,7 @@ GitHub への投稿は外向きアクションなので、投稿前に **一度�
 - ✅ Step 0 でテスト観点の委譲を聞き（既定: 委譲する）、委譲したら `test-gap` を停止して Step 5 を実行。
 - ✅ どのレポートでもテスト観点の状態を `テスト観点:` 行に明記 — 何も監査しなかった実行を含めて。
 - ✅ 復旧手段が `make db-init` しかない破壊系 curl は事前にユーザー確認。
-- ✅ コメント品質の指摘は Step 7 で 1 回の確認のうえ適用（削除 / 振る舞いへの書き直し）し、その後 `make fix` + `make lint`。`--no-apply` で省略。
+- ✅ コメント品質の指摘は Step 7 で 1 回の確認のうえ適用（削除 / 振る舞いへの書き直し）し、その後 `make go-fix` + `make go-lint`。`--no-apply` で省略。
 - ✅ 既定で CONFIRMED + PLAUSIBLE をブランチの PR にインラインコメント投稿（Step 8）。`--no-comment` か PR 無しのとき抑止。
 - ✅ PR 投稿前に一度だけ確認（外向きアクション）。各コメントは `path:行` にアンカーし、diff 外の **コード lens** 指摘はレビュー要約にまとめる（diff 外の *テスト* 指摘は対象外 — Step 8 のとおりローカルに留める）。
 - ❌ REFUTED を投稿する / `REQUEST_CHANGES`・`APPROVE` を使う — 投稿レビューは助言的 `COMMENT` のみ。
@@ -385,6 +385,6 @@ GitHub への投稿は外向きアクションなので、投稿前に **一度�
 - [ ] 触られたエンドポイントの curl + o11y 実施（共有スキーマ → 全 consumer）、破壊系は確認済み。
 - [ ] 委譲したときは Step 5 を実行（`scope` / `base_ref` / `reviewer_model` / `skip_verifier: false` を渡し、`test-gap` は起動しない）。
 - [ ] 1つの日本語レポート: CONFIRMED → PLAUSIBLE、ランタイムのカバー範囲を明記、`テスト観点:` 行が3状態のいずれかで存在。
-- [ ] `--no-apply` 以外: コメント指摘を Step 7 で適用（機能的ディレクティブは不可侵、export doc コメントは削除でなく書き直し）、その後 `make fix` + `make lint`。自動コミットはしない。
+- [ ] `--no-apply` 以外: コメント指摘を Step 7 で適用（機能的ディレクティブは不可侵、export doc コメントは削除でなく書き直し）、その後 `make go-fix` + `make go-lint`。自動コミットはしない。
 - [ ] `--no-comment` / PR 無し以外: 一度確認のうえ CONFIRMED + PLAUSIBLE をインライン PR コメント投稿（diff 外 → 要約 body）、REFUTED は除外、`event: COMMENT`。
 - [ ] 委譲したテスト指摘は diff ハンク内にアンカーできるものだけ投稿（severity 4種すべて）、diff 外はローカルに留め伏せた件数を明記。

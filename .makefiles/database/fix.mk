@@ -1,15 +1,15 @@
 ## DBに対する修正コマンド群
 # -----Dockerコンテナ内で実行するコマンド群-----
-.PHONY: fix-collation ## データベースのコラテーションを修正
+.PHONY: sql-fix-collation ## データベースのコラテーションを修正
 # ----CI用ターゲット-----
-.PHONY: fix-collation-ci ## データベースのコラテーションを修正（CI用）
+.PHONY: sql-fix-collation-ci ## データベースのコラテーションを修正（CI用）
 
 # -----Dockerコンテナ内で実行するコマンド群-----
-fix-collation:
+sql-fix-collation:
 	@echo "🔄 データベースのコラテーションを修正します..."
-	@docker compose run --rm go_tool_runner make fix-collation-ci
+	@docker compose run --rm go_tool_runner make sql-fix-collation-ci
 	@echo "✅ データベースのコラテーション修正が完了しました。"
 
 # ----CI用ターゲット-----
-fix-collation-ci:
+sql-fix-collation-ci:
 	go run ./cmd/ fix-collation

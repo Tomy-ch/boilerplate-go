@@ -12,7 +12,7 @@ pre-commit:
       glob: "scripts/**/*.go"
       skip:
         - run: make -s gate-heavy-skip
-      run: make test-scripts-cached
+      run: make go-test-scripts-cached
     sql-lint:
       glob: "*.sql"
       run: make sql-lint
@@ -42,7 +42,7 @@ pre-commit:
     oapi-lint:
       glob:
         - "openapi/**/*.yaml"
-      run: make lint-oapi
+      run: make oapi-lint
     docker-lint:
       glob:
         - "docker/**/Dockerfile"

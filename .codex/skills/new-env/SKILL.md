@@ -1,6 +1,6 @@
 ---
 name: new-env
-description: Add a new environment variable to the project end-to-end, keeping the typed config struct, env file samples, and documentation in sync. Touches `internal/config/envspec.go` (Loader field), `internal/config/model.go` (Config struct + private field), `internal/config/config.go` (New() mapping + getter method), `internal/config/config_testing_mock.go` (expected value + mock setter), `env/.env` (the local default) and `env/.env.{ci,dev,stg,prd,dast}` for per-environment values, and `env/README.{md,ja.md}` (table row in the matching subsystem). The subsystem (envPrefix → struct), Go type mapping, and naming conventions are derived from the existing `envspec.go` / `model.go` at runtime — the skill hardcodes no subsystem list. Confirms variable name, type, description (en + ja), required vs default, and per-environment values via `ask the user explicitly` before writing. Does NOT auto-add a testing setter helper in `config_testing_setter.go` (the file explicitly limits additions); offers it only on explicit request. Verifies with `make fix` + `make test` at the end.
+description: Add a new environment variable to the project end-to-end, keeping the typed config struct, env file samples, and documentation in sync. Touches `internal/config/envspec.go` (Loader field), `internal/config/model.go` (Config struct + private field), `internal/config/config.go` (New() mapping + getter method), `internal/config/config_testing_mock.go` (expected value + mock setter), `env/.env` (the local default) and `env/.env.{ci,dev,stg,prd,dast}` for per-environment values, and `env/README.{md,ja.md}` (table row in the matching subsystem). The subsystem (envPrefix → struct), Go type mapping, and naming conventions are derived from the existing `envspec.go` / `model.go` at runtime — the skill hardcodes no subsystem list. Confirms variable name, type, description (en + ja), required vs default, and per-environment values via `ask the user explicitly` before writing. Does NOT auto-add a testing setter helper in `config_testing_setter.go` (the file explicitly limits additions); offers it only on explicit request. Verifies with `make go-fix` + `make go-test` at the end.
 ---
 
 # New Env
@@ -221,27 +221,27 @@ After each file edit, verify the edit landed (the `Edit` tool reports success or
 Run:
 
 ```sh
-make fix    # absorb formatting
-make test   # confirm config loading + getters compile, tests pass, coverage maintained
+make go-fix    # absorb formatting
+make go-test   # confirm config loading + getters compile, tests pass, coverage maintained
 ```
 
-If `make test` fails, surface the failure and stop. Do NOT roll back the edits; the user decides whether to fix forward.
+If `make go-test` fails, surface the failure and stop. Do NOT roll back the edits; the user decides whether to fix forward.
 
-If `make fix` modifies anything beyond the just-edited files, surface the diff.
+If `make go-fix` modifies anything beyond the just-edited files, surface the diff.
 
 ### Coverage check
 
-After `make test` succeeds, confirm the `internal/config` package's coverage line in the test output. Expected: `go-boilerplate/internal/config <time>  coverage: 100.0% of statements`. If coverage dropped below 100%:
+After `make go-test` succeeds, confirm the `internal/config` package's coverage line in the test output. Expected: `go-boilerplate/internal/config <time>  coverage: 100.0% of statements`. If coverage dropped below 100%:
 
 1. Identify which new code path lacks a test (typically the new getter or the new `New()` mapping line).
 2. Verify the Step-3 test updates (`config_test.go`, `model_test.go`, `config_testing_mock_test.go`) all included the new field.
-3. If any was missed, add it and re-run `make test`.
+3. If any was missed, add it and re-run `make go-test`.
 
 Do NOT mark the skill complete with reduced coverage unless the user explicitly opted out of mock + test updates (Question 5).
 
 ## Step 5. Closing
 
-- Print a 1-line summary: `<VAR_NAME> を追加。<N> ファイル更新。make test OK。`
+- Print a 1-line summary: `<VAR_NAME> を追加。<N> ファイル更新。make go-test OK。`
 - The skill does NOT commit. Use `/commit` after reviewing.
 - If the user also wants the corresponding documentation in `internal/config/README.md` to be refreshed (rare — `internal/config/README.md` describes the package, not individual vars), recommend `/sync-readme`.
 
@@ -268,7 +268,7 @@ Remains protected:
 - ✅ Japanese user-facing output
 - ✅ Preserve formatting in env files (column alignment, comment style)
 - ✅ Preserve formatting in README tables (column count and order)
-- ✅ Run `make fix` + `make test` after the writes
+- ✅ Run `make go-fix` + `make go-test` after the writes
 - ✅ Surface any verification failure; do not auto-rollback
 
 ## Checklist
@@ -287,7 +287,7 @@ Before reporting completion, confirm:
 - [ ] All 6 env files updated with the new var under the matching subsystem comment
 - [ ] `env/README.md` and `env/README.ja.md` updated with a new table row
 - [ ] `config_testing_setter.go` was NOT touched unless explicitly requested
-- [ ] `make fix` and `make test` were run and the results reported
+- [ ] `make go-fix` and `make go-test` were run and the results reported
 - [ ] `internal/config` coverage was checked against the test output; expected 100.0% (or explicitly noted lower if mock scope skipped)
 - [ ] No commits / pushes were performed
 - [ ] Final summary is in Japanese

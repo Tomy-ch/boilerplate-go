@@ -52,7 +52,7 @@
 1. `--reviews-dir`（既定 `tmp/skills/reviews`）に `mod_*.md` が存在することを確認。無ければ
    「先に `full-verify` を実行してください」と伝えて終了。
 2. **go ツールチェーンの疎通確認**（このリポジトリは Go / mise 管理）。
-   `make fix` / `make lint` / `make test` が正規経路。`go`/`make` が壊れた GOROOT や
+   `make go-fix` / `make go-lint` / `make go-test` が正規経路。`go`/`make` が壊れた GOROOT や
    バージョンずれで失敗する場合は、mise 管理下の go を明示する — `mise exec go -- go version`
    で疎通確認、またはピンずれなら `mise install` で揃える。個別マシンの mise
    インストールパスを直接漁らない（環境依存ハックを残さない）。`go build/vet/test` が
@@ -156,7 +156,7 @@ go vet ./path/to/pkg/...
 go test ./path/to/pkg/...
 ```
 
-可能なら正規の `make fix` → `make lint` → `make test`。テストが既存実装の特定構造に
+可能なら正規の `make go-fix` → `make go-lint` → `make go-test`。テストが既存実装の特定構造に
 依存している場合は、修正がそれを壊していないか必ず確認する。緑にならない修正は
 コミットせず、原因が判断要なら保留へ切り戻す。
 

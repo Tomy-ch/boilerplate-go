@@ -52,7 +52,7 @@
 
 ## 強制
 
-depguard（`.golangci-full.yaml` の `maintain_a_sound_domain`）は domain ファイルに対して
+depguard（`.golangci.yaml` の `maintain_a_sound_domain`）は domain ファイルに対して
 `internal/domain/` を拒否しつつ `internal/domain/lexicon` を許可します。したがって domain→lexicon は
 許され、domain→他集約は禁止されます。
 

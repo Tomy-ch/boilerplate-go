@@ -56,9 +56,9 @@ feature を「今いる地点」— ラフなアイデアでも、書き上げ�
 
 コア開始時に前提未充足なら、該当 child skill が surface し本 skill が chain 中断。
 
-> **環境に関する注記（前提 3〜5）:** `make gen-query` は `pg_dump` で稼働中の DB スキーマをダンプするため、**DB が起動している必要がある**（未起動だと `make gen-query` / `make test` が `could not translate host name "database"` で失敗する）。環境は**生 `docker compose` ではなく専用 make ターゲット**で起動すること: `make serve`（development プロファイル、`database` サービス含む）→ **`make db-init`**（local/test 両 DB を migrate **かつ seed**。テストは seed 前提のため、`db-*-migrate-up` 単体では不十分）→ その後に `make gen-query` / `make gen-api`。
+> **環境に関する注記（前提 3〜5）:** `make gen-query` は `pg_dump` で稼働中の DB スキーマをダンプするため、**DB が起動している必要がある**（未起動だと `make gen-query` / `make go-test` が `could not translate host name "database"` で失敗する）。環境は**生 `docker compose` ではなく専用 make ターゲット**で起動すること: `make serve`（development プロファイル、`database` サービス含む）→ **`make db-init`**（local/test 両 DB を migrate **かつ seed**。テストは seed 前提のため、`db-*-migrate-up` 単体では不十分）→ その後に `make gen-query` / `make gen-api`。
 >
-> **ツールチェーンに関する注記（最終 `make fix` / `make test`）:** `make fix` や `make lint` が**ツールのバージョン不整合**（例: `golangci-lint` の "you are using a configuration file for golangci-lint v2 with golangci-lint v1"）で失敗した場合は回避策を取らず、`make install-tools` でローカルのツールを `mise.toml` 固定バージョンに揃えてから再実行する（`mise.toml` 自体を変更した場合は先に `make sync-versions`）。`PATH` の手動書き換えやバージョン指定バイナリの直叩きで代替しないこと。
+> **ツールチェーンに関する注記（最終 `make go-fix` / `make go-test`）:** `make go-fix` や `make go-lint` が**ツールのバージョン不整合**（例: `golangci-lint` の "you are using a configuration file for golangci-lint v2 with golangci-lint v1"）で失敗した場合は回避策を取らず、`make install-tools` でローカルのツールを `mise.toml` 固定バージョンに揃えてから再実行する（`mise.toml` 自体を変更した場合は先に `make sync-versions`）。`PATH` の手動書き換えやバージョン指定バイナリの直叩きで代替しないこと。
 
 ---
 
@@ -169,23 +169,23 @@ child skill 間で成否ステータスを伝播:
 - 自身の test 観点 subagent を起動
 - 必要なら `make gen-api` 実行
 - 自身のファイルを書き込み
-- 書き込み後 `make fix` + `make test` 実行
+- 書き込み後 `make go-fix` + `make go-test` 実行
 - 失敗時 TODO + FB を surface
 
 layer ごとにユーザー確認を挟むので、判断を要する箇所で human-in-the-loop が保たれる。
 
-### Phase 7. 統合検証（make test + ランタイム curl + o11y）
+### Phase 7. 統合検証（make go-test + ランタイム curl + o11y）
 
 全 4 child skill 成功後、統合最終検査:
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
-cross-layer 統合（handler → usecase → domain → infra）が全体としてコンパイル / テスト通るか確認。本 scaffold が触った 4 パッケージのカバレッジ行を surface。ここで `make test` 失敗時（child が自身でテスト済みなのでまれ）は TODO + FB で surface して停止。
+cross-layer 統合（handler → usecase → domain → infra）が全体としてコンパイル / テスト通るか確認。本 scaffold が触った 4 パッケージのカバレッジ行を surface。ここで `make go-test` 失敗時（child が自身でテスト済みなのでまれ）は TODO + FB で surface して停止。
 
-続いて**ランタイム動作確認（curl + o11y）**を実施。`make test` は **usecase / repository をモック**するため、実際の Fx グラフ・HTTP ミドルウェア（認証 / OpenAPI バリデーション）・DB を通らない。実機でしか出ないバグ群がある: `security:` 宣言漏れ（認証なしで到達）、`BindHandler` の未登録 / 配線ミス、DI provider 不整合、実 DB での SQL フィルタ挙動差など。**curl はここでやるのが正しい** — 全層 + DI がここで初めて揃う。per-layer スキルでは不可（下位層 / DI が無く起動すらしない）。
+続いて**ランタイム動作確認（curl + o11y）**を実施。`make go-test` は **usecase / repository をモック**するため、実際の Fx グラフ・HTTP ミドルウェア（認証 / OpenAPI バリデーション）・DB を通らない。実機でしか出ないバグ群がある: `security:` 宣言漏れ（認証なしで到達）、`BindHandler` の未登録 / 配線ミス、DI provider 不整合、実 DB での SQL フィルタ挙動差など。**curl はここでやるのが正しい** — 全層 + DI がここで初めて揃う。per-layer スキルでは不可（下位層 / DI が無く起動すらしない）。
 
 前提:
 
@@ -235,7 +235,7 @@ scaffold-endpoint 完了（feature: <feature>, mode: <A/B>）。
   ✓ scaffold-infra-db: <N> ファイル作成、coverage <X>%
   ✓ scaffold-usecase: <N> ファイル作成、coverage 100%
   ✓ scaffold-controller: <N> ファイル作成、coverage 100%
-  ✓ make test: 全体 OK
+  ✓ make go-test: 全体 OK
   ✓ ランタイム動作確認: curl 到達 / 認証 / 主要異常系 / o11y トレース OK
   ✓ 品質レビュー: impl-review / arch-check / test-review 実施（指摘 <n> 件、対応方針: <...>）
 
@@ -268,9 +268,9 @@ commit しない。push しない。
 - ✅ ユーザー向け出力は日本語。
 - ✅ 上流フェーズは既存の `Explore` / `Plan` エージェントを流用（新エージェント型なし）。
 - ✅ 依存順序（domain → infra-db → usecase → controller）で child 起動。
-- ✅ 実行した全フェーズ + 最終 `make test` を統合した最終レポートを surface。
+- ✅ 実行した全フェーズ + 最終 `make go-test` を統合した最終レポートを surface。
 - ✅ 各 child skill が自身の確認を layer ごとに取る（judgment-heavy step で human-in-the-loop）。
-- ✅ ランタイム curl + o11y 確認（Phase 7）を実施 — `make test` だけでは DI / ミドルウェア / DB を通らない。
+- ✅ ランタイム curl + o11y 確認（Phase 7）を実施 — `make go-test` だけでは DI / ミドルウェア / DB を通らない。
 - ✅ 品質レビュー（Phase 8）は汎用 reviewer でなく `impl-review` / `arch-check` / `test-review` を再利用。
 - ✅ 元に戻す手段が `make db-init` しかない破壊的 curl は実行前にユーザー確認。
 
@@ -280,7 +280,7 @@ commit しない。push しない。
 - [ ] **モード A**: 要件明確化（Phase 1）→ `Explore` で探索（Phase 2）→ レール内で `Plan` により案選択（Phase 3）→ 入力アーティファクトをドラフト・ユーザー承認・`make gen-api`/`gen-query` 実行（Phase 4）
 - [ ] `verify-spec` 実行、違反時は chain 中断（Phase 5）
 - [ ] `scaffold-domain` / `-infra-db` / `-usecase` / `-controller` 各々成功実行（または失敗時 chain 停止）（Phase 6）
-- [ ] 全 child 成功後に最終 `make fix` + `make test`; ランタイム curl / 認証 / 主要異常系 / o11y トレース確認（Phase 7）
+- [ ] 全 child 成功後に最終 `make go-fix` + `make go-test`; ランタイム curl / 認証 / 主要異常系 / o11y トレース確認（Phase 7）
 - [ ] 品質レビュー実行（`impl-review` + `arch-check` + `test-review`）; 指摘 surface と対応判断（Phase 8）
 - [ ] layer ごとのファイル数 + カバレッジを含む統合日本語サマリ（Phase 9）
 - [ ] commit / push なし

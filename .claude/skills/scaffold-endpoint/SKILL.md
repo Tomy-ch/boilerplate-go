@@ -1,7 +1,7 @@
 ---
 name: scaffold-endpoint
 description: >-
-  End-to-end orchestrator that builds a complete onion-architecture endpoint (domain + infra-db + usecase + controller) for one feature — and, when you start from a rough idea instead of finished specs, first drives the feature-dev-style upstream design phases that turn that idea into the input artifacts the deterministic scaffold core needs. Two entry modes, auto-detected: (A) **idea-first** — Discovery + Clarifying Questions (AskUserQuestion) → parallel Codebase Exploration (Explore agents) → Architecture Design (Plan agent, constrained to the lean A / onion / OpenAPI-first / sqlc rails) → draft the OpenAPI YAML + SQL migration + the domain and usecase specs for user review, then run `make gen-api` / `make gen-query`; (B) **specs-ready** — jump straight to the core when `docs/spec/domain/<domainPkg>.md` + `docs/spec/usecase/<usecasePkg>.md` + OpenAPI + SQL already exist. The deterministic core is unchanged: `verify-spec` → `scaffold-domain` → `scaffold-infra-db` → `scaffold-usecase` → `scaffold-controller` → `make fix`/`make test` → runtime curl + o11y. Closes with a Quality Review that reuses the repo's own review skills (`impl-review` + `arch-check` + `test-review`) rather than a generic reviewer. Use when starting a new feature / endpoint end-to-end, when you have only an idea or a requirement and no specs yet, when you want the whole controller→usecase→domain→infra stack built consistently with one consolidated report, or when you want the upstream design phases (clarify → explore → design) before implementing. Do NOT use for modifying a single existing layer (run the specific `scaffold-<layer>` standalone), for a pure spec-template scaffold (`new-spec`), or for a review-only pass (`impl-review` / `arch-check` / `test-review`). Halts (never auto-rollbacks) on any failing phase; each layer keeps its own human-in-the-loop confirmation.
+  End-to-end orchestrator that builds a complete onion-architecture endpoint (domain + infra-db + usecase + controller) for one feature — and, when you start from a rough idea instead of finished specs, first drives the feature-dev-style upstream design phases that turn that idea into the input artifacts the deterministic scaffold core needs. Two entry modes, auto-detected: (A) **idea-first** — Discovery + Clarifying Questions (AskUserQuestion) → parallel Codebase Exploration (Explore agents) → Architecture Design (Plan agent, constrained to the lean A / onion / OpenAPI-first / sqlc rails) → draft the OpenAPI YAML + SQL migration + the domain and usecase specs for user review, then run `make gen-api` / `make gen-query`; (B) **specs-ready** — jump straight to the core when `docs/spec/domain/<domainPkg>.md` + `docs/spec/usecase/<usecasePkg>.md` + OpenAPI + SQL already exist. The deterministic core is unchanged: `verify-spec` → `scaffold-domain` → `scaffold-infra-db` → `scaffold-usecase` → `scaffold-controller` → `make go-fix`/`make go-test` → runtime curl + o11y. Closes with a Quality Review that reuses the repo's own review skills (`impl-review` + `arch-check` + `test-review`) rather than a generic reviewer. Use when starting a new feature / endpoint end-to-end, when you have only an idea or a requirement and no specs yet, when you want the whole controller→usecase→domain→infra stack built consistently with one consolidated report, or when you want the upstream design phases (clarify → explore → design) before implementing. Do NOT use for modifying a single existing layer (run the specific `scaffold-<layer>` standalone), for a pure spec-template scaffold (`new-spec`), or for a review-only pass (`impl-review` / `arch-check` / `test-review`). Halts (never auto-rollbacks) on any failing phase; each layer keeps its own human-in-the-loop confirmation.
 ---
 
 # Scaffold Endpoint
@@ -62,9 +62,9 @@ These must be true before the **core** runs. In Mode A they are the *output* of 
 
 If any precondition fails when the core starts, the relevant child skill will surface it and this skill aborts the chain.
 
-> **Environment note (preconditions 3–5):** `make gen-query` dumps the live DB schema via `pg_dump`, so the database **must be running** — `make gen-query` (and `make test`) fail with `could not translate host name "database"` when it is not. Bring the environment up with the **dedicated make targets, not raw `docker compose`**: `make serve` (starts the development profile incl. the `database` service), then **`make db-init`** — which migrates **and seeds** both the local and test DBs (the test suite assumes seed data exists; piecemeal `db-*-migrate-up` alone is insufficient) — and only then `make gen-query` / `make gen-api`.
+> **Environment note (preconditions 3–5):** `make gen-query` dumps the live DB schema via `pg_dump`, so the database **must be running** — `make gen-query` (and `make go-test`) fail with `could not translate host name "database"` when it is not. Bring the environment up with the **dedicated make targets, not raw `docker compose`**: `make serve` (starts the development profile incl. the `database` service), then **`make db-init`** — which migrates **and seeds** both the local and test DBs (the test suite assumes seed data exists; piecemeal `db-*-migrate-up` alone is insufficient) — and only then `make gen-query` / `make gen-api`.
 >
-> **Toolchain note (final `make fix` / `make test`):** if `make fix` or `make lint` fails on a **tool version mismatch** (e.g. `golangci-lint` reporting "you are using a configuration file for golangci-lint v2 with golangci-lint v1"), do **not** work around it — align the local toolchain with `make install-tools` (installs the versions pinned in `mise.toml`; run `make sync-versions` first if `mise.toml` itself changed), then re-run. Do not hand-edit `PATH` or invoke version-specific binaries as a substitute.
+> **Toolchain note (final `make go-fix` / `make go-test`):** if `make go-fix` or `make go-lint` fails on a **tool version mismatch** (e.g. `golangci-lint` reporting "you are using a configuration file for golangci-lint v2 with golangci-lint v1"), do **not** work around it — align the local toolchain with `make install-tools` (installs the versions pinned in `mise.toml`; run `make sync-versions` first if `mise.toml` itself changed), then re-run. Do not hand-edit `PATH` or invoke version-specific binaries as a substitute.
 
 ---
 
@@ -175,23 +175,23 @@ Each child skill independently:
 - Invokes its own test-perspective subagent
 - Runs `make gen-api` if needed
 - Writes its own files
-- Runs `make fix` + `make test` after its writes
+- Runs `make go-fix` + `make go-test` after its writes
 - Surfaces TODO + FB on failure
 
 Each layer is confirmed with the user, so the human stays in the loop on the judgment-heavy steps.
 
-### Phase 7. Integration Verification (make test + runtime curl + o11y)
+### Phase 7. Integration Verification (make go-test + runtime curl + o11y)
 
 After all 4 child skills succeed, run a final consolidated check:
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
-This confirms the cross-layer integration (handler → usecase → domain → infra) compiles and tests pass as a whole. Surface the per-package coverage line for the 4 packages this scaffold touched. If `make test` fails here (rare — child skills already ran their own), surface the failure with TODO + FB and stop.
+This confirms the cross-layer integration (handler → usecase → domain → infra) compiles and tests pass as a whole. Surface the per-package coverage line for the 4 packages this scaffold touched. If `make go-test` fails here (rare — child skills already ran their own), surface the failure with TODO + FB and stop.
 
-Then run the **runtime verification (curl + o11y)**. `make test` uses **mocked usecases/repositories**, so it does NOT construct the real Fx graph, run the HTTP middleware (auth / OpenAPI validation), or touch the DB. A whole class of bugs only surfaces at runtime: a missing `security:` declaration (endpoint reachable without auth), an unregistered/mis-wired `BindHandler`, a DI provider mismatch, or a SQL filter that behaves differently against a real DB. **This is the correct place to curl** — all layers + DI now exist. Per-layer skills cannot do this (their lower layers / DI may be absent, so the app would not even boot).
+Then run the **runtime verification (curl + o11y)**. `make go-test` uses **mocked usecases/repositories**, so it does NOT construct the real Fx graph, run the HTTP middleware (auth / OpenAPI validation), or touch the DB. A whole class of bugs only surfaces at runtime: a missing `security:` declaration (endpoint reachable without auth), an unregistered/mis-wired `BindHandler`, a DI provider mismatch, or a SQL filter that behaves differently against a real DB. **This is the correct place to curl** — all layers + DI now exist. Per-layer skills cannot do this (their lower layers / DI may be absent, so the app would not even boot).
 
 Preconditions:
 
@@ -241,7 +241,7 @@ scaffold-endpoint 完了（feature: <feature>, mode: <A/B>）。
   ✓ scaffold-infra-db: <N> ファイル作成、coverage <X>%
   ✓ scaffold-usecase: <N> ファイル作成、coverage 100%
   ✓ scaffold-controller: <N> ファイル作成、coverage 100%
-  ✓ make test: 全体 OK
+  ✓ make go-test: 全体 OK
   ✓ ランタイム動作確認: curl 到達 / 認証 / 主要異常系 / o11y トレース OK
   ✓ 品質レビュー: impl-review / arch-check / test-review 実施（指摘 <n> 件、対応方針: <...>）
 
@@ -274,9 +274,9 @@ Do NOT commit. Do NOT push.
 - ✅ Japanese user-facing output.
 - ✅ Reuse the existing `Explore` / `Plan` agents for the upstream phases (no new agent types).
 - ✅ Run child skills in the documented dependency order (domain → infra-db → usecase → controller).
-- ✅ Surface a consolidated final report covering every phase that ran + the final `make test`.
+- ✅ Surface a consolidated final report covering every phase that ran + the final `make go-test`.
 - ✅ Let each child skill ask its own confirmation per layer (human-in-the-loop on judgment-heavy steps).
-- ✅ Run the runtime curl + o11y verification (Phase 7) — `make test` alone does not exercise DI / middleware / DB.
+- ✅ Run the runtime curl + o11y verification (Phase 7) — `make go-test` alone does not exercise DI / middleware / DB.
 - ✅ Reuse `impl-review` / `arch-check` / `test-review` for the Quality Review (Phase 8), not a generic reviewer.
 - ✅ Confirm with the user before any destructive curl whose only restore path is `make db-init`.
 
@@ -288,7 +288,7 @@ Before reporting completion, confirm:
 - [ ] **Mode A**: requirements clarified (Phase 1) → codebase explored via `Explore` (Phase 2) → approach chosen via `Plan` within the rails (Phase 3) → input artifacts drafted, user-approved, and `make gen-api`/`gen-query` run (Phase 4)
 - [ ] `verify-spec` ran; chain aborted if any violation (Phase 5)
 - [ ] `scaffold-domain` / `-infra-db` / `-usecase` / `-controller` each ran successfully (or failed and chain halted) (Phase 6)
-- [ ] Final `make fix` + `make test` run after all child skills; runtime curl / auth / key error paths / o11y trace confirmed (Phase 7)
+- [ ] Final `make go-fix` + `make go-test` run after all child skills; runtime curl / auth / key error paths / o11y trace confirmed (Phase 7)
 - [ ] Quality Review ran (`impl-review` + `arch-check` + `test-review`); findings surfaced and fix decision taken (Phase 8)
 - [ ] Consolidated Japanese summary with per-layer file counts and coverage (Phase 9)
 - [ ] No commits / pushes

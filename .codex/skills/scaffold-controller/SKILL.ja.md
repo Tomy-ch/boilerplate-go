@@ -38,7 +38,7 @@
 
 **Triggers (via `make`)**:
 
-- `make fix` + `make test` — 最終検証
+- `make go-fix` + `make go-test` — 最終検証
 
 **触らない**:
 
@@ -158,17 +158,17 @@ Codex delegation を起動して controller 層 test 観点を実装前に列挙
 ## Step 6. 検証
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
 handler package coverage 確認。handler test は 100% target（project 規約）。失敗時は surface + TODO + FB。
 
-> **DI 検証（runtime）:** `go build` / `make test` は Fx グラフを構築しない — provider 欠落・`BindHandler` の未登録・コンストラクタのシグネチャ不整合は、コンパイル/テストではなく**アプリ起動時**に初めて失敗する。DI 登録（`fx.Invoke(<pkg>.BindHandler)`）後はアプリが実際に起動するか確認する: `make serve` 稼働中なら保存で `air` が再ビルドするので、`api_server` のログが `[Fx] RUNNING`（"http server started"）に到達し、Fx の `provide` / `invoke` エラーが無いことを確認する。新規環境の注意: コンテナは **vendor モード**でビルドするため先に `make tidy-lib`（`vendor/` 生成）を実行する — 未生成だと Fx 実行前に `inconsistent vendoring` で失敗する。
+> **DI 検証（runtime）:** `go build` / `make go-test` は Fx グラフを構築しない — provider 欠落・`BindHandler` の未登録・コンストラクタのシグネチャ不整合は、コンパイル/テストではなく**アプリ起動時**に初めて失敗する。DI 登録（`fx.Invoke(<pkg>.BindHandler)`）後はアプリが実際に起動するか確認する: `make serve` 稼働中なら保存で `air` が再ビルドするので、`api_server` のログが `[Fx] RUNNING`（"http server started"）に到達し、Fx の `provide` / `invoke` エラーが無いことを確認する。新規環境の注意: コンテナは **vendor モード**でビルドするため先に `make tidy-lib`（`vendor/` 生成）を実行する — 未生成だと Fx 実行前に `inconsistent vendoring` で失敗する。
 
 ## Step 7. integration テストを chain
 
-handler がコンパイル可能で `make test` が通ったら、最終ステップとして `scaffold-integration-test`（`Skill` ツール経由）を呼ぶ。feature 名 + handler パッケージパス + usecase パッケージを context で渡し、子側の identity `ask the user explicitly` を省略させる。これにより feature の HTTP 境界テスト `internal/integration/<feature>_test.go`（Router → Middleware → Handler → Presenter、usecase は mock）が生成される。
+handler がコンパイル可能で `make go-test` が通ったら、最終ステップとして `scaffold-integration-test`（`Skill` ツール経由）を呼ぶ。feature 名 + handler パッケージパス + usecase パッケージを context で渡し、子側の identity `ask the user explicitly` を省略させる。これにより feature の HTTP 境界テスト `internal/integration/<feature>_test.go`（Router → Middleware → Handler → Presenter、usecase は mock）が生成される。
 
 - `internal/integration/<feature>_test.go` が既存なら `scaffold-integration-test` は中断（手動編集に委ねる）— surface してクロージングへ進む
 - `scaffold-integration-test` 内の失敗は handler を rollback しない。FB を surface し、ユーザー判断に委ねる
@@ -177,7 +177,7 @@ handler がコンパイル可能で `make test` が通ったら、最終ステ�
 ## Step 8. クロージング
 
 ```text
-<Feature> controller 層を生成しました。<N> ファイル作成 + DI 1 行追加、make test OK、coverage <X>%。
+<Feature> controller 層を生成しました。<N> ファイル作成 + DI 1 行追加、make go-test OK、coverage <X>%。
 HTTP 境界 integration テストも internal/integration/<feature>_test.go に生成しました（scaffold-integration-test）。
 全層が揃いました — `make serve` + curl での実機ランタイム確認に進めます。
 ```
@@ -229,7 +229,7 @@ commit しない。
 - [ ] 実装ファイル書き込み; method signature が生成 interface と完全一致
 - [ ] テストファイル書き込み (testkit/testecho + testkit/testassert)
 - [ ] `internal/di/module/controller.go` 更新（新 `BindHandler` を `fx.Invoke(...)` 内に追加）
-- [ ] `make fix` + `make test` 実行; coverage 報告（or 失敗を TODO + FB surface）
+- [ ] `make go-fix` + `make go-test` 実行; coverage 報告（or 失敗を TODO + FB surface）
 - [ ] `scaffold-integration-test` を最終ステップで chain（既存時 skip / 失敗を surface、rollback なし）
 - [ ] commit / push なし
 - [ ] 最終サマリ日本語

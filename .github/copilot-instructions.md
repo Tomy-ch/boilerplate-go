@@ -79,9 +79,9 @@ Before writing tests:
 
 After implementation:
 
-    make fix
-    make lint
-    make test
+    make go-fix
+    make go-lint
+    make go-test
 
 New or modified packages must exceed 90% coverage.
 

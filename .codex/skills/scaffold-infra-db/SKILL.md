@@ -1,7 +1,7 @@
 ---
 name: scaffold-infra-db
 description: >-
-  Implement the infrastructure (RDB) layer Repository for one feature, derived from domain Repository IF + sqlc gen functions (lean A — no spec file). Reads the domain Repository Interface at `internal/domain/<aggregate>/<aggregate>_repository.go` for method list, the sqlc gen functions at `internal/infrastructure/rdb/sqlc/gen/*.gen.go` for available DB calls, and `internal/infrastructure/rdb/README.md` for naming convention. Derives the mapping Repository method → sqlc gen function via name-match heuristic. For methods without a derivable mapping, **leaves TODO at the impl location + reports** (user resolves: add SQL + re-run `make gen-query`, or accept hand-write). Wraps each method with tracer span + `pgerror.NormalizeError` + row→entity conversion per the sibling pattern. Reads `internal/infrastructure/README.md` + `internal/infrastructure/rdb/README.md` + an existing `repository/<sibling>/` as structural template, invokes a test-perspective subagent (real DB + rollback via testkit, sqlc gen wrap correctness, pgerror normalization paths, observability spans), writes Go impl + integration-style test, updates `internal/di/module/persistence.go` with `fx.Provide`. Verifies with `make fix` + `make test`. Prerequisites: (1) domain Repository IF exists; (2) `make gen-query` has run. Does NOT generate SQL or run `make gen-query` itself.
+  Implement the infrastructure (RDB) layer Repository for one feature, derived from domain Repository IF + sqlc gen functions (lean A — no spec file). Reads the domain Repository Interface at `internal/domain/<aggregate>/<aggregate>_repository.go` for method list, the sqlc gen functions at `internal/infrastructure/rdb/sqlc/gen/*.gen.go` for available DB calls, and `internal/infrastructure/rdb/README.md` for naming convention. Derives the mapping Repository method → sqlc gen function via name-match heuristic. For methods without a derivable mapping, **leaves TODO at the impl location + reports** (user resolves: add SQL + re-run `make gen-query`, or accept hand-write). Wraps each method with tracer span + `pgerror.NormalizeError` + row→entity conversion per the sibling pattern. Reads `internal/infrastructure/README.md` + `internal/infrastructure/rdb/README.md` + an existing `repository/<sibling>/` as structural template, invokes a test-perspective subagent (real DB + rollback via testkit, sqlc gen wrap correctness, pgerror normalization paths, observability spans), writes Go impl + integration-style test, updates `internal/di/module/persistence.go` with `fx.Provide`. Verifies with `make go-fix` + `make go-test`. Prerequisites: (1) domain Repository IF exists; (2) `make gen-query` has run. Does NOT generate SQL or run `make gen-query` itself.
 ---
 
 # Scaffold Infra DB
@@ -42,7 +42,7 @@ Do NOT use for:
 
 **Triggers (via `make`)**:
 
-- `make fix` + `make test` — final verification
+- `make go-fix` + `make go-test` — final verification
 
 **Never touches**:
 
@@ -60,9 +60,9 @@ The skill verifies before any write:
 
 If any precondition fails, abort with corrective guidance (`/scaffold-domain`, `make gen-query`, manual cleanup).
 
-> **Environment note:** `make gen-query` dumps the live DB schema via `pg_dump`, so the database must be running first. Use the dedicated make targets — **not raw `docker compose`** — to prepare it: `make serve` (starts the development profile incl. the `database` service) → **`make db-init`** → `make gen-query`. `make db-init` migrates **and seeds** both the local and test DBs in one shot; the integration-style tests this skill writes (`make test`) also need the running, **seeded** test DB, so `db-init` (not a bare `db-*-migrate-up`) is the correct setup.
+> **Environment note:** `make gen-query` dumps the live DB schema via `pg_dump`, so the database must be running first. Use the dedicated make targets — **not raw `docker compose`** — to prepare it: `make serve` (starts the development profile incl. the `database` service) → **`make db-init`** → `make gen-query`. `make db-init` migrates **and seeds** both the local and test DBs in one shot; the integration-style tests this skill writes (`make go-test`) also need the running, **seeded** test DB, so `db-init` (not a bare `db-*-migrate-up`) is the correct setup.
 >
-> **Toolchain note:** if the final `make fix` / `make test` (or `make lint`) fails on a tool version mismatch (e.g. `golangci-lint` v1-vs-v2 config error), realign the local toolchain with `make install-tools` (`make sync-versions` first if `mise.toml` changed) rather than hand-editing `PATH` — then re-run.
+> **Toolchain note:** if the final `make go-fix` / `make go-test` (or `make go-lint`) fails on a tool version mismatch (e.g. `golangci-lint` v1-vs-v2 config error), realign the local toolchain with `make install-tools` (`make sync-versions` first if `mise.toml` changed) rather than hand-editing `PATH` — then re-run.
 
 ## First Step: Resolve Identity
 
@@ -167,13 +167,13 @@ Test file conventions:
 ## Step 6. Verify
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
 Confirm Repository package coverage. Infra layer targets ≥85%. On failure: TODO + FB; no auto-rollback.
 
-> **DI verification (runtime):** `go build` / `make test` do NOT construct the Fx graph — a missing provider, an unregistered `New`, or a mismatched constructor signature only fails at **app startup**, not at compile/test time. After the DI registration (`fx.Provide(<aggregate>.New)`), confirm the app actually boots: with `make serve` running, `air` rebuilds on save — verify the `api_server` logs reach `[Fx] RUNNING` ("http server started") with no Fx `provide` / `invoke` errors. Fresh-env caveat: the container builds in **vendor mode**, so run `make tidy-lib` (generates `vendor/`) first — otherwise it fails with `inconsistent vendoring` before Fx even runs.
+> **DI verification (runtime):** `go build` / `make go-test` do NOT construct the Fx graph — a missing provider, an unregistered `New`, or a mismatched constructor signature only fails at **app startup**, not at compile/test time. After the DI registration (`fx.Provide(<aggregate>.New)`), confirm the app actually boots: with `make serve` running, `air` rebuilds on save — verify the `api_server` logs reach `[Fx] RUNNING` ("http server started") with no Fx `provide` / `invoke` errors. Fresh-env caveat: the container builds in **vendor mode**, so run `make tidy-lib` (generates `vendor/`) first — otherwise it fails with `inconsistent vendoring` before Fx even runs.
 
 ## Step 7. Closing
 
@@ -181,7 +181,7 @@ Confirm Repository package coverage. Infra layer targets ≥85%. On failure: TOD
 <Aggregate> infra-db 層を生成しました。<N> ファイル作成 + DI 1 行追加。
   mapped: <X> methods (sqlc gen 経由)
   unmapped: <Y> methods (TODO stub、SQL 追加 + make gen-query 後に再 scaffold or 手動実装)
-make test OK、coverage <Z>%。
+make go-test OK、coverage <Z>%。
 次は scaffold-usecase で application service、または scaffold-endpoint で残層を続行できます。
 ```
 
@@ -231,6 +231,6 @@ Remains protected:
 - [ ] Implementation file written; mapped methods call sqlc gen, unmapped methods have TODO stub
 - [ ] Test file written; tests only for mapped methods
 - [ ] `internal/di/module/persistence.go` updated with new `fx.Provide`
-- [ ] `make fix` + `make test` run; coverage reported (or failure surfaced)
+- [ ] `make go-fix` + `make go-test` run; coverage reported (or failure surfaced)
 - [ ] Final summary clearly lists mapped count + unmapped count + next-step guidance
 - [ ] No commits / pushes

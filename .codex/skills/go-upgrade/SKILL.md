@@ -187,13 +187,13 @@ make gen
 ### 13. Run Tests
 
 ```sh
-make test
+make go-test
 ```
 
 ### 14. Run Lint
 
 ```sh
-make lint
+make go-lint
 ```
 
 ### 15. Final Verification
@@ -206,8 +206,8 @@ make pin-images-check
 make tidy-lib
 make install-tools
 make gen
-make test
-make lint
+make go-test
+make go-lint
 make serve-build-clean
 make tool-runners-build-clean
 ```

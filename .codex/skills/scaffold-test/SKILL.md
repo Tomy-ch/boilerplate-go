@@ -12,7 +12,7 @@ A Japanese reference translation of this skill is available at `SKILL.ja.md` in 
 ## When to Use
 
 - Adding a unit test for a function or method whose implementation already exists and compiles.
-- Filling a coverage gap surfaced by `make test` (a package below the 90 % threshold).
+- Filling a coverage gap surfaced by `make go-test` (a package below the 90 % threshold).
 - After hand-editing a function whose behavior changed and the existing test no longer reflects intent.
 - As a chained step from `scaffold-domain` / `scaffold-usecase` / `scaffold-controller` / `scaffold-infra-db` when those skills want test generation factored out (the parent passes target + viewpoints; this skill skips its own resolution + perspective subagent).
 
@@ -48,8 +48,8 @@ Do NOT use this skill for:
 
 **Triggers (via `make`)**:
 
-- `make fix` — auto-format the generated test file.
-- `make test` — run the produced tests + verify the package's coverage did not regress.
+- `make go-fix` — auto-format the generated test file.
+- `make go-test` — run the produced tests + verify the package's coverage did not regress.
 
 **Never touches**:
 
@@ -219,11 +219,11 @@ If the test file already exists, do not rewrite it — append the new `TestXxx` 
 
 Run, in order:
 
-1. `make fix` — formats the new test file. If any non-target file is reformatted, surface the diff to the user.
-2. `make test` — confirms the new tests pass and that the package's coverage stays at or above its prior level (and above the 90 % project threshold for new / modified packages, per `docs/testing-conventions.md`).
+1. `make go-fix` — formats the new test file. If any non-target file is reformatted, surface the diff to the user.
+2. `make go-test` — confirms the new tests pass and that the package's coverage stays at or above its prior level (and above the 90 % project threshold for new / modified packages, per `docs/testing-conventions.md`).
 3. **Mutation-check the regression-critical cases.** For any case written to lock in a specific behavior or guard a known / just-fixed bug (not generic coverage cases), prove the test actually catches the regression: temporarily inject the regression into the **subject** (flip the condition, drop the guard, swap the field / arg), re-run just that test, confirm it **FAILs**, then revert the mutation. A test that still passes under the mutation protects nothing — strengthen the assertion until it fails. This is the difference between a real regression test and a tautology; do it on the regression-critical cases, not every case.
 
-If `make test` fails:
+If `make go-test` fails:
 
 - Leave the produced test file in place so the user can inspect it.
 - Surface the failing test name + assertion message.
@@ -288,4 +288,4 @@ Before reporting completion, confirm:
 - [ ] All error assertions use `require.*`, all terminal value checks use `assert.*`.
 - [ ] Mocks come from `<package>/mock/`; no custom mocks added.
 - [ ] The subject source file was not edited.
-- [ ] `make fix` + `make test` passed; coverage did not regress.
+- [ ] `make go-fix` + `make go-test` passed; coverage did not regress.

@@ -306,7 +306,7 @@ OpenAPI の description を 1 行変えるだけでも生成物は 3 つ動く: 
 
 ## Step 6 — ローカルゲート
 
-`make fix` → `make lint` / `make test`。worktree が多いときは CI に任せてもよいが、**ローカル未実行であることを PR に書く**。黙っていると「検証済み」と読まれる。
+`make go-fix` → `make go-lint` / `make go-test`。worktree が多いときは CI に任せてもよいが、**ローカル未実行であることを PR に書く**。黙っていると「検証済み」と読まれる。
 
 runtime 検証は意図的にここに置いていない。PR ができた後（Step 8）に置くことで、CI と並行して走らせられる。
 

@@ -129,8 +129,8 @@ make md-doc-ref-lint
 make md-skill-lint
 ```
 
-有効な Codex の CI-first 保護が適用される間、ユーザーがローカル検証を明示しない限り、`make lint`、
-`make test`、`make sql-lint` や同等物はローカルで実行しません。CI へ延期したゲートとして記録し、承認済みの
+有効な Codex の CI-first 保護が適用される間、ユーザーがローカル検証を明示しない限り、`make go-lint`、
+`make go-test`、`make sql-lint` や同等物はローカルで実行しません。CI へ延期したゲートとして記録し、承認済みの
 commit / push 後に得られる CI check を根拠にします。未実行ゲートを成功と表現しません。
 
 機械的に clean と宣言する前に、未解決エントリと conflict marker を再確認します。根拠（Git 状態と

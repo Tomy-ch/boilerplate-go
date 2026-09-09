@@ -319,7 +319,7 @@ cat .gobp-db-slot 2>/dev/null || echo 'slot: none'
 ```
 
 A missing or malformed slot is a fact to report, not a fault to fix on the spot. Lease one with
-`make slot-acquire` immediately before DB-backed work actually begins — the first `make test`,
+`make slot-acquire` immediately before DB-backed work actually begins — the first `make go-test`,
 `make serve`, or `psql` — and not before. `go mod vendor` is the same: run it when `vendor/` is absent
 and a build is imminent, not as a resume ritual.
 
@@ -472,7 +472,7 @@ nothing drifted, say so in one line and move on.
 
 ## Step 6 — Local gates
 
-`make fix`, then `make lint` / `make test`. When many worktrees are active these may be left to CI,
+`make go-fix`, then `make go-lint` / `make go-test`. When many worktrees are active these may be left to CI,
 but **say in the PR that they were not run locally**. Silence reads as "verified".
 
 Runtime verification is deliberately *not* here. It belongs after the PR exists (Step 8), so CI runs

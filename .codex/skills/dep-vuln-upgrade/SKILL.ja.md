@@ -93,7 +93,7 @@ pnpm install --lockfile-only
 変更したエコシステムに応じた検査を実行し、結果をそれぞれ報告する。**失敗しても自動で戻さないこと。**
 
 - pnpm: 変更した各パッケージディレクトリで `pnpm install --frozen-lockfile`、続けて `pnpm audit` を実行する。frozen install は lockfile が方針をなお満たしていることを証明する。age 違反が出た場合、影響を受けた workspace に必要な除外が無いということである。
-- Go: `go build ./...` と、利用できるなら `govulncheck ./...` を実行する。Go 側の変更が十分に広いなら `make lint` と `make test` も足す。
+- Go: `go build ./...` と、利用できるなら `govulncheck ./...` を実行する。Go 側の変更が十分に広いなら `make go-lint` と `make go-test` も足す。
 - 生成器へ入力される依存については、既存の生成ターゲットを実行し、生成物のドリフトを確認する。`scripts/` の pnpm マニフェスト・lockfile・workspace ファイルを変更した場合は、コンテナ経由のゲートが通ったと主張する前に `make tool-runners-build` を実行する。
 
 `pnpm audit` は advisory が名指したものより高い修正下限を示すことがある。**黙って too-new なバージョンを選ぶのではなく、その事実を表に出すこと。** 見送った / 対象外としたパッケージに advisory が残るのは想定どおりであり、理由を添えて未解決として報告する。

@@ -61,7 +61,7 @@ authoritative unless this file states a Codex-specific execution detail.
 ## CI-first validation
 
 - Unless the user explicitly asks for local verification, run test and lint workloads in CI. Do
-  not consume the host machine's resources by running `make test`, `make lint`, `make sql-lint`,
+  not consume the host machine's resources by running `make go-test`, `make go-lint`, `make sql-lint`,
   or their equivalent local commands; push the scoped change and use the resulting CI checks as
   the validation record.
 

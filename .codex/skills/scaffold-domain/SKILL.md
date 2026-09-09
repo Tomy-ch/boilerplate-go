@@ -44,7 +44,7 @@ Do NOT use this skill for:
 **Triggers (via `make`)**:
 
 - `make gen-api` — regenerates Repository mock under `internal/domain/<aggregate>/mock/`.
-- `make fix` + `make test` — final verification.
+- `make go-fix` + `make go-test` — final verification.
 
 **Never touches**:
 
@@ -138,13 +138,13 @@ This processes the `//go:generate mockgen` directive in `<aggregate>_repository.
 ## Step 7. Verify
 
 ```sh
-make fix    # absorb formatting
-make test   # compile + tests + coverage
+make go-fix    # absorb formatting
+make go-test   # compile + tests + coverage
 ```
 
 Check the coverage line for `internal/domain/<aggregate>`. Domain tests must reach 100% per the project's testing convention. If coverage dropped, identify untested branches (likely an invariant or VO factory path) and request a follow-up test addition.
 
-If `make test` fails:
+If `make go-test` fails:
 
 - Surface the failure to the user.
 - Write a TODO comment in the failing file at the relevant location.
@@ -155,7 +155,7 @@ If `make test` fails:
 Print a one-line summary:
 
 ```text
-<Aggregate> domain 層を生成しました。<N> ファイル作成、make test OK、coverage 100%。
+<Aggregate> domain 層を生成しました。<N> ファイル作成、make go-test OK、coverage 100%。
 次は scaffold-infra-db で repository 実装、または scaffold-endpoint で残層を続行できます。
 ```
 
@@ -202,6 +202,6 @@ Before reporting completion, confirm:
 - [ ] Plan displayed and confirmed via `ask the user explicitly`
 - [ ] Files written in dependency order (constant → error → entity → repository → VO → tests)
 - [ ] `make gen-api` executed; mock file present
-- [ ] `make fix` + `make test` run; coverage 100% confirmed (or failure surfaced with TODO + FB)
+- [ ] `make go-fix` + `make go-test` run; coverage 100% confirmed (or failure surfaced with TODO + FB)
 - [ ] No commits / pushes
 - [ ] Final summary in Japanese

@@ -126,10 +126,10 @@ make pin-actions-check && make pin-images-check
 make check-migration-up-version && make check-migration-down-version
 make check-migration-up-gap && make check-migration-down-gap
 make md-doc-ref-lint && make md-skill-lint
-make lint && make test
+make go-lint && make go-test
 ```
 
-`make lint` / `make test` は、このリポジトリのローカルゲート負荷帯によっては CI へ委譲されうる。全部回った
+`make go-lint` / `make go-test` は、このリポジトリのローカルゲート負荷帯によっては CI へ委譲されうる。全部回った
 かのように書かず、実際に回したゲートを述べること。
 
 ## Step 6 — 終わり方は 2 通り

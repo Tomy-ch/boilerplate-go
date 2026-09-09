@@ -449,7 +449,7 @@ nothing drifted, say so in one line and move on.
 
 ## Step 6 — Local gates
 
-`make fix`, then `make lint` / `make test`. When many worktrees are active these may be left to CI,
+`make go-fix`, then `make go-lint` / `make go-test`. When many worktrees are active these may be left to CI,
 but **say in the PR that they were not run locally**. Silence reads as "verified".
 
 Runtime verification is deliberately *not* here. It belongs after the PR exists (Step 8), so CI runs

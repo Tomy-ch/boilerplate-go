@@ -50,7 +50,7 @@ requires relative-file refs to resolve correctly.
 - Split files are independently reviewable and reusable via `$ref`.
 - Naming conventions (camelCase body fields, camelCase parameters, PascalCase
   `operationId`) are enforced at lint time before code generation runs.
-- `make gen-api` is the single command that runs bundle, docs, and codegen in sequence; `redocly lint` runs separately via `make lint-oapi` (also a CI gate).
+- `make gen-api` is the single command that runs bundle, docs, and codegen in sequence; `redocly lint` runs separately via `make oapi-lint` (also a CI gate).
 - Documentation is generated from the same source as the code.
 - Because handler code is generated from the bundled spec, the YAML definition always precedes the implementation; drift between definition and implementation cannot flow undetected into production.
 

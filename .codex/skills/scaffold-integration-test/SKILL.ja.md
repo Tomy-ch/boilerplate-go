@@ -14,7 +14,7 @@
 
 以下には使わない:
 
-- DB / Repository / usecase ロジックの検証 — それらは unit テスト（domain/usecase）と repository 自身の `make test`（実 DB）の担当。ここは HTTP 境界で止める
+- DB / Repository / usecase ロジックの検証 — それらは unit テスト（domain/usecase）と repository 自身の `make go-test`（実 DB）の担当。ここは HTTP 境界で止める
 - handler / usecase / 生成ファイルの変更
 - 既存 `<feature>_test.go` への 1 ケース追加 — 手で編集
 
@@ -35,7 +35,7 @@
 
 **トリガ（`make` 経由）**:
 
-- `make fix` + `make test` — 最終検証
+- `make go-fix` + `make go-test` — 最終検証
 
 **触らない**:
 
@@ -119,11 +119,11 @@ Agent ツール（`subagent_type: general-purpose`）で、書き込み前に HT
 ## Step 6. 検証
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
-> **環境に関する注記:** `make test` は同一実行内の DB 依存スイートのために開発環境が起動している必要がある。**生 `docker compose` ではなく専用 make ターゲット**で起動する（`make serve` → **`make db-init`**。local/test 両 DB を migrate **かつ seed** する。スイートは seed 前提のため、`db-*-migrate-up` 単体では不十分）。`make fix` / `make test` がツールのバージョン不整合（例: `golangci-lint` の v1/v2 config エラー）で失敗した場合は、`PATH` の手動書き換えではなく `make install-tools` で揃えてから再実行する（`mise.toml` 変更時は先に `make sync-versions`）。
+> **環境に関する注記:** `make go-test` は同一実行内の DB 依存スイートのために開発環境が起動している必要がある。**生 `docker compose` ではなく専用 make ターゲット**で起動する（`make serve` → **`make db-init`**。local/test 両 DB を migrate **かつ seed** する。スイートは seed 前提のため、`db-*-migrate-up` 単体では不十分）。`make go-fix` / `make go-test` がツールのバージョン不整合（例: `golangci-lint` の v1/v2 config エラー）で失敗した場合は、`PATH` の手動書き換えではなく `make install-tools` で揃えてから再実行する（`mise.toml` 変更時は先に `make sync-versions`）。
 
 失敗時: 失敗テスト出力を surface + 該当ケースに `// TODO:` + FB サマリ。自動 rollback はしない。
 
@@ -131,7 +131,7 @@ make test
 
 ```text
 <Feature> の HTTP 境界 integration テストを internal/integration/<feature>_test.go に生成しました。
-<N> 件の subtest、make test OK。
+<N> 件の subtest、make go-test OK。
 ```
 
 commit はしない。
@@ -170,6 +170,6 @@ commit はしない。
 - [ ] テスト観点 subagent を起動、書き込み前に観点を捕捉
 - [ ] 計画を提示し `ask the user explicitly` で確認
 - [ ] `internal/integration/<feature>_test.go` を既存ヘルパー・日本語 subtest 名・`t.Parallel()` で書いた
-- [ ] `make fix` + `make test` 実行（または失敗を TODO + FB で surface）
+- [ ] `make go-fix` + `make go-test` 実行（または失敗を TODO + FB で surface）
 - [ ] commit / push なし
 - [ ] 最終サマリは日本語

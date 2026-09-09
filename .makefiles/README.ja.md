@@ -196,8 +196,8 @@ make db-migrate-up-10 DB=local
 | `make gen-db-schema-ci` | SchemaSpy コンテナを直接実行してスキーマドキュメントを生成します。 | CI 用ターゲットです。 |
 | `make dump-schema` | スキーマダンプを実行します。 | SQLC 生成や DML マージの前処理として利用します。所有者ごとの使い捨てデータベース（`gen_schema`、スロット保持中は `gen_schema_wt<N>`）を当該ブランチの migration から作り直してダンプします。 |
 | `make dump-schema-ci` | Docker を介さず、直接 `cmd/main.go dump-schema` を実行します。 | CI 用ターゲットです。 |
-| `make fix-collation` | データベースのコラテーションを修正します。 | なし |
-| `make fix-collation-ci` | Docker を介さず、直接コラテーション修正処理を実行します。 | CI 用ターゲットです。 |
+| `make sql-fix-collation` | データベースのコラテーションを修正します。 | なし |
+| `make sql-fix-collation-ci` | Docker を介さず、直接コラテーション修正処理を実行します。 | CI 用ターゲットです。 |
 | `make db-ensure` | `DB` が指すデータベースを、無ければ作成し、`pg_trgm` 拡張を初期化します。 | 冪等です。データベースの所有を必要とします。 |
 
 ### DML マージ関連
@@ -358,15 +358,15 @@ hadolint により Dockerfile を lint し、`FROM` の base image を不変の 
 | --- | --- | --- |
 | `make gen-bundle-oapi` | 分割された OpenAPI 定義をバンドルし、単一の OpenAPI ファイルを生成します。 | `openapi/openapi.yaml` をもとに `openapi/openapi.gen.yaml` を生成します。 |
 | `make gen-api-docs` | OpenAPI 定義をもとに API ドキュメントを生成します。 | なし |
-| `make lint-oapi` | OpenAPI 定義を `redocly lint` で検証します。 | `node_tool_runner` コンテナ内で `make lint-oapi-ci` を呼び出します。 |
+| `make oapi-lint` | OpenAPI 定義を `redocly lint` で検証します。 | `node_tool_runner` コンテナ内で `make oapi-lint-ci` を呼び出します。 |
 | `make gen-bundle-oapi-ci` | `redocly bundle` により `openapi/openapi.gen.yaml` を生成します。 | CI 用ターゲットです。 |
 | `make gen-api-docs-ci` | `redocly build-docs` により `docs/openapi/index.html` を生成します。 | CI 用ターゲットです。 |
-| `make lint-oapi-ci` | `redocly lint openapi/openapi.yaml` を直接実行します。 | CI 用ターゲットです。 |
+| `make oapi-lint-ci` | `redocly lint openapi/openapi.yaml` を直接実行します。 | CI 用ターゲットです。 |
 | `make stamp-openapi-version` | リリースブランチ名から `info.version` を書き換えます。 | `node_tool_runner` コンテナ内で `make stamp-openapi-version-ci` を実行します。`REF=release/vX.Y.Z` を取り、未指定なら `GITHUB_REF_NAME` を使います。それ以外の ref は何もしません。 |
 | `make stamp-openapi-version-ci` | `scripts/stamp-openapi-version/index.ts` を直接実行します。 | CI 用ターゲットです。 |
-| `make lint-oapi-security-ci` | Spectral + OWASP API Security ルールセットで検証します。 | CI 用ターゲット。spec だけを見る検査のためにツールランナーのイメージを起こさないので、コンテナを介さず実行します。事前に `pnpm install --dir scripts --frozen-lockfile` が必要です。 |
+| `make oapi-security-lint-ci` | Spectral + OWASP API Security ルールセットで検証します。 | CI 用ターゲット。spec だけを見る検査のためにツールランナーのイメージを起こさないので、コンテナを介さず実行します。事前に `pnpm install --dir scripts --frozen-lockfile` が必要です。 |
 | `make openapi-client-check` | frontend generator（orval）が bundle 済み spec から SSE の契約型（`DeliveryEvent` / `ControlEvent` / `StreamCursor`）を生成できることを確認します。 | `node_tool_runner` コンテナ内で `make openapi-client-check-ci` を呼び出します。生成物は `tmp/openapi-client/` に出し、コミットしません。 |
-| `make openapi-client-check-ci` | `tsx scripts/openapi-client-check` を直接実行します。 | CI 用ターゲット。事前準備は `lint-oapi-security-ci` と同じです。 |
+| `make openapi-client-check-ci` | `tsx scripts/openapi-client-check` を直接実行します。 | CI 用ターゲット。事前準備は `oapi-security-lint-ci` と同じです。 |
 
 ## `.makefiles/load` 系
 
@@ -391,13 +391,13 @@ hadolint により Dockerfile を lint し、`FROM` の base image を不変の 
 | コマンド | 説明 | 補足 |
 | --- | --- | --- |
 | `make load-status` | 解決された帯・窓数・CPU シェア・各ツールへ渡るフラグを表示します。 | ゲートの挙動が不審なときはまずここを見ます |
-| `make gate-go` | `pre-commit` の Go ゲート（`lint` + `test-cached`）。帯が並列/逐次/委譲を決められるよう束ねてあります。 | lefthook が呼びます |
-| `make gate-go-push` | `pre-push` の Go ゲート（`test` + `test-scripts`）。同じく束ねてあります。 | lefthook が呼びます |
+| `make gate-go` | `pre-commit` の Go ゲート（`lint` + `go-test-cached`）。帯が並列/逐次/委譲を決められるよう束ねてあります。 | lefthook が呼びます |
+| `make gate-go-push` | `pre-push` の Go ゲート（`test` + `go-test-scripts`）。同じく束ねてあります。 | lefthook が呼びます |
 | `make gate-heavy-skip` | lefthook の `skip:` から呼ぶ述語。exit 0 が「CI がやる」を意味します。 | 終了コードだけが interface です |
-| `make gate-fix` | 自動フォーマットの委譲先です。毎回走る経路は `fix` を直接呼ばずこちらを呼びます。 | 負荷帯が `ci-first` でなければ `make fix` を実行し、`ci-first` のときは委譲した旨だけを表示します。フォーマットのずれは CI の lint が曖昧さなく捕まえられる数少ない対象であり、それがここを委譲してよい理由です。 |
+| `make gate-fix` | 自動フォーマットの委譲先です。毎回走る経路は `fix` を直接呼ばずこちらを呼びます。 | 負荷帯が `ci-first` でなければ `make go-fix` を実行し、`ci-first` のときは委譲した旨だけを表示します。フォーマットのずれは CI の lint が曖昧さなく捕まえられる数少ない対象であり、それがここを委譲してよい理由です。 |
 
 帯は `GOBP_LOAD=full|low|ci-first` で明示的に上書きできます（例: 残りは委譲したまま重いゲートを 1 つだけ
-手で回すなら `make lint GOBP_LOAD=low`）。閾値は `GOBP_LOW_THRESHOLD` と `GOBP_CI_FIRST_THRESHOLD` です。
+手で回すなら `make go-lint GOBP_LOAD=low`）。閾値は `GOBP_LOW_THRESHOLD` と `GOBP_CI_FIRST_THRESHOLD` です。
 これらの既定値と帯の解決そのものは `scripts/load-band` にあり、make のパース時ではなくゲートのレシピ実行時に評価されます。
 
 **ゲートを `.lefthook.yaml` に個別に並べず束ねている理由**: lefthook はフック内の commands を並列に
@@ -426,8 +426,10 @@ Trivy スキャン）は放置します。ループで回すものではない�
 | コマンド | 説明 | 補足 |
 | --- | --- | --- |
 | `make fmt` | Go コードをフォーマットします。 | `go fmt ./...` を実行します。 |
-| `make lint` | GolangCI-Lint による静的解析を実行します。 | なし |
-| `make fix` | GolangCI-Lint の自動修正を実行します。 | なし |
+| `make go-lint` | GolangCI-Lint による静的解析を実行します。 | なし |
+| `make go-lint-config-check` | golangci の 3 設定が構文として妥当か検証します（`golangci-lint config verify`）。 | CI が重い lint の前に実行します。ゲートが読むのは `.golangci.yaml` だけなので、残る 2 つが受ける唯一の検査です（ADR-0088）。 |
+| `make go-lint-fast` | `.golangci-fast.yaml` で静的解析を実行します（違反が波及する規則だけ）。 | ゲートではありません。可否は `go-lint` と CI が決めます。実装中は `go-test-arch` と対で使います（ADR-0088）。 |
+| `make go-fix` | GolangCI-Lint の自動修正を実行します。 | なし |
 | `make tidy-lib` | Go モジュール依存関係を整理し、`vendor` を更新します。 | `go mod tidy` と `go mod vendor` を順に実行します。 |
 | `make vendor-sync` | `vendor` が `go.mod` からずれていれば再生成します。 | Go 自身の vendor 整合検査が失敗したときだけ `go mod vendor` を実行するため、通常は何もしません。`post-merge` / `post-checkout` フックから呼ばれます。`vendor` は gitignore されているため、他人の `go.mod` 変更を受け取っただけの checkout が壊れる側になります。 |
 
@@ -435,14 +437,15 @@ Trivy スキャン）は放置します。ループで回すものではない�
 
 | コマンド | 説明 | 補足 |
 | --- | --- | --- |
-| `make test` | CI 用のテストを実行します。 | `gen` / `cmd` / `mock` / `apperror` / `scripts` を除外したパッケージ群に対して `go test` を実行します（`internal/cli` コアは計測対象に含まれます）。 |
-| `make test-cached` | ローカル用にテストキャッシュを有効にしてテストを実行します。 | pre-commit のローカル実行向け。除外パッケージは `test` と同じですが、`-count=1` を付けずキャッシュ結果を再利用します。 |
+| `make go-test-arch` | `internal/architest` だけを実行します。 | DB 不要・約 1 秒。depguard が表現できない検査（集約間 import の隔離、DI パリティ、route パリティ）を受け持ちます。実装中は `go-lint-fast` と対で使います。 |
+| `make go-test` | CI 用のテストを実行します。 | `gen` / `cmd` / `mock` / `apperror` / `scripts` を除外したパッケージ群に対して `go test` を実行します（`internal/cli` コアは計測対象に含まれます）。 |
+| `make go-test-cached` | ローカル用にテストキャッシュを有効にしてテストを実行します。 | pre-commit のローカル実行向け。除外パッケージは `test` と同じですが、`-count=1` を付けずキャッシュ結果を再利用します。 |
 | `make gen-test-repo` | テストを実行し、HTML カバレッジレポートを生成します。 | 出力先は `docs/coverage/index.html` です。 |
-| `make test-cover-ci` | カバレッジ付きでテストを実行します。 | CI 用ターゲットで、`coverage.out` を出力します。 |
-| `make cover-gate` | 総カバレッジが閾値を下回ると fail します。 | CI ゲート。`COVERAGE_THRESHOLD`（既定 90）。`coverage.out` が必要（先に `test-cover-ci`）。 |
-| `make test-scripts` | CI 用に `scripts/` 配下ツールのテストを実行します。 | `scripts/` は上記のカバレッジ対象から除外されているため、専用の実行経路が必要です。`cover-gate` の対象には入りません。`actions-shellcheck` のテストは host の `shellcheck`（`install-tools` が導入）を必要とし、無ければ自分で skip します。CI は `REQUIRE_SHELLCHECK` を立てて、その skip を失敗に変えます。 |
-| `make test-fails` | `go test` のログから、成功しか報告していない行 — `ok` 行 / `[no test files]` 行 / 単独の `coverage:` 行 — をすべて落として表示します。絶対パスはリポジトリ相対へ縮め、`gh run view --log` が各行へ付ける `<job>/<step>/<timestamp>` 接頭辞も剥がします（1 行が短くなるうえ、接頭辞に潰されていた行頭アンカーが復活します）。`LOG=` でログを指定でき（既定は `make ai-test` が残す `tmp/ai-logs/test.txt`）、`LOG=-` は標準入力を読むため、`gh run view --log-failed \| make test-fails LOG=-` で CI のログにも同じ絞り込みを当てられます。 | `coverage:` 行こそがこのターゲットの存在理由です。`test-cover-ci` と `gen-test-repo` は対象パッケージ全部を `-coverpkg` に渡すため、`go test` はカバレッジを報告するたびにそのリスト全体を複製します。結果として 1 回の失敗 run が数 MB を出力し、そのなかで失敗は数十バイトしかありません。捨てても失うものはありません — `cover-gate` が読むのは標準出力ではなく `coverage.out` です。許可リストではなく拒否リストなので、落とすのは「通った」としか言っていない行だけであり、想定外の panic / ビルドエラー / race レポートはそのまま通ります。元のログもディスクに残ります。ログを読むだけで、何も実行しません。 |
-| `make test-scripts-cached` | ローカル用にテストキャッシュを有効にして `scripts/` 配下ツールのテストを実行します。 | pre-commit のローカル実行向け。対象パッケージは `test-scripts` と同じで、`-race -count=1` は付けません。 |
+| `make go-test-cover-ci` | カバレッジ付きでテストを実行します。 | CI 用ターゲットで、`coverage.out` を出力します。 |
+| `make cover-gate` | 総カバレッジが閾値を下回ると fail します。 | CI ゲート。`COVERAGE_THRESHOLD`（既定 90）。`coverage.out` が必要（先に `go-test-cover-ci`）。 |
+| `make go-test-scripts` | CI 用に `scripts/` 配下ツールのテストを実行します。 | `scripts/` は上記のカバレッジ対象から除外されているため、専用の実行経路が必要です。`cover-gate` の対象には入りません。`actions-shellcheck` のテストは host の `shellcheck`（`install-tools` が導入）を必要とし、無ければ自分で skip します。CI は `REQUIRE_SHELLCHECK` を立てて、その skip を失敗に変えます。 |
+| `make go-test-fails` | `go test` のログから、成功しか報告していない行 — `ok` 行 / `[no test files]` 行 / 単独の `coverage:` 行 — をすべて落として表示します。絶対パスはリポジトリ相対へ縮め、`gh run view --log` が各行へ付ける `<job>/<step>/<timestamp>` 接頭辞も剥がします（1 行が短くなるうえ、接頭辞に潰されていた行頭アンカーが復活します）。`LOG=` でログを指定でき（既定は `make ai-go-test` が残す `tmp/ai-logs/go-test.txt`）、`LOG=-` は標準入力を読むため、`gh run view --log-failed \| make go-test-fails LOG=-` で CI のログにも同じ絞り込みを当てられます。 | `coverage:` 行こそがこのターゲットの存在理由です。`go-test-cover-ci` と `gen-test-repo` は対象パッケージ全部を `-coverpkg` に渡すため、`go test` はカバレッジを報告するたびにそのリスト全体を複製します。結果として 1 回の失敗 run が数 MB を出力し、そのなかで失敗は数十バイトしかありません。捨てても失うものはありません — `cover-gate` が読むのは標準出力ではなく `coverage.out` です。許可リストではなく拒否リストなので、落とすのは「通った」としか言っていない行だけであり、想定外の panic / ビルドエラー / race レポートはそのまま通ります。元のログもディスクに残ります。ログを読むだけで、何も実行しません。 |
+| `make go-test-scripts-cached` | ローカル用にテストキャッシュを有効にして `scripts/` 配下ツールのテストを実行します。 | pre-commit のローカル実行向け。対象パッケージは `go-test-scripts` と同じで、`-race -count=1` は付けません。 |
 | `make cover-scripts` | `scripts/` 配下ツールの総カバレッジを計測し、`SCRIPTS_COVERAGE_THRESHOLD` を下回ったら警告します。 | 失敗させず警告に留めます（`-warn`）。開発ツールのカバレッジが出荷物のマージを止めないためです。Actions 上では `-github` が付きます。プロファイルは実行後に削除されます。 |
 | `make build-scripts` | `scripts/` 配下のツールを `scripts/bin/` へビルドします。 | `-o scripts/bin/` を固定しているのは、リポジトリ直下で `go build ./scripts/<tool>` を叩くとパッケージ名の実行ファイルが数十 MB のまま追跡対象外でルートに落ちるためです。出力先は gitignore 済みです。 |
 
@@ -451,7 +454,7 @@ Trivy スキャン）は放置します。ループで回すものではない�
 | コマンド | 説明 | 補足 |
 | --- | --- | --- |
 | `make go-update` | `mise.toml` に記載された Go ランタイムを mise でインストールします。詳細は `docs/maintenance/go-upgrade.md` を参照。 | mise が必須 |
-| `make install-tools` | host 開発用のツール群を mise でインストールします（バージョンは `mise.toml` から解決）。 | `gopls`、`gotests`、`impl`、`dlv`、`lefthook`、`golangci-lint`、`zizmor`、`shellcheck` を導入します。`golangci-lint` と `zizmor` は、Alpine の tool-runner 向け musl ビルドが無いため pre-commit フックがホストで実行するツールです。`shellcheck` は、フックの `test-scripts` がホストで走らせる `actions-shellcheck` のテストが実物のバイナリを呼ぶためです。 |
+| `make install-tools` | host 開発用のツール群を mise でインストールします（バージョンは `mise.toml` から解決）。 | `gopls`、`gotests`、`impl`、`dlv`、`lefthook`、`golangci-lint`、`zizmor`、`shellcheck` を導入します。`golangci-lint` と `zizmor` は、Alpine の tool-runner 向け musl ビルドが無いため pre-commit フックがホストで実行するツールです。`shellcheck` は、フックの `go-test-scripts` がホストで走らせる `actions-shellcheck` のテストが実物のバイナリを呼ぶためです。 |
 | `make activate-tools` | `lefthook install` を実行し、Git フックをセットアップします。 | なし |
 | `make sync-versions` | `mise.toml` の go / node / python バージョンを `go.mod` と Dockerfile の `FROM` に反映します。 | `docs/maintenance/go-upgrade.md` の手順で参照されます。`scripts/sync-versions` を実行します。 |
 

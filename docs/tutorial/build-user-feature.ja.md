@@ -497,12 +497,12 @@ import できない（depguard が強制する）。worker は組み立て済み
 **目的:** 再構築した機能が正しく、整形済みで、カバレッジゲートを満たすことを証明する。
 
 ```bash
-make fix    # gofmt + golangci-lint --fix
-make lint   # golangci-lint（フル設定）
-make test   # 全テスト、キャッシュなし。テスト DB のマイグレーションが必要
+make go-fix    # gofmt + golangci-lint --fix
+make go-lint   # golangci-lint（フル設定）
+make go-test   # 全テスト、キャッシュなし。テスト DB のマイグレーションが必要
 ```
 
-**カバレッジ:** `make test` はカバレッジを下げてはならない。新規/変更したパッケージは **90%** を超える
+**カバレッジ:** `make go-test` はカバレッジを下げてはならない。新規/変更したパッケージは **90%** を超える
 こと（`make cover-gate` が CI でフロアを強制する）。生成パッケージ（`gen`、`cmd`、`mock`、`apperror`、
 `scripts`）は計算から除外される。
 
@@ -523,10 +523,10 @@ of Done の一部であり、任意の仕上げではない。
 |5|infra|`internal/infrastructure/rdb/repository/user/**`|`pgerror.NormalizeError` + tracer span + 型漏洩なし|`go test ./…/user/...`（DB）|
 |6|usecase|`internal/usecase/user/**`|DTO を返す。時刻/tx は boundary 経由。調整のみ|`go test ./internal/usecase/user/...`|
 |7|controller|`internal/controller/handler/v1/users/**`、`job/usercount/**`|operationId ごとに 1 メソッド。ハンドラーは純粋テンプレート|`go test ./…/users/...`|
-|8|DI|`internal/di/module/*.go`|レイヤーが出会う唯一の場所。マーカーブロックで削除可能に保つ|`make lint`|
+|8|DI|`internal/di/module/*.go`|レイヤーが出会う唯一の場所。マーカーブロックで削除可能に保つ|`make go-lint`|
 |9|integration|`internal/integration/v1_users*_test.go`|usecase をモックした HTTP 境界|`go test ./internal/integration/...`|
 |9.5|worker|`internal/controller/worker/withdrawalarchive/**`|usecase 層へのもう 1 つの入口。操作自体が冪等|`make worker NAME=withdrawal-archive`|
-|10|verify|`make fix` / `make lint` / `make test`|90% フロアは Done の一部|`make cover-gate`|
+|10|verify|`make go-fix` / `make go-lint` / `make go-test`|90% フロアは Done の一部|`make cover-gate`|
 
 ---
 

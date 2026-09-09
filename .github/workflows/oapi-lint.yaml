@@ -78,7 +78,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run redocly lint
-        run: make lint-oapi-ci
+        run: make oapi-lint-ci
 
   # The frontend generator contract check: a consumer's generator must be able to type the SSE
   # contract components — a break redocly and Spectral cannot see. See README.md § Workflow List.

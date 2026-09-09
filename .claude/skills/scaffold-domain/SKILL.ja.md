@@ -38,7 +38,7 @@
 **`make` トリガ**:
 
 - `make gen-api` — `internal/domain/<aggregate>/mock/` 配下に Repository mock 再生成
-- `make fix` + `make test` — 最終検証
+- `make go-fix` + `make go-test` — 最終検証
 
 **触らない**:
 
@@ -132,13 +132,13 @@ make gen-api
 ## Step 7. 検証
 
 ```sh
-make fix    # フォーマット
-make test   # コンパイル + テスト + カバレッジ
+make go-fix    # フォーマット
+make go-test   # コンパイル + テスト + カバレッジ
 ```
 
 `internal/domain/<aggregate>` のカバレッジ行を確認。domain テストはプロジェクト規約で 100% 必須。低下時は未テストブランチ（多くは invariant or VO factory パス）を特定し、テスト追記。
 
-`make test` 失敗時:
+`make go-test` 失敗時:
 
 - 失敗を surface
 - 該当ファイルに TODO コメント書き込み
@@ -149,7 +149,7 @@ make test   # コンパイル + テスト + カバレッジ
 1 行サマリ:
 
 ```text
-<Aggregate> domain 層を生成しました。<N> ファイル作成、make test OK、coverage 100%。
+<Aggregate> domain 層を生成しました。<N> ファイル作成、make go-test OK、coverage 100%。
 次は scaffold-infra-db で repository 実装、または scaffold-endpoint で残層を続行できます。
 ```
 
@@ -194,6 +194,6 @@ commit しない。次の scaffold skill を起動しない。
 - [ ] プラン表示 + `AskUserQuestion` 確認
 - [ ] 依存順序（constant → error → entity → repository → VO → tests）で書き込み
 - [ ] `make gen-api` 実行、mock ファイル存在確認
-- [ ] `make fix` + `make test` 実行、カバレッジ 100% 確認（または失敗時 TODO + FB）
+- [ ] `make go-fix` + `make go-test` 実行、カバレッジ 100% 確認（または失敗時 TODO + FB）
 - [ ] commit / push なし
 - [ ] 最終サマリは日本語

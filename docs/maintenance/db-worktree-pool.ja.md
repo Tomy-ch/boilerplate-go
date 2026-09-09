@@ -10,7 +10,7 @@ compose のサービスを 2 層に分ける:
 
 DB の worktree 分離は「別コンテナ・別ポート」ではなく「同一インスタンス内の別データベース」
 （`wt<N>_local` / `wt<N>_test`）で行う。これにより DB 軸のホストポート割当が不要になり、「別 worktree が
-5432 を握っていて `make test` が動かせない」も「主 checkout の serve が worktree の DB と衝突する」も起きない。
+5432 を握っていて `make go-test` が動かせない」も「主 checkout の serve が worktree の DB と衝突する」も起きない。
 o11y は共有が利点になる（全 checkout のトレース / メトリクス / ログが 1 つの Grafana に集まる）。
 
 ## 不変条件: データベース : worktree = 1 : 0..1
@@ -29,7 +29,7 @@ o11y は共有が利点になる（全 checkout のトレース / メトリク�
 スキーマから生成物が作り直される、という形で後になって表面化する。そこで
 `make require-db-owner`（`.makefiles/database/pool.mk`）を、データベース名を解決する全ターゲットの
 前提条件に置いている — `db-migrate-*` / `db-seed` / `db-drop-tables` / `db-ensure` / `dump-schema` に加え、
-`make test` / `test-cached` / `gen-test-repo`（host 実行の `go test` が `DB_NAME_TEST` を読む）と
+`make go-test` / `go-test-cached` / `gen-test-repo`（host 実行の `go test` が `DB_NAME_TEST` を読む）と
 `make serve` / `serve-build` / `serve-build-clean`（app コンテナが解決値 `DB_LOCAL` を読む）。
 判定の実体は `internal/cli/dbslot` にある。リンク worktree は `git-dir` ≠ `git-common-dir` の
 食い違いで識別するため、主 checkout と CI は素通りする。`git` がそもそも答えられない場合も一律には
@@ -38,7 +38,7 @@ o11y は共有が利点になる（全 checkout のトレース / メトリク�
 場合は失敗する — そこでは worktree でないと断定できず、黙ってフォールバックしないことこそが
 このガードの目的だからである。
 
-知っておくべき帰結: worktree では `make slot-acquire` するまで `make test` が落ちる。それが狙いで、
+知っておくべき帰結: worktree では `make slot-acquire` するまで `make go-test` が落ちる。それが狙いで、
 このガードが無かった頃は共有 `test` データベースに対して黙って走っていた。
 
 ## 仕組み
@@ -81,7 +81,7 @@ o11y は共有が利点になる（全 checkout のトレース / メトリク�
   seed ファイルは URL ではなく `${AUTH_ISSUER}` を持ち、`make db-seed` がそのスロットの値を渡す
   （`database/seed/README.md` を参照）。`db-reinit` / `db-seed` / `slot-acquire` のいずれを通っても環境に一致する
   identity が入る。この種のデータを足すときも、既定ポートを焼き込まず同じようにスロットへ追随させること。
-  DB 名と同じく、この値が host 実行の `go test` に届くのは `make` 経由だけ（`make test` / `test-cached` が
+  DB 名と同じく、この値が host 実行の `go test` に届くのは `make` 経由だけ（`make go-test` / `go-test-cached` が
   export する）。素の `go test` は `DB_NAME_TEST` も スロットの issuer も受け取らないため、DB を使うテストは
   これらのターゲットから実行すること。
 - **拡張のブートストラップ**: acquire は `wt<N>_local` / `wt<N>_test` を CREATE DATABASE
@@ -130,7 +130,7 @@ worktree で並列に作業するときはスロットを取る。
 
 ```sh
 make slot-acquire    # 空きスロットをリースし自 worktree DB を作成/再構築
-make test            # ホストから localhost:5432 経由で wt<N>_test へ接続
+make go-test            # ホストから localhost:5432 経由で wt<N>_test へ接続
 make serve           # app を gobp-wt-N で起動 → curl localhost:$API_HOST_PORT（DB は共有の wt<N>_local）
 make slot-status     # スロット占有状況（DB 名 / API ポート）を表示
 make slot-free       # スロットだけを解放（データベースは warm 保持、worktree は残す）
@@ -174,7 +174,7 @@ make slot-release    # app 停止+イメージ削除 → スロット解放 → 
   パッケージが `failed to ping DB` で落ちる一方、`too many clients` は出ない。インスタンスの接続数には
   余裕があり、飽和するのは**同時に確立しようとしている本数**で、待たされている間に ping の予算が尽きる。
   worktree が 2 つ要るわけでもない — lefthook の `pre-commit` / `pre-push` は `parallel: true` なので、
-  単一 checkout でも `make lint` と `make test` が重なる。テスト経路にはすでに対策が入っている — `ci` が
+  単一 checkout でも `make go-lint` と `make go-test` が重なる。テスト経路にはすでに対策が入っている — `ci` が
   何をどう設定しているかは `env/README.md` の `DBCONN_MIN_CONNS` / `DB_PING_TIMEOUT` を参照。env ファイルを
   読まない経路は `internal/config` のテスト用設定が同じ値を持つ。
   再発時の切り分けは、`pgrep -fl "go test"` → `lsof -a -p <pid> -d cwd` でどの checkout がテストを

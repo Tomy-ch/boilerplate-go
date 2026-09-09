@@ -24,7 +24,7 @@ const (
 )
 
 // seed が投入する JWT identity の issuer は環境の AUTH_ISSUER で、worktree の DB スロットでポートがずれる。
-// テスト用 DB を seed するのも値を渡すのも make のため、DB を使う本テストは make test / make test-cached
+// テスト用 DB を seed するのも値を渡すのも make のため、DB を使う本テストは make go-test / make go-test-cached
 // 経由で実行する（素の go test は make の渡す値を受け取らない）。
 
 func TestNew(t *testing.T) {

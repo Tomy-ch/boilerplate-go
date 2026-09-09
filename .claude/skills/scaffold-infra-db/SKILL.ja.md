@@ -36,7 +36,7 @@
 
 **Triggers (via `make`)**:
 
-- `make fix` + `make test` — 最終検証
+- `make go-fix` + `make go-test` — 最終検証
 
 **触らない**:
 
@@ -54,9 +54,9 @@ skill が書き込み前に検証:
 
 前提未充足時は明示メッセージで中断（`/scaffold-domain`、`make gen-query`、手動 cleanup 等の案内付き）。
 
-> **環境に関する注記:** `make gen-query` は `pg_dump` で稼働中の DB スキーマをダンプするため、先に DB が起動している必要がある。準備は**生 `docker compose` ではなく専用 make ターゲット**で行うこと: `make serve`（development プロファイル、`database` サービス含む）→ **`make db-init`** → `make gen-query`。`make db-init` は local/test 両 DB を一括で migrate **かつ seed** する。本 skill が書く integration テスト（`make test`）も稼働中かつ **seed 済み**の test DB を要するため、`db-*-migrate-up` 単体ではなく `db-init` が正しい準備手順。
+> **環境に関する注記:** `make gen-query` は `pg_dump` で稼働中の DB スキーマをダンプするため、先に DB が起動している必要がある。準備は**生 `docker compose` ではなく専用 make ターゲット**で行うこと: `make serve`（development プロファイル、`database` サービス含む）→ **`make db-init`** → `make gen-query`。`make db-init` は local/test 両 DB を一括で migrate **かつ seed** する。本 skill が書く integration テスト（`make go-test`）も稼働中かつ **seed 済み**の test DB を要するため、`db-*-migrate-up` 単体ではなく `db-init` が正しい準備手順。
 >
-> **ツールチェーンに関する注記:** 最終の `make fix` / `make test`（または `make lint`）がツールのバージョン不整合（例: `golangci-lint` の v1/v2 config エラー）で失敗した場合は、`PATH` の手動書き換えではなく `make install-tools` でローカルのツールを揃えてから再実行する（`mise.toml` を変更した場合は先に `make sync-versions`）。
+> **ツールチェーンに関する注記:** 最終の `make go-fix` / `make go-test`（または `make go-lint`）がツールのバージョン不整合（例: `golangci-lint` の v1/v2 config エラー）で失敗した場合は、`PATH` の手動書き換えではなく `make install-tools` でローカルのツールを揃えてから再実行する（`mise.toml` を変更した場合は先に `make sync-versions`）。
 
 ## 最初のステップ: identity 確認
 
@@ -161,13 +161,13 @@ Agent tool を起動して infra 層 test 観点を実装前に列挙:
 ## Step 6. 検証
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
 Repository package coverage 確認。infra 層は ≥85% target。失敗時は TODO + FB、自動 rollback なし。
 
-> **DI 検証（runtime）:** `go build` / `make test` は Fx グラフを構築しない — provider 欠落・`New` の未登録・コンストラクタのシグネチャ不整合は、コンパイル/テストではなく**アプリ起動時**に初めて失敗する。DI 登録（`fx.Provide(<aggregate>.New)`）後はアプリが実際に起動するか確認する: `make serve` 稼働中なら保存で `air` が再ビルドするので、`api_server` のログが `[Fx] RUNNING`（"http server started"）に到達し、Fx の `provide` / `invoke` エラーが無いことを確認する。新規環境の注意: コンテナは **vendor モード**でビルドするため先に `make tidy-lib`（`vendor/` 生成）を実行する — 未生成だと Fx 実行前に `inconsistent vendoring` で失敗する。
+> **DI 検証（runtime）:** `go build` / `make go-test` は Fx グラフを構築しない — provider 欠落・`New` の未登録・コンストラクタのシグネチャ不整合は、コンパイル/テストではなく**アプリ起動時**に初めて失敗する。DI 登録（`fx.Provide(<aggregate>.New)`）後はアプリが実際に起動するか確認する: `make serve` 稼働中なら保存で `air` が再ビルドするので、`api_server` のログが `[Fx] RUNNING`（"http server started"）に到達し、Fx の `provide` / `invoke` エラーが無いことを確認する。新規環境の注意: コンテナは **vendor モード**でビルドするため先に `make tidy-lib`（`vendor/` 生成）を実行する — 未生成だと Fx 実行前に `inconsistent vendoring` で失敗する。
 
 ## Step 7. クロージング
 
@@ -175,7 +175,7 @@ Repository package coverage 確認。infra 層は ≥85% target。失敗時は T
 <Aggregate> infra-db 層を生成しました。<N> ファイル作成 + DI 1 行追加。
   mapped: <X> methods (sqlc gen 経由)
   unmapped: <Y> methods (TODO stub、SQL 追加 + make gen-query 後に再 scaffold or 手動実装)
-make test OK、coverage <Z>%。
+make go-test OK、coverage <Z>%。
 次は scaffold-usecase で application service、または scaffold-endpoint で残層を続行できます。
 ```
 
@@ -225,6 +225,6 @@ commit しない。
 - [ ] 実装ファイル書き込み; mapped method は sqlc gen 呼び出し、unmapped method は TODO stub
 - [ ] テストファイル書き込み; mapped method のみテスト
 - [ ] `internal/di/module/persistence.go` 更新（新 `fx.Provide`）
-- [ ] `make fix` + `make test` 実行; coverage 報告（or 失敗 surface）
+- [ ] `make go-fix` + `make go-test` 実行; coverage 報告（or 失敗 surface）
 - [ ] 最終サマリで mapped count + unmapped count + 次手順案内を明示
 - [ ] commit / push なし

@@ -143,7 +143,7 @@ setup-remove-sample-api:
 		$(MAKE) db-local-reinit db-test-reinit && \
 		$(MAKE) gen-api gen-query && \
 		$(MAKE) tidy-lib && \
-		$(MAKE) fix lint && \
+		$(MAKE) go-fix go-lint && \
 		pnpm install --dir scripts --frozen-lockfile && \
 		$(TSX) scripts/setup/verify-sample-removal && \
 		echo "✅ サンプルAPIの削除・再生成・検証が完了しました。"; \

@@ -131,7 +131,7 @@ Exclusion ADR（意図的な「X はしない」）は、リポジトリセッ�
 | [0085](0085-make-single-entrypoint.ja.md) | Make を単一のツールエントリポイントとし、.mk 登録とセルフドキュメンティングなヘルプを提供する | accepted |
 | [0086](0086-scripts-in-node-go.ja.md) | 運用スクリプトは scripts/ に TypeScript または Go で配置し、シェルスクリプトは使用しない | accepted |
 | [0087](0087-docker-compose-dev-environment.ja.md) | ローカル開発環境はプロファイルで分離されたサービスを持つ Docker Compose で提供する | accepted |
-| [0088](0088-two-layer-golangci-config.ja.md) | 2 層の golangci 設定——最小デフォルトと完全な権威ゲート | accepted |
+| [0088](0088-layered-golangci-config.ja.md) | golangci 設定を層に分ける——誰がどの頻度で回すかで割る | accepted |
 | [0089](0089-local-hooks-mirror-ci.ja.md) | ローカル git フックは CI 契約を複製する（local == CI、グロブスコープ、バイパス後に一度検証） | accepted |
 | [0090](0090-coverage-hard-gate.ja.md) | 総カバレッジ 90% を CI のハードゲートとし、例外ガバナンスパスを設ける | accepted |
 | [0091](0091-ci-real-graph-boot-check.ja.md) | CI は実際の Postgres に対して実際の fx グラフを起動する（スタートアップ検証） | accepted |

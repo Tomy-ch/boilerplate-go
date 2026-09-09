@@ -190,8 +190,8 @@ make pin-images-check
 ### 9. 検証
 
 ```sh
-make lint
-make test
+make go-lint
+make go-test
 ```
 
 `python/*.in` の pin を変えた場合は、併せて以下も実行する。
@@ -242,7 +242,7 @@ pin と lockfile が一致しているかを見る検査であり、いま宣言
 - [ ] `python/*.in` の pin を変えたなら `make tool-cooldown-audit` を実行
 - [ ] go / node / python が更新されたなら `make sync-versions` を実行
 - [ ] ランタイム bump 時は base image digest を再固定（`make pin-images-resolve` + `pin-images-apply` + `pin-images-check`）。公開直後のイメージでは新 tag に対するルール 3 の fail-closed が想定どおりの結果であり、結合（トリアージのうえ `days=0` でブートストラップするか bump を保留するか）とともに提示する。無理に通さず、tag と digest の食い違いを残さない
-- [ ] `make lint` + `make test` を実行
+- [ ] `make go-lint` + `make go-test` を実行
 - [ ] 最終結果テーブルをユーザーに報告
 - [ ] `SKILL.md` 更新時は `SKILL.ja.md` も同期
 - [ ] コミット / stage / push は一切実行しない

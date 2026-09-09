@@ -91,8 +91,9 @@ Tests respect the same onion boundaries as production code:
 
 ## 8. Coverage
 
-- Run `make test` (coverage). Coverage **must not decrease** from the current baseline; new / modified packages exceed **90 %** and handlers approach ~100 %.
+- Run `make go-test` (coverage). Coverage **must not decrease** from the current baseline; new / modified packages exceed **90 %** and handlers approach ~100 %.
 - If a package is below the bar, add the missing branch tests — do not stop until met. (The "done" definition lives in [`rules.md` → Testing & Definition of Done](rules.md).)
+- **Coverage % is a proxy, not the goal.** A test's worth is the contract it locks against regression, not the number it moves. A meaningful test can add 0 % — an empty no-op default has zero coverable statements, so a whole-function `0.0%` on an `{}` body is a Go display artifact, not a gap. Do not chase those, and do not delete a test that verifies a real contract because it does not raise coverage. Conversely, code run only to reach lines with no meaningful assertion is coverage theater — that one *is* meaningless.
 
 ## 9. Coverage exceptions and governance
 
@@ -117,6 +118,14 @@ anti-patterns to avoid. It is the **single source for test quality**, read by bo
 `scaffold-test` (to generate tests that satisfy it) and `test-review` (to flag tests that
 violate it) — keeping the list here prevents the generator and the reviewer from drifting.
 
+### When a test is meaningful at all
+
+Before the bar below applies, the test must have a contract worth locking. A test is meaningful only if the contract it protects (correctness / invariant / boundary / safety) (1) can actually regress, (2) is not already locked elsewhere, and (3) is owned by the layer under test. The meaningless forms are the inverses:
+
+- **Wrong semantics** — a tautology, an assertion on an incidental implementation detail, or a case that exists only to move coverage.
+- **Redundant duplication** — the same path verified two or three times across layers with no new viewpoint; re-testing a dependency or generated code.
+- **Wrong layer** — verifying a concern the layer under test does not own.
+
 ### Meaning coverage (意味網羅)
 
 Reaching a branch is not enough — each case must assert that branch's **distinctive**
@@ -139,7 +148,7 @@ lifts coverage yet reveals nothing.
 - **Responsibility creep** — one `TestXxx` driving multiple subjects (a section-1 1:1 violation). Decompose into one `TestXxx` per subject; do not fold multiple subjects into one test.
 - **Helper duplication** — a 5+-line fixture repeated across 3+ `TestXxx` functions that should be a `t.Helper()`-tagged helper.
 - **Redundant comments** — inline comments that restate the code or narrate *why*; case intent belongs in the Japanese `t.Run` name, not in comments (per the Comment Rules in [`rules.md`](rules.md)).
-- **Auto-fixable broken input** — a deliberately-invalid literal that `make fix` silently repairs, so the case stops exercising the rejection path while still passing. A misspelled field name (`"nmae"`) is rewritten to the real one by `misspell`, turning a body that should be rejected into a valid one. Pick an input whose invalidity no linter can "correct": for an unknown field, a correctly-spelled name that simply is not in the contract.
+- **Auto-fixable broken input** — a deliberately-invalid literal that `make go-fix` silently repairs, so the case stops exercising the rejection path while still passing. A misspelled field name (`"nmae"`) is rewritten to the real one by `misspell`, turning a body that should be rejected into a valid one. Pick an input whose invalidity no linter can "correct": for an unknown field, a correctly-spelled name that simply is not in the contract.
 
 ## 11. Test Strategy sections: ownership and adjudicating drift
 

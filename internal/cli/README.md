@@ -37,7 +37,7 @@ coverage, while the testable core lives here and is covered like any other packa
 - The core must NOT import Cobra, `internal/di`, OS signals, or infrastructure (except
   `infrastructure/rdb/driver` types). It operates on injected interfaces / function seams.
   `internal/config` is permitted — the enforced boundary is the `independent_cli` depguard rule in
-  `.golangci-full.yaml`, which denies the layers above but not `config`.
+  `.golangci.yaml`, which denies the layers above but not `config`.
 - The CLI layer does not contain feature business logic (that belongs in usecase / domain).
 - Adding a new command: add `cmd/<command>.go` (Cobra def + real-dependency wiring), add the core
   logic under `internal/cli/<command>/`, and register it in `registerCommands`.

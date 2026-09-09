@@ -1,0 +1,350 @@
+# make go-lint-fast 用。修正が他ファイルへ波及する違反（層境界・依存の向き）をチェックポイントで
+# 早く捕まえるための設定。ゲートではない。3 者の関係は .golangci.yaml の冒頭。
+version: "2"
+
+linters:
+  default: none
+  enable:
+    # Enabled by Default
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    # Disabled by Default
+    - decorder # constやvarなどの宣言順序をチェックします
+    - depguard # 外部ライブラリの使用を制限します
+    - funcorder # 構造体に関連する関数・メソッドの配置順序をチェックします
+    - funlen # 関数の長さを制限して、冗長性と複雑さを減らします
+    - gocheckcompilerdirectives # コンパイラディレクティブのチェックを行います
+    - gocognit # 人間の理解難度を測る指標として、関数・メソッドの認知的複雑度を算出します
+    - gocritic # Goコードの高級な静的解析を行います
+    - godox # 特定のコメントキーワード（たとえば TODO, FIXME, BUG, OPTIMIZE など）を検出します
+    - gosec # セキュリティ上の脆弱性を検出します
+    - lll # 行の長さを制限します
+    - misspell # スペルミスを検出します
+    - modernize # モダンなGo言語・標準ライブラリ機能への簡素化を提案します
+    - nolintlint # nolintコメントの使用をチェックします
+    - revive # Goコードの静的解析を行うツールで、特にコードの品質とスタイルに焦点を当てています
+    - spancheck # OpenTelemetryのSpanの使用をチェックします
+
+  settings:
+    staticcheck:
+      checks:
+        - all
+    decorder:
+      dec-order:
+        - "const"
+        - "var"
+        - "type"
+        - "func"
+      ignore-underscore-vars: false
+      disable-dec-order-check: false
+      disable-init-func-first-check: false
+    depguard:
+      # pkg/ の薄いラッパー経由での利用を強制する規則群（方針の理由: ADR-0001 (avoid-lock-in)）。
+      rules:
+        only_the_original_error_is_permitted:
+          files:
+            - "**/*.go"
+            - "!**/pkg/xerrors/**.go" # pkg/xerrors配下ではアプリケーション全体で使用するエラーラッパーを実装するため許可します
+          list-mode: lax
+          deny:
+            - pkg: github.com/cockroachdb/errors
+              desc: "スタックトレース用として導入したライブラリです。
+                代わりに pkg/xerrors を使用してください。"
+            - pkg: errors
+              desc: "標準の errors パッケージは直接使用しないでください。
+                pkg/xerrors の New / Wrap / Join / Is / As を使用してください。"
+        only_the_original_uuid_is_permitted:
+          files:
+            - "**/*.go"
+            - "!**/pkg/uuid/**.go" # pkg/uuid配下ではアプリケーション全体で使用するuuidライブラリのラッパーを実装するため許可します
+            - "!**/internal/infrastructure/rdb/conv/**.go" # conv配下ではORMの型変換のためuuidライブラリの使用を許可します
+          list-mode: lax
+          deny:
+            - pkg: github.com/google/uuid
+              desc: "uuid作成用として導入したライブラリです。
+                代わりに pkg/uuid を使用してください。"
+        discourage_reflect: # reflect の使用を原則禁止します（型安全性・可読性のため）
+          files:
+            - "**/*.go"
+            - "!**/*.gen.go" # 生成物(gomock 等)は reflect を用いるため除外します
+          list-mode: lax
+          deny:
+            - pkg: reflect
+              desc: "reflect は原則使用しないでください（型安全性・可読性を損なうため）。
+                必要な場合は設計を見直し、個別に相談してください。"
+        # アプリケーションの健全性を保つためのルール
+        independent_apperror: # apperrorパッケージが責務の実装層にも依存しないことを保証します
+          files:
+            - "**/internal/apperror/**.go"
+          list-mode: lax
+          deny:
+            - pkg: go-boilerplate/internal/domain/
+              desc: "apperrorパッケージは他のdomain層に依存してはいけません。"
+            - pkg: go-boilerplate/internal/usecase/
+              desc: "apperrorパッケージは他のusecase層に依存してはいけません。"
+            - pkg: go-boilerplate/internal/controller/
+              desc: "apperrorパッケージは他のcontroller層に依存してはいけません。"
+            - pkg: go-boilerplate/internal/infrastructure/
+              desc: "apperrorパッケージは他のinfrastructure層に依存してはいけません。"
+        independent_config: # configパッケージが責務の実装層にも依存しないことを保証します
+          files:
+            - "**/internal/config/**.go"
+          list-mode: lax
+          deny:
+            - pkg: go-boilerplate/internal/domain/
+              desc: "configパッケージはdomain層に依存してはいけません。"
+            - pkg: go-boilerplate/internal/usecase/
+              desc: "configパッケージはusecase層に依存してはいけません。"
+            - pkg: go-boilerplate/internal/controller/
+              desc: "configパッケージはcontroller層に依存してはいけません。"
+            - pkg: go-boilerplate/internal/infrastructure/
+              desc: "configパッケージは他のinfrastructure層に依存してはいけません。"
+        independent_pkg: # pkgディレクトリが他の内部パッケージに依存しないことを保証します
+          files:
+            - "**/pkg/**.go"
+            # testkit は親 pkg を import してよい（production から参照されない test seam のため）。
+            - "!**/pkg/**/testkit/**.go"
+          list-mode: lax
+          allow:
+            # pkg 配下からの参照のみ例外的に許可します。
+            - go-boilerplate/pkg/xerrors
+          deny:
+            - pkg: go-boilerplate/internal/
+              desc: "pkgディレクトリはinternalディレクトリから独立している必要があります。
+                internalディレクトリを参照することは禁止です。"
+            - pkg: go-boilerplate/pkg/
+              desc: "pkgディレクトリは他のpkgディレクトリから独立している必要があります。
+                他のpkgディレクトリを参照することは禁止です。"
+        # 責務の侵食崩壊を防ぐためのルール
+        maintain_a_sound_domain:
+          files:
+            - "**/internal/domain/**.go"
+            # internal/domain/service/** は下の maintain_a_sound_domain_service が受け持つ。
+            - "!**/internal/domain/service/**.go"
+          list-mode: lax
+          deny:
+            # 集約間の直接結合の禁止は internal/architest の TestDomainAggregateImportIsolation が受け持つ。
+            - pkg: net/http
+              desc: "Domain層でhttpパッケージを直接使用しないでください。
+                handler層にて処理して、DTOなどを介して値を受け渡してください。"
+            - pkg: github.com/labstack/echo/v5
+              desc: "Domain層でechoパッケージを直接使用しないでください。
+                handler層にて処理して、DTOなどを介して値を受け渡してください。"
+            - pkg: database/sql
+              desc: "Domain層でdatabase/sqlパッケージを直接使用しないでください。
+                infrastructure層にて処理して、コンストラクタに受け渡してください。"
+            - pkg: go-boilerplate/internal/usecase/
+              desc: "domain層でusecase層を参照することは禁止です。"
+            - pkg: go-boilerplate/internal/controller/
+              desc: "domain層でcontroller層を参照することは禁止です。"
+            - pkg: go-boilerplate/internal/infrastructure/
+              desc: "domain層でinfrastructure層を参照することは禁止です。"
+            - pkg: go-boilerplate/pkg/fs
+              desc: "domain層でファイルシステム I/O を行わないでください。FS アクセスは外側の層の責務です。"
+            - pkg: go-boilerplate/pkg/exec
+              desc: "domain層で外部プロセス実行を行わないでください。プロセス実行は外側の層の責務です。"
+            - pkg: go-boilerplate/pkg/envutil
+              desc: "環境変数の書き換えは外側の層の責務です。本層からの参照は禁止です。"
+        # internal/domain/service/<name> だけは集約間の import を許可する例外（internal/domain/README.md）。
+        maintain_a_sound_domain_service:
+          files:
+            - "**/internal/domain/service/**.go"
+          list-mode: lax
+          deny:
+            - pkg: net/http
+              desc: "Domain層でhttpパッケージを直接使用しないでください。
+                handler層にて処理して、DTOなどを介して値を受け渡してください。"
+            - pkg: github.com/labstack/echo/v5
+              desc: "Domain層でechoパッケージを直接使用しないでください。
+                handler層にて処理して、DTOなどを介して値を受け渡してください。"
+            - pkg: database/sql
+              desc: "Domain層でdatabase/sqlパッケージを直接使用しないでください。
+                infrastructure層にて処理して、コンストラクタに受け渡してください。"
+            - pkg: go-boilerplate/internal/usecase/
+              desc: "domain層でusecase層を参照することは禁止です。"
+            - pkg: go-boilerplate/internal/controller/
+              desc: "domain層でcontroller層を参照することは禁止です。"
+            - pkg: go-boilerplate/internal/infrastructure/
+              desc: "domain層でinfrastructure層を参照することは禁止です。"
+            - pkg: go-boilerplate/pkg/fs
+              desc: "domain層でファイルシステム I/O を行わないでください。FS アクセスは外側の層の責務です。"
+            - pkg: go-boilerplate/pkg/exec
+              desc: "domain層で外部プロセス実行を行わないでください。プロセス実行は外側の層の責務です。"
+            - pkg: go-boilerplate/pkg/envutil
+              desc: "環境変数の書き換えは外側の層の責務です。本層からの参照は禁止です。"
+        # usecase層では外界とのやり取りのライブラリの使用を禁止します。
+        maintain_a_sound_usecase:
+          files:
+            - "**/internal/usecase/**.go"
+          list-mode: lax
+          deny:
+            - pkg: github.com/labstack/echo/v5
+              desc: "Usecase層でechoパッケージを直接使用しないでください。
+                handler層にて処理して、DTOなどを介して値を受け渡してください。"
+            - pkg: go-boilerplate/internal/controller/
+              desc: "usecase層でcontroller層を参照することは禁止です。"
+            - pkg: go-boilerplate/internal/infrastructure/
+              desc: "usecase層でinfrastructure層を参照することは禁止です。"
+            - pkg: go-boilerplate/pkg/fs
+              desc: "usecase層でファイルシステム I/O を行わないでください。FS アクセスは外側の層の責務です。"
+            - pkg: go-boilerplate/pkg/exec
+              desc: "usecase層で外部プロセス実行を行わないでください。プロセス実行は外側の層の責務です。"
+            - pkg: go-boilerplate/pkg/envutil
+              desc: "環境変数の書き換えは外側の層の責務です。本層からの参照は禁止です。"
+        # controller層では永続化を行うライブラリ(database/sqlなど)の使用を禁止します。
+        maintain_a_sound_controller:
+          files:
+            - "**/internal/controller/**.go"
+          list-mode: lax
+          deny:
+            - pkg: go-boilerplate/internal/infrastructure/
+              desc: "controller層の責務は入出力境界です。infrastructure層を参照することは禁止です。"
+            - pkg: go-boilerplate/internal/domain/
+              desc: "controller層の責務は入出力境界です。domain層の情報にアクセスすることは禁止です。
+                出力する値は必ずDTOなどを介して受け渡してください。"
+        # infrastructure層では HTTP リクエストを扱うライブラリ(net/httpなど)の使用を禁止します。
+        maintain_a_sound_infrastructure:
+          files:
+            - "**/internal/infrastructure/**.go"
+            - "!**/internal/infrastructure/httpclient/**.go" # outbound HTTP client substrate は net/http を許可(下の専用ルールで別途制限)
+          list-mode: lax
+          deny:
+            - pkg: go-boilerplate/internal/controller/
+              desc: "infrastructure層でcontroller層を参照することは禁止です。"
+        # outbound HTTP client 専用。net/http は許可し、inbound 用ライブラリと controller 参照は禁止します。
+        maintain_a_sound_outbound_http_client:
+          files:
+            - "**/internal/infrastructure/httpclient/**.go"
+          list-mode: lax
+          deny:
+            - pkg: github.com/labstack/echo/v5
+              desc: "outbound HTTP client では echo(inbound ハンドラ用)を使用しないでください。"
+            - pkg: go-boilerplate/internal/controller/
+              desc: "infrastructure層でcontroller層を参照することは禁止です。"
+            - pkg: go-boilerplate/internal/domain/
+              desc: "汎用 substrate である outbound HTTP client は domain 層に依存してはいけません。
+                domain 概念を扱うのは external gateway / repository 実装の責務です。"
+        # Realtime Delivery の feature 中立性の depguard 側（docs/design/realtime-delivery.md）。
+        maintain_realtime_feature_neutrality:
+          files:
+            - "**/internal/usecase/boundary/realtime/**.go"
+            - "**/internal/usecase/realtime/**.go"
+            - "**/internal/infrastructure/eventlog/**.go"
+            - "**/internal/infrastructure/streamticket/**.go"
+            - "**/internal/infrastructure/instancelease/**.go"
+            - "**/internal/infrastructure/realtimesecret/**.go"
+            - "**/internal/infrastructure/realtime/**.go"
+            - "**/internal/controller/stream/**.go"
+            - "**/internal/controller/realtime/**.go"
+          list-mode: lax
+          # lax では deny より長い prefix の allow が勝つため、機構自身の 2 package はここで戻します。
+          allow:
+            - go-boilerplate/internal/usecase/boundary/
+            - go-boilerplate/internal/usecase/realtime
+          deny:
+            - pkg: go-boilerplate/internal/domain/
+              desc: "Realtime Delivery の機構側から feature の domain を参照することは禁止です。
+                配送機構は feature に対して中立でなければなりません。"
+            - pkg: go-boilerplate/internal/usecase/
+              desc: "Realtime Delivery の機構側から feature の usecase を参照することは禁止です。
+                機構が使ってよいのは usecase/boundary 配下と usecase/realtime だけです。"
+    funcorder:
+      constructor: true
+      struct-method: true
+      alphabetical: false
+    funlen:
+      # 関数内の行数チェックは無効にします。
+      lines: -1
+      # 関数内のステートメント数を制限します。
+      statements: 50
+    gocognit:
+      min-complexity: 20
+    godox:
+      keywords:
+        - TODO
+        - FIXME
+    lll:
+      line-length: 150
+    misspell:
+      locale: US
+      ignore-rules:
+        - "importas"
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      rules:
+        - name: exported # exported な宣言にはドキュメントコメントを必須とする
+          arguments:
+            - "disableStutteringCheck" # 命名の stutter 検査は行わない
+        - name: var-naming
+          arguments:
+            - []
+            - []
+            - [{ skipPackageNameChecks: true }] # 変数名の命名規則をチェックしますが、パッケージ名のチェックはスキップします。これにより、パッケージ名が変数名と同じ場合でもエラーにならなくなります。
+
+  exclusions:
+    paths:
+      - vendor
+      # npm が展開する依存ツリー。`flatted` のように Go 実装を同梱するパッケージがあり、
+      # そこは第三者のコードなので指摘しても直せない（pnpm 側は `.pnpm` 配下で go が自ら飛ばす）。
+      - node_modules
+    rules:
+      - path: (.+)_test\.go
+        linters:
+          - lll
+
+run:
+  # 固定 timeout なし（0=無効）。リポジトリ全体を回すため所要は規模と共に伸びる。予算は呼び出し元が持つ。
+  timeout: "0s"
+  tests: true
+  allow-parallel-runners: true
+  allow-serial-runners: true
+  relative-path-mode: wd
+  concurrency: 4
+
+formatters:
+  enable:
+    - goimports
+    - gofumpt
+    - gofmt
+    - golines
+    - swaggo
+  settings:
+    gofmt:
+      rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
+    goimports:
+      local-prefixes:
+        - "go-boilerplate"
+    gofumpt:
+      # extra 規則は 3 つとも有効にする。旧 extra-rules: true が意味していたのは
+      # 「既定で無効な追加規則を使う」ことで、規則が個別キーへ分割された後もその意図は
+      # 変わらない。1 つだけ落とすと、なぜそれが外れているのかを読み手が推測することになる。
+      module-path: "go-boilerplate"
+      extra:
+        # 同じ型で隣接する引数をまとめる（a int, b int → a, b int）。
+        group-params: true
+        # 開き括弧が行末で終わる複数行の呼び出しで、閉じ括弧を独立行に置く。
+        # 引数を足し引きしても差分が 1 行で済む。
+        balance-calls: true
+        # 名前付き返り値を持つ関数の裸の return に値を書き出す（return → return err）。
+        clothe-returns: true
+    golines:
+      max-len: 150
+      tab-len: 4
+      shorten-comments: false
+      reformat-tags: true
+      chain-split-dots: true
+  exclusions:
+    paths:
+      - ".*\\.gen\\.go$"
+      - ".*\\.sql\\.go$"
+      - ".*mock_.*\\.go$"
+      - "vendor/.*"
+      - "node_modules/.*"

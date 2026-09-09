@@ -268,7 +268,7 @@ The test viewpoint therefore has exactly one owner. Lens 5 owns "the symbol has 
 ## Constraints (Summary)
 
 - ❌ Editing any file (read-only).
-- ❌ Running `make test` (this skill reviews tests, not runs them; coverage / pass-status is `make test`'s job, run separately).
+- ❌ Running `make go-test` (this skill reviews tests, not runs them; coverage / pass-status is `make go-test`'s job, run separately).
 - ❌ Trusting finder output without verification — the verifier stage is mandatory.
 - ❌ Hardcoding viewpoint lists (the SSOT is the layer README's Test Strategy section; `pkg/` is the documented exception).
 - ❌ Hardcoding the semantic-quality anti-pattern catalogue (Lens 3) or the 意味網羅 bar (Lens 4 Axis B) — the SSOT is `docs/testing-conventions.md` section 10, read at runtime.

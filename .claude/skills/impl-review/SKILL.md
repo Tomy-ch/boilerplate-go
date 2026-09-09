@@ -18,7 +18,7 @@ A Japanese reference translation of this skill lives at `SKILL.ja.md` in this di
 
 Do NOT use this skill for:
 
-- Style / formatting — `make fix` / `make lint`.
+- Style / formatting — `make go-fix` / `make go-lint`.
 - Exhaustive layer-compliance auditing — `arch-check` (this skill's `architecture` lens flags only high-signal violations).
 - Spec validation — `verify-spec`.
 - Applying fixes — this skill is read-only on source; it reports, the user fixes.
@@ -194,7 +194,7 @@ an architecture violation and as a type-design suggestion, and shipping both dou
 
 Run this **only if Step 1 found a touched endpoint**, and run it from the **orchestrator (main session)**, not a subagent — it needs interactive bash, real DB/state, log reading, and possibly user confirmation. Follow `scaffold-endpoint` Phase 7:
 
-1. `make test` (mocked) does NOT build the real Fx graph, run auth/OpenAPI middleware, or touch the DB — so this stage exists to catch what Step 2's `runtime-gap` lens only *predicts*.
+1. `make go-test` (mocked) does NOT build the real Fx graph, run auth/OpenAPI middleware, or touch the DB — so this stage exists to catch what Step 2's `runtime-gap` lens only *predicts*.
 2. Pick/seed a target row in a known state. For credential/state-sensitive checks, create a row whose plaintext/state you control.
 3. `curl` the touched endpoint(s) (local auth: `Authorization: Bearer debug:<subject>`) and assert: happy path; key error paths (404 / 400 / 422); and — **if the operation declares `security:`** — no-token ⇒ 401 (prove it is actually protected). For IDOR-shaped findings, curl as a *different* subject and assert it cannot reach another subject's resource.
 4. **Shared-schema impact:** if a shared `components/*` was edited (Step 1), curl **every** consumer endpoint, not just the changed one — `grep` the spec for `$ref`s and exercise each.

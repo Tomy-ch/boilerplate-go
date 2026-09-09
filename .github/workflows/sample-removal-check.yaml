@@ -192,12 +192,12 @@ jobs:
       - name: Regenerate from the shrunken spec
         run: make gen-bundle-oapi gen-go-code
 
-      - name: Format after removal (make fix)
-        run: make fix
+      - name: Format after removal (make go-fix)
+        run: make go-fix
 
       # Stripping marker blocks edits Markdown structurally (READMEs, docs, the target
       # registry), and a block that swallows one line too many leaves a broken table, an
-      # orphaned heading or an unclosed fence. `make fix` only formats Go, and the repo-wide
+      # orphaned heading or an unclosed fence. `make go-fix` only formats Go, and the repo-wide
       # md-lint job only ever sees the state with the sample still in it.
       - name: Verify the stripped Markdown is still valid
         run: make md-markdownlint-ci
@@ -217,10 +217,10 @@ jobs:
         run: go build ./...
 
       - name: Verify lint
-        run: make lint
+        run: make go-lint
 
       - name: Verify tests
-        run: make test
+        run: make go-test
 
       - name: Verify sample removal (exact deletion + no dangling refs)
         run: pnpm --dir scripts run tsx scripts/setup/verify-sample-removal/index.ts
