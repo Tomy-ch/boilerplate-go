@@ -146,7 +146,7 @@ backend、ツールキー、候補バージョン、**`mise.toml` で現在ピ�
 - `mise.toml` 内の該当行を特定する
 - バージョンリテラルだけを置換する。key（`aqua:owner/repo` / `go:path/to/module` / 短い名前）と、もとが `v` prefix を使っていた場合はその慣習を保持する
 - key の並び順を変えない、無関係な key を触らない、`[settings]` table も触らない
-- **pin が最新より前にある理由は決して記録せず、そのようなメモに遭遇したら削除する。** upstream の最新版とその公開からの経過日数を示すメモは、[ADR-0095](../../../docs/adr/0095-malicious-package-detection-via-cooldown.md) が定め、`tool-cooldown` が強制するポリシーを繰り返すうえ、そこに加えた二つの事実はいずれも陳腐化する。経過日数は翌日には誤りになり、名指しした最新版は次の upstream リリースで古くなる。`mise outdated --bump` なら同じ問いに毎回答えられ、陳腐化しない。残すべきものはバージョンに依存しない制約——ある backend を別の backend より選んだ理由や、下限とそれを必要とする対象——であり、それらは維持する。
+- **pin が最新より前にある理由は決して記録せず、そのようなメモに遭遇したら削除する。** upstream の最新版とその公開からの経過日数を示すメモは、[ADR-0095](../../../docs/adr/0095-malicious-package-detection-via-cooldown.md) が定め、`tool-cooldown` が強制するポリシーを繰り返すうえ、そこに加えた二つの事実はいずれも陳腐化する。経過日数は翌日には誤りになり、名指しした最新版は次の upstream リリースで古くなる。`make tool-cooldown-outdated` なら同じ問いに毎回答えられ、陳腐化しない。しかも上流の最新だけでなく、この repo の窓を満たす最新まで答える。残すべきものはバージョンに依存しない制約——ある backend を別の backend より選んだ理由や、下限とそれを必要とする対象——であり、それらは維持する。
 
 全承認分の置換を memory 上で計算したあと、`mise.toml` を **1 回だけ書き出す**（atomic single-pass）。
 
