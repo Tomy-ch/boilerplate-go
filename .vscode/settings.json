@@ -10,6 +10,9 @@
   },
 
   "go.lintTool": "golangci-lint-v2",
+  // 保存ごとの pass は最小構成を明示的に指す。暗黙探索の既定は権威ゲート(.golangci.yaml)で、
+  // それを保存ごとに回すと数分かかる（ADR-0088）。
+  "go.lintFlags": ["--config=${workspaceFolder}/.golangci-min.yaml"],
   "go.lintOnSave": "package",
   "go.useLanguageServer": true,
 

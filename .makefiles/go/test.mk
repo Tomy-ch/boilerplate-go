@@ -1,15 +1,16 @@
 ## Go言語のテスト関連のコマンド群
-.PHONY: test ## CI用のテスト実行（キャッシュ無効）
-.PHONY: test-cached ## ローカル用テスト実行（キャッシュ有効・pre-commit向け）
+.PHONY: go-test ## CI用のテスト実行（キャッシュ無効）
+.PHONY: go-test-cached ## ローカル用テスト実行（キャッシュ有効・pre-commit向け）
+.PHONY: go-test-arch ## アーキテクチャテストだけを実行（DB 不要・約 1 秒）
 .PHONY: gen-test-repo ## テストの実行とテストレポートの生成
-.PHONY: test-cover-ci ## CI用のカバレッジ付きテスト実行
+.PHONY: go-test-cover-ci ## CI用のカバレッジ付きテスト実行
 .PHONY: cover-gate ## 総カバレッジが閾値以上か検証（CIゲート）
-.PHONY: test-scripts ## CI用の scripts 配下ツールのテスト実行（キャッシュ無効）
-.PHONY: test-scripts-cached ## ローカル用の scripts 配下ツールのテスト実行（キャッシュ有効・pre-commit向け）
+.PHONY: go-test-scripts ## CI用の scripts 配下ツールのテスト実行（キャッシュ無効）
+.PHONY: go-test-scripts-cached ## ローカル用の scripts 配下ツールのテスト実行（キャッシュ有効・pre-commit向け）
 .PHONY: cover-scripts ## scripts 配下ツールの総カバレッジを計測し、下限割れを警告する（失敗させない）
 .PHONY: build-scripts ## scripts 配下ツールを scripts/bin/ へビルドする（手元で実バイナリを動かす用）
 
-# カバレッジ対象外パッケージ（test / test-cached / gen-test-repo / test-cover-ci で共有）
+# カバレッジ対象外パッケージ（test / go-test-cached / gen-test-repo / go-test-cover-ci で共有）
 #
 # node_modules を外すのは、npm が展開する依存ツリーに Go 実装を同梱するパッケージがあり
 # （`flatted` の golang/）、`go list ./...` がそれを本体のパッケージとして数えてしまうため。
@@ -31,14 +32,19 @@ GO_TEST_ENV = $(LOAD_BAND); $(LOAD_SLOT); $(DB_SLOT_ENV); export AUTH_ISSUER; \
 
 # ホスト実行の go test は DB_NAME_TEST を見て接続先を決める（internal/config/config_testing_mock.go）。
 # 未設定なら共有 test へ落ちるため、スロット未取得の worktree では require-db-owner で止める
-# （不変条件は .makefiles/database/pool.mk）。CI 用の test-cover-ci は CI 側で DB を用意するため対象外。
-test: require-db-owner
+# （不変条件は .makefiles/database/pool.mk）。CI 用の go-test-cover-ci は CI 側で DB を用意するため対象外。
+go-test: require-db-owner
 	@$(GO_TEST_ENV) TGT_PKGS="$$(go list ./... | grep -Ev '$(GO_TEST_EXCLUDE)')"; \
 	$$GOBP_NICE go test $$TGT_PKGS -race -cover -count=1 $$GO_TEST_P_FLAG
 
-test-cached: require-db-owner
+go-test-cached: require-db-owner
 	@$(GO_TEST_ENV) TGT_PKGS="$$(go list ./... | grep -Ev '$(GO_TEST_EXCLUDE)')"; \
 	$$GOBP_NICE go test $$TGT_PKGS -cover $$GO_TEST_P_FLAG
+
+# 実装中の反復用。DB を要さず約 1 秒で終わるので、go-lint-fast と対で checkpoint に回せる。
+# depguard が持てない検査（集約間 import の隔離など）はここが受け持つ。
+go-test-arch:
+	@$(LOAD_BAND); $$GOBP_NICE go test ./internal/architest/... -count=1
 
 gen-test-repo: require-db-owner
 	@echo "🔄 テストを実行し、レポートを生成します..."
@@ -54,7 +60,7 @@ gen-test-repo: require-db-owner
 	rm -f docs/coverage/coverage.out
 	@echo "✅ テストレポートの生成が完了しました。"
 
-test-cover-ci:
+go-test-cover-ci:
 	@$(GO_TEST_ENV) TGT_PKGS="$$(go list ./... | grep -Ev '$(GO_TEST_EXCLUDE)')"; \
 	COVER_PKGS="$$(go list ./... \
 		| grep -Ev '$(GO_TEST_EXCLUDE)' \
@@ -63,12 +69,12 @@ test-cover-ci:
 	go test $$TGT_PKGS -race -coverpkg=$$COVER_PKGS -coverprofile=coverage.out -covermode=atomic -count=1
 
 # scripts 配下の開発ツールは GO_TEST_EXCLUDE でカバレッジ母数から外れており、そのままでは
-# test / test-cached のいずれにも乗らない。ツール自体がゲート（供給網ピン・lint）なので、
+# test / go-test-cached のいずれにも乗らない。ツール自体がゲート（供給網ピン・lint）なので、
 # 壊れ方が「静かに何も検査しなくなる」方向に出る。カバレッジ計測とは切り離して実行だけを足す。
-test-scripts:
+go-test-scripts:
 	@$(LOAD_BAND); $$GOBP_NICE go test ./scripts/... -race -count=1 $$GO_TEST_P_FLAG
 
-test-scripts-cached:
+go-test-scripts-cached:
 	@$(LOAD_BAND); $$GOBP_NICE go test ./scripts/... $$GO_TEST_P_FLAG
 
 # 出力先を scripts/bin/ に固定する。`go build ./scripts/<tool>` をリポジトリ直下で叩くと
