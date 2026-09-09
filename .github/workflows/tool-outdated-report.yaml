@@ -1,0 +1,147 @@
+name: Tool Version Report
+
+# `tool-cooldown` gates a declared version against the window; neither it nor anything else notices
+# that upstream has published a newer one. Without this, the pins in `mise.toml` and `python/*.in`
+# sit still until somebody remembers to run `/tools-upgrade`. This reports so that remembering is
+# not a person's job; it never applies an update.
+#
+# The report goes to an issue rather than a pull request because a notification carries no diff to
+# maintain: it cannot conflict while it waits, and it closes itself once nothing is actionable.
+
+on:
+  schedule:
+    - cron: '15 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            agent.api.stepsecurity.io:443
+            api.github.com:443
+            github.com:443
+            codeload.github.com:443
+            objects.githubusercontent.com:443
+            raw.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            *.actions.githubusercontent.com:443
+            *.blob.core.windows.net:443
+            mise.jdx.dev:443
+            mise-versions.jdx.dev:443
+            mise.run:443
+            mise.en.dev:443
+            aquaproj.github.io:443
+            proxy.golang.org:443
+            sum.golang.org:443
+            index.golang.org:443
+            storage.googleapis.com:443
+            dl.google.com:443
+            go.dev:443
+            golang.org:443
+            downloads.sqlc.dev:443
+            nodejs.org:443
+            registry.npmjs.org:443
+            get.pnpm.io:443
+            astral.sh:443
+            pypi.org:443
+            files.pythonhosted.org:443
+            tuf-repo-cdn.sigstore.dev:443
+            rekor.sigstore.dev:443
+            fulcio.sigstore.dev:443
+            api.npmjs.org:443
+            api.osv.dev:443
+            npm.jsr.io:443
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # `mise registry` is what resolves a short name to its backend, so mise has to be present
+      # even though no tool is installed here.
+      - name: Setup mise
+        uses: ./.github/actions/setup-mise
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # The unauthenticated GitHub API allows 60 requests an hour per IP, which one run of this
+      # survey does not fit into.
+      - name: Survey upstream versions
+        id: survey
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          go run ./scripts/tool-cooldown outdated --summary-out=tool-outdated.md
+          cat tool-outdated.md >> "${GITHUB_STEP_SUMMARY}"
+
+      # The issue is the notification, so it is created only while something is actionable and is
+      # closed again once nothing is. Reusing one title as the identity key keeps a weekly schedule
+      # from filing a new issue every Monday.
+      - name: Create or update the report issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          ACTIONABLE: ${{ steps.survey.outputs.actionable }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = 'Tool Version Report: 窓を満たす更新があります';
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+            const existing = issues.find(issue => issue.title === title);
+
+            if (Number(process.env.ACTIONABLE) === 0) {
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: existing.number,
+                  body: `窓を満たす更新が無くなったので閉じます。[実行](${runUrl})`,
+                });
+                await github.rest.issues.update({
+                  owner, repo, issue_number: existing.number, state: 'closed',
+                });
+              }
+              return;
+            }
+
+            const body = [
+              '<!-- tool-outdated-report -->',
+              fs.readFileSync('tool-outdated.md', 'utf8'),
+              `実行: [${context.workflow}](${runUrl})`,
+            ].join('\n');
+
+            if (existing) {
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, body });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body });
+            }
