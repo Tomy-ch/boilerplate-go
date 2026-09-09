@@ -384,7 +384,7 @@ func reportOutdated(client *http.Client, declared []tool, opt options, now time.
 		}
 	}
 
-	log.Printf("ℹ️ tool-cooldown outdated: 対象 %d 件 / 解決できない backend %d 件 / 窓 GitHub %d 日・レジストリ %d 日",
+	log.Printf("ℹ️ tool-cooldown outdated: 対象 %d 件 / ランタイム除外 %d 件 / 窓 GitHub %d 日・レジストリ %d 日",
 		len(resolved), len(skipped), releaseWindowDays, registryWindowDays)
 	log.Printf("ℹ️ 今すぐ上げられる %d 件 / 窓待ち %d 件 / 上流を確認できず %d 件", actionable, held, failed)
 
