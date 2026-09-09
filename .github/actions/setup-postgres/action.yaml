@@ -48,11 +48,9 @@ runs:
       if: ${{ inputs.install_psql == 'true' }}
       shell: bash
       run: |
-        # The runner image ships third-party apt sources (Chrome, Microsoft) this job never installs
-        # from. `apt-get update` fetches them anyway and exits 100 when any one source fails, so an
-        # outage in either takes down a step that needs only Ubuntu and pgdg. Match on the host, not
-        # the filename: the image is free to rename a list, and a stale name would silently match
-        # nothing. No match is the normal case on an image that ships neither, so it is not an error.
+        # `apt-get update` exits 100 if any single source fails, and the runner image ships
+        # third-party sources (Chrome, Microsoft) this job never installs from. Match on the host:
+        # the image may rename a list, and no match is the normal case rather than an error.
         lists="$(sudo grep -rlE 'dl\.google\.com|packages\.microsoft\.com' /etc/apt/sources.list.d/ || true)"
         if [ -n "$lists" ]; then
           printf '%s\n' "$lists" | sudo xargs -r rm -f
