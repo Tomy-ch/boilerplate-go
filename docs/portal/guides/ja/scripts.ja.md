@@ -1,6 +1,12 @@
 # scripts
 
-`scripts/` には、コード生成・ドキュメント・バージョニング・プロジェクト初期設定のための**ユーティリティスクリプト**が格納されています。
+`scripts/` には、アプリケーションの傍らで動かす**開発用ツール**が入る。生成器・ゲート・一度きりの操作、
+そしてこのテンプレートをプロジェクトへ変える初期設定である。線引きは、ここにあるものが**ビルド済みの
+アプリケーションから到達しない**こと。ツールがバイナリのコンパイル対象になるコードを書くことはあるが、
+バイナリが `scripts/` を呼ぶことはない。代わりに `cmd/` + `internal/cli/` に置かれるのは、その線の反対側
+—— デプロイされたアプリケーション自身が実行できなければならない操作である。
+
+下の *スクリプトカテゴリ* は現時点の目録であって定義ではない。増えていく一覧として読むこと。
 
 ## ディレクトリ構成
 
@@ -21,7 +27,7 @@ Node の設定とパッケージ横断のゲートは直下に置く。各ツー
 
 |スクリプト|説明|実行元|
 |---|---|---|
-|`marker-baseline/`|撤去マーカー（`boilerplate-only` / `sample-api`）の行数をファイルごとに `baseline.json` へ固定し、動いたら落とす。発火する本物のマーカーと、規約を説明する例示とは同じ形をしているため、除去側は後者を `MARKER_LITERAL_FILES` で宣言する。宣言し忘れると、除去が中断する（声が出る）か、例示した区域が黙って消える（空フェンスは valid な Markdown なので誰も鳴らない）。どちらの経路でも唯一の手がかりは「マーカー行が増えたこと」なので、そこを判断の場にする——ベースラインを更新するか、ファイルを宣言するか。再生成は `tsx scripts/marker-baseline --write`。|`make test`（vitest） <!-- boilerplate-only:line -->|
+|`marker-baseline/`|撤去マーカー（`boilerplate-only` / `sample-api`）の行数をファイルごとに `baseline.json` へ固定し、動いたら落とす。発火する本物のマーカーと、規約を説明する例示とは同じ形をしているため、除去側は後者を `MARKER_LITERAL_FILES` で宣言する。宣言し忘れると、除去が中断する（声が出る）か、例示した区域が黙って消える（空フェンスは valid な Markdown なので誰も鳴らない）。どちらの経路でも唯一の手がかりは「マーカー行が増えたこと」なので、そこを判断の場にする——ベースラインを更新するか、ファイルを宣言するか。再生成は `tsx scripts/marker-baseline --write`。|`make go-test`（vitest） <!-- boilerplate-only:line -->|
 |`openapi-client-check/`|bundle 済み spec（`openapi/openapi.gen.yaml`）を frontend generator（`orval`）に渡して `tmp/openapi-client/` へ生成し、SSE の契約型（`DeliveryEvent` / `ControlEvent` / `StreamCursor`）が生成物に現れなければ失敗する。`redocly lint` と Spectral は spec を文書として判定するだけで、消費側の generator が component を型にできるかは見ない — サーバ側の契約破りが表面化するのは client の生成済み検証だけになる（[openapi/boundary-ownership.md](../openapi/boundary-ownership.ja.md)）という穴を埋める。生成物が空か宣言を含まない場合は「全型あり」ではなく退化入力（exit 2）として報告する。|`make openapi-client-check` / CI `oapi-lint.yaml`|
 |`doc-ref-lint/`|ADR のファイル名 / H1 / 参照の整合と、英日ドキュメント対の存在を検査する。ADR 参照は番号と併せてファイル名の slug を持つため、再採番が黙って別の ADR を指すことはない。`docs/spec/**` は日本語版の spec 一式が入るまで対訳存在チェックから意図的に除外している。|`make md-lint` / `make md-doc-ref-lint`|
 |`premise-lint/`|[docs/rules.md](../docs/rules.md) の *No premise the document will outlive* を機械化したもの。テンプレート作成後も残る Markdown（`docs/adr/**` / `docs/design/**` / `docs/rules.md` / 各層 README …）をマーカー除去後の姿で読み、テンプレートから作成した瞬間に真でなくなる自己参照があれば落とす。前提を書いてよいのは、セットアップが書き換え・削除する `README*` / `docs/get-started/**` と、`boilerplate-only` / `sample-api` マーカーで囲った領域だけ。同じ語の別語義は `allowances.ts` へ理由付きで宣言する。|`make md-premise-lint` <!-- boilerplate-only:line -->|
@@ -103,7 +109,25 @@ make ターゲットやパスと違い、採番し直された節は参照を構
 |`tool-cooldown/`|このリポジトリが宣言するツール版を供給網 cooldown 窓に照らす。対象は mise が解決するもの全部（`mise.toml`）に加え、hash 固定の lockfile から入る PyPI ツール（`python/*.in`、[ADR-0084 (mise-ssot-drift-gate)](../docs/adr/0084-mise-ssot-drift-gate.md)）。窓はツールではなく backend の性質で決まる。GitHub リリース経由（aqua / ubi / github）は 14 日で、tag が別 commit へ付け替えられ得るぶん `pin-actions` / `pin-images` と揃える。パッケージレジストリ経由（go / npm / PyPI）は公開が immutable なので 7 日で、`go-cooldown` と揃う。lockfile 側（推移依存）は `go-cooldown` が direct のみを見るのと同じ理由で対象外。公開時刻はそれぞれ GitHub Releases API・Go module proxy・npm registry・PyPI から取る。`go:` backend はパッケージパスを指すため、proxy が答えるまで接頭辞を遡ってモジュールパスを見つける。短縮名の backend は対応表を持たず `mise registry` に解決させる（表を持つと mise の更新で静かにずれる）。**言語ランタイム（`core:` backend）は受容したリスクとして対象外** — go / node / python の配布自体が汚染される事態は供給網の 1 リンクではなく言語の信頼モデルの崩壊であり、冷却期間で守れるものが無い。`gate` は base ref と比較して失敗し、`audit` は全件を棚卸しして窓では失敗しない。双方とも `python/*.in` の宣言と `python/*.txt` の lockfile が違う版を指していれば失敗する（cooldown を通した版が実際に入る版と別になるため。再生成は `make py-lock`）。また `.github/tool-cooldown-bypass.toml` のエントリが期限切れ・3 ヶ月超・対象不在なら失敗し、無効なエントリは効力を失う。|`make tool-cooldown-gate BASE=<ref>` / `make tool-cooldown-audit`|
 |`pnpm-cooldown/`|各 `pnpm-workspace.yaml` の `minimumReleaseAgeExclude` を、[`.github/pnpm-cooldown-bypass.toml`](../.github/pnpm-cooldown-bypass.toml) が持つ期限と突き合わせて検査する。`go-cooldown` / `tool-cooldown` と違い、これは窓の番人ではない。窓そのものは pnpm の解決器が強制しており、しかも install のたびに lockfile 全体を照らし直す（`--frozen-lockfile` の再生も含む）。番人が居なかったのは免除のほう。期限を宣言ではなく専用 TOML へ置くのは兄弟と同じ理由で、`expires` は pnpm にとって意味を持たないため pnpm が読むファイルを占める筋合いが無く、外へ出すことで検査がコメント解釈の経路から離れる——そこは pnpm が honor するのに読み手が取りこぼす書き方があり、期限の無い免除を通してしまう。期限の無い例外、期限切れ、上限 3 ヶ月超過、どの例外にも対応しないエントリ、対になる `pnpm-lock.yaml` がもう解決していない版、のいずれでも失敗する。宣言は行走査ではなく `yaml.Node` として読む。YAML は同じシーケンスを何通りにも書ける（インデントあり・キーと同じ桁・フロー形式・引用符つき）ため、pnpm が honor する形を 1 つでも取りこぼすと、期限の無い免除が「免除ゼロ」として通る。lockfile のキーは比較前に正規化する（`'@scope/name@1.0.0'` は quote され、`name@1.0.0(peer@2.0.0)` は peer サフィックスを持つ）。素の完全一致では scoped パッケージが常に未解決に見えるため。期限はどちらのファイルが変わらなくても訪れるので、pull request だけでなくスケジュールでも走る。|`make pnpm-cooldown-check`|
 |`migration-lint/`|`database/migrations` の連番について、重複（`-check duplicate`）と欠番（`-check gap`）を検査する。読むのは `<連番>_<名前>.<kind>.sql` の最初の `_` より前で、up / down は `-kind` で切り替える。lefthook の pre-commit ゲートから呼ばれる。判定がシェルのレシピではなく Go に在るのは、この検査の壊れ方が「何も検査しなくなる」方向に出るためで、そこはテストで固定できるがシェルのパイプラインでは固定できない。|`make check-migration-up-version` / `check-migration-down-version` / `check-migration-up-gap` / `check-migration-down-gap`|
+|`compose-lint/`|`docker-compose.yaml` のサービス宣言を、compose 自身のスキーマではなくこのリポジトリが守りたい規則に照らして検査する。規則は今のところ 1 つで、app 層として起動されるサービスは `healthcheck` を宣言していること。その一覧はここに書き写さず [`.makefiles/docker/compose.mk`](../.makefiles/docker/compose.mk) の `APP_SERVICES` から読むので、両者がずれようがない。これらのファイルを判定するものが何も無かった穴を埋める —— `shell-lint` は `*.sh` しか読まず、`trivy config` は compose のチェックを持たず（[`trivy-config.yaml`](../.github/workflows/trivy-config.yaml) 自身がそう述べている）、lefthook が `docker-compose*.yaml` に掛けるのは image の digest 固定だけで、app 層を起動する CI ジョブは無い。`APP_SERVICES` に挙がっているのに compose に無いサービスは合格ではなくエラーにする。読めないファイルとサービスを 1 つも宣言しないファイルも同じで、何も見ていない実行がクリーンに読めてはならない。構文と補間は docker compose 自身の担当。|`make compose-lint` / CI `compose-lint.yaml`|
 |`cover-gate/`|`go tool cover -func` が報告する総カバレッジを `-threshold` の値と比較し、下回れば非 0 で終了する。`total:` 行の抽出と判定を別々の純粋関数に分けてあるため双方をテストで固定できる。置き換え前の `awk` パイプラインは数値でないパーセント表記を `t+0` で `0` に丸めていたため、壊れたプロファイルを「ツールの失敗」ではなく「カバレッジ不足」として報告していた。|`make cover-gate`|
+
+### ローカル環境のリセット（破壊的・emulator 専用）
+
+ここに置くツールは、**その checkout の設定が名指しする資源を削除する**。下の検証用ツールと同じローカル
+スタックを相手にするが、取り去ることができるのは一方だけなので、並べずに分けてある。
+
+同じ資源の作成側をアプリケーションが既に持っていても、削除側はここに残る —— `realtime-init` は
+Realtime Delivery の table を `cmd/` のサブコマンドとして作り（[`internal/cli/README.md`](../internal/cli/README.md)）、
+`realtime-reset` はそれをここから削除する。この非対称は配置規則の見落としではなく、意図的で、かつ効いて
+いる。作成側はデプロイ先の環境が実際に行う操作なのでアプリケーションに属する。削除側はそうではなく、
+アプリケーションのバイナリの外に置いてあることが、実 AWS が拒む資格情報で署名できる理由になっている
+—— endpoint の検査の背後にある、独立した 2 つ目の防御である。`cmd/` へ寄せると app の `REALTIME_*`
+資格情報が渡り、打ち間違えた flag と本番 table の間に立つのは `validateEndpoint` だけになる。
+
+|スクリプト|説明|実行元|
+|---|---|---|
+|`realtime-reset/`|この checkout の Realtime Delivery の 3 table を削除し、消え切るまで待つ。スロットの PostgreSQL と DynamoDB EventLog を一緒に作り直すためである。`slot-acquire` が PostgreSQL しか作り直さない穴を埋める: 採番が 1 から再開する一方 EventLog には同じ位置の item が残っており、条件付き書き込みはその衝突を — 正しく — 拒否するので、relay の head-of-line blocking の裏で stream が止まったままになる。table 名は app が読むのと同じ `REALTIME_TABLE_SUFFIX` から取るため、serve が使う名前とずれようがない。作成は `realtime-init` の担当のままで、こちらは削除だけを行い、無い table は成功として数える。本番 DynamoDB へ届かせない制御は独立に 2 つある。`-endpoint` は emulator を名指すこと（host を持たない値は設定ミスとして拒否し、AWS の host は正面から拒否する。自前ホストの emulator を使う構成があるので loopback には限定しない）と、実 AWS が拒むダミー鍵で署名すること —— したがって app の `REALTIME_*` 資格情報へ寄せてはならず、寄せると endpoint の検査だけが唯一の防御になる。そのダミー鍵で app の table が見えるのは `dynamodb_local` が `-sharedDb` で動くためである。消えるまで待つのは、後続の `realtime-init` が `ResourceInUseException` を踏まないようにするためである。|`make realtime-reset` / `make slot-acquire`|
 
 ### ローカル環境の検証
 
@@ -183,7 +207,7 @@ make ターゲットやパスと違い、採番し直された節は参照を構
 [`docs/testing-conventions.md`](../docs/testing-conventions.md) の 11 節に従い、観点はここが持ちます。
 横断的な構造規則（`t.Parallel()`・サブテストのグループ・アサーション）は引き続きその文書が持ち、
 ここが持つのは以下の観点だけです。観点は Go のツールにも TypeScript のツールにも等しく効きます。
-違うのは走らせ方（`make test-scripts` か `make scripts-test` か）であって観点ではありません。
+違うのは走らせ方（`make go-test-scripts` か `make scripts-test` か）であって観点ではありません。
 
 - **判定を検査し、その外側の入口は検査しない。** どのツールも、ファイルを読み・出力し・終了コードを
   返すだけの入口と、その隣に並ぶ判定モジュールへ分かれる。Go では入口が `main` と `run` で、`run` は
@@ -225,8 +249,8 @@ make ターゲットやパスと違い、採番し直された節は参照を構
 
 ## 注意点
 
-- Go ツールのユニットテストを実行するのは `make test-scripts` / `make test-scripts-cached` だけ。
-  `make test` は `scripts/` を除外する。配線の詳細は
+- Go ツールのユニットテストを実行するのは `make go-test-scripts` / `make go-test-scripts-cached` だけ。
+  `make go-test` は `scripts/` を除外する。配線の詳細は
   [`.makefiles/README.md`](../.makefiles/README.md) を参照
 - `actions-shellcheck` のテストは実物の `shellcheck` を呼び、無い環境では自分で skip する。
   `REQUIRE_SHELLCHECK` を立てるとその skip を失敗に変える。skip は既定の出力に現れないため、

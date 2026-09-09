@@ -153,7 +153,7 @@
 				<dd><a href="#Usecase">type Usecase</a></dd>
 				
 					
-					<dd>    <a href="#New">func New(tf observability.TracerFactory, txm tx.Manager, clock clock.Clock, authorizer authz.Authorizer, userRepo user.Repository, userLock user.LockRepository, prefectureRepo prefecture.Repository, purchaseRepo purchase.Repository, emit outbox.EmitUsecase) Usecase</a></dd>
+					<dd>    <a href="#New">func New(tf observability.TracerFactory, txm tx.Manager, clock clock.Clock, authorizer authz.Authorizer, userRepo user.Repository, userLock user.LockRepository, prefectureRepo prefecture.Repository, purchaseRepo purchase.Repository, couponRepo coupon.Repository, identities authbd.IdentityRegistrar, emit outbox.EmitUsecase) Usecase</a></dd>
 				
 				
 			
@@ -188,6 +188,8 @@
 				<a href="../../../../src/go-boilerplate/internal/usecase/user/user_purge_usecase.go.html">user_purge_usecase.go</a>
 			
 				<a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html">user_usecase.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/user/welcome_coupon.go.html">welcome_coupon.go</a>
 			
 				<a href="../../../../src/go-boilerplate/internal/usecase/user/withdrawal_archive_usecase.go.html">withdrawal_archive_usecase.go</a>
 			
@@ -286,17 +288,22 @@
 		
 			
 			
-			<h2 id="CreateParamsDTO">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=2640:2711#L68">CreateParamsDTO</a>
+			<h2 id="CreateParamsDTO">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=2910:3118#L71">CreateParamsDTO</a>
 				<a class="permalink" href="#CreateParamsDTO">¶</a>
 				
 				
 			</h2>
 			<p>CreateParamsDTO は、ユーザー作成に必要なパラメータを表します。
+内部ユーザー ID は登録時に採番するため受け取りません。呼出元が渡すのは、認証済みの主体を
+指す外部アイデンティティ（Issuer + Subject）と本人の属性だけです。
 
 			</p><pre>type CreateParamsDTO struct {
     <a href="#UpdateProfileParams">UpdateProfileParams</a>
 
-<span id="CreateParamsDTO.UserID"></span>    UserID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="CreateParamsDTO.Issuer"></span>    <span class="comment">// Issuer は、認証したトークンの発行者です。</span>
+    Issuer <a href="../../../../builtin/#string">string</a>
+<span id="CreateParamsDTO.Subject"></span>    <span class="comment">// Subject は、認証したトークンの主体です。</span>
+    Subject <a href="../../../../builtin/#string">string</a>
 }
 </pre>
 
@@ -314,7 +321,7 @@
 		
 			
 			
-			<h2 id="PatchParamsDTO">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=2864:3110#L75">PatchParamsDTO</a>
+			<h2 id="PatchParamsDTO">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=3271:3517#L81">PatchParamsDTO</a>
 				<a class="permalink" href="#PatchParamsDTO">¶</a>
 				
 				
@@ -426,7 +433,7 @@
 		
 			
 			
-			</p><h2 id="UpdateProfileParams">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=2306:2549#L55">UpdateProfileParams</a>
+			</p><h2 id="UpdateProfileParams">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=2347:2590#L56">UpdateProfileParams</a>
 				<a class="permalink" href="#UpdateProfileParams">¶</a>
 				
 				
@@ -460,7 +467,7 @@
 		
 			
 			
-			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=3507:6628#L100">Usecase</a>
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=3985:7420#L108">Usecase</a>
 				<a class="permalink" href="#Usecase">¶</a>
 				
 				
@@ -477,7 +484,9 @@
     <span class="comment">// ListUsersFeed は、認可を確認したうえで未削除ユーザーを作成日時の降順（cursor ページネーション）で</span>
     <span class="comment">// 取得します。認可条件は ListUsers と同じく admin 限定です。</span>
     ListUsersFeed(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">authbd</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, cursor *<a href="../../../../go-boilerplate/internal/usecase/tools/paging/">paging</a>.<a href="../../../../go-boilerplate/internal/usecase/tools/paging/#Cursor">Cursor</a>) (*<a href="#UserFeedView">UserFeedView</a>, <a href="../../../../builtin/#error">error</a>)
-    <span class="comment">// CreateUser は、ユーザーを作成します。</span>
+    <span class="comment">// CreateUser は、認証済みの主体を内部ユーザーとして登録します。ユーザーの作成・外部アイデンティティの</span>
+    <span class="comment">// 結び付け・ウェルカムクーポンの発行を単一トランザクションで行います。</span>
+    <span class="comment">// 既に登録済みの主体からの呼び出しは apperror.ErrConflict を返し、何も残しません。</span>
     CreateUser(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, dto *<a href="#CreateParamsDTO">CreateParamsDTO</a>) (<a href="#UserView">UserView</a>, <a href="../../../../builtin/#error">error</a>)
     <span class="comment">// CountUsers は、ユーザーの総件数を返します。件数のみを返し個々のユーザーを開示しないため、</span>
     <span class="comment">// 認可を要求しません。</span>
@@ -509,7 +518,7 @@
 
 			
 				
-				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=6710:6987#L133">New</a>
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=7502:7848#L143">New</a>
 					<a class="permalink" href="#New">¶</a>
 					
 					
@@ -523,6 +532,8 @@
     userLock <a href="../../../../go-boilerplate/internal/domain/user/">user</a>.<a href="../../../../go-boilerplate/internal/domain/user/#LockRepository">LockRepository</a>,
     prefectureRepo <a href="../../../../go-boilerplate/internal/domain/prefecture/">prefecture</a>.<a href="../../../../go-boilerplate/internal/domain/prefecture/#Repository">Repository</a>,
     purchaseRepo <a href="../../../../go-boilerplate/internal/domain/purchase/">purchase</a>.<a href="../../../../go-boilerplate/internal/domain/purchase/#Repository">Repository</a>,
+    couponRepo <a href="../../../../go-boilerplate/internal/domain/coupon/">coupon</a>.<a href="../../../../go-boilerplate/internal/domain/coupon/#Repository">Repository</a>,
+    identities <a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">authbd</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#IdentityRegistrar">IdentityRegistrar</a>,
     emit <a href="../../../../go-boilerplate/internal/usecase/outbox/">outbox</a>.<a href="../../../../go-boilerplate/internal/usecase/outbox/#EmitUsecase">EmitUsecase</a>,
 ) <a href="#Usecase">Usecase</a></pre>
 				<p>New は、ユーザーに関するユースケースを初期化します。
@@ -535,7 +546,7 @@
 		
 			
 			
-			</p><h2 id="UserFeedView">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=1939:2184#L47">UserFeedView</a>
+			</p><h2 id="UserFeedView">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=1980:2225#L48">UserFeedView</a>
 				<a class="permalink" href="#UserFeedView">¶</a>
 				
 				
@@ -564,7 +575,7 @@
 		
 			
 			
-			<h2 id="UserListView">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=1761:1820#L41">UserListView</a>
+			<h2 id="UserListView">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=1802:1861#L42">UserListView</a>
 				<a class="permalink" href="#UserListView">¶</a>
 				
 				
@@ -591,7 +602,7 @@
 		
 			
 			
-			<h2 id="UserView">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=1376:1661#L26">UserView</a>
+			<h2 id="UserView">type <a href="../../../../src/go-boilerplate/internal/usecase/user/user_usecase.go.html?s=1417:1702#L27">UserView</a>
 				<a class="permalink" href="#UserView">¶</a>
 				
 				

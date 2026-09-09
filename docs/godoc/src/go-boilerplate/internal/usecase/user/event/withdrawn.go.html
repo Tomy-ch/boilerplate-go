@@ -73,41 +73,42 @@
 <span id="L16" class="ln">    16  </span><span class="comment">// ErrInvalidWithdrawn は、user.withdrawn.v1 の payload として読めないことを示すエラーです。</span>
 <span id="L17" class="ln">    17  </span>var ErrInvalidWithdrawn = xerrors.Wrap(apperror.ErrInvalidArgument, &#34;invalid user.withdrawn payload&#34;)
 <span id="L18" class="ln">    18  </span>
-<span id="L19" class="ln">    19  </span><span class="comment">// Withdrawn は、user.withdrawn.v1 の自己完結 snapshot payload です。</span>
-<span id="L20" class="ln">    20  </span>type Withdrawn struct {
-<span id="L21" class="ln">    21  </span>	UserID    string `json:&#34;userId&#34;`
-<span id="L22" class="ln">    22  </span>	DeletedAt string `json:&#34;deletedAt&#34;`
-<span id="L23" class="ln">    23  </span>}
-<span id="L24" class="ln">    24  </span>
-<span id="L25" class="ln">    25  </span><span class="comment">// BuildWithdrawn は、ユーザー集約から user.withdrawn.v1 の自己完結 snapshot payload を marshal します。</span>
-<span id="L26" class="ln">    26  </span><span class="comment">// 退会していないユーザーを渡した場合、payload の deletedAt は空文字列になります。</span>
-<span id="L27" class="ln">    27  </span>func BuildWithdrawn(u *user.User) ([]byte, error) {
-<span id="L28" class="ln">    28  </span>	var deletedAt string
-<span id="L29" class="ln">    29  </span>	if at := u.DeletedAt(); at != nil {
-<span id="L30" class="ln">    30  </span>		deletedAt = at.Format(time.RFC3339Nano)
-<span id="L31" class="ln">    31  </span>	}
-<span id="L32" class="ln">    32  </span>
-<span id="L33" class="ln">    33  </span>	payload, err := json.Marshal(Withdrawn{
-<span id="L34" class="ln">    34  </span>		UserID:    u.ID().String(),
-<span id="L35" class="ln">    35  </span>		DeletedAt: deletedAt,
-<span id="L36" class="ln">    36  </span>	})
-<span id="L37" class="ln">    37  </span>	if err != nil {
-<span id="L38" class="ln">    38  </span>		return nil, xerrors.Wrap(err, &#34;failed to encode user.withdrawn payload&#34;)
-<span id="L39" class="ln">    39  </span>	}
-<span id="L40" class="ln">    40  </span>	return payload, nil
-<span id="L41" class="ln">    41  </span>}
-<span id="L42" class="ln">    42  </span>
-<span id="L43" class="ln">    43  </span><span class="comment">// ParseWithdrawn は、user.withdrawn.v1 の payload を復元します。</span>
-<span id="L44" class="ln">    44  </span><span class="comment">// 復元できない payload は ErrInvalidWithdrawn を返します。値の妥当性（userId が空でないか等）は</span>
-<span id="L45" class="ln">    45  </span><span class="comment">// 消費側の関心なので、ここでは判定しません。</span>
-<span id="L46" class="ln">    46  </span>func ParseWithdrawn(payload []byte) (Withdrawn, error) {
-<span id="L47" class="ln">    47  </span>	var w Withdrawn
-<span id="L48" class="ln">    48  </span>	if err := json.Unmarshal(payload, &amp;w); err != nil {
-<span id="L49" class="ln">    49  </span>		return Withdrawn{}, xerrors.Wrap(ErrInvalidWithdrawn, err.Error())
-<span id="L50" class="ln">    50  </span>	}
-<span id="L51" class="ln">    51  </span>	return w, nil
-<span id="L52" class="ln">    52  </span>}
-<span id="L53" class="ln">    53  </span>
+<span id="L19" class="ln">    19  </span><span class="comment">// Withdrawn は、user.withdrawn.v1 の通知 payload です（payload_parity.yaml の kind: notification）。</span>
+<span id="L20" class="ln">    20  </span><span class="comment">// 他の payload と違って公開しているのは、退会アーカイブのワーカーが ParseWithdrawn で読み戻すためです。</span>
+<span id="L21" class="ln">    21  </span>type Withdrawn struct {
+<span id="L22" class="ln">    22  </span>	UserID    string `json:&#34;userId&#34;`
+<span id="L23" class="ln">    23  </span>	DeletedAt string `json:&#34;deletedAt&#34;`
+<span id="L24" class="ln">    24  </span>}
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span><span class="comment">// BuildWithdrawn は、ユーザー集約から user.withdrawn.v1 の通知 payload を marshal します。</span>
+<span id="L27" class="ln">    27  </span><span class="comment">// 退会していないユーザーを渡した場合、payload の deletedAt は空文字列になります。</span>
+<span id="L28" class="ln">    28  </span>func BuildWithdrawn(u *user.User) ([]byte, error) {
+<span id="L29" class="ln">    29  </span>	var deletedAt string
+<span id="L30" class="ln">    30  </span>	if at := u.DeletedAt(); at != nil {
+<span id="L31" class="ln">    31  </span>		deletedAt = at.Format(time.RFC3339Nano)
+<span id="L32" class="ln">    32  </span>	}
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span>	payload, err := json.Marshal(Withdrawn{
+<span id="L35" class="ln">    35  </span>		UserID:    u.ID().String(),
+<span id="L36" class="ln">    36  </span>		DeletedAt: deletedAt,
+<span id="L37" class="ln">    37  </span>	})
+<span id="L38" class="ln">    38  </span>	if err != nil {
+<span id="L39" class="ln">    39  </span>		return nil, xerrors.Wrap(err, &#34;failed to encode user.withdrawn payload&#34;)
+<span id="L40" class="ln">    40  </span>	}
+<span id="L41" class="ln">    41  </span>	return payload, nil
+<span id="L42" class="ln">    42  </span>}
+<span id="L43" class="ln">    43  </span>
+<span id="L44" class="ln">    44  </span><span class="comment">// ParseWithdrawn は、user.withdrawn.v1 の payload を復元します。</span>
+<span id="L45" class="ln">    45  </span><span class="comment">// 復元できない payload は ErrInvalidWithdrawn を返します。値の妥当性（userId が空でないか等）は</span>
+<span id="L46" class="ln">    46  </span><span class="comment">// 消費側の関心なので、ここでは判定しません。</span>
+<span id="L47" class="ln">    47  </span>func ParseWithdrawn(payload []byte) (Withdrawn, error) {
+<span id="L48" class="ln">    48  </span>	var w Withdrawn
+<span id="L49" class="ln">    49  </span>	if err := json.Unmarshal(payload, &amp;w); err != nil {
+<span id="L50" class="ln">    50  </span>		return Withdrawn{}, xerrors.Wrap(ErrInvalidWithdrawn, err.Error())
+<span id="L51" class="ln">    51  </span>	}
+<span id="L52" class="ln">    52  </span>	return w, nil
+<span id="L53" class="ln">    53  </span>}
+<span id="L54" class="ln">    54  </span>
 </pre><p><a href="../../../../../../src/go-boilerplate/internal/usecase/user/event/withdrawn.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

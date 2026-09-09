@@ -195,17 +195,43 @@ Repository / QueryService とは異なり、ビジネスドメインに属さな
 ## command_service
 
 `command_service` は **CommandService** を実装します。QueryService の書き込み側の対称物で、
-インターフェースは QueryService と並んで Usecase 層に、実装はここに置きます。単一トランザクションでの
-原子性を要する複数集約への書き込みのために予約されています
+インターフェースは QueryService と並んで Usecase 層に、実装はここに置きます。集約ごとの保存へ分解
+できない書き込み —— 集約を跨いで原子的でなければならないか、対象行が述語でしか名指しできないため ——
+のために予約されています
 （[ADR-0032 (lightweight-cqrs)](../../../docs/adr/0032-lightweight-cqrs.md) /
-[ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md)）。書き込み順序は
+[ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md) /
+[ADR-0114 (predicate-defined-set-writes-on-commandservice)](../../../docs/adr/0114-predicate-defined-set-writes-on-commandservice.md)）。
+書き込み順序は
 [ADR-0036 (ordered-pessimistic-row-locks)](../../../docs/adr/0036-ordered-pessimistic-row-locks.md) に従います。
 
 <!-- sample-api:replace-begin -->
-このカテゴリに現在実装はありません。対象行を identity で名指しできる書き込みはロックできるため
-Repository 呼び出しで構成した usecase へ分解でき、購入の経路が CommandService を使わないのはこの理由です。
-このカテゴリが待っているのは、対象集合が述語でしか決まらない書き込みです。
-[issue #1461](https://github.com/Tomy-ch/go-boilerplate/issues/1461) を参照してください。
+このカテゴリには 2 つの実装があり、この対によって基準が読み取れるようになっています。対象行を
+identity で名指しできる書き込みはロックできるため Repository 呼び出しで構成した usecase へ分解でき、
+購入の経路が CommandService を使わないのはこの理由です。
+
+`command_service/product` は商品が廃番になったとき代償のクーポンを発行します。受給者はカート行に
+対する述語で決まり、書き込みの前に列挙できず、件数にも上限がありません。それとは独立に、この発行は
+商品自身の書き込みとコミットを共にしなければなりません。
+[ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md)
+の分岐 3a の実例です。
+
+`command_service/coupon` は退会していない全ユーザーへ 1 枚ずつクーポンを発行します。書き込むのは
+`coupons` だけなので、原子性を理由にここへ来るわけではありません。受給者は同じく述語でしか決まらず、
+分解できない理由はそれだけです。
+[ADR-0114 (predicate-defined-set-writes-on-commandservice)](../../../docs/adr/0114-predicate-defined-set-writes-on-commandservice.md)
+の分岐 3b の実例です。
+**この 2 つを併せて読んでください。** このカテゴリは「集約を跨ぐ書き込み」ではなく、2 つ目の実装が
+それを示しています。どちらも同じ生成済み `InsertCoupons` を呼びます。書き込む表も列も同じである以上、
+発行の事由ごとに文を複製すると、次に列が足されたとき片方が取り残されます。
+
+どちらのメソッドも、共有する列は渡された素のパラメータではなく、直前に組み立てた検証済みの集約から
+取ります。パラメータを集約の不変条件を満たすものへ変えたのはコンストラクタなので、そこから列を読み戻せば、
+書き込む値と検証した値が「同じもの」であり続けます。乖離しうる 2 つの写しにはなりません。
+
+どちらのメソッドも、パラメータは決定済みの集約ではなく発行条件です。受給者を読むまで集約が存在し
+得ないためです。この形が守る規則は変わりません —— 各メソッドは受給者を読んでから、すべての行を
+Domain のコンストラクタ経由で組み立てるため、集約の不変条件を満たさない行はデータベースに届きません。
+往復は 2 回のままで、クーポンの件数に応じて増えません。
 <!-- sample-api:replace-with -->
 <!-- = 基準を満たす書き込みが現れるまで、このカテゴリに実装はありません。 -->
 <!-- sample-api:replace-end -->

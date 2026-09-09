@@ -1,6 +1,12 @@
 # scripts
 
-`scripts/` contains **utility scripts** for code generation, documentation, versioning, and initial project setup.
+`scripts/` holds the **development tooling** this repository runs beside the application: generators,
+gates, one-off operations, and the setup that turns this template into a project. The line is that
+nothing here is reachable from the built application — a tool may write code the binary compiles, but
+the binary never calls into `scripts/`. What lives under `cmd/` + `internal/cli/` instead is the
+opposite side of that line: an operation the deployed application itself has to be able to perform.
+
+*Script Categories* below is the current inventory, not the definition. Read it as a list that grows.
 
 ## Directory Structure
 
@@ -21,7 +27,7 @@ Node configuration and the cross-package gates sit at the top level. What each t
 
 |Script|Description|Invoked By|
 |---|---|---|
-|`marker-baseline/`|Pin the number of removal-marker (`boilerplate-only` / `sample-api`) lines per file in `baseline.json`, and fail when the count moves. A marker that fires and a marker shown as an example look identical, so the removers carry a `MARKER_LITERAL_FILES` declaration for the latter; forgetting it either aborts the removal (loud) or silently deletes the illustrated passage (not loud — an emptied code fence is valid Markdown). An added marker line is the only signal either way, so it is made a decision: update the baseline, or declare the file. Regenerate with `tsx scripts/marker-baseline --write`.|`make test` (vitest) <!-- boilerplate-only:line -->|
+|`marker-baseline/`|Pin the number of removal-marker (`boilerplate-only` / `sample-api`) lines per file in `baseline.json`, and fail when the count moves. A marker that fires and a marker shown as an example look identical, so the removers carry a `MARKER_LITERAL_FILES` declaration for the latter; forgetting it either aborts the removal (loud) or silently deletes the illustrated passage (not loud — an emptied code fence is valid Markdown). An added marker line is the only signal either way, so it is made a decision: update the baseline, or declare the file. Regenerate with `tsx scripts/marker-baseline --write`.|`make go-test` (vitest) <!-- boilerplate-only:line -->|
 |`premise-lint/`|Mechanises the *No premise the document will outlive* rule from [docs/rules.md](../docs/rules.md). Reads every Markdown file that survives template instantiation — `docs/adr/**`, `docs/design/**`, `docs/rules.md`, the layer READMEs, … — with the marked regions removed, and fails on a self-reference that stops being true once a repository is created from the template. A premise belongs in `README*` / `docs/get-started/**`, which the setup rewrites or deletes, or inside a `boilerplate-only` / `sample-api` marker. Other senses of the same words are declared with a reason in `allowances.ts`.|`make md-premise-lint` <!-- boilerplate-only:line -->|
 |`mermaid-lint/`|Extract every ` ```mermaid ` fence from the repo's Markdown (same exclusions as `markdownlint-cli2`) and validate each with the real `mermaid.parse` (DOM provided by `linkedom`). Reports every broken diagram, then exits non-zero if there was any. Fills the gap that `markdownlint` only checks Markdown shape, never the diagram grammar.|`make md-lint` / `make md-mermaid-lint`|
 |`skill-lint/`|Check the skill / agent definitions under `.claude/**` semantically: frontmatter (`name` matches the directory / file name, `name` + `description` present), translation pairs (`SKILL.ja.md` exists, carries no frontmatter, opens with a sync note, and its heading-level sequence matches `SKILL.md`), reference existence (every `` `make <target>` `` resolves against `Makefile` / `.makefiles/**`, every repo-root-relative path in inline code exists), and cross-skill section references (`` `repo-ops` §19 `` resolves against the numbered sections `repo-ops/SKILL.md` actually declares — this one reads `.codex/**` too). Also checks that each skill / agent exists in `.codex/**` too. Fills the gap that a skill definition is an agent instruction sheet whose prose nothing else checks against reality, and that a skill landing on only one of the two AI environments goes unnoticed. See [Skill Lint](#skill-lint) for scope and the ignore directive.|`make md-lint` / `make md-skill-lint`|
@@ -146,7 +152,27 @@ See [genctxkey/README.md](genctxkey/README.md) for details.
 |`tool-cooldown/`|Check the tool versions this repository declares — `mise.toml` for everything mise resolves, plus `python/*.in` for the PyPI tools that install from a hash-pinned lockfile ([ADR-0084 (mise-ssot-drift-gate)](../docs/adr/0084-mise-ssot-drift-gate.md)) — against the supply-chain cooldown window. The window comes from the backend, not the tool: 14 days for one resolved through a GitHub release (aqua / ubi / github), matching `pin-actions` and `pin-images` because a tag can be moved onto another commit; 7 days for one resolved through a package registry (go / npm / PyPI), matching `go-cooldown` because a published version there is immutable. The lockfiles themselves (transitive dependencies) are out of scope, for the same reason `go-cooldown` gates only direct requirements. Publish times come from the GitHub Releases API, the Go module proxy, the npm registry and PyPI respectively — a `go:` backend names a package path, so the module path is found by walking the prefix back until the proxy answers. A short name's backend is resolved by asking `mise registry` rather than by a table kept here, which would drift the next time mise changes. **Language runtimes (`core:` backend) are excluded as an accepted risk** — a compromised go / node / python distribution is a failure of the language's trust model rather than of one supply-chain link, and no cooldown protects against it. `gate` compares against a base ref and fails; `audit` inventories everything and never fails on the window. Both also fail when a `python/*.in` declaration and its `python/*.txt` lockfile name different versions, because the version cleared here would then not be the version installed — `make py-lock` regenerates it. Both fail on a bypass entry in `.github/tool-cooldown-bypass.toml` that has expired, reaches beyond three months, or matches nothing, and an invalid entry loses its effect.|`make tool-cooldown-gate BASE=<ref>` / `make tool-cooldown-audit`|
 |`pnpm-cooldown/`|Check the `minimumReleaseAgeExclude` entries in every `pnpm-workspace.yaml` against the deadlines in [`.github/pnpm-cooldown-bypass.toml`](../.github/pnpm-cooldown-bypass.toml). Unlike `go-cooldown` and `tool-cooldown` this is not the window's guard: pnpm's resolver enforces the window itself and re-verifies the whole lockfile on every install, `--frozen-lockfile` included. What had no guard is the exemption. The deadline lives in its own TOML rather than in the declaration, for the same reason the siblings do — an `expires` is meaningless to pnpm, so it has no claim on the file pnpm reads, and keeping it out also keeps the check off the comment-parsing path where a form pnpm honours but a reader misses would let an undated exemption through. The check fails on an exclusion with no entry, an entry that has expired, one reaching beyond three months, one matching no exclusion, and an exclusion naming a version the sibling `pnpm-lock.yaml` no longer resolves. The declaration is read as a `yaml.Node` rather than by scanning lines, because YAML spells the same sequence several ways — indented, flush with the key, flow-style, quoted — and every form pnpm honours must be read or an undated exemption passes as "no exemptions". Lockfile keys are normalized before comparison (`'@scope/name@1.0.0'` is quoted, `name@1.0.0(peer@2.0.0)` carries a peer suffix), since a raw match reports every scoped package as unresolved. A deadline arrives without either file changing, so this runs on a schedule as well as on the pull request.|`make pnpm-cooldown-check`|
 |`migration-lint/`|Check the sequence numbers under `database/migrations` for duplicates (`-check duplicate`) and gaps (`-check gap`), reading the number before the first `_` of `<seq>_<name>.<kind>.sql` and selecting up / down with `-kind`. Called from the lefthook pre-commit gate. The decision lives in Go rather than in the shell recipe because this check fails towards *inspecting nothing*, which a test can pin and a shell pipeline cannot.|`make check-migration-up-version` / `check-migration-down-version` / `check-migration-up-gap` / `check-migration-down-gap`|
+|`compose-lint/`|Check the service declarations in `docker-compose.yaml` against the rules this repository wants held, rather than against compose's own schema. The one rule so far: every service started as the app layer declares a `healthcheck`. The list of those services is read from `APP_SERVICES` in [`.makefiles/docker/compose.mk`](../.makefiles/docker/compose.mk) rather than restated here, so the two cannot drift. Fills the gap that nothing judged these files at all — `shell-lint` reads only `*.sh`, `trivy config` ships no compose checks ([`trivy-config.yaml`](../.github/workflows/trivy-config.yaml) says so itself), the lefthook gate on `docker-compose*.yaml` only verifies image digests, and no CI job starts the app layer. A service named in `APP_SERVICES` but absent from the compose file is an error rather than a pass, as are an unreadable file and one declaring no services — a run that looked at nothing must not read as clean. Syntax and interpolation stay with docker compose itself.|`make compose-lint` / CI `compose-lint.yaml`|
 |`cover-gate/`|Compare the total coverage `go tool cover -func` reports against the `-threshold` value and exit non-zero below it. Extracting the `total:` line and judging it are separate pure functions, so both are pinned by tests — the `awk` pipeline this replaced coerced any non-numeric percentage to `0` through `t+0`, which reported a malformed profile as a coverage failure rather than as the tooling failure it is.|`make cover-gate`|
+
+### Local Environment Reset (destructive, emulator-only)
+
+A tool here **deletes resources the checkout's own configuration names**, which is why it is separated
+from the verification tools below rather than filed beside them: the two are read against the same
+local stack, but only one of them can take something away.
+
+Such a tool stays in `scripts/` even when the application already owns the creating half of the same
+resource — `realtime-init` creates the Realtime Delivery tables as a `cmd/` subcommand ([`internal/cli/README.md`](../internal/cli/README.md)),
+and `realtime-reset` deletes them from here. That asymmetry is deliberate and load-bearing, not an
+oversight in the placement rule. The creating half is an operation a deployed environment genuinely
+performs, so it belongs to the application. The deleting half is not, and keeping it out of the
+application binary is what allows it to sign with a credential real AWS rejects — a second, independent
+guard behind the endpoint check. Moving it to `cmd/` would hand it the app's `REALTIME_*` credentials
+and leave `validateEndpoint` as the only thing between a mistyped flag and a production table.
+
+|Script|Description|Invoked By|
+|---|---|---|
+|`realtime-reset/`|Delete this checkout's three Realtime Delivery tables and wait until each is gone, so the slot's PostgreSQL and its DynamoDB EventLog are rebuilt together. Fills the gap that `slot-acquire` rebuilds only PostgreSQL: sequence allocation restarts at 1 while the EventLog still holds items at those positions, and the conditional write refuses the collision — correctly — leaving the stream stopped behind the relay's head-of-line blocking. Table names come from the same `REALTIME_TABLE_SUFFIX` the app reads, so the script cannot drift from what serve uses. Creation stays with `realtime-init`; this one only deletes, and a missing table counts as success. Two independent controls keep it off real DynamoDB: `-endpoint` must name an emulator — a host-less value is refused as a misconfiguration and an AWS host is refused outright, while loopback is not required because a self-hosted emulator is a supported setup — and the client signs with a fixed dummy credential that real AWS rejects, so the tool must never borrow the app's `REALTIME_*` credentials; doing so would leave the endpoint check as the only guard. That dummy credential sees the app's tables only because `dynamodb_local` runs `-sharedDb`. Waiting for the table to disappear is what keeps a following `realtime-init` from hitting `ResourceInUseException`.|`make realtime-reset` / `make slot-acquire`|
 
 ### Local Environment Verification
 
@@ -225,7 +251,7 @@ a file with no real markers of its own, since that declaration removes it from t
 and the convention write-ups carry the `sample-api` marker form in their own prose, so a naive scan
 would harvest text that was never an instruction. Declaring the file is therefore the exception that
 keeps the scan honest, and forgetting one corrupts that file — `sample-removal-check.yaml` catches it
-as a failing `make test` / `md-markdownlint-ci` / `go build`.
+as a failing `make go-test` / `md-markdownlint-ci` / `go build`.
 <!-- sample-api:end -->
 
 ## Test Strategy
@@ -234,7 +260,7 @@ These tools are not a layer, so no layer README governs them; per section 11 of
 [`docs/testing-conventions.md`](../docs/testing-conventions.md) their viewpoints live here. The
 cross-cutting structure rules (`t.Parallel()`, subtest groups, assertions) still come from that
 document — only the viewpoints below are local. They hold for the Go tools and the TypeScript ones
-alike: the runner differs (`make test-scripts` vs. `make scripts-test`), the viewpoints do not.
+alike: the runner differs (`make go-test-scripts` vs. `make scripts-test`), the viewpoints do not.
 
 - **Test the decision, not the shell around it.** Each tool splits into an entry that only reads
   files, prints, and sets an exit code, and the decision modules beside it. In Go that entry is
@@ -279,8 +305,8 @@ alike: the runner differs (`make test-scripts` vs. `make scripts-test`), the vie
 
 ## Notes
 
-- The Go tools' unit tests run through `make test-scripts` / `make test-scripts-cached` alone —
-  `make test` excludes `scripts/`. How they are wired is in
+- The Go tools' unit tests run through `make go-test-scripts` / `make go-test-scripts-cached` alone —
+  `make go-test` excludes `scripts/`. How they are wired is in
   [`.makefiles/README.md`](../.makefiles/README.md)
 - `actions-shellcheck`'s tests shell out to the real `shellcheck` and skip themselves when it is
   absent. `REQUIRE_SHELLCHECK` turns those skips into failures, because a skip is invisible in the

@@ -107,6 +107,8 @@
 			<dl>
 			
 			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
 			
 				
 				<dd><a href="#RenderEnv">func RenderEnv(v Values) string</a></dd>
@@ -158,6 +160,11 @@
 				
 			
 				
+				<dd><a href="#LeaseProbe">type LeaseProbe</a></dd>
+				
+				
+			
+				
 				<dd><a href="#Meta">type Meta</a></dd>
 				
 				
@@ -200,6 +207,14 @@
 				
 			
 				
+				<dd><a href="#RealtimeBase">type RealtimeBase</a></dd>
+				
+					
+					<dd>    <a href="#LoadRealtimeBase">func LoadRealtimeBase() (RealtimeBase, error)</a></dd>
+				
+				
+			
+				
 				<dd><a href="#Registry">type Registry</a></dd>
 				
 					
@@ -214,6 +229,9 @@
 				
 					
 					<dd>    <a href="#Registry.Exists">func (r *Registry) Exists(slot int) bool</a></dd>
+				
+					
+					<dd>    <a href="#Registry.HeldByOther">func (r *Registry) HeldByOther(slot int) bool</a></dd>
 				
 					
 					<dd>    <a href="#Registry.IsStale">func (r *Registry) IsStale(slot int) bool</a></dd>
@@ -231,7 +249,7 @@
 					<dd>    <a href="#Registry.ReadMeta">func (r *Registry) ReadMeta(slot int) (Meta, bool)</a></dd>
 				
 					
-					<dd>    <a href="#Registry.Release">func (r *Registry) Release(slot int)</a></dd>
+					<dd>    <a href="#Registry.Release">func (r *Registry) Release(slot int) bool</a></dd>
 				
 					
 					<dd>    <a href="#Registry.TryAcquireFresh">func (r *Registry) TryAcquireFresh(slot int) bool</a></dd>
@@ -247,7 +265,7 @@
 				<dd><a href="#Resolver">type Resolver</a></dd>
 				
 					
-					<dd>    <a href="#NewResolver">func NewResolver(cfg Config, probe *GitProbe, out io.Writer) *Resolver</a></dd>
+					<dd>    <a href="#NewResolver">func NewResolver(cfg Config, probe *GitProbe, lease *LeaseProbe, out io.Writer) *Resolver</a></dd>
 				
 				
 					
@@ -285,6 +303,8 @@
 			
 				<a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html">dbslot.go</a>
 			
+				<a href="../../../../src/go-boilerplate/internal/cli/dbslot/realtime.go.html">realtime.go</a>
+			
 				<a href="../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html">registry.go</a>
 			
 				<a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html">resolve.go</a>
@@ -299,10 +319,17 @@
 
 		
 		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrRealtimeBaseMissing は、埋め込み env が Realtime の資源名の基底を宣言していないことを表します。
+
+				</p><pre>var <span id="ErrRealtimeBaseMissing">ErrRealtimeBaseMissing</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#New">New</a>(&#34;the embedded env declares no realtime resource name&#34;)</pre>
+			
+		
 		
 			
 			
-			<h2 id="RenderEnv">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=8871:8902#L218">RenderEnv</a>
+			<h2 id="RenderEnv">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=11321:11352#L274">RenderEnv</a>
 				<a class="permalink" href="#RenderEnv">¶</a>
 				
 				
@@ -316,7 +343,7 @@
 		
 			
 			
-			</p><h2 id="RenderValues">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=9378:9412#L237">RenderValues</a>
+			</p><h2 id="RenderValues">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=11971:12005#L296">RenderValues</a>
 				<a class="permalink" href="#RenderValues">¶</a>
 				
 				
@@ -331,7 +358,7 @@
 		
 			
 			
-			</p><h2 id="Compose">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=313:855#L6">Compose</a>
+			</p><h2 id="Compose">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=649:1191#L11">Compose</a>
 				<a class="permalink" href="#Compose">¶</a>
 				
 				
@@ -361,7 +388,7 @@
 		
 			
 			
-			<h2 id="Config">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=644:1188#L14">Config</a>
+			<h2 id="Config">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=644:1310#L14">Config</a>
 				<a class="permalink" href="#Config">¶</a>
 				
 				
@@ -376,6 +403,8 @@
 <span id="Config.DlvBase"></span>    DlvBase       <a href="../../../../builtin/#int">int</a>    <span class="comment">// DLV_HOST_PORT のベース</span>
 <span id="Config.PprofBase"></span>    PprofBase     <a href="../../../../builtin/#int">int</a>    <span class="comment">// PPROF_HOST_PORT のベース</span>
 <span id="Config.APPEnv"></span>    APPEnv        <a href="../../../../builtin/#string">string</a> <span class="comment">// 実行環境ラベル（deploy 系ガードに使用）</span>
+
+<span id="Config.Realtime"></span>    Realtime <a href="#RealtimeBase">RealtimeBase</a> <span class="comment">// Realtime Delivery の資源名の基底（LoadRealtimeBase が埋め込み env から読む）</span>
 }
 </pre>
 
@@ -423,7 +452,7 @@
 		
 			
 			
-			<h2 id="ExecCompose">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=1002:1027#L17">ExecCompose</a>
+			<h2 id="ExecCompose">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=1338:1363#L22">ExecCompose</a>
 				<a class="permalink" href="#ExecCompose">¶</a>
 				
 				
@@ -446,21 +475,22 @@
 
 			
 				
-				<h3 id="ExecCompose.DownServe">func (ExecCompose) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=1789:1862#L28">DownServe</a>
+				<h3 id="ExecCompose.DownServe">func (ExecCompose) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=2203:2276#L34">DownServe</a>
 					<a class="permalink" href="#ExecCompose.DownServe">¶</a>
 					
 					
 				</h3>
 				<pre>func (c <a href="#ExecCompose">ExecCompose</a>) DownServe(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, project <a href="../../../../builtin/#string">string</a>) <a href="../../../../builtin/#error">error</a></pre>
-				<p>DownServe は `docker compose -f docker-compose.yaml -f docker-compose.attach.yaml down` を実行します。
+				<p>DownServe は、app 層の compose プロジェクトを down します。
 docker compose down はコンテナ不在でも exit 0 のため、返るエラーは docker 未起動・権限不足などの実失敗のみです。
+app 層の override（docker-compose.attach.yaml）は重ねません（理由は README.md「Compose」）。
 
 				
 				
 				
 			
 				
-				</p><h3 id="ExecCompose.RunningContainers">func (ExecCompose) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=2202:2290#L34">RunningContainers</a>
+				</p><h3 id="ExecCompose.RunningContainers">func (ExecCompose) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=2605:2693#L40">RunningContainers</a>
 					<a class="permalink" href="#ExecCompose.RunningContainers">¶</a>
 					
 					
@@ -474,7 +504,7 @@ docker compose down はコンテナ不在でも exit 0 のため、返るエラ�
 				
 			
 				
-				</p><h3 id="ExecCompose.UpSharedDB">func (ExecCompose) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=1337:1411#L22">UpSharedDB</a>
+				</p><h3 id="ExecCompose.UpSharedDB">func (ExecCompose) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/compose.go.html?s=1673:1747#L27">UpSharedDB</a>
 					<a class="permalink" href="#ExecCompose.UpSharedDB">¶</a>
 					
 					
@@ -491,13 +521,13 @@ docker compose down はコンテナ不在でも exit 0 のため、返るエラ�
 		
 			
 			
-			</p><h2 id="GitContext">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=2177:2196#L45">GitContext</a>
+			</p><h2 id="GitContext">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=2245:2264#L49">GitContext</a>
 				<a class="permalink" href="#GitContext">¶</a>
 				
 				
 			</h2>
 			<p>GitContext は、この checkout がどの git 文脈にあるかを表します。
-「所有データベースが無い状態を検出できるか」はこの区別で決まります。
+文脈ごとの扱いは RequireOwner を参照。
 
 			</p><pre>type GitContext <a href="../../../../builtin/#int">int</a></pre>
 
@@ -525,7 +555,7 @@ docker compose down はコンテナ不在でも exit 0 のため、返るエラ�
 
 			
 				
-				<h3 id="GitContext.String">func (GitContext) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=3930:3965#L79">String</a>
+				<h3 id="GitContext.String">func (GitContext) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=4766:4801#L96">String</a>
 					<a class="permalink" href="#GitContext.String">¶</a>
 					
 					
@@ -540,7 +570,7 @@ docker compose down はコンテナ不在でも exit 0 のため、返るエラ�
 		
 			
 			
-			</p><h2 id="GitProbe">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=2314:2739#L48">GitProbe</a>
+			</p><h2 id="GitProbe">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=2382:2807#L52">GitProbe</a>
 				<a class="permalink" href="#GitProbe">¶</a>
 				
 				
@@ -554,6 +584,34 @@ docker compose down はコンテナ不在でも exit 0 のため、返るエラ�
     GitDirs func(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, root <a href="../../../../builtin/#string">string</a>) (<a href="../../../../builtin/#string">string</a>, <a href="../../../../builtin/#error">error</a>)
 <span id="GitProbe.HasGitEntry"></span>    <span class="comment">// HasGitEntry は、root か その祖先に .git が存在するかを返します。</span>
     HasGitEntry func(root <a href="../../../../builtin/#string">string</a>) <a href="../../../../builtin/#bool">bool</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="LeaseProbe">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=3030:3200#L63">LeaseProbe</a>
+				<a class="permalink" href="#LeaseProbe">¶</a>
+				
+				
+			</h2>
+			<p>LeaseProbe は、リース所有権の判定に使う外部依存の注入点です（テストで差し替えます。
+ファイルの存在が所有の証明にならない理由は README.md「Slot file」）。
+
+			</p><pre>type LeaseProbe struct {
+<span id="LeaseProbe.OwnedBySelf"></span>    <span class="comment">// OwnedBySelf は、そのスロットのリースを自 worktree が保持しているかを返します。</span>
+    OwnedBySelf func(slot <a href="../../../../builtin/#int">int</a>) <a href="../../../../builtin/#bool">bool</a>
 }
 </pre>
 
@@ -637,7 +695,7 @@ CREATE DATABASE / pg_stat_activity は maintenance DB へ、拡張は対象 DB �
 
 			
 				
-				</p><h3 id="PgxAdmin.ActiveConnections">func (*PgxAdmin) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/admin.go.html?s=2878:2965#L66">ActiveConnections</a>
+				</p><h3 id="PgxAdmin.ActiveConnections">func (*PgxAdmin) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/admin.go.html?s=2825:2912#L66">ActiveConnections</a>
 					<a class="permalink" href="#PgxAdmin.ActiveConnections">¶</a>
 					
 					
@@ -663,14 +721,14 @@ CREATE DATABASE / pg_stat_activity は maintenance DB へ、拡張は対象 DB �
 				
 			
 				
-				</p><h3 id="PgxAdmin.SetupDatabase">func (*PgxAdmin) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/admin.go.html?s=2388:2460#L52">SetupDatabase</a>
+				</p><h3 id="PgxAdmin.SetupDatabase">func (*PgxAdmin) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/admin.go.html?s=2335:2407#L52">SetupDatabase</a>
 					<a class="permalink" href="#PgxAdmin.SetupDatabase">¶</a>
 					
 					
 				</h3>
 				<pre>func (a *<a href="#PgxAdmin">PgxAdmin</a>) SetupDatabase(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, name <a href="../../../../builtin/#string">string</a>) <a href="../../../../builtin/#error">error</a></pre>
-				<p>SetupDatabase は、対象 DB に pg_trgm 拡張を設定します。
-timezone は DB コンテナの TZ 由来のクラスタ既定を継承するため、ここでは設定しません。
+				<p>SetupDatabase は、対象 DB に pg_trgm 拡張を設定します
+（timezone を設定しない理由は README.md「DB admin」）。
 
 				
 				
@@ -679,7 +737,7 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 		
 			
 			
-			</p><h2 id="Pool">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=1291:1492#L25">Pool</a>
+			</p><h2 id="Pool">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=1413:1614#L27">Pool</a>
 				<a class="permalink" href="#Pool">¶</a>
 				
 				
@@ -701,7 +759,7 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 
 			
 				
-				<h3 id="NewPool">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=1536:1631#L35">NewPool</a>
+				<h3 id="NewPool">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=1658:1753#L37">NewPool</a>
 					<a class="permalink" href="#NewPool">¶</a>
 					
 					
@@ -715,7 +773,7 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 
 			
 				
-				</p><h3 id="Pool.Acquire">func (*Pool) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=1860:1909#L40">Acquire</a>
+				</p><h3 id="Pool.Acquire">func (*Pool) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=1982:2031#L42">Acquire</a>
 					<a class="permalink" href="#Pool.Acquire">¶</a>
 					
 					
@@ -728,7 +786,7 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 				
 			
 				
-				</p><h3 id="Pool.Heartbeat">func (*Pool) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=4178:4210#L108">Heartbeat</a>
+				</p><h3 id="Pool.Heartbeat">func (*Pool) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=5221:5253#L129">Heartbeat</a>
 					<a class="permalink" href="#Pool.Heartbeat">¶</a>
 					
 					
@@ -741,7 +799,7 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 				
 			
 				
-				</p><h3 id="Pool.Release">func (*Pool) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=3385:3434#L90">Release</a>
+				</p><h3 id="Pool.Release">func (*Pool) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=3444:3493#L92">Release</a>
 					<a class="permalink" href="#Pool.Release">¶</a>
 					
 					
@@ -754,7 +812,7 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 				
 			
 				
-				</p><h3 id="Pool.Status">func (*Pool) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=4391:4420#L117">Status</a>
+				</p><h3 id="Pool.Status">func (*Pool) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/dbslot.go.html?s=5434:5463#L138">Status</a>
 					<a class="permalink" href="#Pool.Status">¶</a>
 					
 					
@@ -765,6 +823,48 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 				
 				
 				
+			
+		
+			
+			
+			</p><h2 id="RealtimeBase">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/realtime.go.html?s=874:1057#L16">RealtimeBase</a>
+				<a class="permalink" href="#RealtimeBase">¶</a>
+				
+				
+			</h2>
+			<p>RealtimeBase は、Realtime Delivery の資源名の基底です。スロットを保持しない checkout では
+これがそのまま使われ、保持していればスロット番号を継いだ名前になります（realtimeName）。
+
+			</p><pre>type RealtimeBase struct {
+<span id="RealtimeBase.TableSuffix"></span>    TableSuffix <a href="../../../../builtin/#string">string</a> <span class="comment">// REALTIME_TABLE_SUFFIX</span>
+<span id="RealtimeBase.QueuePrefix"></span>    QueuePrefix <a href="../../../../builtin/#string">string</a> <span class="comment">// REALTIME_QUEUE_PREFIX</span>
+<span id="RealtimeBase.Topic"></span>    Topic       <a href="../../../../builtin/#string">string</a> <span class="comment">// REALTIME_TOPIC（fan-out topic の ARN）</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="LoadRealtimeBase">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/realtime.go.html?s=1297:1342#L24">LoadRealtimeBase</a>
+					<a class="permalink" href="#LoadRealtimeBase">¶</a>
+					
+					
+				</h3>
+				<pre>func LoadRealtimeBase() (<a href="#RealtimeBase">RealtimeBase</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>LoadRealtimeBase は、埋め込み env が宣言する基底を返します。OS の環境変数はマージしません —
+db-slot env が撒く同名の変数を読み戻さないためです（README「Resolved values」）。
+
+				
+				
+			
+
 			
 		
 			
@@ -805,7 +905,7 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 
 			
 				
-				</p><h3 id="Registry.AgeSeconds">func (*Registry) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html?s=6237:6282#L174">AgeSeconds</a>
+				</p><h3 id="Registry.AgeSeconds">func (*Registry) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html?s=7046:7091#L187">AgeSeconds</a>
 					<a class="permalink" href="#Registry.AgeSeconds">¶</a>
 					
 					
@@ -844,7 +944,22 @@ timezone は DB コンテナの TZ 由来のクラスタ既定を継承するた
 				
 			
 				
-				</p><h3 id="Registry.IsStale">func (*Registry) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html?s=5693:5734#L152">IsStale</a>
+				</p><h3 id="Registry.HeldByOther">func (*Registry) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html?s=5924:5969#L154">HeldByOther</a>
+					<a class="permalink" href="#Registry.HeldByOther">¶</a>
+					
+					
+				</h3>
+				<pre>func (r *<a href="#Registry">Registry</a>) HeldByOther(slot <a href="../../../../builtin/#int">int</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>HeldByOther は、meta を読み取れて、かつ保持者が自分でないことを返します。
+読み取れなかった場合は false です。「他 worktree が保持している」と「判定できなかった」を
+同じ真に畳むと、レジストリを一度読めなかっただけで自分の後始末を取り下げることになります。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Registry.IsStale">func (*Registry) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html?s=6177:6218#L160">IsStale</a>
 					<a class="permalink" href="#Registry.IsStale">¶</a>
 					
 					
@@ -910,13 +1025,15 @@ fresh mkdir と reclaim rename の隙間で起きる二重取得を防ぐため�
 				
 			
 				
-				</p><h3 id="Registry.Release">func (*Registry) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html?s=6021:6057#L167">Release</a>
+				</p><h3 id="Registry.Release">func (*Registry) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html?s=6796:6837#L177">Release</a>
 					<a class="permalink" href="#Registry.Release">¶</a>
 					
 					
 				</h3>
-				<pre>func (r *<a href="#Registry">Registry</a>) Release(slot <a href="../../../../builtin/#int">int</a>)</pre>
-				<p>Release は、スロットのロックを解放します（自分の保持のときのみ）。
+				<pre>func (r *<a href="#Registry">Registry</a>) Release(slot <a href="../../../../builtin/#int">int</a>) <a href="../../../../builtin/#bool">bool</a></pre>
+				<p>Release は、スロットのロックを解放します（自分の保持のときのみ）。解放したかを返します。
+保持を確認できないロックは残します。meta を書く前の取得直後と区別できず、消せば他 worktree の
+取得を壊すためです。残っても meta の無いロックは stale として次の走査が回収します。
 
 				
 				
@@ -965,7 +1082,7 @@ rename の source は一度しか成功しないのが要点。rm→mkdir は互
 		
 			
 			
-			</p><h2 id="Resolver">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=3799:3870#L72">Resolver</a>
+			</p><h2 id="Resolver">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=4617:4706#L88">Resolver</a>
 				<a class="permalink" href="#Resolver">¶</a>
 				
 				
@@ -988,13 +1105,15 @@ rename の source は一度しか成功しないのが要点。rm→mkdir は互
 
 			
 				
-				<h3 id="NewResolver">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=4323:4393#L95">NewResolver</a>
+				<h3 id="NewResolver">func <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=5412:5501#L114">NewResolver</a>
 					<a class="permalink" href="#NewResolver">¶</a>
 					
 					
 				</h3>
-				<pre>func NewResolver(cfg <a href="#Config">Config</a>, probe *<a href="#GitProbe">GitProbe</a>, out <a href="../../../../io/">io</a>.<a href="../../../../io/#Writer">Writer</a>) *<a href="#Resolver">Resolver</a></pre>
+				<pre>func NewResolver(cfg <a href="#Config">Config</a>, probe *<a href="#GitProbe">GitProbe</a>, lease *<a href="#LeaseProbe">LeaseProbe</a>, out <a href="../../../../io/">io</a>.<a href="../../../../io/#Writer">Writer</a>) *<a href="#Resolver">Resolver</a></pre>
 				<p>NewResolver は Resolver を生成します。probe が nil の場合はホストの git を使います。
+lease が nil のときはリースを確認できないため、どのスロットも保持していないものとして解決します
+（所有を騙るより、スロットの取り直しを案内して止まるほうが安全なため）。
 
 				
 				
@@ -1002,7 +1121,7 @@ rename の source は一度しか成功しないのが要点。rm→mkdir は互
 
 			
 				
-				</p><h3 id="Resolver.PrintEnv">func (*Resolver) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=6821:6875#L155">PrintEnv</a>
+				</p><h3 id="Resolver.PrintEnv">func (*Resolver) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=8664:8718#L195">PrintEnv</a>
 					<a class="permalink" href="#Resolver.PrintEnv">¶</a>
 					
 					
@@ -1015,7 +1134,7 @@ rename の source は一度しか成功しないのが要点。rm→mkdir は互
 				
 			
 				
-				</p><h3 id="Resolver.PrintValues">func (*Resolver) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=7219:7276#L168">PrintValues</a>
+				</p><h3 id="Resolver.PrintValues">func (*Resolver) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=9062:9119#L208">PrintValues</a>
 					<a class="permalink" href="#Resolver.PrintValues">¶</a>
 					
 					
@@ -1029,7 +1148,7 @@ rename の source は一度しか成功しないのが要点。rm→mkdir は互
 				
 			
 				
-				</p><h3 id="Resolver.RequireOwner">func (*Resolver) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=6065:6123#L136">RequireOwner</a>
+				</p><h3 id="Resolver.RequireOwner">func (*Resolver) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=7818:7876#L175">RequireOwner</a>
 					<a class="permalink" href="#Resolver.RequireOwner">¶</a>
 					
 					
@@ -1045,7 +1164,7 @@ rename の source は一度しか成功しないのが要点。rm→mkdir は互
 				
 			
 				
-				</p><h3 id="Resolver.Resolve">func (*Resolver) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=4719:4782#L106">Resolve</a>
+				</p><h3 id="Resolver.Resolve">func (*Resolver) <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=5891:5954#L130">Resolve</a>
 					<a class="permalink" href="#Resolver.Resolve">¶</a>
 					
 					
@@ -1061,23 +1180,28 @@ git リポジトリなのに構成を読めなかった場合だけエラーに�
 		
 			
 			
-			</p><h2 id="Values">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=3031:3565#L60">Values</a>
+			</p><h2 id="Values">type <a href="../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?s=3375:4383#L70">Values</a>
 				<a class="permalink" href="#Values">¶</a>
 				
 				
 			</h2>
-			<p>Values は、スロットから導かれる解決済みの値です。
-一箇所で導いて env（make が eval する KEY=VALUE）と status（人間向けの表示）の両方へ流すため、
-「make が使う値」と「デバッグで読む値」が食い違いません。
+			<p>Values は、スロットから導かれる解決済みの値です
+（env / status の双方へ同一の導出を流す理由は README.md「Resolved values」）。
 
 			</p><pre>type Values struct {
 <span id="Values.Git"></span>    Git             <a href="#GitContext">GitContext</a>
-<span id="Values.SlotHeld"></span>    SlotHeld        <a href="../../../../builtin/#bool">bool</a>   <span class="comment">// .gobp-db-slot が所有データベースを宣言しているか</span>
+<span id="Values.SlotHeld"></span>    SlotHeld        <a href="../../../../builtin/#bool">bool</a>   <span class="comment">// .gobp-db-slot が宣言するスロットのリースを実際に保持しているか</span>
 <span id="Values.DBLocal"></span>    DBLocal         <a href="../../../../builtin/#string">string</a> <span class="comment">// 所有する local 系データベース</span>
 <span id="Values.DBTest"></span>    DBTest          <a href="../../../../builtin/#string">string</a> <span class="comment">// 所有する test 系データベース</span>
 <span id="Values.AppProject"></span>    AppProject      <a href="../../../../builtin/#string">string</a> <span class="comment">// app 層の compose プロジェクト名</span>
 <span id="Values.AuthIssuer"></span>    AuthIssuer      <a href="../../../../builtin/#string">string</a> <span class="comment">// mock 認証サーバーのホスト公開 URL（トークンの iss）</span>
 <span id="Values.InfraNoRecreate"></span>    InfraNoRecreate <a href="../../../../builtin/#string">string</a> <span class="comment">// 共有インフラへ渡す --no-recreate（不要なら空）</span>
+
+    <span class="comment">// Realtime Delivery の資源名。共有の DynamoDB Local / GoAWS 上でスロット毎に名前空間を分けます</span>
+    <span class="comment">// （docs/maintenance/db-worktree-pool.md「The Realtime Delivery emulators are shared instances」）。</span>
+<span id="Values.RealtimeTableSuffix"></span>    RealtimeTableSuffix <a href="../../../../builtin/#string">string</a> <span class="comment">// table 名の末尾（realtime_event_log_&lt;suffix&gt; の suffix）</span>
+<span id="Values.RealtimeQueuePrefix"></span>    RealtimeQueuePrefix <a href="../../../../builtin/#string">string</a> <span class="comment">// serve instance ごとの queue 名の先頭</span>
+<span id="Values.RealtimeTopic"></span>    RealtimeTopic       <a href="../../../../builtin/#string">string</a> <span class="comment">// fan-out topic の ARN</span>
 }
 </pre>
 

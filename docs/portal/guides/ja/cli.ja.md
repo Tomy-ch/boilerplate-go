@@ -36,11 +36,23 @@ OS シグナル / golang-migrate）を結線する composition root は `cmd/`�
 - 各コマンドは `internal/cli/` 配下の1コアパッケージ + `cmd/` 配下の1薄殻ファイルで構成。
 - コアは Cobra・`internal/di`・OS シグナル・infrastructure（`infrastructure/rdb/driver` の型を除く）を
   import してはならない。注入された interface / 関数シームに対して動作する。
-  `internal/config` は許可される。強制されている境界は `.golangci-full.yaml` の `independent_cli`
+  `internal/config` は許可される。強制されている境界は `.golangci.yaml` の `independent_cli`
   depguard ルールであり、上位の層は deny するが `config` は deny しない。
 - CLI 層は feature のビジネスロジックを持たない（それは usecase / domain の責務）。
 - コマンド追加手順: `cmd/<command>.go`（Cobra 定義 + 実依存の結線）を追加し、コアロジックを
   `internal/cli/<command>/` に追加し、`registerCommands` に登録する。
+
+### 意図的にコマンドにしていないもの
+
+この規約が統べるのは**アプリケーションバイナリのサブコマンド** —— デプロイ先の環境が実行できなければ
+ならない操作である。ローカルの emulator しか相手にしない開発用ツールはそれに当たらず、
+[`scripts/`](../../scripts/README.md) に置く。両者は同じものの配置先を争っているのではない。
+
+それが見える対が `realtime-init` と `scripts/realtime-reset` で、この分割は意図的である。Realtime
+Delivery の table を作ることは実環境が行う操作なのでここのサブコマンドになる。削除することはそうでは
+なく、このバイナリの外に居ることが、実 AWS が拒む資格情報で署名できる理由になっている —— endpoint の
+検査とは独立に効く防御である。取り込めば app の `REALTIME_*` 資格情報が渡り、2 つの防御が 1 つになる。
+非対称を「揃える」目的で動かさないこと。
 
 ## テスト方針
 

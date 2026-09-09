@@ -308,6 +308,20 @@
 		</tr>
 
 		<tr>
+			<td class="pkg-name" style="padding-left: 100px;"><a href="go-boilerplate/internal/controller/handler/v1/coupons">coupons</a></td>
+			<td class="pkg-synopsis">
+				Package coupons は、/v1/coupons エンドポイントに関連するハンドラを提供します。
+			</td>
+		</tr>
+
+		<tr>
+			<td class="pkg-name" style="padding-left: 120px;"><a href="go-boilerplate/internal/controller/handler/v1/coupons/bulkissue">bulkissue</a></td>
+			<td class="pkg-synopsis">
+				Package couponsbulkissue は、/v1/coupons/bulk-issue エンドポイントに関連するハンドラを提供します。
+			</td>
+		</tr>
+
+		<tr>
 			<td class="pkg-name" style="padding-left: 100px;"><a href="go-boilerplate/internal/controller/handler/v1/dashboard">dashboard</a></td>
 			<td class="pkg-synopsis">
 				Package dashboard は、/v1/dashboard 配下のエンドポイントに関連するハンドラを提供します。
@@ -1239,6 +1253,13 @@
 		</tr>
 
 		<tr>
+			<td class="pkg-name" style="padding-left: 100px;"><a href="go-boilerplate/internal/infrastructure/rdb/command_service/coupon">coupon</a></td>
+			<td class="pkg-synopsis">
+				Package coupon は、販促クーポン一括発行のコマンドサービス（command.CommandService）の RDB 実装を 提供します。
+			</td>
+		</tr>
+
+		<tr>
 			<td class="pkg-name" style="padding-left: 100px;"><a href="go-boilerplate/internal/infrastructure/rdb/command_service/product">product</a></td>
 			<td class="pkg-synopsis">
 				Package product は、廃番のコマンドサービス（command.CommandService）の RDB 実装を提供します。
@@ -1731,7 +1752,14 @@
 		<tr>
 			<td class="pkg-name" style="padding-left: 60px;"><a href="go-boilerplate/internal/usecase/coupon">coupon</a></td>
 			<td class="pkg-synopsis">
-				Package coupon は、クーポンの読み取りユースケースを提供します。
+				Package coupon は、クーポンの発行と読み取りのユースケースを提供します。
+			</td>
+		</tr>
+
+		<tr>
+			<td class="pkg-name" style="padding-left: 80px;"><a href="go-boilerplate/internal/usecase/coupon/command">command</a></td>
+			<td class="pkg-synopsis">
+				Package command は、販促クーポン一括発行の書き込み操作（CommandService）のインターフェースを 定義します（ADR-0032 (lightweight-cqrs)）。
 			</td>
 		</tr>
 
@@ -1864,7 +1892,7 @@
 		<tr>
 			<td class="pkg-name" style="padding-left: 80px;"><a href="go-boilerplate/internal/usecase/purchase/event">event</a></td>
 			<td class="pkg-synopsis">
-				Package event は、購入ユースケースが発行する outbox イベントの本文（自己完結 snapshot）と その marshal を提供します。
+				Package event は、購入ユースケースが発行する outbox イベントの本文と、その marshal を提供します。
 			</td>
 		</tr>
 

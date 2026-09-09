@@ -1,0 +1,483 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>tool-cooldown - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/scripts">scripts</a>/<a href="../../../../src/go-boilerplate/scripts/tool-cooldown">tool-cooldown</a>/<span class="text-muted">outdated.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/scripts/tool-cooldown">go-boilerplate/scripts/tool-cooldown</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package main
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;fmt&#34;
+<span id="L6" class="ln">     6  </span>	&#34;log&#34;
+<span id="L7" class="ln">     7  </span>	&#34;net/http&#34;
+<span id="L8" class="ln">     8  </span>	&#34;os&#34;
+<span id="L9" class="ln">     9  </span>	&#34;sort&#34;
+<span id="L10" class="ln">    10  </span>	&#34;strconv&#34;
+<span id="L11" class="ln">    11  </span>	&#34;strings&#34;
+<span id="L12" class="ln">    12  </span>	&#34;sync&#34;
+<span id="L13" class="ln">    13  </span>	&#34;time&#34;
+<span id="L14" class="ln">    14  </span>
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L16" class="ln">    16  </span>)
+<span id="L17" class="ln">    17  </span>
+<span id="L18" class="ln">    18  </span><span class="comment">// maxGoProxyProbes は go backend で公開時刻を問い合わせる版数の上限。module proxy は版の一覧に</span>
+<span id="L19" class="ln">    19  </span><span class="comment">// 日付を含めないため 1 版ごとに .info を引く必要があり、遡る範囲を切らないと 1 ツールで数百回の</span>
+<span id="L20" class="ln">    20  </span><span class="comment">// 往復になる。新しい方から数えてこの数だけ見れば、窓を満たす版はまず見つかる。</span>
+<span id="L21" class="ln">    21  </span>const maxGoProxyProbes = 20
+<span id="L22" class="ln">    22  </span>
+<span id="L23" class="ln">    23  </span><span class="comment">// release は上流が公開している版 1 つ。</span>
+<span id="L24" class="ln">    24  </span>type release struct {
+<span id="L25" class="ln">    25  </span>	version string
+<span id="L26" class="ln">    26  </span>	at      time.Time
+<span id="L27" class="ln">    27  </span>}
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span><span class="comment">// candidate は 1 ツールの棚卸し結果。latest は上流の最新、eligible は「現在の major を保ったまま</span>
+<span id="L30" class="ln">    30  </span><span class="comment">// 窓を満たす最新」で、両者が食い違うのが常態である点がこの型の要。窓の内側にある版は採れないので、</span>
+<span id="L31" class="ln">    31  </span><span class="comment">// 人が今日動かせるのは eligible の方だけになる。</span>
+<span id="L32" class="ln">    32  </span>type candidate struct {
+<span id="L33" class="ln">    33  </span>	tool        tool
+<span id="L34" class="ln">    34  </span>	latest      string
+<span id="L35" class="ln">    35  </span>	latestAge   int
+<span id="L36" class="ln">    36  </span>	eligible    string
+<span id="L37" class="ln">    37  </span>	eligibleAge int
+<span id="L38" class="ln">    38  </span>	window      int
+<span id="L39" class="ln">    39  </span>	err         error
+<span id="L40" class="ln">    40  </span>}
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// actionable は、今日ピンを動かせる状態かどうかを返す。</span>
+<span id="L43" class="ln">    43  </span>func (c candidate) actionable() bool {
+<span id="L44" class="ln">    44  </span>	return c.err == nil &amp;&amp; c.eligible != &#34;&#34; &amp;&amp; c.eligible != c.tool.version
+<span id="L45" class="ln">    45  </span>}
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span><span class="comment">// heldByWindow は、上流に新版があるのに窓がそれを止めている状態かどうかを返す。</span>
+<span id="L48" class="ln">    48  </span>func (c candidate) heldByWindow() bool {
+<span id="L49" class="ln">    49  </span>	return c.err == nil &amp;&amp; c.latest != &#34;&#34; &amp;&amp; c.latest != c.tool.version &amp;&amp; c.latest != c.eligible
+<span id="L50" class="ln">    50  </span>}
+<span id="L51" class="ln">    51  </span>
+<span id="L52" class="ln">    52  </span><span class="comment">// surveyOutdated は各ツールの上流を調べ、窓を満たす更新先を決めます。</span>
+<span id="L53" class="ln">    53  </span><span class="comment">// client は上流への問い合わせ手段、now は齢の基準時刻で、差し替えられるよう引数で受けます。</span>
+<span id="L54" class="ln">    54  </span>func surveyOutdated(ctx context.Context, client *http.Client, tools []tool, now time.Time) []candidate {
+<span id="L55" class="ln">    55  </span>	out := make([]candidate, len(tools))
+<span id="L56" class="ln">    56  </span>	sem := make(chan struct{}, fetchWorkers)
+<span id="L57" class="ln">    57  </span>	var wg sync.WaitGroup
+<span id="L58" class="ln">    58  </span>	for i, t := range tools {
+<span id="L59" class="ln">    59  </span>		wg.Add(1)
+<span id="L60" class="ln">    60  </span>		go func(i int, t tool) {
+<span id="L61" class="ln">    61  </span>			defer wg.Done()
+<span id="L62" class="ln">    62  </span>			sem &lt;- struct{}{}
+<span id="L63" class="ln">    63  </span>			defer func() { &lt;-sem }()
+<span id="L64" class="ln">    64  </span>			out[i] = evaluate(ctx, client, t, now)
+<span id="L65" class="ln">    65  </span>		}(i, t)
+<span id="L66" class="ln">    66  </span>	}
+<span id="L67" class="ln">    67  </span>	wg.Wait()
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span>	sort.Slice(out, func(i, j int) bool { return out[i].tool.id() &lt; out[j].tool.id() })
+<span id="L70" class="ln">    70  </span>	return out
+<span id="L71" class="ln">    71  </span>}
+<span id="L72" class="ln">    72  </span>
+<span id="L73" class="ln">    73  </span><span class="comment">// evaluate は 1 ツールの上流を調べて candidate に畳みます。</span>
+<span id="L74" class="ln">    74  </span>func evaluate(ctx context.Context, client *http.Client, t tool, now time.Time) candidate {
+<span id="L75" class="ln">    75  </span>	c := candidate{tool: t, window: windowFor(t.backend)}
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>	releases, err := listReleases(ctx, client, t)
+<span id="L78" class="ln">    78  </span>	if err != nil {
+<span id="L79" class="ln">    79  </span>		c.err = err
+<span id="L80" class="ln">    80  </span>
+<span id="L81" class="ln">    81  </span>		return c
+<span id="L82" class="ln">    82  </span>	}
+<span id="L83" class="ln">    83  </span>	<span class="comment">// 新しい版が先に来る順へ揃える。上流ごとに一覧の順序が違うため、ここで決め直さないと</span>
+<span id="L84" class="ln">    84  </span>	<span class="comment">// 「最新」も「窓を満たす最新」も上流の都合で変わる。</span>
+<span id="L85" class="ln">    85  </span>	sort.Slice(releases, func(i, j int) bool { return lessVersion(releases[j].version, releases[i].version) })
+<span id="L86" class="ln">    86  </span>
+<span id="L87" class="ln">    87  </span>	if len(releases) &gt; 0 {
+<span id="L88" class="ln">    88  </span>		c.latest = releases[0].version
+<span id="L89" class="ln">    89  </span>		c.latestAge = ageDays(releases[0].at, now)
+<span id="L90" class="ln">    90  </span>	}
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>	major := majorOf(t.version)
+<span id="L93" class="ln">    93  </span>	for _, r := range releases {
+<span id="L94" class="ln">    94  </span>		if majorOf(r.version) != major {
+<span id="L95" class="ln">    95  </span>			continue
+<span id="L96" class="ln">    96  </span>		}
+<span id="L97" class="ln">    97  </span>		if ageDays(r.at, now) &lt; c.window {
+<span id="L98" class="ln">    98  </span>			continue
+<span id="L99" class="ln">    99  </span>		}
+<span id="L100" class="ln">   100  </span>		c.eligible = r.version
+<span id="L101" class="ln">   101  </span>		c.eligibleAge = ageDays(r.at, now)
+<span id="L102" class="ln">   102  </span>
+<span id="L103" class="ln">   103  </span>		break
+<span id="L104" class="ln">   104  </span>	}
+<span id="L105" class="ln">   105  </span>
+<span id="L106" class="ln">   106  </span>	return c
+<span id="L107" class="ln">   107  </span>}
+<span id="L108" class="ln">   108  </span>
+<span id="L109" class="ln">   109  </span><span class="comment">// listReleases は backend ごとの上流から安定版の一覧を取ります。</span>
+<span id="L110" class="ln">   110  </span>func listReleases(ctx context.Context, client *http.Client, t tool) ([]release, error) {
+<span id="L111" class="ln">   111  </span>	_, ref, _ := strings.Cut(t.backend, &#34;:&#34;)
+<span id="L112" class="ln">   112  </span>	switch backendKind(t.backend) {
+<span id="L113" class="ln">   113  </span>	case &#34;github&#34;:
+<span id="L114" class="ln">   114  </span>		return githubReleases(ctx, client, ref)
+<span id="L115" class="ln">   115  </span>	case &#34;go&#34;:
+<span id="L116" class="ln">   116  </span>		return goModuleReleases(ctx, client, ref)
+<span id="L117" class="ln">   117  </span>	case &#34;npm&#34;:
+<span id="L118" class="ln">   118  </span>		return npmReleases(ctx, client, ref)
+<span id="L119" class="ln">   119  </span>	case &#34;pypi&#34;:
+<span id="L120" class="ln">   120  </span>		return pypiReleases(ctx, client, extrasRe.ReplaceAllString(ref, &#34;&#34;))
+<span id="L121" class="ln">   121  </span>	default:
+<span id="L122" class="ln">   122  </span>		return nil, xerrors.Wrap(errUnsupportedBackend, t.backend)
+<span id="L123" class="ln">   123  </span>	}
+<span id="L124" class="ln">   124  </span>}
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>func githubReleases(ctx context.Context, client *http.Client, repo string) ([]release, error) {
+<span id="L127" class="ln">   127  </span>	var body []struct {
+<span id="L128" class="ln">   128  </span>		<span class="comment">//nolint:tagliatelle // GitHub API の応答フィールド名</span>
+<span id="L129" class="ln">   129  </span>		TagName string `json:&#34;tag_name&#34;`
+<span id="L130" class="ln">   130  </span>		<span class="comment">//nolint:tagliatelle // GitHub API の応答フィールド名</span>
+<span id="L131" class="ln">   131  </span>		PublishedAt time.Time `json:&#34;published_at&#34;`
+<span id="L132" class="ln">   132  </span>		Prerelease  bool      `json:&#34;prerelease&#34;`
+<span id="L133" class="ln">   133  </span>		Draft       bool      `json:&#34;draft&#34;`
+<span id="L134" class="ln">   134  </span>	}
+<span id="L135" class="ln">   135  </span>	if err := getJSON(ctx, client, githubAPI+repo+&#34;/releases?per_page=100&#34;, &amp;body); err != nil {
+<span id="L136" class="ln">   136  </span>		return nil, err
+<span id="L137" class="ln">   137  </span>	}
+<span id="L138" class="ln">   138  </span>
+<span id="L139" class="ln">   139  </span>	out := make([]release, 0, len(body))
+<span id="L140" class="ln">   140  </span>	for _, r := range body {
+<span id="L141" class="ln">   141  </span>		if r.Prerelease || r.Draft {
+<span id="L142" class="ln">   142  </span>			continue
+<span id="L143" class="ln">   143  </span>		}
+<span id="L144" class="ln">   144  </span>		v := strings.TrimPrefix(r.TagName, &#34;v&#34;)
+<span id="L145" class="ln">   145  </span>		if !stableVersion(v) {
+<span id="L146" class="ln">   146  </span>			continue
+<span id="L147" class="ln">   147  </span>		}
+<span id="L148" class="ln">   148  </span>		out = append(out, release{version: v, at: r.PublishedAt})
+<span id="L149" class="ln">   149  </span>	}
+<span id="L150" class="ln">   150  </span>
+<span id="L151" class="ln">   151  </span>	return out, nil
+<span id="L152" class="ln">   152  </span>}
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span><span class="comment">// goModuleReleases は module proxy の版一覧を新しい方から maxGoProxyProbes 件だけ日付付きにします。</span>
+<span id="L155" class="ln">   155  </span><span class="comment">// proxy の一覧に日付が無く 1 版ごとに .info が要るため、全件を引くと往復が跳ね上がります。</span>
+<span id="L156" class="ln">   156  </span>func goModuleReleases(ctx context.Context, client *http.Client, pkg string) ([]release, error) {
+<span id="L157" class="ln">   157  </span>	versions, base, err := goModuleVersions(ctx, client, pkg)
+<span id="L158" class="ln">   158  </span>	if err != nil {
+<span id="L159" class="ln">   159  </span>		return nil, err
+<span id="L160" class="ln">   160  </span>	}
+<span id="L161" class="ln">   161  </span>	sort.Slice(versions, func(i, j int) bool { return lessVersion(versions[j], versions[i]) })
+<span id="L162" class="ln">   162  </span>	if len(versions) &gt; maxGoProxyProbes {
+<span id="L163" class="ln">   163  </span>		versions = versions[:maxGoProxyProbes]
+<span id="L164" class="ln">   164  </span>	}
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>	out := make([]release, 0, len(versions))
+<span id="L167" class="ln">   167  </span>	for _, v := range versions {
+<span id="L168" class="ln">   168  </span>		at, atErr := goModuleAt(ctx, client, base, v)
+<span id="L169" class="ln">   169  </span>		if atErr != nil {
+<span id="L170" class="ln">   170  </span>			continue
+<span id="L171" class="ln">   171  </span>		}
+<span id="L172" class="ln">   172  </span>		out = append(out, release{version: v, at: at})
+<span id="L173" class="ln">   173  </span>	}
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span>	return out, nil
+<span id="L176" class="ln">   176  </span>}
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span><span class="comment">// goModuleVersions は @v/list を引き、解決できたモジュールパスも返します。mise の go backend は</span>
+<span id="L179" class="ln">   179  </span><span class="comment">// パッケージパスを受けるのに proxy が知るのはモジュールパスなので、末尾要素を落としながら遡ります。</span>
+<span id="L180" class="ln">   180  </span><span class="comment">//</span>
+<span id="L181" class="ln">   181  </span><span class="comment">// 遡るのは proxy がそのパスをモジュールとして知らなかったときだけです。応答が返った時点でそこが</span>
+<span id="L182" class="ln">   182  </span><span class="comment">// モジュールで、安定版を 1 つも持たなくても答えは「無い」であって親のものではありません。</span>
+<span id="L183" class="ln">   183  </span><span class="comment">// `golang.org/x/tools/cmd/godoc` は v0.1.0-deprecated しか持たない独立モジュールで、空を理由に</span>
+<span id="L184" class="ln">   184  </span><span class="comment">// 遡ると親 `golang.org/x/tools` の版一覧を、この別物のツールの更新先として差し出すことになります。</span>
+<span id="L185" class="ln">   185  </span>func goModuleVersions(ctx context.Context, client *http.Client, pkg string) ([]string, string, error) {
+<span id="L186" class="ln">   186  </span>	var lastErr error
+<span id="L187" class="ln">   187  </span>	for path := pkg; strings.Contains(path, &#34;/&#34;); path = path[:strings.LastIndex(path, &#34;/&#34;)] {
+<span id="L188" class="ln">   188  </span>		body, err := getText(ctx, client, goProxyBase+escapeModulePath(path)+&#34;/@v/list&#34;)
+<span id="L189" class="ln">   189  </span>		if err != nil {
+<span id="L190" class="ln">   190  </span>			lastErr = err
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>			continue
+<span id="L193" class="ln">   193  </span>		}
+<span id="L194" class="ln">   194  </span>		var versions []string
+<span id="L195" class="ln">   195  </span>		for line := range strings.FieldsSeq(body) {
+<span id="L196" class="ln">   196  </span>			v := strings.TrimPrefix(line, &#34;v&#34;)
+<span id="L197" class="ln">   197  </span>			if stableVersion(v) {
+<span id="L198" class="ln">   198  </span>				versions = append(versions, v)
+<span id="L199" class="ln">   199  </span>			}
+<span id="L200" class="ln">   200  </span>		}
+<span id="L201" class="ln">   201  </span>
+<span id="L202" class="ln">   202  </span>		return versions, path, nil
+<span id="L203" class="ln">   203  </span>	}
+<span id="L204" class="ln">   204  </span>	if lastErr == nil {
+<span id="L205" class="ln">   205  </span>		lastErr = xerrors.Wrap(errNotFound, pkg)
+<span id="L206" class="ln">   206  </span>	}
+<span id="L207" class="ln">   207  </span>
+<span id="L208" class="ln">   208  </span>	return nil, &#34;&#34;, lastErr
+<span id="L209" class="ln">   209  </span>}
+<span id="L210" class="ln">   210  </span>
+<span id="L211" class="ln">   211  </span>func npmReleases(ctx context.Context, client *http.Client, pkg string) ([]release, error) {
+<span id="L212" class="ln">   212  </span>	var body struct {
+<span id="L213" class="ln">   213  </span>		Time map[string]time.Time `json:&#34;time&#34;`
+<span id="L214" class="ln">   214  </span>	}
+<span id="L215" class="ln">   215  </span>	if err := getJSON(ctx, client, npmBase+pkg, &amp;body); err != nil {
+<span id="L216" class="ln">   216  </span>		return nil, err
+<span id="L217" class="ln">   217  </span>	}
+<span id="L218" class="ln">   218  </span>
+<span id="L219" class="ln">   219  </span>	out := make([]release, 0, len(body.Time))
+<span id="L220" class="ln">   220  </span>	for v, at := range body.Time {
+<span id="L221" class="ln">   221  </span>		<span class="comment">// created / modified は版ではなくパッケージ全体の時刻なので、版として数えない。</span>
+<span id="L222" class="ln">   222  </span>		if !stableVersion(v) {
+<span id="L223" class="ln">   223  </span>			continue
+<span id="L224" class="ln">   224  </span>		}
+<span id="L225" class="ln">   225  </span>		out = append(out, release{version: v, at: at})
+<span id="L226" class="ln">   226  </span>	}
+<span id="L227" class="ln">   227  </span>
+<span id="L228" class="ln">   228  </span>	return out, nil
+<span id="L229" class="ln">   229  </span>}
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>func pypiReleases(ctx context.Context, client *http.Client, pkg string) ([]release, error) {
+<span id="L232" class="ln">   232  </span>	var body struct {
+<span id="L233" class="ln">   233  </span>		Releases map[string][]struct {
+<span id="L234" class="ln">   234  </span>			<span class="comment">//nolint:tagliatelle // PyPI の応答フィールド名</span>
+<span id="L235" class="ln">   235  </span>			UploadTime time.Time `json:&#34;upload_time_iso_8601&#34;`
+<span id="L236" class="ln">   236  </span>		} `json:&#34;releases&#34;`
+<span id="L237" class="ln">   237  </span>	}
+<span id="L238" class="ln">   238  </span>	if err := getJSON(ctx, client, pypiBase+pkg+&#34;/json&#34;, &amp;body); err != nil {
+<span id="L239" class="ln">   239  </span>		return nil, err
+<span id="L240" class="ln">   240  </span>	}
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>	out := make([]release, 0, len(body.Releases))
+<span id="L243" class="ln">   243  </span>	for v, files := range body.Releases {
+<span id="L244" class="ln">   244  </span>		<span class="comment">// 配布物を 1 つも持たない版は yank 済みで、install できないため候補にしない。</span>
+<span id="L245" class="ln">   245  </span>		if len(files) == 0 || !stableVersion(v) {
+<span id="L246" class="ln">   246  </span>			continue
+<span id="L247" class="ln">   247  </span>		}
+<span id="L248" class="ln">   248  </span>		out = append(out, release{version: v, at: files[0].UploadTime})
+<span id="L249" class="ln">   249  </span>	}
+<span id="L250" class="ln">   250  </span>
+<span id="L251" class="ln">   251  </span>	return out, nil
+<span id="L252" class="ln">   252  </span>}
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span><span class="comment">// stableVersion は数値だけの区切りからなる版かどうかを返します。プレリリース識別子やビルド</span>
+<span id="L255" class="ln">   255  </span><span class="comment">// メタデータを持つ版を弾くのが目的で、ここを通さないと `1.2.0-rc1` が最新として選ばれます。</span>
+<span id="L256" class="ln">   256  </span>func stableVersion(v string) bool {
+<span id="L257" class="ln">   257  </span>	if v == &#34;&#34; {
+<span id="L258" class="ln">   258  </span>		return false
+<span id="L259" class="ln">   259  </span>	}
+<span id="L260" class="ln">   260  </span>	for part := range strings.SplitSeq(v, &#34;.&#34;) {
+<span id="L261" class="ln">   261  </span>		if part == &#34;&#34; {
+<span id="L262" class="ln">   262  </span>			return false
+<span id="L263" class="ln">   263  </span>		}
+<span id="L264" class="ln">   264  </span>		if _, err := strconv.Atoi(part); err != nil {
+<span id="L265" class="ln">   265  </span>			return false
+<span id="L266" class="ln">   266  </span>		}
+<span id="L267" class="ln">   267  </span>	}
+<span id="L268" class="ln">   268  </span>
+<span id="L269" class="ln">   269  </span>	return true
+<span id="L270" class="ln">   270  </span>}
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span><span class="comment">// lessVersion は数値区切りを左から比べます。区切りの数が違う場合は足りない側を 0 とみなすので、</span>
+<span id="L273" class="ln">   273  </span><span class="comment">// `1.2` は `1.2.0` と同じ位置に来ます。</span>
+<span id="L274" class="ln">   274  </span>func lessVersion(a, b string) bool {
+<span id="L275" class="ln">   275  </span>	as, bs := strings.Split(a, &#34;.&#34;), strings.Split(b, &#34;.&#34;)
+<span id="L276" class="ln">   276  </span>	for i := 0; i &lt; len(as) || i &lt; len(bs); i++ {
+<span id="L277" class="ln">   277  </span>		x, y := 0, 0
+<span id="L278" class="ln">   278  </span>		if i &lt; len(as) {
+<span id="L279" class="ln">   279  </span>			x, _ = strconv.Atoi(as[i])
+<span id="L280" class="ln">   280  </span>		}
+<span id="L281" class="ln">   281  </span>		if i &lt; len(bs) {
+<span id="L282" class="ln">   282  </span>			y, _ = strconv.Atoi(bs[i])
+<span id="L283" class="ln">   283  </span>		}
+<span id="L284" class="ln">   284  </span>		if x != y {
+<span id="L285" class="ln">   285  </span>			return x &lt; y
+<span id="L286" class="ln">   286  </span>		}
+<span id="L287" class="ln">   287  </span>	}
+<span id="L288" class="ln">   288  </span>
+<span id="L289" class="ln">   289  </span>	return false
+<span id="L290" class="ln">   290  </span>}
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span><span class="comment">// majorOf は先頭の数値区切りを返します。比較ではなく分類に使うので、解釈できない版は</span>
+<span id="L293" class="ln">   293  </span><span class="comment">// 元の文字列をそのまま返し、他の major と混ざらないようにします。</span>
+<span id="L294" class="ln">   294  </span>func majorOf(v string) string {
+<span id="L295" class="ln">   295  </span>	head, _, found := strings.Cut(strings.TrimPrefix(v, &#34;v&#34;), &#34;.&#34;)
+<span id="L296" class="ln">   296  </span>	if !found {
+<span id="L297" class="ln">   297  </span>		return strings.TrimPrefix(v, &#34;v&#34;)
+<span id="L298" class="ln">   298  </span>	}
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>	return head
+<span id="L301" class="ln">   301  </span>}
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span>func ageDays(at, now time.Time) int {
+<span id="L304" class="ln">   304  </span>	return int(now.Sub(at).Hours() / hoursPerDay)
+<span id="L305" class="ln">   305  </span>}
+<span id="L306" class="ln">   306  </span>
+<span id="L307" class="ln">   307  </span><span class="comment">// outdatedReport は棚卸し結果を Markdown にします。issue の本文としてそのまま使うため、</span>
+<span id="L308" class="ln">   308  </span><span class="comment">// 見出しから始めず、状態ごとの節だけを並べます。</span>
+<span id="L309" class="ln">   309  </span>func outdatedReport(cands []candidate, now time.Time) string {
+<span id="L310" class="ln">   310  </span>	var actionable, held, failed []candidate
+<span id="L311" class="ln">   311  </span>	for _, c := range cands {
+<span id="L312" class="ln">   312  </span>		switch {
+<span id="L313" class="ln">   313  </span>		case c.err != nil:
+<span id="L314" class="ln">   314  </span>			failed = append(failed, c)
+<span id="L315" class="ln">   315  </span>		case c.actionable():
+<span id="L316" class="ln">   316  </span>			actionable = append(actionable, c)
+<span id="L317" class="ln">   317  </span>		case c.heldByWindow():
+<span id="L318" class="ln">   318  </span>			held = append(held, c)
+<span id="L319" class="ln">   319  </span>		}
+<span id="L320" class="ln">   320  </span>	}
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>	var b strings.Builder
+<span id="L323" class="ln">   323  </span>	fmt.Fprintf(&amp;b, &#34;棚卸し時刻: `%s`\n&#34;, now.Format(time.RFC3339))
+<span id="L324" class="ln">   324  </span>	fmt.Fprintf(&amp;b, &#34;窓: GitHub リリース %d 日 / パッケージレジストリ %d 日\n\n&#34;,
+<span id="L325" class="ln">   325  </span>		releaseWindowDays, registryWindowDays)
+<span id="L326" class="ln">   326  </span>
+<span id="L327" class="ln">   327  </span>	b.WriteString(&#34;## 今すぐ上げられる\n\n&#34;)
+<span id="L328" class="ln">   328  </span>	if len(actionable) == 0 {
+<span id="L329" class="ln">   329  </span>		b.WriteString(&#34;なし。\n\n&#34;)
+<span id="L330" class="ln">   330  </span>	} else {
+<span id="L331" class="ln">   331  </span>		b.WriteString(&#34;| ツール | 現在 | 窓を満たす最新 | 齢 | 宣言 |\n| --- | --- | --- | --- | --- |\n&#34;)
+<span id="L332" class="ln">   332  </span>		for _, c := range actionable {
+<span id="L333" class="ln">   333  </span>			fmt.Fprintf(&amp;b, &#34;| `%s` | %s | **%s** | %dd | `%s` |\n&#34;,
+<span id="L334" class="ln">   334  </span>				c.tool.key, c.tool.version, c.eligible, c.eligibleAge, c.tool.file)
+<span id="L335" class="ln">   335  </span>		}
+<span id="L336" class="ln">   336  </span>		b.WriteString(&#34;\n`/tools-upgrade` が同じ窓でこの表を再計算し、宣言と lockfile を更新します。\n\n&#34;)
+<span id="L337" class="ln">   337  </span>	}
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>	b.WriteString(&#34;## 窓が明けるのを待っている\n\n&#34;)
+<span id="L340" class="ln">   340  </span>	if len(held) == 0 {
+<span id="L341" class="ln">   341  </span>		b.WriteString(&#34;なし。\n\n&#34;)
+<span id="L342" class="ln">   342  </span>	} else {
+<span id="L343" class="ln">   343  </span>		b.WriteString(&#34;| ツール | 現在 | 上流最新 | 齢 | 窓 |\n| --- | --- | --- | --- | --- |\n&#34;)
+<span id="L344" class="ln">   344  </span>		for _, c := range held {
+<span id="L345" class="ln">   345  </span>			fmt.Fprintf(&amp;b, &#34;| `%s` | %s | %s | %dd | %dd |\n&#34;,
+<span id="L346" class="ln">   346  </span>				c.tool.key, c.tool.version, c.latest, c.latestAge, c.window)
+<span id="L347" class="ln">   347  </span>		}
+<span id="L348" class="ln">   348  </span>		b.WriteString(&#34;\n上流の最新が窓の内側にあるものです。齢が窓に届けば次回から上の表へ移ります。\n&#34;)
+<span id="L349" class="ln">   349  </span>		b.WriteString(&#34;major 跨ぎもここに出ます（同じ major に窓を満たす新版が無いため）。\n\n&#34;)
+<span id="L350" class="ln">   350  </span>	}
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span>	if len(failed) &gt; 0 {
+<span id="L353" class="ln">   353  </span>		b.WriteString(&#34;## 上流を確認できなかった\n\n&#34;)
+<span id="L354" class="ln">   354  </span>		for _, c := range failed {
+<span id="L355" class="ln">   355  </span>			fmt.Fprintf(&amp;b, &#34;- `%s`（%s）: %v\n&#34;, c.tool.key, c.tool.backend, c.err)
+<span id="L356" class="ln">   356  </span>		}
+<span id="L357" class="ln">   357  </span>		b.WriteString(&#34;\n&#34;)
+<span id="L358" class="ln">   358  </span>	}
+<span id="L359" class="ln">   359  </span>
+<span id="L360" class="ln">   360  </span>	return b.String()
+<span id="L361" class="ln">   361  </span>}
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span><span class="comment">// reportOutdated は棚卸しを実行し、結果を標準出力と（指定があれば）ファイルへ書きます。</span>
+<span id="L364" class="ln">   364  </span><span class="comment">// gate / audit と違い違反という概念が無いため、上流を確認できなかった場合だけ失敗させます。</span>
+<span id="L365" class="ln">   365  </span>func reportOutdated(client *http.Client, declared []tool, opt options, now time.Time) error {
+<span id="L366" class="ln">   366  </span>	ctx := context.Background()
+<span id="L367" class="ln">   367  </span>	resolved, skipped, err := resolveBackends(ctx, declared)
+<span id="L368" class="ln">   368  </span>	if err != nil {
+<span id="L369" class="ln">   369  </span>		return xerrors.Wrap(err, &#34;❌ backend の解決&#34;)
+<span id="L370" class="ln">   370  </span>	}
+<span id="L371" class="ln">   371  </span>
+<span id="L372" class="ln">   372  </span>	cands := surveyOutdated(ctx, client, resolved, now)
+<span id="L373" class="ln">   373  </span>	body := outdatedReport(cands, now)
+<span id="L374" class="ln">   374  </span>
+<span id="L375" class="ln">   375  </span>	var actionable, held, failed int
+<span id="L376" class="ln">   376  </span>	for _, c := range cands {
+<span id="L377" class="ln">   377  </span>		switch {
+<span id="L378" class="ln">   378  </span>		case c.err != nil:
+<span id="L379" class="ln">   379  </span>			failed++
+<span id="L380" class="ln">   380  </span>		case c.actionable():
+<span id="L381" class="ln">   381  </span>			actionable++
+<span id="L382" class="ln">   382  </span>		case c.heldByWindow():
+<span id="L383" class="ln">   383  </span>			held++
+<span id="L384" class="ln">   384  </span>		}
+<span id="L385" class="ln">   385  </span>	}
+<span id="L386" class="ln">   386  </span>
+<span id="L387" class="ln">   387  </span>	log.Printf(&#34;ℹ️ tool-cooldown outdated: 対象 %d 件 / ランタイム除外 %d 件 / 窓 GitHub %d 日・レジストリ %d 日&#34;,
+<span id="L388" class="ln">   388  </span>		len(resolved), len(skipped), releaseWindowDays, registryWindowDays)
+<span id="L389" class="ln">   389  </span>	log.Printf(&#34;ℹ️ 今すぐ上げられる %d 件 / 窓待ち %d 件 / 上流を確認できず %d 件&#34;, actionable, held, failed)
+<span id="L390" class="ln">   390  </span>
+<span id="L391" class="ln">   391  </span>	if opt.summaryOut != &#34;&#34; {
+<span id="L392" class="ln">   392  </span>		if writeErr := os.WriteFile(opt.summaryOut, []byte(body), summaryPerm); writeErr != nil {
+<span id="L393" class="ln">   393  </span>			return xerrors.Wrap(writeErr, &#34;❌ write summary&#34;)
+<span id="L394" class="ln">   394  </span>		}
+<span id="L395" class="ln">   395  </span>	}
+<span id="L396" class="ln">   396  </span>	<span class="comment">// 起票するかどうかは呼び出し側の判断なので、件数だけを渡す。</span>
+<span id="L397" class="ln">   397  </span>	if out := os.Getenv(&#34;GITHUB_OUTPUT&#34;); out != &#34;&#34; {
+<span id="L398" class="ln">   398  </span>		if writeErr := appendOutdatedOutput(out, actionable, held, failed); writeErr != nil {
+<span id="L399" class="ln">   399  </span>			return xerrors.Wrap(writeErr, &#34;❌ write GITHUB_OUTPUT&#34;)
+<span id="L400" class="ln">   400  </span>		}
+<span id="L401" class="ln">   401  </span>	}
+<span id="L402" class="ln">   402  </span>
+<span id="L403" class="ln">   403  </span>	return nil
+<span id="L404" class="ln">   404  </span>}
+<span id="L405" class="ln">   405  </span>
+<span id="L406" class="ln">   406  </span>func appendOutdatedOutput(path string, actionable, held, failed int) error {
+<span id="L407" class="ln">   407  </span>	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, outputPerm) <span class="comment">//nolint:gosec // path は GITHUB_OUTPUT（ランナー提供）</span>
+<span id="L408" class="ln">   408  </span>	if err != nil {
+<span id="L409" class="ln">   409  </span>		return xerrors.Wrap(err, &#34;open &#34;+path)
+<span id="L410" class="ln">   410  </span>	}
+<span id="L411" class="ln">   411  </span>	defer func() { _ = f.Close() }()
+<span id="L412" class="ln">   412  </span>
+<span id="L413" class="ln">   413  </span>	_, err = fmt.Fprintf(f, &#34;actionable=%d\nheld=%d\nfailed=%d\n&#34;, actionable, held, failed)
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>	return xerrors.Wrap(err, &#34;write &#34;+path)
+<span id="L416" class="ln">   416  </span>}
+<span id="L417" class="ln">   417  </span>
+</pre><p><a href="../../../../src/go-boilerplate/scripts/tool-cooldown/outdated.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

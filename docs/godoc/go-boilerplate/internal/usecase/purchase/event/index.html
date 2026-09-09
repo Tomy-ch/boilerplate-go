@@ -84,9 +84,10 @@
 			</div>
 			<div class="expanded">
 				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
-				<p>Package event は、購入ユースケースが発行する outbox イベントの本文（自己完結 snapshot）と
-その marshal を提供します。版付きのイベント種別と JSON のワイヤ表現を本パッケージへ隔離し、
-usecase 本体を薄く保ちます（ADR-0054 (transactional-outbox)）。
+				<p>Package event は、購入ユースケースが発行する outbox イベントの本文と、その marshal を提供します。
+版付きのイベント種別と JSON のワイヤ表現を本パッケージへ隔離し、usecase 本体を薄く保ちます
+（ADR-0054 (transactional-outbox)）。payload の種別と集約との対応は payload_parity.yaml が宣言します
+（ADR-0113 (outbox-payload-kinds-and-parity-declaration)）。
 
 				
 			</p></div>
@@ -185,13 +186,13 @@ usecase 本体を薄く保ちます（ADR-0054 (transactional-outbox)）。
 		
 			
 			
-			<h2 id="BuildCanceled">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/canceled.go.html?s=1220:1276#L20">BuildCanceled</a>
+			<h2 id="BuildCanceled">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/canceled.go.html?s=1238:1294#L20">BuildCanceled</a>
 				<a class="permalink" href="#BuildCanceled">¶</a>
 				
 				
 			</h2>
 			<pre>func BuildCanceled(p *<a href="../../../../../go-boilerplate/internal/domain/purchase/">purchase</a>.<a href="../../../../../go-boilerplate/internal/domain/purchase/#Purchase">Purchase</a>) ([]<a href="../../../../../builtin/#byte">byte</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
-			<p>BuildCanceled は、購入集約から purchase.canceled.v1 の自己完結 snapshot payload を marshal します。
+			<p>BuildCanceled は、購入集約から purchase.canceled.v1 の通知 payload を marshal します。
 キャンセルされていない購入を渡された場合は payload を生成せず errNotCanceled を返します。
 
 			
@@ -200,13 +201,15 @@ usecase 本体を薄く保ちます（ADR-0054 (transactional-outbox)）。
 		
 			
 			
-			</p><h2 id="BuildCreated">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/created.go.html?s=2087:2142#L34">BuildCreated</a>
+			</p><h2 id="BuildCreated">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/created.go.html?s=2555:2610#L41">BuildCreated</a>
 				<a class="permalink" href="#BuildCreated">¶</a>
 				
 				
 			</h2>
 			<pre>func BuildCreated(p *<a href="../../../../../go-boilerplate/internal/domain/purchase/">purchase</a>.<a href="../../../../../go-boilerplate/internal/domain/purchase/#Purchase">Purchase</a>) ([]<a href="../../../../../builtin/#byte">byte</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
-			<p>BuildCreated は、購入集約から purchase.created.v1 の自己完結 snapshot payload を marshal します。
+			<p>BuildCreated は、購入集約から purchase.created.v1 の snapshot payload を marshal します。
+</p><p>書き込み後に読み直した集約を渡してください（理由は docs/spec/usecase/purchase.md の Workflow ⑥）。
+生成直後の集約かどうかは型では区別できないため、注文日時が未採番ならここで弾きます。
 
 			
 			
@@ -214,13 +217,13 @@ usecase 本体を薄く保ちます（ADR-0054 (transactional-outbox)）。
 		
 			
 			
-			</p><h2 id="BuildDelivered">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/delivered.go.html?s=698:755#L14">BuildDelivered</a>
+			</p><h2 id="BuildDelivered">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/delivered.go.html?s=716:773#L14">BuildDelivered</a>
 				<a class="permalink" href="#BuildDelivered">¶</a>
 				
 				
 			</h2>
 			<pre>func BuildDelivered(p *<a href="../../../../../go-boilerplate/internal/domain/purchase/">purchase</a>.<a href="../../../../../go-boilerplate/internal/domain/purchase/#Purchase">Purchase</a>) ([]<a href="../../../../../builtin/#byte">byte</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
-			<p>BuildDelivered は、購入集約から purchase.delivered.v1 の自己完結 snapshot payload を marshal します。
+			<p>BuildDelivered は、購入集約から purchase.delivered.v1 の通知 payload を marshal します。
 
 			
 			
@@ -228,13 +231,13 @@ usecase 本体を薄く保ちます（ADR-0054 (transactional-outbox)）。
 		
 			
 			
-			</p><h2 id="BuildPaid">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/paid.go.html?s=645:697#L14">BuildPaid</a>
+			</p><h2 id="BuildPaid">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/paid.go.html?s=663:715#L14">BuildPaid</a>
 				<a class="permalink" href="#BuildPaid">¶</a>
 				
 				
 			</h2>
 			<pre>func BuildPaid(p *<a href="../../../../../go-boilerplate/internal/domain/purchase/">purchase</a>.<a href="../../../../../go-boilerplate/internal/domain/purchase/#Purchase">Purchase</a>) ([]<a href="../../../../../builtin/#byte">byte</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
-			<p>BuildPaid は、購入集約から purchase.paid.v1 の自己完結 snapshot payload を marshal します。
+			<p>BuildPaid は、購入集約から purchase.paid.v1 の通知 payload を marshal します。
 
 			
 			
@@ -242,13 +245,13 @@ usecase 本体を薄く保ちます（ADR-0054 (transactional-outbox)）。
 		
 			
 			
-			</p><h2 id="BuildShipped">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/shipped.go.html?s=669:724#L14">BuildShipped</a>
+			</p><h2 id="BuildShipped">func <a href="../../../../../src/go-boilerplate/internal/usecase/purchase/event/shipped.go.html?s=687:742#L14">BuildShipped</a>
 				<a class="permalink" href="#BuildShipped">¶</a>
 				
 				
 			</h2>
 			<pre>func BuildShipped(p *<a href="../../../../../go-boilerplate/internal/domain/purchase/">purchase</a>.<a href="../../../../../go-boilerplate/internal/domain/purchase/#Purchase">Purchase</a>) ([]<a href="../../../../../builtin/#byte">byte</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
-			<p>BuildShipped は、購入集約から purchase.shipped.v1 の自己完結 snapshot payload を marshal します。
+			<p>BuildShipped は、購入集約から purchase.shipped.v1 の通知 payload を marshal します。
 
 			
 			

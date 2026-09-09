@@ -1,0 +1,422 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime-reset - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/scripts">scripts</a>/<a href="../../../../src/go-boilerplate/scripts/realtime-reset">realtime-reset</a>/<span class="text-muted">main_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/scripts/realtime-reset">go-boilerplate/scripts/realtime-reset</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package main
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;bytes&#34;
+<span id="L5" class="ln">     5  </span>	&#34;context&#34;
+<span id="L6" class="ln">     6  </span>	&#34;flag&#34;
+<span id="L7" class="ln">     7  </span>	&#34;os&#34;
+<span id="L8" class="ln">     8  </span>	&#34;testing&#34;
+<span id="L9" class="ln">     9  </span>	&#34;time&#34;
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	&#34;github.com/aws/aws-sdk-go-v2/aws&#34;
+<span id="L12" class="ln">    12  </span>	&#34;github.com/joho/godotenv&#34;
+<span id="L13" class="ln">    13  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L14" class="ln">    14  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span>	root &#34;go-boilerplate&#34;
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/config&#34;
+<span id="L18" class="ln">    18  </span>)
+<span id="L19" class="ln">    19  </span>
+<span id="L20" class="ln">    20  </span>func Test_run(t *testing.T) {
+<span id="L21" class="ln">    21  </span>	t.Parallel()
+<span id="L22" class="ln">    22  </span>
+<span id="L23" class="ln">    23  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L24" class="ln">    24  </span>		t.Parallel()
+<span id="L25" class="ln">    25  </span>
+<span id="L26" class="ln">    26  </span>		t.Run(&#34;解決したtableを順に削除する&#34;, func(t *testing.T) {
+<span id="L27" class="ln">    27  </span>			t.Parallel()
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span>			api := newFakeTableAPI(&#34;x&#34;, &#34;y&#34;)
+<span id="L30" class="ln">    30  </span>			var out bytes.Buffer
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span>			err := run(context.Background(), nil, &amp;out, tablesOf(&#34;x&#34;, &#34;y&#34;), apiOf(api))
+<span id="L33" class="ln">    33  </span>			require.NoError(t, err)
+<span id="L34" class="ln">    34  </span>			assert.Equal(t, []string{&#34;x&#34;, &#34;y&#34;}, api.deleted)
+<span id="L35" class="ln">    35  </span>		})
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span>		t.Run(&#34;helpは何も削除せずに正常終了する&#34;, func(t *testing.T) {
+<span id="L38" class="ln">    38  </span>			t.Parallel()
+<span id="L39" class="ln">    39  </span>
+<span id="L40" class="ln">    40  </span>			api := newFakeTableAPI(&#34;x&#34;)
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span>			require.NoError(t, run(context.Background(), []string{&#34;-help&#34;}, &amp;bytes.Buffer{}, tablesOf(&#34;x&#34;), apiOf(api)))
+<span id="L43" class="ln">    43  </span>			assert.Empty(t, api.deleted, &#34;使い方を表示しただけで table を消してはならない&#34;)
+<span id="L44" class="ln">    44  </span>		})
+<span id="L45" class="ln">    45  </span>	})
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L48" class="ln">    48  </span>		t.Parallel()
+<span id="L49" class="ln">    49  </span>
+<span id="L50" class="ln">    50  </span>		t.Run(&#34;endpointの拒否はクライアント生成より先に効く&#34;, func(t *testing.T) {
+<span id="L51" class="ln">    51  </span>			t.Parallel()
+<span id="L52" class="ln">    52  </span>
+<span id="L53" class="ln">    53  </span>			called := false
+<span id="L54" class="ln">    54  </span>			factory := func(context.Context, options) (tableAPI, error) {
+<span id="L55" class="ln">    55  </span>				called = true
+<span id="L56" class="ln">    56  </span>
+<span id="L57" class="ln">    57  </span>				return newFakeTableAPI(), nil
+<span id="L58" class="ln">    58  </span>			}
+<span id="L59" class="ln">    59  </span>
+<span id="L60" class="ln">    60  </span>			err := run(context.Background(), []string{&#34;-endpoint&#34;, &#34;&#34;}, &amp;bytes.Buffer{}, tablesOf(&#34;x&#34;), factory)
+<span id="L61" class="ln">    61  </span>			require.ErrorIs(t, err, errEndpoint)
+<span id="L62" class="ln">    62  </span>			assert.False(t, called, &#34;削除は取り消せないので、接続先を組み立てる前に止まらなければならない&#34;)
+<span id="L63" class="ln">    63  </span>		})
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span>		t.Run(&#34;未知のflagはErrHelpと区別して返す&#34;, func(t *testing.T) {
+<span id="L66" class="ln">    66  </span>			t.Parallel()
+<span id="L67" class="ln">    67  </span>
+<span id="L68" class="ln">    68  </span>			err := run(context.Background(), []string{&#34;-nope&#34;}, &amp;bytes.Buffer{}, tablesOf(&#34;x&#34;), apiOf(newFakeTableAPI()))
+<span id="L69" class="ln">    69  </span>			require.ErrorIs(t, err, errFlags)
+<span id="L70" class="ln">    70  </span>			require.NotErrorIs(t, err, flag.ErrHelp)
+<span id="L71" class="ln">    71  </span>		})
+<span id="L72" class="ln">    72  </span>
+<span id="L73" class="ln">    73  </span>		t.Run(&#34;table名を解決できなければ削除に進まない&#34;, func(t *testing.T) {
+<span id="L74" class="ln">    74  </span>			t.Parallel()
+<span id="L75" class="ln">    75  </span>
+<span id="L76" class="ln">    76  </span>			called := false
+<span id="L77" class="ln">    77  </span>			factory := func(context.Context, options) (tableAPI, error) {
+<span id="L78" class="ln">    78  </span>				called = true
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span>				return newFakeTableAPI(), nil
+<span id="L81" class="ln">    81  </span>			}
+<span id="L82" class="ln">    82  </span>			resolver := func() ([]string, error) { return nil, errAPI }
+<span id="L83" class="ln">    83  </span>
+<span id="L84" class="ln">    84  </span>			require.ErrorIs(t, run(context.Background(), nil, &amp;bytes.Buffer{}, resolver, factory), errAPI)
+<span id="L85" class="ln">    85  </span>			assert.False(t, called)
+<span id="L86" class="ln">    86  </span>		})
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span>		t.Run(&#34;クライアントを組み立てられなければそのエラーを返す&#34;, func(t *testing.T) {
+<span id="L89" class="ln">    89  </span>			t.Parallel()
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>			factory := func(context.Context, options) (tableAPI, error) { return nil, errAPI }
+<span id="L92" class="ln">    92  </span>
+<span id="L93" class="ln">    93  </span>			require.ErrorIs(t, run(context.Background(), nil, &amp;bytes.Buffer{}, tablesOf(&#34;x&#34;), factory), errAPI)
+<span id="L94" class="ln">    94  </span>		})
+<span id="L95" class="ln">    95  </span>
+<span id="L96" class="ln">    96  </span>		t.Run(&#34;指定したtimeoutで打ち切る&#34;, func(t *testing.T) {
+<span id="L97" class="ln">    97  </span>			t.Parallel()
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span>			api := newFakeTableAPI(&#34;x&#34;)
+<span id="L100" class="ln">   100  </span>			api.describeLeft = 1 &lt;&lt; 30
+<span id="L101" class="ln">   101  </span>			start := time.Now()
+<span id="L102" class="ln">   102  </span>
+<span id="L103" class="ln">   103  </span>			err := run(
+<span id="L104" class="ln">   104  </span>				context.Background(), []string{&#34;-timeout&#34;, &#34;10ms&#34;}, &amp;bytes.Buffer{}, tablesOf(&#34;x&#34;), apiOf(api),
+<span id="L105" class="ln">   105  </span>			)
+<span id="L106" class="ln">   106  </span>			require.ErrorIs(t, err, errGone)
+<span id="L107" class="ln">   107  </span>			require.ErrorIs(t, err, context.DeadlineExceeded)
+<span id="L108" class="ln">   108  </span>			assert.Less(t, time.Since(start), time.Second,
+<span id="L109" class="ln">   109  </span>				&#34;-timeout を無視して既定の 60 秒を使う退行も、同じ sentinel で返ってくる&#34;)
+<span id="L110" class="ln">   110  </span>		})
+<span id="L111" class="ln">   111  </span>	})
+<span id="L112" class="ln">   112  </span>}
+<span id="L113" class="ln">   113  </span>
+<span id="L114" class="ln">   114  </span><span class="comment">//nolint:paralleltest // SetUpConfig は os.Setenv でグローバル環境を変更するため並列化不可</span>
+<span id="L115" class="ln">   115  </span>func Test_configuredTables(t *testing.T) {
+<span id="L116" class="ln">   116  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L117" class="ln">   117  </span>		t.Run(&#34;埋め込みenvのsuffixを付けた3つのtable名を返す&#34;, func(t *testing.T) {
+<span id="L118" class="ln">   118  </span>			<span class="comment">// 被験体が設定を通らず OS env を読むだけの退行を捉えるため、期待値は埋め込み</span>
+<span id="L119" class="ln">   119  </span>			<span class="comment">// ファイルから直に作り、プロセス側の同名変数を外してから呼ぶ。</span>
+<span id="L120" class="ln">   120  </span>			<span class="comment">// t.Setenv では未設定へ戻せない。空文字にすると config.Load が「設定済み」と見て</span>
+<span id="L121" class="ln">   121  </span>			<span class="comment">// 埋め込みの値で上書きせず、正しい被験体まで空 suffix になってしまう。</span>
+<span id="L122" class="ln">   122  </span>			if v, ok := os.LookupEnv(&#34;REALTIME_TABLE_SUFFIX&#34;); ok {
+<span id="L123" class="ln">   123  </span>				t.Cleanup(func() { _ = os.Setenv(&#34;REALTIME_TABLE_SUFFIX&#34;, v) }) <span class="comment">//nolint:usetesting // 復元のため</span>
+<span id="L124" class="ln">   124  </span>				require.NoError(t, os.Unsetenv(&#34;REALTIME_TABLE_SUFFIX&#34;))
+<span id="L125" class="ln">   125  </span>			}
+<span id="L126" class="ln">   126  </span>
+<span id="L127" class="ln">   127  </span>			b, err := root.FS.ReadFile(&#34;env/.env&#34;)
+<span id="L128" class="ln">   128  </span>			require.NoError(t, err)
+<span id="L129" class="ln">   129  </span>			kv, err := godotenv.Parse(bytes.NewReader(b))
+<span id="L130" class="ln">   130  </span>			require.NoError(t, err)
+<span id="L131" class="ln">   131  </span>			suffix := kv[&#34;REALTIME_TABLE_SUFFIX&#34;]
+<span id="L132" class="ln">   132  </span>			require.NotEmpty(t, suffix)
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>			got, err := configuredTables()
+<span id="L135" class="ln">   135  </span>			require.NoError(t, err)
+<span id="L136" class="ln">   136  </span>			assert.Equal(t, []string{
+<span id="L137" class="ln">   137  </span>				&#34;realtime_event_log_&#34; + suffix,
+<span id="L138" class="ln">   138  </span>				&#34;realtime_stream_ticket_&#34; + suffix,
+<span id="L139" class="ln">   139  </span>				&#34;realtime_instance_lease_&#34; + suffix,
+<span id="L140" class="ln">   140  </span>			}, got, &#34;別の checkout の table や Realtime 以外の table を消さない&#34;)
+<span id="L141" class="ln">   141  </span>		})
+<span id="L142" class="ln">   142  </span>	})
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L145" class="ln">   145  </span>		t.Run(&#34;設定を読めなければ削除対象を返さない&#34;, func(t *testing.T) {
+<span id="L146" class="ln">   146  </span>			t.Setenv(&#34;APP_MODE&#34;, &#34;invalid-mode&#34;)
+<span id="L147" class="ln">   147  </span>
+<span id="L148" class="ln">   148  </span>			got, err := configuredTables()
+<span id="L149" class="ln">   149  </span>			require.ErrorIs(t, err, config.ErrInvalidAppMode)
+<span id="L150" class="ln">   150  </span>			assert.Nil(t, got, &#34;対象が定まらないまま削除へ進ませない&#34;)
+<span id="L151" class="ln">   151  </span>		})
+<span id="L152" class="ln">   152  </span>	})
+<span id="L153" class="ln">   153  </span>}
+<span id="L154" class="ln">   154  </span>
+<span id="L155" class="ln">   155  </span>func Test_newClient(t *testing.T) {
+<span id="L156" class="ln">   156  </span>	t.Parallel()
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L159" class="ln">   159  </span>		t.Parallel()
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span>		t.Run(&#34;指定したendpointとregionがクライアントへ届く&#34;, func(t *testing.T) {
+<span id="L162" class="ln">   162  </span>			t.Parallel()
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>			c, err := newClient(t.Context(), options{endpoint: &#34;http://localhost:8000&#34;, region: &#34;ap-northeast-1&#34;})
+<span id="L165" class="ln">   165  </span>			require.NoError(t, err)
+<span id="L166" class="ln">   166  </span>			assert.Equal(t, &#34;http://localhost:8000&#34;, aws.ToString(c.Options().BaseEndpoint),
+<span id="L167" class="ln">   167  </span>				&#34;endpoint が届かないと SDK 既定の解決で本番 DynamoDB を指す&#34;)
+<span id="L168" class="ln">   168  </span>			assert.Equal(t, &#34;ap-northeast-1&#34;, c.Options().Region)
+<span id="L169" class="ln">   169  </span>
+<span id="L170" class="ln">   170  </span>			creds, err := c.Options().Credentials.Retrieve(t.Context())
+<span id="L171" class="ln">   171  </span>			require.NoError(t, err)
+<span id="L172" class="ln">   172  </span>			assert.Equal(t, resetCredential, creds.AccessKeyID,
+<span id="L173" class="ln">   173  </span>				&#34;実 AWS が拒む鍵であることが本番到達を止める防御の一部（app の鍵へ寄せない）&#34;)
+<span id="L174" class="ln">   174  </span>		})
+<span id="L175" class="ln">   175  </span>	})
+<span id="L176" class="ln">   176  </span>}
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>func Test_parseOptions(t *testing.T) {
+<span id="L179" class="ln">   179  </span>	t.Parallel()
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L182" class="ln">   182  </span>		t.Parallel()
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>		t.Run(&#34;既定値&#34;, func(t *testing.T) {
+<span id="L185" class="ln">   185  </span>			t.Parallel()
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>			opts, err := parseOptions(nil)
+<span id="L188" class="ln">   188  </span>			require.NoError(t, err)
+<span id="L189" class="ln">   189  </span>			assert.Equal(t, defaultEndpoint, opts.endpoint)
+<span id="L190" class="ln">   190  </span>			assert.Equal(t, defaultRegion, opts.region)
+<span id="L191" class="ln">   191  </span>			assert.Equal(t, defaultTimeout, opts.timeout)
+<span id="L192" class="ln">   192  </span>		})
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span>		t.Run(&#34;指定した値で上書きされる&#34;, func(t *testing.T) {
+<span id="L195" class="ln">   195  </span>			t.Parallel()
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>			opts, err := parseOptions([]string{
+<span id="L198" class="ln">   198  </span>				&#34;-endpoint&#34;, &#34;http://127.0.0.1:9000&#34;, &#34;-region&#34;, &#34;ap-northeast-1&#34;, &#34;-timeout&#34;, &#34;5s&#34;,
+<span id="L199" class="ln">   199  </span>			})
+<span id="L200" class="ln">   200  </span>			require.NoError(t, err)
+<span id="L201" class="ln">   201  </span>			assert.Equal(t, &#34;http://127.0.0.1:9000&#34;, opts.endpoint)
+<span id="L202" class="ln">   202  </span>			assert.Equal(t, &#34;ap-northeast-1&#34;, opts.region)
+<span id="L203" class="ln">   203  </span>			assert.Equal(t, 5*time.Second, opts.timeout)
+<span id="L204" class="ln">   204  </span>		})
+<span id="L205" class="ln">   205  </span>
+<span id="L206" class="ln">   206  </span>		t.Run(&#34;helpはErrHelpを返す&#34;, func(t *testing.T) {
+<span id="L207" class="ln">   207  </span>			t.Parallel()
+<span id="L208" class="ln">   208  </span>
+<span id="L209" class="ln">   209  </span>			_, err := parseOptions([]string{&#34;-help&#34;})
+<span id="L210" class="ln">   210  </span>			require.ErrorIs(t, err, flag.ErrHelp)
+<span id="L211" class="ln">   211  </span>		})
+<span id="L212" class="ln">   212  </span>	})
+<span id="L213" class="ln">   213  </span>
+<span id="L214" class="ln">   214  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L215" class="ln">   215  </span>		t.Parallel()
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span>		t.Run(&#34;空のendpointは拒否される&#34;, func(t *testing.T) {
+<span id="L218" class="ln">   218  </span>			t.Parallel()
+<span id="L219" class="ln">   219  </span>
+<span id="L220" class="ln">   220  </span>			_, err := parseOptions([]string{&#34;-endpoint&#34;, &#34;&#34;})
+<span id="L221" class="ln">   221  </span>			require.ErrorIs(t, err, errEndpoint, &#34;空だとSDK既定の解決で本番DynamoDBを消し得る&#34;)
+<span id="L222" class="ln">   222  </span>		})
+<span id="L223" class="ln">   223  </span>
+<span id="L224" class="ln">   224  </span>		t.Run(&#34;未知のflagはエラーになる&#34;, func(t *testing.T) {
+<span id="L225" class="ln">   225  </span>			t.Parallel()
+<span id="L226" class="ln">   226  </span>
+<span id="L227" class="ln">   227  </span>			_, err := parseOptions([]string{&#34;-nope&#34;})
+<span id="L228" class="ln">   228  </span>			require.ErrorIs(t, err, errFlags)
+<span id="L229" class="ln">   229  </span>			require.NotErrorIs(t, err, flag.ErrHelp)
+<span id="L230" class="ln">   230  </span>		})
+<span id="L231" class="ln">   231  </span>	})
+<span id="L232" class="ln">   232  </span>}
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>func Test_validateEndpoint(t *testing.T) {
+<span id="L235" class="ln">   235  </span>	t.Parallel()
+<span id="L236" class="ln">   236  </span>
+<span id="L237" class="ln">   237  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L238" class="ln">   238  </span>		t.Parallel()
+<span id="L239" class="ln">   239  </span>
+<span id="L240" class="ln">   240  </span>		t.Run(&#34;httpを受け入れる&#34;, func(t *testing.T) {
+<span id="L241" class="ln">   241  </span>			t.Parallel()
+<span id="L242" class="ln">   242  </span>
+<span id="L243" class="ln">   243  </span>			require.NoError(t, validateEndpoint(&#34;http://localhost:8000&#34;))
+<span id="L244" class="ln">   244  </span>		})
+<span id="L245" class="ln">   245  </span>
+<span id="L246" class="ln">   246  </span>		t.Run(&#34;httpsを受け入れる&#34;, func(t *testing.T) {
+<span id="L247" class="ln">   247  </span>			t.Parallel()
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>			require.NoError(t, validateEndpoint(&#34;https://dynamodb.example.test&#34;))
+<span id="L250" class="ln">   250  </span>		})
+<span id="L251" class="ln">   251  </span>
+<span id="L252" class="ln">   252  </span>		t.Run(&#34;自前ホストのemulatorを受け入れる&#34;, func(t *testing.T) {
+<span id="L253" class="ln">   253  </span>			t.Parallel()
+<span id="L254" class="ln">   254  </span>
+<span id="L255" class="ln">   255  </span>			require.NoError(t, validateEndpoint(&#34;http://dynamo.internal.example:8000&#34;),
+<span id="L256" class="ln">   256  </span>				&#34;loopback に限定すると遠隔の emulator を使う構成が壊れる&#34;)
+<span id="L257" class="ln">   257  </span>		})
+<span id="L258" class="ln">   258  </span>
+<span id="L259" class="ln">   259  </span>		t.Run(&#34;AWSに似た別ドメインは拒まない&#34;, func(t *testing.T) {
+<span id="L260" class="ln">   260  </span>			t.Parallel()
+<span id="L261" class="ln">   261  </span>
+<span id="L262" class="ln">   262  </span>			require.NoError(t, validateEndpoint(&#34;http://notamazonaws.com:8000&#34;),
+<span id="L263" class="ln">   263  </span>				&#34;ラベル境界を無視した末尾一致は自前ホストを巻き込む&#34;)
+<span id="L264" class="ln">   264  </span>		})
+<span id="L265" class="ln">   265  </span>	})
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L268" class="ln">   268  </span>		t.Parallel()
+<span id="L269" class="ln">   269  </span>
+<span id="L270" class="ln">   270  </span>		t.Run(&#34;空文字を拒否する&#34;, func(t *testing.T) {
+<span id="L271" class="ln">   271  </span>			t.Parallel()
+<span id="L272" class="ln">   272  </span>
+<span id="L273" class="ln">   273  </span>			require.ErrorIs(t, validateEndpoint(&#34;&#34;), errEndpoint, &#34;SDK 既定の解決へ落とさない&#34;)
+<span id="L274" class="ln">   274  </span>		})
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>		t.Run(&#34;schemeを省いたものを拒否する&#34;, func(t *testing.T) {
+<span id="L277" class="ln">   277  </span>			t.Parallel()
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>			require.ErrorIs(t, validateEndpoint(&#34;localhost:8000&#34;), errEndpoint)
+<span id="L280" class="ln">   280  </span>		})
+<span id="L281" class="ln">   281  </span>
+<span id="L282" class="ln">   282  </span>		t.Run(&#34;hostが空のものを拒否する&#34;, func(t *testing.T) {
+<span id="L283" class="ln">   283  </span>			t.Parallel()
+<span id="L284" class="ln">   284  </span>
+<span id="L285" class="ln">   285  </span>			require.ErrorIs(t, validateEndpoint(&#34;http://&#34;), errEndpoint)
+<span id="L286" class="ln">   286  </span>		})
+<span id="L287" class="ln">   287  </span>
+<span id="L288" class="ln">   288  </span>		t.Run(&#34;パスだけのものを拒否する&#34;, func(t *testing.T) {
+<span id="L289" class="ln">   289  </span>			t.Parallel()
+<span id="L290" class="ln">   290  </span>
+<span id="L291" class="ln">   291  </span>			require.ErrorIs(t, validateEndpoint(&#34;/tmp/socket&#34;), errEndpoint)
+<span id="L292" class="ln">   292  </span>		})
+<span id="L293" class="ln">   293  </span>
+<span id="L294" class="ln">   294  </span>		t.Run(&#34;http以外のschemeを拒否する&#34;, func(t *testing.T) {
+<span id="L295" class="ln">   295  </span>			t.Parallel()
+<span id="L296" class="ln">   296  </span>
+<span id="L297" class="ln">   297  </span>			require.ErrorIs(t, validateEndpoint(&#34;ftp://localhost:8000&#34;), errEndpoint)
+<span id="L298" class="ln">   298  </span>		})
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>		t.Run(&#34;URLとして解釈できないものを拒否する&#34;, func(t *testing.T) {
+<span id="L301" class="ln">   301  </span>			t.Parallel()
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span>			require.ErrorIs(t, validateEndpoint(&#34;http://local host:8000&#34;), errEndpoint)
+<span id="L304" class="ln">   304  </span>		})
+<span id="L305" class="ln">   305  </span>
+<span id="L306" class="ln">   306  </span>		t.Run(&#34;実AWSのhostを拒否する&#34;, func(t *testing.T) {
+<span id="L307" class="ln">   307  </span>			t.Parallel()
+<span id="L308" class="ln">   308  </span>
+<span id="L309" class="ln">   309  </span>			require.ErrorIs(t,
+<span id="L310" class="ln">   310  </span>				validateEndpoint(&#34;https://dynamodb.ap-northeast-1.amazonaws.com&#34;), errRealAWS,
+<span id="L311" class="ln">   311  </span>				&#34;静的資格情報が将来外れても二重に止まる&#34;)
+<span id="L312" class="ln">   312  </span>		})
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span>		t.Run(&#34;大文字で書いた実AWSのhostも拒否する&#34;, func(t *testing.T) {
+<span id="L315" class="ln">   315  </span>			t.Parallel()
+<span id="L316" class="ln">   316  </span>
+<span id="L317" class="ln">   317  </span>			require.ErrorIs(t, validateEndpoint(&#34;https://DynamoDB.AmazonAWS.CoM&#34;), errRealAWS)
+<span id="L318" class="ln">   318  </span>		})
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span>		t.Run(&#34;apex そのものを拒否する&#34;, func(t *testing.T) {
+<span id="L321" class="ln">   321  </span>			t.Parallel()
+<span id="L322" class="ln">   322  </span>
+<span id="L323" class="ln">   323  </span>			require.ErrorIs(t, validateEndpoint(&#34;https://amazonaws.com&#34;), errRealAWS,
+<span id="L324" class="ln">   324  </span>				&#34;末尾一致だけでは apex を取りこぼす&#34;)
+<span id="L325" class="ln">   325  </span>		})
+<span id="L326" class="ln">   326  </span>
+<span id="L327" class="ln">   327  </span>		t.Run(&#34;末尾ドット付きのFQDNを拒否する&#34;, func(t *testing.T) {
+<span id="L328" class="ln">   328  </span>			t.Parallel()
+<span id="L329" class="ln">   329  </span>
+<span id="L330" class="ln">   330  </span>			require.ErrorIs(t, validateEndpoint(&#34;https://dynamodb.us-east-1.amazonaws.com.&#34;), errRealAWS)
+<span id="L331" class="ln">   331  </span>		})
+<span id="L332" class="ln">   332  </span>
+<span id="L333" class="ln">   333  </span>		t.Run(&#34;中国パーティションを拒否する&#34;, func(t *testing.T) {
+<span id="L334" class="ln">   334  </span>			t.Parallel()
+<span id="L335" class="ln">   335  </span>
+<span id="L336" class="ln">   336  </span>			require.ErrorIs(t, validateEndpoint(&#34;https://dynamodb.cn-north-1.amazonaws.com.cn&#34;), errRealAWS)
+<span id="L337" class="ln">   337  </span>		})
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>		t.Run(&#34;dual-stackのendpointを拒否する&#34;, func(t *testing.T) {
+<span id="L340" class="ln">   340  </span>			t.Parallel()
+<span id="L341" class="ln">   341  </span>
+<span id="L342" class="ln">   342  </span>			require.ErrorIs(t, validateEndpoint(&#34;https://dynamodb.us-east-1.api.aws&#34;), errRealAWS)
+<span id="L343" class="ln">   343  </span>		})
+<span id="L344" class="ln">   344  </span>	})
+<span id="L345" class="ln">   345  </span>}
+<span id="L346" class="ln">   346  </span>
+<span id="L347" class="ln">   347  </span><span class="comment">// tablesOf は、固定の table 名を返す tableResolver を作ります。</span>
+<span id="L348" class="ln">   348  </span>func tablesOf(names ...string) tableResolver {
+<span id="L349" class="ln">   349  </span>	return func() ([]string, error) { return names, nil }
+<span id="L350" class="ln">   350  </span>}
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span><span class="comment">// apiOf は、渡した tableAPI を返す apiFactory を作ります。</span>
+<span id="L353" class="ln">   353  </span>func apiOf(api tableAPI) apiFactory {
+<span id="L354" class="ln">   354  </span>	return func(context.Context, options) (tableAPI, error) { return api, nil }
+<span id="L355" class="ln">   355  </span>}
+<span id="L356" class="ln">   356  </span>
+</pre><p><a href="../../../../src/go-boilerplate/scripts/realtime-reset/main_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

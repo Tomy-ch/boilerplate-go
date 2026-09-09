@@ -67,337 +67,543 @@
 <span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/driver&#34;
 <span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/infrastructure/rdb/testkit&#34;
 <span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/observability&#34;
-<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/uuid&#34;
-<span id="L14" class="ln">    14  </span>
-<span id="L15" class="ln">    15  </span>	&#34;github.com/stretchr/testify/assert&#34;
-<span id="L16" class="ln">    16  </span>	&#34;github.com/stretchr/testify/require&#34;
-<span id="L17" class="ln">    17  </span>)
-<span id="L18" class="ln">    18  </span>
-<span id="L19" class="ln">    19  </span><span class="comment">// 既存 seed のクーポンと受給者（database/seed/000041_coupons.sql）。</span>
-<span id="L20" class="ln">    20  </span>const (
-<span id="L21" class="ln">    21  </span>	seedBobUserID   = &#34;090f5b51-37ac-4413-b326-1709ae4661f4&#34;
-<span id="L22" class="ln">    22  </span>	seedBobFlatAll  = &#34;0193a1c0-0001-7000-8000-000000000001&#34;
-<span id="L23" class="ln">    23  </span>	seedBobRateAll  = &#34;0193a1c0-0001-7000-8000-000000000002&#34;
-<span id="L24" class="ln">    24  </span>	seedAliceUserID = &#34;0b393ac1-b8a2-4f69-8972-de680aeb0a95&#34;
-<span id="L25" class="ln">    25  </span>	seedCategoryID  = &#34;5dd52d84-78eb-4a52-ba0b-2e11c95c2af2&#34;
-<span id="L26" class="ln">    26  </span>)
-<span id="L27" class="ln">    27  </span>
-<span id="L28" class="ln">    28  </span>func mustParse(t *testing.T, s string) uuid.UUID {
-<span id="L29" class="ln">    29  </span>	t.Helper()
-<span id="L30" class="ln">    30  </span>	id, err := uuid.Parse(s)
-<span id="L31" class="ln">    31  </span>	require.NoError(t, err)
-<span id="L32" class="ln">    32  </span>
-<span id="L33" class="ln">    33  </span>	return id
-<span id="L34" class="ln">    34  </span>}
-<span id="L35" class="ln">    35  </span>
-<span id="L36" class="ln">    36  </span>func TestNew(t *testing.T) {
-<span id="L37" class="ln">    37  </span>	t.Parallel()
-<span id="L38" class="ln">    38  </span>
-<span id="L39" class="ln">    39  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L40" class="ln">    40  </span>		t.Parallel()
-<span id="L41" class="ln">    41  </span>
-<span id="L42" class="ln">    42  </span>		t.Run(&#34;依存を注入したリポジトリ実装を生成する&#34;, func(t *testing.T) {
-<span id="L43" class="ln">    43  </span>			t.Parallel()
-<span id="L44" class="ln">    44  </span>
-<span id="L45" class="ln">    45  </span>			testDB := testkit.NewTestDB(t)
-<span id="L46" class="ln">    46  </span>
-<span id="L47" class="ln">    47  </span>			repo, ok := New(testDB, observability.NewNoopTracerFactory(t)).(*repository)
-<span id="L48" class="ln">    48  </span>			require.True(t, ok)
-<span id="L49" class="ln">    49  </span>			assert.Equal(t, testDB, repo.db)
-<span id="L50" class="ln">    50  </span>			assert.NotNil(t, repo.tracer)
-<span id="L51" class="ln">    51  </span>		})
-<span id="L52" class="ln">    52  </span>	})
-<span id="L53" class="ln">    53  </span>}
-<span id="L54" class="ln">    54  </span>
-<span id="L55" class="ln">    55  </span>func Test_repository_FindByUserID(t *testing.T) {
-<span id="L56" class="ln">    56  </span>	t.Parallel()
-<span id="L57" class="ln">    57  </span>
-<span id="L58" class="ln">    58  </span>	testDB := testkit.NewTestDB(t)
-<span id="L59" class="ln">    59  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L60" class="ln">    60  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
-<span id="L61" class="ln">    61  </span>
-<span id="L62" class="ln">    62  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L63" class="ln">    63  </span>		t.Parallel()
-<span id="L64" class="ln">    64  </span>
-<span id="L65" class="ln">    65  </span>		t.Run(&#34;保有するクーポンを発行日時の降順で返す&#34;, func(t *testing.T) {
-<span id="L66" class="ln">    66  </span>			t.Parallel()
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/decimal&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L17" class="ln">    17  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L18" class="ln">    18  </span>)
+<span id="L19" class="ln">    19  </span>
+<span id="L20" class="ln">    20  </span><span class="comment">// 既存 seed のクーポンと受給者（database/seed/000041_coupons.sql）。</span>
+<span id="L21" class="ln">    21  </span>const (
+<span id="L22" class="ln">    22  </span>	seedBobUserID   = &#34;090f5b51-37ac-4413-b326-1709ae4661f4&#34;
+<span id="L23" class="ln">    23  </span>	seedBobFlatAll  = &#34;0193a1c0-0001-7000-8000-000000000001&#34;
+<span id="L24" class="ln">    24  </span>	seedBobRateAll  = &#34;0193a1c0-0001-7000-8000-000000000002&#34;
+<span id="L25" class="ln">    25  </span>	seedAliceUserID = &#34;0b393ac1-b8a2-4f69-8972-de680aeb0a95&#34;
+<span id="L26" class="ln">    26  </span>	seedCategoryID  = &#34;5dd52d84-78eb-4a52-ba0b-2e11c95c2af2&#34;
+<span id="L27" class="ln">    27  </span>)
+<span id="L28" class="ln">    28  </span>
+<span id="L29" class="ln">    29  </span>func mustParse(t *testing.T, s string) uuid.UUID {
+<span id="L30" class="ln">    30  </span>	t.Helper()
+<span id="L31" class="ln">    31  </span>	id, err := uuid.Parse(s)
+<span id="L32" class="ln">    32  </span>	require.NoError(t, err)
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span>	return id
+<span id="L35" class="ln">    35  </span>}
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span>func TestNew(t *testing.T) {
+<span id="L38" class="ln">    38  </span>	t.Parallel()
+<span id="L39" class="ln">    39  </span>
+<span id="L40" class="ln">    40  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L41" class="ln">    41  </span>		t.Parallel()
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span>		t.Run(&#34;依存を注入したリポジトリ実装を生成する&#34;, func(t *testing.T) {
+<span id="L44" class="ln">    44  </span>			t.Parallel()
+<span id="L45" class="ln">    45  </span>
+<span id="L46" class="ln">    46  </span>			testDB := testkit.NewTestDB(t)
+<span id="L47" class="ln">    47  </span>
+<span id="L48" class="ln">    48  </span>			repo, ok := New(testDB, observability.NewNoopTracerFactory(t)).(*repository)
+<span id="L49" class="ln">    49  </span>			require.True(t, ok)
+<span id="L50" class="ln">    50  </span>			assert.Equal(t, testDB, repo.db)
+<span id="L51" class="ln">    51  </span>			assert.NotNil(t, repo.tracer)
+<span id="L52" class="ln">    52  </span>		})
+<span id="L53" class="ln">    53  </span>	})
+<span id="L54" class="ln">    54  </span>}
+<span id="L55" class="ln">    55  </span>
+<span id="L56" class="ln">    56  </span>func Test_repository_Create(t *testing.T) {
+<span id="L57" class="ln">    57  </span>	t.Parallel()
+<span id="L58" class="ln">    58  </span>
+<span id="L59" class="ln">    59  </span>	testDB := testkit.NewTestDB(t)
+<span id="L60" class="ln">    60  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L61" class="ln">    61  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L62" class="ln">    62  </span>
+<span id="L63" class="ln">    63  </span>	newID := func(t *testing.T) uuid.UUID {
+<span id="L64" class="ln">    64  </span>		t.Helper()
+<span id="L65" class="ln">    65  </span>		id, err := uuid.New()
+<span id="L66" class="ln">    66  </span>		require.NoError(t, err)
 <span id="L67" class="ln">    67  </span>
-<span id="L68" class="ln">    68  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L69" class="ln">    69  </span>				got, err := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
+<span id="L68" class="ln">    68  </span>		return id
+<span id="L69" class="ln">    69  </span>	}
 <span id="L70" class="ln">    70  </span>
-<span id="L71" class="ln">    71  </span>				require.NoError(t, err)
-<span id="L72" class="ln">    72  </span>				require.Len(t, got, 2)
-<span id="L73" class="ln">    73  </span>				for _, c := range got {
-<span id="L74" class="ln">    74  </span>					assert.Equal(t, mustParse(t, seedBobUserID), c.UserID())
-<span id="L75" class="ln">    75  </span>				}
-<span id="L76" class="ln">    76  </span>			})
-<span id="L77" class="ln">    77  </span>		})
-<span id="L78" class="ln">    78  </span>
-<span id="L79" class="ln">    79  </span>		t.Run(&#34;値引きと適用範囲を業務キーからドメインの値へ復元する&#34;, func(t *testing.T) {
-<span id="L80" class="ln">    80  </span>			t.Parallel()
-<span id="L81" class="ln">    81  </span>
-<span id="L82" class="ln">    82  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L83" class="ln">    83  </span>				got, err := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
-<span id="L84" class="ln">    84  </span>				require.NoError(t, err)
-<span id="L85" class="ln">    85  </span>
-<span id="L86" class="ln">    86  </span>				kinds := make(map[int]bool, len(got))
-<span id="L87" class="ln">    87  </span>				for _, c := range got {
-<span id="L88" class="ln">    88  </span>					kinds[c.Discount().Kind().Code()] = true
-<span id="L89" class="ln">    89  </span>					assert.Equal(t, domaincoupon.ScopeKindAll, c.Scope().Kind())
-<span id="L90" class="ln">    90  </span>					assert.Nil(t, c.Scope().TargetID())
-<span id="L91" class="ln">    91  </span>				}
-<span id="L92" class="ln">    92  </span>				assert.True(t, kinds[domaincoupon.DiscountKindFlat.Code()])
-<span id="L93" class="ln">    93  </span>				assert.True(t, kinds[domaincoupon.DiscountKindRate.Code()])
-<span id="L94" class="ln">    94  </span>			})
-<span id="L95" class="ln">    95  </span>		})
-<span id="L96" class="ln">    96  </span>
-<span id="L97" class="ln">    97  </span>		t.Run(&#34;使用済みのクーポンも母集団に含める&#34;, func(t *testing.T) {
-<span id="L98" class="ln">    98  </span>			t.Parallel()
-<span id="L99" class="ln">    99  </span>
-<span id="L100" class="ln">   100  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L101" class="ln">   101  </span>				drv := driver.New(ctx, testDB)
-<span id="L102" class="ln">   102  </span>				_, err := drv.Exec(ctx, &#34;UPDATE coupons SET used_at = NOW() WHERE id = $1&#34;, seedBobFlatAll)
-<span id="L103" class="ln">   103  </span>				require.NoError(t, err)
+<span id="L71" class="ln">    71  </span>	newCoupon := func(t *testing.T, discount domaincoupon.Discount, scope domaincoupon.Scope) *domaincoupon.Coupon {
+<span id="L72" class="ln">    72  </span>		t.Helper()
+<span id="L73" class="ln">    73  </span>
+<span id="L74" class="ln">    74  </span>		issuedAt := time.Now().UTC().Truncate(time.Microsecond)
+<span id="L75" class="ln">    75  </span>		c, err := domaincoupon.New(newID(t), domaincoupon.Attributes{
+<span id="L76" class="ln">    76  </span>			UserID:    mustParse(t, seedAliceUserID),
+<span id="L77" class="ln">    77  </span>			Discount:  discount,
+<span id="L78" class="ln">    78  </span>			Scope:     scope,
+<span id="L79" class="ln">    79  </span>			ExpiresAt: issuedAt.Add(24 * time.Hour),
+<span id="L80" class="ln">    80  </span>			IssuedAt:  issuedAt,
+<span id="L81" class="ln">    81  </span>		})
+<span id="L82" class="ln">    82  </span>		require.NoError(t, err)
+<span id="L83" class="ln">    83  </span>
+<span id="L84" class="ln">    84  </span>		return c
+<span id="L85" class="ln">    85  </span>	}
+<span id="L86" class="ln">    86  </span>
+<span id="L87" class="ln">    87  </span>	findIssued := func(ctx context.Context, t *testing.T, id uuid.UUID) *domaincoupon.Coupon {
+<span id="L88" class="ln">    88  </span>		t.Helper()
+<span id="L89" class="ln">    89  </span>
+<span id="L90" class="ln">    90  </span>		coupons, err := repo.FindByUserID(ctx, mustParse(t, seedAliceUserID))
+<span id="L91" class="ln">    91  </span>		require.NoError(t, err)
+<span id="L92" class="ln">    92  </span>		for _, c := range coupons {
+<span id="L93" class="ln">    93  </span>			if c.ID() == id {
+<span id="L94" class="ln">    94  </span>				return c
+<span id="L95" class="ln">    95  </span>			}
+<span id="L96" class="ln">    96  </span>		}
+<span id="L97" class="ln">    97  </span>		require.FailNow(t, &#34;発行したクーポンが保有一覧に現れなかった&#34;)
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span>		return nil
+<span id="L100" class="ln">   100  </span>	}
+<span id="L101" class="ln">   101  </span>
+<span id="L102" class="ln">   102  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L103" class="ln">   103  </span>		t.Parallel()
 <span id="L104" class="ln">   104  </span>
-<span id="L105" class="ln">   105  </span>				got, ferr := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
-<span id="L106" class="ln">   106  </span>
-<span id="L107" class="ln">   107  </span>				require.NoError(t, ferr)
-<span id="L108" class="ln">   108  </span>				assert.Len(t, got, 2)
-<span id="L109" class="ln">   109  </span>			})
-<span id="L110" class="ln">   110  </span>		})
-<span id="L111" class="ln">   111  </span>
-<span id="L112" class="ln">   112  </span>		t.Run(&#34;1枚も保有しない利用者には空を返す&#34;, func(t *testing.T) {
-<span id="L113" class="ln">   113  </span>			t.Parallel()
-<span id="L114" class="ln">   114  </span>
-<span id="L115" class="ln">   115  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L116" class="ln">   116  </span>				got, err := repo.FindByUserID(ctx, mustParse(t, &#34;11111111-1111-4111-8111-111111111111&#34;))
+<span id="L105" class="ln">   105  </span>		t.Run(&#34;定額かつ全体のクーポンを未使用として永続化する&#34;, func(t *testing.T) {
+<span id="L106" class="ln">   106  </span>			t.Parallel()
+<span id="L107" class="ln">   107  </span>
+<span id="L108" class="ln">   108  </span>			discount, err := domaincoupon.NewDiscount(domaincoupon.DiscountKindFlat, decimal.FromInt(500))
+<span id="L109" class="ln">   109  </span>			require.NoError(t, err)
+<span id="L110" class="ln">   110  </span>			scope, err := domaincoupon.NewScope(domaincoupon.ScopeKindAll, nil)
+<span id="L111" class="ln">   111  </span>			require.NoError(t, err)
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L114" class="ln">   114  </span>				want := newCoupon(t, discount, scope)
+<span id="L115" class="ln">   115  </span>
+<span id="L116" class="ln">   116  </span>				require.NoError(t, repo.Create(ctx, want))
 <span id="L117" class="ln">   117  </span>
-<span id="L118" class="ln">   118  </span>				require.NoError(t, err)
-<span id="L119" class="ln">   119  </span>				assert.Empty(t, got)
-<span id="L120" class="ln">   120  </span>			})
-<span id="L121" class="ln">   121  </span>		})
-<span id="L122" class="ln">   122  </span>	})
-<span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L125" class="ln">   125  </span>		t.Parallel()
-<span id="L126" class="ln">   126  </span>
-<span id="L127" class="ln">   127  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
-<span id="L128" class="ln">   128  </span>			t.Parallel()
-<span id="L129" class="ln">   129  </span>
-<span id="L130" class="ln">   130  </span>			ctx, cancel := context.WithCancel(t.Context())
-<span id="L131" class="ln">   131  </span>			cancel()
-<span id="L132" class="ln">   132  </span>
-<span id="L133" class="ln">   133  </span>			got, err := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
-<span id="L134" class="ln">   134  </span>
-<span id="L135" class="ln">   135  </span>			assert.Nil(t, got)
-<span id="L136" class="ln">   136  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L137" class="ln">   137  </span>		})
-<span id="L138" class="ln">   138  </span>
-<span id="L139" class="ln">   139  </span>		t.Run(&#34;ドメインが知らない値引き種別コードは再構築エラーを返す&#34;, func(t *testing.T) {
-<span id="L140" class="ln">   140  </span>			t.Parallel()
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L143" class="ln">   143  </span>				drv := driver.New(ctx, testDB)
-<span id="L144" class="ln">   144  </span>				_, err := drv.Exec(ctx, &#34;UPDATE coupons SET discount_kind = 99 WHERE id = $1&#34;, seedBobFlatAll)
-<span id="L145" class="ln">   145  </span>				require.NoError(t, err)
-<span id="L146" class="ln">   146  </span>
-<span id="L147" class="ln">   147  </span>				got, ferr := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
-<span id="L148" class="ln">   148  </span>
-<span id="L149" class="ln">   149  </span>				assert.Nil(t, got)
-<span id="L150" class="ln">   150  </span>				require.ErrorIs(t, ferr, apperror.ErrInternal)
+<span id="L118" class="ln">   118  </span>				got := findIssued(ctx, t, want.ID())
+<span id="L119" class="ln">   119  </span>				assert.Equal(t, domaincoupon.DiscountKindFlat, got.Discount().Kind())
+<span id="L120" class="ln">   120  </span>				assert.True(t, want.Discount().Value().Equal(got.Discount().Value()))
+<span id="L121" class="ln">   121  </span>				assert.Equal(t, domaincoupon.ScopeKindAll, got.Scope().Kind())
+<span id="L122" class="ln">   122  </span>				assert.Nil(t, got.Scope().TargetID())
+<span id="L123" class="ln">   123  </span>				assert.Nil(t, got.UsedAt())
+<span id="L124" class="ln">   124  </span>				assert.WithinDuration(t, want.ExpiresAt(), got.ExpiresAt(), time.Millisecond)
+<span id="L125" class="ln">   125  </span>				assert.WithinDuration(t, want.IssuedAt(), got.IssuedAt(), time.Millisecond)
+<span id="L126" class="ln">   126  </span>			})
+<span id="L127" class="ln">   127  </span>		})
+<span id="L128" class="ln">   128  </span>
+<span id="L129" class="ln">   129  </span>		t.Run(&#34;定率かつ商品限定のクーポンは適用範囲の対象も往復する&#34;, func(t *testing.T) {
+<span id="L130" class="ln">   130  </span>			t.Parallel()
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span>			value, err := decimal.Parse(&#34;0.15&#34;)
+<span id="L133" class="ln">   133  </span>			require.NoError(t, err)
+<span id="L134" class="ln">   134  </span>			discount, err := domaincoupon.NewDiscount(domaincoupon.DiscountKindRate, value)
+<span id="L135" class="ln">   135  </span>			require.NoError(t, err)
+<span id="L136" class="ln">   136  </span>			targetID := mustParse(t, seedCategoryID)
+<span id="L137" class="ln">   137  </span>			scope, err := domaincoupon.NewScope(domaincoupon.ScopeKindProduct, &amp;targetID)
+<span id="L138" class="ln">   138  </span>			require.NoError(t, err)
+<span id="L139" class="ln">   139  </span>
+<span id="L140" class="ln">   140  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L141" class="ln">   141  </span>				want := newCoupon(t, discount, scope)
+<span id="L142" class="ln">   142  </span>
+<span id="L143" class="ln">   143  </span>				require.NoError(t, repo.Create(ctx, want))
+<span id="L144" class="ln">   144  </span>
+<span id="L145" class="ln">   145  </span>				got := findIssued(ctx, t, want.ID())
+<span id="L146" class="ln">   146  </span>				assert.Equal(t, domaincoupon.DiscountKindRate, got.Discount().Kind())
+<span id="L147" class="ln">   147  </span>				assert.True(t, want.Discount().Value().Equal(got.Discount().Value()))
+<span id="L148" class="ln">   148  </span>				assert.Equal(t, domaincoupon.ScopeKindProduct, got.Scope().Kind())
+<span id="L149" class="ln">   149  </span>				require.NotNil(t, got.Scope().TargetID())
+<span id="L150" class="ln">   150  </span>				assert.Equal(t, targetID, *got.Scope().TargetID())
 <span id="L151" class="ln">   151  </span>			})
 <span id="L152" class="ln">   152  </span>		})
 <span id="L153" class="ln">   153  </span>	})
-<span id="L154" class="ln">   154  </span>}
-<span id="L155" class="ln">   155  </span>
-<span id="L156" class="ln">   156  </span>func Test_repository_LockByID(t *testing.T) {
-<span id="L157" class="ln">   157  </span>	t.Parallel()
-<span id="L158" class="ln">   158  </span>
-<span id="L159" class="ln">   159  </span>	testDB := testkit.NewTestDB(t)
-<span id="L160" class="ln">   160  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L161" class="ln">   161  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
-<span id="L162" class="ln">   162  </span>
-<span id="L163" class="ln">   163  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L164" class="ln">   164  </span>		t.Parallel()
+<span id="L154" class="ln">   154  </span>
+<span id="L155" class="ln">   155  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L156" class="ln">   156  </span>		t.Parallel()
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>		t.Run(&#34;在籍しない受給者の外部キー違反はErrInvalidArgumentへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L159" class="ln">   159  </span>			t.Parallel()
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span>			discount, err := domaincoupon.NewDiscount(domaincoupon.DiscountKindFlat, decimal.FromInt(500))
+<span id="L162" class="ln">   162  </span>			require.NoError(t, err)
+<span id="L163" class="ln">   163  </span>			scope, err := domaincoupon.NewScope(domaincoupon.ScopeKindAll, nil)
+<span id="L164" class="ln">   164  </span>			require.NoError(t, err)
 <span id="L165" class="ln">   165  </span>
-<span id="L166" class="ln">   166  </span>		t.Run(&#34;IDで1枚取得する&#34;, func(t *testing.T) {
-<span id="L167" class="ln">   167  </span>			t.Parallel()
-<span id="L168" class="ln">   168  </span>
-<span id="L169" class="ln">   169  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L170" class="ln">   170  </span>				got, err := repo.LockByID(ctx, mustParse(t, seedBobRateAll))
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>				require.NoError(t, err)
-<span id="L173" class="ln">   173  </span>				require.NotNil(t, got)
-<span id="L174" class="ln">   174  </span>				assert.Equal(t, mustParse(t, seedBobRateAll), got.ID())
-<span id="L175" class="ln">   175  </span>				assert.Equal(t, domaincoupon.DiscountKindRate, got.Discount().Kind())
-<span id="L176" class="ln">   176  </span>			})
-<span id="L177" class="ln">   177  </span>		})
-<span id="L178" class="ln">   178  </span>
-<span id="L179" class="ln">   179  </span>		t.Run(&#34;使用済みのクーポンも取得できる&#34;, func(t *testing.T) {
-<span id="L180" class="ln">   180  </span>			t.Parallel()
-<span id="L181" class="ln">   181  </span>
-<span id="L182" class="ln">   182  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L183" class="ln">   183  </span>				drv := driver.New(ctx, testDB)
-<span id="L184" class="ln">   184  </span>				_, err := drv.Exec(ctx, &#34;UPDATE coupons SET used_at = NOW() WHERE id = $1&#34;, seedBobRateAll)
-<span id="L185" class="ln">   185  </span>				require.NoError(t, err)
-<span id="L186" class="ln">   186  </span>
-<span id="L187" class="ln">   187  </span>				got, lerr := repo.LockByID(ctx, mustParse(t, seedBobRateAll))
+<span id="L166" class="ln">   166  </span>			issuedAt := time.Now().UTC()
+<span id="L167" class="ln">   167  </span>			c, err := domaincoupon.New(newID(t), domaincoupon.Attributes{
+<span id="L168" class="ln">   168  </span>				UserID:    newID(t),
+<span id="L169" class="ln">   169  </span>				Discount:  discount,
+<span id="L170" class="ln">   170  </span>				Scope:     scope,
+<span id="L171" class="ln">   171  </span>				ExpiresAt: issuedAt.Add(24 * time.Hour),
+<span id="L172" class="ln">   172  </span>				IssuedAt:  issuedAt,
+<span id="L173" class="ln">   173  </span>			})
+<span id="L174" class="ln">   174  </span>			require.NoError(t, err)
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L177" class="ln">   177  </span>				require.ErrorIs(t, repo.Create(ctx, c), apperror.ErrInvalidArgument)
+<span id="L178" class="ln">   178  </span>			})
+<span id="L179" class="ln">   179  </span>		})
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L182" class="ln">   182  </span>			t.Parallel()
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>			discount, err := domaincoupon.NewDiscount(domaincoupon.DiscountKindFlat, decimal.FromInt(500))
+<span id="L185" class="ln">   185  </span>			require.NoError(t, err)
+<span id="L186" class="ln">   186  </span>			scope, err := domaincoupon.NewScope(domaincoupon.ScopeKindAll, nil)
+<span id="L187" class="ln">   187  </span>			require.NoError(t, err)
 <span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span>				require.NoError(t, lerr)
-<span id="L190" class="ln">   190  </span>				require.NotNil(t, got)
-<span id="L191" class="ln">   191  </span>				assert.True(t, got.IsUsed())
-<span id="L192" class="ln">   192  </span>			})
+<span id="L189" class="ln">   189  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L190" class="ln">   190  </span>			cancel()
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>			require.ErrorIs(t, repo.Create(ctx, newCoupon(t, discount, scope)), apperror.ErrCanceled)
 <span id="L193" class="ln">   193  </span>		})
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>		t.Run(&#34;受給者で絞らないため他人のクーポンも取得できる&#34;, func(t *testing.T) {
-<span id="L196" class="ln">   196  </span>			t.Parallel()
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L199" class="ln">   199  </span>				got, err := repo.LockByID(ctx, mustParse(t, seedBobRateAll))
-<span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>				require.NoError(t, err)
-<span id="L202" class="ln">   202  </span>				require.NotNil(t, got)
-<span id="L203" class="ln">   203  </span>				assert.False(t, got.IsHeldBy(mustParse(t, seedAliceUserID)))
-<span id="L204" class="ln">   204  </span>			})
-<span id="L205" class="ln">   205  </span>		})
-<span id="L206" class="ln">   206  </span>	})
-<span id="L207" class="ln">   207  </span>
-<span id="L208" class="ln">   208  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L209" class="ln">   209  </span>		t.Parallel()
-<span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>		t.Run(&#34;存在しないIDはNotFoundを返す&#34;, func(t *testing.T) {
-<span id="L212" class="ln">   212  </span>			t.Parallel()
-<span id="L213" class="ln">   213  </span>
-<span id="L214" class="ln">   214  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L215" class="ln">   215  </span>				got, err := repo.LockByID(ctx, mustParse(t, &#34;22222222-2222-4222-8222-222222222222&#34;))
-<span id="L216" class="ln">   216  </span>
-<span id="L217" class="ln">   217  </span>				assert.Nil(t, got)
-<span id="L218" class="ln">   218  </span>				require.ErrorIs(t, err, apperror.ErrNotFound)
-<span id="L219" class="ln">   219  </span>			})
-<span id="L220" class="ln">   220  </span>		})
-<span id="L221" class="ln">   221  </span>
-<span id="L222" class="ln">   222  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
-<span id="L223" class="ln">   223  </span>			t.Parallel()
-<span id="L224" class="ln">   224  </span>
-<span id="L225" class="ln">   225  </span>			ctx, cancel := context.WithCancel(t.Context())
-<span id="L226" class="ln">   226  </span>			cancel()
+<span id="L194" class="ln">   194  </span>	})
+<span id="L195" class="ln">   195  </span>}
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>func Test_repository_FindByUserID(t *testing.T) {
+<span id="L198" class="ln">   198  </span>	t.Parallel()
+<span id="L199" class="ln">   199  </span>
+<span id="L200" class="ln">   200  </span>	testDB := testkit.NewTestDB(t)
+<span id="L201" class="ln">   201  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L202" class="ln">   202  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L205" class="ln">   205  </span>		t.Parallel()
+<span id="L206" class="ln">   206  </span>
+<span id="L207" class="ln">   207  </span>		t.Run(&#34;保有するクーポンを発行日時の降順で返す&#34;, func(t *testing.T) {
+<span id="L208" class="ln">   208  </span>			t.Parallel()
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L211" class="ln">   211  </span>				got, err := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>				require.NoError(t, err)
+<span id="L214" class="ln">   214  </span>				require.Len(t, got, 2)
+<span id="L215" class="ln">   215  </span>				for _, c := range got {
+<span id="L216" class="ln">   216  </span>					assert.Equal(t, mustParse(t, seedBobUserID), c.UserID())
+<span id="L217" class="ln">   217  </span>				}
+<span id="L218" class="ln">   218  </span>			})
+<span id="L219" class="ln">   219  </span>		})
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span>		t.Run(&#34;値引きと適用範囲を業務キーからドメインの値へ復元する&#34;, func(t *testing.T) {
+<span id="L222" class="ln">   222  </span>			t.Parallel()
+<span id="L223" class="ln">   223  </span>
+<span id="L224" class="ln">   224  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L225" class="ln">   225  </span>				got, err := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
+<span id="L226" class="ln">   226  </span>				require.NoError(t, err)
 <span id="L227" class="ln">   227  </span>
-<span id="L228" class="ln">   228  </span>			got, err := repo.LockByID(ctx, mustParse(t, seedBobRateAll))
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			assert.Nil(t, got)
-<span id="L231" class="ln">   231  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L232" class="ln">   232  </span>		})
-<span id="L233" class="ln">   233  </span>	})
-<span id="L234" class="ln">   234  </span>}
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>func Test_repository_UpdateUsed(t *testing.T) {
-<span id="L237" class="ln">   237  </span>	t.Parallel()
+<span id="L228" class="ln">   228  </span>				kinds := make(map[int]bool, len(got))
+<span id="L229" class="ln">   229  </span>				for _, c := range got {
+<span id="L230" class="ln">   230  </span>					kinds[c.Discount().Kind().Code()] = true
+<span id="L231" class="ln">   231  </span>					assert.Equal(t, domaincoupon.ScopeKindAll, c.Scope().Kind())
+<span id="L232" class="ln">   232  </span>					assert.Nil(t, c.Scope().TargetID())
+<span id="L233" class="ln">   233  </span>				}
+<span id="L234" class="ln">   234  </span>				assert.True(t, kinds[domaincoupon.DiscountKindFlat.Code()])
+<span id="L235" class="ln">   235  </span>				assert.True(t, kinds[domaincoupon.DiscountKindRate.Code()])
+<span id="L236" class="ln">   236  </span>			})
+<span id="L237" class="ln">   237  </span>		})
 <span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>	testDB := testkit.NewTestDB(t)
-<span id="L240" class="ln">   240  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L241" class="ln">   241  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>	usedAt := time.Date(2026, time.September, 6, 0, 0, 0, 0, time.UTC)
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L246" class="ln">   246  </span>		t.Parallel()
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>		t.Run(&#34;未使用のクーポンを使用済みにする&#34;, func(t *testing.T) {
-<span id="L249" class="ln">   249  </span>			t.Parallel()
-<span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L252" class="ln">   252  </span>				require.NoError(t, repo.UpdateUsed(ctx, mustParse(t, seedBobFlatAll), usedAt))
+<span id="L239" class="ln">   239  </span>		t.Run(&#34;使用済みのクーポンも母集団に含める&#34;, func(t *testing.T) {
+<span id="L240" class="ln">   240  </span>			t.Parallel()
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L243" class="ln">   243  </span>				drv := driver.New(ctx, testDB)
+<span id="L244" class="ln">   244  </span>				_, err := drv.Exec(ctx, &#34;UPDATE coupons SET used_at = NOW() WHERE id = $1&#34;, seedBobFlatAll)
+<span id="L245" class="ln">   245  </span>				require.NoError(t, err)
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>				got, ferr := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
+<span id="L248" class="ln">   248  </span>
+<span id="L249" class="ln">   249  </span>				require.NoError(t, ferr)
+<span id="L250" class="ln">   250  </span>				assert.Len(t, got, 2)
+<span id="L251" class="ln">   251  </span>			})
+<span id="L252" class="ln">   252  </span>		})
 <span id="L253" class="ln">   253  </span>
-<span id="L254" class="ln">   254  </span>				got, err := repo.LockByID(ctx, mustParse(t, seedBobFlatAll))
-<span id="L255" class="ln">   255  </span>				require.NoError(t, err)
-<span id="L256" class="ln">   256  </span>				require.NotNil(t, got.UsedAt())
-<span id="L257" class="ln">   257  </span>				assert.True(t, usedAt.Equal(*got.UsedAt()))
-<span id="L258" class="ln">   258  </span>			})
-<span id="L259" class="ln">   259  </span>		})
-<span id="L260" class="ln">   260  </span>	})
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L263" class="ln">   263  </span>		t.Parallel()
-<span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>		t.Run(&#34;既に使用済みの場合、ErrUsedConcurrentlyを返す&#34;, func(t *testing.T) {
-<span id="L266" class="ln">   266  </span>			t.Parallel()
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L269" class="ln">   269  </span>				require.NoError(t, repo.UpdateUsed(ctx, mustParse(t, seedBobRateAll), usedAt))
-<span id="L270" class="ln">   270  </span>
-<span id="L271" class="ln">   271  </span>				err := repo.UpdateUsed(ctx, mustParse(t, seedBobRateAll), usedAt.Add(time.Hour))
-<span id="L272" class="ln">   272  </span>
-<span id="L273" class="ln">   273  </span>				require.ErrorIs(t, err, domaincoupon.ErrUsedConcurrently)
-<span id="L274" class="ln">   274  </span>				require.ErrorIs(t, err, apperror.ErrConflict)
-<span id="L275" class="ln">   275  </span>			})
-<span id="L276" class="ln">   276  </span>		})
-<span id="L277" class="ln">   277  </span>
-<span id="L278" class="ln">   278  </span>		t.Run(&#34;存在しないIDもErrUsedConcurrentlyを返す&#34;, func(t *testing.T) {
-<span id="L279" class="ln">   279  </span>			t.Parallel()
+<span id="L254" class="ln">   254  </span>		t.Run(&#34;1枚も保有しない利用者には空を返す&#34;, func(t *testing.T) {
+<span id="L255" class="ln">   255  </span>			t.Parallel()
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L258" class="ln">   258  </span>				got, err := repo.FindByUserID(ctx, mustParse(t, &#34;11111111-1111-4111-8111-111111111111&#34;))
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>				require.NoError(t, err)
+<span id="L261" class="ln">   261  </span>				assert.Empty(t, got)
+<span id="L262" class="ln">   262  </span>			})
+<span id="L263" class="ln">   263  </span>		})
+<span id="L264" class="ln">   264  </span>	})
+<span id="L265" class="ln">   265  </span>
+<span id="L266" class="ln">   266  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L267" class="ln">   267  </span>		t.Parallel()
+<span id="L268" class="ln">   268  </span>
+<span id="L269" class="ln">   269  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L270" class="ln">   270  </span>			t.Parallel()
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L273" class="ln">   273  </span>			cancel()
+<span id="L274" class="ln">   274  </span>
+<span id="L275" class="ln">   275  </span>			got, err := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
+<span id="L276" class="ln">   276  </span>
+<span id="L277" class="ln">   277  </span>			assert.Nil(t, got)
+<span id="L278" class="ln">   278  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L279" class="ln">   279  </span>		})
 <span id="L280" class="ln">   280  </span>
-<span id="L281" class="ln">   281  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L282" class="ln">   282  </span>				err := repo.UpdateUsed(ctx, mustParse(t, &#34;33333333-3333-4333-8333-333333333333&#34;), usedAt)
+<span id="L281" class="ln">   281  </span>		t.Run(&#34;ドメインが知らない値引き種別コードは再構築エラーを返す&#34;, func(t *testing.T) {
+<span id="L282" class="ln">   282  </span>			t.Parallel()
 <span id="L283" class="ln">   283  </span>
-<span id="L284" class="ln">   284  </span>				require.ErrorIs(t, err, domaincoupon.ErrUsedConcurrently)
-<span id="L285" class="ln">   285  </span>			})
-<span id="L286" class="ln">   286  </span>		})
-<span id="L287" class="ln">   287  </span>
-<span id="L288" class="ln">   288  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
-<span id="L289" class="ln">   289  </span>			t.Parallel()
+<span id="L284" class="ln">   284  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L285" class="ln">   285  </span>				drv := driver.New(ctx, testDB)
+<span id="L286" class="ln">   286  </span>				_, err := drv.Exec(ctx, &#34;UPDATE coupons SET discount_kind = 99 WHERE id = $1&#34;, seedBobFlatAll)
+<span id="L287" class="ln">   287  </span>				require.NoError(t, err)
+<span id="L288" class="ln">   288  </span>
+<span id="L289" class="ln">   289  </span>				got, ferr := repo.FindByUserID(ctx, mustParse(t, seedBobUserID))
 <span id="L290" class="ln">   290  </span>
-<span id="L291" class="ln">   291  </span>			ctx, cancel := context.WithCancel(t.Context())
-<span id="L292" class="ln">   292  </span>			cancel()
-<span id="L293" class="ln">   293  </span>
-<span id="L294" class="ln">   294  </span>			err := repo.UpdateUsed(ctx, mustParse(t, seedBobFlatAll), usedAt)
-<span id="L295" class="ln">   295  </span>
-<span id="L296" class="ln">   296  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L297" class="ln">   297  </span>		})
-<span id="L298" class="ln">   298  </span>	})
-<span id="L299" class="ln">   299  </span>}
+<span id="L291" class="ln">   291  </span>				assert.Nil(t, got)
+<span id="L292" class="ln">   292  </span>				require.ErrorIs(t, ferr, apperror.ErrInternal)
+<span id="L293" class="ln">   293  </span>			})
+<span id="L294" class="ln">   294  </span>		})
+<span id="L295" class="ln">   295  </span>	})
+<span id="L296" class="ln">   296  </span>}
+<span id="L297" class="ln">   297  </span>
+<span id="L298" class="ln">   298  </span>func Test_repository_LockByID(t *testing.T) {
+<span id="L299" class="ln">   299  </span>	t.Parallel()
 <span id="L300" class="ln">   300  </span>
-<span id="L301" class="ln">   301  </span>func Test_rowToCoupon(t *testing.T) {
-<span id="L302" class="ln">   302  </span>	t.Parallel()
-<span id="L303" class="ln">   303  </span>
-<span id="L304" class="ln">   304  </span>	testDB := testkit.NewTestDB(t)
-<span id="L305" class="ln">   305  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L306" class="ln">   306  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L301" class="ln">   301  </span>	testDB := testkit.NewTestDB(t)
+<span id="L302" class="ln">   302  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L303" class="ln">   303  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L306" class="ln">   306  </span>		t.Parallel()
 <span id="L307" class="ln">   307  </span>
-<span id="L308" class="ln">   308  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L309" class="ln">   309  </span>		t.Parallel()
+<span id="L308" class="ln">   308  </span>		t.Run(&#34;IDで1枚取得する&#34;, func(t *testing.T) {
+<span id="L309" class="ln">   309  </span>			t.Parallel()
 <span id="L310" class="ln">   310  </span>
-<span id="L311" class="ln">   311  </span>		t.Run(&#34;ドメインが知らない適用範囲種別コードは再構築エラーを返す&#34;, func(t *testing.T) {
-<span id="L312" class="ln">   312  </span>			t.Parallel()
+<span id="L311" class="ln">   311  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L312" class="ln">   312  </span>				got, err := repo.LockByID(ctx, mustParse(t, seedBobRateAll))
 <span id="L313" class="ln">   313  </span>
-<span id="L314" class="ln">   314  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L315" class="ln">   315  </span>				drv := driver.New(ctx, testDB)
-<span id="L316" class="ln">   316  </span>				_, err := drv.Exec(ctx, &#34;UPDATE coupons SET scope_kind = 99 WHERE id = $1&#34;, seedBobFlatAll)
-<span id="L317" class="ln">   317  </span>				require.NoError(t, err)
-<span id="L318" class="ln">   318  </span>
-<span id="L319" class="ln">   319  </span>				got, lerr := repo.LockByID(ctx, mustParse(t, seedBobFlatAll))
+<span id="L314" class="ln">   314  </span>				require.NoError(t, err)
+<span id="L315" class="ln">   315  </span>				require.NotNil(t, got)
+<span id="L316" class="ln">   316  </span>				assert.Equal(t, mustParse(t, seedBobRateAll), got.ID())
+<span id="L317" class="ln">   317  </span>				assert.Equal(t, domaincoupon.DiscountKindRate, got.Discount().Kind())
+<span id="L318" class="ln">   318  </span>			})
+<span id="L319" class="ln">   319  </span>		})
 <span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>				assert.Nil(t, got)
-<span id="L322" class="ln">   322  </span>				require.ErrorIs(t, lerr, apperror.ErrInternal)
-<span id="L323" class="ln">   323  </span>			})
-<span id="L324" class="ln">   324  </span>		})
-<span id="L325" class="ln">   325  </span>
-<span id="L326" class="ln">   326  </span>		t.Run(&#34;全体の適用範囲に対象IDが入っている場合は再構築エラーを返す&#34;, func(t *testing.T) {
-<span id="L327" class="ln">   327  </span>			t.Parallel()
+<span id="L321" class="ln">   321  </span>		t.Run(&#34;使用済みのクーポンも取得できる&#34;, func(t *testing.T) {
+<span id="L322" class="ln">   322  </span>			t.Parallel()
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L325" class="ln">   325  </span>				drv := driver.New(ctx, testDB)
+<span id="L326" class="ln">   326  </span>				_, err := drv.Exec(ctx, &#34;UPDATE coupons SET used_at = NOW() WHERE id = $1&#34;, seedBobRateAll)
+<span id="L327" class="ln">   327  </span>				require.NoError(t, err)
 <span id="L328" class="ln">   328  </span>
-<span id="L329" class="ln">   329  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L330" class="ln">   330  </span>				drv := driver.New(ctx, testDB)
-<span id="L331" class="ln">   331  </span>				_, err := drv.Exec(ctx,
-<span id="L332" class="ln">   332  </span>					&#34;UPDATE coupons SET scope_target_id = $1 WHERE id = $2&#34;, seedCategoryID, seedBobFlatAll)
-<span id="L333" class="ln">   333  </span>				require.NoError(t, err)
-<span id="L334" class="ln">   334  </span>
-<span id="L335" class="ln">   335  </span>				got, lerr := repo.LockByID(ctx, mustParse(t, seedBobFlatAll))
+<span id="L329" class="ln">   329  </span>				got, lerr := repo.LockByID(ctx, mustParse(t, seedBobRateAll))
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>				require.NoError(t, lerr)
+<span id="L332" class="ln">   332  </span>				require.NotNil(t, got)
+<span id="L333" class="ln">   333  </span>				assert.True(t, got.IsUsed())
+<span id="L334" class="ln">   334  </span>			})
+<span id="L335" class="ln">   335  </span>		})
 <span id="L336" class="ln">   336  </span>
-<span id="L337" class="ln">   337  </span>				assert.Nil(t, got)
-<span id="L338" class="ln">   338  </span>				require.ErrorIs(t, lerr, apperror.ErrInternal)
-<span id="L339" class="ln">   339  </span>			})
-<span id="L340" class="ln">   340  </span>		})
-<span id="L341" class="ln">   341  </span>	})
-<span id="L342" class="ln">   342  </span>}
-<span id="L343" class="ln">   343  </span>
+<span id="L337" class="ln">   337  </span>		t.Run(&#34;受給者で絞らないため他人のクーポンも取得できる&#34;, func(t *testing.T) {
+<span id="L338" class="ln">   338  </span>			t.Parallel()
+<span id="L339" class="ln">   339  </span>
+<span id="L340" class="ln">   340  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L341" class="ln">   341  </span>				got, err := repo.LockByID(ctx, mustParse(t, seedBobRateAll))
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span>				require.NoError(t, err)
+<span id="L344" class="ln">   344  </span>				require.NotNil(t, got)
+<span id="L345" class="ln">   345  </span>				assert.False(t, got.IsHeldBy(mustParse(t, seedAliceUserID)))
+<span id="L346" class="ln">   346  </span>			})
+<span id="L347" class="ln">   347  </span>		})
+<span id="L348" class="ln">   348  </span>	})
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L351" class="ln">   351  </span>		t.Parallel()
+<span id="L352" class="ln">   352  </span>
+<span id="L353" class="ln">   353  </span>		t.Run(&#34;存在しないIDはNotFoundを返す&#34;, func(t *testing.T) {
+<span id="L354" class="ln">   354  </span>			t.Parallel()
+<span id="L355" class="ln">   355  </span>
+<span id="L356" class="ln">   356  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L357" class="ln">   357  </span>				got, err := repo.LockByID(ctx, mustParse(t, &#34;22222222-2222-4222-8222-222222222222&#34;))
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>				assert.Nil(t, got)
+<span id="L360" class="ln">   360  </span>				require.ErrorIs(t, err, apperror.ErrNotFound)
+<span id="L361" class="ln">   361  </span>			})
+<span id="L362" class="ln">   362  </span>		})
+<span id="L363" class="ln">   363  </span>
+<span id="L364" class="ln">   364  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L365" class="ln">   365  </span>			t.Parallel()
+<span id="L366" class="ln">   366  </span>
+<span id="L367" class="ln">   367  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L368" class="ln">   368  </span>			cancel()
+<span id="L369" class="ln">   369  </span>
+<span id="L370" class="ln">   370  </span>			got, err := repo.LockByID(ctx, mustParse(t, seedBobRateAll))
+<span id="L371" class="ln">   371  </span>
+<span id="L372" class="ln">   372  </span>			assert.Nil(t, got)
+<span id="L373" class="ln">   373  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L374" class="ln">   374  </span>		})
+<span id="L375" class="ln">   375  </span>	})
+<span id="L376" class="ln">   376  </span>}
+<span id="L377" class="ln">   377  </span>
+<span id="L378" class="ln">   378  </span>func Test_repository_UpdateUsed(t *testing.T) {
+<span id="L379" class="ln">   379  </span>	t.Parallel()
+<span id="L380" class="ln">   380  </span>
+<span id="L381" class="ln">   381  </span>	testDB := testkit.NewTestDB(t)
+<span id="L382" class="ln">   382  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L383" class="ln">   383  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L384" class="ln">   384  </span>
+<span id="L385" class="ln">   385  </span>	usedAt := time.Date(2026, time.September, 6, 0, 0, 0, 0, time.UTC)
+<span id="L386" class="ln">   386  </span>
+<span id="L387" class="ln">   387  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L388" class="ln">   388  </span>		t.Parallel()
+<span id="L389" class="ln">   389  </span>
+<span id="L390" class="ln">   390  </span>		t.Run(&#34;未使用のクーポンを使用済みにする&#34;, func(t *testing.T) {
+<span id="L391" class="ln">   391  </span>			t.Parallel()
+<span id="L392" class="ln">   392  </span>
+<span id="L393" class="ln">   393  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L394" class="ln">   394  </span>				require.NoError(t, repo.UpdateUsed(ctx, mustParse(t, seedBobFlatAll), usedAt))
+<span id="L395" class="ln">   395  </span>
+<span id="L396" class="ln">   396  </span>				got, err := repo.LockByID(ctx, mustParse(t, seedBobFlatAll))
+<span id="L397" class="ln">   397  </span>				require.NoError(t, err)
+<span id="L398" class="ln">   398  </span>				require.NotNil(t, got.UsedAt())
+<span id="L399" class="ln">   399  </span>				assert.True(t, usedAt.Equal(*got.UsedAt()))
+<span id="L400" class="ln">   400  </span>			})
+<span id="L401" class="ln">   401  </span>		})
+<span id="L402" class="ln">   402  </span>	})
+<span id="L403" class="ln">   403  </span>
+<span id="L404" class="ln">   404  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L405" class="ln">   405  </span>		t.Parallel()
+<span id="L406" class="ln">   406  </span>
+<span id="L407" class="ln">   407  </span>		t.Run(&#34;既に使用済みの場合、ErrUsedConcurrentlyを返す&#34;, func(t *testing.T) {
+<span id="L408" class="ln">   408  </span>			t.Parallel()
+<span id="L409" class="ln">   409  </span>
+<span id="L410" class="ln">   410  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L411" class="ln">   411  </span>				require.NoError(t, repo.UpdateUsed(ctx, mustParse(t, seedBobRateAll), usedAt))
+<span id="L412" class="ln">   412  </span>
+<span id="L413" class="ln">   413  </span>				err := repo.UpdateUsed(ctx, mustParse(t, seedBobRateAll), usedAt.Add(time.Hour))
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>				require.ErrorIs(t, err, domaincoupon.ErrUsedConcurrently)
+<span id="L416" class="ln">   416  </span>				require.ErrorIs(t, err, apperror.ErrConflict)
+<span id="L417" class="ln">   417  </span>			})
+<span id="L418" class="ln">   418  </span>		})
+<span id="L419" class="ln">   419  </span>
+<span id="L420" class="ln">   420  </span>		t.Run(&#34;存在しないIDもErrUsedConcurrentlyを返す&#34;, func(t *testing.T) {
+<span id="L421" class="ln">   421  </span>			t.Parallel()
+<span id="L422" class="ln">   422  </span>
+<span id="L423" class="ln">   423  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L424" class="ln">   424  </span>				err := repo.UpdateUsed(ctx, mustParse(t, &#34;33333333-3333-4333-8333-333333333333&#34;), usedAt)
+<span id="L425" class="ln">   425  </span>
+<span id="L426" class="ln">   426  </span>				require.ErrorIs(t, err, domaincoupon.ErrUsedConcurrently)
+<span id="L427" class="ln">   427  </span>			})
+<span id="L428" class="ln">   428  </span>		})
+<span id="L429" class="ln">   429  </span>
+<span id="L430" class="ln">   430  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L431" class="ln">   431  </span>			t.Parallel()
+<span id="L432" class="ln">   432  </span>
+<span id="L433" class="ln">   433  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L434" class="ln">   434  </span>			cancel()
+<span id="L435" class="ln">   435  </span>
+<span id="L436" class="ln">   436  </span>			err := repo.UpdateUsed(ctx, mustParse(t, seedBobFlatAll), usedAt)
+<span id="L437" class="ln">   437  </span>
+<span id="L438" class="ln">   438  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L439" class="ln">   439  </span>		})
+<span id="L440" class="ln">   440  </span>	})
+<span id="L441" class="ln">   441  </span>}
+<span id="L442" class="ln">   442  </span>
+<span id="L443" class="ln">   443  </span>func Test_repository_UpdateUnused(t *testing.T) {
+<span id="L444" class="ln">   444  </span>	t.Parallel()
+<span id="L445" class="ln">   445  </span>
+<span id="L446" class="ln">   446  </span>	testDB := testkit.NewTestDB(t)
+<span id="L447" class="ln">   447  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L448" class="ln">   448  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L449" class="ln">   449  </span>
+<span id="L450" class="ln">   450  </span>	usedAt := time.Date(2026, time.September, 6, 0, 0, 0, 0, time.UTC)
+<span id="L451" class="ln">   451  </span>
+<span id="L452" class="ln">   452  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L453" class="ln">   453  </span>		t.Parallel()
+<span id="L454" class="ln">   454  </span>
+<span id="L455" class="ln">   455  </span>		t.Run(&#34;使用済みのクーポンを未使用へ戻す&#34;, func(t *testing.T) {
+<span id="L456" class="ln">   456  </span>			t.Parallel()
+<span id="L457" class="ln">   457  </span>
+<span id="L458" class="ln">   458  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L459" class="ln">   459  </span>				require.NoError(t, repo.UpdateUsed(ctx, mustParse(t, seedBobFlatAll), usedAt))
+<span id="L460" class="ln">   460  </span>
+<span id="L461" class="ln">   461  </span>				require.NoError(t, repo.UpdateUnused(ctx, mustParse(t, seedBobFlatAll)))
+<span id="L462" class="ln">   462  </span>
+<span id="L463" class="ln">   463  </span>				got, err := repo.LockByID(ctx, mustParse(t, seedBobFlatAll))
+<span id="L464" class="ln">   464  </span>				require.NoError(t, err)
+<span id="L465" class="ln">   465  </span>				assert.Nil(t, got.UsedAt())
+<span id="L466" class="ln">   466  </span>			})
+<span id="L467" class="ln">   467  </span>		})
+<span id="L468" class="ln">   468  </span>	})
+<span id="L469" class="ln">   469  </span>
+<span id="L470" class="ln">   470  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L471" class="ln">   471  </span>		t.Parallel()
+<span id="L472" class="ln">   472  </span>
+<span id="L473" class="ln">   473  </span>		t.Run(&#34;未使用の場合、ErrNotUsedを返す&#34;, func(t *testing.T) {
+<span id="L474" class="ln">   474  </span>			t.Parallel()
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L477" class="ln">   477  </span>				err := repo.UpdateUnused(ctx, mustParse(t, seedBobRateAll))
+<span id="L478" class="ln">   478  </span>
+<span id="L479" class="ln">   479  </span>				require.ErrorIs(t, err, domaincoupon.ErrNotUsed)
+<span id="L480" class="ln">   480  </span>				require.ErrorIs(t, err, apperror.ErrConflict)
+<span id="L481" class="ln">   481  </span>			})
+<span id="L482" class="ln">   482  </span>		})
+<span id="L483" class="ln">   483  </span>
+<span id="L484" class="ln">   484  </span>		t.Run(&#34;存在しないIDもErrNotUsedを返す&#34;, func(t *testing.T) {
+<span id="L485" class="ln">   485  </span>			t.Parallel()
+<span id="L486" class="ln">   486  </span>
+<span id="L487" class="ln">   487  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L488" class="ln">   488  </span>				err := repo.UpdateUnused(ctx, mustParse(t, &#34;44444444-4444-4444-8444-444444444444&#34;))
+<span id="L489" class="ln">   489  </span>
+<span id="L490" class="ln">   490  </span>				require.ErrorIs(t, err, domaincoupon.ErrNotUsed)
+<span id="L491" class="ln">   491  </span>			})
+<span id="L492" class="ln">   492  </span>		})
+<span id="L493" class="ln">   493  </span>
+<span id="L494" class="ln">   494  </span>		t.Run(&#34;キャンセル済みコンテキストではErrCanceledへ正規化して返す&#34;, func(t *testing.T) {
+<span id="L495" class="ln">   495  </span>			t.Parallel()
+<span id="L496" class="ln">   496  </span>
+<span id="L497" class="ln">   497  </span>			ctx, cancel := context.WithCancel(t.Context())
+<span id="L498" class="ln">   498  </span>			cancel()
+<span id="L499" class="ln">   499  </span>
+<span id="L500" class="ln">   500  </span>			err := repo.UpdateUnused(ctx, mustParse(t, seedBobFlatAll))
+<span id="L501" class="ln">   501  </span>
+<span id="L502" class="ln">   502  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L503" class="ln">   503  </span>		})
+<span id="L504" class="ln">   504  </span>	})
+<span id="L505" class="ln">   505  </span>}
+<span id="L506" class="ln">   506  </span>
+<span id="L507" class="ln">   507  </span>func Test_rowToCoupon(t *testing.T) {
+<span id="L508" class="ln">   508  </span>	t.Parallel()
+<span id="L509" class="ln">   509  </span>
+<span id="L510" class="ln">   510  </span>	testDB := testkit.NewTestDB(t)
+<span id="L511" class="ln">   511  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L512" class="ln">   512  </span>	repo := &amp;repository{db: testDB, tracer: observability.NewMockInfraLayerTracer(t)}
+<span id="L513" class="ln">   513  </span>
+<span id="L514" class="ln">   514  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L515" class="ln">   515  </span>		t.Parallel()
+<span id="L516" class="ln">   516  </span>
+<span id="L517" class="ln">   517  </span>		t.Run(&#34;ドメインが知らない適用範囲種別コードは再構築エラーを返す&#34;, func(t *testing.T) {
+<span id="L518" class="ln">   518  </span>			t.Parallel()
+<span id="L519" class="ln">   519  </span>
+<span id="L520" class="ln">   520  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L521" class="ln">   521  </span>				drv := driver.New(ctx, testDB)
+<span id="L522" class="ln">   522  </span>				_, err := drv.Exec(ctx, &#34;UPDATE coupons SET scope_kind = 99 WHERE id = $1&#34;, seedBobFlatAll)
+<span id="L523" class="ln">   523  </span>				require.NoError(t, err)
+<span id="L524" class="ln">   524  </span>
+<span id="L525" class="ln">   525  </span>				got, lerr := repo.LockByID(ctx, mustParse(t, seedBobFlatAll))
+<span id="L526" class="ln">   526  </span>
+<span id="L527" class="ln">   527  </span>				assert.Nil(t, got)
+<span id="L528" class="ln">   528  </span>				require.ErrorIs(t, lerr, apperror.ErrInternal)
+<span id="L529" class="ln">   529  </span>			})
+<span id="L530" class="ln">   530  </span>		})
+<span id="L531" class="ln">   531  </span>
+<span id="L532" class="ln">   532  </span>		t.Run(&#34;全体の適用範囲に対象IDが入っている場合は再構築エラーを返す&#34;, func(t *testing.T) {
+<span id="L533" class="ln">   533  </span>			t.Parallel()
+<span id="L534" class="ln">   534  </span>
+<span id="L535" class="ln">   535  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L536" class="ln">   536  </span>				drv := driver.New(ctx, testDB)
+<span id="L537" class="ln">   537  </span>				_, err := drv.Exec(ctx,
+<span id="L538" class="ln">   538  </span>					&#34;UPDATE coupons SET scope_target_id = $1 WHERE id = $2&#34;, seedCategoryID, seedBobFlatAll)
+<span id="L539" class="ln">   539  </span>				require.NoError(t, err)
+<span id="L540" class="ln">   540  </span>
+<span id="L541" class="ln">   541  </span>				got, lerr := repo.LockByID(ctx, mustParse(t, seedBobFlatAll))
+<span id="L542" class="ln">   542  </span>
+<span id="L543" class="ln">   543  </span>				assert.Nil(t, got)
+<span id="L544" class="ln">   544  </span>				require.ErrorIs(t, lerr, apperror.ErrInternal)
+<span id="L545" class="ln">   545  </span>			})
+<span id="L546" class="ln">   546  </span>		})
+<span id="L547" class="ln">   547  </span>	})
+<span id="L548" class="ln">   548  </span>}
+<span id="L549" class="ln">   549  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/repository/coupon/coupon_repository_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

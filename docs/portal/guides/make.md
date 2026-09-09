@@ -15,6 +15,7 @@ Make targets are mainly organized into the following units.
 - `.makefiles/openapi` : OpenAPI bundle / API documentation generation
 - `.makefiles/go` : Go code generation / Format / Lint / Test / Tool management
 - `.makefiles/python` : PyPI tool lockfile generation
+- `.makefiles/agents` : Closed Loop development feedback / agent-facing quiet-run logs
 - `.makefiles/graphify` : Knowledge-graph export / tracked-artifact portability check
 - `.makefiles/docs` : Portal / Tool information documentation generation
 - `.makefiles/gen` : Batch execution of various generation processes
@@ -26,10 +27,12 @@ Make targets are mainly organized into the following units.
 - Targets are split into two flavors:
   - **Normal targets**: invoked by developers locally; run inside Docker containers for reproducibility. A few resolve their tool on the host instead — `lint` / `fix` (`golangci-lint`), `actions-zizmor` (`zizmor`), `go-cooldown-gate` / `go-cooldown-audit`, `tool-cooldown-gate` / `tool-cooldown-audit`, `pnpm-cooldown-check` — because the tool-runners are Alpine and upstream publishes no musl build. That is the documented last resort in [Toolchain Execution Rules](../docs/rules.md#toolchain-execution-rules), not an exception to the convention: `make install-tools` provisions those tools, and the `mise.toml` pin carries the reproducibility the image otherwise would.
   - **`-ci` targets**: low-level commands intended to run on bare metal (CI runners, or developers who already have the tool installed).
+  - **`ai-` targets**: an `ai-%` pattern rule wrapping any of the above. `make ai-<target>` runs `<target>` with all output captured to `tmp/ai-logs/<target>.txt` and prints nothing on success, passing the exit code through and naming the log in one line when it fails. It exists because an AI agent reads a command's whole output into its context, and the harness excerpts a *failing* command without saving it — so the noise is paid for on every run and the diagnosis is the part that gets cut. The `ai-` goes in front for a reason: a `%-ai` suffix is ambiguous wherever the base target is itself a pattern rule (`new-migrate-add-ai` matches both `new-migrate-%` and `%-ai`), which rule wins depends on whether the competing rule's prerequisites are satisfiable, and the loser fails silently rather than erroring. Not for targets whose output is the deliverable (`help`, `load-status`, `base-branch`) or that never return (`serve`, `worker`, `outbox-relay`), and do not name a new target with an `ai-` prefix.
 - Every target should be `.PHONY` and self-documenting via a trailing `##` comment so `make help` can pick it up.
 
 ## Notes
 
+- `tmp/ai-logs/` is git-ignored and per-worktree; `make clean-ai-logs` empties it. Logs are kept on success too, so a generated-artifact run can be re-read without being re-run.
 - Adding a new target to an existing group file needs no top-level edit. Adding a new `.mk` file, however, requires appending its `include` line to the top-level `makefile` — files are included individually, not by wildcard.
 - Prefer `make new-migrate-<name>` (and similar helpers) over manual file creation; the helpers enforce naming conventions and number sequences.
 - For one-off operational commands (`make setup-repo`, etc.) keep them under `.makefiles/github/operation/` so they stay separate from developer-facing targets.
@@ -46,9 +49,10 @@ per-checkout **app** layer (`api_server` / `mock_auth_server`) runs in this chec
 
 | Command | Description | Main Use |
 | --- | --- | --- |
-| `make serve` | Brings up the shared infra (`infra-up`), then starts this checkout's app services in the background and refreshes the DB slot heartbeat. | Start normal local development |
-| `make serve-build` | Rebuilds the app images (cache enabled), brings up the shared infra, then starts the app services. | Reflect Dockerfile or dependency changes |
-| `make serve-build-clean` | Cleanly rebuilds the app images with `--no-cache --pull`, brings up the shared infra, then starts the app services. | Pick up base image updates (e.g., Go version upgrade) |
+| `make serve` | Brings up the shared infra (`infra-up`), then starts this checkout's app services through `app-up` and refreshes the DB slot heartbeat. | Start normal local development |
+| `make serve-build` | Rebuilds the app images (cache enabled), brings up the shared infra, then starts the app services through `app-up`. | Reflect Dockerfile or dependency changes |
+| `make serve-build-clean` | Cleanly rebuilds the app images with `--no-cache --pull`, brings up the shared infra, then starts the app services through `app-up`. | Pick up base image updates (e.g., Go version upgrade) |
+| `make app-up` | Starts this checkout's app services and waits for the `api_server` healthcheck (`up --wait`), so the caller's success message means the API can answer rather than that a container exists. On failure prints the last `APP_LOG_TAIL` (default `50`) lines of the `api_server` log and exits non-zero. | Internal — called by the three `serve` targets. Useful on its own to restart just the app after a startup failure, skipping the infra and provisioning steps |
 | `make serve-stop` | Stops this checkout's app project only. | Stop the API without touching the shared infra or other checkouts |
 | `make infra-up` | Starts the shared infra services (`--wait`) plus the one-shot `garage_init` in the `gobp-shared` project. | Bring up the shared infra alone (called idempotently by `serve` / `job` / `worker`). In a worktree it also passes `INFRA_NO_RECREATE`, keeping a running container another checkout may be using — a definition change then takes `infra-down` followed by `infra-up` |
 | `make infra-down` | Stops the shared infra project (named volumes are kept). | Shut the infra down — **affects every checkout / worktree** |
@@ -117,8 +121,11 @@ that step (and its undo for drift checks).
 
 | Command | Description | Main Use |
 | --- | --- | --- |
-| `make realtime-init` | Brings up the shared infra, then creates the Realtime Delivery tables (EventLog / StreamTicket / InstanceLease) in DynamoDB Local and the fan-out topic on GoAWS from inside the app container (`go run ./cmd/ realtime-init`). Idempotent — re-running converges on the same state. | Provisioning without starting the app. `make serve` runs the same one-shot itself (`realtime-provision`), so the ordinary path needs no separate call |
+| `make realtime-init` | Brings up the shared infra, then creates the Realtime Delivery tables (EventLog / StreamTicket / InstanceLease) in DynamoDB Local and the fan-out topic on GoAWS from inside the app container (`go run ./cmd/ realtime-init`). Idempotent — re-running converges on the same state. Requires a database owner, for the same reason `serve` does: a slot-less worktree would otherwise converge the main checkout's namespace. | Provisioning without starting the app. `make serve` runs the same one-shot itself (`realtime-provision`), so the ordinary path needs no separate call |
+| `make realtime-reset` | Brings up `dynamodb_local`, then runs `scripts/realtime-reset` from the host to delete this checkout's three tables and wait until each is gone. Creation stays with `realtime-provision`. Requires a database owner, and refuses a host-less `-endpoint` or an AWS host — the dummy signing credential is the second control, so the deny list is not the only guard. | Run by every path that rebuilds a local database — `slot-acquire`, `db-local-reinit`, `db-init-local` — so the sequence allocator and its EventLog are reset together; see [db-worktree-pool.md](../docs/maintenance/db-worktree-pool.md). Also useful by hand when a local stream is wedged behind a stale sequence |
 | `make realtime-smoke` | Brings up the shared infra, then runs `scripts/realtime-smoke` against DynamoDB Local and GoAWS with the AWS SDK Go v2 and prints one verdict per call (互換 / 非互換 / 未対応 / 検証不能). Resources are created under a per-run random name and deleted afterwards. `ARGS` passes flags through (`-format markdown` / `-subscribers N` / `-keep` / `-strict`). | Confirm the emulators still accept the calls Realtime Delivery makes — e.g. after bumping either image |
+| `make realtime-provision` | Creates only the Realtime Delivery resources, assuming the shared infra is already up. | Internal — `serve` calls it. Runs `go run ./cmd/ realtime-init` in the `api_server` container and discards its output. Requires a database owner. |
+| `make realtime-contract-test` | Runs the Realtime Delivery contract tests. | Runs `go test` on the host, against DynamoDB Local / GoAWS by default; `REALTIME_TEST_*` points them at real AWS instead. `ARGS` passes flags through. |
 
 ## `.makefiles/database` group
 
@@ -132,6 +139,10 @@ Provides migration, seed insertion, DML merge, schema generation, DB initializat
 | `make db-init` | Executes initialization for both the owned local and test databases. | Calls `db-init-local` and `db-init-test` sequentially. |
 | `make db-init-local` | Initializes the owned local database. | Executes `db-local-migrate-down` → `db-local-migrate-up` → `db-local-seed`. |
 | `make db-init-test` | Initializes the owned test database. | Executes `db-test-migrate-down` → `db-test-migrate-up` → `db-test-seed`. |
+| `make db-reinit` | Rebuilds the database named by `DB`: `db-drop-tables` → `db-migrate-up` → `db-seed`. | Does not go through `migrate-down`, so it recovers a database whose migration history no longer matches this branch. |
+| `make db-local-reinit` | Rebuilds the shared `local` database that way, then runs `realtime-reset`. | `DB=$(DB_LOCAL)`. |
+| `make db-test-reinit` | Rebuilds the shared `test` database that way. | `DB=$(DB_TEST)`. |
+| `make db-drop-tables` | Drops every table in `public`, keeping extensions. | Feeds `database/maintenance/drop-all-tables.sql` to `psql` with `ON_ERROR_STOP=1`. For maintenance where `migrate-down` cannot be used. Requires a database owner. |
 | `make require-db-owner` | Verifies that this checkout owns a database. | Prerequisite of every target that resolves a database name. Fails in a linked worktree that holds no DB slot, instead of falling back to the main checkout's `local` / `test` — see `docs/maintenance/db-worktree-pool.md`. The decision lives in `internal/cli/dbslot`: a missing `git` executable and a directory that is no repository both pass through, while a repository whose layout `git` will not report fails. |
 
 ### DB migration related
@@ -185,8 +196,9 @@ make db-migrate-up-10 DB=local
 | `make gen-db-schema-ci` | Executes SchemaSpy container directly to generate schema docs. | CI target |
 | `make dump-schema` | Executes schema dump. | Used as preprocessing for SQLC generation and DML merge. Rebuilds the owner's throwaway database (`gen_schema`, or `gen_schema_wt<N>` while a slot is held) from this branch's migrations and dumps that. |
 | `make dump-schema-ci` | Executes `cmd/main.go dump-schema` directly without Docker. | CI target |
-| `make fix-collation` | Fixes database collation. | None |
-| `make fix-collation-ci` | Executes collation fix directly without Docker. | CI target |
+| `make sql-fix-collation` | Fixes database collation. | None |
+| `make sql-fix-collation-ci` | Executes collation fix directly without Docker. | CI target |
+| `make db-ensure` | Creates the database named by `DB` if it does not exist, then initializes the `pg_trgm` extension. | Idempotent. Requires a database owner. |
 
 ### DML merge related
 
@@ -211,6 +223,20 @@ Example:
 make merge-dml-core type="repository" work-dir="/app"
 ```
 
+### DB slot pool (worktree) related
+
+A single shared Postgres serves every checkout, and a worktree leases a *slot* in it — its own
+`wt<N>_local` / `wt<N>_test` databases plus the host ports the app binds. Without a lease the targets
+fall back to `local` / `test` on the default ports, which is the single-checkout arrangement. The
+invariants live in [db-worktree-pool.md](../docs/maintenance/db-worktree-pool.md).
+
+| Command | Description | Notes |
+| --- | --- | --- |
+| `make slot-acquire` | Leases a DB slot and rebuilds the databases it hands out. | Runs `go run ./cmd/ db-slot acquire`, then `db-reinit` once per slot database. The two rebuilds are separate `make` invocations on purpose: they share the `db-reinit` prerequisite, so a single invocation would run it once and leave the second database untouched. |
+| `make slot-free` | Releases the held slot only, leaving the worktree in place. | The databases are kept, so re-acquiring is warm. |
+| `make slot-release` | Retires the worktree: stops the app and removes its local images, frees the slot, then removes the worktree, in that order. | Refuses to run in the main checkout — it compares `--git-dir` against `--git-common-dir` and exits non-zero when they match. |
+| `make slot-status` | Shows what the slot pool is currently holding. | Useful after a failed `slot-acquire`, where the lease often succeeded even though the rebuild did not. |
+
 ## `.makefiles/sql` group
 
 This group handles static analysis and auto-fix for SQL files.
@@ -224,6 +250,7 @@ Targets include Migration / DML / Seed SQL.
 | `make sql-lint-migrations` | Lints migration SQL. | None |
 | `make sql-lint-dml` | Lints DML SQL. | None |
 | `make sql-lint-seed` | Lints seed SQL. | None |
+| `make sql-lint-ci` | Runs every SQL category's lint in one container. | CI target. Depends on `sql-lint-migrations-ci` / `sql-lint-dml-ci` / `sql-lint-seed-ci`. |
 | `make sql-lint-migrations-ci` | Executes `sqlfluff lint` on `database/migrations/`. | CI target |
 | `make sql-lint-dml-ci` | Executes `sqlfluff lint` on `database/dml/`. | CI target |
 | `make sql-lint-seed-ci` | Executes `sqlfluff lint` on `database/seed/`. | CI target |
@@ -236,6 +263,7 @@ Targets include Migration / DML / Seed SQL.
 | `make sql-fix-migrations` | Auto-fixes migration SQL. | None |
 | `make sql-fix-dml` | Auto-fixes DML SQL. | None |
 | `make sql-fix-seed` | Auto-fixes seed SQL. | None |
+| `make sql-fix-ci` | Runs every SQL category's auto-fix in one container. | CI target. Depends on `sql-fix-migrations-ci` / `sql-fix-dml-ci` / `sql-fix-seed-ci`. |
 | `make sql-fix-migrations-ci` | Executes `sqlfluff fix` on `database/migrations/`. | CI target |
 | `make sql-fix-dml-ci` | Executes `sqlfluff fix` on `database/dml/`. | CI target |
 | `make sql-fix-seed-ci` | Executes `sqlfluff fix` on `database/seed/`. | CI target |
@@ -251,7 +279,10 @@ This group handles linting and auto-fixing of Markdown files.
 | `make md-mermaid-lint` | Validates only the ` ```mermaid ` fences. | Invokes `make md-mermaid-lint-ci` inside the `node_tool_runner` container. |
 | `make md-skill-lint` | Validates only the skill / agent definitions under `.claude/**` and their `.codex/**` counterparts. | Invokes `make md-skill-lint-ci` inside the `node_tool_runner` container. |
 | `make md-premise-lint` | Checks only that no document which outlives template instantiation rests on a premise that lapses with it. | Invokes `make md-premise-lint-ci` inside the `node_tool_runner` container.  <!-- boilerplate-only:line --> |
+| `make md-doc-ref-lint` | Checks that ADR references and translation pairs actually resolve. | Invokes `make md-doc-ref-lint-ci` inside the `node_tool_runner` container. |
+| `make md-doc-ref-fix` | Fills the canonical slug into ADR references. | Invokes `make md-doc-ref-fix-ci` inside the `node_tool_runner` container. |
 | `make md-lint-ci` | Runs `markdownlint-cli2`, then the mermaid syntax lint, then the skill-definition lint. | CI target. Excludes `vendor/`, `node_modules/`, `.git/`. |
+| `make md-markdownlint-ci` | Runs `markdownlint-cli2` over `MD_GLOBS` directly. | CI target |
 | `make md-mermaid-lint-ci` | Validates ` ```mermaid ` fences with `scripts/mermaid-lint/index.ts` (real `mermaid.parse`). | CI target. markdownlint never checks diagram grammar. |
 | `make md-skill-lint-ci` | Checks `.claude/**` definitions with `scripts/skill-lint/index.ts` (frontmatter / translation-pair structure / reference existence) and their `.codex/**` correspondence (skill / agent existence parity, Codex skill structure). | CI target. markdownlint never checks whether the prose matches reality, and nothing else notices a skill that landed on only one of the two environments. |
 | `make md-premise-lint-ci` | Mechanises the *No premise the document will outlive* rule from [docs/rules.md](../docs/rules.md) with `scripts/premise-lint/index.ts`. Fails when a document that survives template instantiation carries a self-reference that stops being true there; the phrases it looks for are declared in `scripts/premise-lint/rules.ts`. | CI target. A premise may be stated in `README*` / `docs/get-started/**`, which the setup rewrites or deletes, or inside a `boilerplate-only` / `sample-api` marker. Other senses of the same words are declared with a reason in `scripts/premise-lint/allowances.ts`.  <!-- boilerplate-only:line --> |
@@ -308,6 +339,7 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | `COMPOSE_INFRA` | `docker compose -p $(INFRA_PROJECT)` | Compose invocation for the infra layer. |
 | `INFRA_NO_RECREATE` | `--no-recreate` in a worktree, empty otherwise | Keeps a shared-infra container another checkout is using instead of re-creating it. Empty in a single checkout, where compose re-converges on a definition change as usual. Set it explicitly for a topology the worktree test misses, such as several independent clones. Resolved inside the recipe by `db-slot env`, not at make's parse time. |
 | `COMPOSE_APP` | `docker compose -p $(APP_PROJECT) -f docker-compose.yaml -f docker-compose.attach.yaml --profile development` | Compose invocation for the app layer. `docker-compose.attach.yaml` points the app services at the shared infra via `host.docker.internal`. |
+| `APP_LOG_TAIL` | `50` | Lines of the `api_server` log `app-up` prints when the API fails to come up. Raise it when the failure is older than the tail. |
 | `API_HOST_PORT` / `MOCK_AUTH_HOST_PORT` | `8080` / `2010` | Published host ports of the API / mock auth server. |
 | `DLV_HOST_PORT` / `PPROF_HOST_PORT` | `2345` / `6060` | Published host ports of the dlv debug / pprof endpoints. |
 | `COMPOSE_PROJECT_NAME` | `$(INFRA_PROJECT)` | Default project for compose calls that don't pass `-p`, so DB tooling shares the infra network. |
@@ -318,6 +350,7 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | --- | --- | --- |
 | `make docker-lint` | Lints `docker/*/Dockerfile` with hadolint. | Invokes `make docker-lint-ci` inside the `go_tool_runner` container. |
 | `make docker-lint-ci` | Runs `hadolint docker/*/Dockerfile` directly. | CI target. Ignored rules are in `.hadolint.yaml`. |
+| `make compose-lint` | Checks the compose service declarations against the rules in [`scripts/compose-lint`](../scripts/README.md) — currently that every `APP_SERVICES` member declares a `healthcheck`. | Runs on the host (`go run`), like `migration-lint`, because the decision is our own tool rather than an installed linter. Also runs in CI (`compose-lint.yaml`). |
 | `make pin-images-resolve` | Resolves every registry reference — `FROM`, `docker-compose*.yaml` `image:`, and a workflow's `uses: docker://` and `services.*.image` — to its current digest and updates the `docker/images-pin.toml` lockfile. | Quarantines digests younger than `PIN_IMAGES_MIN_AGE_DAYS` (default 14; 0 disables). Needs registry access (`docker`). |
 | `make pin-images-apply` | Pins those same four reference forms to `image:tag@sha256:...` from the lockfile (quarantined images stay tag-only). | None |
 | `make pin-images-check` | Verifies those same four reference forms are pinned per the lockfile (no write). An `image:` built from a `${{ }}` expression is not a fixable reference and is skipped. | CI / pre-commit gate. |
@@ -328,15 +361,15 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | --- | --- | --- |
 | `make gen-bundle-oapi` | Bundles split OpenAPI definitions into a single file. | Generates `openapi/openapi.gen.yaml` from `openapi/openapi.yaml`. |
 | `make gen-api-docs` | Generates API documentation from OpenAPI definition. | None |
-| `make lint-oapi` | Validates the OpenAPI definition with `redocly lint`. | Invokes `make lint-oapi-ci` inside the `node_tool_runner` container. |
+| `make oapi-lint` | Validates the OpenAPI definition with `redocly lint`. | Invokes `make oapi-lint-ci` inside the `node_tool_runner` container. |
 | `make gen-bundle-oapi-ci` | Generates `openapi/openapi.gen.yaml` via `redocly bundle`. | CI target |
 | `make gen-api-docs-ci` | Generates `docs/openapi/index.html` via `redocly build-docs`. | CI target |
-| `make lint-oapi-ci` | Runs `redocly lint openapi/openapi.yaml` directly. | CI target |
+| `make oapi-lint-ci` | Runs `redocly lint openapi/openapi.yaml` directly. | CI target |
 | `make stamp-openapi-version` | Rewrites `info.version` from a release branch name. | Invokes `make stamp-openapi-version-ci` inside the `node_tool_runner` container. Takes `REF=release/vX.Y.Z`, falling back to `GITHUB_REF_NAME`; any other ref is a no-op. |
 | `make stamp-openapi-version-ci` | Runs `scripts/stamp-openapi-version/index.ts` directly. | CI target |
-| `make lint-oapi-security-ci` | Runs Spectral with the OWASP API Security ruleset. | CI target. Runs outside `node_tool_runner` so a spec-only check does not build the tool image; run `pnpm install --dir scripts --frozen-lockfile` first. |
+| `make oapi-security-lint-ci` | Runs Spectral with the OWASP API Security ruleset. | CI target. Runs outside `node_tool_runner` so a spec-only check does not build the tool image; run `pnpm install --dir scripts --frozen-lockfile` first. |
 | `make openapi-client-check` | Confirms the frontend generator (orval) can generate the SSE contract types (`DeliveryEvent` / `ControlEvent` / `StreamCursor`) from the bundled spec. | Invokes `make openapi-client-check-ci` inside the `node_tool_runner` container. Output goes to `tmp/openapi-client/` and is never committed. |
-| `make openapi-client-check-ci` | Runs `tsx scripts/openapi-client-check` directly. | CI target. Same preparation as `lint-oapi-security-ci`. |
+| `make openapi-client-check-ci` | Runs `tsx scripts/openapi-client-check` directly. | CI target. Same preparation as `oapi-security-lint-ci`. |
 
 ## `.makefiles/load` group
 
@@ -362,11 +395,12 @@ identically, so nothing goes unverified; it moves where the verification happens
 | Command | Description | Notes |
 | --- | --- | --- |
 | `make load-status` | Prints the resolved band, window count, CPU share and the flags each tool will receive. | Start here when a gate is behaving unexpectedly |
-| `make gate-go` | The `pre-commit` Go gate (`lint` + `test-cached`), bundled so the band decides parallel / serial / deferred. | Called by lefthook, not usually by hand |
-| `make gate-go-push` | The `pre-push` Go gate (`test` + `test-scripts`), same bundling. | Called by lefthook |
+| `make gate-go` | The `pre-commit` Go gate (`lint` + `go-test-cached`), bundled so the band decides parallel / serial / deferred. | Called by lefthook, not usually by hand |
+| `make gate-go-push` | The `pre-push` Go gate (`test` + `go-test-scripts`), same bundling. | Called by lefthook |
 | `make gate-heavy-skip` | Predicate for lefthook's `skip:` — exit 0 means "CI will do this". | Exit status is the whole interface |
+| `make gate-fix` | The delegation point for auto-formatting; paths that run on every commit call this rather than `fix` directly. | Runs `make go-fix` unless the band resolved to `ci-first`, where it prints what it skipped instead. Formatting drift is one of the few things CI's lint catches without ambiguity, which is why this one may be delegated. |
 
-Override the band explicitly with `GOBP_LOAD=full|low|ci-first` (e.g. `make lint GOBP_LOAD=low` to run
+Override the band explicitly with `GOBP_LOAD=full|low|ci-first` (e.g. `make go-lint GOBP_LOAD=low` to run
 one heavy gate by hand while the rest stays deferred). The thresholds are `GOBP_LOW_THRESHOLD` and
 `GOBP_CI_FIRST_THRESHOLD`. Their defaults, and the band resolution itself, live in
 `scripts/load-band` and are evaluated when a gate recipe runs rather than when make parses.
@@ -398,8 +432,10 @@ in a loop.
 | Command | Description | Notes |
 | --- | --- | --- |
 | `make fmt` | Formats Go code. | Executes `go fmt ./...`. |
-| `make lint` | Executes static analysis via GolangCI-Lint. | None |
-| `make fix` | Executes auto-fix via GolangCI-Lint. | None |
+| `make go-lint` | Executes static analysis via GolangCI-Lint. | None |
+| `make go-lint-config-check` | Verifies that all three golangci configs parse (`golangci-lint config verify`). | CI runs it before the heavy lint. Only `.golangci.yaml` is consumed by a gate, so this is the one check the other two get (ADR-0088). |
+| `make go-lint-fast` | Static analysis with `.golangci-fast.yaml` — only the rules whose violation propagates. | Not a gate; `go-lint` / CI decide. Paired with `go-test-arch` while implementing (ADR-0088). |
+| `make go-fix` | Executes auto-fix via GolangCI-Lint. | None |
 | `make tidy-lib` | Cleans Go module dependencies and updates `vendor`. | Executes `go mod tidy` and `go mod vendor`. |
 | `make vendor-sync` | Regenerates `vendor` when it has drifted from `go.mod`. | Runs `go mod vendor` only when Go's own vendor consistency check fails, so it is a no-op in the normal case. Called by the `post-merge` / `post-checkout` hooks: `vendor` is gitignored, so the checkout that breaks is the one merely receiving someone else's `go.mod` change. |
 
@@ -407,20 +443,24 @@ in a loop.
 
 | Command | Description | Notes |
 | --- | --- | --- |
-| `make test` | Executes tests for CI. | Runs `go test` on packages excluding `gen` / `cmd` / `mock` / `apperror` / `scripts` (the `internal/cli` core is now included). |
-| `make test-cached` | Executes tests locally with the test cache enabled. | For pre-commit local runs. Same excluded packages as `test`, but omits `-count=1` so cached results are reused. |
+| `make go-test-arch` | Runs only `internal/architest`. | No DB required, ~1s. Carries the checks depguard cannot express (cross-aggregate import isolation, DI parity, route parity). Paired with `go-lint-fast` while implementing. |
+| `make go-test` | Executes tests for CI. | Runs `go test` on packages excluding `gen` / `cmd` / `mock` / `apperror` / `scripts` (the `internal/cli` core is now included). |
+| `make go-test-cached` | Executes tests locally with the test cache enabled. | For pre-commit local runs. Same excluded packages as `test`, but omits `-count=1` so cached results are reused. |
 | `make gen-test-repo` | Executes tests and generates HTML coverage report. | Output is `docs/coverage/index.html`. |
-| `make test-cover-ci` | Executes tests with coverage. | CI target, outputs `coverage.out`. |
-| `make cover-gate` | Fails if total coverage is below the threshold. | CI gate. `COVERAGE_THRESHOLD` (default 90). Requires `coverage.out` (run `test-cover-ci` first). |
-| `make test-scripts` | Executes the `scripts/` tool tests for CI. | `scripts/` is excluded from the coverage targets above, so its tests need their own entry point. Not part of `cover-gate`. `actions-shellcheck`'s tests need `shellcheck` on the host (installed by `install-tools`) and skip themselves without it; CI sets `REQUIRE_SHELLCHECK` so those skips fail instead. |
-| `make test-scripts-cached` | Executes the `scripts/` tool tests locally with the test cache enabled. | For pre-commit local runs. Same packages as `test-scripts`, without `-race -count=1`. |
+| `make go-test-cover-ci` | Executes tests with coverage. | CI target, outputs `coverage.out`. |
+| `make cover-gate` | Fails if total coverage is below the threshold. | CI gate. `COVERAGE_THRESHOLD` (default 90). Requires `coverage.out` (run `go-test-cover-ci` first). |
+| `make go-test-scripts` | Executes the `scripts/` tool tests for CI. | `scripts/` is excluded from the coverage targets above, so its tests need their own entry point. Not part of `cover-gate`. `actions-shellcheck`'s tests need `shellcheck` on the host (installed by `install-tools`) and skip themselves without it; CI sets `REQUIRE_SHELLCHECK` so those skips fail instead. |
+| `make go-test-fails` | Prints a `go test` log with everything that only reports success removed — `ok` lines, `[no test files]` lines, and every standalone `coverage:` line — with absolute paths shortened to repo-relative and the per-line `<job>/<step>/<timestamp>` prefix that `gh run view --log` adds stripped, which both shrinks each line and restores the line anchors the prefix would otherwise defeat. `LOG=` selects the log (default `tmp/ai-logs/go-test.txt`, what `make ai-go-test` leaves); `LOG=-` reads stdin, so `gh run view --log-failed \| make go-test-fails LOG=-` narrows a CI log the same way. | The `coverage:` lines are the reason this exists: `go-test-cover-ci` and `gen-test-repo` pass every target package to `-coverpkg`, and `go test` repeats that whole list on each coverage report, so one failing run prints megabytes in which the failure is a handful of bytes. Dropping them costs nothing — `cover-gate` reads `coverage.out`, not stdout. A deny list, not an allow list: only lines that say nothing but "passed" go, so an unanticipated panic, build error, or race report still comes through, and the full log stays on disk. Reads a log; runs nothing. |
+| `make go-test-scripts-cached` | Executes the `scripts/` tool tests locally with the test cache enabled. | For pre-commit local runs. Same packages as `go-test-scripts`, without `-race -count=1`. |
+| `make cover-scripts` | Measures the total coverage of the `scripts/` tools and warns when it falls below `SCRIPTS_COVERAGE_THRESHOLD`. | Warns rather than fails (`-warn`), so a development tool's coverage never blocks a merge of the shipped code; `-github` is added under Actions. The profile is deleted afterwards. |
+| `make build-scripts` | Builds the `scripts/` tools into `scripts/bin/`. | The `-o scripts/bin/` is fixed here because `go build ./scripts/<tool>` run at the repository root drops a package-named binary of tens of MB into it, untracked. The output directory is git-ignored. |
 
 ### Go tool installation related
 
 | Command | Description | Notes |
 | --- | --- | --- |
 | `make go-update` | Installs the Go runtime pinned in `mise.toml` via mise. See `docs/maintenance/go-upgrade.md`. | mise required |
-| `make install-tools` | Installs the host development tools via mise (versions from `mise.toml`). | Installs `gopls`, `gotests`, `impl`, `dlv`, `lefthook`, `golangci-lint`, `zizmor`, `shellcheck`. `golangci-lint` and `zizmor` are the tools the pre-commit hook runs on the host because no musl build exists for the Alpine tool-runners; `shellcheck` is there because the hook's `test-scripts` runs `actions-shellcheck`'s tests on the host and they shell out to the real binary. |
+| `make install-tools` | Installs the host development tools via mise (versions from `mise.toml`). | Installs `gopls`, `gotests`, `impl`, `dlv`, `lefthook`, `golangci-lint`, `zizmor`, `shellcheck`. `golangci-lint` and `zizmor` are the tools the pre-commit hook runs on the host because no musl build exists for the Alpine tool-runners; `shellcheck` is there because the hook's `go-test-scripts` runs `actions-shellcheck`'s tests on the host and they shell out to the real binary. |
 | `make activate-tools` | Executes `lefthook install` to set up Git hooks. | None |
 | `make sync-versions` | Propagates the `mise.toml` go / node / python versions into `go.mod` and the Dockerfile `FROM` lines. | Referenced by the `docs/maintenance/go-upgrade.md` procedure. Runs `scripts/sync-versions`. |
 
@@ -449,6 +489,27 @@ These targets regenerate the lockfiles; nothing installs from a `.in` file direc
 | --- | --- | --- |
 | `make py-lock` | Recompiles every `python/*.txt` from its `python/*.in`. | Invokes `make py-lock-ci` inside the `python_tool_runner` container. Run it after changing a pin, and commit both files. |
 | `make py-lock-ci` | Runs `uv pip compile --generate-hashes --universal` per declaration, resolving against the Python version `mise.toml` declares. | CI target |
+
+## `.makefiles/agents` group
+
+Targets that serve AI-assisted development itself rather than the application: the Closed Loop
+feedback cycle, and the log directory the `ai-` targets described under [Conventions](#conventions)
+write into.
+
+Marks are written by `.agents/closed-loop/marks.sh` from hooks, skills and git hooks; the targets
+here are the reading and the sending half. Only `closed-loop-report` runs in a container, because of
+where each one looks: the marks it reads are inside the repository and already mounted, while the
+transcripts `send` reads live under the user's home directory and the `gh` that `weekly` calls needs
+the user's credentials. A container reaches neither.
+
+| Command | Description | Notes |
+| --- | --- | --- |
+| `make closed-loop-report` | Reports the phase spans and the anomalies of the marked development windows. | Invokes `make closed-loop-report-ci` inside the `node_tool_runner` container. |
+| `make closed-loop-send` | Sends the windows that have closed but have not been sent yet to the Feedback Issue. | Runs `.agents/closed-loop/send.sh` on the host. |
+| `make closed-loop-send-dry` | Prints what would be sent without sending it. | `send.sh --dry-run`. |
+| `make closed-loop-weekly` | Aggregates the Feedback Issues in a period and lists the questions they raise. `FROM=` / `TO=` set the period. | Runs on the host: it calls `gh` with the user's credentials. |
+| `make closed-loop-report-ci` | Runs `tsx scripts/closed-loop` directly. | CI target |
+| `make clean-ai-logs` | Removes `tmp/ai-logs/`, where `make ai-<target>` leaves the output it kept out of the console. | The directory is git-ignored and per-worktree, so this affects only the checkout it runs in. |
 
 ## `.makefiles/graphify` group
 
@@ -537,6 +598,9 @@ and a rewritten ADR are not the same amount of work to re-extract.
 | `make actions-comment-fence-lint` | Runs the PR-comment fence check alone. | Invokes `make actions-comment-fence-lint-ci` inside the `node_tool_runner` container. |
 | `make actions-cutoff-lint` | Runs the job cut-off check alone. | Invokes `make actions-cutoff-lint-ci` inside the `node_tool_runner` container. |
 | `make actions-shellcheck` | Extracts `runs.steps[].run` from every composite action under `.github/actions/**` and checks each `bash` / `sh` script with `shellcheck`; a step on any other shell is reported as skipped (`scripts/actions-shellcheck`). | Invokes `make actions-shellcheck-ci` inside the `go_tool_runner` container. Covers what `actionlint` cannot see: it only walks `.github/workflows`, and an `action.yaml` handed to it directly is parsed as a workflow. A `run:` written as a folded scalar (`>`) is rejected — write it as a literal (`\|`) — because folding drops the line breaks a finding's position is mapped back through. |
+| `make shell-lint` | Checks every `*.sh` in the repository with shellcheck. | Invokes `make shell-lint-ci` inside the `go_tool_runner` container. |
+| `make actions-mise-pin-lint` | Checks that `setup-mise`'s version, digest and cache key agree with each other. | Invokes `make actions-mise-pin-lint-ci` inside the `node_tool_runner` container. |
+| `make required-check-lint` | Checks the jobs that report the ruleset's required contexts, and the `pull_request` conditions that start them. | Invokes `make required-check-lint-ci` inside the `node_tool_runner` container. |
 | `make actions-lint-ci` | Runs actionlint, the composite-action shellcheck, then the bundled node checks directly. | CI target. actionlint runs first on purpose: the node checks read workflow structure by column and rely on the file parsing as YAML at all. |
 | `make actions-node-lint-ci` | Runs the three node checks (secret / fence / cut-off) directly. | CI target. |
 | `make actions-actionlint-ci` | Runs `actionlint` directly. | CI target. |
@@ -544,6 +608,9 @@ and a rewritten ADR are not the same amount of work to re-extract.
 | `make actions-comment-secret-lint-ci` | Fails when a job using `upsert-pr-comment` is passed a secret other than `GITHUB_TOKEN` (`scripts/pr-comment-secret-lint/index.ts`). | CI target. Why the rule exists: [`.github/workflows/README.md`](../.github/workflows/README.md). |
 | `make actions-comment-fence-lint-ci` | Fails when a `run:` block emits a fixed-length Markdown fence around a PR comment body, or the duplicated `fence_for` helpers diverge (`scripts/pr-comment-fence-lint/index.ts`). | CI target. Why the rule exists: [`.github/workflows/README.md`](../.github/workflows/README.md). |
 | `make actions-cutoff-lint-ci` | Fails when a job carries no `timeout-minutes`, or a step calling `upsert-pr-comment` has an `if:` a cancelled job cannot reach (`scripts/actions-cutoff-lint/index.ts`). | CI target. Why the rule exists: [`.github/workflows/README.md`](../.github/workflows/README.md). |
+| `make shell-lint-ci` | Runs `go run ./scripts/shell-lint` directly. | CI target |
+| `make actions-mise-pin-lint-ci` | Runs `tsx scripts/actions-mise-pin-lint` directly. | CI target |
+| `make required-check-lint-ci` | Runs `tsx scripts/required-check-lint` directly. | CI target |
 | `make pin-actions-resolve` | Resolves each `uses:` tag to its commit SHA and updates the `.github/actions-pin.toml` lockfile. | Quarantines refs younger than `PIN_ACTIONS_MIN_AGE_DAYS` (default 14; 0 disables). |
 | `make pin-actions-apply` | Pins `uses:` to `@<sha> # <tag>` from the lockfile. | None |
 | `make pin-actions-check` | Verifies `uses:` are pinned per the lockfile (no write). | CI / pre-commit gate. |
@@ -601,6 +668,7 @@ This is the initial setup command when launching a new repository.
 | `make setup-remove-boilerplate-identity` | Removes what only holds while this repository is a boilerplate. | Scans the repository for `boilerplate-only` markers and resolves each via `node_tool_runner`, deletes the boilerplate-only conventions doc, then removes itself. Preview with `DRY_RUN=1`. <!-- boilerplate-only:line --> |
 | `make setup-remove-sample-api` | Removes the sample API (`user`/`product`/`order`) in batch. | Deletes via `node_tool_runner`, then runs `db-local-reinit` / `db-test-reinit` → `gen-api` → `gen-query` → `tidy-lib` → `fix` → `lint`. The DB rebuild keeps dropped tables out of the generated models, and `tidy-lib` drops the direct dependencies the sample API was the only user of. **Requires the DB container (`database`) running** (`gen-query` dumps the live schema). Preview without changing anything with `DRY_RUN=1` (any non-empty value counts as preview, `0` included, so omit the variable entirely for a real run). <!-- sample-api:line --> |
 | `make setup-remove-doc-language` | Resolves the documentation / skill translation pairs against `LANG_CHOICE` — `en` / `ja` fold into that language, `both` keeps the pairs and resolves the markers. | Runs on the host, not through the tool runner: it commits the whole fold at once and needs the host's git. Run it **before** every other removal — each removal tool carries paired declarations and prunes its own pair when the fold resolves it, while Phase 12 deletes a workflow this tool declares a string in, so a fold attempted afterwards aborts. Preview with `DRY_RUN=1` (works on a dirty tree; the real run requires a clean one). <!-- lang-choice:line --> |
+| `make setup-remove-licensed-scanners` | Removes the two scanners that need credentials or billing, committing once per product. | `SETUP_DRY_RUN_FLAG` reports what it would remove without writing. |
 
 ### Base branch resolution related
 

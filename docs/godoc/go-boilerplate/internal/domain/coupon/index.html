@@ -158,6 +158,9 @@
 					<dd>    <a href="#Coupon.Redeem">func (c *Coupon) Redeem(now time.Time) error</a></dd>
 				
 					
+					<dd>    <a href="#Coupon.Restore">func (c *Coupon) Restore(now time.Time) (bool, error)</a></dd>
+				
+					
 					<dd>    <a href="#Coupon.Scope">func (c *Coupon) Scope() Scope</a></dd>
 				
 					
@@ -176,13 +179,13 @@
 				<dd><a href="#Discount">type Discount</a></dd>
 				
 					
+					<dd>    <a href="#NewDiscount">func NewDiscount(kind DiscountKind, value decimal.Decimal) (Discount, error)</a></dd>
+				
+					
 					<dd>    <a href="#NewFlatDiscount">func NewFlatDiscount(amount decimal.Decimal) (Discount, error)</a></dd>
 				
 					
 					<dd>    <a href="#NewRateDiscount">func NewRateDiscount(rate decimal.Decimal) (Discount, error)</a></dd>
-				
-					
-					<dd>    <a href="#ReconstructDiscount">func ReconstructDiscount(kind DiscountKind, value decimal.Decimal) (Discount, error)</a></dd>
 				
 				
 					
@@ -203,6 +206,9 @@
 				
 					
 					<dd>    <a href="#NewDiscountKind">func NewDiscountKind(code int) (DiscountKind, error)</a></dd>
+				
+					
+					<dd>    <a href="#NewDiscountKindByName">func NewDiscountKindByName(name string) (DiscountKind, error)</a></dd>
 				
 				
 					
@@ -255,7 +261,7 @@
 					<dd>    <a href="#NewProductScope">func NewProductScope(productID uuid.UUID) (Scope, error)</a></dd>
 				
 					
-					<dd>    <a href="#ReconstructScope">func ReconstructScope(kind ScopeKind, targetID *uuid.UUID) (Scope, error)</a></dd>
+					<dd>    <a href="#NewScope">func NewScope(kind ScopeKind, targetID *uuid.UUID) (Scope, error)</a></dd>
 				
 				
 					
@@ -276,6 +282,9 @@
 				
 					
 					<dd>    <a href="#NewScopeKind">func NewScopeKind(code int) (ScopeKind, error)</a></dd>
+				
+					
+					<dd>    <a href="#NewScopeKindByName">func NewScopeKindByName(name string) (ScopeKind, error)</a></dd>
 				
 				
 					
@@ -379,6 +388,9 @@
     <span class="comment">// ErrUsedConcurrently は、引き換えの最中に他の書き手が同じクーポンを消費した場合のエラーです</span>
     <span class="comment">// （到達条件は docs/spec/domain/coupon.md の Repository Methods &gt; UpdateUsed を参照）。</span>
     <span id="ErrUsedConcurrently">ErrUsedConcurrently</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrConflict">ErrConflict</a>, &#34;coupon was used concurrently&#34;)
+    <span class="comment">// ErrNotUsed は、未使用のクーポンを返却しようとした場合のエラーです。適用済みと言う購入と</span>
+    <span class="comment">// 未使用と言うクーポンの食い違いを表すため、要求の不正ではなく状態の衝突として扱います。</span>
+    <span id="ErrNotUsed">ErrNotUsed</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrConflict">ErrConflict</a>, &#34;coupon is not used&#34;)
 )</pre>
 			
 				<p>既知の適用範囲種別。
@@ -486,7 +498,7 @@ Cross-field Invariants を参照）。
 
 			
 				
-				</p><h3 id="Coupon.Discount">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4065:4101#L98">Discount</a>
+				</p><h3 id="Coupon.Discount">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4432:4468#L108">Discount</a>
 					<a class="permalink" href="#Coupon.Discount">¶</a>
 					
 					
@@ -499,7 +511,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.DiscountFor">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=5545:5600#L124">DiscountFor</a>
+				</p><h3 id="Coupon.DiscountFor">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=5912:5967#L134">DiscountFor</a>
 					<a class="permalink" href="#Coupon.DiscountFor">¶</a>
 					
 					
@@ -515,7 +527,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.ExpiresAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4272:4310#L104">ExpiresAt</a>
+				</p><h3 id="Coupon.ExpiresAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4639:4677#L114">ExpiresAt</a>
 					<a class="permalink" href="#Coupon.ExpiresAt">¶</a>
 					
 					
@@ -528,7 +540,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.ID">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=3850:3881#L92">ID</a>
+				</p><h3 id="Coupon.ID">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4217:4248#L102">ID</a>
 					<a class="permalink" href="#Coupon.ID">¶</a>
 					
 					
@@ -541,7 +553,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.IsExpired">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=6798:6844#L159">IsExpired</a>
+				</p><h3 id="Coupon.IsExpired">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=7607:7653#L186">IsExpired</a>
 					<a class="permalink" href="#Coupon.IsExpired">¶</a>
 					
 					
@@ -555,7 +567,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.IsHeldBy">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4937:4985#L117">IsHeldBy</a>
+				</p><h3 id="Coupon.IsHeldBy">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=5304:5352#L127">IsHeldBy</a>
 					<a class="permalink" href="#Coupon.IsHeldBy">¶</a>
 					
 					
@@ -569,7 +581,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.IsUsed">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4669:4699#L113">IsUsed</a>
+				</p><h3 id="Coupon.IsUsed">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=5036:5066#L123">IsUsed</a>
 					<a class="permalink" href="#Coupon.IsUsed">¶</a>
 					
 					
@@ -582,7 +594,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.IssuedAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4384:4421#L107">IssuedAt</a>
+				</p><h3 id="Coupon.IssuedAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4751:4788#L117">IssuedAt</a>
 					<a class="permalink" href="#Coupon.IssuedAt">¶</a>
 					
 					
@@ -595,22 +607,37 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.Redeem">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=6365:6409#L144">Redeem</a>
+				</p><h3 id="Coupon.Redeem">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=6629:6673#L153">Redeem</a>
 					<a class="permalink" href="#Coupon.Redeem">¶</a>
 					
 					
 				</h3>
 				<pre>func (c *<a href="#Coupon">Coupon</a>) Redeem(now <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>) <a href="../../../../builtin/#error">error</a></pre>
-				<p>Redeem は、クーポンを使用済みにします。使用済みへの遷移は一度きりで、取り消せません。
+				<p>Redeem は、クーポンを使用済みにします。使用済みから未使用へ戻すのは <a href="#Coupon.Restore">Coupon.Restore</a> だけです。
 </p><p>既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えません。
-日時は引数で受け取ります（internal/domain/README.md の Handling time and ID を参照）。
 
 				
 				
 				
 			
 				
-				</p><h3 id="Coupon.Scope">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4171:4201#L101">Scope</a>
+				</p><h3 id="Coupon.Restore">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=7156:7209#L171">Restore</a>
+					<a class="permalink" href="#Coupon.Restore">¶</a>
+					
+					
+				</h3>
+				<pre>func (c *<a href="#Coupon">Coupon</a>) Restore(now <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>) (<a href="../../../../builtin/#bool">bool</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>Restore は、使用済みのクーポンを未使用へ戻し、戻したかどうかを返します。
+</p><p>渡された時点で失効している場合は状態を変えず false を返します（理由は
+docs/spec/domain/coupon.md の Behavior Methods &gt; Restore を参照）。
+未使用のクーポンには ErrNotUsed を返します。
+
+				
+				
+				
+			
+				
+				</p><h3 id="Coupon.Scope">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4538:4568#L111">Scope</a>
 					<a class="permalink" href="#Coupon.Scope">¶</a>
 					
 					
@@ -623,7 +650,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.UsedAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4527:4563#L110">UsedAt</a>
+				</p><h3 id="Coupon.UsedAt">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4894:4930#L120">UsedAt</a>
 					<a class="permalink" href="#Coupon.UsedAt">¶</a>
 					
 					
@@ -636,7 +663,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Coupon.UserID">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=3962:3997#L95">UserID</a>
+				</p><h3 id="Coupon.UserID">func (*Coupon) <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?s=4329:4364#L105">UserID</a>
 					<a class="permalink" href="#Coupon.UserID">¶</a>
 					
 					
@@ -698,7 +725,21 @@ Cross-field Invariants を参照）。
 
 			
 				
-				<h3 id="NewFlatDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2899:2961#L62">NewFlatDiscount</a>
+				<h3 id="NewDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=4614:4690#L93">NewDiscount</a>
+					<a class="permalink" href="#NewDiscount">¶</a>
+					
+					
+				</h3>
+				<pre>func NewDiscount(kind <a href="#DiscountKind">DiscountKind</a>, value <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>) (<a href="#Discount">Discount</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewDiscount は、解決済みの種別と値から値引きを生成します。種別ごとの生成関数へ振り分けるだけで、
+検証はその先が行います。永続化された行からの復元も、要求が渡した名前からの構築も、
+種別を解決したあとはこの入口を通ります。
+
+				
+				
+			
+				
+				</p><h3 id="NewFlatDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=3486:3548#L74">NewFlatDiscount</a>
 					<a class="permalink" href="#NewFlatDiscount">¶</a>
 					
 					
@@ -711,7 +752,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="NewRateDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=3412:3472#L71">NewRateDiscount</a>
+				</p><h3 id="NewRateDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=3999:4059#L83">NewRateDiscount</a>
 					<a class="permalink" href="#NewRateDiscount">¶</a>
 					
 					
@@ -723,23 +764,10 @@ Cross-field Invariants を参照）。
 				
 				
 			
-				
-				</p><h3 id="ReconstructDiscount">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=3839:3923#L80">ReconstructDiscount</a>
-					<a class="permalink" href="#ReconstructDiscount">¶</a>
-					
-					
-				</h3>
-				<pre>func ReconstructDiscount(kind <a href="#DiscountKind">DiscountKind</a>, value <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>) (<a href="#Discount">Discount</a>, <a href="../../../../builtin/#error">error</a>)</pre>
-				<p>ReconstructDiscount は、永続化されている種別と値から値引きを再構築します。
-検証は生成時と同一です。
-
-				
-				
-			
 
 			
 				
-				</p><h3 id="Discount.Apply">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=5166:5231#L108">Apply</a>
+				</p><h3 id="Discount.Apply">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=5933:5998#L121">Apply</a>
 					<a class="permalink" href="#Discount.Apply">¶</a>
 					
 					
@@ -757,7 +785,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Discount.IsZero">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=4521:4552#L98">IsZero</a>
+				</p><h3 id="Discount.IsZero">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=5288:5319#L111">IsZero</a>
 					<a class="permalink" href="#Discount.IsZero">¶</a>
 					
 					
@@ -770,7 +798,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Discount.Kind">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=4213:4250#L92">Kind</a>
+				</p><h3 id="Discount.Kind">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=4980:5017#L105">Kind</a>
 					<a class="permalink" href="#Discount.Kind">¶</a>
 					
 					
@@ -783,7 +811,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="Discount.Value">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=4391:4432#L95">Value</a>
+				</p><h3 id="Discount.Value">func (Discount) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=5158:5199#L108">Value</a>
 					<a class="permalink" href="#Discount.Value">¶</a>
 					
 					
@@ -834,10 +862,24 @@ Cross-field Invariants を参照）。
 				
 				
 			
+				
+				</p><h3 id="NewDiscountKindByName">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2548:2609#L54">NewDiscountKindByName</a>
+					<a class="permalink" href="#NewDiscountKindByName">¶</a>
+					
+					
+				</h3>
+				<pre>func NewDiscountKindByName(name <a href="../../../../builtin/#string">string</a>) (<a href="#DiscountKind">DiscountKind</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewDiscountKindByName は、外部から渡された名前から値引き種別を解決します。
+既知でない名前は ErrInvalidDiscountKind を返します。閉じた集合の権威は allDiscountKinds ただ 1 つで、
+code からの解決（<a href="#NewDiscountKind">NewDiscountKind</a>）と同じ一覧を走査します。
+
+				
+				
+			
 
 			
 				
-				</p><h3 id="DiscountKind.Code">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2309:2341#L52">Code</a>
+				</p><h3 id="DiscountKind.Code">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2896:2928#L64">Code</a>
 					<a class="permalink" href="#DiscountKind.Code">¶</a>
 					
 					
@@ -850,7 +892,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="DiscountKind.IsZero">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2628:2663#L58">IsZero</a>
+				</p><h3 id="DiscountKind.IsZero">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=3215:3250#L70">IsZero</a>
 					<a class="permalink" href="#DiscountKind.IsZero">¶</a>
 					
 					
@@ -863,7 +905,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="DiscountKind.Name">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=2499:2534#L55">Name</a>
+				</p><h3 id="DiscountKind.Name">func (DiscountKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/discount.go.html?s=3086:3121#L67">Name</a>
 					<a class="permalink" href="#DiscountKind.Name">¶</a>
 					
 					
@@ -991,7 +1033,7 @@ Cross-field Invariants を参照）。
 		
 			
 			
-			<h2 id="Repository">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_repository.go.html?s=302:1258#L2">Repository</a>
+			<h2 id="Repository">type <a href="../../../../src/go-boilerplate/internal/domain/coupon/coupon_repository.go.html?s=302:1954#L2">Repository</a>
 				<a class="permalink" href="#Repository">¶</a>
 				
 				
@@ -999,15 +1041,22 @@ Cross-field Invariants を参照）。
 			<p>Repository は、クーポンの永続化操作を定義するドメインリポジトリインターフェースです。
 
 			</p><pre>type Repository interface {
+    <span class="comment">// Create は、発行したクーポンを 1 枚永続化します。対象は [New] が生成した未使用のクーポンです。</span>
+    <span class="comment">// 呼び出し元のトランザクションがあればそれに参加します。</span>
+    <span class="comment">// 受給者が在籍するかどうかは判定しません。発行の可否は呼び出し元が先に確かめます。</span>
+    Create(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, c *<a href="#Coupon">Coupon</a>) <a href="../../../../builtin/#error">error</a>
     <span class="comment">// FindByUserID は、指定利用者が保有するクーポンを発行日時の新しい順で返します。</span>
     <span class="comment">// 使用済み・失効済みも含みます。1 枚も持たない場合は空を返します。</span>
     FindByUserID(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, userID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#Coupons">Coupons</a>, <a href="../../../../builtin/#error">error</a>)
-    <span class="comment">// LockByID は、引き換えのために ID からクーポンを取得します。存在しない場合は NotFound を返します。</span>
+    <span class="comment">// LockByID は、引き換え・返却のために ID からクーポンを取得します。存在しない場合は NotFound を返します。</span>
     <span class="comment">// 同一クーポンへの並行更新は、先行する更新が終わるまで待機したうえで最新の状態を取得します。</span>
     LockByID(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (*<a href="#Coupon">Coupon</a>, <a href="../../../../builtin/#error">error</a>)
     <span class="comment">// UpdateUsed は、クーポンを使用済みにします。対象は LockByID で取得し [Coupon.Redeem] で</span>
     <span class="comment">// 検証済みです。他の書き手が先に消費していた場合は ErrUsedConcurrently を返します。</span>
     UpdateUsed(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, usedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>) <a href="../../../../builtin/#error">error</a>
+    <span class="comment">// UpdateUnused は、使用済みのクーポンを未使用へ戻します。対象は LockByID で取得し</span>
+    <span class="comment">// [Coupon.Restore] が戻せると判定したものです。既に未使用だった場合は ErrNotUsed を返します。</span>
+    UpdateUnused(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, id <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) <a href="../../../../builtin/#error">error</a>
 }</pre>
 
 			
@@ -1048,7 +1097,7 @@ Cross-field Invariants を参照）。
 
 			
 				
-				<h3 id="NewAllScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2673:2697#L60">NewAllScope</a>
+				<h3 id="NewAllScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=3233:3257#L72">NewAllScope</a>
 					<a class="permalink" href="#NewAllScope">¶</a>
 					
 					
@@ -1060,7 +1109,7 @@ Cross-field Invariants を参照）。
 				
 			
 				
-				</p><h3 id="NewCategoryScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2903:2961#L64">NewCategoryScope</a>
+				</p><h3 id="NewCategoryScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=3463:3521#L76">NewCategoryScope</a>
 					<a class="permalink" href="#NewCategoryScope">¶</a>
 					
 					
@@ -1073,7 +1122,7 @@ categoryID が未設定の場合は ErrInvalidScopeTarget を返します。
 				
 			
 				
-				</p><h3 id="NewProductScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=3316:3372#L73">NewProductScope</a>
+				</p><h3 id="NewProductScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=3876:3932#L85">NewProductScope</a>
 					<a class="permalink" href="#NewProductScope">¶</a>
 					
 					
@@ -1086,14 +1135,15 @@ productID が未設定の場合は ErrInvalidScopeTarget を返します。
 				
 			
 				
-				</p><h3 id="ReconstructScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=3788:3861#L82">ReconstructScope</a>
-					<a class="permalink" href="#ReconstructScope">¶</a>
+				</p><h3 id="NewScope">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=4524:4589#L95">NewScope</a>
+					<a class="permalink" href="#NewScope">¶</a>
 					
 					
 				</h3>
-				<pre>func ReconstructScope(kind <a href="#ScopeKind">ScopeKind</a>, targetID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#Scope">Scope</a>, <a href="../../../../builtin/#error">error</a>)</pre>
-				<p>ReconstructScope は、永続化されている種別と対象 ID から適用範囲を再構築します。
-検証は生成時と同一です。全体の適用範囲は対象 ID を持ってはなりません。
+				<pre>func NewScope(kind <a href="#ScopeKind">ScopeKind</a>, targetID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="#Scope">Scope</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewScope は、解決済みの種別と対象 ID から適用範囲を生成します。種別ごとの生成関数へ振り分け、
+対象 ID の要否だけをここで課します（全体は対象を持ってはなりません）。
+永続化された行からの復元も、要求が渡した名前からの構築も、種別を解決したあとはこの入口を通ります。
 
 				
 				
@@ -1101,7 +1151,7 @@ productID が未設定の場合は ErrInvalidScopeTarget を返します。
 
 			
 				
-				</p><h3 id="Scope.Covers">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=5377:5414#L118">Covers</a>
+				</p><h3 id="Scope.Covers">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=6105:6142#L131">Covers</a>
 					<a class="permalink" href="#Scope.Covers">¶</a>
 					
 					
@@ -1117,7 +1167,7 @@ productID が未設定の場合は ErrInvalidScopeTarget を返します。
 				
 			
 				
-				</p><h3 id="Scope.IsZero">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=4883:4911#L111">IsZero</a>
+				</p><h3 id="Scope.IsZero">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=5611:5639#L124">IsZero</a>
 					<a class="permalink" href="#Scope.IsZero">¶</a>
 					
 					
@@ -1130,7 +1180,7 @@ productID が未設定の場合は ErrInvalidScopeTarget を返します。
 				
 			
 				
-				</p><h3 id="Scope.Kind">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=4580:4611#L105">Kind</a>
+				</p><h3 id="Scope.Kind">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=5308:5339#L118">Kind</a>
 					<a class="permalink" href="#Scope.Kind">¶</a>
 					
 					
@@ -1143,7 +1193,7 @@ productID が未設定の場合は ErrInvalidScopeTarget を返します。
 				
 			
 				
-				</p><h3 id="Scope.TargetID">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=4742:4778#L108">TargetID</a>
+				</p><h3 id="Scope.TargetID">func (Scope) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=5470:5506#L121">TargetID</a>
 					<a class="permalink" href="#Scope.TargetID">¶</a>
 					
 					
@@ -1192,10 +1242,24 @@ productID が未設定の場合は ErrInvalidScopeTarget を返します。
 				
 				
 			
+				
+				</p><h3 id="NewScopeKindByName">func <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2532:2587#L53">NewScopeKindByName</a>
+					<a class="permalink" href="#NewScopeKindByName">¶</a>
+					
+					
+				</h3>
+				<pre>func NewScopeKindByName(name <a href="../../../../builtin/#string">string</a>) (<a href="#ScopeKind">ScopeKind</a>, <a href="../../../../builtin/#error">error</a>)</pre>
+				<p>NewScopeKindByName は、外部から渡された名前から適用範囲種別を解決します。
+既知でない名前は ErrInvalidScopeKind を返します。閉じた集合の権威は allScopeKinds ただ 1 つで、
+code からの解決（<a href="#NewScopeKind">NewScopeKind</a>）と同じ一覧を走査します。
+
+				
+				
+			
 
 			
 				
-				</p><h3 id="ScopeKind.Code">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2302:2331#L51">Code</a>
+				</p><h3 id="ScopeKind.Code">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2862:2891#L63">Code</a>
 					<a class="permalink" href="#ScopeKind.Code">¶</a>
 					
 					
@@ -1208,7 +1272,7 @@ productID が未設定の場合は ErrInvalidScopeTarget を返します。
 				
 			
 				
-				</p><h3 id="ScopeKind.IsZero">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2540:2572#L57">IsZero</a>
+				</p><h3 id="ScopeKind.IsZero">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=3100:3132#L69">IsZero</a>
 					<a class="permalink" href="#ScopeKind.IsZero">¶</a>
 					
 					
@@ -1221,7 +1285,7 @@ productID が未設定の場合は ErrInvalidScopeTarget を返します。
 				
 			
 				
-				</p><h3 id="ScopeKind.Name">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2411:2443#L54">Name</a>
+				</p><h3 id="ScopeKind.Name">func (ScopeKind) <a href="../../../../src/go-boilerplate/internal/domain/coupon/scope.go.html?s=2971:3003#L66">Name</a>
 					<a class="permalink" href="#ScopeKind.Name">¶</a>
 					
 					

@@ -94,733 +94,963 @@
 <span id="L37" class="ln">    37  </span>	}
 <span id="L38" class="ln">    38  </span>}
 <span id="L39" class="ln">    39  </span>
-<span id="L40" class="ln">    40  </span><span class="comment">// newResolver は、root を持つ Resolver と出力バッファを返します。</span>
+<span id="L40" class="ln">    40  </span><span class="comment">// newResolver は、宣言どおりのスロットをリースしている Resolver と出力バッファを返します。</span>
 <span id="L41" class="ln">    41  </span>func newResolver(t *testing.T, root string, stub probeStub) (*Resolver, *bytes.Buffer) {
 <span id="L42" class="ln">    42  </span>	t.Helper()
 <span id="L43" class="ln">    43  </span>
-<span id="L44" class="ln">    44  </span>	var out bytes.Buffer
-<span id="L45" class="ln">    45  </span>
-<span id="L46" class="ln">    46  </span>	cfg := Config{Root: root, SharedProject: &#34;gobp-shared&#34;, APIBasePort: 8080, MockAuthBase: 2010}
-<span id="L47" class="ln">    47  </span>
-<span id="L48" class="ln">    48  </span>	return NewResolver(cfg, stub.probe(), &amp;out), &amp;out
-<span id="L49" class="ln">    49  </span>}
+<span id="L44" class="ln">    44  </span>	return newResolverWithLease(t, root, stub, &amp;LeaseProbe{OwnedBySelf: func(int) bool { return true }})
+<span id="L45" class="ln">    45  </span>}
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span><span class="comment">// newResolverWithLease は、リース所有権の判定点を差し替えた Resolver と出力バッファを返します。</span>
+<span id="L48" class="ln">    48  </span>func newResolverWithLease(t *testing.T, root string, stub probeStub, lease *LeaseProbe) (*Resolver, *bytes.Buffer) {
+<span id="L49" class="ln">    49  </span>	t.Helper()
 <span id="L50" class="ln">    50  </span>
-<span id="L51" class="ln">    51  </span><span class="comment">// writeSlot は、root に .gobp-db-slot を書き出します。</span>
-<span id="L52" class="ln">    52  </span>func writeSlot(t *testing.T, root, content string) {
-<span id="L53" class="ln">    53  </span>	t.Helper()
-<span id="L54" class="ln">    54  </span>
-<span id="L55" class="ln">    55  </span>	require.NoError(t, os.WriteFile(filepath.Join(root, &#34;.gobp-db-slot&#34;), []byte(content), filePerm))
-<span id="L56" class="ln">    56  </span>}
-<span id="L57" class="ln">    57  </span>
-<span id="L58" class="ln">    58  </span>func TestResolver_Resolve(t *testing.T) {
-<span id="L59" class="ln">    59  </span>	t.Parallel()
-<span id="L60" class="ln">    60  </span>
-<span id="L61" class="ln">    61  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L62" class="ln">    62  </span>		t.Parallel()
-<span id="L63" class="ln">    63  </span>
-<span id="L64" class="ln">    64  </span>		t.Run(&#34;git-dir と git-common-dir が一致すれば主 checkout とみなす&#34;, func(t *testing.T) {
-<span id="L65" class="ln">    65  </span>			t.Parallel()
-<span id="L66" class="ln">    66  </span>
-<span id="L67" class="ln">    67  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L51" class="ln">    51  </span>	var out bytes.Buffer
+<span id="L52" class="ln">    52  </span>
+<span id="L53" class="ln">    53  </span>	cfg := Config{
+<span id="L54" class="ln">    54  </span>		Root: root, SharedProject: &#34;gobp-shared&#34;, APIBasePort: 8080, MockAuthBase: 2010,
+<span id="L55" class="ln">    55  </span>		Realtime: RealtimeBase{
+<span id="L56" class="ln">    56  </span>			TableSuffix: &#34;local&#34;,
+<span id="L57" class="ln">    57  </span>			QueuePrefix: &#34;realtime-local&#34;,
+<span id="L58" class="ln">    58  </span>			Topic:       &#34;arn:aws:sns:us-east-1:000000000000:realtime-fanout-local&#34;,
+<span id="L59" class="ln">    59  </span>		},
+<span id="L60" class="ln">    60  </span>	}
+<span id="L61" class="ln">    61  </span>
+<span id="L62" class="ln">    62  </span>	return NewResolver(cfg, stub.probe(), lease, &amp;out), &amp;out
+<span id="L63" class="ln">    63  </span>}
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span><span class="comment">// writeSlot は、root に .gobp-db-slot を書き出します。</span>
+<span id="L66" class="ln">    66  </span>func writeSlot(t *testing.T, root, content string) {
+<span id="L67" class="ln">    67  </span>	t.Helper()
 <span id="L68" class="ln">    68  </span>
-<span id="L69" class="ln">    69  </span>			got, err := r.Resolve(t.Context())
-<span id="L70" class="ln">    70  </span>			require.NoError(t, err)
-<span id="L71" class="ln">    71  </span>			assert.Equal(t, GitMainCheckout, got.Git)
-<span id="L72" class="ln">    72  </span>		})
-<span id="L73" class="ln">    73  </span>
-<span id="L74" class="ln">    74  </span>		t.Run(&#34;相対パスと絶対パスで返っても同一なら主 checkout とみなす&#34;, func(t *testing.T) {
-<span id="L75" class="ln">    75  </span>			t.Parallel()
-<span id="L76" class="ln">    76  </span>
-<span id="L77" class="ln">    77  </span>			root := t.TempDir()
-<span id="L78" class="ln">    78  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;.git\n&#34; + filepath.Join(root, &#34;.git&#34;) + &#34;\n&#34;})
-<span id="L79" class="ln">    79  </span>
-<span id="L80" class="ln">    80  </span>			got, err := r.Resolve(t.Context())
-<span id="L81" class="ln">    81  </span>			require.NoError(t, err)
-<span id="L82" class="ln">    82  </span>			assert.Equal(t, GitMainCheckout, got.Git)
-<span id="L83" class="ln">    83  </span>		})
-<span id="L84" class="ln">    84  </span>
-<span id="L85" class="ln">    85  </span>		t.Run(&#34;git-dir と git-common-dir が食い違えばリンク worktree とみなす&#34;, func(t *testing.T) {
-<span id="L86" class="ln">    86  </span>			t.Parallel()
+<span id="L69" class="ln">    69  </span>	require.NoError(t, os.WriteFile(filepath.Join(root, &#34;.gobp-db-slot&#34;), []byte(content), filePerm))
+<span id="L70" class="ln">    70  </span>}
+<span id="L71" class="ln">    71  </span>
+<span id="L72" class="ln">    72  </span>func TestResolver_Resolve(t *testing.T) {
+<span id="L73" class="ln">    73  </span>	t.Parallel()
+<span id="L74" class="ln">    74  </span>
+<span id="L75" class="ln">    75  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L76" class="ln">    76  </span>		t.Parallel()
+<span id="L77" class="ln">    77  </span>
+<span id="L78" class="ln">    78  </span>		t.Run(&#34;git-dir と git-common-dir が一致すれば主 checkout とみなす&#34;, func(t *testing.T) {
+<span id="L79" class="ln">    79  </span>			t.Parallel()
+<span id="L80" class="ln">    80  </span>
+<span id="L81" class="ln">    81  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L82" class="ln">    82  </span>
+<span id="L83" class="ln">    83  </span>			got, err := r.Resolve(t.Context())
+<span id="L84" class="ln">    84  </span>			require.NoError(t, err)
+<span id="L85" class="ln">    85  </span>			assert.Equal(t, GitMainCheckout, got.Git)
+<span id="L86" class="ln">    86  </span>		})
 <span id="L87" class="ln">    87  </span>
-<span id="L88" class="ln">    88  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;/repo/.git/worktrees/wt1\n/repo/.git\n&#34;})
-<span id="L89" class="ln">    89  </span>
-<span id="L90" class="ln">    90  </span>			got, err := r.Resolve(t.Context())
-<span id="L91" class="ln">    91  </span>			require.NoError(t, err)
-<span id="L92" class="ln">    92  </span>			assert.Equal(t, GitLinkedWorktree, got.Git)
-<span id="L93" class="ln">    93  </span>			assert.Equal(t, &#34;--no-recreate&#34;, got.InfraNoRecreate)
-<span id="L94" class="ln">    94  </span>		})
-<span id="L95" class="ln">    95  </span>
-<span id="L96" class="ln">    96  </span>		t.Run(&#34;git 実行ファイルが無ければ判定せず素通りさせる&#34;, func(t *testing.T) {
-<span id="L97" class="ln">    97  </span>			t.Parallel()
+<span id="L88" class="ln">    88  </span>		t.Run(&#34;相対パスと絶対パスで返っても同一なら主 checkout とみなす&#34;, func(t *testing.T) {
+<span id="L89" class="ln">    89  </span>			t.Parallel()
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>			root := t.TempDir()
+<span id="L92" class="ln">    92  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;.git\n&#34; + filepath.Join(root, &#34;.git&#34;) + &#34;\n&#34;})
+<span id="L93" class="ln">    93  </span>
+<span id="L94" class="ln">    94  </span>			got, err := r.Resolve(t.Context())
+<span id="L95" class="ln">    95  </span>			require.NoError(t, err)
+<span id="L96" class="ln">    96  </span>			assert.Equal(t, GitMainCheckout, got.Git)
+<span id="L97" class="ln">    97  </span>		})
 <span id="L98" class="ln">    98  </span>
-<span id="L99" class="ln">    99  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{lookErr: errGitFailed, hasGitEntry: true})
-<span id="L100" class="ln">   100  </span>
-<span id="L101" class="ln">   101  </span>			got, err := r.Resolve(t.Context())
-<span id="L102" class="ln">   102  </span>			require.NoError(t, err)
-<span id="L103" class="ln">   103  </span>			assert.Equal(t, GitUnavailable, got.Git)
-<span id="L104" class="ln">   104  </span>			assert.Empty(t, got.InfraNoRecreate)
-<span id="L105" class="ln">   105  </span>		})
-<span id="L106" class="ln">   106  </span>
-<span id="L107" class="ln">   107  </span>		t.Run(&#34;git はあるがリポジトリでなければ素通りさせる&#34;, func(t *testing.T) {
-<span id="L108" class="ln">   108  </span>			t.Parallel()
+<span id="L99" class="ln">    99  </span>		t.Run(&#34;git-dir と git-common-dir が食い違えばリンク worktree とみなす&#34;, func(t *testing.T) {
+<span id="L100" class="ln">   100  </span>			t.Parallel()
+<span id="L101" class="ln">   101  </span>
+<span id="L102" class="ln">   102  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;/repo/.git/worktrees/wt1\n/repo/.git\n&#34;})
+<span id="L103" class="ln">   103  </span>
+<span id="L104" class="ln">   104  </span>			got, err := r.Resolve(t.Context())
+<span id="L105" class="ln">   105  </span>			require.NoError(t, err)
+<span id="L106" class="ln">   106  </span>			assert.Equal(t, GitLinkedWorktree, got.Git)
+<span id="L107" class="ln">   107  </span>			assert.Equal(t, &#34;--no-recreate&#34;, got.InfraNoRecreate)
+<span id="L108" class="ln">   108  </span>		})
 <span id="L109" class="ln">   109  </span>
-<span id="L110" class="ln">   110  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: false})
-<span id="L111" class="ln">   111  </span>
-<span id="L112" class="ln">   112  </span>			got, err := r.Resolve(t.Context())
-<span id="L113" class="ln">   113  </span>			require.NoError(t, err)
-<span id="L114" class="ln">   114  </span>			assert.Equal(t, GitNoRepository, got.Git)
-<span id="L115" class="ln">   115  </span>		})
-<span id="L116" class="ln">   116  </span>
-<span id="L117" class="ln">   117  </span>		t.Run(&#34;スロット未取得なら既定の local / test を所有データベースとする&#34;, func(t *testing.T) {
-<span id="L118" class="ln">   118  </span>			t.Parallel()
-<span id="L119" class="ln">   119  </span>
-<span id="L120" class="ln">   120  </span>			root := filepath.Join(t.TempDir(), &#34;go-boilerplate&#34;)
-<span id="L121" class="ln">   121  </span>			require.NoError(t, os.Mkdir(root, dirPerm))
-<span id="L122" class="ln">   122  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L110" class="ln">   110  </span>		t.Run(&#34;git 実行ファイルが無ければ判定せず素通りさせる&#34;, func(t *testing.T) {
+<span id="L111" class="ln">   111  </span>			t.Parallel()
+<span id="L112" class="ln">   112  </span>
+<span id="L113" class="ln">   113  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{lookErr: errGitFailed, hasGitEntry: true})
+<span id="L114" class="ln">   114  </span>
+<span id="L115" class="ln">   115  </span>			got, err := r.Resolve(t.Context())
+<span id="L116" class="ln">   116  </span>			require.NoError(t, err)
+<span id="L117" class="ln">   117  </span>			assert.Equal(t, GitUnavailable, got.Git)
+<span id="L118" class="ln">   118  </span>			assert.Empty(t, got.InfraNoRecreate)
+<span id="L119" class="ln">   119  </span>		})
+<span id="L120" class="ln">   120  </span>
+<span id="L121" class="ln">   121  </span>		t.Run(&#34;git はあるがリポジトリでなければ素通りさせる&#34;, func(t *testing.T) {
+<span id="L122" class="ln">   122  </span>			t.Parallel()
 <span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>			got, err := r.Resolve(t.Context())
-<span id="L125" class="ln">   125  </span>			require.NoError(t, err)
-<span id="L126" class="ln">   126  </span>			assert.False(t, got.SlotHeld)
-<span id="L127" class="ln">   127  </span>			assert.Equal(t, &#34;local&#34;, got.DBLocal)
-<span id="L128" class="ln">   128  </span>			assert.Equal(t, &#34;test&#34;, got.DBTest)
-<span id="L129" class="ln">   129  </span>			assert.Equal(t, &#34;gobp-app-go-boilerplate&#34;, got.AppProject)
-<span id="L130" class="ln">   130  </span>			assert.Equal(t, &#34;http://localhost:2010/default&#34;, got.AuthIssuer)
-<span id="L131" class="ln">   131  </span>		})
-<span id="L132" class="ln">   132  </span>
-<span id="L133" class="ln">   133  </span>		t.Run(&#34;スロット取得済みならスロットの値を所有データベース・プロジェクトとする&#34;, func(t *testing.T) {
-<span id="L134" class="ln">   134  </span>			t.Parallel()
-<span id="L135" class="ln">   135  </span>
-<span id="L136" class="ln">   136  </span>			root := t.TempDir()
-<span id="L137" class="ln">   137  </span>			writeSlot(t, root, slotFileContent)
-<span id="L138" class="ln">   138  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
-<span id="L139" class="ln">   139  </span>
-<span id="L140" class="ln">   140  </span>			got, err := r.Resolve(t.Context())
-<span id="L141" class="ln">   141  </span>			require.NoError(t, err)
-<span id="L142" class="ln">   142  </span>			assert.True(t, got.SlotHeld)
-<span id="L143" class="ln">   143  </span>			assert.Equal(t, &#34;wt3_local&#34;, got.DBLocal)
-<span id="L144" class="ln">   144  </span>			assert.Equal(t, &#34;wt3_test&#34;, got.DBTest)
-<span id="L145" class="ln">   145  </span>			assert.Equal(t, &#34;gobp-wt-3&#34;, got.AppProject)
-<span id="L146" class="ln">   146  </span>			assert.Equal(t, &#34;http://localhost:2013/default&#34;, got.AuthIssuer)
-<span id="L147" class="ln">   147  </span>		})
-<span id="L148" class="ln">   148  </span>	})
+<span id="L124" class="ln">   124  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: false})
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>			got, err := r.Resolve(t.Context())
+<span id="L127" class="ln">   127  </span>			require.NoError(t, err)
+<span id="L128" class="ln">   128  </span>			assert.Equal(t, GitNoRepository, got.Git)
+<span id="L129" class="ln">   129  </span>		})
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span>		t.Run(&#34;スロット未取得なら既定の local / test を所有データベースとする&#34;, func(t *testing.T) {
+<span id="L132" class="ln">   132  </span>			t.Parallel()
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>			root := filepath.Join(t.TempDir(), &#34;go-boilerplate&#34;)
+<span id="L135" class="ln">   135  </span>			require.NoError(t, os.Mkdir(root, dirPerm))
+<span id="L136" class="ln">   136  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>			got, err := r.Resolve(t.Context())
+<span id="L139" class="ln">   139  </span>			require.NoError(t, err)
+<span id="L140" class="ln">   140  </span>			assert.False(t, got.SlotHeld)
+<span id="L141" class="ln">   141  </span>			assert.Equal(t, &#34;local&#34;, got.DBLocal)
+<span id="L142" class="ln">   142  </span>			assert.Equal(t, &#34;test&#34;, got.DBTest)
+<span id="L143" class="ln">   143  </span>			assert.Equal(t, &#34;gobp-app-go-boilerplate&#34;, got.AppProject)
+<span id="L144" class="ln">   144  </span>			assert.Equal(t, &#34;http://localhost:2010/default&#34;, got.AuthIssuer)
+<span id="L145" class="ln">   145  </span>			assert.Equal(t, &#34;local&#34;, got.RealtimeTableSuffix, &#34;スロットが無ければ埋め込み env の基底名のまま&#34;)
+<span id="L146" class="ln">   146  </span>			assert.Equal(t, &#34;realtime-local&#34;, got.RealtimeQueuePrefix)
+<span id="L147" class="ln">   147  </span>			assert.Equal(t, &#34;arn:aws:sns:us-east-1:000000000000:realtime-fanout-local&#34;, got.RealtimeTopic)
+<span id="L148" class="ln">   148  </span>		})
 <span id="L149" class="ln">   149  </span>
-<span id="L150" class="ln">   150  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L151" class="ln">   151  </span>		t.Parallel()
+<span id="L150" class="ln">   150  </span>		t.Run(&#34;スロット取得済みならスロットの値を所有データベース・プロジェクトとする&#34;, func(t *testing.T) {
+<span id="L151" class="ln">   151  </span>			t.Parallel()
 <span id="L152" class="ln">   152  </span>
-<span id="L153" class="ln">   153  </span>		t.Run(&#34;リポジトリなのに git が失敗したら判定不能として止める&#34;, func(t *testing.T) {
-<span id="L154" class="ln">   154  </span>			t.Parallel()
-<span id="L155" class="ln">   155  </span>
-<span id="L156" class="ln">   156  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
-<span id="L157" class="ln">   157  </span>
-<span id="L158" class="ln">   158  </span>			_, err := r.Resolve(t.Context())
-<span id="L159" class="ln">   159  </span>			require.ErrorIs(t, err, errGitLayoutUnreadable)
-<span id="L160" class="ln">   160  </span>		})
-<span id="L161" class="ln">   161  </span>
-<span id="L162" class="ln">   162  </span>		t.Run(&#34;git の出力が想定外の形なら判定不能として止める&#34;, func(t *testing.T) {
-<span id="L163" class="ln">   163  </span>			t.Parallel()
-<span id="L164" class="ln">   164  </span>
-<span id="L165" class="ln">   165  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n&#34;})
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span>			_, err := r.Resolve(t.Context())
-<span id="L168" class="ln">   168  </span>			require.ErrorIs(t, err, errGitLayoutUnreadable)
-<span id="L169" class="ln">   169  </span>		})
-<span id="L170" class="ln">   170  </span>	})
-<span id="L171" class="ln">   171  </span>}
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>func TestResolver_RequireOwner(t *testing.T) {
-<span id="L174" class="ln">   174  </span>	t.Parallel()
-<span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L177" class="ln">   177  </span>		t.Parallel()
-<span id="L178" class="ln">   178  </span>
-<span id="L179" class="ln">   179  </span>		t.Run(&#34;主 checkout は所有者として素通りさせる&#34;, func(t *testing.T) {
-<span id="L180" class="ln">   180  </span>			t.Parallel()
-<span id="L181" class="ln">   181  </span>
-<span id="L182" class="ln">   182  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
-<span id="L183" class="ln">   183  </span>
-<span id="L184" class="ln">   184  </span>			require.NoError(t, r.RequireOwner(t.Context()))
-<span id="L185" class="ln">   185  </span>		})
-<span id="L186" class="ln">   186  </span>
-<span id="L187" class="ln">   187  </span>		t.Run(&#34;ツールランナー内（git 不在）は素通りさせる&#34;, func(t *testing.T) {
-<span id="L188" class="ln">   188  </span>			t.Parallel()
+<span id="L153" class="ln">   153  </span>			root := t.TempDir()
+<span id="L154" class="ln">   154  </span>			writeSlot(t, root, slotFileContent)
+<span id="L155" class="ln">   155  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>			got, err := r.Resolve(t.Context())
+<span id="L158" class="ln">   158  </span>			require.NoError(t, err)
+<span id="L159" class="ln">   159  </span>			assert.True(t, got.SlotHeld)
+<span id="L160" class="ln">   160  </span>			assert.Equal(t, &#34;wt3_local&#34;, got.DBLocal)
+<span id="L161" class="ln">   161  </span>			assert.Equal(t, &#34;wt3_test&#34;, got.DBTest)
+<span id="L162" class="ln">   162  </span>			assert.Equal(t, &#34;gobp-wt-3&#34;, got.AppProject)
+<span id="L163" class="ln">   163  </span>			assert.Equal(t, &#34;http://localhost:2013/default&#34;, got.AuthIssuer)
+<span id="L164" class="ln">   164  </span>		})
+<span id="L165" class="ln">   165  </span>
+<span id="L166" class="ln">   166  </span>		t.Run(&#34;値はスロット番号から導き、スロット定義が並べる DB 名やポートは採用しない&#34;, func(t *testing.T) {
+<span id="L167" class="ln">   167  </span>			t.Parallel()
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span>			root := t.TempDir()
+<span id="L170" class="ln">   170  </span>			writeSlot(t, root, &#34;SLOT=3\nDB_NAME_LOCAL=wt9_local\nDB_NAME_TEST=wt9_test\n&#34;+
+<span id="L171" class="ln">   171  </span>				&#34;MOCK_AUTH_HOST_PORT=2019\nSERVE_PROJECT=gobp-wt-9\n&#34;)
+<span id="L172" class="ln">   172  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
+<span id="L173" class="ln">   173  </span>
+<span id="L174" class="ln">   174  </span>			got, err := r.Resolve(t.Context())
+<span id="L175" class="ln">   175  </span>			require.NoError(t, err)
+<span id="L176" class="ln">   176  </span>			assert.True(t, got.SlotHeld)
+<span id="L177" class="ln">   177  </span>			assert.Equal(t, &#34;wt3_local&#34;, got.DBLocal)
+<span id="L178" class="ln">   178  </span>			assert.Equal(t, &#34;wt3_test&#34;, got.DBTest)
+<span id="L179" class="ln">   179  </span>			assert.Equal(t, &#34;gobp-wt-3&#34;, got.AppProject)
+<span id="L180" class="ln">   180  </span>			assert.Equal(t, &#34;http://localhost:2013/default&#34;, got.AuthIssuer)
+<span id="L181" class="ln">   181  </span>		})
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>		t.Run(&#34;Realtime の資源名をスロットごとの名前空間へ落とす&#34;, func(t *testing.T) {
+<span id="L184" class="ln">   184  </span>			t.Parallel()
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span>			root := t.TempDir()
+<span id="L187" class="ln">   187  </span>			writeSlot(t, root, slotFileContent)
+<span id="L188" class="ln">   188  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
 <span id="L189" class="ln">   189  </span>
-<span id="L190" class="ln">   190  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{lookErr: errGitFailed, hasGitEntry: true})
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>			require.NoError(t, r.RequireOwner(t.Context()))
-<span id="L193" class="ln">   193  </span>		})
-<span id="L194" class="ln">   194  </span>
-<span id="L195" class="ln">   195  </span>		t.Run(&#34;スロット取得済みのリンク worktree は素通りさせる&#34;, func(t *testing.T) {
-<span id="L196" class="ln">   196  </span>			t.Parallel()
-<span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>			root := t.TempDir()
-<span id="L199" class="ln">   199  </span>			writeSlot(t, root, slotFileContent)
-<span id="L200" class="ln">   200  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
-<span id="L201" class="ln">   201  </span>
-<span id="L202" class="ln">   202  </span>			require.NoError(t, r.RequireOwner(t.Context()))
-<span id="L203" class="ln">   203  </span>		})
-<span id="L204" class="ln">   204  </span>	})
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L207" class="ln">   207  </span>		t.Parallel()
-<span id="L208" class="ln">   208  </span>
-<span id="L209" class="ln">   209  </span>		t.Run(&#34;スロット未取得のリンク worktree は取得方法を案内して失敗させる&#34;, func(t *testing.T) {
-<span id="L210" class="ln">   210  </span>			t.Parallel()
+<span id="L190" class="ln">   190  </span>			got, err := r.Resolve(t.Context())
+<span id="L191" class="ln">   191  </span>			require.NoError(t, err)
+<span id="L192" class="ln">   192  </span>			assert.Equal(t, &#34;local_wt3&#34;, got.RealtimeTableSuffix, &#34;table の suffix だけ区切りが `_`&#34;)
+<span id="L193" class="ln">   193  </span>			assert.Equal(t, &#34;realtime-local-wt3&#34;, got.RealtimeQueuePrefix)
+<span id="L194" class="ln">   194  </span>			assert.Equal(t, &#34;arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3&#34;, got.RealtimeTopic)
+<span id="L195" class="ln">   195  </span>		})
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>		t.Run(&#34;スロット番号が壊れていれば既定へ落とす&#34;, func(t *testing.T) {
+<span id="L198" class="ln">   198  </span>			t.Parallel()
+<span id="L199" class="ln">   199  </span>
+<span id="L200" class="ln">   200  </span>			root := filepath.Join(t.TempDir(), &#34;go-boilerplate&#34;)
+<span id="L201" class="ln">   201  </span>			require.NoError(t, os.Mkdir(root, dirPerm))
+<span id="L202" class="ln">   202  </span>			writeSlot(t, root, &#34;SLOT=abc\nDB_NAME_LOCAL=wt3_local\nDB_NAME_TEST=wt3_test\n&#34;)
+<span id="L203" class="ln">   203  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
+<span id="L204" class="ln">   204  </span>
+<span id="L205" class="ln">   205  </span>			got, err := r.Resolve(t.Context())
+<span id="L206" class="ln">   206  </span>			require.NoError(t, err)
+<span id="L207" class="ln">   207  </span>			assert.False(t, got.SlotHeld)
+<span id="L208" class="ln">   208  </span>			assert.Equal(t, &#34;local&#34;, got.DBLocal)
+<span id="L209" class="ln">   209  </span>			assert.Equal(t, &#34;gobp-app-go-boilerplate&#34;, got.AppProject)
+<span id="L210" class="ln">   210  </span>		})
 <span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
-<span id="L213" class="ln">   213  </span>
-<span id="L214" class="ln">   214  </span>			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
-<span id="L215" class="ln">   215  </span>			assert.Contains(t, out.String(), &#34;所有するデータベースがありません&#34;)
-<span id="L216" class="ln">   216  </span>			assert.Contains(t, out.String(), &#34;make slot-acquire&#34;)
-<span id="L217" class="ln">   217  </span>		})
-<span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>		t.Run(&#34;スロット定義に DB 名が無ければ所有者とみなさない&#34;, func(t *testing.T) {
-<span id="L220" class="ln">   220  </span>			t.Parallel()
-<span id="L221" class="ln">   221  </span>
-<span id="L222" class="ln">   222  </span>			root := t.TempDir()
-<span id="L223" class="ln">   223  </span>			writeSlot(t, root, &#34;SLOT=3\n&#34;)
-<span id="L224" class="ln">   224  </span>			r, out := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
-<span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
-<span id="L227" class="ln">   227  </span>			assert.Contains(t, out.String(), &#34;make slot-acquire&#34;)
+<span id="L212" class="ln">   212  </span>		t.Run(&#34;リースを他 worktree に回収されていればスロット定義を無視して既定へ落とす&#34;, func(t *testing.T) {
+<span id="L213" class="ln">   213  </span>			t.Parallel()
+<span id="L214" class="ln">   214  </span>
+<span id="L215" class="ln">   215  </span>			root := filepath.Join(t.TempDir(), &#34;go-boilerplate&#34;)
+<span id="L216" class="ln">   216  </span>			require.NoError(t, os.Mkdir(root, dirPerm))
+<span id="L217" class="ln">   217  </span>			writeSlot(t, root, slotFileContent)
+<span id="L218" class="ln">   218  </span>			r, _ := newResolverWithLease(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;},
+<span id="L219" class="ln">   219  </span>				&amp;LeaseProbe{OwnedBySelf: func(int) bool { return false }})
+<span id="L220" class="ln">   220  </span>
+<span id="L221" class="ln">   221  </span>			got, err := r.Resolve(t.Context())
+<span id="L222" class="ln">   222  </span>			require.NoError(t, err)
+<span id="L223" class="ln">   223  </span>			assert.False(t, got.SlotHeld)
+<span id="L224" class="ln">   224  </span>			assert.Equal(t, &#34;local&#34;, got.DBLocal)
+<span id="L225" class="ln">   225  </span>			assert.Equal(t, &#34;test&#34;, got.DBTest)
+<span id="L226" class="ln">   226  </span>			assert.Equal(t, &#34;gobp-app-go-boilerplate&#34;, got.AppProject)
+<span id="L227" class="ln">   227  </span>			assert.Equal(t, &#34;http://localhost:2010/default&#34;, got.AuthIssuer)
 <span id="L228" class="ln">   228  </span>		})
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>		t.Run(&#34;リポジトリなのに git が失敗したら素通りさせず止める&#34;, func(t *testing.T) {
-<span id="L231" class="ln">   231  </span>			t.Parallel()
-<span id="L232" class="ln">   232  </span>
-<span id="L233" class="ln">   233  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
-<span id="L234" class="ln">   234  </span>
-<span id="L235" class="ln">   235  </span>			require.ErrorIs(t, r.RequireOwner(t.Context()), errGitLayoutUnreadable)
-<span id="L236" class="ln">   236  </span>		})
-<span id="L237" class="ln">   237  </span>	})
-<span id="L238" class="ln">   238  </span>}
-<span id="L239" class="ln">   239  </span>
-<span id="L240" class="ln">   240  </span>func TestResolver_PrintEnv(t *testing.T) {
-<span id="L241" class="ln">   241  </span>	t.Parallel()
+<span id="L229" class="ln">   229  </span>	})
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L232" class="ln">   232  </span>		t.Parallel()
+<span id="L233" class="ln">   233  </span>
+<span id="L234" class="ln">   234  </span>		t.Run(&#34;リポジトリなのに git が失敗したら判定不能として止める&#34;, func(t *testing.T) {
+<span id="L235" class="ln">   235  </span>			t.Parallel()
+<span id="L236" class="ln">   236  </span>
+<span id="L237" class="ln">   237  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
+<span id="L238" class="ln">   238  </span>
+<span id="L239" class="ln">   239  </span>			_, err := r.Resolve(t.Context())
+<span id="L240" class="ln">   240  </span>			require.ErrorIs(t, err, errGitLayoutUnreadable)
+<span id="L241" class="ln">   241  </span>		})
 <span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L244" class="ln">   244  </span>		t.Parallel()
+<span id="L243" class="ln">   243  </span>		t.Run(&#34;git の出力が想定外の形なら判定不能として止める&#34;, func(t *testing.T) {
+<span id="L244" class="ln">   244  </span>			t.Parallel()
 <span id="L245" class="ln">   245  </span>
-<span id="L246" class="ln">   246  </span>		t.Run(&#34;make が eval できる KEY=VALUE を出力する&#34;, func(t *testing.T) {
-<span id="L247" class="ln">   247  </span>			t.Parallel()
-<span id="L248" class="ln">   248  </span>
-<span id="L249" class="ln">   249  </span>			root := t.TempDir()
-<span id="L250" class="ln">   250  </span>			writeSlot(t, root, slotFileContent)
-<span id="L251" class="ln">   251  </span>			r, out := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
-<span id="L252" class="ln">   252  </span>
-<span id="L253" class="ln">   253  </span>			require.NoError(t, r.PrintEnv(t.Context()))
-<span id="L254" class="ln">   254  </span>			assert.Contains(t, out.String(), &#34;DB_LOCAL=&#39;wt3_local&#39;\n&#34;)
-<span id="L255" class="ln">   255  </span>			assert.Contains(t, out.String(), &#34;DB_TEST=&#39;wt3_test&#39;\n&#34;)
-<span id="L256" class="ln">   256  </span>			assert.Contains(t, out.String(), &#34;APP_PROJECT=&#39;gobp-wt-3&#39;\n&#34;)
-<span id="L257" class="ln">   257  </span>			assert.Contains(t, out.String(), &#34;AUTH_ISSUER=&#39;http://localhost:2013/default&#39;\n&#34;)
-<span id="L258" class="ln">   258  </span>			assert.Contains(t, out.String(), &#34;INFRA_NO_RECREATE=&#39;--no-recreate&#39;\n&#34;)
-<span id="L259" class="ln">   259  </span>			assert.Contains(t, out.String(), &#34;GOBP_GIT_CONTEXT=&#39;linked-worktree&#39;\n&#34;)
-<span id="L260" class="ln">   260  </span>		})
-<span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span>		t.Run(&#34;単一 checkout では --no-recreate を渡さない&#34;, func(t *testing.T) {
-<span id="L263" class="ln">   263  </span>			t.Parallel()
+<span id="L246" class="ln">   246  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n&#34;})
+<span id="L247" class="ln">   247  </span>
+<span id="L248" class="ln">   248  </span>			_, err := r.Resolve(t.Context())
+<span id="L249" class="ln">   249  </span>			require.ErrorIs(t, err, errGitLayoutUnreadable)
+<span id="L250" class="ln">   250  </span>		})
+<span id="L251" class="ln">   251  </span>	})
+<span id="L252" class="ln">   252  </span>}
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>func TestResolver_RequireOwner(t *testing.T) {
+<span id="L255" class="ln">   255  </span>	t.Parallel()
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L258" class="ln">   258  </span>		t.Parallel()
+<span id="L259" class="ln">   259  </span>
+<span id="L260" class="ln">   260  </span>		t.Run(&#34;主 checkout は所有者として素通りさせる&#34;, func(t *testing.T) {
+<span id="L261" class="ln">   261  </span>			t.Parallel()
+<span id="L262" class="ln">   262  </span>
+<span id="L263" class="ln">   263  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
 <span id="L264" class="ln">   264  </span>
-<span id="L265" class="ln">   265  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
-<span id="L266" class="ln">   266  </span>
-<span id="L267" class="ln">   267  </span>			require.NoError(t, r.PrintEnv(t.Context()))
-<span id="L268" class="ln">   268  </span>			assert.Contains(t, out.String(), &#34;INFRA_NO_RECREATE=&#39;&#39;\n&#34;)
-<span id="L269" class="ln">   269  </span>		})
-<span id="L270" class="ln">   270  </span>	})
-<span id="L271" class="ln">   271  </span>
-<span id="L272" class="ln">   272  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L273" class="ln">   273  </span>		t.Parallel()
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>		t.Run(&#34;判定不能なら何も出力せず失敗させる&#34;, func(t *testing.T) {
-<span id="L276" class="ln">   276  </span>			t.Parallel()
-<span id="L277" class="ln">   277  </span>
-<span id="L278" class="ln">   278  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>			require.ErrorIs(t, r.PrintEnv(t.Context()), errGitLayoutUnreadable)
-<span id="L281" class="ln">   281  </span>			assert.Empty(t, out.String())
-<span id="L282" class="ln">   282  </span>		})
-<span id="L283" class="ln">   283  </span>	})
-<span id="L284" class="ln">   284  </span>}
-<span id="L285" class="ln">   285  </span>
-<span id="L286" class="ln">   286  </span>func TestResolver_PrintValues(t *testing.T) {
-<span id="L287" class="ln">   287  </span>	t.Parallel()
-<span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L290" class="ln">   290  </span>		t.Parallel()
-<span id="L291" class="ln">   291  </span>
-<span id="L292" class="ln">   292  </span>		t.Run(&#34;どのデータベースとプロジェクトを叩くのかを表示する&#34;, func(t *testing.T) {
-<span id="L293" class="ln">   293  </span>			t.Parallel()
+<span id="L265" class="ln">   265  </span>			require.NoError(t, r.RequireOwner(t.Context()))
+<span id="L266" class="ln">   266  </span>		})
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>		t.Run(&#34;ツールランナー内（git 不在）は素通りさせる&#34;, func(t *testing.T) {
+<span id="L269" class="ln">   269  </span>			t.Parallel()
+<span id="L270" class="ln">   270  </span>
+<span id="L271" class="ln">   271  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{lookErr: errGitFailed, hasGitEntry: true})
+<span id="L272" class="ln">   272  </span>
+<span id="L273" class="ln">   273  </span>			require.NoError(t, r.RequireOwner(t.Context()))
+<span id="L274" class="ln">   274  </span>		})
+<span id="L275" class="ln">   275  </span>
+<span id="L276" class="ln">   276  </span>		t.Run(&#34;スロット取得済みのリンク worktree は素通りさせる&#34;, func(t *testing.T) {
+<span id="L277" class="ln">   277  </span>			t.Parallel()
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>			root := t.TempDir()
+<span id="L280" class="ln">   280  </span>			writeSlot(t, root, slotFileContent)
+<span id="L281" class="ln">   281  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span>			require.NoError(t, r.RequireOwner(t.Context()))
+<span id="L284" class="ln">   284  </span>		})
+<span id="L285" class="ln">   285  </span>	})
+<span id="L286" class="ln">   286  </span>
+<span id="L287" class="ln">   287  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L288" class="ln">   288  </span>		t.Parallel()
+<span id="L289" class="ln">   289  </span>
+<span id="L290" class="ln">   290  </span>		t.Run(&#34;スロット未取得のリンク worktree は取得方法を案内して失敗させる&#34;, func(t *testing.T) {
+<span id="L291" class="ln">   291  </span>			t.Parallel()
+<span id="L292" class="ln">   292  </span>
+<span id="L293" class="ln">   293  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
 <span id="L294" class="ln">   294  </span>
-<span id="L295" class="ln">   295  </span>			root := t.TempDir()
-<span id="L296" class="ln">   296  </span>			writeSlot(t, root, slotFileContent)
-<span id="L297" class="ln">   297  </span>			r, out := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
-<span id="L298" class="ln">   298  </span>
-<span id="L299" class="ln">   299  </span>			require.NoError(t, r.PrintValues(t.Context()))
-<span id="L300" class="ln">   300  </span>			assert.Contains(t, out.String(), &#34;git context       : linked-worktree&#34;)
-<span id="L301" class="ln">   301  </span>			assert.Contains(t, out.String(), &#34;slot held         : yes&#34;)
-<span id="L302" class="ln">   302  </span>			assert.Contains(t, out.String(), &#34;DB_LOCAL          : wt3_local&#34;)
-<span id="L303" class="ln">   303  </span>			assert.Contains(t, out.String(), &#34;APP_PROJECT       : gobp-wt-3&#34;)
-<span id="L304" class="ln">   304  </span>			assert.Contains(t, out.String(), &#34;INFRA_NO_RECREATE : --no-recreate&#34;)
-<span id="L305" class="ln">   305  </span>		})
-<span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>		t.Run(&#34;渡さない値は空欄にせず明示する&#34;, func(t *testing.T) {
-<span id="L308" class="ln">   308  </span>			t.Parallel()
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L295" class="ln">   295  </span>			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
+<span id="L296" class="ln">   296  </span>			assert.Contains(t, out.String(), &#34;所有するデータベースがありません&#34;)
+<span id="L297" class="ln">   297  </span>			assert.Contains(t, out.String(), &#34;make slot-acquire&#34;)
+<span id="L298" class="ln">   298  </span>		})
+<span id="L299" class="ln">   299  </span>
+<span id="L300" class="ln">   300  </span>		t.Run(&#34;回収済みのスロット定義が残っていても所有者とみなさない&#34;, func(t *testing.T) {
+<span id="L301" class="ln">   301  </span>			t.Parallel()
+<span id="L302" class="ln">   302  </span>
+<span id="L303" class="ln">   303  </span>			root := t.TempDir()
+<span id="L304" class="ln">   304  </span>			writeSlot(t, root, slotFileContent)
+<span id="L305" class="ln">   305  </span>			r, out := newResolverWithLease(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;},
+<span id="L306" class="ln">   306  </span>				&amp;LeaseProbe{OwnedBySelf: func(int) bool { return false }})
+<span id="L307" class="ln">   307  </span>
+<span id="L308" class="ln">   308  </span>			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
+<span id="L309" class="ln">   309  </span>			assert.Contains(t, out.String(), &#34;回収されている&#34;)
+<span id="L310" class="ln">   310  </span>		})
 <span id="L311" class="ln">   311  </span>
-<span id="L312" class="ln">   312  </span>			require.NoError(t, r.PrintValues(t.Context()))
-<span id="L313" class="ln">   313  </span>			assert.Contains(t, out.String(), &#34;INFRA_NO_RECREATE : （渡さない）&#34;)
-<span id="L314" class="ln">   314  </span>			assert.Contains(t, out.String(), &#34;slot held         : no&#34;)
-<span id="L315" class="ln">   315  </span>		})
-<span id="L316" class="ln">   316  </span>	})
-<span id="L317" class="ln">   317  </span>
-<span id="L318" class="ln">   318  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L319" class="ln">   319  </span>		t.Parallel()
-<span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>		t.Run(&#34;判定不能なら何も出力せず失敗させる&#34;, func(t *testing.T) {
-<span id="L322" class="ln">   322  </span>			t.Parallel()
-<span id="L323" class="ln">   323  </span>
-<span id="L324" class="ln">   324  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
-<span id="L325" class="ln">   325  </span>
-<span id="L326" class="ln">   326  </span>			require.ErrorIs(t, r.PrintValues(t.Context()), errGitLayoutUnreadable)
-<span id="L327" class="ln">   327  </span>			assert.Empty(t, out.String())
-<span id="L328" class="ln">   328  </span>		})
-<span id="L329" class="ln">   329  </span>	})
-<span id="L330" class="ln">   330  </span>}
-<span id="L331" class="ln">   331  </span>
-<span id="L332" class="ln">   332  </span>func TestNewResolver(t *testing.T) {
-<span id="L333" class="ln">   333  </span>	t.Parallel()
-<span id="L334" class="ln">   334  </span>
-<span id="L335" class="ln">   335  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L336" class="ln">   336  </span>		t.Parallel()
+<span id="L312" class="ln">   312  </span>		t.Run(&#34;リースの判定点が無ければ所有者とみなさない&#34;, func(t *testing.T) {
+<span id="L313" class="ln">   313  </span>			t.Parallel()
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>			root := t.TempDir()
+<span id="L316" class="ln">   316  </span>			writeSlot(t, root, slotFileContent)
+<span id="L317" class="ln">   317  </span>			r, _ := newResolverWithLease(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;}, nil)
+<span id="L318" class="ln">   318  </span>
+<span id="L319" class="ln">   319  </span>			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
+<span id="L320" class="ln">   320  </span>		})
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>		t.Run(&#34;スロット定義に DB 名が無ければ所有者とみなさない&#34;, func(t *testing.T) {
+<span id="L323" class="ln">   323  </span>			t.Parallel()
+<span id="L324" class="ln">   324  </span>
+<span id="L325" class="ln">   325  </span>			root := t.TempDir()
+<span id="L326" class="ln">   326  </span>			writeSlot(t, root, &#34;SLOT=3\n&#34;)
+<span id="L327" class="ln">   327  </span>			r, out := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
+<span id="L328" class="ln">   328  </span>
+<span id="L329" class="ln">   329  </span>			require.ErrorIs(t, r.RequireOwner(t.Context()), errNoDatabaseOwner)
+<span id="L330" class="ln">   330  </span>			assert.Contains(t, out.String(), &#34;make slot-acquire&#34;)
+<span id="L331" class="ln">   331  </span>		})
+<span id="L332" class="ln">   332  </span>
+<span id="L333" class="ln">   333  </span>		t.Run(&#34;リポジトリなのに git が失敗したら素通りさせず止める&#34;, func(t *testing.T) {
+<span id="L334" class="ln">   334  </span>			t.Parallel()
+<span id="L335" class="ln">   335  </span>
+<span id="L336" class="ln">   336  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
 <span id="L337" class="ln">   337  </span>
-<span id="L338" class="ln">   338  </span>		t.Run(&#34;probe を渡さなければホストの git を使う実依存で組み立てる&#34;, func(t *testing.T) {
-<span id="L339" class="ln">   339  </span>			t.Parallel()
-<span id="L340" class="ln">   340  </span>
-<span id="L341" class="ln">   341  </span>			r := NewResolver(Config{Root: t.TempDir()}, nil, io.Discard)
+<span id="L338" class="ln">   338  </span>			require.ErrorIs(t, r.RequireOwner(t.Context()), errGitLayoutUnreadable)
+<span id="L339" class="ln">   339  </span>		})
+<span id="L340" class="ln">   340  </span>	})
+<span id="L341" class="ln">   341  </span>}
 <span id="L342" class="ln">   342  </span>
-<span id="L343" class="ln">   343  </span>			assert.NotNil(t, r.probe.LookGit)
-<span id="L344" class="ln">   344  </span>			assert.NotNil(t, r.probe.GitDirs)
-<span id="L345" class="ln">   345  </span>			assert.NotNil(t, r.probe.HasGitEntry)
-<span id="L346" class="ln">   346  </span>		})
-<span id="L347" class="ln">   347  </span>	})
-<span id="L348" class="ln">   348  </span>}
-<span id="L349" class="ln">   349  </span>
-<span id="L350" class="ln">   350  </span>func Test_hasGitEntry(t *testing.T) {
-<span id="L351" class="ln">   351  </span>	t.Parallel()
-<span id="L352" class="ln">   352  </span>
-<span id="L353" class="ln">   353  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L354" class="ln">   354  </span>		t.Parallel()
+<span id="L343" class="ln">   343  </span>func TestResolver_PrintEnv(t *testing.T) {
+<span id="L344" class="ln">   344  </span>	t.Parallel()
+<span id="L345" class="ln">   345  </span>
+<span id="L346" class="ln">   346  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L347" class="ln">   347  </span>		t.Parallel()
+<span id="L348" class="ln">   348  </span>
+<span id="L349" class="ln">   349  </span>		t.Run(&#34;make が eval できる KEY=VALUE を出力する&#34;, func(t *testing.T) {
+<span id="L350" class="ln">   350  </span>			t.Parallel()
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span>			root := t.TempDir()
+<span id="L353" class="ln">   353  </span>			writeSlot(t, root, slotFileContent)
+<span id="L354" class="ln">   354  </span>			r, out := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
 <span id="L355" class="ln">   355  </span>
-<span id="L356" class="ln">   356  </span>		t.Run(&#34;祖先に .git があれば真を返す&#34;, func(t *testing.T) {
-<span id="L357" class="ln">   357  </span>			t.Parallel()
-<span id="L358" class="ln">   358  </span>
-<span id="L359" class="ln">   359  </span>			root := t.TempDir()
-<span id="L360" class="ln">   360  </span>			require.NoError(t, os.Mkdir(filepath.Join(root, &#34;.git&#34;), dirPerm))
-<span id="L361" class="ln">   361  </span>			nested := filepath.Join(root, &#34;a&#34;, &#34;b&#34;)
-<span id="L362" class="ln">   362  </span>			require.NoError(t, os.MkdirAll(nested, dirPerm))
-<span id="L363" class="ln">   363  </span>
-<span id="L364" class="ln">   364  </span>			assert.True(t, hasGitEntry(nested))
-<span id="L365" class="ln">   365  </span>		})
-<span id="L366" class="ln">   366  </span>
-<span id="L367" class="ln">   367  </span>		t.Run(&#34;リンク worktree の .git はファイルでも真を返す&#34;, func(t *testing.T) {
-<span id="L368" class="ln">   368  </span>			t.Parallel()
+<span id="L356" class="ln">   356  </span>			require.NoError(t, r.PrintEnv(t.Context()))
+<span id="L357" class="ln">   357  </span>			assert.Contains(t, out.String(), &#34;DB_LOCAL=&#39;wt3_local&#39;\n&#34;)
+<span id="L358" class="ln">   358  </span>			assert.Contains(t, out.String(), &#34;DB_TEST=&#39;wt3_test&#39;\n&#34;)
+<span id="L359" class="ln">   359  </span>			assert.Contains(t, out.String(), &#34;APP_PROJECT=&#39;gobp-wt-3&#39;\n&#34;)
+<span id="L360" class="ln">   360  </span>			assert.Contains(t, out.String(), &#34;AUTH_ISSUER=&#39;http://localhost:2013/default&#39;\n&#34;)
+<span id="L361" class="ln">   361  </span>			assert.Contains(t, out.String(), &#34;INFRA_NO_RECREATE=&#39;--no-recreate&#39;\n&#34;)
+<span id="L362" class="ln">   362  </span>			assert.Contains(t, out.String(), &#34;GOBP_GIT_CONTEXT=&#39;linked-worktree&#39;\n&#34;)
+<span id="L363" class="ln">   363  </span>		})
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>		t.Run(&#34;単一 checkout では --no-recreate を渡さない&#34;, func(t *testing.T) {
+<span id="L366" class="ln">   366  </span>			t.Parallel()
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
 <span id="L369" class="ln">   369  </span>
-<span id="L370" class="ln">   370  </span>			root := t.TempDir()
-<span id="L371" class="ln">   371  </span>			require.NoError(t, os.WriteFile(filepath.Join(root, &#34;.git&#34;), []byte(&#34;gitdir: /repo/.git/worktrees/wt1\n&#34;), filePerm))
-<span id="L372" class="ln">   372  </span>
-<span id="L373" class="ln">   373  </span>			assert.True(t, hasGitEntry(root))
-<span id="L374" class="ln">   374  </span>		})
-<span id="L375" class="ln">   375  </span>
-<span id="L376" class="ln">   376  </span>		t.Run(&#34;祖先に .git が無ければ偽を返す&#34;, func(t *testing.T) {
-<span id="L377" class="ln">   377  </span>			t.Parallel()
-<span id="L378" class="ln">   378  </span>
-<span id="L379" class="ln">   379  </span>			<span class="comment">// t.TempDir() は /tmp 配下（git 管理外）なので、根まで遡っても .git は見つからない。</span>
-<span id="L380" class="ln">   380  </span>			assert.False(t, hasGitEntry(t.TempDir()))
-<span id="L381" class="ln">   381  </span>		})
-<span id="L382" class="ln">   382  </span>	})
-<span id="L383" class="ln">   383  </span>}
-<span id="L384" class="ln">   384  </span>
-<span id="L385" class="ln">   385  </span>func TestGitContext_String(t *testing.T) {
-<span id="L386" class="ln">   386  </span>	t.Parallel()
-<span id="L387" class="ln">   387  </span>
-<span id="L388" class="ln">   388  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L389" class="ln">   389  </span>		t.Parallel()
-<span id="L390" class="ln">   390  </span>
-<span id="L391" class="ln">   391  </span>		t.Run(&#34;git 不在は git-unavailable を返す&#34;, func(t *testing.T) {
-<span id="L392" class="ln">   392  </span>			t.Parallel()
-<span id="L393" class="ln">   393  </span>
-<span id="L394" class="ln">   394  </span>			assert.Equal(t, &#34;git-unavailable&#34;, GitUnavailable.String())
-<span id="L395" class="ln">   395  </span>		})
-<span id="L396" class="ln">   396  </span>
-<span id="L397" class="ln">   397  </span>		t.Run(&#34;非リポジトリは no-repository を返す&#34;, func(t *testing.T) {
-<span id="L398" class="ln">   398  </span>			t.Parallel()
-<span id="L399" class="ln">   399  </span>
-<span id="L400" class="ln">   400  </span>			assert.Equal(t, &#34;no-repository&#34;, GitNoRepository.String())
-<span id="L401" class="ln">   401  </span>		})
-<span id="L402" class="ln">   402  </span>
-<span id="L403" class="ln">   403  </span>		t.Run(&#34;主 checkout は main-checkout を返す&#34;, func(t *testing.T) {
-<span id="L404" class="ln">   404  </span>			t.Parallel()
-<span id="L405" class="ln">   405  </span>
-<span id="L406" class="ln">   406  </span>			assert.Equal(t, &#34;main-checkout&#34;, GitMainCheckout.String())
-<span id="L407" class="ln">   407  </span>		})
-<span id="L408" class="ln">   408  </span>
-<span id="L409" class="ln">   409  </span>		t.Run(&#34;リンク worktree は linked-worktree を返す&#34;, func(t *testing.T) {
-<span id="L410" class="ln">   410  </span>			t.Parallel()
-<span id="L411" class="ln">   411  </span>
-<span id="L412" class="ln">   412  </span>			assert.Equal(t, &#34;linked-worktree&#34;, GitLinkedWorktree.String())
-<span id="L413" class="ln">   413  </span>		})
-<span id="L414" class="ln">   414  </span>	})
-<span id="L415" class="ln">   415  </span>
-<span id="L416" class="ln">   416  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L417" class="ln">   417  </span>		t.Parallel()
-<span id="L418" class="ln">   418  </span>
-<span id="L419" class="ln">   419  </span>		t.Run(&#34;未定義の値は unknown へ落とし、数値を露出させない&#34;, func(t *testing.T) {
-<span id="L420" class="ln">   420  </span>			t.Parallel()
-<span id="L421" class="ln">   421  </span>
-<span id="L422" class="ln">   422  </span>			assert.Equal(t, &#34;unknown&#34;, GitContext(99).String())
-<span id="L423" class="ln">   423  </span>		})
-<span id="L424" class="ln">   424  </span>	})
-<span id="L425" class="ln">   425  </span>}
+<span id="L370" class="ln">   370  </span>			require.NoError(t, r.PrintEnv(t.Context()))
+<span id="L371" class="ln">   371  </span>			assert.Contains(t, out.String(), &#34;INFRA_NO_RECREATE=&#39;&#39;\n&#34;)
+<span id="L372" class="ln">   372  </span>		})
+<span id="L373" class="ln">   373  </span>	})
+<span id="L374" class="ln">   374  </span>
+<span id="L375" class="ln">   375  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L376" class="ln">   376  </span>		t.Parallel()
+<span id="L377" class="ln">   377  </span>
+<span id="L378" class="ln">   378  </span>		t.Run(&#34;判定不能なら何も出力せず失敗させる&#34;, func(t *testing.T) {
+<span id="L379" class="ln">   379  </span>			t.Parallel()
+<span id="L380" class="ln">   380  </span>
+<span id="L381" class="ln">   381  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
+<span id="L382" class="ln">   382  </span>
+<span id="L383" class="ln">   383  </span>			require.ErrorIs(t, r.PrintEnv(t.Context()), errGitLayoutUnreadable)
+<span id="L384" class="ln">   384  </span>			assert.Empty(t, out.String())
+<span id="L385" class="ln">   385  </span>		})
+<span id="L386" class="ln">   386  </span>	})
+<span id="L387" class="ln">   387  </span>}
+<span id="L388" class="ln">   388  </span>
+<span id="L389" class="ln">   389  </span>func TestResolver_PrintValues(t *testing.T) {
+<span id="L390" class="ln">   390  </span>	t.Parallel()
+<span id="L391" class="ln">   391  </span>
+<span id="L392" class="ln">   392  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L393" class="ln">   393  </span>		t.Parallel()
+<span id="L394" class="ln">   394  </span>
+<span id="L395" class="ln">   395  </span>		t.Run(&#34;どのデータベースとプロジェクトを叩くのかを表示する&#34;, func(t *testing.T) {
+<span id="L396" class="ln">   396  </span>			t.Parallel()
+<span id="L397" class="ln">   397  </span>
+<span id="L398" class="ln">   398  </span>			root := t.TempDir()
+<span id="L399" class="ln">   399  </span>			writeSlot(t, root, slotFileContent)
+<span id="L400" class="ln">   400  </span>			r, out := newResolver(t, root, probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
+<span id="L401" class="ln">   401  </span>
+<span id="L402" class="ln">   402  </span>			require.NoError(t, r.PrintValues(t.Context()))
+<span id="L403" class="ln">   403  </span>			assert.Contains(t, out.String(), &#34;git context       : linked-worktree&#34;)
+<span id="L404" class="ln">   404  </span>			assert.Contains(t, out.String(), &#34;slot held         : yes&#34;)
+<span id="L405" class="ln">   405  </span>			assert.Contains(t, out.String(), &#34;DB_LOCAL          : wt3_local&#34;)
+<span id="L406" class="ln">   406  </span>			assert.Contains(t, out.String(), &#34;APP_PROJECT       : gobp-wt-3&#34;)
+<span id="L407" class="ln">   407  </span>			assert.Contains(t, out.String(), &#34;INFRA_NO_RECREATE : --no-recreate&#34;)
+<span id="L408" class="ln">   408  </span>		})
+<span id="L409" class="ln">   409  </span>
+<span id="L410" class="ln">   410  </span>		t.Run(&#34;渡さない値は空欄にせず明示する&#34;, func(t *testing.T) {
+<span id="L411" class="ln">   411  </span>			t.Parallel()
+<span id="L412" class="ln">   412  </span>
+<span id="L413" class="ln">   413  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>			require.NoError(t, r.PrintValues(t.Context()))
+<span id="L416" class="ln">   416  </span>			assert.Contains(t, out.String(), &#34;INFRA_NO_RECREATE : （渡さない）&#34;)
+<span id="L417" class="ln">   417  </span>			assert.Contains(t, out.String(), &#34;slot held         : no&#34;)
+<span id="L418" class="ln">   418  </span>		})
+<span id="L419" class="ln">   419  </span>	})
+<span id="L420" class="ln">   420  </span>
+<span id="L421" class="ln">   421  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L422" class="ln">   422  </span>		t.Parallel()
+<span id="L423" class="ln">   423  </span>
+<span id="L424" class="ln">   424  </span>		t.Run(&#34;判定不能なら何も出力せず失敗させる&#34;, func(t *testing.T) {
+<span id="L425" class="ln">   425  </span>			t.Parallel()
 <span id="L426" class="ln">   426  </span>
-<span id="L427" class="ln">   427  </span>func TestRenderEnv(t *testing.T) {
-<span id="L428" class="ln">   428  </span>	t.Parallel()
-<span id="L429" class="ln">   429  </span>
-<span id="L430" class="ln">   430  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L431" class="ln">   431  </span>		t.Parallel()
-<span id="L432" class="ln">   432  </span>
-<span id="L433" class="ln">   433  </span>		t.Run(&#34;make が eval できる KEY=&#39;VALUE&#39; を 1 行 1 変数で並べる&#34;, func(t *testing.T) {
-<span id="L434" class="ln">   434  </span>			t.Parallel()
-<span id="L435" class="ln">   435  </span>
-<span id="L436" class="ln">   436  </span>			got := RenderEnv(Values{
-<span id="L437" class="ln">   437  </span>				Git:             GitLinkedWorktree,
-<span id="L438" class="ln">   438  </span>				DBLocal:         &#34;wt3_local&#34;,
-<span id="L439" class="ln">   439  </span>				DBTest:          &#34;wt3_test&#34;,
-<span id="L440" class="ln">   440  </span>				AppProject:      &#34;gobp-wt-3&#34;,
-<span id="L441" class="ln">   441  </span>				AuthIssuer:      &#34;http://localhost:2013/default&#34;,
-<span id="L442" class="ln">   442  </span>				InfraNoRecreate: noRecreateFlag,
-<span id="L443" class="ln">   443  </span>			})
-<span id="L444" class="ln">   444  </span>
-<span id="L445" class="ln">   445  </span>			assert.Equal(t, &#34;GOBP_GIT_CONTEXT=&#39;linked-worktree&#39;\n&#34;+
-<span id="L446" class="ln">   446  </span>				&#34;DB_LOCAL=&#39;wt3_local&#39;\n&#34;+
-<span id="L447" class="ln">   447  </span>				&#34;DB_TEST=&#39;wt3_test&#39;\n&#34;+
-<span id="L448" class="ln">   448  </span>				&#34;APP_PROJECT=&#39;gobp-wt-3&#39;\n&#34;+
-<span id="L449" class="ln">   449  </span>				&#34;AUTH_ISSUER=&#39;http://localhost:2013/default&#39;\n&#34;+
-<span id="L450" class="ln">   450  </span>				&#34;INFRA_NO_RECREATE=&#39;--no-recreate&#39;\n&#34;, got)
-<span id="L451" class="ln">   451  </span>		})
-<span id="L452" class="ln">   452  </span>
-<span id="L453" class="ln">   453  </span>		t.Run(&#34;空の値もキーごと出力し、変数の欠落にしない&#34;, func(t *testing.T) {
-<span id="L454" class="ln">   454  </span>			t.Parallel()
-<span id="L455" class="ln">   455  </span>
-<span id="L456" class="ln">   456  </span>			got := RenderEnv(Values{Git: GitMainCheckout})
-<span id="L457" class="ln">   457  </span>
-<span id="L458" class="ln">   458  </span>			assert.Contains(t, got, &#34;INFRA_NO_RECREATE=&#39;&#39;\n&#34;)
-<span id="L459" class="ln">   459  </span>		})
-<span id="L460" class="ln">   460  </span>	})
+<span id="L427" class="ln">   427  </span>			r, out := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
+<span id="L428" class="ln">   428  </span>
+<span id="L429" class="ln">   429  </span>			require.ErrorIs(t, r.PrintValues(t.Context()), errGitLayoutUnreadable)
+<span id="L430" class="ln">   430  </span>			assert.Empty(t, out.String())
+<span id="L431" class="ln">   431  </span>		})
+<span id="L432" class="ln">   432  </span>	})
+<span id="L433" class="ln">   433  </span>}
+<span id="L434" class="ln">   434  </span>
+<span id="L435" class="ln">   435  </span>func TestResolver_heldSlot(t *testing.T) {
+<span id="L436" class="ln">   436  </span>	t.Parallel()
+<span id="L437" class="ln">   437  </span>
+<span id="L438" class="ln">   438  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L439" class="ln">   439  </span>		t.Parallel()
+<span id="L440" class="ln">   440  </span>
+<span id="L441" class="ln">   441  </span>		t.Run(&#34;宣言されたスロットのリースを保持していればその番号を返す&#34;, func(t *testing.T) {
+<span id="L442" class="ln">   442  </span>			t.Parallel()
+<span id="L443" class="ln">   443  </span>
+<span id="L444" class="ln">   444  </span>			root := t.TempDir()
+<span id="L445" class="ln">   445  </span>			writeSlot(t, root, slotFileContent)
+<span id="L446" class="ln">   446  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L447" class="ln">   447  </span>
+<span id="L448" class="ln">   448  </span>			slot, held := r.heldSlot()
+<span id="L449" class="ln">   449  </span>
+<span id="L450" class="ln">   450  </span>			assert.True(t, held)
+<span id="L451" class="ln">   451  </span>			assert.Equal(t, 3, slot)
+<span id="L452" class="ln">   452  </span>		})
+<span id="L453" class="ln">   453  </span>
+<span id="L454" class="ln">   454  </span>		t.Run(&#34;リースを保持していなければ番号を返さない&#34;, func(t *testing.T) {
+<span id="L455" class="ln">   455  </span>			t.Parallel()
+<span id="L456" class="ln">   456  </span>
+<span id="L457" class="ln">   457  </span>			root := t.TempDir()
+<span id="L458" class="ln">   458  </span>			writeSlot(t, root, slotFileContent)
+<span id="L459" class="ln">   459  </span>			r, _ := newResolverWithLease(t, root, probeStub{dirs: &#34;.git\n.git\n&#34;},
+<span id="L460" class="ln">   460  </span>				&amp;LeaseProbe{OwnedBySelf: func(int) bool { return false }})
 <span id="L461" class="ln">   461  </span>
-<span id="L462" class="ln">   462  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L463" class="ln">   463  </span>		t.Parallel()
-<span id="L464" class="ln">   464  </span>
-<span id="L465" class="ln">   465  </span>		t.Run(&#34;値に含まれる単引用符をエスケープし、eval を壊させない&#34;, func(t *testing.T) {
-<span id="L466" class="ln">   466  </span>			t.Parallel()
+<span id="L462" class="ln">   462  </span>			_, held := r.heldSlot()
+<span id="L463" class="ln">   463  </span>
+<span id="L464" class="ln">   464  </span>			assert.False(t, held)
+<span id="L465" class="ln">   465  </span>		})
+<span id="L466" class="ln">   466  </span>	})
 <span id="L467" class="ln">   467  </span>
-<span id="L468" class="ln">   468  </span>			got := RenderEnv(Values{DBLocal: &#34;it&#39;s&#34;})
-<span id="L469" class="ln">   469  </span>
-<span id="L470" class="ln">   470  </span>			assert.Contains(t, got, `DB_LOCAL=&#39;it&#39;\&#39;&#39;s&#39;`)
-<span id="L471" class="ln">   471  </span>		})
-<span id="L472" class="ln">   472  </span>	})
-<span id="L473" class="ln">   473  </span>}
-<span id="L474" class="ln">   474  </span>
-<span id="L475" class="ln">   475  </span>func TestRenderValues(t *testing.T) {
-<span id="L476" class="ln">   476  </span>	t.Parallel()
+<span id="L468" class="ln">   468  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L469" class="ln">   469  </span>		t.Parallel()
+<span id="L470" class="ln">   470  </span>
+<span id="L471" class="ln">   471  </span>		t.Run(&#34;スロット定義が無ければ保持なしとする&#34;, func(t *testing.T) {
+<span id="L472" class="ln">   472  </span>			t.Parallel()
+<span id="L473" class="ln">   473  </span>
+<span id="L474" class="ln">   474  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span>			_, held := r.heldSlot()
 <span id="L477" class="ln">   477  </span>
-<span id="L478" class="ln">   478  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L479" class="ln">   479  </span>		t.Parallel()
+<span id="L478" class="ln">   478  </span>			assert.False(t, held)
+<span id="L479" class="ln">   479  </span>		})
 <span id="L480" class="ln">   480  </span>
-<span id="L481" class="ln">   481  </span>		t.Run(&#34;解決済みの値を項目ごとに並べる&#34;, func(t *testing.T) {
+<span id="L481" class="ln">   481  </span>		t.Run(&#34;スロット番号が数値でなければ壊れた宣言として保持なしとする&#34;, func(t *testing.T) {
 <span id="L482" class="ln">   482  </span>			t.Parallel()
 <span id="L483" class="ln">   483  </span>
-<span id="L484" class="ln">   484  </span>			got := RenderValues(Values{
-<span id="L485" class="ln">   485  </span>				Git:             GitLinkedWorktree,
-<span id="L486" class="ln">   486  </span>				SlotHeld:        true,
-<span id="L487" class="ln">   487  </span>				DBLocal:         &#34;wt3_local&#34;,
-<span id="L488" class="ln">   488  </span>				DBTest:          &#34;wt3_test&#34;,
-<span id="L489" class="ln">   489  </span>				AppProject:      &#34;gobp-wt-3&#34;,
-<span id="L490" class="ln">   490  </span>				AuthIssuer:      &#34;http://localhost:2013/default&#34;,
-<span id="L491" class="ln">   491  </span>				InfraNoRecreate: noRecreateFlag,
-<span id="L492" class="ln">   492  </span>			})
-<span id="L493" class="ln">   493  </span>
-<span id="L494" class="ln">   494  </span>			assert.Contains(t, got, &#34;git context       : linked-worktree&#34;)
-<span id="L495" class="ln">   495  </span>			assert.Contains(t, got, &#34;slot held         : yes&#34;)
-<span id="L496" class="ln">   496  </span>			assert.Contains(t, got, &#34;DB_LOCAL          : wt3_local&#34;)
-<span id="L497" class="ln">   497  </span>			assert.Contains(t, got, &#34;DB_TEST           : wt3_test&#34;)
-<span id="L498" class="ln">   498  </span>			assert.Contains(t, got, &#34;APP_PROJECT       : gobp-wt-3&#34;)
-<span id="L499" class="ln">   499  </span>			assert.Contains(t, got, &#34;AUTH_ISSUER       : http://localhost:2013/default&#34;)
-<span id="L500" class="ln">   500  </span>			assert.Contains(t, got, &#34;INFRA_NO_RECREATE : --no-recreate&#34;)
-<span id="L501" class="ln">   501  </span>		})
-<span id="L502" class="ln">   502  </span>
-<span id="L503" class="ln">   503  </span>		t.Run(&#34;渡さないフラグは空欄ではなく明示の文言で示す&#34;, func(t *testing.T) {
-<span id="L504" class="ln">   504  </span>			t.Parallel()
-<span id="L505" class="ln">   505  </span>
-<span id="L506" class="ln">   506  </span>			got := RenderValues(Values{Git: GitMainCheckout})
-<span id="L507" class="ln">   507  </span>
-<span id="L508" class="ln">   508  </span>			assert.Contains(t, got, &#34;INFRA_NO_RECREATE : （渡さない）&#34;)
-<span id="L509" class="ln">   509  </span>			assert.Contains(t, got, &#34;slot held         : no&#34;)
-<span id="L510" class="ln">   510  </span>		})
-<span id="L511" class="ln">   511  </span>	})
-<span id="L512" class="ln">   512  </span>}
-<span id="L513" class="ln">   513  </span>
-<span id="L514" class="ln">   514  </span>func TestResolver_absDir(t *testing.T) {
-<span id="L515" class="ln">   515  </span>	t.Parallel()
-<span id="L516" class="ln">   516  </span>
-<span id="L517" class="ln">   517  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L518" class="ln">   518  </span>		t.Parallel()
-<span id="L519" class="ln">   519  </span>
-<span id="L520" class="ln">   520  </span>		t.Run(&#34;相対パスは root 起点の絶対パスへ揃える&#34;, func(t *testing.T) {
-<span id="L521" class="ln">   521  </span>			t.Parallel()
-<span id="L522" class="ln">   522  </span>
-<span id="L523" class="ln">   523  </span>			root := t.TempDir()
-<span id="L524" class="ln">   524  </span>			r, _ := newResolver(t, root, probeStub{})
-<span id="L525" class="ln">   525  </span>
-<span id="L526" class="ln">   526  </span>			assert.Equal(t, filepath.Join(root, &#34;.git&#34;), r.absDir(&#34;.git&#34;))
-<span id="L527" class="ln">   527  </span>		})
-<span id="L528" class="ln">   528  </span>
-<span id="L529" class="ln">   529  </span>		t.Run(&#34;絶対パスはそのまま扱う&#34;, func(t *testing.T) {
-<span id="L530" class="ln">   530  </span>			t.Parallel()
+<span id="L484" class="ln">   484  </span>			root := t.TempDir()
+<span id="L485" class="ln">   485  </span>			writeSlot(t, root, &#34;SLOT=abc\nDB_NAME_LOCAL=wt3_local\nDB_NAME_TEST=wt3_test\n&#34;)
+<span id="L486" class="ln">   486  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L487" class="ln">   487  </span>
+<span id="L488" class="ln">   488  </span>			_, held := r.heldSlot()
+<span id="L489" class="ln">   489  </span>
+<span id="L490" class="ln">   490  </span>			assert.False(t, held)
+<span id="L491" class="ln">   491  </span>		})
+<span id="L492" class="ln">   492  </span>
+<span id="L493" class="ln">   493  </span>		t.Run(&#34;リースの判定点が無ければ保持なしとする&#34;, func(t *testing.T) {
+<span id="L494" class="ln">   494  </span>			t.Parallel()
+<span id="L495" class="ln">   495  </span>
+<span id="L496" class="ln">   496  </span>			root := t.TempDir()
+<span id="L497" class="ln">   497  </span>			writeSlot(t, root, slotFileContent)
+<span id="L498" class="ln">   498  </span>			r, _ := newResolverWithLease(t, root, probeStub{dirs: &#34;.git\n.git\n&#34;}, nil)
+<span id="L499" class="ln">   499  </span>
+<span id="L500" class="ln">   500  </span>			_, held := r.heldSlot()
+<span id="L501" class="ln">   501  </span>
+<span id="L502" class="ln">   502  </span>			assert.False(t, held)
+<span id="L503" class="ln">   503  </span>		})
+<span id="L504" class="ln">   504  </span>	})
+<span id="L505" class="ln">   505  </span>}
+<span id="L506" class="ln">   506  </span>
+<span id="L507" class="ln">   507  </span>func Test_mockAuthIssuer(t *testing.T) {
+<span id="L508" class="ln">   508  </span>	t.Parallel()
+<span id="L509" class="ln">   509  </span>
+<span id="L510" class="ln">   510  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L511" class="ln">   511  </span>		t.Parallel()
+<span id="L512" class="ln">   512  </span>
+<span id="L513" class="ln">   513  </span>		t.Run(&#34;ホスト公開ポートから issuer URL を組み立てる&#34;, func(t *testing.T) {
+<span id="L514" class="ln">   514  </span>			t.Parallel()
+<span id="L515" class="ln">   515  </span>
+<span id="L516" class="ln">   516  </span>			assert.Equal(t, &#34;http://localhost:2013/default&#34;, mockAuthIssuer(2013))
+<span id="L517" class="ln">   517  </span>		})
+<span id="L518" class="ln">   518  </span>	})
+<span id="L519" class="ln">   519  </span>}
+<span id="L520" class="ln">   520  </span>
+<span id="L521" class="ln">   521  </span>func TestNewResolver(t *testing.T) {
+<span id="L522" class="ln">   522  </span>	t.Parallel()
+<span id="L523" class="ln">   523  </span>
+<span id="L524" class="ln">   524  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L525" class="ln">   525  </span>		t.Parallel()
+<span id="L526" class="ln">   526  </span>
+<span id="L527" class="ln">   527  </span>		t.Run(&#34;probe を渡さなければホストの git を使う実依存で組み立てる&#34;, func(t *testing.T) {
+<span id="L528" class="ln">   528  </span>			t.Parallel()
+<span id="L529" class="ln">   529  </span>
+<span id="L530" class="ln">   530  </span>			r := NewResolver(Config{Root: t.TempDir()}, nil, &amp;LeaseProbe{OwnedBySelf: func(int) bool { return true }}, io.Discard)
 <span id="L531" class="ln">   531  </span>
-<span id="L532" class="ln">   532  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{})
-<span id="L533" class="ln">   533  </span>
-<span id="L534" class="ln">   534  </span>			assert.Equal(t, filepath.FromSlash(&#34;/repo/.git&#34;), r.absDir(filepath.FromSlash(&#34;/repo/.git&#34;)))
+<span id="L532" class="ln">   532  </span>			assert.NotNil(t, r.probe.LookGit)
+<span id="L533" class="ln">   533  </span>			assert.NotNil(t, r.probe.GitDirs)
+<span id="L534" class="ln">   534  </span>			assert.NotNil(t, r.probe.HasGitEntry)
 <span id="L535" class="ln">   535  </span>		})
-<span id="L536" class="ln">   536  </span>
-<span id="L537" class="ln">   537  </span>		t.Run(&#34;同じ場所を指す表記揺れを同一の値へ畳む&#34;, func(t *testing.T) {
-<span id="L538" class="ln">   538  </span>			t.Parallel()
-<span id="L539" class="ln">   539  </span>
-<span id="L540" class="ln">   540  </span>			root := t.TempDir()
-<span id="L541" class="ln">   541  </span>			r, _ := newResolver(t, root, probeStub{})
-<span id="L542" class="ln">   542  </span>
-<span id="L543" class="ln">   543  </span>			assert.Equal(t, r.absDir(&#34;.git&#34;), r.absDir(&#34;./a/../.git&#34;))
-<span id="L544" class="ln">   544  </span>		})
-<span id="L545" class="ln">   545  </span>	})
-<span id="L546" class="ln">   546  </span>}
+<span id="L536" class="ln">   536  </span>	})
+<span id="L537" class="ln">   537  </span>}
+<span id="L538" class="ln">   538  </span>
+<span id="L539" class="ln">   539  </span>func Test_hasGitEntry(t *testing.T) {
+<span id="L540" class="ln">   540  </span>	t.Parallel()
+<span id="L541" class="ln">   541  </span>
+<span id="L542" class="ln">   542  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L543" class="ln">   543  </span>		t.Parallel()
+<span id="L544" class="ln">   544  </span>
+<span id="L545" class="ln">   545  </span>		t.Run(&#34;祖先に .git があれば真を返す&#34;, func(t *testing.T) {
+<span id="L546" class="ln">   546  </span>			t.Parallel()
 <span id="L547" class="ln">   547  </span>
-<span id="L548" class="ln">   548  </span>func TestResolver_inspectGit(t *testing.T) {
-<span id="L549" class="ln">   549  </span>	t.Parallel()
-<span id="L550" class="ln">   550  </span>
-<span id="L551" class="ln">   551  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L552" class="ln">   552  </span>		t.Parallel()
-<span id="L553" class="ln">   553  </span>
-<span id="L554" class="ln">   554  </span>		t.Run(&#34;git 実行ファイルが無ければ GitUnavailable を返し失敗させない&#34;, func(t *testing.T) {
-<span id="L555" class="ln">   555  </span>			t.Parallel()
-<span id="L556" class="ln">   556  </span>
-<span id="L557" class="ln">   557  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{lookErr: errGitFailed, hasGitEntry: true})
+<span id="L548" class="ln">   548  </span>			root := t.TempDir()
+<span id="L549" class="ln">   549  </span>			require.NoError(t, os.Mkdir(filepath.Join(root, &#34;.git&#34;), dirPerm))
+<span id="L550" class="ln">   550  </span>			nested := filepath.Join(root, &#34;a&#34;, &#34;b&#34;)
+<span id="L551" class="ln">   551  </span>			require.NoError(t, os.MkdirAll(nested, dirPerm))
+<span id="L552" class="ln">   552  </span>
+<span id="L553" class="ln">   553  </span>			assert.True(t, hasGitEntry(nested))
+<span id="L554" class="ln">   554  </span>		})
+<span id="L555" class="ln">   555  </span>
+<span id="L556" class="ln">   556  </span>		t.Run(&#34;リンク worktree の .git はファイルでも真を返す&#34;, func(t *testing.T) {
+<span id="L557" class="ln">   557  </span>			t.Parallel()
 <span id="L558" class="ln">   558  </span>
-<span id="L559" class="ln">   559  </span>			got, err := r.inspectGit(t.Context())
-<span id="L560" class="ln">   560  </span>			require.NoError(t, err)
-<span id="L561" class="ln">   561  </span>			assert.Equal(t, GitUnavailable, got)
-<span id="L562" class="ln">   562  </span>		})
-<span id="L563" class="ln">   563  </span>
-<span id="L564" class="ln">   564  </span>		t.Run(&#34;git が失敗し .git も無ければ GitNoRepository を返し失敗させない&#34;, func(t *testing.T) {
-<span id="L565" class="ln">   565  </span>			t.Parallel()
-<span id="L566" class="ln">   566  </span>
-<span id="L567" class="ln">   567  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: false})
-<span id="L568" class="ln">   568  </span>
-<span id="L569" class="ln">   569  </span>			got, err := r.inspectGit(t.Context())
-<span id="L570" class="ln">   570  </span>			require.NoError(t, err)
-<span id="L571" class="ln">   571  </span>			assert.Equal(t, GitNoRepository, got)
-<span id="L572" class="ln">   572  </span>		})
+<span id="L559" class="ln">   559  </span>			root := t.TempDir()
+<span id="L560" class="ln">   560  </span>			require.NoError(t, os.WriteFile(filepath.Join(root, &#34;.git&#34;), []byte(&#34;gitdir: /repo/.git/worktrees/wt1\n&#34;), filePerm))
+<span id="L561" class="ln">   561  </span>
+<span id="L562" class="ln">   562  </span>			assert.True(t, hasGitEntry(root))
+<span id="L563" class="ln">   563  </span>		})
+<span id="L564" class="ln">   564  </span>
+<span id="L565" class="ln">   565  </span>		t.Run(&#34;祖先に .git が無ければ偽を返す&#34;, func(t *testing.T) {
+<span id="L566" class="ln">   566  </span>			t.Parallel()
+<span id="L567" class="ln">   567  </span>
+<span id="L568" class="ln">   568  </span>			<span class="comment">// t.TempDir() は /tmp 配下（git 管理外）なので、根まで遡っても .git は見つからない。</span>
+<span id="L569" class="ln">   569  </span>			assert.False(t, hasGitEntry(t.TempDir()))
+<span id="L570" class="ln">   570  </span>		})
+<span id="L571" class="ln">   571  </span>	})
+<span id="L572" class="ln">   572  </span>}
 <span id="L573" class="ln">   573  </span>
-<span id="L574" class="ln">   574  </span>		t.Run(&#34;git-dir と git-common-dir が一致すれば主 checkout と判定する&#34;, func(t *testing.T) {
-<span id="L575" class="ln">   575  </span>			t.Parallel()
+<span id="L574" class="ln">   574  </span>func TestGitContext_String(t *testing.T) {
+<span id="L575" class="ln">   575  </span>	t.Parallel()
 <span id="L576" class="ln">   576  </span>
-<span id="L577" class="ln">   577  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
-<span id="L578" class="ln">   578  </span>
-<span id="L579" class="ln">   579  </span>			got, err := r.inspectGit(t.Context())
-<span id="L580" class="ln">   580  </span>			require.NoError(t, err)
-<span id="L581" class="ln">   581  </span>			assert.Equal(t, GitMainCheckout, got)
-<span id="L582" class="ln">   582  </span>		})
-<span id="L583" class="ln">   583  </span>
-<span id="L584" class="ln">   584  </span>		t.Run(&#34;git-dir と git-common-dir が食い違えばリンク worktree と判定する&#34;, func(t *testing.T) {
-<span id="L585" class="ln">   585  </span>			t.Parallel()
-<span id="L586" class="ln">   586  </span>
-<span id="L587" class="ln">   587  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
+<span id="L577" class="ln">   577  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L578" class="ln">   578  </span>		t.Parallel()
+<span id="L579" class="ln">   579  </span>
+<span id="L580" class="ln">   580  </span>		t.Run(&#34;git 不在は git-unavailable を返す&#34;, func(t *testing.T) {
+<span id="L581" class="ln">   581  </span>			t.Parallel()
+<span id="L582" class="ln">   582  </span>
+<span id="L583" class="ln">   583  </span>			assert.Equal(t, &#34;git-unavailable&#34;, GitUnavailable.String())
+<span id="L584" class="ln">   584  </span>		})
+<span id="L585" class="ln">   585  </span>
+<span id="L586" class="ln">   586  </span>		t.Run(&#34;非リポジトリは no-repository を返す&#34;, func(t *testing.T) {
+<span id="L587" class="ln">   587  </span>			t.Parallel()
 <span id="L588" class="ln">   588  </span>
-<span id="L589" class="ln">   589  </span>			got, err := r.inspectGit(t.Context())
-<span id="L590" class="ln">   590  </span>			require.NoError(t, err)
-<span id="L591" class="ln">   591  </span>			assert.Equal(t, GitLinkedWorktree, got)
-<span id="L592" class="ln">   592  </span>		})
-<span id="L593" class="ln">   593  </span>
-<span id="L594" class="ln">   594  </span>		t.Run(&#34;相対と絶対が混ざっても同一箇所なら主 checkout と判定する&#34;, func(t *testing.T) {
-<span id="L595" class="ln">   595  </span>			t.Parallel()
-<span id="L596" class="ln">   596  </span>
-<span id="L597" class="ln">   597  </span>			root := t.TempDir()
-<span id="L598" class="ln">   598  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;.git\n&#34; + filepath.Join(root, &#34;.git&#34;) + &#34;\n&#34;})
-<span id="L599" class="ln">   599  </span>
-<span id="L600" class="ln">   600  </span>			got, err := r.inspectGit(t.Context())
-<span id="L601" class="ln">   601  </span>			require.NoError(t, err)
-<span id="L602" class="ln">   602  </span>			assert.Equal(t, GitMainCheckout, got)
-<span id="L603" class="ln">   603  </span>		})
-<span id="L604" class="ln">   604  </span>	})
-<span id="L605" class="ln">   605  </span>
-<span id="L606" class="ln">   606  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L607" class="ln">   607  </span>		t.Parallel()
-<span id="L608" class="ln">   608  </span>
-<span id="L609" class="ln">   609  </span>		t.Run(&#34;git が失敗しても .git があれば素通りさせず失敗させる&#34;, func(t *testing.T) {
-<span id="L610" class="ln">   610  </span>			t.Parallel()
-<span id="L611" class="ln">   611  </span>
-<span id="L612" class="ln">   612  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
-<span id="L613" class="ln">   613  </span>
-<span id="L614" class="ln">   614  </span>			_, err := r.inspectGit(t.Context())
-<span id="L615" class="ln">   615  </span>			require.ErrorIs(t, err, errGitLayoutUnreadable)
-<span id="L616" class="ln">   616  </span>		})
-<span id="L617" class="ln">   617  </span>
-<span id="L618" class="ln">   618  </span>		t.Run(&#34;git の出力が 2 フィールドでなければ失敗させる&#34;, func(t *testing.T) {
-<span id="L619" class="ln">   619  </span>			t.Parallel()
-<span id="L620" class="ln">   620  </span>
-<span id="L621" class="ln">   621  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n&#34;})
-<span id="L622" class="ln">   622  </span>
-<span id="L623" class="ln">   623  </span>			_, err := r.inspectGit(t.Context())
-<span id="L624" class="ln">   624  </span>			require.ErrorIs(t, err, errGitLayoutUnreadable)
-<span id="L625" class="ln">   625  </span>		})
-<span id="L626" class="ln">   626  </span>	})
-<span id="L627" class="ln">   627  </span>}
-<span id="L628" class="ln">   628  </span>
-<span id="L629" class="ln">   629  </span>func Test_realGitProbe(t *testing.T) {
-<span id="L630" class="ln">   630  </span>	t.Parallel()
-<span id="L631" class="ln">   631  </span>
-<span id="L632" class="ln">   632  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L633" class="ln">   633  </span>		t.Parallel()
-<span id="L634" class="ln">   634  </span>
-<span id="L635" class="ln">   635  </span>		t.Run(&#34;3 つの依存をすべて結線して返す&#34;, func(t *testing.T) {
-<span id="L636" class="ln">   636  </span>			t.Parallel()
-<span id="L637" class="ln">   637  </span>
-<span id="L638" class="ln">   638  </span>			p := realGitProbe()
-<span id="L639" class="ln">   639  </span>
-<span id="L640" class="ln">   640  </span>			assert.NotNil(t, p.LookGit)
-<span id="L641" class="ln">   641  </span>			assert.NotNil(t, p.GitDirs)
-<span id="L642" class="ln">   642  </span>			assert.NotNil(t, p.HasGitEntry)
-<span id="L643" class="ln">   643  </span>		})
-<span id="L644" class="ln">   644  </span>
-<span id="L645" class="ln">   645  </span>		t.Run(&#34;HasGitEntry は .git の実在を見る実装を指す&#34;, func(t *testing.T) {
-<span id="L646" class="ln">   646  </span>			t.Parallel()
+<span id="L589" class="ln">   589  </span>			assert.Equal(t, &#34;no-repository&#34;, GitNoRepository.String())
+<span id="L590" class="ln">   590  </span>		})
+<span id="L591" class="ln">   591  </span>
+<span id="L592" class="ln">   592  </span>		t.Run(&#34;主 checkout は main-checkout を返す&#34;, func(t *testing.T) {
+<span id="L593" class="ln">   593  </span>			t.Parallel()
+<span id="L594" class="ln">   594  </span>
+<span id="L595" class="ln">   595  </span>			assert.Equal(t, &#34;main-checkout&#34;, GitMainCheckout.String())
+<span id="L596" class="ln">   596  </span>		})
+<span id="L597" class="ln">   597  </span>
+<span id="L598" class="ln">   598  </span>		t.Run(&#34;リンク worktree は linked-worktree を返す&#34;, func(t *testing.T) {
+<span id="L599" class="ln">   599  </span>			t.Parallel()
+<span id="L600" class="ln">   600  </span>
+<span id="L601" class="ln">   601  </span>			assert.Equal(t, &#34;linked-worktree&#34;, GitLinkedWorktree.String())
+<span id="L602" class="ln">   602  </span>		})
+<span id="L603" class="ln">   603  </span>	})
+<span id="L604" class="ln">   604  </span>
+<span id="L605" class="ln">   605  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L606" class="ln">   606  </span>		t.Parallel()
+<span id="L607" class="ln">   607  </span>
+<span id="L608" class="ln">   608  </span>		t.Run(&#34;未定義の値は unknown へ落とし、数値を露出させない&#34;, func(t *testing.T) {
+<span id="L609" class="ln">   609  </span>			t.Parallel()
+<span id="L610" class="ln">   610  </span>
+<span id="L611" class="ln">   611  </span>			assert.Equal(t, &#34;unknown&#34;, GitContext(99).String())
+<span id="L612" class="ln">   612  </span>		})
+<span id="L613" class="ln">   613  </span>	})
+<span id="L614" class="ln">   614  </span>}
+<span id="L615" class="ln">   615  </span>
+<span id="L616" class="ln">   616  </span>func TestRenderEnv(t *testing.T) {
+<span id="L617" class="ln">   617  </span>	t.Parallel()
+<span id="L618" class="ln">   618  </span>
+<span id="L619" class="ln">   619  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L620" class="ln">   620  </span>		t.Parallel()
+<span id="L621" class="ln">   621  </span>
+<span id="L622" class="ln">   622  </span>		t.Run(&#34;make が eval できる KEY=&#39;VALUE&#39; を 1 行 1 変数で並べる&#34;, func(t *testing.T) {
+<span id="L623" class="ln">   623  </span>			t.Parallel()
+<span id="L624" class="ln">   624  </span>
+<span id="L625" class="ln">   625  </span>			got := RenderEnv(Values{
+<span id="L626" class="ln">   626  </span>				Git:                 GitLinkedWorktree,
+<span id="L627" class="ln">   627  </span>				DBLocal:             &#34;wt3_local&#34;,
+<span id="L628" class="ln">   628  </span>				DBTest:              &#34;wt3_test&#34;,
+<span id="L629" class="ln">   629  </span>				AppProject:          &#34;gobp-wt-3&#34;,
+<span id="L630" class="ln">   630  </span>				AuthIssuer:          &#34;http://localhost:2013/default&#34;,
+<span id="L631" class="ln">   631  </span>				InfraNoRecreate:     noRecreateFlag,
+<span id="L632" class="ln">   632  </span>				RealtimeTableSuffix: &#34;local_wt3&#34;,
+<span id="L633" class="ln">   633  </span>				RealtimeQueuePrefix: &#34;realtime-local-wt3&#34;,
+<span id="L634" class="ln">   634  </span>				RealtimeTopic:       &#34;arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3&#34;,
+<span id="L635" class="ln">   635  </span>			})
+<span id="L636" class="ln">   636  </span>
+<span id="L637" class="ln">   637  </span>			assert.Equal(t, &#34;GOBP_GIT_CONTEXT=&#39;linked-worktree&#39;\n&#34;+
+<span id="L638" class="ln">   638  </span>				&#34;DB_LOCAL=&#39;wt3_local&#39;\n&#34;+
+<span id="L639" class="ln">   639  </span>				&#34;DB_TEST=&#39;wt3_test&#39;\n&#34;+
+<span id="L640" class="ln">   640  </span>				&#34;APP_PROJECT=&#39;gobp-wt-3&#39;\n&#34;+
+<span id="L641" class="ln">   641  </span>				&#34;AUTH_ISSUER=&#39;http://localhost:2013/default&#39;\n&#34;+
+<span id="L642" class="ln">   642  </span>				&#34;INFRA_NO_RECREATE=&#39;--no-recreate&#39;\n&#34;+
+<span id="L643" class="ln">   643  </span>				&#34;REALTIME_TABLE_SUFFIX=&#39;local_wt3&#39;\n&#34;+
+<span id="L644" class="ln">   644  </span>				&#34;REALTIME_QUEUE_PREFIX=&#39;realtime-local-wt3&#39;\n&#34;+
+<span id="L645" class="ln">   645  </span>				&#34;REALTIME_TOPIC=&#39;arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3&#39;\n&#34;, got)
+<span id="L646" class="ln">   646  </span>		})
 <span id="L647" class="ln">   647  </span>
-<span id="L648" class="ln">   648  </span>			root := t.TempDir()
-<span id="L649" class="ln">   649  </span>			p := realGitProbe()
+<span id="L648" class="ln">   648  </span>		t.Run(&#34;空の値もキーごと出力し、変数の欠落にしない&#34;, func(t *testing.T) {
+<span id="L649" class="ln">   649  </span>			t.Parallel()
 <span id="L650" class="ln">   650  </span>
-<span id="L651" class="ln">   651  </span>			assert.False(t, p.HasGitEntry(root))
-<span id="L652" class="ln">   652  </span>			require.NoError(t, os.Mkdir(filepath.Join(root, &#34;.git&#34;), dirPerm))
-<span id="L653" class="ln">   653  </span>			assert.True(t, p.HasGitEntry(root))
+<span id="L651" class="ln">   651  </span>			got := RenderEnv(Values{Git: GitMainCheckout})
+<span id="L652" class="ln">   652  </span>
+<span id="L653" class="ln">   653  </span>			assert.Contains(t, got, &#34;INFRA_NO_RECREATE=&#39;&#39;\n&#34;)
 <span id="L654" class="ln">   654  </span>		})
 <span id="L655" class="ln">   655  </span>	})
 <span id="L656" class="ln">   656  </span>
 <span id="L657" class="ln">   657  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
 <span id="L658" class="ln">   658  </span>		t.Parallel()
 <span id="L659" class="ln">   659  </span>
-<span id="L660" class="ln">   660  </span>		t.Run(&#34;GitDirs は非リポジトリでエラーを返す&#34;, func(t *testing.T) {
+<span id="L660" class="ln">   660  </span>		t.Run(&#34;値に含まれる単引用符をエスケープし、eval を壊させない&#34;, func(t *testing.T) {
 <span id="L661" class="ln">   661  </span>			t.Parallel()
 <span id="L662" class="ln">   662  </span>
-<span id="L663" class="ln">   663  </span>			_, err := realGitProbe().GitDirs(t.Context(), t.TempDir())
-<span id="L664" class="ln">   664  </span>			require.Error(t, err)
-<span id="L665" class="ln">   665  </span>		})
-<span id="L666" class="ln">   666  </span>	})
-<span id="L667" class="ln">   667  </span>}
-<span id="L668" class="ln">   668  </span>
-<span id="L669" class="ln">   669  </span>func Test_readSlotFile(t *testing.T) {
-<span id="L670" class="ln">   670  </span>	t.Parallel()
-<span id="L671" class="ln">   671  </span>
-<span id="L672" class="ln">   672  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L673" class="ln">   673  </span>		t.Parallel()
-<span id="L674" class="ln">   674  </span>
-<span id="L675" class="ln">   675  </span>		t.Run(&#34;KEY=VALUE を読み取る&#34;, func(t *testing.T) {
-<span id="L676" class="ln">   676  </span>			t.Parallel()
-<span id="L677" class="ln">   677  </span>
-<span id="L678" class="ln">   678  </span>			root := t.TempDir()
-<span id="L679" class="ln">   679  </span>			writeSlot(t, root, slotFileContent)
-<span id="L680" class="ln">   680  </span>
-<span id="L681" class="ln">   681  </span>			got := readSlotFile(filepath.Join(root, &#34;.gobp-db-slot&#34;))
-<span id="L682" class="ln">   682  </span>
-<span id="L683" class="ln">   683  </span>			assert.Equal(t, &#34;wt3_local&#34;, got[&#34;DB_NAME_LOCAL&#34;])
-<span id="L684" class="ln">   684  </span>			assert.Equal(t, &#34;wt3_test&#34;, got[&#34;DB_NAME_TEST&#34;])
-<span id="L685" class="ln">   685  </span>			assert.Equal(t, &#34;gobp-wt-3&#34;, got[&#34;SERVE_PROJECT&#34;])
-<span id="L686" class="ln">   686  </span>			assert.Equal(t, &#34;2013&#34;, got[&#34;MOCK_AUTH_HOST_PORT&#34;])
-<span id="L687" class="ln">   687  </span>		})
-<span id="L688" class="ln">   688  </span>
-<span id="L689" class="ln">   689  </span>		t.Run(&#34;値に含まれる = は最初の 1 つだけで分割する&#34;, func(t *testing.T) {
-<span id="L690" class="ln">   690  </span>			t.Parallel()
+<span id="L663" class="ln">   663  </span>			got := RenderEnv(Values{DBLocal: &#34;it&#39;s&#34;})
+<span id="L664" class="ln">   664  </span>
+<span id="L665" class="ln">   665  </span>			assert.Contains(t, got, `DB_LOCAL=&#39;it&#39;\&#39;&#39;s&#39;`)
+<span id="L666" class="ln">   666  </span>		})
+<span id="L667" class="ln">   667  </span>	})
+<span id="L668" class="ln">   668  </span>}
+<span id="L669" class="ln">   669  </span>
+<span id="L670" class="ln">   670  </span>func TestRenderValues(t *testing.T) {
+<span id="L671" class="ln">   671  </span>	t.Parallel()
+<span id="L672" class="ln">   672  </span>
+<span id="L673" class="ln">   673  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L674" class="ln">   674  </span>		t.Parallel()
+<span id="L675" class="ln">   675  </span>
+<span id="L676" class="ln">   676  </span>		t.Run(&#34;解決済みの値を項目ごとに並べる&#34;, func(t *testing.T) {
+<span id="L677" class="ln">   677  </span>			t.Parallel()
+<span id="L678" class="ln">   678  </span>
+<span id="L679" class="ln">   679  </span>			got := RenderValues(Values{
+<span id="L680" class="ln">   680  </span>				Git:                 GitLinkedWorktree,
+<span id="L681" class="ln">   681  </span>				SlotHeld:            true,
+<span id="L682" class="ln">   682  </span>				DBLocal:             &#34;wt3_local&#34;,
+<span id="L683" class="ln">   683  </span>				DBTest:              &#34;wt3_test&#34;,
+<span id="L684" class="ln">   684  </span>				AppProject:          &#34;gobp-wt-3&#34;,
+<span id="L685" class="ln">   685  </span>				AuthIssuer:          &#34;http://localhost:2013/default&#34;,
+<span id="L686" class="ln">   686  </span>				InfraNoRecreate:     noRecreateFlag,
+<span id="L687" class="ln">   687  </span>				RealtimeTableSuffix: &#34;local_wt3&#34;,
+<span id="L688" class="ln">   688  </span>				RealtimeQueuePrefix: &#34;realtime-local-wt3&#34;,
+<span id="L689" class="ln">   689  </span>				RealtimeTopic:       &#34;arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3&#34;,
+<span id="L690" class="ln">   690  </span>			})
 <span id="L691" class="ln">   691  </span>
-<span id="L692" class="ln">   692  </span>			root := t.TempDir()
-<span id="L693" class="ln">   693  </span>			writeSlot(t, root, &#34;AUTH_ISSUER=http://localhost:2013/?a=b\n&#34;)
-<span id="L694" class="ln">   694  </span>
-<span id="L695" class="ln">   695  </span>			got := readSlotFile(filepath.Join(root, &#34;.gobp-db-slot&#34;))
-<span id="L696" class="ln">   696  </span>
-<span id="L697" class="ln">   697  </span>			assert.Equal(t, &#34;http://localhost:2013/?a=b&#34;, got[&#34;AUTH_ISSUER&#34;])
-<span id="L698" class="ln">   698  </span>		})
-<span id="L699" class="ln">   699  </span>
-<span id="L700" class="ln">   700  </span>		t.Run(&#34;= を含まない行は読み飛ばす&#34;, func(t *testing.T) {
-<span id="L701" class="ln">   701  </span>			t.Parallel()
-<span id="L702" class="ln">   702  </span>
-<span id="L703" class="ln">   703  </span>			root := t.TempDir()
-<span id="L704" class="ln">   704  </span>			writeSlot(t, root, &#34;# comment\n\nSLOT=3\n&#34;)
-<span id="L705" class="ln">   705  </span>
-<span id="L706" class="ln">   706  </span>			got := readSlotFile(filepath.Join(root, &#34;.gobp-db-slot&#34;))
-<span id="L707" class="ln">   707  </span>
-<span id="L708" class="ln">   708  </span>			assert.Len(t, got, 1)
-<span id="L709" class="ln">   709  </span>			assert.Equal(t, &#34;3&#34;, got[&#34;SLOT&#34;])
-<span id="L710" class="ln">   710  </span>		})
-<span id="L711" class="ln">   711  </span>	})
-<span id="L712" class="ln">   712  </span>
-<span id="L713" class="ln">   713  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L714" class="ln">   714  </span>		t.Parallel()
-<span id="L715" class="ln">   715  </span>
-<span id="L716" class="ln">   716  </span>		t.Run(&#34;ファイルが無ければ空の map を返し、スロット未取得として扱わせる&#34;, func(t *testing.T) {
-<span id="L717" class="ln">   717  </span>			t.Parallel()
-<span id="L718" class="ln">   718  </span>
-<span id="L719" class="ln">   719  </span>			got := readSlotFile(filepath.Join(t.TempDir(), &#34;.gobp-db-slot&#34;))
+<span id="L692" class="ln">   692  </span>			assert.Contains(t, got, &#34;git context       : linked-worktree&#34;)
+<span id="L693" class="ln">   693  </span>			assert.Contains(t, got, &#34;slot held         : yes&#34;)
+<span id="L694" class="ln">   694  </span>			assert.Contains(t, got, &#34;DB_LOCAL          : wt3_local&#34;)
+<span id="L695" class="ln">   695  </span>			assert.Contains(t, got, &#34;DB_TEST           : wt3_test&#34;)
+<span id="L696" class="ln">   696  </span>			assert.Contains(t, got, &#34;APP_PROJECT       : gobp-wt-3&#34;)
+<span id="L697" class="ln">   697  </span>			assert.Contains(t, got, &#34;AUTH_ISSUER       : http://localhost:2013/default&#34;)
+<span id="L698" class="ln">   698  </span>			assert.Contains(t, got, &#34;INFRA_NO_RECREATE : --no-recreate&#34;)
+<span id="L699" class="ln">   699  </span>			assert.Contains(t, got, &#34;REALTIME_TABLE    : local_wt3&#34;)
+<span id="L700" class="ln">   700  </span>			assert.Contains(t, got, &#34;REALTIME_QUEUE    : realtime-local-wt3&#34;)
+<span id="L701" class="ln">   701  </span>			assert.Contains(t, got, &#34;REALTIME_TOPIC    : arn:aws:sns:us-east-1:000000000000:realtime-fanout-local-wt3&#34;)
+<span id="L702" class="ln">   702  </span>		})
+<span id="L703" class="ln">   703  </span>
+<span id="L704" class="ln">   704  </span>		t.Run(&#34;渡さないフラグは空欄ではなく明示の文言で示す&#34;, func(t *testing.T) {
+<span id="L705" class="ln">   705  </span>			t.Parallel()
+<span id="L706" class="ln">   706  </span>
+<span id="L707" class="ln">   707  </span>			got := RenderValues(Values{Git: GitMainCheckout})
+<span id="L708" class="ln">   708  </span>
+<span id="L709" class="ln">   709  </span>			assert.Contains(t, got, &#34;INFRA_NO_RECREATE : （渡さない）&#34;)
+<span id="L710" class="ln">   710  </span>			assert.Contains(t, got, &#34;slot held         : no&#34;)
+<span id="L711" class="ln">   711  </span>		})
+<span id="L712" class="ln">   712  </span>	})
+<span id="L713" class="ln">   713  </span>}
+<span id="L714" class="ln">   714  </span>
+<span id="L715" class="ln">   715  </span>func TestResolver_absDir(t *testing.T) {
+<span id="L716" class="ln">   716  </span>	t.Parallel()
+<span id="L717" class="ln">   717  </span>
+<span id="L718" class="ln">   718  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L719" class="ln">   719  </span>		t.Parallel()
 <span id="L720" class="ln">   720  </span>
-<span id="L721" class="ln">   721  </span>			assert.Empty(t, got)
-<span id="L722" class="ln">   722  </span>			assert.NotNil(t, got)
-<span id="L723" class="ln">   723  </span>		})
-<span id="L724" class="ln">   724  </span>	})
-<span id="L725" class="ln">   725  </span>}
+<span id="L721" class="ln">   721  </span>		t.Run(&#34;相対パスは root 起点の絶対パスへ揃える&#34;, func(t *testing.T) {
+<span id="L722" class="ln">   722  </span>			t.Parallel()
+<span id="L723" class="ln">   723  </span>
+<span id="L724" class="ln">   724  </span>			root := t.TempDir()
+<span id="L725" class="ln">   725  </span>			r, _ := newResolver(t, root, probeStub{})
 <span id="L726" class="ln">   726  </span>
-<span id="L727" class="ln">   727  </span>func Test_orDefault(t *testing.T) {
-<span id="L728" class="ln">   728  </span>	t.Parallel()
+<span id="L727" class="ln">   727  </span>			assert.Equal(t, filepath.Join(root, &#34;.git&#34;), r.absDir(&#34;.git&#34;))
+<span id="L728" class="ln">   728  </span>		})
 <span id="L729" class="ln">   729  </span>
-<span id="L730" class="ln">   730  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L731" class="ln">   731  </span>		t.Parallel()
+<span id="L730" class="ln">   730  </span>		t.Run(&#34;絶対パスはそのまま扱う&#34;, func(t *testing.T) {
+<span id="L731" class="ln">   731  </span>			t.Parallel()
 <span id="L732" class="ln">   732  </span>
-<span id="L733" class="ln">   733  </span>		t.Run(&#34;値があればその値を返す&#34;, func(t *testing.T) {
-<span id="L734" class="ln">   734  </span>			t.Parallel()
-<span id="L735" class="ln">   735  </span>
-<span id="L736" class="ln">   736  </span>			assert.Equal(t, &#34;wt3_local&#34;, orDefault(&#34;wt3_local&#34;, defaultDBLocal))
-<span id="L737" class="ln">   737  </span>		})
-<span id="L738" class="ln">   738  </span>
-<span id="L739" class="ln">   739  </span>		t.Run(&#34;空なら既定値を返す&#34;, func(t *testing.T) {
-<span id="L740" class="ln">   740  </span>			t.Parallel()
-<span id="L741" class="ln">   741  </span>
-<span id="L742" class="ln">   742  </span>			assert.Equal(t, defaultDBLocal, orDefault(&#34;&#34;, defaultDBLocal))
-<span id="L743" class="ln">   743  </span>		})
-<span id="L744" class="ln">   744  </span>	})
-<span id="L745" class="ln">   745  </span>}
-<span id="L746" class="ln">   746  </span>
-<span id="L747" class="ln">   747  </span>func Test_yesNo(t *testing.T) {
-<span id="L748" class="ln">   748  </span>	t.Parallel()
-<span id="L749" class="ln">   749  </span>
-<span id="L750" class="ln">   750  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L751" class="ln">   751  </span>		t.Parallel()
-<span id="L752" class="ln">   752  </span>
-<span id="L753" class="ln">   753  </span>		t.Run(&#34;真は yes を返す&#34;, func(t *testing.T) {
-<span id="L754" class="ln">   754  </span>			t.Parallel()
-<span id="L755" class="ln">   755  </span>
-<span id="L756" class="ln">   756  </span>			assert.Equal(t, &#34;yes&#34;, yesNo(true))
-<span id="L757" class="ln">   757  </span>		})
-<span id="L758" class="ln">   758  </span>
-<span id="L759" class="ln">   759  </span>		t.Run(&#34;偽は no を返す&#34;, func(t *testing.T) {
-<span id="L760" class="ln">   760  </span>			t.Parallel()
-<span id="L761" class="ln">   761  </span>
-<span id="L762" class="ln">   762  </span>			assert.Equal(t, &#34;no&#34;, yesNo(false))
+<span id="L733" class="ln">   733  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{})
+<span id="L734" class="ln">   734  </span>
+<span id="L735" class="ln">   735  </span>			assert.Equal(t, filepath.FromSlash(&#34;/repo/.git&#34;), r.absDir(filepath.FromSlash(&#34;/repo/.git&#34;)))
+<span id="L736" class="ln">   736  </span>		})
+<span id="L737" class="ln">   737  </span>
+<span id="L738" class="ln">   738  </span>		t.Run(&#34;同じ場所を指す表記揺れを同一の値へ畳む&#34;, func(t *testing.T) {
+<span id="L739" class="ln">   739  </span>			t.Parallel()
+<span id="L740" class="ln">   740  </span>
+<span id="L741" class="ln">   741  </span>			root := t.TempDir()
+<span id="L742" class="ln">   742  </span>			r, _ := newResolver(t, root, probeStub{})
+<span id="L743" class="ln">   743  </span>
+<span id="L744" class="ln">   744  </span>			assert.Equal(t, r.absDir(&#34;.git&#34;), r.absDir(&#34;./a/../.git&#34;))
+<span id="L745" class="ln">   745  </span>		})
+<span id="L746" class="ln">   746  </span>	})
+<span id="L747" class="ln">   747  </span>}
+<span id="L748" class="ln">   748  </span>
+<span id="L749" class="ln">   749  </span>func TestResolver_inspectGit(t *testing.T) {
+<span id="L750" class="ln">   750  </span>	t.Parallel()
+<span id="L751" class="ln">   751  </span>
+<span id="L752" class="ln">   752  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L753" class="ln">   753  </span>		t.Parallel()
+<span id="L754" class="ln">   754  </span>
+<span id="L755" class="ln">   755  </span>		t.Run(&#34;git 実行ファイルが無ければ GitUnavailable を返し失敗させない&#34;, func(t *testing.T) {
+<span id="L756" class="ln">   756  </span>			t.Parallel()
+<span id="L757" class="ln">   757  </span>
+<span id="L758" class="ln">   758  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{lookErr: errGitFailed, hasGitEntry: true})
+<span id="L759" class="ln">   759  </span>
+<span id="L760" class="ln">   760  </span>			got, err := r.inspectGit(t.Context())
+<span id="L761" class="ln">   761  </span>			require.NoError(t, err)
+<span id="L762" class="ln">   762  </span>			assert.Equal(t, GitUnavailable, got)
 <span id="L763" class="ln">   763  </span>		})
-<span id="L764" class="ln">   764  </span>	})
-<span id="L765" class="ln">   765  </span>}
-<span id="L766" class="ln">   766  </span>
+<span id="L764" class="ln">   764  </span>
+<span id="L765" class="ln">   765  </span>		t.Run(&#34;git が失敗し .git も無ければ GitNoRepository を返し失敗させない&#34;, func(t *testing.T) {
+<span id="L766" class="ln">   766  </span>			t.Parallel()
+<span id="L767" class="ln">   767  </span>
+<span id="L768" class="ln">   768  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: false})
+<span id="L769" class="ln">   769  </span>
+<span id="L770" class="ln">   770  </span>			got, err := r.inspectGit(t.Context())
+<span id="L771" class="ln">   771  </span>			require.NoError(t, err)
+<span id="L772" class="ln">   772  </span>			assert.Equal(t, GitNoRepository, got)
+<span id="L773" class="ln">   773  </span>		})
+<span id="L774" class="ln">   774  </span>
+<span id="L775" class="ln">   775  </span>		t.Run(&#34;git-dir と git-common-dir が一致すれば主 checkout と判定する&#34;, func(t *testing.T) {
+<span id="L776" class="ln">   776  </span>			t.Parallel()
+<span id="L777" class="ln">   777  </span>
+<span id="L778" class="ln">   778  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n.git\n&#34;})
+<span id="L779" class="ln">   779  </span>
+<span id="L780" class="ln">   780  </span>			got, err := r.inspectGit(t.Context())
+<span id="L781" class="ln">   781  </span>			require.NoError(t, err)
+<span id="L782" class="ln">   782  </span>			assert.Equal(t, GitMainCheckout, got)
+<span id="L783" class="ln">   783  </span>		})
+<span id="L784" class="ln">   784  </span>
+<span id="L785" class="ln">   785  </span>		t.Run(&#34;git-dir と git-common-dir が食い違えばリンク worktree と判定する&#34;, func(t *testing.T) {
+<span id="L786" class="ln">   786  </span>			t.Parallel()
+<span id="L787" class="ln">   787  </span>
+<span id="L788" class="ln">   788  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;/repo/.git/worktrees/wt3\n/repo/.git\n&#34;})
+<span id="L789" class="ln">   789  </span>
+<span id="L790" class="ln">   790  </span>			got, err := r.inspectGit(t.Context())
+<span id="L791" class="ln">   791  </span>			require.NoError(t, err)
+<span id="L792" class="ln">   792  </span>			assert.Equal(t, GitLinkedWorktree, got)
+<span id="L793" class="ln">   793  </span>		})
+<span id="L794" class="ln">   794  </span>
+<span id="L795" class="ln">   795  </span>		t.Run(&#34;相対と絶対が混ざっても同一箇所なら主 checkout と判定する&#34;, func(t *testing.T) {
+<span id="L796" class="ln">   796  </span>			t.Parallel()
+<span id="L797" class="ln">   797  </span>
+<span id="L798" class="ln">   798  </span>			root := t.TempDir()
+<span id="L799" class="ln">   799  </span>			r, _ := newResolver(t, root, probeStub{dirs: &#34;.git\n&#34; + filepath.Join(root, &#34;.git&#34;) + &#34;\n&#34;})
+<span id="L800" class="ln">   800  </span>
+<span id="L801" class="ln">   801  </span>			got, err := r.inspectGit(t.Context())
+<span id="L802" class="ln">   802  </span>			require.NoError(t, err)
+<span id="L803" class="ln">   803  </span>			assert.Equal(t, GitMainCheckout, got)
+<span id="L804" class="ln">   804  </span>		})
+<span id="L805" class="ln">   805  </span>	})
+<span id="L806" class="ln">   806  </span>
+<span id="L807" class="ln">   807  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L808" class="ln">   808  </span>		t.Parallel()
+<span id="L809" class="ln">   809  </span>
+<span id="L810" class="ln">   810  </span>		t.Run(&#34;git が失敗しても .git があれば素通りさせず失敗させる&#34;, func(t *testing.T) {
+<span id="L811" class="ln">   811  </span>			t.Parallel()
+<span id="L812" class="ln">   812  </span>
+<span id="L813" class="ln">   813  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirsErr: errGitFailed, hasGitEntry: true})
+<span id="L814" class="ln">   814  </span>
+<span id="L815" class="ln">   815  </span>			_, err := r.inspectGit(t.Context())
+<span id="L816" class="ln">   816  </span>			require.ErrorIs(t, err, errGitLayoutUnreadable)
+<span id="L817" class="ln">   817  </span>		})
+<span id="L818" class="ln">   818  </span>
+<span id="L819" class="ln">   819  </span>		t.Run(&#34;git の出力が 2 フィールドでなければ失敗させる&#34;, func(t *testing.T) {
+<span id="L820" class="ln">   820  </span>			t.Parallel()
+<span id="L821" class="ln">   821  </span>
+<span id="L822" class="ln">   822  </span>			r, _ := newResolver(t, t.TempDir(), probeStub{dirs: &#34;.git\n&#34;})
+<span id="L823" class="ln">   823  </span>
+<span id="L824" class="ln">   824  </span>			_, err := r.inspectGit(t.Context())
+<span id="L825" class="ln">   825  </span>			require.ErrorIs(t, err, errGitLayoutUnreadable)
+<span id="L826" class="ln">   826  </span>		})
+<span id="L827" class="ln">   827  </span>	})
+<span id="L828" class="ln">   828  </span>}
+<span id="L829" class="ln">   829  </span>
+<span id="L830" class="ln">   830  </span>func Test_realGitProbe(t *testing.T) {
+<span id="L831" class="ln">   831  </span>	t.Parallel()
+<span id="L832" class="ln">   832  </span>
+<span id="L833" class="ln">   833  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L834" class="ln">   834  </span>		t.Parallel()
+<span id="L835" class="ln">   835  </span>
+<span id="L836" class="ln">   836  </span>		t.Run(&#34;3 つの依存をすべて結線して返す&#34;, func(t *testing.T) {
+<span id="L837" class="ln">   837  </span>			t.Parallel()
+<span id="L838" class="ln">   838  </span>
+<span id="L839" class="ln">   839  </span>			p := realGitProbe()
+<span id="L840" class="ln">   840  </span>
+<span id="L841" class="ln">   841  </span>			assert.NotNil(t, p.LookGit)
+<span id="L842" class="ln">   842  </span>			assert.NotNil(t, p.GitDirs)
+<span id="L843" class="ln">   843  </span>			assert.NotNil(t, p.HasGitEntry)
+<span id="L844" class="ln">   844  </span>		})
+<span id="L845" class="ln">   845  </span>
+<span id="L846" class="ln">   846  </span>		t.Run(&#34;HasGitEntry は .git の実在を見る実装を指す&#34;, func(t *testing.T) {
+<span id="L847" class="ln">   847  </span>			t.Parallel()
+<span id="L848" class="ln">   848  </span>
+<span id="L849" class="ln">   849  </span>			root := t.TempDir()
+<span id="L850" class="ln">   850  </span>			p := realGitProbe()
+<span id="L851" class="ln">   851  </span>
+<span id="L852" class="ln">   852  </span>			assert.False(t, p.HasGitEntry(root))
+<span id="L853" class="ln">   853  </span>			require.NoError(t, os.Mkdir(filepath.Join(root, &#34;.git&#34;), dirPerm))
+<span id="L854" class="ln">   854  </span>			assert.True(t, p.HasGitEntry(root))
+<span id="L855" class="ln">   855  </span>		})
+<span id="L856" class="ln">   856  </span>	})
+<span id="L857" class="ln">   857  </span>
+<span id="L858" class="ln">   858  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L859" class="ln">   859  </span>		t.Parallel()
+<span id="L860" class="ln">   860  </span>
+<span id="L861" class="ln">   861  </span>		t.Run(&#34;GitDirs は非リポジトリでエラーを返す&#34;, func(t *testing.T) {
+<span id="L862" class="ln">   862  </span>			t.Parallel()
+<span id="L863" class="ln">   863  </span>
+<span id="L864" class="ln">   864  </span>			_, err := realGitProbe().GitDirs(t.Context(), t.TempDir())
+<span id="L865" class="ln">   865  </span>			require.Error(t, err)
+<span id="L866" class="ln">   866  </span>		})
+<span id="L867" class="ln">   867  </span>	})
+<span id="L868" class="ln">   868  </span>}
+<span id="L869" class="ln">   869  </span>
+<span id="L870" class="ln">   870  </span>func Test_readSlotFile(t *testing.T) {
+<span id="L871" class="ln">   871  </span>	t.Parallel()
+<span id="L872" class="ln">   872  </span>
+<span id="L873" class="ln">   873  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L874" class="ln">   874  </span>		t.Parallel()
+<span id="L875" class="ln">   875  </span>
+<span id="L876" class="ln">   876  </span>		t.Run(&#34;KEY=VALUE を読み取る&#34;, func(t *testing.T) {
+<span id="L877" class="ln">   877  </span>			t.Parallel()
+<span id="L878" class="ln">   878  </span>
+<span id="L879" class="ln">   879  </span>			root := t.TempDir()
+<span id="L880" class="ln">   880  </span>			writeSlot(t, root, slotFileContent)
+<span id="L881" class="ln">   881  </span>
+<span id="L882" class="ln">   882  </span>			got := readSlotFile(filepath.Join(root, &#34;.gobp-db-slot&#34;))
+<span id="L883" class="ln">   883  </span>
+<span id="L884" class="ln">   884  </span>			assert.Equal(t, &#34;wt3_local&#34;, got[&#34;DB_NAME_LOCAL&#34;])
+<span id="L885" class="ln">   885  </span>			assert.Equal(t, &#34;wt3_test&#34;, got[&#34;DB_NAME_TEST&#34;])
+<span id="L886" class="ln">   886  </span>			assert.Equal(t, &#34;gobp-wt-3&#34;, got[&#34;SERVE_PROJECT&#34;])
+<span id="L887" class="ln">   887  </span>			assert.Equal(t, &#34;2013&#34;, got[&#34;MOCK_AUTH_HOST_PORT&#34;])
+<span id="L888" class="ln">   888  </span>		})
+<span id="L889" class="ln">   889  </span>
+<span id="L890" class="ln">   890  </span>		t.Run(&#34;値に含まれる = は最初の 1 つだけで分割する&#34;, func(t *testing.T) {
+<span id="L891" class="ln">   891  </span>			t.Parallel()
+<span id="L892" class="ln">   892  </span>
+<span id="L893" class="ln">   893  </span>			root := t.TempDir()
+<span id="L894" class="ln">   894  </span>			writeSlot(t, root, &#34;AUTH_ISSUER=http://localhost:2013/?a=b\n&#34;)
+<span id="L895" class="ln">   895  </span>
+<span id="L896" class="ln">   896  </span>			got := readSlotFile(filepath.Join(root, &#34;.gobp-db-slot&#34;))
+<span id="L897" class="ln">   897  </span>
+<span id="L898" class="ln">   898  </span>			assert.Equal(t, &#34;http://localhost:2013/?a=b&#34;, got[&#34;AUTH_ISSUER&#34;])
+<span id="L899" class="ln">   899  </span>		})
+<span id="L900" class="ln">   900  </span>
+<span id="L901" class="ln">   901  </span>		t.Run(&#34;= を含まない行は読み飛ばす&#34;, func(t *testing.T) {
+<span id="L902" class="ln">   902  </span>			t.Parallel()
+<span id="L903" class="ln">   903  </span>
+<span id="L904" class="ln">   904  </span>			root := t.TempDir()
+<span id="L905" class="ln">   905  </span>			writeSlot(t, root, &#34;# comment\n\nSLOT=3\n&#34;)
+<span id="L906" class="ln">   906  </span>
+<span id="L907" class="ln">   907  </span>			got := readSlotFile(filepath.Join(root, &#34;.gobp-db-slot&#34;))
+<span id="L908" class="ln">   908  </span>
+<span id="L909" class="ln">   909  </span>			assert.Len(t, got, 1)
+<span id="L910" class="ln">   910  </span>			assert.Equal(t, &#34;3&#34;, got[&#34;SLOT&#34;])
+<span id="L911" class="ln">   911  </span>		})
+<span id="L912" class="ln">   912  </span>	})
+<span id="L913" class="ln">   913  </span>
+<span id="L914" class="ln">   914  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L915" class="ln">   915  </span>		t.Parallel()
+<span id="L916" class="ln">   916  </span>
+<span id="L917" class="ln">   917  </span>		t.Run(&#34;ファイルが無ければ空の map を返し、スロット未取得として扱わせる&#34;, func(t *testing.T) {
+<span id="L918" class="ln">   918  </span>			t.Parallel()
+<span id="L919" class="ln">   919  </span>
+<span id="L920" class="ln">   920  </span>			got := readSlotFile(filepath.Join(t.TempDir(), &#34;.gobp-db-slot&#34;))
+<span id="L921" class="ln">   921  </span>
+<span id="L922" class="ln">   922  </span>			assert.Empty(t, got)
+<span id="L923" class="ln">   923  </span>			assert.NotNil(t, got)
+<span id="L924" class="ln">   924  </span>		})
+<span id="L925" class="ln">   925  </span>	})
+<span id="L926" class="ln">   926  </span>}
+<span id="L927" class="ln">   927  </span>
+<span id="L928" class="ln">   928  </span>func Test_realtimeName(t *testing.T) {
+<span id="L929" class="ln">   929  </span>	t.Parallel()
+<span id="L930" class="ln">   930  </span>
+<span id="L931" class="ln">   931  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L932" class="ln">   932  </span>		t.Parallel()
+<span id="L933" class="ln">   933  </span>
+<span id="L934" class="ln">   934  </span>		t.Run(&#34;スロットがあれば区切りとスロット番号を継ぐ&#34;, func(t *testing.T) {
+<span id="L935" class="ln">   935  </span>			t.Parallel()
+<span id="L936" class="ln">   936  </span>
+<span id="L937" class="ln">   937  </span>			assert.Equal(t, &#34;local_wt3&#34;, realtimeName(&#34;local&#34;, &#34;3&#34;, slotInfixTable))
+<span id="L938" class="ln">   938  </span>			assert.Equal(t, &#34;realtime-local-wt3&#34;, realtimeName(&#34;realtime-local&#34;, &#34;3&#34;, slotInfixName))
+<span id="L939" class="ln">   939  </span>		})
+<span id="L940" class="ln">   940  </span>
+<span id="L941" class="ln">   941  </span>		t.Run(&#34;スロットが無ければ基底名のままにする&#34;, func(t *testing.T) {
+<span id="L942" class="ln">   942  </span>			t.Parallel()
+<span id="L943" class="ln">   943  </span>
+<span id="L944" class="ln">   944  </span>			assert.Equal(t, &#34;local&#34;, realtimeName(&#34;local&#34;, &#34;&#34;, slotInfixTable),
+<span id="L945" class="ln">   945  </span>				&#34;スロット未取得の checkout は埋め込み env の名前をそのまま使う&#34;)
+<span id="L946" class="ln">   946  </span>		})
+<span id="L947" class="ln">   947  </span>
+<span id="L948" class="ln">   948  </span>		t.Run(&#34;基底が空ならスロット番号を継がない&#34;, func(t *testing.T) {
+<span id="L949" class="ln">   949  </span>			t.Parallel()
+<span id="L950" class="ln">   950  </span>
+<span id="L951" class="ln">   951  </span>			assert.Empty(t, realtimeName(&#34;&#34;, &#34;3&#34;, slotInfixName),
+<span id="L952" class="ln">   952  </span>				&#34;空の topic は env の契約。継ぐと `-wt3` という契約でも名前でもない値になる&#34;)
+<span id="L953" class="ln">   953  </span>		})
+<span id="L954" class="ln">   954  </span>	})
+<span id="L955" class="ln">   955  </span>}
+<span id="L956" class="ln">   956  </span>
+<span id="L957" class="ln">   957  </span>func Test_orDefault(t *testing.T) {
+<span id="L958" class="ln">   958  </span>	t.Parallel()
+<span id="L959" class="ln">   959  </span>
+<span id="L960" class="ln">   960  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L961" class="ln">   961  </span>		t.Parallel()
+<span id="L962" class="ln">   962  </span>
+<span id="L963" class="ln">   963  </span>		t.Run(&#34;値があればその値を返す&#34;, func(t *testing.T) {
+<span id="L964" class="ln">   964  </span>			t.Parallel()
+<span id="L965" class="ln">   965  </span>
+<span id="L966" class="ln">   966  </span>			assert.Equal(t, &#34;wt3_local&#34;, orDefault(&#34;wt3_local&#34;, defaultDBLocal))
+<span id="L967" class="ln">   967  </span>		})
+<span id="L968" class="ln">   968  </span>
+<span id="L969" class="ln">   969  </span>		t.Run(&#34;空なら既定値を返す&#34;, func(t *testing.T) {
+<span id="L970" class="ln">   970  </span>			t.Parallel()
+<span id="L971" class="ln">   971  </span>
+<span id="L972" class="ln">   972  </span>			assert.Equal(t, defaultDBLocal, orDefault(&#34;&#34;, defaultDBLocal))
+<span id="L973" class="ln">   973  </span>		})
+<span id="L974" class="ln">   974  </span>	})
+<span id="L975" class="ln">   975  </span>}
+<span id="L976" class="ln">   976  </span>
+<span id="L977" class="ln">   977  </span>func Test_yesNo(t *testing.T) {
+<span id="L978" class="ln">   978  </span>	t.Parallel()
+<span id="L979" class="ln">   979  </span>
+<span id="L980" class="ln">   980  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L981" class="ln">   981  </span>		t.Parallel()
+<span id="L982" class="ln">   982  </span>
+<span id="L983" class="ln">   983  </span>		t.Run(&#34;真は yes を返す&#34;, func(t *testing.T) {
+<span id="L984" class="ln">   984  </span>			t.Parallel()
+<span id="L985" class="ln">   985  </span>
+<span id="L986" class="ln">   986  </span>			assert.Equal(t, &#34;yes&#34;, yesNo(true))
+<span id="L987" class="ln">   987  </span>		})
+<span id="L988" class="ln">   988  </span>
+<span id="L989" class="ln">   989  </span>		t.Run(&#34;偽は no を返す&#34;, func(t *testing.T) {
+<span id="L990" class="ln">   990  </span>			t.Parallel()
+<span id="L991" class="ln">   991  </span>
+<span id="L992" class="ln">   992  </span>			assert.Equal(t, &#34;no&#34;, yesNo(false))
+<span id="L993" class="ln">   993  </span>		})
+<span id="L994" class="ln">   994  </span>	})
+<span id="L995" class="ln">   995  </span>}
+<span id="L996" class="ln">   996  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/cli/dbslot/resolve_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

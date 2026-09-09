@@ -102,417 +102,498 @@
 <span id="L45" class="ln">    45  </span>	return NewPool(reg, admin, comp, cfg, io.Discard, io.Discard), admin, comp
 <span id="L46" class="ln">    46  </span>}
 <span id="L47" class="ln">    47  </span>
-<span id="L48" class="ln">    48  </span><span class="comment">// expectSlotDBs は、指定スロットの DB 作成/設定呼び出しを期待に登録する。</span>
-<span id="L49" class="ln">    49  </span>func expectSlotDBs(admin *mock_dbslot.MockDBAdmin, slot string) {
-<span id="L50" class="ln">    50  </span>	admin.EXPECT().EnsureDatabase(gomock.Any(), &#34;wt&#34;+slot+&#34;_local&#34;).Return(nil)
-<span id="L51" class="ln">    51  </span>	admin.EXPECT().SetupDatabase(gomock.Any(), &#34;wt&#34;+slot+&#34;_local&#34;).Return(nil)
-<span id="L52" class="ln">    52  </span>	admin.EXPECT().EnsureDatabase(gomock.Any(), &#34;wt&#34;+slot+&#34;_test&#34;).Return(nil)
-<span id="L53" class="ln">    53  </span>	admin.EXPECT().SetupDatabase(gomock.Any(), &#34;wt&#34;+slot+&#34;_test&#34;).Return(nil)
-<span id="L54" class="ln">    54  </span>}
-<span id="L55" class="ln">    55  </span>
-<span id="L56" class="ln">    56  </span>func TestPool_Acquire(t *testing.T) {
-<span id="L57" class="ln">    57  </span>	t.Parallel()
-<span id="L58" class="ln">    58  </span>
-<span id="L59" class="ln">    59  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L60" class="ln">    60  </span>		t.Parallel()
-<span id="L61" class="ln">    61  </span>
-<span id="L62" class="ln">    62  </span>		t.Run(&#34;空きスロット1を取得し DB 作成と .gobp-db-slot 書き出しを行う&#34;, func(t *testing.T) {
-<span id="L63" class="ln">    63  </span>			t.Parallel()
-<span id="L64" class="ln">    64  </span>
-<span id="L65" class="ln">    65  </span>			root := t.TempDir()
-<span id="L66" class="ln">    66  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
-<span id="L67" class="ln">    67  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
-<span id="L68" class="ln">    68  </span>			expectSlotDBs(admin, &#34;1&#34;)
-<span id="L69" class="ln">    69  </span>
-<span id="L70" class="ln">    70  </span>			require.NoError(t, pool.Acquire(context.Background()))
-<span id="L71" class="ln">    71  </span>
-<span id="L72" class="ln">    72  </span>			b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
-<span id="L73" class="ln">    73  </span>			require.NoError(t, err)
-<span id="L74" class="ln">    74  </span>			content := string(b)
-<span id="L75" class="ln">    75  </span>			assert.Contains(t, content, &#34;SLOT=1&#34;)
-<span id="L76" class="ln">    76  </span>			assert.Contains(t, content, &#34;DB_NAME_LOCAL=wt1_local&#34;)
-<span id="L77" class="ln">    77  </span>			assert.Contains(t, content, &#34;DB_NAME_TEST=wt1_test&#34;)
-<span id="L78" class="ln">    78  </span>			assert.Contains(t, content, &#34;API_HOST_PORT=8081&#34;)
-<span id="L79" class="ln">    79  </span>			assert.Contains(t, content, &#34;MOCK_AUTH_HOST_PORT=4001&#34;)
-<span id="L80" class="ln">    80  </span>			assert.Contains(t, content, &#34;DLV_HOST_PORT=2346&#34;)
-<span id="L81" class="ln">    81  </span>			assert.Contains(t, content, &#34;PPROF_HOST_PORT=6061&#34;)
-<span id="L82" class="ln">    82  </span>			assert.Contains(t, content, &#34;COMPOSE_PROJECT_NAME=gobp-shared&#34;)
-<span id="L83" class="ln">    83  </span>			assert.Contains(t, content, &#34;SERVE_PROJECT=gobp-wt-1&#34;)
-<span id="L84" class="ln">    84  </span>		})
-<span id="L85" class="ln">    85  </span>
-<span id="L86" class="ln">    86  </span>		t.Run(&#34;stale スロットに稼働中接続があれば破壊せず次スロットを取得する&#34;, func(t *testing.T) {
-<span id="L87" class="ln">    87  </span>			t.Parallel()
-<span id="L88" class="ln">    88  </span>
-<span id="L89" class="ln">    89  </span>			root := t.TempDir()
-<span id="L90" class="ln">    90  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
-<span id="L91" class="ln">    91  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
-<span id="L92" class="ln">    92  </span>			<span class="comment">// slot1 は稼働中接続ありで skip、slot2 を取得する。</span>
-<span id="L93" class="ln">    93  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, nil)
-<span id="L94" class="ln">    94  </span>			admin.EXPECT().ActiveConnections(gomock.Any(), &#34;wt1_local&#34;, &#34;wt1_test&#34;).Return(1, nil)
-<span id="L95" class="ln">    95  </span>			expectSlotDBs(admin, &#34;2&#34;)
-<span id="L96" class="ln">    96  </span>
-<span id="L97" class="ln">    97  </span>			<span class="comment">// slot1 を別 owner の stale リースにする。</span>
-<span id="L98" class="ln">    98  </span>			other := NewRegistry(pool.reg.dir, &#34;/w/other&#34;, &#34;b&#34;, 30*time.Minute, 8,
-<span id="L99" class="ln">    99  </span>				func() time.Time { return time.Unix(1, 0) })
-<span id="L100" class="ln">   100  </span>			require.True(t, other.TryAcquireFresh(1))
-<span id="L101" class="ln">   101  </span>			require.NoError(t, other.WriteMeta(1))
-<span id="L102" class="ln">   102  </span>
-<span id="L103" class="ln">   103  </span>			require.NoError(t, pool.Acquire(context.Background()))
-<span id="L104" class="ln">   104  </span>
-<span id="L105" class="ln">   105  </span>			b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
-<span id="L106" class="ln">   106  </span>			require.NoError(t, err)
-<span id="L107" class="ln">   107  </span>			assert.Contains(t, string(b), &#34;SLOT=2&#34;)
-<span id="L108" class="ln">   108  </span>		})
-<span id="L109" class="ln">   109  </span>
-<span id="L110" class="ln">   110  </span>		t.Run(&#34;stale スロットで app コンテナが稼働中なら破壊せず次スロットを取得する&#34;, func(t *testing.T) {
-<span id="L111" class="ln">   111  </span>			t.Parallel()
-<span id="L112" class="ln">   112  </span>
-<span id="L113" class="ln">   113  </span>			root := t.TempDir()
-<span id="L114" class="ln">   114  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
-<span id="L115" class="ln">   115  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
-<span id="L116" class="ln">   116  </span>			<span class="comment">// 接続プールはアイドルで空になるため、接続数 0 でも serve 中なら slot1 を守る。</span>
-<span id="L117" class="ln">   117  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(2, nil)
-<span id="L118" class="ln">   118  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-2&#34;).Return(0, nil).AnyTimes()
-<span id="L119" class="ln">   119  </span>			expectSlotDBs(admin, &#34;2&#34;)
+<span id="L48" class="ln">    48  </span><span class="comment">// newMockPoolWithRegistry は、レジストリとログ出力を呼び出し側へ渡す Pool を返す</span>
+<span id="L49" class="ln">    49  </span><span class="comment">// （リースの状態やログ文言を検証するケース用）。</span>
+<span id="L50" class="ln">    50  </span>func newMockPoolWithRegistry(t *testing.T, root, poolDir string,
+<span id="L51" class="ln">    51  </span>) (*Pool, *Registry, *mock_dbslot.MockDBAdmin, *mock_dbslot.MockCompose, *bytes.Buffer) {
+<span id="L52" class="ln">    52  </span>	t.Helper()
+<span id="L53" class="ln">    53  </span>	ctrl := gomock.NewController(t)
+<span id="L54" class="ln">    54  </span>	admin := mock_dbslot.NewMockDBAdmin(ctrl)
+<span id="L55" class="ln">    55  </span>	comp := mock_dbslot.NewMockCompose(ctrl)
+<span id="L56" class="ln">    56  </span>	reg := NewRegistry(poolDir, root, &#34;branch&#34;, 30*time.Minute, 8, func() time.Time { return time.Unix(1_000_000, 0) })
+<span id="L57" class="ln">    57  </span>	cfg := Config{
+<span id="L58" class="ln">    58  </span>		Root: root, SharedProject: &#34;gobp-shared&#34;,
+<span id="L59" class="ln">    59  </span>		APIBasePort: 8080, MockAuthBase: 4000, DlvBase: 2345, PprofBase: 6060,
+<span id="L60" class="ln">    60  </span>	}
+<span id="L61" class="ln">    61  </span>	logbuf := &amp;bytes.Buffer{}
+<span id="L62" class="ln">    62  </span>
+<span id="L63" class="ln">    63  </span>	return NewPool(reg, admin, comp, cfg, io.Discard, logbuf), reg, admin, comp, logbuf
+<span id="L64" class="ln">    64  </span>}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span><span class="comment">// expectSlotDBs は、指定スロットの DB 作成/設定呼び出しを期待に登録する。</span>
+<span id="L67" class="ln">    67  </span>func expectSlotDBs(admin *mock_dbslot.MockDBAdmin, slot string) {
+<span id="L68" class="ln">    68  </span>	admin.EXPECT().EnsureDatabase(gomock.Any(), &#34;wt&#34;+slot+&#34;_local&#34;).Return(nil)
+<span id="L69" class="ln">    69  </span>	admin.EXPECT().SetupDatabase(gomock.Any(), &#34;wt&#34;+slot+&#34;_local&#34;).Return(nil)
+<span id="L70" class="ln">    70  </span>	admin.EXPECT().EnsureDatabase(gomock.Any(), &#34;wt&#34;+slot+&#34;_test&#34;).Return(nil)
+<span id="L71" class="ln">    71  </span>	admin.EXPECT().SetupDatabase(gomock.Any(), &#34;wt&#34;+slot+&#34;_test&#34;).Return(nil)
+<span id="L72" class="ln">    72  </span>}
+<span id="L73" class="ln">    73  </span>
+<span id="L74" class="ln">    74  </span>func TestPool_Acquire(t *testing.T) {
+<span id="L75" class="ln">    75  </span>	t.Parallel()
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L78" class="ln">    78  </span>		t.Parallel()
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span>		t.Run(&#34;空きスロット1を取得し DB 作成と .gobp-db-slot 書き出しを行う&#34;, func(t *testing.T) {
+<span id="L81" class="ln">    81  </span>			t.Parallel()
+<span id="L82" class="ln">    82  </span>
+<span id="L83" class="ln">    83  </span>			root := t.TempDir()
+<span id="L84" class="ln">    84  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
+<span id="L85" class="ln">    85  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L86" class="ln">    86  </span>			expectSlotDBs(admin, &#34;1&#34;)
+<span id="L87" class="ln">    87  </span>
+<span id="L88" class="ln">    88  </span>			require.NoError(t, pool.Acquire(context.Background()))
+<span id="L89" class="ln">    89  </span>
+<span id="L90" class="ln">    90  </span>			b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
+<span id="L91" class="ln">    91  </span>			require.NoError(t, err)
+<span id="L92" class="ln">    92  </span>			content := string(b)
+<span id="L93" class="ln">    93  </span>			assert.Contains(t, content, &#34;SLOT=1&#34;)
+<span id="L94" class="ln">    94  </span>			assert.Contains(t, content, &#34;DB_NAME_LOCAL=wt1_local&#34;)
+<span id="L95" class="ln">    95  </span>			assert.Contains(t, content, &#34;DB_NAME_TEST=wt1_test&#34;)
+<span id="L96" class="ln">    96  </span>			assert.Contains(t, content, &#34;API_HOST_PORT=8081&#34;)
+<span id="L97" class="ln">    97  </span>			assert.Contains(t, content, &#34;MOCK_AUTH_HOST_PORT=4001&#34;)
+<span id="L98" class="ln">    98  </span>			assert.Contains(t, content, &#34;DLV_HOST_PORT=2346&#34;)
+<span id="L99" class="ln">    99  </span>			assert.Contains(t, content, &#34;PPROF_HOST_PORT=6061&#34;)
+<span id="L100" class="ln">   100  </span>			assert.Contains(t, content, &#34;COMPOSE_PROJECT_NAME=gobp-shared&#34;)
+<span id="L101" class="ln">   101  </span>			assert.Contains(t, content, &#34;SERVE_PROJECT=gobp-wt-1&#34;)
+<span id="L102" class="ln">   102  </span>		})
+<span id="L103" class="ln">   103  </span>
+<span id="L104" class="ln">   104  </span>		t.Run(&#34;stale スロットに稼働中接続があれば破壊せず次スロットを取得する&#34;, func(t *testing.T) {
+<span id="L105" class="ln">   105  </span>			t.Parallel()
+<span id="L106" class="ln">   106  </span>
+<span id="L107" class="ln">   107  </span>			root := t.TempDir()
+<span id="L108" class="ln">   108  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
+<span id="L109" class="ln">   109  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L110" class="ln">   110  </span>			<span class="comment">// slot1 は稼働中接続ありで skip、slot2 を取得する。</span>
+<span id="L111" class="ln">   111  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, nil)
+<span id="L112" class="ln">   112  </span>			admin.EXPECT().ActiveConnections(gomock.Any(), &#34;wt1_local&#34;, &#34;wt1_test&#34;).Return(1, nil)
+<span id="L113" class="ln">   113  </span>			expectSlotDBs(admin, &#34;2&#34;)
+<span id="L114" class="ln">   114  </span>
+<span id="L115" class="ln">   115  </span>			<span class="comment">// slot1 を別 owner の stale リースにする。</span>
+<span id="L116" class="ln">   116  </span>			other := NewRegistry(pool.reg.dir, &#34;/w/other&#34;, &#34;b&#34;, 30*time.Minute, 8,
+<span id="L117" class="ln">   117  </span>				func() time.Time { return time.Unix(1, 0) })
+<span id="L118" class="ln">   118  </span>			require.True(t, other.TryAcquireFresh(1))
+<span id="L119" class="ln">   119  </span>			require.NoError(t, other.WriteMeta(1))
 <span id="L120" class="ln">   120  </span>
-<span id="L121" class="ln">   121  </span>			other := NewRegistry(pool.reg.dir, &#34;/w/other&#34;, &#34;b&#34;, 30*time.Minute, 8,
-<span id="L122" class="ln">   122  </span>				func() time.Time { return time.Unix(1, 0) })
-<span id="L123" class="ln">   123  </span>			require.True(t, other.TryAcquireFresh(1))
-<span id="L124" class="ln">   124  </span>			require.NoError(t, other.WriteMeta(1))
-<span id="L125" class="ln">   125  </span>
-<span id="L126" class="ln">   126  </span>			require.NoError(t, pool.Acquire(context.Background()))
+<span id="L121" class="ln">   121  </span>			require.NoError(t, pool.Acquire(context.Background()))
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span>			b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
+<span id="L124" class="ln">   124  </span>			require.NoError(t, err)
+<span id="L125" class="ln">   125  </span>			assert.Contains(t, string(b), &#34;SLOT=2&#34;)
+<span id="L126" class="ln">   126  </span>		})
 <span id="L127" class="ln">   127  </span>
-<span id="L128" class="ln">   128  </span>			b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
-<span id="L129" class="ln">   129  </span>			require.NoError(t, err)
-<span id="L130" class="ln">   130  </span>			assert.Contains(t, string(b), &#34;SLOT=2&#34;)
-<span id="L131" class="ln">   131  </span>		})
-<span id="L132" class="ln">   132  </span>
-<span id="L133" class="ln">   133  </span>		t.Run(&#34;再取得は保持中のスロットを再利用する&#34;, func(t *testing.T) {
-<span id="L134" class="ln">   134  </span>			t.Parallel()
-<span id="L135" class="ln">   135  </span>
-<span id="L136" class="ln">   136  </span>			root := t.TempDir()
-<span id="L137" class="ln">   137  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
-<span id="L138" class="ln">   138  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil).Times(2)
-<span id="L139" class="ln">   139  </span>			admin.EXPECT().EnsureDatabase(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-<span id="L140" class="ln">   140  </span>			admin.EXPECT().SetupDatabase(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>			require.NoError(t, pool.Acquire(context.Background()))
-<span id="L143" class="ln">   143  </span>			require.NoError(t, pool.Acquire(context.Background())) <span class="comment">// reuse slot1</span>
-<span id="L144" class="ln">   144  </span>
-<span id="L145" class="ln">   145  </span>			b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
-<span id="L146" class="ln">   146  </span>			require.NoError(t, err)
-<span id="L147" class="ln">   147  </span>			assert.Contains(t, string(b), &#34;SLOT=1&#34;)
-<span id="L148" class="ln">   148  </span>		})
-<span id="L149" class="ln">   149  </span>	})
+<span id="L128" class="ln">   128  </span>		t.Run(&#34;stale スロットで app コンテナが稼働中なら破壊せず次スロットを取得する&#34;, func(t *testing.T) {
+<span id="L129" class="ln">   129  </span>			t.Parallel()
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span>			root := t.TempDir()
+<span id="L132" class="ln">   132  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
+<span id="L133" class="ln">   133  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L134" class="ln">   134  </span>			<span class="comment">// 接続プールはアイドルで空になるため、接続数 0 でも serve 中なら slot1 を守る。</span>
+<span id="L135" class="ln">   135  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(2, nil)
+<span id="L136" class="ln">   136  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-2&#34;).Return(0, nil).AnyTimes()
+<span id="L137" class="ln">   137  </span>			expectSlotDBs(admin, &#34;2&#34;)
+<span id="L138" class="ln">   138  </span>
+<span id="L139" class="ln">   139  </span>			other := NewRegistry(pool.reg.dir, &#34;/w/other&#34;, &#34;b&#34;, 30*time.Minute, 8,
+<span id="L140" class="ln">   140  </span>				func() time.Time { return time.Unix(1, 0) })
+<span id="L141" class="ln">   141  </span>			require.True(t, other.TryAcquireFresh(1))
+<span id="L142" class="ln">   142  </span>			require.NoError(t, other.WriteMeta(1))
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>			require.NoError(t, pool.Acquire(context.Background()))
+<span id="L145" class="ln">   145  </span>
+<span id="L146" class="ln">   146  </span>			b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
+<span id="L147" class="ln">   147  </span>			require.NoError(t, err)
+<span id="L148" class="ln">   148  </span>			assert.Contains(t, string(b), &#34;SLOT=2&#34;)
+<span id="L149" class="ln">   149  </span>		})
 <span id="L150" class="ln">   150  </span>
-<span id="L151" class="ln">   151  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L152" class="ln">   152  </span>		t.Parallel()
+<span id="L151" class="ln">   151  </span>		t.Run(&#34;再取得は保持中のスロットを再利用する&#34;, func(t *testing.T) {
+<span id="L152" class="ln">   152  </span>			t.Parallel()
 <span id="L153" class="ln">   153  </span>
-<span id="L154" class="ln">   154  </span>		t.Run(&#34;deploy 系 env（prd）では実行を拒否する&#34;, func(t *testing.T) {
-<span id="L155" class="ln">   155  </span>			t.Parallel()
-<span id="L156" class="ln">   156  </span>
-<span id="L157" class="ln">   157  </span>			<span class="comment">// deploy 系は EnsureDir/UpSharedDB より前に弾かれるため mock 呼び出しは発生しない。</span>
-<span id="L158" class="ln">   158  </span>			pool, _, _ := newMockPool(t, t.TempDir(), config.EnvProduction)
+<span id="L154" class="ln">   154  </span>			root := t.TempDir()
+<span id="L155" class="ln">   155  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
+<span id="L156" class="ln">   156  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil).Times(2)
+<span id="L157" class="ln">   157  </span>			admin.EXPECT().EnsureDatabase(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+<span id="L158" class="ln">   158  </span>			admin.EXPECT().SetupDatabase(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 <span id="L159" class="ln">   159  </span>
-<span id="L160" class="ln">   160  </span>			require.ErrorIs(t, pool.Acquire(context.Background()), errDeployEnvRefused)
-<span id="L161" class="ln">   161  </span>		})
+<span id="L160" class="ln">   160  </span>			require.NoError(t, pool.Acquire(context.Background()))
+<span id="L161" class="ln">   161  </span>			require.NoError(t, pool.Acquire(context.Background())) <span class="comment">// reuse slot1</span>
 <span id="L162" class="ln">   162  </span>
-<span id="L163" class="ln">   163  </span>		t.Run(&#34;共有 DB 起動に失敗するとエラーを返す&#34;, func(t *testing.T) {
-<span id="L164" class="ln">   164  </span>			t.Parallel()
-<span id="L165" class="ln">   165  </span>
-<span id="L166" class="ln">   166  </span>			pool, _, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L167" class="ln">   167  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), gomock.Any()).Return(errBoom)
+<span id="L163" class="ln">   163  </span>			b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
+<span id="L164" class="ln">   164  </span>			require.NoError(t, err)
+<span id="L165" class="ln">   165  </span>			assert.Contains(t, string(b), &#34;SLOT=1&#34;)
+<span id="L166" class="ln">   166  </span>		})
+<span id="L167" class="ln">   167  </span>	})
 <span id="L168" class="ln">   168  </span>
-<span id="L169" class="ln">   169  </span>			require.Error(t, pool.Acquire(context.Background()))
-<span id="L170" class="ln">   170  </span>		})
+<span id="L169" class="ln">   169  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L170" class="ln">   170  </span>		t.Parallel()
 <span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>		t.Run(&#34;DB 作成に失敗するとエラーを返す&#34;, func(t *testing.T) {
+<span id="L172" class="ln">   172  </span>		t.Run(&#34;deploy 系 env（prd）では実行を拒否する&#34;, func(t *testing.T) {
 <span id="L173" class="ln">   173  </span>			t.Parallel()
 <span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L176" class="ln">   176  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), gomock.Any()).Return(nil)
-<span id="L177" class="ln">   177  </span>			admin.EXPECT().EnsureDatabase(gomock.Any(), gomock.Any()).Return(errBoom)
-<span id="L178" class="ln">   178  </span>
-<span id="L179" class="ln">   179  </span>			require.Error(t, pool.Acquire(context.Background()))
-<span id="L180" class="ln">   180  </span>		})
-<span id="L181" class="ln">   181  </span>
-<span id="L182" class="ln">   182  </span>		t.Run(&#34;DB セットアップに失敗するとエラーを返す&#34;, func(t *testing.T) {
-<span id="L183" class="ln">   183  </span>			t.Parallel()
-<span id="L184" class="ln">   184  </span>
-<span id="L185" class="ln">   185  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L186" class="ln">   186  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), gomock.Any()).Return(nil)
-<span id="L187" class="ln">   187  </span>			admin.EXPECT().EnsureDatabase(gomock.Any(), &#34;wt1_local&#34;).Return(nil)
-<span id="L188" class="ln">   188  </span>			admin.EXPECT().SetupDatabase(gomock.Any(), &#34;wt1_local&#34;).Return(errBoom)
+<span id="L175" class="ln">   175  </span>			<span class="comment">// deploy 系は EnsureDir/UpSharedDB より前に弾かれるため mock 呼び出しは発生しない。</span>
+<span id="L176" class="ln">   176  </span>			pool, _, _ := newMockPool(t, t.TempDir(), config.EnvProduction)
+<span id="L177" class="ln">   177  </span>
+<span id="L178" class="ln">   178  </span>			require.ErrorIs(t, pool.Acquire(context.Background()), errDeployEnvRefused)
+<span id="L179" class="ln">   179  </span>		})
+<span id="L180" class="ln">   180  </span>
+<span id="L181" class="ln">   181  </span>		t.Run(&#34;共有 DB 起動に失敗するとエラーを返す&#34;, func(t *testing.T) {
+<span id="L182" class="ln">   182  </span>			t.Parallel()
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span>			pool, _, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
+<span id="L185" class="ln">   185  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), gomock.Any()).Return(errBoom)
+<span id="L186" class="ln">   186  </span>
+<span id="L187" class="ln">   187  </span>			require.Error(t, pool.Acquire(context.Background()))
+<span id="L188" class="ln">   188  </span>		})
 <span id="L189" class="ln">   189  </span>
-<span id="L190" class="ln">   190  </span>			require.Error(t, pool.Acquire(context.Background()))
-<span id="L191" class="ln">   191  </span>		})
+<span id="L190" class="ln">   190  </span>		t.Run(&#34;DB 作成に失敗するとエラーを返す&#34;, func(t *testing.T) {
+<span id="L191" class="ln">   191  </span>			t.Parallel()
 <span id="L192" class="ln">   192  </span>
-<span id="L193" class="ln">   193  </span>		t.Run(&#34;全スロット使用中ならエラーを返す&#34;, func(t *testing.T) {
-<span id="L194" class="ln">   194  </span>			t.Parallel()
-<span id="L195" class="ln">   195  </span>
-<span id="L196" class="ln">   196  </span>			pool, _, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L197" class="ln">   197  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), gomock.Any()).Return(nil)
-<span id="L198" class="ln">   198  </span>			fillSlots(t, pool.reg.dir, pool.reg.MaxSlots())
+<span id="L193" class="ln">   193  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
+<span id="L194" class="ln">   194  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), gomock.Any()).Return(nil)
+<span id="L195" class="ln">   195  </span>			admin.EXPECT().EnsureDatabase(gomock.Any(), gomock.Any()).Return(errBoom)
+<span id="L196" class="ln">   196  </span>
+<span id="L197" class="ln">   197  </span>			require.Error(t, pool.Acquire(context.Background()))
+<span id="L198" class="ln">   198  </span>		})
 <span id="L199" class="ln">   199  </span>
-<span id="L200" class="ln">   200  </span>			require.ErrorIs(t, pool.Acquire(context.Background()), errNoFreeSlot)
-<span id="L201" class="ln">   201  </span>		})
-<span id="L202" class="ln">   202  </span>	})
-<span id="L203" class="ln">   203  </span>}
-<span id="L204" class="ln">   204  </span>
-<span id="L205" class="ln">   205  </span>func TestPool_slotInUse(t *testing.T) {
-<span id="L206" class="ln">   206  </span>	t.Parallel()
+<span id="L200" class="ln">   200  </span>		t.Run(&#34;DB セットアップに失敗するとエラーを返す&#34;, func(t *testing.T) {
+<span id="L201" class="ln">   201  </span>			t.Parallel()
+<span id="L202" class="ln">   202  </span>
+<span id="L203" class="ln">   203  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
+<span id="L204" class="ln">   204  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), gomock.Any()).Return(nil)
+<span id="L205" class="ln">   205  </span>			admin.EXPECT().EnsureDatabase(gomock.Any(), &#34;wt1_local&#34;).Return(nil)
+<span id="L206" class="ln">   206  </span>			admin.EXPECT().SetupDatabase(gomock.Any(), &#34;wt1_local&#34;).Return(errBoom)
 <span id="L207" class="ln">   207  </span>
-<span id="L208" class="ln">   208  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L209" class="ln">   209  </span>		t.Parallel()
+<span id="L208" class="ln">   208  </span>			require.Error(t, pool.Acquire(context.Background()))
+<span id="L209" class="ln">   209  </span>		})
 <span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>		t.Run(&#34;app コンテナが稼働していれば使用中と判定する&#34;, func(t *testing.T) {
+<span id="L211" class="ln">   211  </span>		t.Run(&#34;全スロット使用中ならエラーを返す&#34;, func(t *testing.T) {
 <span id="L212" class="ln">   212  </span>			t.Parallel()
 <span id="L213" class="ln">   213  </span>
 <span id="L214" class="ln">   214  </span>			pool, _, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L215" class="ln">   215  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(1, nil)
-<span id="L216" class="ln">   216  </span>
-<span id="L217" class="ln">   217  </span>			busy, err := pool.slotInUse(context.Background(), 1)
-<span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>			require.NoError(t, err)
-<span id="L220" class="ln">   220  </span>			assert.True(t, busy)
-<span id="L221" class="ln">   221  </span>		})
+<span id="L215" class="ln">   215  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), gomock.Any()).Return(nil)
+<span id="L216" class="ln">   216  </span>			fillSlots(t, pool.reg.dir, pool.reg.MaxSlots())
+<span id="L217" class="ln">   217  </span>
+<span id="L218" class="ln">   218  </span>			require.ErrorIs(t, pool.Acquire(context.Background()), errNoFreeSlot)
+<span id="L219" class="ln">   219  </span>		})
+<span id="L220" class="ln">   220  </span>	})
+<span id="L221" class="ln">   221  </span>}
 <span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>		t.Run(&#34;コンテナが無くても DB 接続があれば使用中と判定する&#34;, func(t *testing.T) {
-<span id="L224" class="ln">   224  </span>			t.Parallel()
+<span id="L223" class="ln">   223  </span>func TestPool_slotInUse(t *testing.T) {
+<span id="L224" class="ln">   224  </span>	t.Parallel()
 <span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L227" class="ln">   227  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, nil)
-<span id="L228" class="ln">   228  </span>			admin.EXPECT().ActiveConnections(gomock.Any(), &#34;wt1_local&#34;, &#34;wt1_test&#34;).Return(2, nil)
-<span id="L229" class="ln">   229  </span>
-<span id="L230" class="ln">   230  </span>			busy, err := pool.slotInUse(context.Background(), 1)
+<span id="L226" class="ln">   226  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L227" class="ln">   227  </span>		t.Parallel()
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>		t.Run(&#34;app コンテナが稼働していれば使用中と判定する&#34;, func(t *testing.T) {
+<span id="L230" class="ln">   230  </span>			t.Parallel()
 <span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>			require.NoError(t, err)
-<span id="L233" class="ln">   233  </span>			assert.True(t, busy)
-<span id="L234" class="ln">   234  </span>		})
-<span id="L235" class="ln">   235  </span>
-<span id="L236" class="ln">   236  </span>		t.Run(&#34;コンテナも DB 接続も無ければ未使用と判定する&#34;, func(t *testing.T) {
-<span id="L237" class="ln">   237  </span>			t.Parallel()
-<span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L240" class="ln">   240  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, nil)
-<span id="L241" class="ln">   241  </span>			admin.EXPECT().ActiveConnections(gomock.Any(), &#34;wt1_local&#34;, &#34;wt1_test&#34;).Return(0, nil)
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>			busy, err := pool.slotInUse(context.Background(), 1)
-<span id="L244" class="ln">   244  </span>
-<span id="L245" class="ln">   245  </span>			require.NoError(t, err)
-<span id="L246" class="ln">   246  </span>			assert.False(t, busy)
-<span id="L247" class="ln">   247  </span>		})
-<span id="L248" class="ln">   248  </span>	})
+<span id="L232" class="ln">   232  </span>			pool, _, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
+<span id="L233" class="ln">   233  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(1, nil)
+<span id="L234" class="ln">   234  </span>
+<span id="L235" class="ln">   235  </span>			busy, err := pool.slotInUse(context.Background(), 1)
+<span id="L236" class="ln">   236  </span>
+<span id="L237" class="ln">   237  </span>			require.NoError(t, err)
+<span id="L238" class="ln">   238  </span>			assert.True(t, busy)
+<span id="L239" class="ln">   239  </span>		})
+<span id="L240" class="ln">   240  </span>
+<span id="L241" class="ln">   241  </span>		t.Run(&#34;コンテナが無くても DB 接続があれば使用中と判定する&#34;, func(t *testing.T) {
+<span id="L242" class="ln">   242  </span>			t.Parallel()
+<span id="L243" class="ln">   243  </span>
+<span id="L244" class="ln">   244  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
+<span id="L245" class="ln">   245  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, nil)
+<span id="L246" class="ln">   246  </span>			admin.EXPECT().ActiveConnections(gomock.Any(), &#34;wt1_local&#34;, &#34;wt1_test&#34;).Return(2, nil)
+<span id="L247" class="ln">   247  </span>
+<span id="L248" class="ln">   248  </span>			busy, err := pool.slotInUse(context.Background(), 1)
 <span id="L249" class="ln">   249  </span>
-<span id="L250" class="ln">   250  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L251" class="ln">   251  </span>		t.Parallel()
-<span id="L252" class="ln">   252  </span>
-<span id="L253" class="ln">   253  </span>		t.Run(&#34;コンテナ確認が失敗すればエラーを返す&#34;, func(t *testing.T) {
-<span id="L254" class="ln">   254  </span>			t.Parallel()
-<span id="L255" class="ln">   255  </span>
-<span id="L256" class="ln">   256  </span>			pool, _, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L257" class="ln">   257  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, errBoom)
-<span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>			_, err := pool.slotInUse(context.Background(), 1)
+<span id="L250" class="ln">   250  </span>			require.NoError(t, err)
+<span id="L251" class="ln">   251  </span>			assert.True(t, busy)
+<span id="L252" class="ln">   252  </span>		})
+<span id="L253" class="ln">   253  </span>
+<span id="L254" class="ln">   254  </span>		t.Run(&#34;コンテナも DB 接続も無ければ未使用と判定する&#34;, func(t *testing.T) {
+<span id="L255" class="ln">   255  </span>			t.Parallel()
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
+<span id="L258" class="ln">   258  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, nil)
+<span id="L259" class="ln">   259  </span>			admin.EXPECT().ActiveConnections(gomock.Any(), &#34;wt1_local&#34;, &#34;wt1_test&#34;).Return(0, nil)
 <span id="L260" class="ln">   260  </span>
-<span id="L261" class="ln">   261  </span>			require.ErrorIs(t, err, errBoom)
-<span id="L262" class="ln">   262  </span>		})
-<span id="L263" class="ln">   263  </span>
-<span id="L264" class="ln">   264  </span>		t.Run(&#34;接続確認が失敗すればエラーを返す&#34;, func(t *testing.T) {
-<span id="L265" class="ln">   265  </span>			t.Parallel()
-<span id="L266" class="ln">   266  </span>
-<span id="L267" class="ln">   267  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L268" class="ln">   268  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, nil)
-<span id="L269" class="ln">   269  </span>			admin.EXPECT().ActiveConnections(gomock.Any(), &#34;wt1_local&#34;, &#34;wt1_test&#34;).Return(0, errBoom)
+<span id="L261" class="ln">   261  </span>			busy, err := pool.slotInUse(context.Background(), 1)
+<span id="L262" class="ln">   262  </span>
+<span id="L263" class="ln">   263  </span>			require.NoError(t, err)
+<span id="L264" class="ln">   264  </span>			assert.False(t, busy)
+<span id="L265" class="ln">   265  </span>		})
+<span id="L266" class="ln">   266  </span>	})
+<span id="L267" class="ln">   267  </span>
+<span id="L268" class="ln">   268  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L269" class="ln">   269  </span>		t.Parallel()
 <span id="L270" class="ln">   270  </span>
-<span id="L271" class="ln">   271  </span>			_, err := pool.slotInUse(context.Background(), 1)
-<span id="L272" class="ln">   272  </span>
-<span id="L273" class="ln">   273  </span>			require.ErrorIs(t, err, errBoom)
-<span id="L274" class="ln">   274  </span>		})
-<span id="L275" class="ln">   275  </span>	})
-<span id="L276" class="ln">   276  </span>}
-<span id="L277" class="ln">   277  </span>
-<span id="L278" class="ln">   278  </span>func TestPool_Release(t *testing.T) {
-<span id="L279" class="ln">   279  </span>	t.Parallel()
-<span id="L280" class="ln">   280  </span>
-<span id="L281" class="ln">   281  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L282" class="ln">   282  </span>		t.Parallel()
-<span id="L283" class="ln">   283  </span>
-<span id="L284" class="ln">   284  </span>		t.Run(&#34;serve コンテナを停止し .gobp-db-slot を削除する&#34;, func(t *testing.T) {
-<span id="L285" class="ln">   285  </span>			t.Parallel()
-<span id="L286" class="ln">   286  </span>
-<span id="L287" class="ln">   287  </span>			root := t.TempDir()
-<span id="L288" class="ln">   288  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
-<span id="L289" class="ln">   289  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
-<span id="L290" class="ln">   290  </span>			expectSlotDBs(admin, &#34;1&#34;)
-<span id="L291" class="ln">   291  </span>			comp.EXPECT().DownServe(gomock.Any(), &#34;gobp-wt-1&#34;).Return(nil)
-<span id="L292" class="ln">   292  </span>
-<span id="L293" class="ln">   293  </span>			require.NoError(t, pool.Acquire(context.Background()))
-<span id="L294" class="ln">   294  </span>			require.NoError(t, pool.Release(context.Background()))
+<span id="L271" class="ln">   271  </span>		t.Run(&#34;コンテナ確認が失敗すればエラーを返す&#34;, func(t *testing.T) {
+<span id="L272" class="ln">   272  </span>			t.Parallel()
+<span id="L273" class="ln">   273  </span>
+<span id="L274" class="ln">   274  </span>			pool, _, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
+<span id="L275" class="ln">   275  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, errBoom)
+<span id="L276" class="ln">   276  </span>
+<span id="L277" class="ln">   277  </span>			_, err := pool.slotInUse(context.Background(), 1)
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>			require.ErrorIs(t, err, errBoom)
+<span id="L280" class="ln">   280  </span>		})
+<span id="L281" class="ln">   281  </span>
+<span id="L282" class="ln">   282  </span>		t.Run(&#34;接続確認が失敗すればエラーを返す&#34;, func(t *testing.T) {
+<span id="L283" class="ln">   283  </span>			t.Parallel()
+<span id="L284" class="ln">   284  </span>
+<span id="L285" class="ln">   285  </span>			pool, admin, comp := newMockPool(t, t.TempDir(), &#34;&#34;)
+<span id="L286" class="ln">   286  </span>			comp.EXPECT().RunningContainers(gomock.Any(), &#34;gobp-wt-1&#34;).Return(0, nil)
+<span id="L287" class="ln">   287  </span>			admin.EXPECT().ActiveConnections(gomock.Any(), &#34;wt1_local&#34;, &#34;wt1_test&#34;).Return(0, errBoom)
+<span id="L288" class="ln">   288  </span>
+<span id="L289" class="ln">   289  </span>			_, err := pool.slotInUse(context.Background(), 1)
+<span id="L290" class="ln">   290  </span>
+<span id="L291" class="ln">   291  </span>			require.ErrorIs(t, err, errBoom)
+<span id="L292" class="ln">   292  </span>		})
+<span id="L293" class="ln">   293  </span>	})
+<span id="L294" class="ln">   294  </span>}
 <span id="L295" class="ln">   295  </span>
-<span id="L296" class="ln">   296  </span>			_, err := os.Stat(filepath.Join(root, &#34;.gobp-db-slot&#34;))
-<span id="L297" class="ln">   297  </span>			assert.True(t, os.IsNotExist(err))
-<span id="L298" class="ln">   298  </span>		})
-<span id="L299" class="ln">   299  </span>
-<span id="L300" class="ln">   300  </span>		t.Run(&#34;スロット未保持なら何もしない&#34;, func(t *testing.T) {
-<span id="L301" class="ln">   301  </span>			t.Parallel()
-<span id="L302" class="ln">   302  </span>
-<span id="L303" class="ln">   303  </span>			pool, _, _ := newMockPool(t, t.TempDir(), &#34;&#34;)
-<span id="L304" class="ln">   304  </span>			require.NoError(t, pool.Release(context.Background()))
-<span id="L305" class="ln">   305  </span>		})
-<span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>		t.Run(&#34;serve 停止が失敗してもリースは解放しログへ可視化する&#34;, func(t *testing.T) {
-<span id="L308" class="ln">   308  </span>			t.Parallel()
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>			root := t.TempDir()
-<span id="L311" class="ln">   311  </span>			ctrl := gomock.NewController(t)
-<span id="L312" class="ln">   312  </span>			admin := mock_dbslot.NewMockDBAdmin(ctrl)
-<span id="L313" class="ln">   313  </span>			comp := mock_dbslot.NewMockCompose(ctrl)
-<span id="L314" class="ln">   314  </span>			reg := NewRegistry(t.TempDir(), root, &#34;branch&#34;, 30*time.Minute, 8,
-<span id="L315" class="ln">   315  </span>				func() time.Time { return time.Unix(1_000_000, 0) })
-<span id="L316" class="ln">   316  </span>			cfg := Config{
-<span id="L317" class="ln">   317  </span>				Root: root, SharedProject: &#34;gobp-shared&#34;,
-<span id="L318" class="ln">   318  </span>				APIBasePort: 8080, MockAuthBase: 4000, DlvBase: 2345, PprofBase: 6060,
-<span id="L319" class="ln">   319  </span>			}
-<span id="L320" class="ln">   320  </span>			var logbuf bytes.Buffer
-<span id="L321" class="ln">   321  </span>			pool := NewPool(reg, admin, comp, cfg, io.Discard, &amp;logbuf)
+<span id="L296" class="ln">   296  </span>func TestPool_Release(t *testing.T) {
+<span id="L297" class="ln">   297  </span>	t.Parallel()
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L300" class="ln">   300  </span>		t.Parallel()
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>		t.Run(&#34;serve コンテナを停止し .gobp-db-slot を削除する&#34;, func(t *testing.T) {
+<span id="L303" class="ln">   303  </span>			t.Parallel()
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>			root := t.TempDir()
+<span id="L306" class="ln">   306  </span>			pool, admin, comp := newMockPool(t, root, &#34;&#34;)
+<span id="L307" class="ln">   307  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L308" class="ln">   308  </span>			expectSlotDBs(admin, &#34;1&#34;)
+<span id="L309" class="ln">   309  </span>			comp.EXPECT().DownServe(gomock.Any(), &#34;gobp-wt-1&#34;).Return(nil)
+<span id="L310" class="ln">   310  </span>
+<span id="L311" class="ln">   311  </span>			require.NoError(t, pool.Acquire(context.Background()))
+<span id="L312" class="ln">   312  </span>			require.NoError(t, pool.Release(context.Background()))
+<span id="L313" class="ln">   313  </span>
+<span id="L314" class="ln">   314  </span>			_, err := os.Stat(filepath.Join(root, &#34;.gobp-db-slot&#34;))
+<span id="L315" class="ln">   315  </span>			assert.True(t, os.IsNotExist(err))
+<span id="L316" class="ln">   316  </span>		})
+<span id="L317" class="ln">   317  </span>
+<span id="L318" class="ln">   318  </span>		t.Run(&#34;スロット未保持なら何もしない&#34;, func(t *testing.T) {
+<span id="L319" class="ln">   319  </span>			t.Parallel()
+<span id="L320" class="ln">   320  </span>
+<span id="L321" class="ln">   321  </span>			pool, _, _, _, logbuf := newMockPoolWithRegistry(t, t.TempDir(), t.TempDir())
 <span id="L322" class="ln">   322  </span>
-<span id="L323" class="ln">   323  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
-<span id="L324" class="ln">   324  </span>			expectSlotDBs(admin, &#34;1&#34;)
-<span id="L325" class="ln">   325  </span>			comp.EXPECT().DownServe(gomock.Any(), &#34;gobp-wt-1&#34;).Return(errBoom)
-<span id="L326" class="ln">   326  </span>
-<span id="L327" class="ln">   327  </span>			require.NoError(t, pool.Acquire(context.Background()))
-<span id="L328" class="ln">   328  </span>			require.NoError(t, pool.Release(context.Background()))
-<span id="L329" class="ln">   329  </span>
-<span id="L330" class="ln">   330  </span>			_, err := os.Stat(filepath.Join(root, &#34;.gobp-db-slot&#34;))
-<span id="L331" class="ln">   331  </span>			assert.True(t, os.IsNotExist(err))
-<span id="L332" class="ln">   332  </span>			assert.Contains(t, logbuf.String(), &#34;failed to stop serve containers for slot 1&#34;)
-<span id="L333" class="ln">   333  </span>		})
-<span id="L334" class="ln">   334  </span>	})
-<span id="L335" class="ln">   335  </span>}
-<span id="L336" class="ln">   336  </span>
-<span id="L337" class="ln">   337  </span>func TestPool_slotFileHasNoTrailingSpace(t *testing.T) {
-<span id="L338" class="ln">   338  </span>	t.Parallel()
-<span id="L339" class="ln">   339  </span>
-<span id="L340" class="ln">   340  </span>	root := t.TempDir()
-<span id="L341" class="ln">   341  </span>	pool, admin, comp := newMockPool(t, root, &#34;&#34;)
-<span id="L342" class="ln">   342  </span>	comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
-<span id="L343" class="ln">   343  </span>	expectSlotDBs(admin, &#34;1&#34;)
-<span id="L344" class="ln">   344  </span>	require.NoError(t, pool.Acquire(context.Background()))
+<span id="L323" class="ln">   323  </span>			require.NoError(t, pool.Release(context.Background()))
+<span id="L324" class="ln">   324  </span>
+<span id="L325" class="ln">   325  </span>			assert.Contains(t, logbuf.String(), &#34;no slot held by this worktree&#34;)
+<span id="L326" class="ln">   326  </span>		})
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>		t.Run(&#34;リースを他 worktree に回収されていれば compose を触らず slot ファイルだけ捨てる&#34;, func(t *testing.T) {
+<span id="L329" class="ln">   329  </span>			t.Parallel()
+<span id="L330" class="ln">   330  </span>
+<span id="L331" class="ln">   331  </span>			root := t.TempDir()
+<span id="L332" class="ln">   332  </span>			poolDir := t.TempDir()
+<span id="L333" class="ln">   333  </span>			pool, _, admin, comp, logbuf := newMockPoolWithRegistry(t, root, poolDir)
+<span id="L334" class="ln">   334  </span>
+<span id="L335" class="ln">   335  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L336" class="ln">   336  </span>			expectSlotDBs(admin, &#34;1&#34;)
+<span id="L337" class="ln">   337  </span>			require.NoError(t, pool.Acquire(context.Background()))
+<span id="L338" class="ln">   338  </span>
+<span id="L339" class="ln">   339  </span>			<span class="comment">// stale 回収で他 worktree がスロット 1 を持って行った状態にする。</span>
+<span id="L340" class="ln">   340  </span>			other := NewRegistry(poolDir, &#34;/w/other&#34;, &#34;b&#34;, 30*time.Minute, 8,
+<span id="L341" class="ln">   341  </span>				func() time.Time { return time.Unix(1_000_000, 0) })
+<span id="L342" class="ln">   342  </span>			require.NoError(t, other.WriteMeta(1))
+<span id="L343" class="ln">   343  </span>
+<span id="L344" class="ln">   344  </span>			require.NoError(t, pool.Release(context.Background()))
 <span id="L345" class="ln">   345  </span>
-<span id="L346" class="ln">   346  </span>	b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
-<span id="L347" class="ln">   347  </span>	require.NoError(t, err)
-<span id="L348" class="ln">   348  </span>	for line := range strings.SplitSeq(strings.TrimRight(string(b), &#34;\n&#34;), &#34;\n&#34;) {
-<span id="L349" class="ln">   349  </span>		assert.Equal(t, line, strings.TrimSpace(line), &#34;行に余分な空白がないこと&#34;)
-<span id="L350" class="ln">   350  </span>	}
-<span id="L351" class="ln">   351  </span>}
-<span id="L352" class="ln">   352  </span>
-<span id="L353" class="ln">   353  </span>func TestNewPool(t *testing.T) {
-<span id="L354" class="ln">   354  </span>	t.Parallel()
-<span id="L355" class="ln">   355  </span>
-<span id="L356" class="ln">   356  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L357" class="ln">   357  </span>		t.Parallel()
-<span id="L358" class="ln">   358  </span>
-<span id="L359" class="ln">   359  </span>		t.Run(&#34;渡した依存・設定・2 つの出力先をそのまま保持した Pool を返す&#34;, func(t *testing.T) {
-<span id="L360" class="ln">   360  </span>			t.Parallel()
+<span id="L346" class="ln">   346  </span>			assert.True(t, other.OwnedBySelf(1), &#34;現保持者のリースを奪ってはならない&#34;)
+<span id="L347" class="ln">   347  </span>			_, err := os.Stat(filepath.Join(root, &#34;.gobp-db-slot&#34;))
+<span id="L348" class="ln">   348  </span>			assert.True(t, os.IsNotExist(err))
+<span id="L349" class="ln">   349  </span>			assert.Contains(t, logbuf.String(), &#34;slot 1 is held by another worktree&#34;)
+<span id="L350" class="ln">   350  </span>		})
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span>		t.Run(&#34;リースの meta を読めないだけなら自分の後始末を取り下げない&#34;, func(t *testing.T) {
+<span id="L353" class="ln">   353  </span>			t.Parallel()
+<span id="L354" class="ln">   354  </span>
+<span id="L355" class="ln">   355  </span>			root := t.TempDir()
+<span id="L356" class="ln">   356  </span>			pool, reg, admin, comp, logbuf := newMockPoolWithRegistry(t, root, t.TempDir())
+<span id="L357" class="ln">   357  </span>
+<span id="L358" class="ln">   358  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L359" class="ln">   359  </span>			expectSlotDBs(admin, &#34;1&#34;)
+<span id="L360" class="ln">   360  </span>			require.NoError(t, pool.Acquire(context.Background()))
 <span id="L361" class="ln">   361  </span>
-<span id="L362" class="ln">   362  </span>			ctrl := gomock.NewController(t)
-<span id="L363" class="ln">   363  </span>			admin := mock_dbslot.NewMockDBAdmin(ctrl)
-<span id="L364" class="ln">   364  </span>			comp := mock_dbslot.NewMockCompose(ctrl)
-<span id="L365" class="ln">   365  </span>			reg := NewRegistry(t.TempDir(), &#34;/w/self&#34;, &#34;branch&#34;, 30*time.Minute, 8,
-<span id="L366" class="ln">   366  </span>				func() time.Time { return time.Unix(1_000_000, 0) })
-<span id="L367" class="ln">   367  </span>			cfg := Config{Root: &#34;/w/self&#34;, SharedProject: &#34;gobp-shared&#34;, APIBasePort: 8080}
-<span id="L368" class="ln">   368  </span>			var out, logw bytes.Buffer
-<span id="L369" class="ln">   369  </span>
-<span id="L370" class="ln">   370  </span>			pool := NewPool(reg, admin, comp, cfg, &amp;out, &amp;logw)
-<span id="L371" class="ln">   371  </span>
-<span id="L372" class="ln">   372  </span>			assert.Equal(t, &amp;Pool{reg: reg, admin: admin, comp: comp, cfg: cfg, out: &amp;out, logw: &amp;logw}, pool)
+<span id="L362" class="ln">   362  </span>			<span class="comment">// meta だけを失う（他 worktree が保持しているわけではない）。</span>
+<span id="L363" class="ln">   363  </span>			require.NoError(t, os.Remove(reg.metaPath(1)))
+<span id="L364" class="ln">   364  </span>			comp.EXPECT().DownServe(gomock.Any(), &#34;gobp-wt-1&#34;).Return(nil)
+<span id="L365" class="ln">   365  </span>
+<span id="L366" class="ln">   366  </span>			require.NoError(t, pool.Release(context.Background()))
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>			_, err := os.Stat(filepath.Join(root, &#34;.gobp-db-slot&#34;))
+<span id="L369" class="ln">   369  </span>			assert.True(t, os.IsNotExist(err))
+<span id="L370" class="ln">   370  </span>			<span class="comment">// 保持を確認できないロックは残す（meta を書く前の取得直後と区別できないため）。</span>
+<span id="L371" class="ln">   371  </span>			assert.DirExists(t, reg.lockDir(1))
+<span id="L372" class="ln">   372  </span>			assert.Contains(t, logbuf.String(), &#34;left it for stale reclaim&#34;)
 <span id="L373" class="ln">   373  </span>		})
-<span id="L374" class="ln">   374  </span>	})
-<span id="L375" class="ln">   375  </span>}
-<span id="L376" class="ln">   376  </span>
-<span id="L377" class="ln">   377  </span>func TestPool_logf(t *testing.T) {
-<span id="L378" class="ln">   378  </span>	t.Parallel()
-<span id="L379" class="ln">   379  </span>
-<span id="L380" class="ln">   380  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L381" class="ln">   381  </span>		t.Parallel()
-<span id="L382" class="ln">   382  </span>
-<span id="L383" class="ln">   383  </span>		t.Run(&#34;[db-slot] 接頭辞付きの 1 行を標準出力ではなく進捗ログへ書く&#34;, func(t *testing.T) {
-<span id="L384" class="ln">   384  </span>			t.Parallel()
+<span id="L374" class="ln">   374  </span>
+<span id="L375" class="ln">   375  </span>		t.Run(&#34;scan lock を取れなくても後始末は続行する&#34;, func(t *testing.T) {
+<span id="L376" class="ln">   376  </span>			t.Parallel()
+<span id="L377" class="ln">   377  </span>
+<span id="L378" class="ln">   378  </span>			root := t.TempDir()
+<span id="L379" class="ln">   379  </span>			poolDir := t.TempDir()
+<span id="L380" class="ln">   380  </span>			pool, _, admin, comp, logbuf := newMockPoolWithRegistry(t, root, poolDir)
+<span id="L381" class="ln">   381  </span>
+<span id="L382" class="ln">   382  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L383" class="ln">   383  </span>			expectSlotDBs(admin, &#34;1&#34;)
+<span id="L384" class="ln">   384  </span>			require.NoError(t, pool.Acquire(context.Background()))
 <span id="L385" class="ln">   385  </span>
-<span id="L386" class="ln">   386  </span>			ctrl := gomock.NewController(t)
-<span id="L387" class="ln">   387  </span>			reg := NewRegistry(t.TempDir(), &#34;/w/self&#34;, &#34;branch&#34;, 30*time.Minute, 8,
-<span id="L388" class="ln">   388  </span>				func() time.Time { return time.Unix(1_000_000, 0) })
-<span id="L389" class="ln">   389  </span>			var out, logw bytes.Buffer
-<span id="L390" class="ln">   390  </span>			pool := NewPool(reg, mock_dbslot.NewMockDBAdmin(ctrl), mock_dbslot.NewMockCompose(ctrl),
-<span id="L391" class="ln">   391  </span>				Config{Root: &#34;/w/self&#34;}, &amp;out, &amp;logw)
+<span id="L386" class="ln">   386  </span>			<span class="comment">// .scan.lock を同名ディレクトリで塞ぎ、flock 用の open を確実に失敗させる。</span>
+<span id="L387" class="ln">   387  </span>			require.NoError(t, os.Remove(filepath.Join(poolDir, &#34;.scan.lock&#34;)))
+<span id="L388" class="ln">   388  </span>			require.NoError(t, os.Mkdir(filepath.Join(poolDir, &#34;.scan.lock&#34;), dirPerm))
+<span id="L389" class="ln">   389  </span>			comp.EXPECT().DownServe(gomock.Any(), &#34;gobp-wt-1&#34;).Return(nil)
+<span id="L390" class="ln">   390  </span>
+<span id="L391" class="ln">   391  </span>			require.NoError(t, pool.Release(context.Background()))
 <span id="L392" class="ln">   392  </span>
-<span id="L393" class="ln">   393  </span>			pool.logf(&#34;reclaim stale slot %d&#34;, 3)
-<span id="L394" class="ln">   394  </span>
-<span id="L395" class="ln">   395  </span>			assert.Equal(t, &#34;[db-slot] reclaim stale slot 3\n&#34;, logw.String())
-<span id="L396" class="ln">   396  </span>			assert.Empty(t, out.String())
-<span id="L397" class="ln">   397  </span>		})
-<span id="L398" class="ln">   398  </span>	})
-<span id="L399" class="ln">   399  </span>}
+<span id="L393" class="ln">   393  </span>			_, err := os.Stat(filepath.Join(root, &#34;.gobp-db-slot&#34;))
+<span id="L394" class="ln">   394  </span>			assert.True(t, os.IsNotExist(err))
+<span id="L395" class="ln">   395  </span>			assert.Contains(t, logbuf.String(), &#34;releasing without it&#34;)
+<span id="L396" class="ln">   396  </span>		})
+<span id="L397" class="ln">   397  </span>
+<span id="L398" class="ln">   398  </span>		t.Run(&#34;serve 停止が失敗してもリースは解放しログへ可視化する&#34;, func(t *testing.T) {
+<span id="L399" class="ln">   399  </span>			t.Parallel()
 <span id="L400" class="ln">   400  </span>
-<span id="L401" class="ln">   401  </span>func TestPool_slotFilePath(t *testing.T) {
-<span id="L402" class="ln">   402  </span>	t.Parallel()
+<span id="L401" class="ln">   401  </span>			root := t.TempDir()
+<span id="L402" class="ln">   402  </span>			pool, _, admin, comp, logbuf := newMockPoolWithRegistry(t, root, t.TempDir())
 <span id="L403" class="ln">   403  </span>
-<span id="L404" class="ln">   404  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L405" class="ln">   405  </span>		t.Parallel()
-<span id="L406" class="ln">   406  </span>
-<span id="L407" class="ln">   407  </span>		t.Run(&#34;自 worktree ルート直下の .gobp-db-slot を指す&#34;, func(t *testing.T) {
-<span id="L408" class="ln">   408  </span>			t.Parallel()
-<span id="L409" class="ln">   409  </span>
-<span id="L410" class="ln">   410  </span>			pool, _, _ := newMockPool(t, &#34;/w/self&#34;, &#34;&#34;)
-<span id="L411" class="ln">   411  </span>
-<span id="L412" class="ln">   412  </span>			assert.Equal(t, &#34;/w/self/.gobp-db-slot&#34;, pool.slotFilePath())
-<span id="L413" class="ln">   413  </span>		})
-<span id="L414" class="ln">   414  </span>	})
-<span id="L415" class="ln">   415  </span>}
-<span id="L416" class="ln">   416  </span>
-<span id="L417" class="ln">   417  </span>func Test_dbLocal(t *testing.T) {
-<span id="L418" class="ln">   418  </span>	t.Parallel()
-<span id="L419" class="ln">   419  </span>
-<span id="L420" class="ln">   420  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L421" class="ln">   421  </span>		t.Parallel()
-<span id="L422" class="ln">   422  </span>
-<span id="L423" class="ln">   423  </span>		t.Run(&#34;スロット番号から local データベース名を組み立てる&#34;, func(t *testing.T) {
-<span id="L424" class="ln">   424  </span>			t.Parallel()
-<span id="L425" class="ln">   425  </span>
-<span id="L426" class="ln">   426  </span>			assert.Equal(t, &#34;wt3_local&#34;, dbLocal(3))
-<span id="L427" class="ln">   427  </span>		})
-<span id="L428" class="ln">   428  </span>	})
-<span id="L429" class="ln">   429  </span>}
-<span id="L430" class="ln">   430  </span>
-<span id="L431" class="ln">   431  </span>func Test_dbTest(t *testing.T) {
-<span id="L432" class="ln">   432  </span>	t.Parallel()
+<span id="L404" class="ln">   404  </span>			comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L405" class="ln">   405  </span>			expectSlotDBs(admin, &#34;1&#34;)
+<span id="L406" class="ln">   406  </span>			comp.EXPECT().DownServe(gomock.Any(), &#34;gobp-wt-1&#34;).Return(errBoom)
+<span id="L407" class="ln">   407  </span>
+<span id="L408" class="ln">   408  </span>			require.NoError(t, pool.Acquire(context.Background()))
+<span id="L409" class="ln">   409  </span>			require.NoError(t, pool.Release(context.Background()))
+<span id="L410" class="ln">   410  </span>
+<span id="L411" class="ln">   411  </span>			_, err := os.Stat(filepath.Join(root, &#34;.gobp-db-slot&#34;))
+<span id="L412" class="ln">   412  </span>			assert.True(t, os.IsNotExist(err))
+<span id="L413" class="ln">   413  </span>			assert.Contains(t, logbuf.String(), &#34;failed to stop serve containers for slot 1&#34;)
+<span id="L414" class="ln">   414  </span>		})
+<span id="L415" class="ln">   415  </span>	})
+<span id="L416" class="ln">   416  </span>}
+<span id="L417" class="ln">   417  </span>
+<span id="L418" class="ln">   418  </span>func TestPool_slotFileHasNoTrailingSpace(t *testing.T) {
+<span id="L419" class="ln">   419  </span>	t.Parallel()
+<span id="L420" class="ln">   420  </span>
+<span id="L421" class="ln">   421  </span>	root := t.TempDir()
+<span id="L422" class="ln">   422  </span>	pool, admin, comp := newMockPool(t, root, &#34;&#34;)
+<span id="L423" class="ln">   423  </span>	comp.EXPECT().UpSharedDB(gomock.Any(), &#34;gobp-shared&#34;).Return(nil)
+<span id="L424" class="ln">   424  </span>	expectSlotDBs(admin, &#34;1&#34;)
+<span id="L425" class="ln">   425  </span>	require.NoError(t, pool.Acquire(context.Background()))
+<span id="L426" class="ln">   426  </span>
+<span id="L427" class="ln">   427  </span>	b, err := os.ReadFile(filepath.Join(root, &#34;.gobp-db-slot&#34;)) <span class="comment">//nolint:gosec // テスト内の固定パス</span>
+<span id="L428" class="ln">   428  </span>	require.NoError(t, err)
+<span id="L429" class="ln">   429  </span>	for line := range strings.SplitSeq(strings.TrimRight(string(b), &#34;\n&#34;), &#34;\n&#34;) {
+<span id="L430" class="ln">   430  </span>		assert.Equal(t, line, strings.TrimSpace(line), &#34;行に余分な空白がないこと&#34;)
+<span id="L431" class="ln">   431  </span>	}
+<span id="L432" class="ln">   432  </span>}
 <span id="L433" class="ln">   433  </span>
-<span id="L434" class="ln">   434  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L435" class="ln">   435  </span>		t.Parallel()
+<span id="L434" class="ln">   434  </span>func TestNewPool(t *testing.T) {
+<span id="L435" class="ln">   435  </span>	t.Parallel()
 <span id="L436" class="ln">   436  </span>
-<span id="L437" class="ln">   437  </span>		t.Run(&#34;スロット番号から test データベース名を組み立てる&#34;, func(t *testing.T) {
-<span id="L438" class="ln">   438  </span>			t.Parallel()
+<span id="L437" class="ln">   437  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L438" class="ln">   438  </span>		t.Parallel()
 <span id="L439" class="ln">   439  </span>
-<span id="L440" class="ln">   440  </span>			assert.Equal(t, &#34;wt3_test&#34;, dbTest(3))
-<span id="L441" class="ln">   441  </span>		})
-<span id="L442" class="ln">   442  </span>	})
-<span id="L443" class="ln">   443  </span>}
-<span id="L444" class="ln">   444  </span>
-<span id="L445" class="ln">   445  </span>func Test_serveProject(t *testing.T) {
-<span id="L446" class="ln">   446  </span>	t.Parallel()
-<span id="L447" class="ln">   447  </span>
-<span id="L448" class="ln">   448  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L449" class="ln">   449  </span>		t.Parallel()
+<span id="L440" class="ln">   440  </span>		t.Run(&#34;渡した依存・設定・2 つの出力先をそのまま保持した Pool を返す&#34;, func(t *testing.T) {
+<span id="L441" class="ln">   441  </span>			t.Parallel()
+<span id="L442" class="ln">   442  </span>
+<span id="L443" class="ln">   443  </span>			ctrl := gomock.NewController(t)
+<span id="L444" class="ln">   444  </span>			admin := mock_dbslot.NewMockDBAdmin(ctrl)
+<span id="L445" class="ln">   445  </span>			comp := mock_dbslot.NewMockCompose(ctrl)
+<span id="L446" class="ln">   446  </span>			reg := NewRegistry(t.TempDir(), &#34;/w/self&#34;, &#34;branch&#34;, 30*time.Minute, 8,
+<span id="L447" class="ln">   447  </span>				func() time.Time { return time.Unix(1_000_000, 0) })
+<span id="L448" class="ln">   448  </span>			cfg := Config{Root: &#34;/w/self&#34;, SharedProject: &#34;gobp-shared&#34;, APIBasePort: 8080}
+<span id="L449" class="ln">   449  </span>			var out, logw bytes.Buffer
 <span id="L450" class="ln">   450  </span>
-<span id="L451" class="ln">   451  </span>		t.Run(&#34;スロット番号から serve 用 compose プロジェクト名を組み立てる&#34;, func(t *testing.T) {
-<span id="L452" class="ln">   452  </span>			t.Parallel()
-<span id="L453" class="ln">   453  </span>
-<span id="L454" class="ln">   454  </span>			assert.Equal(t, &#34;gobp-wt-3&#34;, serveProject(3))
-<span id="L455" class="ln">   455  </span>		})
-<span id="L456" class="ln">   456  </span>	})
-<span id="L457" class="ln">   457  </span>}
-<span id="L458" class="ln">   458  </span>
+<span id="L451" class="ln">   451  </span>			pool := NewPool(reg, admin, comp, cfg, &amp;out, &amp;logw)
+<span id="L452" class="ln">   452  </span>
+<span id="L453" class="ln">   453  </span>			assert.Equal(t, &amp;Pool{reg: reg, admin: admin, comp: comp, cfg: cfg, out: &amp;out, logw: &amp;logw}, pool)
+<span id="L454" class="ln">   454  </span>		})
+<span id="L455" class="ln">   455  </span>	})
+<span id="L456" class="ln">   456  </span>}
+<span id="L457" class="ln">   457  </span>
+<span id="L458" class="ln">   458  </span>func TestPool_logf(t *testing.T) {
+<span id="L459" class="ln">   459  </span>	t.Parallel()
+<span id="L460" class="ln">   460  </span>
+<span id="L461" class="ln">   461  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L462" class="ln">   462  </span>		t.Parallel()
+<span id="L463" class="ln">   463  </span>
+<span id="L464" class="ln">   464  </span>		t.Run(&#34;[db-slot] 接頭辞付きの 1 行を標準出力ではなく進捗ログへ書く&#34;, func(t *testing.T) {
+<span id="L465" class="ln">   465  </span>			t.Parallel()
+<span id="L466" class="ln">   466  </span>
+<span id="L467" class="ln">   467  </span>			ctrl := gomock.NewController(t)
+<span id="L468" class="ln">   468  </span>			reg := NewRegistry(t.TempDir(), &#34;/w/self&#34;, &#34;branch&#34;, 30*time.Minute, 8,
+<span id="L469" class="ln">   469  </span>				func() time.Time { return time.Unix(1_000_000, 0) })
+<span id="L470" class="ln">   470  </span>			var out, logw bytes.Buffer
+<span id="L471" class="ln">   471  </span>			pool := NewPool(reg, mock_dbslot.NewMockDBAdmin(ctrl), mock_dbslot.NewMockCompose(ctrl),
+<span id="L472" class="ln">   472  </span>				Config{Root: &#34;/w/self&#34;}, &amp;out, &amp;logw)
+<span id="L473" class="ln">   473  </span>
+<span id="L474" class="ln">   474  </span>			pool.logf(&#34;reclaim stale slot %d&#34;, 3)
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span>			assert.Equal(t, &#34;[db-slot] reclaim stale slot 3\n&#34;, logw.String())
+<span id="L477" class="ln">   477  </span>			assert.Empty(t, out.String())
+<span id="L478" class="ln">   478  </span>		})
+<span id="L479" class="ln">   479  </span>	})
+<span id="L480" class="ln">   480  </span>}
+<span id="L481" class="ln">   481  </span>
+<span id="L482" class="ln">   482  </span>func TestPool_slotFilePath(t *testing.T) {
+<span id="L483" class="ln">   483  </span>	t.Parallel()
+<span id="L484" class="ln">   484  </span>
+<span id="L485" class="ln">   485  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L486" class="ln">   486  </span>		t.Parallel()
+<span id="L487" class="ln">   487  </span>
+<span id="L488" class="ln">   488  </span>		t.Run(&#34;自 worktree ルート直下の .gobp-db-slot を指す&#34;, func(t *testing.T) {
+<span id="L489" class="ln">   489  </span>			t.Parallel()
+<span id="L490" class="ln">   490  </span>
+<span id="L491" class="ln">   491  </span>			pool, _, _ := newMockPool(t, &#34;/w/self&#34;, &#34;&#34;)
+<span id="L492" class="ln">   492  </span>
+<span id="L493" class="ln">   493  </span>			assert.Equal(t, &#34;/w/self/.gobp-db-slot&#34;, pool.slotFilePath())
+<span id="L494" class="ln">   494  </span>		})
+<span id="L495" class="ln">   495  </span>	})
+<span id="L496" class="ln">   496  </span>}
+<span id="L497" class="ln">   497  </span>
+<span id="L498" class="ln">   498  </span>func Test_dbLocal(t *testing.T) {
+<span id="L499" class="ln">   499  </span>	t.Parallel()
+<span id="L500" class="ln">   500  </span>
+<span id="L501" class="ln">   501  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L502" class="ln">   502  </span>		t.Parallel()
+<span id="L503" class="ln">   503  </span>
+<span id="L504" class="ln">   504  </span>		t.Run(&#34;スロット番号から local データベース名を組み立てる&#34;, func(t *testing.T) {
+<span id="L505" class="ln">   505  </span>			t.Parallel()
+<span id="L506" class="ln">   506  </span>
+<span id="L507" class="ln">   507  </span>			assert.Equal(t, &#34;wt3_local&#34;, dbLocal(3))
+<span id="L508" class="ln">   508  </span>		})
+<span id="L509" class="ln">   509  </span>	})
+<span id="L510" class="ln">   510  </span>}
+<span id="L511" class="ln">   511  </span>
+<span id="L512" class="ln">   512  </span>func Test_dbTest(t *testing.T) {
+<span id="L513" class="ln">   513  </span>	t.Parallel()
+<span id="L514" class="ln">   514  </span>
+<span id="L515" class="ln">   515  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L516" class="ln">   516  </span>		t.Parallel()
+<span id="L517" class="ln">   517  </span>
+<span id="L518" class="ln">   518  </span>		t.Run(&#34;スロット番号から test データベース名を組み立てる&#34;, func(t *testing.T) {
+<span id="L519" class="ln">   519  </span>			t.Parallel()
+<span id="L520" class="ln">   520  </span>
+<span id="L521" class="ln">   521  </span>			assert.Equal(t, &#34;wt3_test&#34;, dbTest(3))
+<span id="L522" class="ln">   522  </span>		})
+<span id="L523" class="ln">   523  </span>	})
+<span id="L524" class="ln">   524  </span>}
+<span id="L525" class="ln">   525  </span>
+<span id="L526" class="ln">   526  </span>func Test_serveProject(t *testing.T) {
+<span id="L527" class="ln">   527  </span>	t.Parallel()
+<span id="L528" class="ln">   528  </span>
+<span id="L529" class="ln">   529  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L530" class="ln">   530  </span>		t.Parallel()
+<span id="L531" class="ln">   531  </span>
+<span id="L532" class="ln">   532  </span>		t.Run(&#34;スロット番号から serve 用 compose プロジェクト名を組み立てる&#34;, func(t *testing.T) {
+<span id="L533" class="ln">   533  </span>			t.Parallel()
+<span id="L534" class="ln">   534  </span>
+<span id="L535" class="ln">   535  </span>			assert.Equal(t, &#34;gobp-wt-3&#34;, serveProject(3))
+<span id="L536" class="ln">   536  </span>		})
+<span id="L537" class="ln">   537  </span>	})
+<span id="L538" class="ln">   538  </span>}
+<span id="L539" class="ln">   539  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/cli/dbslot/dbslot_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

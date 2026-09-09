@@ -103,7 +103,7 @@
 <span id="L46" class="ln">    46  </span>		entity = locked
 <span id="L47" class="ln">    47  </span>
 <span id="L48" class="ln">    48  </span>		if err = entity.AdjustStock(params.Delta); err != nil {
-<span id="L49" class="ln">    49  </span>			return err
+<span id="L49" class="ln">    49  </span>			return apperror.WithDetails(err, product.FieldDelta)
 <span id="L50" class="ln">    50  </span>		}
 <span id="L51" class="ln">    51  </span>
 <span id="L52" class="ln">    52  </span>		updatedVersion, err = u.repo.UpdateStock(ctx, entity)

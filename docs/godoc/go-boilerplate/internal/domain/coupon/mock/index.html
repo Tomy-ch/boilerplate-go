@@ -112,6 +112,9 @@
 				
 				
 					
+					<dd>    <a href="#MockRepository.Create">func (m *MockRepository) Create(ctx context.Context, c *coupon.Coupon) error</a></dd>
+				
+					
 					<dd>    <a href="#MockRepository.EXPECT">func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder</a></dd>
 				
 					
@@ -119,6 +122,9 @@
 				
 					
 					<dd>    <a href="#MockRepository.LockByID">func (m *MockRepository) LockByID(ctx context.Context, id uuid.UUID) (*coupon.Coupon, error)</a></dd>
+				
+					
+					<dd>    <a href="#MockRepository.UpdateUnused">func (m *MockRepository) UpdateUnused(ctx context.Context, id uuid.UUID) error</a></dd>
 				
 					
 					<dd>    <a href="#MockRepository.UpdateUsed">func (m *MockRepository) UpdateUsed(ctx context.Context, id uuid.UUID, usedAt time.Time) error</a></dd>
@@ -129,10 +135,16 @@
 				
 				
 					
+					<dd>    <a href="#MockRepositoryMockRecorder.Create">func (mr *MockRepositoryMockRecorder) Create(ctx, c any) *gomock.Call</a></dd>
+				
+					
 					<dd>    <a href="#MockRepositoryMockRecorder.FindByUserID">func (mr *MockRepositoryMockRecorder) FindByUserID(ctx, userID any) *gomock.Call</a></dd>
 				
 					
 					<dd>    <a href="#MockRepositoryMockRecorder.LockByID">func (mr *MockRepositoryMockRecorder) LockByID(ctx, id any) *gomock.Call</a></dd>
+				
+					
+					<dd>    <a href="#MockRepositoryMockRecorder.UpdateUnused">func (mr *MockRepositoryMockRecorder) UpdateUnused(ctx, id any) *gomock.Call</a></dd>
 				
 					
 					<dd>    <a href="#MockRepositoryMockRecorder.UpdateUsed">func (mr *MockRepositoryMockRecorder) UpdateUsed(ctx, id, usedAt any) *gomock.Call</a></dd>
@@ -201,6 +213,19 @@
 
 			
 				
+				</p><h3 id="MockRepository.Create">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=1200:1276#L37">Create</a>
+					<a class="permalink" href="#MockRepository.Create">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockRepository">MockRepository</a>) Create(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, c *<a href="../../../../../go-boilerplate/internal/domain/coupon/">coupon</a>.<a href="../../../../../go-boilerplate/internal/domain/coupon/#Coupon">Coupon</a>) <a href="../../../../../builtin/#error">error</a></pre>
+				<p>Create mocks base method.
+
+				
+				
+				
+			
+				
 				</p><h3 id="MockRepository.EXPECT">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=1085:1146#L32">EXPECT</a>
 					<a class="permalink" href="#MockRepository.EXPECT">¶</a>
 					
@@ -214,7 +239,7 @@
 				
 			
 				
-				</p><h3 id="MockRepository.FindByUserID">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=1206:1306#L37">FindByUserID</a>
+				</p><h3 id="MockRepository.FindByUserID">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=1685:1785#L51">FindByUserID</a>
 					<a class="permalink" href="#MockRepository.FindByUserID">¶</a>
 					
 					
@@ -227,7 +252,7 @@
 				
 			
 				
-				</p><h3 id="MockRepository.LockByID">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=1804:1896#L52">LockByID</a>
+				</p><h3 id="MockRepository.LockByID">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=2283:2375#L66">LockByID</a>
 					<a class="permalink" href="#MockRepository.LockByID">¶</a>
 					
 					
@@ -240,7 +265,20 @@
 				
 			
 				
-				</p><h3 id="MockRepository.UpdateUsed">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=2360:2454#L67">UpdateUsed</a>
+				</p><h3 id="MockRepository.UpdateUnused">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=2841:2919#L81">UpdateUnused</a>
+					<a class="permalink" href="#MockRepository.UpdateUnused">¶</a>
+					
+					
+				</h3>
+				<pre>func (m *<a href="#MockRepository">MockRepository</a>) UpdateUnused(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, id <a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) <a href="../../../../../builtin/#error">error</a></pre>
+				<p>UpdateUnused mocks base method.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockRepository.UpdateUsed">func (*MockRepository) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=3365:3459#L95">UpdateUsed</a>
 					<a class="permalink" href="#MockRepository.UpdateUsed">¶</a>
 					
 					
@@ -279,7 +317,20 @@
 
 			
 				
-				<h3 id="MockRepositoryMockRecorder.FindByUserID">func (*MockRepositoryMockRecorder) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=1525:1605#L46">FindByUserID</a>
+				<h3 id="MockRepositoryMockRecorder.Create">func (*MockRepositoryMockRecorder) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=1430:1499#L45">Create</a>
+					<a class="permalink" href="#MockRepositoryMockRecorder.Create">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockRepositoryMockRecorder">MockRepositoryMockRecorder</a>) Create(ctx, c <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>Create indicates an expected call of Create.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockRepositoryMockRecorder.FindByUserID">func (*MockRepositoryMockRecorder) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=2004:2084#L60">FindByUserID</a>
 					<a class="permalink" href="#MockRepositoryMockRecorder.FindByUserID">¶</a>
 					
 					
@@ -292,7 +343,7 @@
 				
 			
 				
-				</p><h3 id="MockRepositoryMockRecorder.LockByID">func (*MockRepositoryMockRecorder) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=2099:2171#L61">LockByID</a>
+				</p><h3 id="MockRepositoryMockRecorder.LockByID">func (*MockRepositoryMockRecorder) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=2578:2650#L75">LockByID</a>
 					<a class="permalink" href="#MockRepositoryMockRecorder.LockByID">¶</a>
 					
 					
@@ -305,7 +356,20 @@
 				
 			
 				
-				</p><h3 id="MockRepositoryMockRecorder.UpdateUsed">func (*MockRepositoryMockRecorder) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=2629:2711#L75">UpdateUsed</a>
+				</p><h3 id="MockRepositoryMockRecorder.UpdateUnused">func (*MockRepositoryMockRecorder) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=3092:3168#L89">UpdateUnused</a>
+					<a class="permalink" href="#MockRepositoryMockRecorder.UpdateUnused">¶</a>
+					
+					
+				</h3>
+				<pre>func (mr *<a href="#MockRepositoryMockRecorder">MockRepositoryMockRecorder</a>) UpdateUnused(ctx, id <a href="../../../../../builtin/#any">any</a>) *<a href="../../../../../go.uber.org/mock/gomock/">gomock</a>.<a href="../../../../../go.uber.org/mock/gomock/#Call">Call</a></pre>
+				<p>UpdateUnused indicates an expected call of UpdateUnused.
+
+				
+				
+				
+			
+				
+				</p><h3 id="MockRepositoryMockRecorder.UpdateUsed">func (*MockRepositoryMockRecorder) <a href="../../../../../src/go-boilerplate/internal/domain/coupon/mock/mock_coupon_repository.go.gen.go.html?s=3634:3716#L103">UpdateUsed</a>
 					<a class="permalink" href="#MockRepositoryMockRecorder.UpdateUsed">¶</a>
 					
 					

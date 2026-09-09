@@ -1914,7 +1914,7 @@
 <span id="L1857" class="ln">  1857  </span>			_, _, err := parseArgs(nil)
 <span id="L1858" class="ln">  1858  </span>
 <span id="L1859" class="ln">  1859  </span>			require.ErrorIs(t, err, errUsage)
-<span id="L1860" class="ln">  1860  </span>			assert.Contains(t, err.Error(), &#34;usage: tool-cooldown &lt;gate|audit&gt;&#34;)
+<span id="L1860" class="ln">  1860  </span>			assert.Contains(t, err.Error(), &#34;usage: tool-cooldown &lt;gate|audit|outdated&gt;&#34;)
 <span id="L1861" class="ln">  1861  </span>		})
 <span id="L1862" class="ln">  1862  </span>
 <span id="L1863" class="ln">  1863  </span>		t.Run(&#34;未知のサブコマンドはエラーにする&#34;, func(t *testing.T) {
@@ -2144,6 +2144,110 @@
 <span id="L2087" class="ln">  2087  </span>	})
 <span id="L2088" class="ln">  2088  </span>}
 <span id="L2089" class="ln">  2089  </span>
+<span id="L2090" class="ln">  2090  </span><span class="comment">//nolint:paralleltest // GITHUB_TOKEN を t.Setenv で差し替えるため並列化できない</span>
+<span id="L2091" class="ln">  2091  </span>func Test_fetchBody(t *testing.T) {
+<span id="L2092" class="ln">  2092  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L2093" class="ln">  2093  </span>		t.Run(&#34;200 なら本文を読める形で返す&#34;, func(t *testing.T) {
+<span id="L2094" class="ln">  2094  </span>			client := fakeUpstream(t, respondJSON(&#34;/pkg&#34;, `{&#34;name&#34;:&#34;ok&#34;}`))
+<span id="L2095" class="ln">  2095  </span>
+<span id="L2096" class="ln">  2096  </span>			body, err := fetchBody(t.Context(), client, npmBase+&#34;pkg&#34;)
+<span id="L2097" class="ln">  2097  </span>
+<span id="L2098" class="ln">  2098  </span>			require.NoError(t, err)
+<span id="L2099" class="ln">  2099  </span>			defer func() { _ = body.Close() }()
+<span id="L2100" class="ln">  2100  </span>			out, readErr := io.ReadAll(body)
+<span id="L2101" class="ln">  2101  </span>			require.NoError(t, readErr)
+<span id="L2102" class="ln">  2102  </span>			assert.JSONEq(t, `{&#34;name&#34;:&#34;ok&#34;}`, string(out))
+<span id="L2103" class="ln">  2103  </span>		})
+<span id="L2104" class="ln">  2104  </span>
+<span id="L2105" class="ln">  2105  </span>		<span class="comment">// GitHub 以外の上流へトークンを送ると、資格情報を無関係な第三者へ渡すことになる。</span>
+<span id="L2106" class="ln">  2106  </span>		t.Run(&#34;GitHub API にだけトークンを載せる&#34;, func(t *testing.T) {
+<span id="L2107" class="ln">  2107  </span>			t.Setenv(&#34;GITHUB_TOKEN&#34;, &#34;test-token&#34;)
+<span id="L2108" class="ln">  2108  </span>			auth := make(chan string, 2)
+<span id="L2109" class="ln">  2109  </span>			client := fakeUpstream(t, func(w http.ResponseWriter, r *http.Request) {
+<span id="L2110" class="ln">  2110  </span>				auth &lt;- r.Header.Get(&#34;Authorization&#34;)
+<span id="L2111" class="ln">  2111  </span>				_, _ = io.WriteString(w, &#34;{}&#34;)
+<span id="L2112" class="ln">  2112  </span>			})
+<span id="L2113" class="ln">  2113  </span>
+<span id="L2114" class="ln">  2114  </span>			for _, url := range []string{githubAPI + &#34;owner/repo&#34;, npmBase + &#34;pkg&#34;} {
+<span id="L2115" class="ln">  2115  </span>				body, err := fetchBody(t.Context(), client, url)
+<span id="L2116" class="ln">  2116  </span>				require.NoError(t, err)
+<span id="L2117" class="ln">  2117  </span>				_ = body.Close()
+<span id="L2118" class="ln">  2118  </span>			}
+<span id="L2119" class="ln">  2119  </span>
+<span id="L2120" class="ln">  2120  </span>			assert.Equal(t, &#34;Bearer test-token&#34;, &lt;-auth)
+<span id="L2121" class="ln">  2121  </span>			assert.Empty(t, &lt;-auth)
+<span id="L2122" class="ln">  2122  </span>		})
+<span id="L2123" class="ln">  2123  </span>	})
+<span id="L2124" class="ln">  2124  </span>
+<span id="L2125" class="ln">  2125  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L2126" class="ln">  2126  </span>		t.Run(&#34;404 と 410 は未検出として返す&#34;, func(t *testing.T) {
+<span id="L2127" class="ln">  2127  </span>			for _, status := range []int{http.StatusNotFound, http.StatusGone} {
+<span id="L2128" class="ln">  2128  </span>				client := fakeUpstream(t, func(w http.ResponseWriter, _ *http.Request) {
+<span id="L2129" class="ln">  2129  </span>					w.WriteHeader(status)
+<span id="L2130" class="ln">  2130  </span>				})
+<span id="L2131" class="ln">  2131  </span>
+<span id="L2132" class="ln">  2132  </span>				_, err := fetchBody(t.Context(), client, npmBase+&#34;pkg&#34;)
+<span id="L2133" class="ln">  2133  </span>
+<span id="L2134" class="ln">  2134  </span>				require.ErrorIs(t, err, errNotFound)
+<span id="L2135" class="ln">  2135  </span>			}
+<span id="L2136" class="ln">  2136  </span>		})
+<span id="L2137" class="ln">  2137  </span>
+<span id="L2138" class="ln">  2138  </span>		t.Run(&#34;その他の異常なステータスは状態エラーとして返す&#34;, func(t *testing.T) {
+<span id="L2139" class="ln">  2139  </span>			client := fakeUpstream(t, func(w http.ResponseWriter, _ *http.Request) {
+<span id="L2140" class="ln">  2140  </span>				w.WriteHeader(http.StatusInternalServerError)
+<span id="L2141" class="ln">  2141  </span>			})
+<span id="L2142" class="ln">  2142  </span>
+<span id="L2143" class="ln">  2143  </span>			_, err := fetchBody(t.Context(), client, npmBase+&#34;pkg&#34;)
+<span id="L2144" class="ln">  2144  </span>
+<span id="L2145" class="ln">  2145  </span>			require.ErrorIs(t, err, errUpstreamStatus)
+<span id="L2146" class="ln">  2146  </span>		})
+<span id="L2147" class="ln">  2147  </span>
+<span id="L2148" class="ln">  2148  </span>		t.Run(&#34;要求を組み立てられなければエラーを返す&#34;, func(t *testing.T) {
+<span id="L2149" class="ln">  2149  </span>			_, err := fetchBody(t.Context(), offlineClient(), npmBase+&#34;pkg\x7f&#34;)
+<span id="L2150" class="ln">  2150  </span>
+<span id="L2151" class="ln">  2151  </span>			require.Error(t, err)
+<span id="L2152" class="ln">  2152  </span>		})
+<span id="L2153" class="ln">  2153  </span>
+<span id="L2154" class="ln">  2154  </span>		t.Run(&#34;上流へ届かなければエラーを返す&#34;, func(t *testing.T) {
+<span id="L2155" class="ln">  2155  </span>			_, err := fetchBody(t.Context(), offlineClient(), npmBase+&#34;pkg&#34;)
+<span id="L2156" class="ln">  2156  </span>
+<span id="L2157" class="ln">  2157  </span>			require.Error(t, err)
+<span id="L2158" class="ln">  2158  </span>		})
+<span id="L2159" class="ln">  2159  </span>	})
+<span id="L2160" class="ln">  2160  </span>}
+<span id="L2161" class="ln">  2161  </span>
+<span id="L2162" class="ln">  2162  </span>func Test_getText(t *testing.T) {
+<span id="L2163" class="ln">  2163  </span>	t.Parallel()
+<span id="L2164" class="ln">  2164  </span>
+<span id="L2165" class="ln">  2165  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L2166" class="ln">  2166  </span>		t.Parallel()
+<span id="L2167" class="ln">  2167  </span>
+<span id="L2168" class="ln">  2168  </span>		t.Run(&#34;本文をそのまま文字列で返す&#34;, func(t *testing.T) {
+<span id="L2169" class="ln">  2169  </span>			t.Parallel()
+<span id="L2170" class="ln">  2170  </span>			client := fakeUpstream(t, func(w http.ResponseWriter, _ *http.Request) {
+<span id="L2171" class="ln">  2171  </span>				_, _ = io.WriteString(w, &#34;v1.1.0\nv1.2.0\n&#34;)
+<span id="L2172" class="ln">  2172  </span>			})
+<span id="L2173" class="ln">  2173  </span>
+<span id="L2174" class="ln">  2174  </span>			body, err := getText(t.Context(), client, goProxyBase+&#34;example.com/mod/@v/list&#34;)
+<span id="L2175" class="ln">  2175  </span>
+<span id="L2176" class="ln">  2176  </span>			require.NoError(t, err)
+<span id="L2177" class="ln">  2177  </span>			assert.Equal(t, &#34;v1.1.0\nv1.2.0\n&#34;, body, &#34;JSON ではない応答をそのまま扱えること&#34;)
+<span id="L2178" class="ln">  2178  </span>		})
+<span id="L2179" class="ln">  2179  </span>	})
+<span id="L2180" class="ln">  2180  </span>
+<span id="L2181" class="ln">  2181  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L2182" class="ln">  2182  </span>		t.Parallel()
+<span id="L2183" class="ln">  2183  </span>
+<span id="L2184" class="ln">  2184  </span>		t.Run(&#34;上流が応答しなければエラーを返す&#34;, func(t *testing.T) {
+<span id="L2185" class="ln">  2185  </span>			t.Parallel()
+<span id="L2186" class="ln">  2186  </span>
+<span id="L2187" class="ln">  2187  </span>			_, err := getText(t.Context(), offlineClient(), goProxyBase+&#34;example.com/mod/@v/list&#34;)
+<span id="L2188" class="ln">  2188  </span>
+<span id="L2189" class="ln">  2189  </span>			require.Error(t, err)
+<span id="L2190" class="ln">  2190  </span>		})
+<span id="L2191" class="ln">  2191  </span>	})
+<span id="L2192" class="ln">  2192  </span>}
+<span id="L2193" class="ln">  2193  </span>
 </pre><p><a href="../../../../src/go-boilerplate/scripts/tool-cooldown/main_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -68,658 +68,691 @@
 <span id="L11" class="ln">    11  </span>	mock_coupon &#34;go-boilerplate/internal/domain/coupon/mock&#34;
 <span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/internal/domain/lexicon/money&#34;
 <span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/internal/domain/product&#34;
-<span id="L14" class="ln">    14  </span>	mock_product &#34;go-boilerplate/internal/domain/product/mock&#34;
-<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/internal/observability&#34;
-<span id="L16" class="ln">    16  </span>	&#34;go-boilerplate/internal/usecase/boundary/auth&#34;
-<span id="L17" class="ln">    17  </span>	mock_clock &#34;go-boilerplate/internal/usecase/boundary/clock/mock&#34;
-<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/pkg/decimal&#34;
-<span id="L19" class="ln">    19  </span>	&#34;go-boilerplate/pkg/ptr&#34;
-<span id="L20" class="ln">    20  </span>	&#34;go-boilerplate/pkg/uuid&#34;
-<span id="L21" class="ln">    21  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
-<span id="L22" class="ln">    22  </span>
-<span id="L23" class="ln">    23  </span>	&#34;github.com/stretchr/testify/assert&#34;
-<span id="L24" class="ln">    24  </span>	&#34;github.com/stretchr/testify/require&#34;
-<span id="L25" class="ln">    25  </span>	&#34;go.uber.org/mock/gomock&#34;
-<span id="L26" class="ln">    26  </span>)
+<span id="L14" class="ln">    14  </span>	mock_category &#34;go-boilerplate/internal/domain/product/category/mock&#34;
+<span id="L15" class="ln">    15  </span>	mock_product &#34;go-boilerplate/internal/domain/product/mock&#34;
+<span id="L16" class="ln">    16  </span>	mock_user &#34;go-boilerplate/internal/domain/user/mock&#34;
+<span id="L17" class="ln">    17  </span>	&#34;go-boilerplate/internal/observability&#34;
+<span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/internal/usecase/boundary/auth&#34;
+<span id="L19" class="ln">    19  </span>	mock_authz &#34;go-boilerplate/internal/usecase/boundary/authz/mock&#34;
+<span id="L20" class="ln">    20  </span>	mock_clock &#34;go-boilerplate/internal/usecase/boundary/clock/mock&#34;
+<span id="L21" class="ln">    21  </span>	mock_tx &#34;go-boilerplate/internal/usecase/boundary/tx/mock&#34;
+<span id="L22" class="ln">    22  </span>	mock_command &#34;go-boilerplate/internal/usecase/coupon/command/mock&#34;
+<span id="L23" class="ln">    23  </span>	&#34;go-boilerplate/pkg/decimal&#34;
+<span id="L24" class="ln">    24  </span>	&#34;go-boilerplate/pkg/ptr&#34;
+<span id="L25" class="ln">    25  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L26" class="ln">    26  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
 <span id="L27" class="ln">    27  </span>
-<span id="L28" class="ln">    28  </span>var (
-<span id="L29" class="ln">    29  </span>	testNow       = time.Date(2026, time.September, 6, 0, 0, 0, 0, time.UTC)
-<span id="L30" class="ln">    30  </span>	testExpiresAt = time.Date(2026, time.October, 1, 0, 0, 0, 0, time.UTC)
-<span id="L31" class="ln">    31  </span>	testIssuedAt  = time.Date(2026, time.September, 1, 0, 0, 0, 0, time.UTC)
-<span id="L32" class="ln">    32  </span>)
-<span id="L33" class="ln">    33  </span>
-<span id="L34" class="ln">    34  </span>type testDeps struct {
-<span id="L35" class="ln">    35  </span>	couponRepo  *mock_coupon.MockRepository
-<span id="L36" class="ln">    36  </span>	cartRepo    *mock_cart.MockRepository
-<span id="L37" class="ln">    37  </span>	productRepo *mock_product.MockRepository
-<span id="L38" class="ln">    38  </span>	clock       *mock_clock.MockClock
-<span id="L39" class="ln">    39  </span>}
-<span id="L40" class="ln">    40  </span>
-<span id="L41" class="ln">    41  </span>func newTestUsecase(t *testing.T) (*usecase, *testDeps) {
-<span id="L42" class="ln">    42  </span>	t.Helper()
-<span id="L43" class="ln">    43  </span>
-<span id="L44" class="ln">    44  </span>	ctrl := gomock.NewController(t)
-<span id="L45" class="ln">    45  </span>	deps := &amp;testDeps{
-<span id="L46" class="ln">    46  </span>		couponRepo:  mock_coupon.NewMockRepository(ctrl),
-<span id="L47" class="ln">    47  </span>		cartRepo:    mock_cart.NewMockRepository(ctrl),
-<span id="L48" class="ln">    48  </span>		productRepo: mock_product.NewMockRepository(ctrl),
-<span id="L49" class="ln">    49  </span>		clock:       mock_clock.NewMockClock(ctrl),
-<span id="L50" class="ln">    50  </span>	}
-<span id="L51" class="ln">    51  </span>	u := &amp;usecase{
-<span id="L52" class="ln">    52  </span>		tracer:      observability.NewMockUsecaseLayerTracer(t),
-<span id="L53" class="ln">    53  </span>		couponRepo:  deps.couponRepo,
-<span id="L54" class="ln">    54  </span>		cartRepo:    deps.cartRepo,
-<span id="L55" class="ln">    55  </span>		productRepo: deps.productRepo,
-<span id="L56" class="ln">    56  </span>		clock:       deps.clock,
-<span id="L57" class="ln">    57  </span>	}
-<span id="L58" class="ln">    58  </span>
-<span id="L59" class="ln">    59  </span>	return u, deps
-<span id="L60" class="ln">    60  </span>}
-<span id="L61" class="ln">    61  </span>
-<span id="L62" class="ln">    62  </span>func newTestAuthn(t *testing.T) (*auth.Authn, uuid.UUID) {
-<span id="L63" class="ln">    63  </span>	t.Helper()
-<span id="L64" class="ln">    64  </span>
-<span id="L65" class="ln">    65  </span>	userID := uuidtestkit.NewTestFromSalt(t, &#34;coupon_owner&#34;)
-<span id="L66" class="ln">    66  </span>	a, err := auth.New(&#34;subject-1&#34;, auth.IssuerMock, nil, nil)
-<span id="L67" class="ln">    67  </span>	require.NoError(t, err)
-<span id="L68" class="ln">    68  </span>	resolved, err := a.WithUserID(userID)
-<span id="L69" class="ln">    69  </span>	require.NoError(t, err)
-<span id="L70" class="ln">    70  </span>
-<span id="L71" class="ln">    71  </span>	return resolved, userID
-<span id="L72" class="ln">    72  </span>}
-<span id="L73" class="ln">    73  </span>
-<span id="L74" class="ln">    74  </span>func newDecimal(t *testing.T, s string) decimal.Decimal {
-<span id="L75" class="ln">    75  </span>	t.Helper()
-<span id="L76" class="ln">    76  </span>	d, err := decimal.Parse(s)
-<span id="L77" class="ln">    77  </span>	require.NoError(t, err)
+<span id="L28" class="ln">    28  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L29" class="ln">    29  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L30" class="ln">    30  </span>	&#34;go.uber.org/mock/gomock&#34;
+<span id="L31" class="ln">    31  </span>)
+<span id="L32" class="ln">    32  </span>
+<span id="L33" class="ln">    33  </span>var (
+<span id="L34" class="ln">    34  </span>	testNow       = time.Date(2026, time.September, 6, 0, 0, 0, 0, time.UTC)
+<span id="L35" class="ln">    35  </span>	testExpiresAt = time.Date(2026, time.October, 1, 0, 0, 0, 0, time.UTC)
+<span id="L36" class="ln">    36  </span>	testIssuedAt  = time.Date(2026, time.September, 1, 0, 0, 0, 0, time.UTC)
+<span id="L37" class="ln">    37  </span>)
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span>type testDeps struct {
+<span id="L40" class="ln">    40  </span>	couponRepo   *mock_coupon.MockRepository
+<span id="L41" class="ln">    41  </span>	cartRepo     *mock_cart.MockRepository
+<span id="L42" class="ln">    42  </span>	productRepo  *mock_product.MockRepository
+<span id="L43" class="ln">    43  </span>	categoryRepo *mock_category.MockRepository
+<span id="L44" class="ln">    44  </span>	userRepo     *mock_user.MockRepository
+<span id="L45" class="ln">    45  </span>	clock        *mock_clock.MockClock
+<span id="L46" class="ln">    46  </span>	txm          *mock_tx.MockManager
+<span id="L47" class="ln">    47  </span>	authorizer   *mock_authz.MockAuthorizer
+<span id="L48" class="ln">    48  </span>	bulkIssueCmd *mock_command.MockCommandService
+<span id="L49" class="ln">    49  </span>}
+<span id="L50" class="ln">    50  </span>
+<span id="L51" class="ln">    51  </span>func newTestUsecase(t *testing.T) (*usecase, *testDeps) {
+<span id="L52" class="ln">    52  </span>	t.Helper()
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span>	ctrl := gomock.NewController(t)
+<span id="L55" class="ln">    55  </span>	deps := &amp;testDeps{
+<span id="L56" class="ln">    56  </span>		couponRepo:   mock_coupon.NewMockRepository(ctrl),
+<span id="L57" class="ln">    57  </span>		cartRepo:     mock_cart.NewMockRepository(ctrl),
+<span id="L58" class="ln">    58  </span>		productRepo:  mock_product.NewMockRepository(ctrl),
+<span id="L59" class="ln">    59  </span>		categoryRepo: mock_category.NewMockRepository(ctrl),
+<span id="L60" class="ln">    60  </span>		userRepo:     mock_user.NewMockRepository(ctrl),
+<span id="L61" class="ln">    61  </span>		clock:        mock_clock.NewMockClock(ctrl),
+<span id="L62" class="ln">    62  </span>		txm:          mock_tx.NewMockManager(ctrl),
+<span id="L63" class="ln">    63  </span>		authorizer:   mock_authz.NewMockAuthorizer(ctrl),
+<span id="L64" class="ln">    64  </span>		bulkIssueCmd: mock_command.NewMockCommandService(ctrl),
+<span id="L65" class="ln">    65  </span>	}
+<span id="L66" class="ln">    66  </span>	u := &amp;usecase{
+<span id="L67" class="ln">    67  </span>		tracer:       observability.NewMockUsecaseLayerTracer(t),
+<span id="L68" class="ln">    68  </span>		couponRepo:   deps.couponRepo,
+<span id="L69" class="ln">    69  </span>		cartRepo:     deps.cartRepo,
+<span id="L70" class="ln">    70  </span>		productRepo:  deps.productRepo,
+<span id="L71" class="ln">    71  </span>		categoryRepo: deps.categoryRepo,
+<span id="L72" class="ln">    72  </span>		userRepo:     deps.userRepo,
+<span id="L73" class="ln">    73  </span>		clock:        deps.clock,
+<span id="L74" class="ln">    74  </span>		txm:          deps.txm,
+<span id="L75" class="ln">    75  </span>		authorizer:   deps.authorizer,
+<span id="L76" class="ln">    76  </span>		bulkIssueCmd: deps.bulkIssueCmd,
+<span id="L77" class="ln">    77  </span>	}
 <span id="L78" class="ln">    78  </span>
-<span id="L79" class="ln">    79  </span>	return d
+<span id="L79" class="ln">    79  </span>	return u, deps
 <span id="L80" class="ln">    80  </span>}
 <span id="L81" class="ln">    81  </span>
-<span id="L82" class="ln">    82  </span><span class="comment">// newCoupon は、指定した値引きと適用範囲を持つ未使用のクーポンを組み立てます。</span>
-<span id="L83" class="ln">    83  </span>func newCoupon(t *testing.T, salt string, userID uuid.UUID, discount domaincoupon.Discount, scope domaincoupon.Scope) *domaincoupon.Coupon {
-<span id="L84" class="ln">    84  </span>	t.Helper()
-<span id="L85" class="ln">    85  </span>
-<span id="L86" class="ln">    86  </span>	c, err := domaincoupon.New(uuidtestkit.NewTestFromSalt(t, salt), domaincoupon.Attributes{
-<span id="L87" class="ln">    87  </span>		UserID:    userID,
-<span id="L88" class="ln">    88  </span>		Discount:  discount,
-<span id="L89" class="ln">    89  </span>		Scope:     scope,
-<span id="L90" class="ln">    90  </span>		ExpiresAt: testExpiresAt,
-<span id="L91" class="ln">    91  </span>		IssuedAt:  testIssuedAt,
-<span id="L92" class="ln">    92  </span>	})
-<span id="L93" class="ln">    93  </span>	require.NoError(t, err)
-<span id="L94" class="ln">    94  </span>
-<span id="L95" class="ln">    95  </span>	return c
-<span id="L96" class="ln">    96  </span>}
-<span id="L97" class="ln">    97  </span>
-<span id="L98" class="ln">    98  </span>func rateDiscount(t *testing.T, v string) domaincoupon.Discount {
-<span id="L99" class="ln">    99  </span>	t.Helper()
-<span id="L100" class="ln">   100  </span>	d, err := domaincoupon.NewRateDiscount(newDecimal(t, v))
-<span id="L101" class="ln">   101  </span>	require.NoError(t, err)
-<span id="L102" class="ln">   102  </span>
-<span id="L103" class="ln">   103  </span>	return d
-<span id="L104" class="ln">   104  </span>}
+<span id="L82" class="ln">    82  </span>func newTestAuthn(t *testing.T) (*auth.Authn, uuid.UUID) {
+<span id="L83" class="ln">    83  </span>	t.Helper()
+<span id="L84" class="ln">    84  </span>
+<span id="L85" class="ln">    85  </span>	userID := uuidtestkit.NewTestFromSalt(t, &#34;coupon_owner&#34;)
+<span id="L86" class="ln">    86  </span>	a, err := auth.New(&#34;subject-1&#34;, auth.IssuerMock, nil, nil)
+<span id="L87" class="ln">    87  </span>	require.NoError(t, err)
+<span id="L88" class="ln">    88  </span>	resolved, err := a.WithUserID(userID)
+<span id="L89" class="ln">    89  </span>	require.NoError(t, err)
+<span id="L90" class="ln">    90  </span>
+<span id="L91" class="ln">    91  </span>	return resolved, userID
+<span id="L92" class="ln">    92  </span>}
+<span id="L93" class="ln">    93  </span>
+<span id="L94" class="ln">    94  </span>func newDecimal(t *testing.T, s string) decimal.Decimal {
+<span id="L95" class="ln">    95  </span>	t.Helper()
+<span id="L96" class="ln">    96  </span>	d, err := decimal.Parse(s)
+<span id="L97" class="ln">    97  </span>	require.NoError(t, err)
+<span id="L98" class="ln">    98  </span>
+<span id="L99" class="ln">    99  </span>	return d
+<span id="L100" class="ln">   100  </span>}
+<span id="L101" class="ln">   101  </span>
+<span id="L102" class="ln">   102  </span><span class="comment">// newCoupon は、指定した値引きと適用範囲を持つ未使用のクーポンを組み立てます。</span>
+<span id="L103" class="ln">   103  </span>func newCoupon(t *testing.T, salt string, userID uuid.UUID, discount domaincoupon.Discount, scope domaincoupon.Scope) *domaincoupon.Coupon {
+<span id="L104" class="ln">   104  </span>	t.Helper()
 <span id="L105" class="ln">   105  </span>
-<span id="L106" class="ln">   106  </span>func flatDiscount(t *testing.T, v string) domaincoupon.Discount {
-<span id="L107" class="ln">   107  </span>	t.Helper()
-<span id="L108" class="ln">   108  </span>	d, err := domaincoupon.NewFlatDiscount(newDecimal(t, v))
-<span id="L109" class="ln">   109  </span>	require.NoError(t, err)
-<span id="L110" class="ln">   110  </span>
-<span id="L111" class="ln">   111  </span>	return d
-<span id="L112" class="ln">   112  </span>}
-<span id="L113" class="ln">   113  </span>
-<span id="L114" class="ln">   114  </span><span class="comment">// newTestProduct は、公開済みで在庫のある商品を組み立てます。</span>
-<span id="L115" class="ln">   115  </span>func newTestProduct(t *testing.T, salt, price string, quantity int) *product.Product {
-<span id="L116" class="ln">   116  </span>	t.Helper()
+<span id="L106" class="ln">   106  </span>	c, err := domaincoupon.New(uuidtestkit.NewTestFromSalt(t, salt), domaincoupon.Attributes{
+<span id="L107" class="ln">   107  </span>		UserID:    userID,
+<span id="L108" class="ln">   108  </span>		Discount:  discount,
+<span id="L109" class="ln">   109  </span>		Scope:     scope,
+<span id="L110" class="ln">   110  </span>		ExpiresAt: testExpiresAt,
+<span id="L111" class="ln">   111  </span>		IssuedAt:  testIssuedAt,
+<span id="L112" class="ln">   112  </span>	})
+<span id="L113" class="ln">   113  </span>	require.NoError(t, err)
+<span id="L114" class="ln">   114  </span>
+<span id="L115" class="ln">   115  </span>	return c
+<span id="L116" class="ln">   116  </span>}
 <span id="L117" class="ln">   117  </span>
-<span id="L118" class="ln">   118  </span>	status, err := product.NewStatusRef(uuidtestkit.NewTestFromSalt(t, &#34;coupon_status&#34;), &#34;販売中&#34;)
-<span id="L119" class="ln">   119  </span>	require.NoError(t, err)
-<span id="L120" class="ln">   120  </span>	category, err := product.NewCategoryRef(uuidtestkit.NewTestFromSalt(t, &#34;coupon_category&#34;), &#34;家具&#34;)
+<span id="L118" class="ln">   118  </span>func rateDiscount(t *testing.T, v string) domaincoupon.Discount {
+<span id="L119" class="ln">   119  </span>	t.Helper()
+<span id="L120" class="ln">   120  </span>	d, err := domaincoupon.NewRateDiscount(newDecimal(t, v))
 <span id="L121" class="ln">   121  </span>	require.NoError(t, err)
-<span id="L122" class="ln">   122  </span>	amount, err := money.NewPrice(newDecimal(t, price))
-<span id="L123" class="ln">   123  </span>	require.NoError(t, err)
-<span id="L124" class="ln">   124  </span>
-<span id="L125" class="ln">   125  </span>	p, err := product.New(uuidtestkit.NewTestFromSalt(t, salt), product.Attributes{
-<span id="L126" class="ln">   126  </span>		Name:        &#34;テスト商品&#34;,
-<span id="L127" class="ln">   127  </span>		Price:       amount,
-<span id="L128" class="ln">   128  </span>		Quantity:    quantity,
-<span id="L129" class="ln">   129  </span>		Status:      status,
-<span id="L130" class="ln">   130  </span>		Category:    category,
-<span id="L131" class="ln">   131  </span>		PublishedAt: ptr.To(testIssuedAt),
-<span id="L132" class="ln">   132  </span>	}, testIssuedAt)
-<span id="L133" class="ln">   133  </span>	require.NoError(t, err)
-<span id="L134" class="ln">   134  </span>
-<span id="L135" class="ln">   135  </span>	return p
-<span id="L136" class="ln">   136  </span>}
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span>	return d
+<span id="L124" class="ln">   124  </span>}
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span>func flatDiscount(t *testing.T, v string) domaincoupon.Discount {
+<span id="L127" class="ln">   127  </span>	t.Helper()
+<span id="L128" class="ln">   128  </span>	d, err := domaincoupon.NewFlatDiscount(newDecimal(t, v))
+<span id="L129" class="ln">   129  </span>	require.NoError(t, err)
+<span id="L130" class="ln">   130  </span>
+<span id="L131" class="ln">   131  </span>	return d
+<span id="L132" class="ln">   132  </span>}
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span><span class="comment">// newTestProduct は、公開済みで在庫のある商品を組み立てます。</span>
+<span id="L135" class="ln">   135  </span>func newTestProduct(t *testing.T, salt, price string, quantity int) *product.Product {
+<span id="L136" class="ln">   136  </span>	t.Helper()
 <span id="L137" class="ln">   137  </span>
-<span id="L138" class="ln">   138  </span><span class="comment">// newTestCart は、指定商品を数量 1 で 1 件持つカートを組み立てます。</span>
-<span id="L139" class="ln">   139  </span>func newTestCart(t *testing.T, ownerID uuid.UUID, productIDs ...uuid.UUID) *cart.Cart {
-<span id="L140" class="ln">   140  </span>	t.Helper()
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>	return newTestCartExpiringAt(t, ownerID, testExpiresAt, productIDs...)
-<span id="L143" class="ln">   143  </span>}
+<span id="L138" class="ln">   138  </span>	status, err := product.NewStatusRef(uuidtestkit.NewTestFromSalt(t, &#34;coupon_status&#34;), &#34;販売中&#34;)
+<span id="L139" class="ln">   139  </span>	require.NoError(t, err)
+<span id="L140" class="ln">   140  </span>	category, err := product.NewCategoryRef(uuidtestkit.NewTestFromSalt(t, &#34;coupon_category&#34;), &#34;家具&#34;)
+<span id="L141" class="ln">   141  </span>	require.NoError(t, err)
+<span id="L142" class="ln">   142  </span>	amount, err := money.NewPrice(newDecimal(t, price))
+<span id="L143" class="ln">   143  </span>	require.NoError(t, err)
 <span id="L144" class="ln">   144  </span>
-<span id="L145" class="ln">   145  </span><span class="comment">// newTestCartExpiringAt は、有効期限を指定してカートを組み立てます。</span>
-<span id="L146" class="ln">   146  </span>func newTestCartExpiringAt(
-<span id="L147" class="ln">   147  </span>	t *testing.T, ownerID uuid.UUID, expiresAt time.Time, productIDs ...uuid.UUID,
-<span id="L148" class="ln">   148  </span>) *cart.Cart {
-<span id="L149" class="ln">   149  </span>	t.Helper()
-<span id="L150" class="ln">   150  </span>
-<span id="L151" class="ln">   151  </span>	items := make([]cart.CartItem, len(productIDs))
-<span id="L152" class="ln">   152  </span>	for i, id := range productIDs {
-<span id="L153" class="ln">   153  </span>		items[i] = cart.NewCartItem(uuidtestkit.NewTestFromSalt(t, &#34;item_&#34;+id.String()), cart.CartItemAttributes{
-<span id="L154" class="ln">   154  </span>			ProductID: id,
-<span id="L155" class="ln">   155  </span>			Quantity:  1,
-<span id="L156" class="ln">   156  </span>			AddedAt:   testIssuedAt,
-<span id="L157" class="ln">   157  </span>		})
-<span id="L158" class="ln">   158  </span>	}
-<span id="L159" class="ln">   159  </span>
-<span id="L160" class="ln">   160  </span>	c, err := cart.Reconstruct(uuidtestkit.NewTestFromSalt(t, &#34;coupon_cart&#34;), cart.Attributes{
-<span id="L161" class="ln">   161  </span>		OwnerID:   &amp;ownerID,
-<span id="L162" class="ln">   162  </span>		Items:     items,
-<span id="L163" class="ln">   163  </span>		ExpiresAt: expiresAt,
-<span id="L164" class="ln">   164  </span>		CreatedAt: testIssuedAt,
-<span id="L165" class="ln">   165  </span>		UpdatedAt: testIssuedAt,
-<span id="L166" class="ln">   166  </span>	})
-<span id="L167" class="ln">   167  </span>	require.NoError(t, err)
-<span id="L168" class="ln">   168  </span>
-<span id="L169" class="ln">   169  </span>	return c
-<span id="L170" class="ln">   170  </span>}
-<span id="L171" class="ln">   171  </span>
-<span id="L172" class="ln">   172  </span>func TestNew(t *testing.T) {
-<span id="L173" class="ln">   173  </span>	t.Parallel()
-<span id="L174" class="ln">   174  </span>
-<span id="L175" class="ln">   175  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L176" class="ln">   176  </span>		t.Parallel()
-<span id="L177" class="ln">   177  </span>
-<span id="L178" class="ln">   178  </span>		t.Run(&#34;依存を注入したユースケースを生成する&#34;, func(t *testing.T) {
-<span id="L179" class="ln">   179  </span>			t.Parallel()
-<span id="L180" class="ln">   180  </span>
-<span id="L181" class="ln">   181  </span>			ctrl := gomock.NewController(t)
-<span id="L182" class="ln">   182  </span>			couponRepo := mock_coupon.NewMockRepository(ctrl)
-<span id="L183" class="ln">   183  </span>			cartRepo := mock_cart.NewMockRepository(ctrl)
-<span id="L184" class="ln">   184  </span>			productRepo := mock_product.NewMockRepository(ctrl)
-<span id="L185" class="ln">   185  </span>			clk := mock_clock.NewMockClock(ctrl)
-<span id="L186" class="ln">   186  </span>
-<span id="L187" class="ln">   187  </span>			u, ok := New(couponRepo, cartRepo, productRepo, clk, observability.NewNoopTracerFactory(t)).(*usecase)
+<span id="L145" class="ln">   145  </span>	p, err := product.New(uuidtestkit.NewTestFromSalt(t, salt), product.Attributes{
+<span id="L146" class="ln">   146  </span>		Name:        &#34;テスト商品&#34;,
+<span id="L147" class="ln">   147  </span>		Price:       amount,
+<span id="L148" class="ln">   148  </span>		Quantity:    quantity,
+<span id="L149" class="ln">   149  </span>		Status:      status,
+<span id="L150" class="ln">   150  </span>		Category:    category,
+<span id="L151" class="ln">   151  </span>		PublishedAt: ptr.To(testIssuedAt),
+<span id="L152" class="ln">   152  </span>	}, testIssuedAt)
+<span id="L153" class="ln">   153  </span>	require.NoError(t, err)
+<span id="L154" class="ln">   154  </span>
+<span id="L155" class="ln">   155  </span>	return p
+<span id="L156" class="ln">   156  </span>}
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span><span class="comment">// newTestCart は、指定商品を数量 1 で 1 件持つカートを組み立てます。</span>
+<span id="L159" class="ln">   159  </span>func newTestCart(t *testing.T, ownerID uuid.UUID, productIDs ...uuid.UUID) *cart.Cart {
+<span id="L160" class="ln">   160  </span>	t.Helper()
+<span id="L161" class="ln">   161  </span>
+<span id="L162" class="ln">   162  </span>	return newTestCartExpiringAt(t, ownerID, testExpiresAt, productIDs...)
+<span id="L163" class="ln">   163  </span>}
+<span id="L164" class="ln">   164  </span>
+<span id="L165" class="ln">   165  </span><span class="comment">// newTestCartExpiringAt は、有効期限を指定してカートを組み立てます。</span>
+<span id="L166" class="ln">   166  </span>func newTestCartExpiringAt(
+<span id="L167" class="ln">   167  </span>	t *testing.T, ownerID uuid.UUID, expiresAt time.Time, productIDs ...uuid.UUID,
+<span id="L168" class="ln">   168  </span>) *cart.Cart {
+<span id="L169" class="ln">   169  </span>	t.Helper()
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>	items := make([]cart.CartItem, len(productIDs))
+<span id="L172" class="ln">   172  </span>	for i, id := range productIDs {
+<span id="L173" class="ln">   173  </span>		items[i] = cart.NewCartItem(uuidtestkit.NewTestFromSalt(t, &#34;item_&#34;+id.String()), cart.CartItemAttributes{
+<span id="L174" class="ln">   174  </span>			ProductID: id,
+<span id="L175" class="ln">   175  </span>			Quantity:  1,
+<span id="L176" class="ln">   176  </span>			AddedAt:   testIssuedAt,
+<span id="L177" class="ln">   177  </span>		})
+<span id="L178" class="ln">   178  </span>	}
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span>	c, err := cart.Reconstruct(uuidtestkit.NewTestFromSalt(t, &#34;coupon_cart&#34;), cart.Attributes{
+<span id="L181" class="ln">   181  </span>		OwnerID:   &amp;ownerID,
+<span id="L182" class="ln">   182  </span>		Items:     items,
+<span id="L183" class="ln">   183  </span>		ExpiresAt: expiresAt,
+<span id="L184" class="ln">   184  </span>		CreatedAt: testIssuedAt,
+<span id="L185" class="ln">   185  </span>		UpdatedAt: testIssuedAt,
+<span id="L186" class="ln">   186  </span>	})
+<span id="L187" class="ln">   187  </span>	require.NoError(t, err)
 <span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span>			require.True(t, ok)
-<span id="L190" class="ln">   190  </span>			assert.Equal(t, couponRepo, u.couponRepo)
-<span id="L191" class="ln">   191  </span>			assert.Equal(t, cartRepo, u.cartRepo)
-<span id="L192" class="ln">   192  </span>			assert.Equal(t, productRepo, u.productRepo)
-<span id="L193" class="ln">   193  </span>			assert.Equal(t, clk, u.clock)
-<span id="L194" class="ln">   194  </span>		})
-<span id="L195" class="ln">   195  </span>	})
-<span id="L196" class="ln">   196  </span>}
+<span id="L189" class="ln">   189  </span>	return c
+<span id="L190" class="ln">   190  </span>}
+<span id="L191" class="ln">   191  </span>
+<span id="L192" class="ln">   192  </span>func TestNew(t *testing.T) {
+<span id="L193" class="ln">   193  </span>	t.Parallel()
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L196" class="ln">   196  </span>		t.Parallel()
 <span id="L197" class="ln">   197  </span>
-<span id="L198" class="ln">   198  </span>func Test_usecase_ListMyCoupons(t *testing.T) {
-<span id="L199" class="ln">   199  </span>	t.Parallel()
+<span id="L198" class="ln">   198  </span>		t.Run(&#34;依存を注入したユースケースを生成する&#34;, func(t *testing.T) {
+<span id="L199" class="ln">   199  </span>			t.Parallel()
 <span id="L200" class="ln">   200  </span>
-<span id="L201" class="ln">   201  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L202" class="ln">   202  </span>		t.Parallel()
-<span id="L203" class="ln">   203  </span>
-<span id="L204" class="ln">   204  </span>		t.Run(&#34;保有するクーポンを種別の名前つきで返す&#34;, func(t *testing.T) {
-<span id="L205" class="ln">   205  </span>			t.Parallel()
-<span id="L206" class="ln">   206  </span>
-<span id="L207" class="ln">   207  </span>			u, deps := newTestUsecase(t)
-<span id="L208" class="ln">   208  </span>			authn, userID := newTestAuthn(t)
-<span id="L209" class="ln">   209  </span>			c := newCoupon(t, &#34;list_rate&#34;, userID, rateDiscount(t, &#34;0.25&#34;), domaincoupon.NewAllScope())
-<span id="L210" class="ln">   210  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L201" class="ln">   201  </span>			ctrl := gomock.NewController(t)
+<span id="L202" class="ln">   202  </span>			couponRepo := mock_coupon.NewMockRepository(ctrl)
+<span id="L203" class="ln">   203  </span>			cartRepo := mock_cart.NewMockRepository(ctrl)
+<span id="L204" class="ln">   204  </span>			productRepo := mock_product.NewMockRepository(ctrl)
+<span id="L205" class="ln">   205  </span>			categoryRepo := mock_category.NewMockRepository(ctrl)
+<span id="L206" class="ln">   206  </span>			userRepo := mock_user.NewMockRepository(ctrl)
+<span id="L207" class="ln">   207  </span>			clk := mock_clock.NewMockClock(ctrl)
+<span id="L208" class="ln">   208  </span>			txm := mock_tx.NewMockManager(ctrl)
+<span id="L209" class="ln">   209  </span>			authorizer := mock_authz.NewMockAuthorizer(ctrl)
+<span id="L210" class="ln">   210  </span>			bulkIssueCmd := mock_command.NewMockCommandService(ctrl)
 <span id="L211" class="ln">   211  </span>
-<span id="L212" class="ln">   212  </span>			got, err := u.ListMyCoupons(t.Context(), authn)
-<span id="L213" class="ln">   213  </span>
-<span id="L214" class="ln">   214  </span>			require.NoError(t, err)
-<span id="L215" class="ln">   215  </span>			require.Len(t, got, 1)
-<span id="L216" class="ln">   216  </span>			assert.Equal(t, c.ID(), got[0].ID)
-<span id="L217" class="ln">   217  </span>			assert.Equal(t, &#34;rate&#34;, got[0].DiscountKind)
-<span id="L218" class="ln">   218  </span>			assert.Equal(t, &#34;all&#34;, got[0].ScopeKind)
-<span id="L219" class="ln">   219  </span>			assert.Nil(t, got[0].ScopeTargetID)
-<span id="L220" class="ln">   220  </span>			assert.Nil(t, got[0].UsedAt)
-<span id="L221" class="ln">   221  </span>		})
-<span id="L222" class="ln">   222  </span>
-<span id="L223" class="ln">   223  </span>		t.Run(&#34;使用済みのクーポンも並べる&#34;, func(t *testing.T) {
-<span id="L224" class="ln">   224  </span>			t.Parallel()
-<span id="L225" class="ln">   225  </span>
-<span id="L226" class="ln">   226  </span>			u, deps := newTestUsecase(t)
-<span id="L227" class="ln">   227  </span>			authn, userID := newTestAuthn(t)
-<span id="L228" class="ln">   228  </span>			c := newCoupon(t, &#34;list_used&#34;, userID, flatDiscount(t, &#34;5.00&#34;), domaincoupon.NewAllScope())
-<span id="L229" class="ln">   229  </span>			require.NoError(t, c.Redeem(testNow))
-<span id="L230" class="ln">   230  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L231" class="ln">   231  </span>
-<span id="L232" class="ln">   232  </span>			got, err := u.ListMyCoupons(t.Context(), authn)
+<span id="L212" class="ln">   212  </span>			u, ok := New(
+<span id="L213" class="ln">   213  </span>				couponRepo, cartRepo, productRepo, categoryRepo, userRepo,
+<span id="L214" class="ln">   214  </span>				clk, txm, authorizer, bulkIssueCmd, observability.NewNoopTracerFactory(t),
+<span id="L215" class="ln">   215  </span>			).(*usecase)
+<span id="L216" class="ln">   216  </span>
+<span id="L217" class="ln">   217  </span>			require.True(t, ok)
+<span id="L218" class="ln">   218  </span>			assert.Equal(t, couponRepo, u.couponRepo)
+<span id="L219" class="ln">   219  </span>			assert.Equal(t, cartRepo, u.cartRepo)
+<span id="L220" class="ln">   220  </span>			assert.Equal(t, productRepo, u.productRepo)
+<span id="L221" class="ln">   221  </span>			assert.Equal(t, categoryRepo, u.categoryRepo)
+<span id="L222" class="ln">   222  </span>			assert.Equal(t, userRepo, u.userRepo)
+<span id="L223" class="ln">   223  </span>			assert.Equal(t, clk, u.clock)
+<span id="L224" class="ln">   224  </span>			assert.Equal(t, txm, u.txm)
+<span id="L225" class="ln">   225  </span>			assert.Equal(t, authorizer, u.authorizer)
+<span id="L226" class="ln">   226  </span>			assert.Equal(t, bulkIssueCmd, u.bulkIssueCmd)
+<span id="L227" class="ln">   227  </span>		})
+<span id="L228" class="ln">   228  </span>	})
+<span id="L229" class="ln">   229  </span>}
+<span id="L230" class="ln">   230  </span>
+<span id="L231" class="ln">   231  </span>func Test_usecase_ListMyCoupons(t *testing.T) {
+<span id="L232" class="ln">   232  </span>	t.Parallel()
 <span id="L233" class="ln">   233  </span>
-<span id="L234" class="ln">   234  </span>			require.NoError(t, err)
-<span id="L235" class="ln">   235  </span>			require.Len(t, got, 1)
-<span id="L236" class="ln">   236  </span>			require.NotNil(t, got[0].UsedAt)
-<span id="L237" class="ln">   237  </span>		})
-<span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>		t.Run(&#34;1枚も持たない場合は空を返す&#34;, func(t *testing.T) {
-<span id="L240" class="ln">   240  </span>			t.Parallel()
-<span id="L241" class="ln">   241  </span>
-<span id="L242" class="ln">   242  </span>			u, deps := newTestUsecase(t)
-<span id="L243" class="ln">   243  </span>			authn, userID := newTestAuthn(t)
-<span id="L244" class="ln">   244  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{}, nil)
-<span id="L245" class="ln">   245  </span>
-<span id="L246" class="ln">   246  </span>			got, err := u.ListMyCoupons(t.Context(), authn)
-<span id="L247" class="ln">   247  </span>
-<span id="L248" class="ln">   248  </span>			require.NoError(t, err)
-<span id="L249" class="ln">   249  </span>			assert.Empty(t, got)
-<span id="L250" class="ln">   250  </span>		})
-<span id="L251" class="ln">   251  </span>	})
-<span id="L252" class="ln">   252  </span>
-<span id="L253" class="ln">   253  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L254" class="ln">   254  </span>		t.Parallel()
+<span id="L234" class="ln">   234  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L235" class="ln">   235  </span>		t.Parallel()
+<span id="L236" class="ln">   236  </span>
+<span id="L237" class="ln">   237  </span>		t.Run(&#34;保有するクーポンを種別の名前つきで返す&#34;, func(t *testing.T) {
+<span id="L238" class="ln">   238  </span>			t.Parallel()
+<span id="L239" class="ln">   239  </span>
+<span id="L240" class="ln">   240  </span>			u, deps := newTestUsecase(t)
+<span id="L241" class="ln">   241  </span>			authn, userID := newTestAuthn(t)
+<span id="L242" class="ln">   242  </span>			c := newCoupon(t, &#34;list_rate&#34;, userID, rateDiscount(t, &#34;0.25&#34;), domaincoupon.NewAllScope())
+<span id="L243" class="ln">   243  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>			got, err := u.ListMyCoupons(t.Context(), authn)
+<span id="L246" class="ln">   246  </span>
+<span id="L247" class="ln">   247  </span>			require.NoError(t, err)
+<span id="L248" class="ln">   248  </span>			require.Len(t, got, 1)
+<span id="L249" class="ln">   249  </span>			assert.Equal(t, c.ID(), got[0].ID)
+<span id="L250" class="ln">   250  </span>			assert.Equal(t, &#34;rate&#34;, got[0].DiscountKind)
+<span id="L251" class="ln">   251  </span>			assert.Equal(t, &#34;all&#34;, got[0].ScopeKind)
+<span id="L252" class="ln">   252  </span>			assert.Nil(t, got[0].ScopeTargetID)
+<span id="L253" class="ln">   253  </span>			assert.Nil(t, got[0].UsedAt)
+<span id="L254" class="ln">   254  </span>		})
 <span id="L255" class="ln">   255  </span>
-<span id="L256" class="ln">   256  </span>		t.Run(&#34;authnが無い場合、認証エラーを返しリポジトリを呼ばない&#34;, func(t *testing.T) {
+<span id="L256" class="ln">   256  </span>		t.Run(&#34;使用済みのクーポンも並べる&#34;, func(t *testing.T) {
 <span id="L257" class="ln">   257  </span>			t.Parallel()
 <span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>			u, _ := newTestUsecase(t)
-<span id="L260" class="ln">   260  </span>
-<span id="L261" class="ln">   261  </span>			_, err := u.ListMyCoupons(t.Context(), nil)
-<span id="L262" class="ln">   262  </span>
-<span id="L263" class="ln">   263  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
-<span id="L264" class="ln">   264  </span>		})
-<span id="L265" class="ln">   265  </span>
-<span id="L266" class="ln">   266  </span>		t.Run(&#34;リポジトリの失敗をそのまま伝播する&#34;, func(t *testing.T) {
-<span id="L267" class="ln">   267  </span>			t.Parallel()
-<span id="L268" class="ln">   268  </span>
-<span id="L269" class="ln">   269  </span>			u, deps := newTestUsecase(t)
-<span id="L270" class="ln">   270  </span>			authn, userID := newTestAuthn(t)
-<span id="L271" class="ln">   271  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(nil, apperror.ErrCanceled)
-<span id="L272" class="ln">   272  </span>
-<span id="L273" class="ln">   273  </span>			_, err := u.ListMyCoupons(t.Context(), authn)
+<span id="L259" class="ln">   259  </span>			u, deps := newTestUsecase(t)
+<span id="L260" class="ln">   260  </span>			authn, userID := newTestAuthn(t)
+<span id="L261" class="ln">   261  </span>			c := newCoupon(t, &#34;list_used&#34;, userID, flatDiscount(t, &#34;5.00&#34;), domaincoupon.NewAllScope())
+<span id="L262" class="ln">   262  </span>			require.NoError(t, c.Redeem(testNow))
+<span id="L263" class="ln">   263  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>			got, err := u.ListMyCoupons(t.Context(), authn)
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>			require.NoError(t, err)
+<span id="L268" class="ln">   268  </span>			require.Len(t, got, 1)
+<span id="L269" class="ln">   269  </span>			assert.NotNil(t, got[0].UsedAt)
+<span id="L270" class="ln">   270  </span>		})
+<span id="L271" class="ln">   271  </span>
+<span id="L272" class="ln">   272  </span>		t.Run(&#34;1枚も持たない場合は空を返す&#34;, func(t *testing.T) {
+<span id="L273" class="ln">   273  </span>			t.Parallel()
 <span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L276" class="ln">   276  </span>		})
-<span id="L277" class="ln">   277  </span>	})
-<span id="L278" class="ln">   278  </span>}
-<span id="L279" class="ln">   279  </span>
-<span id="L280" class="ln">   280  </span>func Test_usecase_ListApplicableToMyCart(t *testing.T) {
-<span id="L281" class="ln">   281  </span>	t.Parallel()
-<span id="L282" class="ln">   282  </span>
-<span id="L283" class="ln">   283  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L284" class="ln">   284  </span>		t.Parallel()
+<span id="L275" class="ln">   275  </span>			u, deps := newTestUsecase(t)
+<span id="L276" class="ln">   276  </span>			authn, userID := newTestAuthn(t)
+<span id="L277" class="ln">   277  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{}, nil)
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>			got, err := u.ListMyCoupons(t.Context(), authn)
+<span id="L280" class="ln">   280  </span>
+<span id="L281" class="ln">   281  </span>			require.NoError(t, err)
+<span id="L282" class="ln">   282  </span>			assert.Empty(t, got)
+<span id="L283" class="ln">   283  </span>		})
+<span id="L284" class="ln">   284  </span>	})
 <span id="L285" class="ln">   285  </span>
-<span id="L286" class="ln">   286  </span>		t.Run(&#34;使えるクーポンを値引き額つきで返す&#34;, func(t *testing.T) {
-<span id="L287" class="ln">   287  </span>			t.Parallel()
+<span id="L286" class="ln">   286  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L287" class="ln">   287  </span>		t.Parallel()
 <span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>			u, deps := newTestUsecase(t)
-<span id="L290" class="ln">   290  </span>			authn, userID := newTestAuthn(t)
-<span id="L291" class="ln">   291  </span>			p := newTestProduct(t, &#34;applicable_product&#34;, &#34;100.00&#34;, 10)
-<span id="L292" class="ln">   292  </span>			c := newCoupon(t, &#34;applicable_rate&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L289" class="ln">   289  </span>		t.Run(&#34;authnが無い場合、認証エラーを返しリポジトリを呼ばない&#34;, func(t *testing.T) {
+<span id="L290" class="ln">   290  </span>			t.Parallel()
+<span id="L291" class="ln">   291  </span>
+<span id="L292" class="ln">   292  </span>			u, _ := newTestUsecase(t)
 <span id="L293" class="ln">   293  </span>
-<span id="L294" class="ln">   294  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L295" class="ln">   295  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
-<span id="L296" class="ln">   296  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
-<span id="L297" class="ln">   297  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L294" class="ln">   294  </span>			_, err := u.ListMyCoupons(t.Context(), nil)
+<span id="L295" class="ln">   295  </span>
+<span id="L296" class="ln">   296  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+<span id="L297" class="ln">   297  </span>		})
 <span id="L298" class="ln">   298  </span>
-<span id="L299" class="ln">   299  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
-<span id="L300" class="ln">   300  </span>
-<span id="L301" class="ln">   301  </span>			require.NoError(t, err)
-<span id="L302" class="ln">   302  </span>			require.Len(t, got, 1)
-<span id="L303" class="ln">   303  </span>			assert.Equal(t, c.ID(), got[0].Coupon.ID)
-<span id="L304" class="ln">   304  </span>			assert.Equal(t, 1000, got[0].DiscountAmount)
-<span id="L305" class="ln">   305  </span>		})
-<span id="L306" class="ln">   306  </span>
-<span id="L307" class="ln">   307  </span>		t.Run(&#34;使用済みのクーポンは並べない&#34;, func(t *testing.T) {
-<span id="L308" class="ln">   308  </span>			t.Parallel()
-<span id="L309" class="ln">   309  </span>
-<span id="L310" class="ln">   310  </span>			u, deps := newTestUsecase(t)
-<span id="L311" class="ln">   311  </span>			authn, userID := newTestAuthn(t)
-<span id="L312" class="ln">   312  </span>			p := newTestProduct(t, &#34;used_product&#34;, &#34;100.00&#34;, 10)
-<span id="L313" class="ln">   313  </span>			c := newCoupon(t, &#34;used_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
-<span id="L314" class="ln">   314  </span>			require.NoError(t, c.Redeem(testNow))
+<span id="L299" class="ln">   299  </span>		t.Run(&#34;リポジトリの失敗をそのまま伝播する&#34;, func(t *testing.T) {
+<span id="L300" class="ln">   300  </span>			t.Parallel()
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>			u, deps := newTestUsecase(t)
+<span id="L303" class="ln">   303  </span>			authn, userID := newTestAuthn(t)
+<span id="L304" class="ln">   304  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(nil, apperror.ErrCanceled)
+<span id="L305" class="ln">   305  </span>
+<span id="L306" class="ln">   306  </span>			_, err := u.ListMyCoupons(t.Context(), authn)
+<span id="L307" class="ln">   307  </span>
+<span id="L308" class="ln">   308  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L309" class="ln">   309  </span>		})
+<span id="L310" class="ln">   310  </span>	})
+<span id="L311" class="ln">   311  </span>}
+<span id="L312" class="ln">   312  </span>
+<span id="L313" class="ln">   313  </span>func Test_usecase_ListApplicableToMyCart(t *testing.T) {
+<span id="L314" class="ln">   314  </span>	t.Parallel()
 <span id="L315" class="ln">   315  </span>
-<span id="L316" class="ln">   316  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L317" class="ln">   317  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
-<span id="L318" class="ln">   318  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
-<span id="L319" class="ln">   319  </span>			deps.clock.EXPECT().Now().Return(testNow)
-<span id="L320" class="ln">   320  </span>
-<span id="L321" class="ln">   321  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
-<span id="L322" class="ln">   322  </span>
-<span id="L323" class="ln">   323  </span>			require.NoError(t, err)
-<span id="L324" class="ln">   324  </span>			assert.Empty(t, got)
-<span id="L325" class="ln">   325  </span>		})
+<span id="L316" class="ln">   316  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L317" class="ln">   317  </span>		t.Parallel()
+<span id="L318" class="ln">   318  </span>
+<span id="L319" class="ln">   319  </span>		t.Run(&#34;使えるクーポンを値引き額つきで返す&#34;, func(t *testing.T) {
+<span id="L320" class="ln">   320  </span>			t.Parallel()
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>			u, deps := newTestUsecase(t)
+<span id="L323" class="ln">   323  </span>			authn, userID := newTestAuthn(t)
+<span id="L324" class="ln">   324  </span>			p := newTestProduct(t, &#34;applicable_product&#34;, &#34;100.00&#34;, 10)
+<span id="L325" class="ln">   325  </span>			c := newCoupon(t, &#34;applicable_rate&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
 <span id="L326" class="ln">   326  </span>
-<span id="L327" class="ln">   327  </span>		t.Run(&#34;失効したクーポンは並べない&#34;, func(t *testing.T) {
-<span id="L328" class="ln">   328  </span>			t.Parallel()
-<span id="L329" class="ln">   329  </span>
-<span id="L330" class="ln">   330  </span>			u, deps := newTestUsecase(t)
-<span id="L331" class="ln">   331  </span>			authn, userID := newTestAuthn(t)
-<span id="L332" class="ln">   332  </span>			p := newTestProduct(t, &#34;expired_product&#34;, &#34;100.00&#34;, 10)
-<span id="L333" class="ln">   333  </span>			c := newCoupon(t, &#34;expired_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
-<span id="L334" class="ln">   334  </span>
-<span id="L335" class="ln">   335  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L336" class="ln">   336  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
-<span id="L337" class="ln">   337  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
-<span id="L338" class="ln">   338  </span>			deps.clock.EXPECT().Now().Return(testExpiresAt)
+<span id="L327" class="ln">   327  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L328" class="ln">   328  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
+<span id="L329" class="ln">   329  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
+<span id="L330" class="ln">   330  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L331" class="ln">   331  </span>
+<span id="L332" class="ln">   332  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L333" class="ln">   333  </span>
+<span id="L334" class="ln">   334  </span>			require.NoError(t, err)
+<span id="L335" class="ln">   335  </span>			require.Len(t, got, 1)
+<span id="L336" class="ln">   336  </span>			assert.Equal(t, c.ID(), got[0].Coupon.ID)
+<span id="L337" class="ln">   337  </span>			assert.Equal(t, 1000, got[0].DiscountAmount)
+<span id="L338" class="ln">   338  </span>		})
 <span id="L339" class="ln">   339  </span>
-<span id="L340" class="ln">   340  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
-<span id="L341" class="ln">   341  </span>
-<span id="L342" class="ln">   342  </span>			require.NoError(t, err)
-<span id="L343" class="ln">   343  </span>			assert.Empty(t, got)
-<span id="L344" class="ln">   344  </span>		})
-<span id="L345" class="ln">   345  </span>
-<span id="L346" class="ln">   346  </span>		t.Run(&#34;値引きが0になるクーポンは並べない&#34;, func(t *testing.T) {
-<span id="L347" class="ln">   347  </span>			t.Parallel()
+<span id="L340" class="ln">   340  </span>		t.Run(&#34;使用済みのクーポンは並べない&#34;, func(t *testing.T) {
+<span id="L341" class="ln">   341  </span>			t.Parallel()
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span>			u, deps := newTestUsecase(t)
+<span id="L344" class="ln">   344  </span>			authn, userID := newTestAuthn(t)
+<span id="L345" class="ln">   345  </span>			p := newTestProduct(t, &#34;used_product&#34;, &#34;100.00&#34;, 10)
+<span id="L346" class="ln">   346  </span>			c := newCoupon(t, &#34;used_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L347" class="ln">   347  </span>			require.NoError(t, c.Redeem(testNow))
 <span id="L348" class="ln">   348  </span>
-<span id="L349" class="ln">   349  </span>			u, deps := newTestUsecase(t)
-<span id="L350" class="ln">   350  </span>			authn, userID := newTestAuthn(t)
-<span id="L351" class="ln">   351  </span>			p := newTestProduct(t, &#34;zero_product&#34;, &#34;100.00&#34;, 10)
-<span id="L352" class="ln">   352  </span>			scope, err := domaincoupon.NewProductScope(uuidtestkit.NewTestFromSalt(t, &#34;other_product&#34;))
-<span id="L353" class="ln">   353  </span>			require.NoError(t, err)
-<span id="L354" class="ln">   354  </span>			c := newCoupon(t, &#34;zero_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), scope)
+<span id="L349" class="ln">   349  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L350" class="ln">   350  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
+<span id="L351" class="ln">   351  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
+<span id="L352" class="ln">   352  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L353" class="ln">   353  </span>
+<span id="L354" class="ln">   354  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
 <span id="L355" class="ln">   355  </span>
-<span id="L356" class="ln">   356  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L357" class="ln">   357  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
-<span id="L358" class="ln">   358  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
-<span id="L359" class="ln">   359  </span>			deps.clock.EXPECT().Now().Return(testNow)
-<span id="L360" class="ln">   360  </span>
-<span id="L361" class="ln">   361  </span>			got, gerr := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L356" class="ln">   356  </span>			require.NoError(t, err)
+<span id="L357" class="ln">   357  </span>			assert.Empty(t, got)
+<span id="L358" class="ln">   358  </span>		})
+<span id="L359" class="ln">   359  </span>
+<span id="L360" class="ln">   360  </span>		t.Run(&#34;失効したクーポンは並べない&#34;, func(t *testing.T) {
+<span id="L361" class="ln">   361  </span>			t.Parallel()
 <span id="L362" class="ln">   362  </span>
-<span id="L363" class="ln">   363  </span>			require.NoError(t, gerr)
-<span id="L364" class="ln">   364  </span>			assert.Empty(t, got)
-<span id="L365" class="ln">   365  </span>		})
-<span id="L366" class="ln">   366  </span>
-<span id="L367" class="ln">   367  </span>		t.Run(&#34;在庫切れの明細は対象小計に入れない&#34;, func(t *testing.T) {
-<span id="L368" class="ln">   368  </span>			t.Parallel()
-<span id="L369" class="ln">   369  </span>
-<span id="L370" class="ln">   370  </span>			u, deps := newTestUsecase(t)
-<span id="L371" class="ln">   371  </span>			authn, userID := newTestAuthn(t)
-<span id="L372" class="ln">   372  </span>			p := newTestProduct(t, &#34;oos_product&#34;, &#34;100.00&#34;, 0)
-<span id="L373" class="ln">   373  </span>			c := newCoupon(t, &#34;oos_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L363" class="ln">   363  </span>			u, deps := newTestUsecase(t)
+<span id="L364" class="ln">   364  </span>			authn, userID := newTestAuthn(t)
+<span id="L365" class="ln">   365  </span>			p := newTestProduct(t, &#34;expired_product&#34;, &#34;100.00&#34;, 10)
+<span id="L366" class="ln">   366  </span>			c := newCoupon(t, &#34;expired_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L369" class="ln">   369  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
+<span id="L370" class="ln">   370  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
+<span id="L371" class="ln">   371  </span>			deps.clock.EXPECT().Now().Return(testExpiresAt)
+<span id="L372" class="ln">   372  </span>
+<span id="L373" class="ln">   373  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
 <span id="L374" class="ln">   374  </span>
-<span id="L375" class="ln">   375  </span>			deps.clock.EXPECT().Now().Return(testNow)
-<span id="L376" class="ln">   376  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L377" class="ln">   377  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
-<span id="L378" class="ln">   378  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
-<span id="L379" class="ln">   379  </span>
-<span id="L380" class="ln">   380  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L375" class="ln">   375  </span>			require.NoError(t, err)
+<span id="L376" class="ln">   376  </span>			assert.Empty(t, got)
+<span id="L377" class="ln">   377  </span>		})
+<span id="L378" class="ln">   378  </span>
+<span id="L379" class="ln">   379  </span>		t.Run(&#34;値引きが0になるクーポンは並べない&#34;, func(t *testing.T) {
+<span id="L380" class="ln">   380  </span>			t.Parallel()
 <span id="L381" class="ln">   381  </span>
-<span id="L382" class="ln">   382  </span>			require.NoError(t, err)
-<span id="L383" class="ln">   383  </span>			assert.Empty(t, got)
-<span id="L384" class="ln">   384  </span>		})
-<span id="L385" class="ln">   385  </span>
-<span id="L386" class="ln">   386  </span>		t.Run(&#34;1枚も保有しない場合はカートを引かずに空を返す&#34;, func(t *testing.T) {
-<span id="L387" class="ln">   387  </span>			t.Parallel()
+<span id="L382" class="ln">   382  </span>			u, deps := newTestUsecase(t)
+<span id="L383" class="ln">   383  </span>			authn, userID := newTestAuthn(t)
+<span id="L384" class="ln">   384  </span>			p := newTestProduct(t, &#34;zero_product&#34;, &#34;100.00&#34;, 10)
+<span id="L385" class="ln">   385  </span>			scope, err := domaincoupon.NewProductScope(uuidtestkit.NewTestFromSalt(t, &#34;other_product&#34;))
+<span id="L386" class="ln">   386  </span>			require.NoError(t, err)
+<span id="L387" class="ln">   387  </span>			c := newCoupon(t, &#34;zero_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), scope)
 <span id="L388" class="ln">   388  </span>
-<span id="L389" class="ln">   389  </span>			u, deps := newTestUsecase(t)
-<span id="L390" class="ln">   390  </span>			authn, userID := newTestAuthn(t)
-<span id="L391" class="ln">   391  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{}, nil)
-<span id="L392" class="ln">   392  </span>			<span class="comment">// カートも商品も引かないことを、EXPECT を置かないことで表す。</span>
+<span id="L389" class="ln">   389  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L390" class="ln">   390  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
+<span id="L391" class="ln">   391  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
+<span id="L392" class="ln">   392  </span>			deps.clock.EXPECT().Now().Return(testNow)
 <span id="L393" class="ln">   393  </span>
-<span id="L394" class="ln">   394  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L394" class="ln">   394  </span>			got, gerr := u.ListApplicableToMyCart(t.Context(), authn)
 <span id="L395" class="ln">   395  </span>
-<span id="L396" class="ln">   396  </span>			require.NoError(t, err)
+<span id="L396" class="ln">   396  </span>			require.NoError(t, gerr)
 <span id="L397" class="ln">   397  </span>			assert.Empty(t, got)
 <span id="L398" class="ln">   398  </span>		})
 <span id="L399" class="ln">   399  </span>
-<span id="L400" class="ln">   400  </span>		t.Run(&#34;カートを持たない場合は空を返す&#34;, func(t *testing.T) {
+<span id="L400" class="ln">   400  </span>		t.Run(&#34;在庫切れの明細は対象小計に入れない&#34;, func(t *testing.T) {
 <span id="L401" class="ln">   401  </span>			t.Parallel()
 <span id="L402" class="ln">   402  </span>
 <span id="L403" class="ln">   403  </span>			u, deps := newTestUsecase(t)
 <span id="L404" class="ln">   404  </span>			authn, userID := newTestAuthn(t)
-<span id="L405" class="ln">   405  </span>			c := newCoupon(t, &#34;nocart_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
-<span id="L406" class="ln">   406  </span>			deps.clock.EXPECT().Now().Return(testNow)
-<span id="L407" class="ln">   407  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L408" class="ln">   408  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrNotFound)
-<span id="L409" class="ln">   409  </span>
-<span id="L410" class="ln">   410  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
-<span id="L411" class="ln">   411  </span>
-<span id="L412" class="ln">   412  </span>			require.NoError(t, err)
-<span id="L413" class="ln">   413  </span>			assert.Empty(t, got)
-<span id="L414" class="ln">   414  </span>		})
-<span id="L415" class="ln">   415  </span>
-<span id="L416" class="ln">   416  </span>		t.Run(&#34;商品を引けない明細は対象小計に入れない&#34;, func(t *testing.T) {
-<span id="L417" class="ln">   417  </span>			t.Parallel()
+<span id="L405" class="ln">   405  </span>			p := newTestProduct(t, &#34;oos_product&#34;, &#34;100.00&#34;, 0)
+<span id="L406" class="ln">   406  </span>			c := newCoupon(t, &#34;oos_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L407" class="ln">   407  </span>
+<span id="L408" class="ln">   408  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L409" class="ln">   409  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L410" class="ln">   410  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
+<span id="L411" class="ln">   411  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{p}, nil)
+<span id="L412" class="ln">   412  </span>
+<span id="L413" class="ln">   413  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L414" class="ln">   414  </span>
+<span id="L415" class="ln">   415  </span>			require.NoError(t, err)
+<span id="L416" class="ln">   416  </span>			assert.Empty(t, got)
+<span id="L417" class="ln">   417  </span>		})
 <span id="L418" class="ln">   418  </span>
-<span id="L419" class="ln">   419  </span>			u, deps := newTestUsecase(t)
-<span id="L420" class="ln">   420  </span>			authn, userID := newTestAuthn(t)
-<span id="L421" class="ln">   421  </span>			c := newCoupon(t, &#34;missing_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
-<span id="L422" class="ln">   422  </span>			missing := uuidtestkit.NewTestFromSalt(t, &#34;missing_product&#34;)
-<span id="L423" class="ln">   423  </span>
-<span id="L424" class="ln">   424  </span>			deps.clock.EXPECT().Now().Return(testNow)
-<span id="L425" class="ln">   425  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L426" class="ln">   426  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, missing), nil)
-<span id="L427" class="ln">   427  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{}, nil)
+<span id="L419" class="ln">   419  </span>		t.Run(&#34;1枚も保有しない場合はカートを引かずに空を返す&#34;, func(t *testing.T) {
+<span id="L420" class="ln">   420  </span>			t.Parallel()
+<span id="L421" class="ln">   421  </span>
+<span id="L422" class="ln">   422  </span>			u, deps := newTestUsecase(t)
+<span id="L423" class="ln">   423  </span>			authn, userID := newTestAuthn(t)
+<span id="L424" class="ln">   424  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{}, nil)
+<span id="L425" class="ln">   425  </span>			<span class="comment">// カートも商品も引かないことを、EXPECT を置かないことで表す。</span>
+<span id="L426" class="ln">   426  </span>
+<span id="L427" class="ln">   427  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
 <span id="L428" class="ln">   428  </span>
-<span id="L429" class="ln">   429  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
-<span id="L430" class="ln">   430  </span>
-<span id="L431" class="ln">   431  </span>			require.NoError(t, err)
-<span id="L432" class="ln">   432  </span>			assert.Empty(t, got)
-<span id="L433" class="ln">   433  </span>		})
-<span id="L434" class="ln">   434  </span>	})
+<span id="L429" class="ln">   429  </span>			require.NoError(t, err)
+<span id="L430" class="ln">   430  </span>			assert.Empty(t, got)
+<span id="L431" class="ln">   431  </span>		})
+<span id="L432" class="ln">   432  </span>
+<span id="L433" class="ln">   433  </span>		t.Run(&#34;カートを持たない場合は空を返す&#34;, func(t *testing.T) {
+<span id="L434" class="ln">   434  </span>			t.Parallel()
 <span id="L435" class="ln">   435  </span>
-<span id="L436" class="ln">   436  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L437" class="ln">   437  </span>		t.Parallel()
-<span id="L438" class="ln">   438  </span>
-<span id="L439" class="ln">   439  </span>		t.Run(&#34;authnが無い場合、認証エラーを返しリポジトリを呼ばない&#34;, func(t *testing.T) {
-<span id="L440" class="ln">   440  </span>			t.Parallel()
-<span id="L441" class="ln">   441  </span>
-<span id="L442" class="ln">   442  </span>			u, _ := newTestUsecase(t)
-<span id="L443" class="ln">   443  </span>
-<span id="L444" class="ln">   444  </span>			_, err := u.ListApplicableToMyCart(t.Context(), nil)
-<span id="L445" class="ln">   445  </span>
-<span id="L446" class="ln">   446  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+<span id="L436" class="ln">   436  </span>			u, deps := newTestUsecase(t)
+<span id="L437" class="ln">   437  </span>			authn, userID := newTestAuthn(t)
+<span id="L438" class="ln">   438  </span>			c := newCoupon(t, &#34;nocart_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L439" class="ln">   439  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L440" class="ln">   440  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L441" class="ln">   441  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrNotFound)
+<span id="L442" class="ln">   442  </span>
+<span id="L443" class="ln">   443  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L444" class="ln">   444  </span>
+<span id="L445" class="ln">   445  </span>			require.NoError(t, err)
+<span id="L446" class="ln">   446  </span>			assert.Empty(t, got)
 <span id="L447" class="ln">   447  </span>		})
 <span id="L448" class="ln">   448  </span>
-<span id="L449" class="ln">   449  </span>		t.Run(&#34;カートの取得に失敗した場合、商品を引かずエラーを伝播する&#34;, func(t *testing.T) {
+<span id="L449" class="ln">   449  </span>		t.Run(&#34;商品を引けない明細は対象小計に入れない&#34;, func(t *testing.T) {
 <span id="L450" class="ln">   450  </span>			t.Parallel()
 <span id="L451" class="ln">   451  </span>
 <span id="L452" class="ln">   452  </span>			u, deps := newTestUsecase(t)
 <span id="L453" class="ln">   453  </span>			authn, userID := newTestAuthn(t)
-<span id="L454" class="ln">   454  </span>			c := newCoupon(t, &#34;carterr_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
-<span id="L455" class="ln">   455  </span>			deps.clock.EXPECT().Now().Return(testNow)
-<span id="L456" class="ln">   456  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L457" class="ln">   457  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrCanceled)
-<span id="L458" class="ln">   458  </span>
-<span id="L459" class="ln">   459  </span>			_, err := u.ListApplicableToMyCart(t.Context(), authn)
-<span id="L460" class="ln">   460  </span>
-<span id="L461" class="ln">   461  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L462" class="ln">   462  </span>		})
+<span id="L454" class="ln">   454  </span>			c := newCoupon(t, &#34;missing_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L455" class="ln">   455  </span>			missing := uuidtestkit.NewTestFromSalt(t, &#34;missing_product&#34;)
+<span id="L456" class="ln">   456  </span>
+<span id="L457" class="ln">   457  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L458" class="ln">   458  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L459" class="ln">   459  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, missing), nil)
+<span id="L460" class="ln">   460  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{}, nil)
+<span id="L461" class="ln">   461  </span>
+<span id="L462" class="ln">   462  </span>			got, err := u.ListApplicableToMyCart(t.Context(), authn)
 <span id="L463" class="ln">   463  </span>
-<span id="L464" class="ln">   464  </span>		t.Run(&#34;値引き額の計算が失敗した場合、エラーを伝播する&#34;, func(t *testing.T) {
-<span id="L465" class="ln">   465  </span>			t.Parallel()
-<span id="L466" class="ln">   466  </span>
-<span id="L467" class="ln">   467  </span>			u, deps := newTestUsecase(t)
-<span id="L468" class="ln">   468  </span>			authn, userID := newTestAuthn(t)
-<span id="L469" class="ln">   469  </span>			<span class="comment">// Line.Subtotal はドメインでは検証しない観測値なので、決済スケールへ落とすと</span>
-<span id="L470" class="ln">   470  </span>			<span class="comment">// int64 を超える対象小計が DiscountFor へ届き得る。</span>
-<span id="L471" class="ln">   471  </span>			a := newTestProduct(t, &#34;overflow_a&#34;, &#34;90000000000000000&#34;, 10)
-<span id="L472" class="ln">   472  </span>			b := newTestProduct(t, &#34;overflow_b&#34;, &#34;90000000000000000&#34;, 10)
-<span id="L473" class="ln">   473  </span>			c := newCoupon(t, &#34;overflow_coupon&#34;, userID, rateDiscount(t, &#34;1&#34;), domaincoupon.NewAllScope())
+<span id="L464" class="ln">   464  </span>			require.NoError(t, err)
+<span id="L465" class="ln">   465  </span>			assert.Empty(t, got)
+<span id="L466" class="ln">   466  </span>		})
+<span id="L467" class="ln">   467  </span>	})
+<span id="L468" class="ln">   468  </span>
+<span id="L469" class="ln">   469  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L470" class="ln">   470  </span>		t.Parallel()
+<span id="L471" class="ln">   471  </span>
+<span id="L472" class="ln">   472  </span>		t.Run(&#34;authnが無い場合、認証エラーを返しリポジトリを呼ばない&#34;, func(t *testing.T) {
+<span id="L473" class="ln">   473  </span>			t.Parallel()
 <span id="L474" class="ln">   474  </span>
-<span id="L475" class="ln">   475  </span>			deps.clock.EXPECT().Now().Return(testNow)
-<span id="L476" class="ln">   476  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L477" class="ln">   477  </span>			deps.cartRepo.EXPECT().
-<span id="L478" class="ln">   478  </span>				FindByOwnerID(gomock.Any(), userID).
-<span id="L479" class="ln">   479  </span>				Return(newTestCart(t, userID, a.ID(), b.ID()), nil)
-<span id="L480" class="ln">   480  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{a, b}, nil)
+<span id="L475" class="ln">   475  </span>			u, _ := newTestUsecase(t)
+<span id="L476" class="ln">   476  </span>
+<span id="L477" class="ln">   477  </span>			_, err := u.ListApplicableToMyCart(t.Context(), nil)
+<span id="L478" class="ln">   478  </span>
+<span id="L479" class="ln">   479  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+<span id="L480" class="ln">   480  </span>		})
 <span id="L481" class="ln">   481  </span>
-<span id="L482" class="ln">   482  </span>			_, err := u.ListApplicableToMyCart(t.Context(), authn)
-<span id="L483" class="ln">   483  </span>
-<span id="L484" class="ln">   484  </span>			require.ErrorIs(t, err, domaincoupon.ErrInvalidDiscountValue)
-<span id="L485" class="ln">   485  </span>		})
-<span id="L486" class="ln">   486  </span>
-<span id="L487" class="ln">   487  </span>		t.Run(&#34;商品の取得に失敗した場合、エラーを伝播する&#34;, func(t *testing.T) {
-<span id="L488" class="ln">   488  </span>			t.Parallel()
-<span id="L489" class="ln">   489  </span>
-<span id="L490" class="ln">   490  </span>			u, deps := newTestUsecase(t)
-<span id="L491" class="ln">   491  </span>			authn, userID := newTestAuthn(t)
-<span id="L492" class="ln">   492  </span>			c := newCoupon(t, &#34;producterr_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
-<span id="L493" class="ln">   493  </span>			p := newTestProduct(t, &#34;producterr_product&#34;, &#34;100.00&#34;, 10)
-<span id="L494" class="ln">   494  </span>			deps.clock.EXPECT().Now().Return(testNow)
-<span id="L495" class="ln">   495  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
-<span id="L496" class="ln">   496  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
-<span id="L497" class="ln">   497  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(nil, apperror.ErrCanceled)
-<span id="L498" class="ln">   498  </span>
-<span id="L499" class="ln">   499  </span>			_, err := u.ListApplicableToMyCart(t.Context(), authn)
-<span id="L500" class="ln">   500  </span>
-<span id="L501" class="ln">   501  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L502" class="ln">   502  </span>		})
-<span id="L503" class="ln">   503  </span>	})
-<span id="L504" class="ln">   504  </span>}
-<span id="L505" class="ln">   505  </span>
-<span id="L506" class="ln">   506  </span>func Test_usecase_buildLines(t *testing.T) {
-<span id="L507" class="ln">   507  </span>	t.Parallel()
-<span id="L508" class="ln">   508  </span>
-<span id="L509" class="ln">   509  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L510" class="ln">   510  </span>		t.Parallel()
-<span id="L511" class="ln">   511  </span>
-<span id="L512" class="ln">   512  </span>		t.Run(&#34;購入できる明細だけを商品カテゴリつきで写す&#34;, func(t *testing.T) {
-<span id="L513" class="ln">   513  </span>			t.Parallel()
+<span id="L482" class="ln">   482  </span>		t.Run(&#34;カートの取得に失敗した場合、商品を引かずエラーを伝播する&#34;, func(t *testing.T) {
+<span id="L483" class="ln">   483  </span>			t.Parallel()
+<span id="L484" class="ln">   484  </span>
+<span id="L485" class="ln">   485  </span>			u, deps := newTestUsecase(t)
+<span id="L486" class="ln">   486  </span>			authn, userID := newTestAuthn(t)
+<span id="L487" class="ln">   487  </span>			c := newCoupon(t, &#34;carterr_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L488" class="ln">   488  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L489" class="ln">   489  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L490" class="ln">   490  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrCanceled)
+<span id="L491" class="ln">   491  </span>
+<span id="L492" class="ln">   492  </span>			_, err := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L493" class="ln">   493  </span>
+<span id="L494" class="ln">   494  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L495" class="ln">   495  </span>		})
+<span id="L496" class="ln">   496  </span>
+<span id="L497" class="ln">   497  </span>		t.Run(&#34;値引き額の計算が失敗した場合、エラーを伝播する&#34;, func(t *testing.T) {
+<span id="L498" class="ln">   498  </span>			t.Parallel()
+<span id="L499" class="ln">   499  </span>
+<span id="L500" class="ln">   500  </span>			u, deps := newTestUsecase(t)
+<span id="L501" class="ln">   501  </span>			authn, userID := newTestAuthn(t)
+<span id="L502" class="ln">   502  </span>			<span class="comment">// Line.Subtotal はドメインでは検証しない観測値なので、決済スケールへ落とすと</span>
+<span id="L503" class="ln">   503  </span>			<span class="comment">// int64 を超える対象小計が DiscountFor へ届き得る。</span>
+<span id="L504" class="ln">   504  </span>			a := newTestProduct(t, &#34;overflow_a&#34;, &#34;90000000000000000&#34;, 10)
+<span id="L505" class="ln">   505  </span>			b := newTestProduct(t, &#34;overflow_b&#34;, &#34;90000000000000000&#34;, 10)
+<span id="L506" class="ln">   506  </span>			c := newCoupon(t, &#34;overflow_coupon&#34;, userID, rateDiscount(t, &#34;1&#34;), domaincoupon.NewAllScope())
+<span id="L507" class="ln">   507  </span>
+<span id="L508" class="ln">   508  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L509" class="ln">   509  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L510" class="ln">   510  </span>			deps.cartRepo.EXPECT().
+<span id="L511" class="ln">   511  </span>				FindByOwnerID(gomock.Any(), userID).
+<span id="L512" class="ln">   512  </span>				Return(newTestCart(t, userID, a.ID(), b.ID()), nil)
+<span id="L513" class="ln">   513  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(product.Products{a, b}, nil)
 <span id="L514" class="ln">   514  </span>
-<span id="L515" class="ln">   515  </span>			u, deps := newTestUsecase(t)
-<span id="L516" class="ln">   516  </span>			_, userID := newTestAuthn(t)
-<span id="L517" class="ln">   517  </span>			ok := newTestProduct(t, &#34;lines_ok&#34;, &#34;100.00&#34;, 10)
-<span id="L518" class="ln">   518  </span>			oos := newTestProduct(t, &#34;lines_oos&#34;, &#34;50.00&#34;, 0)
+<span id="L515" class="ln">   515  </span>			_, err := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L516" class="ln">   516  </span>
+<span id="L517" class="ln">   517  </span>			require.ErrorIs(t, err, domaincoupon.ErrInvalidDiscountValue)
+<span id="L518" class="ln">   518  </span>		})
 <span id="L519" class="ln">   519  </span>
-<span id="L520" class="ln">   520  </span>			deps.cartRepo.EXPECT().
-<span id="L521" class="ln">   521  </span>				FindByOwnerID(gomock.Any(), userID).
-<span id="L522" class="ln">   522  </span>				Return(newTestCart(t, userID, ok.ID(), oos.ID()), nil)
-<span id="L523" class="ln">   523  </span>			deps.productRepo.EXPECT().
-<span id="L524" class="ln">   524  </span>				FindByIDs(gomock.Any(), gomock.Any()).
-<span id="L525" class="ln">   525  </span>				Return(product.Products{ok, oos}, nil)
-<span id="L526" class="ln">   526  </span>
-<span id="L527" class="ln">   527  </span>			lines, err := u.buildLines(t.Context(), userID, testNow)
-<span id="L528" class="ln">   528  </span>
-<span id="L529" class="ln">   529  </span>			require.NoError(t, err)
-<span id="L530" class="ln">   530  </span>			require.Len(t, lines, 1)
-<span id="L531" class="ln">   531  </span>			assert.Equal(t, ok.ID(), lines[0].ProductID())
-<span id="L532" class="ln">   532  </span>			assert.Equal(t, ok.Category().ID(), lines[0].CategoryID())
-<span id="L533" class="ln">   533  </span>			assert.Equal(t, &#34;100&#34;, lines[0].Subtotal().String())
-<span id="L534" class="ln">   534  </span>		})
-<span id="L535" class="ln">   535  </span>
-<span id="L536" class="ln">   536  </span>		t.Run(&#34;明細が空のカートは空を返す&#34;, func(t *testing.T) {
-<span id="L537" class="ln">   537  </span>			t.Parallel()
+<span id="L520" class="ln">   520  </span>		t.Run(&#34;商品の取得に失敗した場合、エラーを伝播する&#34;, func(t *testing.T) {
+<span id="L521" class="ln">   521  </span>			t.Parallel()
+<span id="L522" class="ln">   522  </span>
+<span id="L523" class="ln">   523  </span>			u, deps := newTestUsecase(t)
+<span id="L524" class="ln">   524  </span>			authn, userID := newTestAuthn(t)
+<span id="L525" class="ln">   525  </span>			c := newCoupon(t, &#34;producterr_coupon&#34;, userID, rateDiscount(t, &#34;0.10&#34;), domaincoupon.NewAllScope())
+<span id="L526" class="ln">   526  </span>			p := newTestProduct(t, &#34;producterr_product&#34;, &#34;100.00&#34;, 10)
+<span id="L527" class="ln">   527  </span>			deps.clock.EXPECT().Now().Return(testNow)
+<span id="L528" class="ln">   528  </span>			deps.couponRepo.EXPECT().FindByUserID(gomock.Any(), userID).Return(domaincoupon.Coupons{c}, nil)
+<span id="L529" class="ln">   529  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID, p.ID()), nil)
+<span id="L530" class="ln">   530  </span>			deps.productRepo.EXPECT().FindByIDs(gomock.Any(), gomock.Any()).Return(nil, apperror.ErrCanceled)
+<span id="L531" class="ln">   531  </span>
+<span id="L532" class="ln">   532  </span>			_, err := u.ListApplicableToMyCart(t.Context(), authn)
+<span id="L533" class="ln">   533  </span>
+<span id="L534" class="ln">   534  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L535" class="ln">   535  </span>		})
+<span id="L536" class="ln">   536  </span>	})
+<span id="L537" class="ln">   537  </span>}
 <span id="L538" class="ln">   538  </span>
-<span id="L539" class="ln">   539  </span>			u, deps := newTestUsecase(t)
-<span id="L540" class="ln">   540  </span>			_, userID := newTestAuthn(t)
-<span id="L541" class="ln">   541  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID), nil)
-<span id="L542" class="ln">   542  </span>
-<span id="L543" class="ln">   543  </span>			lines, err := u.buildLines(t.Context(), userID, testNow)
+<span id="L539" class="ln">   539  </span>func Test_usecase_buildLines(t *testing.T) {
+<span id="L540" class="ln">   540  </span>	t.Parallel()
+<span id="L541" class="ln">   541  </span>
+<span id="L542" class="ln">   542  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L543" class="ln">   543  </span>		t.Parallel()
 <span id="L544" class="ln">   544  </span>
-<span id="L545" class="ln">   545  </span>			require.NoError(t, err)
-<span id="L546" class="ln">   546  </span>			assert.Empty(t, lines)
-<span id="L547" class="ln">   547  </span>		})
-<span id="L548" class="ln">   548  </span>
-<span id="L549" class="ln">   549  </span>		t.Run(&#34;カートを持たない場合はエラーにせず空を返す&#34;, func(t *testing.T) {
-<span id="L550" class="ln">   550  </span>			t.Parallel()
-<span id="L551" class="ln">   551  </span>
-<span id="L552" class="ln">   552  </span>			u, deps := newTestUsecase(t)
-<span id="L553" class="ln">   553  </span>			_, userID := newTestAuthn(t)
-<span id="L554" class="ln">   554  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrNotFound)
-<span id="L555" class="ln">   555  </span>
-<span id="L556" class="ln">   556  </span>			lines, err := u.buildLines(t.Context(), userID, testNow)
-<span id="L557" class="ln">   557  </span>
-<span id="L558" class="ln">   558  </span>			require.NoError(t, err)
-<span id="L559" class="ln">   559  </span>			assert.Empty(t, lines)
-<span id="L560" class="ln">   560  </span>		})
+<span id="L545" class="ln">   545  </span>		t.Run(&#34;購入できる明細だけを商品カテゴリつきで写す&#34;, func(t *testing.T) {
+<span id="L546" class="ln">   546  </span>			t.Parallel()
+<span id="L547" class="ln">   547  </span>
+<span id="L548" class="ln">   548  </span>			u, deps := newTestUsecase(t)
+<span id="L549" class="ln">   549  </span>			_, userID := newTestAuthn(t)
+<span id="L550" class="ln">   550  </span>			ok := newTestProduct(t, &#34;lines_ok&#34;, &#34;100.00&#34;, 10)
+<span id="L551" class="ln">   551  </span>			oos := newTestProduct(t, &#34;lines_oos&#34;, &#34;50.00&#34;, 0)
+<span id="L552" class="ln">   552  </span>
+<span id="L553" class="ln">   553  </span>			deps.cartRepo.EXPECT().
+<span id="L554" class="ln">   554  </span>				FindByOwnerID(gomock.Any(), userID).
+<span id="L555" class="ln">   555  </span>				Return(newTestCart(t, userID, ok.ID(), oos.ID()), nil)
+<span id="L556" class="ln">   556  </span>			deps.productRepo.EXPECT().
+<span id="L557" class="ln">   557  </span>				FindByIDs(gomock.Any(), gomock.Any()).
+<span id="L558" class="ln">   558  </span>				Return(product.Products{ok, oos}, nil)
+<span id="L559" class="ln">   559  </span>
+<span id="L560" class="ln">   560  </span>			lines, err := u.buildLines(t.Context(), userID, testNow)
 <span id="L561" class="ln">   561  </span>
-<span id="L562" class="ln">   562  </span>		t.Run(&#34;期限切れのカートは明細を持っていても空を返す&#34;, func(t *testing.T) {
-<span id="L563" class="ln">   563  </span>			t.Parallel()
-<span id="L564" class="ln">   564  </span>
-<span id="L565" class="ln">   565  </span>			u, deps := newTestUsecase(t)
-<span id="L566" class="ln">   566  </span>			_, userID := newTestAuthn(t)
-<span id="L567" class="ln">   567  </span>			p := newTestProduct(t, &#34;lines_expired&#34;, &#34;100.00&#34;, 10)
-<span id="L568" class="ln">   568  </span>			expired := newTestCartExpiringAt(t, userID, testNow.Add(-time.Second), p.ID())
-<span id="L569" class="ln">   569  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(expired, nil)
-<span id="L570" class="ln">   570  </span>
-<span id="L571" class="ln">   571  </span>			lines, err := u.buildLines(t.Context(), userID, testNow)
-<span id="L572" class="ln">   572  </span>
-<span id="L573" class="ln">   573  </span>			require.NoError(t, err)
-<span id="L574" class="ln">   574  </span>			assert.Empty(t, lines)
-<span id="L575" class="ln">   575  </span>		})
-<span id="L576" class="ln">   576  </span>	})
+<span id="L562" class="ln">   562  </span>			require.NoError(t, err)
+<span id="L563" class="ln">   563  </span>			require.Len(t, lines, 1)
+<span id="L564" class="ln">   564  </span>			assert.Equal(t, ok.ID(), lines[0].ProductID())
+<span id="L565" class="ln">   565  </span>			assert.Equal(t, ok.Category().ID(), lines[0].CategoryID())
+<span id="L566" class="ln">   566  </span>			assert.Equal(t, &#34;100&#34;, lines[0].Subtotal().String())
+<span id="L567" class="ln">   567  </span>		})
+<span id="L568" class="ln">   568  </span>
+<span id="L569" class="ln">   569  </span>		t.Run(&#34;明細が空のカートは空を返す&#34;, func(t *testing.T) {
+<span id="L570" class="ln">   570  </span>			t.Parallel()
+<span id="L571" class="ln">   571  </span>
+<span id="L572" class="ln">   572  </span>			u, deps := newTestUsecase(t)
+<span id="L573" class="ln">   573  </span>			_, userID := newTestAuthn(t)
+<span id="L574" class="ln">   574  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(newTestCart(t, userID), nil)
+<span id="L575" class="ln">   575  </span>
+<span id="L576" class="ln">   576  </span>			lines, err := u.buildLines(t.Context(), userID, testNow)
 <span id="L577" class="ln">   577  </span>
-<span id="L578" class="ln">   578  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L579" class="ln">   579  </span>		t.Parallel()
-<span id="L580" class="ln">   580  </span>
-<span id="L581" class="ln">   581  </span>		t.Run(&#34;NotFound 以外のカート取得エラーはそのまま返す&#34;, func(t *testing.T) {
-<span id="L582" class="ln">   582  </span>			t.Parallel()
-<span id="L583" class="ln">   583  </span>
-<span id="L584" class="ln">   584  </span>			u, deps := newTestUsecase(t)
-<span id="L585" class="ln">   585  </span>			_, userID := newTestAuthn(t)
-<span id="L586" class="ln">   586  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrCanceled)
-<span id="L587" class="ln">   587  </span>
-<span id="L588" class="ln">   588  </span>			_, err := u.buildLines(t.Context(), userID, testNow)
-<span id="L589" class="ln">   589  </span>
-<span id="L590" class="ln">   590  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
-<span id="L591" class="ln">   591  </span>		})
-<span id="L592" class="ln">   592  </span>	})
-<span id="L593" class="ln">   593  </span>}
+<span id="L578" class="ln">   578  </span>			require.NoError(t, err)
+<span id="L579" class="ln">   579  </span>			assert.Empty(t, lines)
+<span id="L580" class="ln">   580  </span>		})
+<span id="L581" class="ln">   581  </span>
+<span id="L582" class="ln">   582  </span>		t.Run(&#34;カートを持たない場合はエラーにせず空を返す&#34;, func(t *testing.T) {
+<span id="L583" class="ln">   583  </span>			t.Parallel()
+<span id="L584" class="ln">   584  </span>
+<span id="L585" class="ln">   585  </span>			u, deps := newTestUsecase(t)
+<span id="L586" class="ln">   586  </span>			_, userID := newTestAuthn(t)
+<span id="L587" class="ln">   587  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrNotFound)
+<span id="L588" class="ln">   588  </span>
+<span id="L589" class="ln">   589  </span>			lines, err := u.buildLines(t.Context(), userID, testNow)
+<span id="L590" class="ln">   590  </span>
+<span id="L591" class="ln">   591  </span>			require.NoError(t, err)
+<span id="L592" class="ln">   592  </span>			assert.Empty(t, lines)
+<span id="L593" class="ln">   593  </span>		})
 <span id="L594" class="ln">   594  </span>
-<span id="L595" class="ln">   595  </span>func Test_toCouponView(t *testing.T) {
-<span id="L596" class="ln">   596  </span>	t.Parallel()
+<span id="L595" class="ln">   595  </span>		t.Run(&#34;期限切れのカートは明細を持っていても空を返す&#34;, func(t *testing.T) {
+<span id="L596" class="ln">   596  </span>			t.Parallel()
 <span id="L597" class="ln">   597  </span>
-<span id="L598" class="ln">   598  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L599" class="ln">   599  </span>		t.Parallel()
-<span id="L600" class="ln">   600  </span>
-<span id="L601" class="ln">   601  </span>		t.Run(&#34;種別を名前で、適用範囲の対象を識別子で写す&#34;, func(t *testing.T) {
-<span id="L602" class="ln">   602  </span>			t.Parallel()
+<span id="L598" class="ln">   598  </span>			u, deps := newTestUsecase(t)
+<span id="L599" class="ln">   599  </span>			_, userID := newTestAuthn(t)
+<span id="L600" class="ln">   600  </span>			p := newTestProduct(t, &#34;lines_expired&#34;, &#34;100.00&#34;, 10)
+<span id="L601" class="ln">   601  </span>			expired := newTestCartExpiringAt(t, userID, testNow.Add(-time.Second), p.ID())
+<span id="L602" class="ln">   602  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(expired, nil)
 <span id="L603" class="ln">   603  </span>
-<span id="L604" class="ln">   604  </span>			_, userID := newTestAuthn(t)
-<span id="L605" class="ln">   605  </span>			categoryID := uuidtestkit.NewTestFromSalt(t, &#34;view_category&#34;)
-<span id="L606" class="ln">   606  </span>			scope, err := domaincoupon.NewCategoryScope(categoryID)
-<span id="L607" class="ln">   607  </span>			require.NoError(t, err)
-<span id="L608" class="ln">   608  </span>			c := newCoupon(t, &#34;view_coupon&#34;, userID, flatDiscount(t, &#34;5.00&#34;), scope)
-<span id="L609" class="ln">   609  </span>
-<span id="L610" class="ln">   610  </span>			got := toCouponView(c)
-<span id="L611" class="ln">   611  </span>
-<span id="L612" class="ln">   612  </span>			assert.Equal(t, c.ID(), got.ID)
-<span id="L613" class="ln">   613  </span>			assert.Equal(t, &#34;flat&#34;, got.DiscountKind)
-<span id="L614" class="ln">   614  </span>			assert.Equal(t, &#34;5&#34;, got.DiscountValue.String())
-<span id="L615" class="ln">   615  </span>			assert.Equal(t, &#34;category&#34;, got.ScopeKind)
-<span id="L616" class="ln">   616  </span>			require.NotNil(t, got.ScopeTargetID)
-<span id="L617" class="ln">   617  </span>			assert.Equal(t, categoryID, *got.ScopeTargetID)
-<span id="L618" class="ln">   618  </span>			assert.Equal(t, testExpiresAt, got.ExpiresAt)
-<span id="L619" class="ln">   619  </span>			assert.Equal(t, testIssuedAt, got.IssuedAt)
-<span id="L620" class="ln">   620  </span>		})
-<span id="L621" class="ln">   621  </span>	})
-<span id="L622" class="ln">   622  </span>}
-<span id="L623" class="ln">   623  </span>
-<span id="L624" class="ln">   624  </span>func Test_requireUserID(t *testing.T) {
-<span id="L625" class="ln">   625  </span>	t.Parallel()
-<span id="L626" class="ln">   626  </span>
-<span id="L627" class="ln">   627  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L628" class="ln">   628  </span>		t.Parallel()
-<span id="L629" class="ln">   629  </span>
-<span id="L630" class="ln">   630  </span>		t.Run(&#34;認証主体から内部ユーザーIDを取り出す&#34;, func(t *testing.T) {
-<span id="L631" class="ln">   631  </span>			t.Parallel()
-<span id="L632" class="ln">   632  </span>
-<span id="L633" class="ln">   633  </span>			authn, userID := newTestAuthn(t)
-<span id="L634" class="ln">   634  </span>
-<span id="L635" class="ln">   635  </span>			got, err := requireUserID(authn)
+<span id="L604" class="ln">   604  </span>			lines, err := u.buildLines(t.Context(), userID, testNow)
+<span id="L605" class="ln">   605  </span>
+<span id="L606" class="ln">   606  </span>			require.NoError(t, err)
+<span id="L607" class="ln">   607  </span>			assert.Empty(t, lines)
+<span id="L608" class="ln">   608  </span>		})
+<span id="L609" class="ln">   609  </span>	})
+<span id="L610" class="ln">   610  </span>
+<span id="L611" class="ln">   611  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L612" class="ln">   612  </span>		t.Parallel()
+<span id="L613" class="ln">   613  </span>
+<span id="L614" class="ln">   614  </span>		t.Run(&#34;NotFound 以外のカート取得エラーはそのまま返す&#34;, func(t *testing.T) {
+<span id="L615" class="ln">   615  </span>			t.Parallel()
+<span id="L616" class="ln">   616  </span>
+<span id="L617" class="ln">   617  </span>			u, deps := newTestUsecase(t)
+<span id="L618" class="ln">   618  </span>			_, userID := newTestAuthn(t)
+<span id="L619" class="ln">   619  </span>			deps.cartRepo.EXPECT().FindByOwnerID(gomock.Any(), userID).Return(nil, apperror.ErrCanceled)
+<span id="L620" class="ln">   620  </span>
+<span id="L621" class="ln">   621  </span>			_, err := u.buildLines(t.Context(), userID, testNow)
+<span id="L622" class="ln">   622  </span>
+<span id="L623" class="ln">   623  </span>			require.ErrorIs(t, err, apperror.ErrCanceled)
+<span id="L624" class="ln">   624  </span>		})
+<span id="L625" class="ln">   625  </span>	})
+<span id="L626" class="ln">   626  </span>}
+<span id="L627" class="ln">   627  </span>
+<span id="L628" class="ln">   628  </span>func Test_toCouponView(t *testing.T) {
+<span id="L629" class="ln">   629  </span>	t.Parallel()
+<span id="L630" class="ln">   630  </span>
+<span id="L631" class="ln">   631  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L632" class="ln">   632  </span>		t.Parallel()
+<span id="L633" class="ln">   633  </span>
+<span id="L634" class="ln">   634  </span>		t.Run(&#34;種別を名前で、適用範囲の対象を識別子で写す&#34;, func(t *testing.T) {
+<span id="L635" class="ln">   635  </span>			t.Parallel()
 <span id="L636" class="ln">   636  </span>
-<span id="L637" class="ln">   637  </span>			require.NoError(t, err)
-<span id="L638" class="ln">   638  </span>			assert.Equal(t, userID, got)
-<span id="L639" class="ln">   639  </span>		})
-<span id="L640" class="ln">   640  </span>	})
-<span id="L641" class="ln">   641  </span>
-<span id="L642" class="ln">   642  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L643" class="ln">   643  </span>		t.Parallel()
+<span id="L637" class="ln">   637  </span>			_, userID := newTestAuthn(t)
+<span id="L638" class="ln">   638  </span>			categoryID := uuidtestkit.NewTestFromSalt(t, &#34;view_category&#34;)
+<span id="L639" class="ln">   639  </span>			scope, err := domaincoupon.NewCategoryScope(categoryID)
+<span id="L640" class="ln">   640  </span>			require.NoError(t, err)
+<span id="L641" class="ln">   641  </span>			c := newCoupon(t, &#34;view_coupon&#34;, userID, flatDiscount(t, &#34;5.00&#34;), scope)
+<span id="L642" class="ln">   642  </span>
+<span id="L643" class="ln">   643  </span>			got := toCouponView(c)
 <span id="L644" class="ln">   644  </span>
-<span id="L645" class="ln">   645  </span>		t.Run(&#34;nilの場合は認証エラーを返す&#34;, func(t *testing.T) {
-<span id="L646" class="ln">   646  </span>			t.Parallel()
-<span id="L647" class="ln">   647  </span>
-<span id="L648" class="ln">   648  </span>			_, err := requireUserID(nil)
-<span id="L649" class="ln">   649  </span>
-<span id="L650" class="ln">   650  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
-<span id="L651" class="ln">   651  </span>		})
-<span id="L652" class="ln">   652  </span>
-<span id="L653" class="ln">   653  </span>		t.Run(&#34;内部ユーザーIDが未解決の場合はErrUserIDUnresolvedを返す&#34;, func(t *testing.T) {
-<span id="L654" class="ln">   654  </span>			t.Parallel()
-<span id="L655" class="ln">   655  </span>
-<span id="L656" class="ln">   656  </span>			a, err := auth.New(&#34;subject-unresolved&#34;, auth.IssuerMock, nil, nil)
-<span id="L657" class="ln">   657  </span>			require.NoError(t, err)
-<span id="L658" class="ln">   658  </span>
-<span id="L659" class="ln">   659  </span>			_, uerr := requireUserID(a)
-<span id="L660" class="ln">   660  </span>
-<span id="L661" class="ln">   661  </span>			require.ErrorIs(t, uerr, auth.ErrUserIDUnresolved)
-<span id="L662" class="ln">   662  </span>		})
-<span id="L663" class="ln">   663  </span>	})
-<span id="L664" class="ln">   664  </span>}
+<span id="L645" class="ln">   645  </span>			assert.Equal(t, c.ID(), got.ID)
+<span id="L646" class="ln">   646  </span>			assert.Equal(t, &#34;flat&#34;, got.DiscountKind)
+<span id="L647" class="ln">   647  </span>			assert.Equal(t, &#34;5&#34;, got.DiscountValue.String())
+<span id="L648" class="ln">   648  </span>			assert.Equal(t, &#34;category&#34;, got.ScopeKind)
+<span id="L649" class="ln">   649  </span>			require.NotNil(t, got.ScopeTargetID)
+<span id="L650" class="ln">   650  </span>			assert.Equal(t, categoryID, *got.ScopeTargetID)
+<span id="L651" class="ln">   651  </span>			assert.Equal(t, testExpiresAt, got.ExpiresAt)
+<span id="L652" class="ln">   652  </span>			assert.Equal(t, testIssuedAt, got.IssuedAt)
+<span id="L653" class="ln">   653  </span>		})
+<span id="L654" class="ln">   654  </span>	})
+<span id="L655" class="ln">   655  </span>}
+<span id="L656" class="ln">   656  </span>
+<span id="L657" class="ln">   657  </span>func Test_requireUserID(t *testing.T) {
+<span id="L658" class="ln">   658  </span>	t.Parallel()
+<span id="L659" class="ln">   659  </span>
+<span id="L660" class="ln">   660  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L661" class="ln">   661  </span>		t.Parallel()
+<span id="L662" class="ln">   662  </span>
+<span id="L663" class="ln">   663  </span>		t.Run(&#34;認証主体から内部ユーザーIDを取り出す&#34;, func(t *testing.T) {
+<span id="L664" class="ln">   664  </span>			t.Parallel()
 <span id="L665" class="ln">   665  </span>
+<span id="L666" class="ln">   666  </span>			authn, userID := newTestAuthn(t)
+<span id="L667" class="ln">   667  </span>
+<span id="L668" class="ln">   668  </span>			got, err := requireUserID(authn)
+<span id="L669" class="ln">   669  </span>
+<span id="L670" class="ln">   670  </span>			require.NoError(t, err)
+<span id="L671" class="ln">   671  </span>			assert.Equal(t, userID, got)
+<span id="L672" class="ln">   672  </span>		})
+<span id="L673" class="ln">   673  </span>	})
+<span id="L674" class="ln">   674  </span>
+<span id="L675" class="ln">   675  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L676" class="ln">   676  </span>		t.Parallel()
+<span id="L677" class="ln">   677  </span>
+<span id="L678" class="ln">   678  </span>		t.Run(&#34;nilの場合は認証エラーを返す&#34;, func(t *testing.T) {
+<span id="L679" class="ln">   679  </span>			t.Parallel()
+<span id="L680" class="ln">   680  </span>
+<span id="L681" class="ln">   681  </span>			_, err := requireUserID(nil)
+<span id="L682" class="ln">   682  </span>
+<span id="L683" class="ln">   683  </span>			require.ErrorIs(t, err, apperror.ErrUnauthenticated)
+<span id="L684" class="ln">   684  </span>		})
+<span id="L685" class="ln">   685  </span>
+<span id="L686" class="ln">   686  </span>		t.Run(&#34;内部ユーザーIDが未解決の場合はErrUserIDUnresolvedを返す&#34;, func(t *testing.T) {
+<span id="L687" class="ln">   687  </span>			t.Parallel()
+<span id="L688" class="ln">   688  </span>
+<span id="L689" class="ln">   689  </span>			a, err := auth.New(&#34;subject-unresolved&#34;, auth.IssuerMock, nil, nil)
+<span id="L690" class="ln">   690  </span>			require.NoError(t, err)
+<span id="L691" class="ln">   691  </span>
+<span id="L692" class="ln">   692  </span>			_, uerr := requireUserID(a)
+<span id="L693" class="ln">   693  </span>
+<span id="L694" class="ln">   694  </span>			require.ErrorIs(t, uerr, auth.ErrUserIDUnresolved)
+<span id="L695" class="ln">   695  </span>		})
+<span id="L696" class="ln">   696  </span>	})
+<span id="L697" class="ln">   697  </span>}
+<span id="L698" class="ln">   698  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -115,7 +115,7 @@
 <span id="L58" class="ln">    58  </span>	}
 <span id="L59" class="ln">    59  </span>	productPrice, err := money.NewPrice(price)
 <span id="L60" class="ln">    60  </span>	if err != nil {
-<span id="L61" class="ln">    61  </span>		return ProductView{}, err
+<span id="L61" class="ln">    61  </span>		return ProductView{}, apperror.WithDetails(err, product.FieldPrice)
 <span id="L62" class="ln">    62  </span>	}
 <span id="L63" class="ln">    63  </span>
 <span id="L64" class="ln">    64  </span>	id, err := uuid.New()

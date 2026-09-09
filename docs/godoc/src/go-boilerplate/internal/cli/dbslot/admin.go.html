@@ -114,8 +114,8 @@
 <span id="L57" class="ln">    57  </span>	return nil
 <span id="L58" class="ln">    58  </span>}
 <span id="L59" class="ln">    59  </span>
-<span id="L60" class="ln">    60  </span><span class="comment">// SetupDatabase は、対象 DB に pg_trgm 拡張を設定します。</span>
-<span id="L61" class="ln">    61  </span><span class="comment">// timezone は DB コンテナの TZ 由来のクラスタ既定を継承するため、ここでは設定しません。</span>
+<span id="L60" class="ln">    60  </span><span class="comment">// SetupDatabase は、対象 DB に pg_trgm 拡張を設定します</span>
+<span id="L61" class="ln">    61  </span><span class="comment">// （timezone を設定しない理由は README.md「DB admin」）。</span>
 <span id="L62" class="ln">    62  </span>func (a *PgxAdmin) SetupDatabase(ctx context.Context, name string) error {
 <span id="L63" class="ln">    63  </span>	conn, err := a.connect(ctx, name)
 <span id="L64" class="ln">    64  </span>	if err != nil {

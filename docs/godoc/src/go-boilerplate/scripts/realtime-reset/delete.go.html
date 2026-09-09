@@ -1,0 +1,151 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>realtime-reset - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/scripts">scripts</a>/<a href="../../../../src/go-boilerplate/scripts/realtime-reset">realtime-reset</a>/<span class="text-muted">delete.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/scripts/realtime-reset">go-boilerplate/scripts/realtime-reset</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package main
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;fmt&#34;
+<span id="L6" class="ln">     6  </span>	&#34;io&#34;
+<span id="L7" class="ln">     7  </span>	&#34;time&#34;
+<span id="L8" class="ln">     8  </span>
+<span id="L9" class="ln">     9  </span>	&#34;github.com/aws/aws-sdk-go-v2/aws&#34;
+<span id="L10" class="ln">    10  </span>	&#34;github.com/aws/aws-sdk-go-v2/service/dynamodb&#34;
+<span id="L11" class="ln">    11  </span>	dynamodbtypes &#34;github.com/aws/aws-sdk-go-v2/service/dynamodb/types&#34;
+<span id="L12" class="ln">    12  </span>
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L14" class="ln">    14  </span>)
+<span id="L15" class="ln">    15  </span>
+<span id="L16" class="ln">    16  </span><span class="comment">// deleteTables は、渡された table を順に削除し、消え切るまで待ちます。</span>
+<span id="L17" class="ln">    17  </span><span class="comment">// 既に無い table は、この関数の目的（無い状態にすること）から見れば成功なので読み飛ばします。</span>
+<span id="L18" class="ln">    18  </span>func deleteTables(ctx context.Context, api tableAPI, tables []string, out io.Writer) error {
+<span id="L19" class="ln">    19  </span>	for _, table := range tables {
+<span id="L20" class="ln">    20  </span>		deleted, err := deleteTable(ctx, api, table)
+<span id="L21" class="ln">    21  </span>		if err != nil {
+<span id="L22" class="ln">    22  </span>			return xerrors.Wrap(err, &#34;realtime-reset: &#34;+table)
+<span id="L23" class="ln">    23  </span>		}
+<span id="L24" class="ln">    24  </span>
+<span id="L25" class="ln">    25  </span>		if !deleted {
+<span id="L26" class="ln">    26  </span>			_, _ = fmt.Fprintf(out, &#34;・%s は既にありません\n&#34;, table)
+<span id="L27" class="ln">    27  </span>
+<span id="L28" class="ln">    28  </span>			continue
+<span id="L29" class="ln">    29  </span>		}
+<span id="L30" class="ln">    30  </span>
+<span id="L31" class="ln">    31  </span>		if err := waitGone(ctx, api, table); err != nil {
+<span id="L32" class="ln">    32  </span>			return xerrors.Wrap(err, &#34;realtime-reset: &#34;+table)
+<span id="L33" class="ln">    33  </span>		}
+<span id="L34" class="ln">    34  </span>
+<span id="L35" class="ln">    35  </span>		_, _ = fmt.Fprintf(out, &#34;・%s を削除しました\n&#34;, table)
+<span id="L36" class="ln">    36  </span>	}
+<span id="L37" class="ln">    37  </span>
+<span id="L38" class="ln">    38  </span>	return nil
+<span id="L39" class="ln">    39  </span>}
+<span id="L40" class="ln">    40  </span>
+<span id="L41" class="ln">    41  </span><span class="comment">// deleteTable は table を削除し、削除を要求したかどうかを返します。</span>
+<span id="L42" class="ln">    42  </span>func deleteTable(ctx context.Context, api tableAPI, table string) (bool, error) {
+<span id="L43" class="ln">    43  </span>	_, err := api.DeleteTable(ctx, &amp;dynamodb.DeleteTableInput{TableName: aws.String(table)})
+<span id="L44" class="ln">    44  </span>	if err == nil {
+<span id="L45" class="ln">    45  </span>		return true, nil
+<span id="L46" class="ln">    46  </span>	}
+<span id="L47" class="ln">    47  </span>
+<span id="L48" class="ln">    48  </span>	var notFound *dynamodbtypes.ResourceNotFoundException
+<span id="L49" class="ln">    49  </span>	if xerrors.As(err, &amp;notFound) {
+<span id="L50" class="ln">    50  </span>		return false, nil
+<span id="L51" class="ln">    51  </span>	}
+<span id="L52" class="ln">    52  </span>
+<span id="L53" class="ln">    53  </span>	return false, xerrors.Wrap(err, &#34;delete table&#34;)
+<span id="L54" class="ln">    54  </span>}
+<span id="L55" class="ln">    55  </span>
+<span id="L56" class="ln">    56  </span><span class="comment">// waitGone は、table が引けなくなるまで待ちます。DeleteTable は非同期に返るため、待たずに</span>
+<span id="L57" class="ln">    57  </span><span class="comment">// realtime-init へ進むと作り直しが ResourceInUseException で落ちます。</span>
+<span id="L58" class="ln">    58  </span><span class="comment">//</span>
+<span id="L59" class="ln">    59  </span><span class="comment">// 打ち切りは待っている間にも問い合わせの最中にも起こるので、errGone はその両方に付けます。</span>
+<span id="L60" class="ln">    60  </span><span class="comment">// 片方だけだと、同じ「消え切らなかった」が呼び出し側から 2 通りの error に見えます。</span>
+<span id="L61" class="ln">    61  </span>func waitGone(ctx context.Context, api tableAPI, table string) error {
+<span id="L62" class="ln">    62  </span>	for {
+<span id="L63" class="ln">    63  </span>		_, err := api.DescribeTable(ctx, &amp;dynamodb.DescribeTableInput{TableName: aws.String(table)})
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span>		var notFound *dynamodbtypes.ResourceNotFoundException
+<span id="L66" class="ln">    66  </span>		if xerrors.As(err, &amp;notFound) {
+<span id="L67" class="ln">    67  </span>			return nil
+<span id="L68" class="ln">    68  </span>		}
+<span id="L69" class="ln">    69  </span>
+<span id="L70" class="ln">    70  </span>		if err != nil {
+<span id="L71" class="ln">    71  </span>			if ctx.Err() != nil {
+<span id="L72" class="ln">    72  </span>				return xerrors.Join(errGone, xerrors.Wrap(err, &#34;describe table&#34;))
+<span id="L73" class="ln">    73  </span>			}
+<span id="L74" class="ln">    74  </span>
+<span id="L75" class="ln">    75  </span>			return xerrors.Wrap(err, &#34;describe table&#34;)
+<span id="L76" class="ln">    76  </span>		}
+<span id="L77" class="ln">    77  </span>
+<span id="L78" class="ln">    78  </span>		select {
+<span id="L79" class="ln">    79  </span>		case &lt;-ctx.Done():
+<span id="L80" class="ln">    80  </span>			return xerrors.Join(errGone, ctx.Err())
+<span id="L81" class="ln">    81  </span>		case &lt;-time.After(gonePollInterval):
+<span id="L82" class="ln">    82  </span>		}
+<span id="L83" class="ln">    83  </span>	}
+<span id="L84" class="ln">    84  </span>}
+<span id="L85" class="ln">    85  </span>
+</pre><p><a href="../../../../src/go-boilerplate/scripts/realtime-reset/delete.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

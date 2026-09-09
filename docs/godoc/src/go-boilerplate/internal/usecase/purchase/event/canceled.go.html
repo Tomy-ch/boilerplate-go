@@ -73,7 +73,7 @@
 <span id="L16" class="ln">    16  </span><span class="comment">// エラーです。イベントは起きた事実であり、事実でないものを発行すれば購読側はそれを取り消せません。</span>
 <span id="L17" class="ln">    17  </span>var errNotCanceled = xerrors.Wrap(apperror.ErrInternal, &#34;purchase is not canceled&#34;)
 <span id="L18" class="ln">    18  </span>
-<span id="L19" class="ln">    19  </span><span class="comment">// canceled は、purchase.canceled.v1 の自己完結 snapshot payload です。</span>
+<span id="L19" class="ln">    19  </span><span class="comment">// canceled は、purchase.canceled.v1 の通知 payload です（payload_parity.yaml の kind: notification）。</span>
 <span id="L20" class="ln">    20  </span>type canceled struct {
 <span id="L21" class="ln">    21  </span>	PurchaseID string `json:&#34;purchaseId&#34;`
 <span id="L22" class="ln">    22  </span>	Code       string `json:&#34;code&#34;`
@@ -82,7 +82,7 @@
 <span id="L25" class="ln">    25  </span>	CanceledAt string `json:&#34;canceledAt&#34;`
 <span id="L26" class="ln">    26  </span>}
 <span id="L27" class="ln">    27  </span>
-<span id="L28" class="ln">    28  </span><span class="comment">// BuildCanceled は、購入集約から purchase.canceled.v1 の自己完結 snapshot payload を marshal します。</span>
+<span id="L28" class="ln">    28  </span><span class="comment">// BuildCanceled は、購入集約から purchase.canceled.v1 の通知 payload を marshal します。</span>
 <span id="L29" class="ln">    29  </span><span class="comment">// キャンセルされていない購入を渡された場合は payload を生成せず errNotCanceled を返します。</span>
 <span id="L30" class="ln">    30  </span>func BuildCanceled(p *purchase.Purchase) ([]byte, error) {
 <span id="L31" class="ln">    31  </span>	if !p.IsCanceled() {

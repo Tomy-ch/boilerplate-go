@@ -309,7 +309,7 @@
 <span id="L252" class="ln">   252  </span>			got := renderStatus(mustResolve(t, bandAuto, 5, 8))
 <span id="L253" class="ln">   253  </span>
 <span id="L254" class="ln">   254  </span>			assert.Contains(t, got, &#34;💡 窓が多いため CI-first です。&#34;)
-<span id="L255" class="ln">   255  </span>			assert.Contains(t, got, &#34;make lint GOBP_LOAD=low&#34;)
+<span id="L255" class="ln">   255  </span>			assert.Contains(t, got, &#34;make go-lint GOBP_LOAD=low&#34;)
 <span id="L256" class="ln">   256  </span>		})
 <span id="L257" class="ln">   257  </span>	})
 <span id="L258" class="ln">   258  </span>}
@@ -538,7 +538,7 @@
 <span id="L481" class="ln">   481  </span>			got := advice(band{resolved: bandCIFirst})
 <span id="L482" class="ln">   482  </span>
 <span id="L483" class="ln">   483  </span>			assert.Contains(t, got, &#34;CI-first&#34;)
-<span id="L484" class="ln">   484  </span>			assert.Contains(t, got, &#34;make lint GOBP_LOAD=low&#34;)
+<span id="L484" class="ln">   484  </span>			assert.Contains(t, got, &#34;make go-lint GOBP_LOAD=low&#34;)
 <span id="L485" class="ln">   485  </span>		})
 <span id="L486" class="ln">   486  </span>
 <span id="L487" class="ln">   487  </span>		t.Run(&#34;low では CPU 数ではなく share を案内に埋め込む&#34;, func(t *testing.T) {
