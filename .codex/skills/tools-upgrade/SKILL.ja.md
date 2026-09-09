@@ -146,13 +146,14 @@ backend、ツールキー、候補バージョン、**`mise.toml` で現在ピ�
 - `mise.toml` 内の該当行を特定する
 - バージョンリテラルだけを置換する。key（`aqua:owner/repo` / `go:path/to/module` / 短い名前）と、もとが `v` prefix を使っていた場合はその慣習を保持する
 - key の並び順を変えない、無関係な key を触らない、`[settings]` table も触らない
+- **pin が最新より前にある理由は決して記録せず、そのようなメモに遭遇したら削除する。** upstream の最新版とその公開からの経過日数を示すメモは、[ADR-0095](../../../docs/adr/0095-malicious-package-detection-via-cooldown.md) が定め、`tool-cooldown` が強制するポリシーを繰り返すうえ、そこに加えた二つの事実はいずれも陳腐化する。経過日数は翌日には誤りになり、名指しした最新版は次の upstream リリースで古くなる。`make tool-cooldown-outdated` なら同じ問いに毎回答えられ、陳腐化しない。しかも上流の最新だけでなく、この repo の窓を満たす最新まで答える。残すべきものはバージョンに依存しない制約——ある backend を別の backend より選んだ理由や、下限とそれを必要とする対象——であり、それらは維持する。
 
 全承認分の置換を memory 上で計算したあと、`mise.toml` を **1 回だけ書き出す**（atomic single-pass）。
 
 `python/*.in` で宣言されている承認済みツールについて:
 
 - `==` の後ろのバージョンだけを置換する。パッケージ名と extras（`graphifyy[sql]`）は保持する
-- pin の上のコメントが「最新より前で止めている理由」（過去の run が書いた隔離のメモ）を述べている場合は、実態に合わせて書き換えるか消す。「新しすぎるので見送った」というメモは、その条件が消えたあとも残り、次の run では方針として読まれてしまう
+- pin が最新より前にある理由を述べるメモが pin の上にあれば、上記の `mise.toml` のルールに従って削除する
 - そのうえで lockfile を再生成する:
 
   ```sh
@@ -238,7 +239,8 @@ pin と lockfile が一致しているかを見る検査であり、いま宣言
 - [ ] 勧告が run の契機なら pending リリースを `/supply-chain-triage` でトリアージ（baseline = `mise.toml` のピン済みバージョン）。そうでなければ実行せず提示にとどめる
 - [ ] eligible が非空なら、per-tool 適用候補を `ask the user explicitly` で確定。早期採用する pending は別枠・既定未選択・バンド付きで提示
 - [ ] `mise.toml` を承認分のみ atomic に書き換え、key 形式と `v` prefix 慣習を保持
-- [ ] 承認された `python/*.in` の pin を書き換え（パッケージ名と extras を保持し、古い隔離コメントを是正）、`make py-lock` を実行し、両方のファイルを残す。`.txt` は手書きしない
+- [ ] 承認された `python/*.in` の pin を書き換え（パッケージ名と extras を保持）、`make py-lock` を実行し、両方のファイルを残す。`.txt` は手書きしない
+- [ ] pin が最新より前にある理由を記録するメモを書かず、途中で見つけたものは削除し、バージョンに依存しない制約は残す
 - [ ] `python/*.in` の pin を変えたなら `make tool-cooldown-audit` を実行
 - [ ] go / node / python が更新されたなら `make sync-versions` を実行
 - [ ] ランタイム bump 時は base image digest を再固定（`make pin-images-resolve` + `pin-images-apply` + `pin-images-check`）。公開直後のイメージでは新 tag に対するルール 3 の fail-closed が想定どおりの結果であり、結合（トリアージのうえ `days=0` でブートストラップするか bump を保留するか）とともに提示する。無理に通さず、tag と digest の食い違いを残さない
