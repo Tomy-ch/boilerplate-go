@@ -2,6 +2,8 @@ package main
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -285,7 +287,12 @@ func Test_outdatedReport(t *testing.T) {
 			t.Parallel()
 			body := outdatedReport([]candidate{
 				{
-					tool:   tool{key: "lefthook", version: "2.1.10", backend: "aqua:evilmartians/lefthook", file: miseFile},
+					tool: tool{
+						key:     "lefthook",
+						version: "2.1.10",
+						backend: "aqua:evilmartians/lefthook",
+						file:    miseFile,
+					},
 					latest: "2.1.12", latestAge: 12,
 					eligible: "2.1.11", eligibleAge: 19, window: releaseWindowDays,
 				},
@@ -307,7 +314,12 @@ func Test_outdatedReport(t *testing.T) {
 			t.Parallel()
 			body := outdatedReport([]candidate{
 				{
-					tool:   tool{key: "sqlfluff", version: "4.3.0", backend: "pypi:sqlfluff", file: "python/sqlfluff.in"},
+					tool: tool{
+						key:     "sqlfluff",
+						version: "4.3.0",
+						backend: "pypi:sqlfluff",
+						file:    "python/sqlfluff.in",
+					},
 					latest: "4.3.0", latestAge: 33,
 					eligible: "4.3.0", eligibleAge: 33, window: registryWindowDays,
 				},
@@ -331,6 +343,425 @@ func Test_outdatedReport(t *testing.T) {
 
 			assert.Contains(t, body, "## 上流を確認できなかった")
 			assert.Contains(t, body, "`broken`")
+		})
+	})
+}
+
+func Test_candidate_actionable(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("窓を満たす版が現在と違えば動かせる", func(t *testing.T) {
+			t.Parallel()
+
+			assert.True(t, candidate{tool: tool{version: "1.1.0"}, eligible: "1.2.0"}.actionable())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("窓を満たす版が現在と同じなら動かせない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, candidate{tool: tool{version: "1.1.0"}, eligible: "1.1.0"}.actionable())
+		})
+
+		t.Run("窓を満たす版が無ければ動かせない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, candidate{tool: tool{version: "1.1.0"}}.actionable())
+		})
+
+		t.Run("上流を確認できていなければ動かせない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, candidate{tool: tool{version: "1.1.0"}, eligible: "1.2.0", err: errNotFound}.actionable())
+		})
+	})
+}
+
+func Test_candidate_heldByWindow(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上流最新が窓を満たす版と違えば待ちが立つ", func(t *testing.T) {
+			t.Parallel()
+
+			assert.True(t, candidate{tool: tool{version: "1.1.0"}, latest: "1.3.0", eligible: "1.2.0"}.heldByWindow())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上流最新が現在と同じなら待ちは立たない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, candidate{tool: tool{version: "1.1.0"}, latest: "1.1.0", eligible: "1.1.0"}.heldByWindow())
+		})
+
+		t.Run("上流最新をそのまま採れるなら待ちは立たない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, candidate{tool: tool{version: "1.1.0"}, latest: "1.2.0", eligible: "1.2.0"}.heldByWindow())
+		})
+
+		t.Run("上流を確認できていなければ待ちは立たない", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, candidate{tool: tool{version: "1.1.0"}, latest: "1.3.0", err: errNotFound}.heldByWindow())
+		})
+	})
+}
+
+func Test_ageDays(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("経過した日数を切り捨てて返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, 3, ageDays(outdatedNow.AddDate(0, 0, -3), outdatedNow))
+			assert.Equal(t, 0, ageDays(outdatedNow.Add(-23*time.Hour), outdatedNow), "24 時間に満たなければ 0 日")
+		})
+	})
+}
+
+func Test_githubReleases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("安定版だけを v 接頭辞を落として返す", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/repos/owner/repo/releases?per_page=100": `[
+					{"tag_name":"v1.2.0","published_at":"` + daysAgo(20) + `","prerelease":false,"draft":false},
+					{"tag_name":"v1.3.0-rc1","published_at":"` + daysAgo(1) + `","prerelease":true,"draft":false},
+					{"tag_name":"nightly","published_at":"` + daysAgo(1) + `","prerelease":false,"draft":false}
+				]`,
+			})
+
+			releases, err := githubReleases(t.Context(), client, "owner/repo")
+
+			require.NoError(t, err)
+			require.Len(t, releases, 1)
+			assert.Equal(t, "1.2.0", releases[0].version)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上流が応答しなければエラーを返す", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := githubReleases(t.Context(), upstreamStub(t, map[string]string{}), "owner/repo")
+
+			require.Error(t, err)
+		})
+	})
+}
+
+func Test_npmReleases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("created と modified は版として数えない", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/pkg": `{"time":{
+					"created":"` + daysAgo(400) + `",
+					"modified":"` + daysAgo(1) + `",
+					"1.2.0":"` + daysAgo(20) + `"
+				}}`,
+			})
+
+			releases, err := npmReleases(t.Context(), client, "pkg")
+
+			require.NoError(t, err)
+			require.Len(t, releases, 1)
+			assert.Equal(t, "1.2.0", releases[0].version)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上流が応答しなければエラーを返す", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := npmReleases(t.Context(), upstreamStub(t, map[string]string{}), "pkg")
+
+			require.Error(t, err)
+		})
+	})
+}
+
+func Test_pypiReleases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("配布物を持たない版は候補にしない", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/pypi/pkg/json": `{"releases":{
+					"1.2.0":[{"upload_time_iso_8601":"` + daysAgo(20) + `"}],
+					"1.3.0":[]
+				}}`,
+			})
+
+			releases, err := pypiReleases(t.Context(), client, "pkg")
+
+			require.NoError(t, err)
+			require.Len(t, releases, 1)
+			assert.Equal(t, "1.2.0", releases[0].version, "yank 済みの版は install できない")
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上流が応答しなければエラーを返す", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := pypiReleases(t.Context(), upstreamStub(t, map[string]string{}), "pkg")
+
+			require.Error(t, err)
+		})
+	})
+}
+
+func Test_goModuleReleases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("版一覧に日付を付けて返す", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/example.com/mod/@v/list":        "v1.1.0\nv1.2.0\n",
+				"/example.com/mod/@v/v1.2.0.info": `{"Time":"` + daysAgo(20) + `"}`,
+				"/example.com/mod/@v/v1.1.0.info": `{"Time":"` + daysAgo(40) + `"}`,
+			})
+
+			releases, err := goModuleReleases(t.Context(), client, "example.com/mod")
+
+			require.NoError(t, err)
+			require.Len(t, releases, 2)
+			assert.Equal(t, "1.2.0", releases[0].version, "新しい方から日付を引く")
+		})
+
+		t.Run("日付を引けない版は落として残りを返す", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/example.com/mod/@v/list":        "v1.1.0\nv1.2.0\n",
+				"/example.com/mod/@v/v1.1.0.info": `{"Time":"` + daysAgo(40) + `"}`,
+			})
+
+			releases, err := goModuleReleases(t.Context(), client, "example.com/mod")
+
+			require.NoError(t, err)
+			require.Len(t, releases, 1)
+			assert.Equal(t, "1.1.0", releases[0].version)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("モジュールが無ければエラーを返す", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := goModuleReleases(t.Context(), upstreamStub(t, map[string]string{}), "example.com/mod")
+
+			require.Error(t, err)
+		})
+	})
+}
+
+func Test_listReleases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("backend の種別で問い合わせ先を選ぶ", func(t *testing.T) {
+			t.Parallel()
+			aged := daysAgo(20)
+			client := upstreamStub(t, map[string]string{
+				"/repos/owner/repo/releases?per_page=100": `[{"tag_name":"v1.2.0","published_at":"` +
+					aged + `","prerelease":false,"draft":false}]`,
+				"/pkg":           `{"time":{"2.0.0":"` + aged + `"}}`,
+				"/pypi/pkg/json": `{"releases":{"3.0.0":[{"upload_time_iso_8601":"` + aged + `"}]}}`,
+			})
+
+			for _, tc := range []struct {
+				backend string
+				want    string
+			}{
+				{backend: "aqua:owner/repo", want: "1.2.0"},
+				{backend: "npm:pkg", want: "2.0.0"},
+				{backend: "pypi:pkg", want: "3.0.0"},
+			} {
+				releases, err := listReleases(t.Context(), client, tool{backend: tc.backend})
+
+				require.NoError(t, err, tc.backend)
+				require.Len(t, releases, 1, tc.backend)
+				assert.Equal(t, tc.want, releases[0].version, tc.backend)
+			}
+		})
+
+		t.Run("extras を落として PyPI へ問い合わせる", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/pypi/graphifyy/json": `{"releases":{"0.9.53":[{"upload_time_iso_8601":"` + daysAgo(20) + `"}]}}`,
+			})
+
+			releases, err := listReleases(t.Context(), client, tool{backend: "pypi:graphifyy[sql]"})
+
+			require.NoError(t, err)
+			require.Len(t, releases, 1)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("公開時刻の取得経路を持たない backend はエラーを返す", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := listReleases(t.Context(), upstreamStub(t, map[string]string{}), tool{backend: "dotnet:Pkg"})
+
+			require.ErrorIs(t, err, errUnsupportedBackend)
+		})
+	})
+}
+
+func Test_surveyOutdated(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("ツール順を固定して返す", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/repos/owner/b/releases?per_page=100": `[{"tag_name":"v1.2.0","published_at":"` + daysAgo(
+					20,
+				) + `","prerelease":false,"draft":false}]`,
+				"/repos/owner/a/releases?per_page=100": `[{"tag_name":"v1.2.0","published_at":"` + daysAgo(
+					20,
+				) + `","prerelease":false,"draft":false}]`,
+			})
+
+			cands := surveyOutdated(t.Context(), client, []tool{
+				{key: "aqua:owner/b", version: "1.1.0", backend: "aqua:owner/b"},
+				{key: "aqua:owner/a", version: "1.1.0", backend: "aqua:owner/a"},
+			}, outdatedNow)
+
+			require.Len(t, cands, 2)
+			assert.Equal(t, "aqua:owner/a", cands[0].tool.key, "並列に問い合わせても出力順は入力順に依らない")
+			assert.Equal(t, "aqua:owner/b", cands[1].tool.key)
+		})
+	})
+}
+
+func Test_reportOutdated(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("summary-out を指定すれば本文を書き出す", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/repos/owner/repo/releases?per_page=100": `[{"tag_name":"v1.2.0","published_at":"` + daysAgo(
+					20,
+				) + `","prerelease":false,"draft":false}]`,
+			})
+			out := filepath.Join(t.TempDir(), "report.md")
+
+			err := reportOutdated(client, []tool{
+				{key: "aqua:owner/repo", version: "1.1.0", file: miseFile},
+			}, options{summaryOut: out}, outdatedNow)
+
+			require.NoError(t, err)
+			body, readErr := os.ReadFile(out) //nolint:gosec // out は t.TempDir() 配下
+			require.NoError(t, readErr)
+			assert.Contains(t, string(body), "**1.2.0**")
+		})
+
+		t.Run("summary-out が無ければ何も書き出さない", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/repos/owner/repo/releases?per_page=100": `[{"tag_name":"v1.2.0","published_at":"` + daysAgo(
+					20,
+				) + `","prerelease":false,"draft":false}]`,
+			})
+
+			err := reportOutdated(client, []tool{
+				{key: "aqua:owner/repo", version: "1.1.0", file: miseFile},
+			}, options{}, outdatedNow)
+
+			require.NoError(t, err)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("書き出し先を作れなければエラーを返す", func(t *testing.T) {
+			t.Parallel()
+			client := upstreamStub(t, map[string]string{
+				"/repos/owner/repo/releases?per_page=100": `[{"tag_name":"v1.2.0","published_at":"` + daysAgo(
+					20,
+				) + `","prerelease":false,"draft":false}]`,
+			})
+
+			err := reportOutdated(client, []tool{
+				{key: "aqua:owner/repo", version: "1.1.0", file: miseFile},
+			}, options{summaryOut: filepath.Join(t.TempDir(), "missing", "report.md")}, outdatedNow)
+
+			require.Error(t, err)
+		})
+	})
+}
+
+//nolint:paralleltest // GITHUB_OUTPUT の書き出し先を t.Setenv で差し替えるため並列化できない
+func Test_appendOutdatedOutput(t *testing.T) {
+	t.Run("正常系", func(t *testing.T) {
+		t.Run("件数を key=value で追記する", func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "out")
+
+			require.NoError(t, appendOutdatedOutput(path, 3, 2, 1))
+			require.NoError(t, appendOutdatedOutput(path, 0, 0, 0))
+
+			body, err := os.ReadFile(path) //nolint:gosec // path は t.TempDir() 配下
+			require.NoError(t, err)
+			assert.Equal(t, "actionable=3\nheld=2\nfailed=1\nactionable=0\nheld=0\nfailed=0\n", string(body),
+				"追記なので既存の行を消さない")
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Run("開けなければエラーを返す", func(t *testing.T) {
+			err := appendOutdatedOutput(filepath.Join(t.TempDir(), "missing", "out"), 0, 0, 0)
+
+			require.Error(t, err)
 		})
 	})
 }
