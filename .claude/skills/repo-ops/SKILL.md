@@ -23,7 +23,7 @@ Three facts explain almost everything below:
    `mock_auth_server` are per-checkout. Worktrees are separated by *database name*
    (`wt<N>_local` / `wt<N>_test`), not by port. Canonical design:
    `docs/maintenance/db-worktree-pool.md`, topology: `docs/maintenance/local-environment.md`.
-3. **`make lint` / `fix` / `test` run on the host** via mise — the exception to the "everything is
+3. **`make go-lint` / `fix` / `test` run on the host** via mise — the exception to the "everything is
    dockerized" rule, and the source of host-vs-CI mismatches.
 
 ## Contract
@@ -54,7 +54,7 @@ Three facts explain almost everything below:
 | A containerized gate reports missing dependencies for a package you never touched, or `make` fails where a bare `docker compose run` passes | §9 |
 | A hook fails for something outside your change | §10 |
 | A gate fails / crawls for reasons unrelated to the change while several worktrees are open | §19 |
-| Want to know why `make lint` skipped, throttled, or deferred itself to CI | §19 |
+| Want to know why `make go-lint` skipped, throttled, or deferred itself to CI | §19 |
 | `pin-images-check` / `pin-actions-check` errors (未固定 / 未登録) | §11 → `images-pin` / `actions-pin` |
 | `tool-cooldown` / `go-cooldown` refuses a version you just declared | §20 → `supply-chain-triage` |
 | A runtime bump breaks a gate through a tool that cannot be upgraded yet | §20 → `tools-upgrade` |
@@ -234,7 +234,7 @@ Trap: `git restore docs/portal` to clean up root-owned files also **reverts hand
 
 - **A bare `go test ./...` does not see `DB_NAME_TEST`** — make exports it, your shell does not — so
   it silently connects to the shared `test` database, which another branch's migrations may own.
-  Run `make test` (or export the variable yourself).
+  Run `make go-test` (or export the variable yourself).
 
 Integration tests (`internal/integration`, `internal/infrastructure/rdb/**`) do not migrate anything;
 they expect a migrated + seeded database. After switching to a branch with different migrations,
@@ -272,16 +272,16 @@ fingerprint in §6.
 
 ## 8. Host-side lint / format / test, and the two golangci configs
 
-`make lint` / `make fix` resolve golangci-lint through mise on the **host** (`mise which golangci-lint`),
-and `make test` runs `go test` on the host too. If the binary is missing, `mise install` — do not
+`make go-lint` / `make go-fix` resolve golangci-lint through mise on the **host** (`mise which golangci-lint`),
+and `make go-test` runs `go test` on the host too. If the binary is missing, `mise install` — do not
 reach for a container.
 
 The repo ships two configs, and a bare `golangci-lint run` picks the wrong one:
 
 ```bash
 golangci-lint run                                  # → .golangci.yaml (lightweight; some linters off)
-make lint                                          # → .golangci-full.yaml, what CI runs
-golangci-lint run --config .golangci-full.yaml     # equivalent, when you need extra flags
+make go-lint                                          # → .golangci.yaml, what CI runs
+golangci-lint run --config .golangci.yaml     # equivalent, when you need extra flags
 ```
 
 Always reproduce CI failures with the full config.
@@ -304,7 +304,7 @@ That last symptom is the one that reads as unrelated to the edit. `scripts/pnpm-
 `scripts/node_modules` was installed under, every `pnpm run` inside the runner fails with
 `[ERR_PNPM_VERIFY_DEPS_BEFORE_RUN] The value of the <setting> setting has changed`. It takes down
 gates with no visible connection to the change — `make md-lint`, `make actions-lint`, `make
-lint-oapi` — while the host-side `-ci` targets stay green, because the host tree was re-installed
+oapi-lint` — while the host-side `-ci` targets stay green, because the host tree was re-installed
 when the file changed. Adding a `minimumReleaseAgeExclude` or `overrides` entry is enough to trigger
 it. Green on the host is therefore **not** evidence that the containerized gate passes: rebuild
 first, then re-run whichever gate you intend to report.
@@ -362,9 +362,9 @@ bump a pin in `mise.toml` to make this symptom go away.
 
 | Hook | Glob → command (abridged) |
 | --- | --- |
-| pre-commit | `*.go` → `make gate-go` (bundles `lint` + `test-cached`); `scripts/**/*.go` → `make test-scripts-cached`; `*.sql` → `make sql-lint`; `*.md` → `make md-lint`; `.github/workflows/**` → `make actions-lint`, `make pin-actions-check`; `openapi/**` → `make lint-oapi`; `docker/**/Dockerfile`, `docker-compose*.yaml` → `make docker-lint`, `make pin-images-check`; `database/migrations/*.sql` → migration version + gap checks |
+| pre-commit | `*.go` → `make gate-go` (bundles `lint` + `go-test-cached`); `scripts/**/*.go` → `make go-test-scripts-cached`; `*.sql` → `make sql-lint`; `*.md` → `make md-lint`; `.github/workflows/**` → `make actions-lint`, `make pin-actions-check`; `openapi/**` → `make oapi-lint`; `docker/**/Dockerfile`, `docker-compose*.yaml` → `make docker-lint`, `make pin-images-check`; `database/migrations/*.sql` → migration version + gap checks |
 | commit-msg | `make commitlint COMMIT_MSG_FILE={1}` |
-| pre-push | `make secret-scan`; `*.go` → `make gate-go-push` (bundles `test` + `test-scripts`); `*.go` / `openapi/**` → regenerate and `git diff --exit-code` on `*.gen.go` / mocks / `openapi.gen.yaml`; `go.mod` / `go.sum` → `go mod tidy` + diff |
+| pre-push | `make secret-scan`; `*.go` → `make gate-go-push` (bundles `test` + `go-test-scripts`); `*.go` / `openapi/**` → regenerate and `git diff --exit-code` on `*.gen.go` / mocks / `openapi.gen.yaml`; `go.mod` / `go.sum` → `go mod tidy` + diff |
 
 The Go gates are **bundled** into `gate-go` / `gate-go-push` rather than listed one per command,
 because lefthook runs a hook's commands in parallel and a per-gate entry multiplies host load by the
@@ -463,7 +463,7 @@ actually run, omit the variable entirely; to preview, `DRY_RUN=1 make <target>`.
 force vendor mode: air's hot-reload build
 (`.air.toml`, `go build --mod=vendor`) and the runtime image build (`docker/server/Dockerfile`,
 `go build -mod=vendor` under `GOPROXY=off`, so it cannot fall back to fetching). Everything else —
-`make test`, `make lint`, host `go run` — resolves from the module cache and stays green, which is
+`make go-test`, `make go-lint`, host `go run` — resolves from the module cache and stays green, which is
 why nothing warns you until the app itself builds:
 
 ```txt
@@ -492,7 +492,7 @@ which drives the vendor-mode `Dockerfile` directly.
 ## 19. A gate failed for a reason unrelated to the change — check how many windows are open
 
 When several worktrees each run a gate sized for the whole host, the host saturates and gates start
-failing in ways that look like defects in the change: a test you did not touch times out, `make lint`
+failing in ways that look like defects in the change: a test you did not touch times out, `make go-lint`
 takes 17 minutes, `docker` stops answering (see also the shared-DB and CPU-saturation traps this
 manifests as). The loss is not the wall time — it is that **a gate failure stops being evidence about
 the code**.
@@ -517,15 +517,15 @@ so nothing goes unverified; the verification moves.
 Override per invocation when you need one heavy gate by hand while the rest stays deferred:
 
 ```bash
-make lint GOBP_LOAD=low       # run this one throttled
-make test GOBP_LOAD=full      # ignore the band entirely (single-window machines)
+make go-lint GOBP_LOAD=low       # run this one throttled
+make go-test GOBP_LOAD=full      # ignore the band entirely (single-window machines)
 ```
 
 Thresholds are `GOBP_LOW_THRESHOLD` / `GOBP_CI_FIRST_THRESHOLD`. Only gates that run on **every**
 commit and push are throttled — one-shot heavy work (image builds, codegen, Trivy) is left alone,
 because nobody runs it in a loop.
 
-**Do not reach for `make lint` locally to reproduce a CI lint failure when windows are many.** Read the
+**Do not reach for `make go-lint` locally to reproduce a CI lint failure when windows are many.** Read the
 CI log and apply the single formatter or linter it named (§8 has the config choice); a full local run
 costs minutes of saturated host to rediscover what CI already printed.
 

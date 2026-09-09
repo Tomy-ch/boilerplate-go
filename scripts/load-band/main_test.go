@@ -252,7 +252,7 @@ func Test_renderStatus(t *testing.T) {
 			got := renderStatus(mustResolve(t, bandAuto, 5, 8))
 
 			assert.Contains(t, got, "💡 窓が多いため CI-first です。")
-			assert.Contains(t, got, "make lint GOBP_LOAD=low")
+			assert.Contains(t, got, "make go-lint GOBP_LOAD=low")
 		})
 	})
 }
@@ -481,7 +481,7 @@ func Test_advice(t *testing.T) {
 			got := advice(band{resolved: bandCIFirst})
 
 			assert.Contains(t, got, "CI-first")
-			assert.Contains(t, got, "make lint GOBP_LOAD=low")
+			assert.Contains(t, got, "make go-lint GOBP_LOAD=low")
 		})
 
 		t.Run("low では CPU 数ではなく share を案内に埋め込む", func(t *testing.T) {

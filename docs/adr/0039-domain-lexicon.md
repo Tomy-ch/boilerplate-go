@@ -123,7 +123,7 @@ Rejected: `pkg/` forbids business logic and must be context-independent. Currenc
 <!-- sample-api:replace-with -->
 <!-- = - Lexicon package: none admitted yet; `internal/domain/lexicon/` holds only its admission bar. -->
 <!-- sample-api:replace-end -->
-- Enforcement: depguard `maintain_a_sound_domain` in `.golangci-full.yaml` (deny
+- Enforcement: depguard `maintain_a_sound_domain` in `.golangci.yaml` (deny
   `internal/domain/`, allow `internal/domain/lexicon`).
 - Admission bar: `internal/domain/lexicon/README.md`; layer rule: `docs/rules.md`.
 - Two-scale quantity model this enables: [ADR-0038](0038-two-scale-quantity-model.md).

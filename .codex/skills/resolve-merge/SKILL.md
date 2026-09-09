@@ -147,7 +147,7 @@ make md-doc-ref-lint
 make md-skill-lint
 ```
 
-Do not run `make lint`, `make test`, `make sql-lint`, or equivalents locally when the active Codex
+Do not run `make go-lint`, `make go-test`, `make sql-lint`, or equivalents locally when the active Codex
 CI-first safeguard applies, unless the user explicitly requested local verification. Record those
 gates as deferred to CI; after an approved commit/push, use the resulting CI checks as their evidence.
 Never claim an unrun gate passed.

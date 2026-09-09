@@ -37,7 +37,7 @@
 **`make` トリガ**:
 
 - `make gen-api` — `internal/usecase/<package>/mock/` 配下に Usecase mock 再生成
-- `make fix` + `make test` — 最終検証
+- `make go-fix` + `make go-test` — 最終検証
 
 **触らない**:
 
@@ -150,20 +150,20 @@ make gen-api
 ## Step 6. 検証
 
 ```sh
-make fix
-make test
+make go-fix
+make go-test
 ```
 
 `internal/usecase/<package>` のカバレッジ行確認。プロジェクト規約で 100% 目標。低下時は未到達 error / branch を特定して追加推奨。
 
 失敗時: TODO + FB summary、自動 rollback なし。
 
-> **DI 検証（runtime）:** `go build` / `make test` は Fx グラフを構築しない — provider 欠落・`New` の未登録・コンストラクタのシグネチャ不整合は、コンパイル/テストではなく**アプリ起動時**に初めて失敗する。DI 登録（`fx.Provide(<package>.New)`）後はアプリが実際に起動するか確認する: `make serve` 稼働中なら保存で `air` が再ビルドするので、`api_server` のログが `[Fx] RUNNING`（"http server started"）に到達し、Fx の `provide` / `invoke` エラーが無いことを確認する。新規環境の注意: コンテナは **vendor モード**でビルドするため先に `make tidy-lib`（`vendor/` 生成）を実行する — 未生成だと Fx 実行前に `inconsistent vendoring` で失敗する。
+> **DI 検証（runtime）:** `go build` / `make go-test` は Fx グラフを構築しない — provider 欠落・`New` の未登録・コンストラクタのシグネチャ不整合は、コンパイル/テストではなく**アプリ起動時**に初めて失敗する。DI 登録（`fx.Provide(<package>.New)`）後はアプリが実際に起動するか確認する: `make serve` 稼働中なら保存で `air` が再ビルドするので、`api_server` のログが `[Fx] RUNNING`（"http server started"）に到達し、Fx の `provide` / `invoke` エラーが無いことを確認する。新規環境の注意: コンテナは **vendor モード**でビルドするため先に `make tidy-lib`（`vendor/` 生成）を実行する — 未生成だと Fx 実行前に `inconsistent vendoring` で失敗する。
 
 ## Step 7. クロージング
 
 ```text
-<Package> usecase 層を生成しました。<N> ファイル作成 + DI 1 行追加、make test OK、coverage <X>%。
+<Package> usecase 層を生成しました。<N> ファイル作成 + DI 1 行追加、make go-test OK、coverage <X>%。
 次は scaffold-controller で handler、または scaffold-endpoint で残層を続行できます。
 ```
 
@@ -212,6 +212,6 @@ commit しない。次の scaffold skill を起動しない。
 - [ ] テストファイル書き込み（gomock セット + subagent 観点）
 - [ ] `internal/di/module/usecase.go` に新 `fx.Provide` 追加
 - [ ] `make gen-api` 実行、mock ファイル存在確認
-- [ ] `make fix` + `make test` 実行、カバレッジ報告（または失敗時 TODO + FB）
+- [ ] `make go-fix` + `make go-test` 実行、カバレッジ報告（または失敗時 TODO + FB）
 - [ ] commit / push なし
 - [ ] 最終サマリは日本語

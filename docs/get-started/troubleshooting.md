@@ -96,13 +96,13 @@ the OpenAPI document or the SQL files that was not followed by `make gen` (or th
 gen-api` / `make gen-query`) is caught there rather than at build time. Regenerate, commit the
 result, and never hand-edit a generated file.
 
-### The editor's lint findings differ from `make lint`
+### The editor's lint findings differ from `make go-lint`
 
 By design. `golangci-lint` picks up `.golangci.yaml` implicitly, which is a deliberately minimal set
-tuned for editor responsiveness; the authoritative gate is `.golangci-full.yaml`, which `make lint`
-and `make fix` pass explicitly and which carries the depguard layer rules. An editor that stays quiet
+tuned for editor responsiveness; the authoritative gate is `.golangci.yaml`, which `make go-lint`
+and `make go-fix` pass explicitly and which carries the depguard layer rules. An editor that stays quiet
 is not evidence. Rationale:
-[ADR-0088 (two-layer-golangci-config)](../adr/0088-two-layer-golangci-config.md).
+[ADR-0088 (layered-golangci-config)](../adr/0088-layered-golangci-config.md).
 
 ### Local gates seem to have stopped running
 

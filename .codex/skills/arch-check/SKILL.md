@@ -64,7 +64,7 @@ This skill is read-only by default. Do not add `TODO` comments merely because th
 ## Procedure
 
 1. Read `AGENTS.md`, then resolve the in-scope files and layers. Report changed Go files outside the listed layers separately; do not pretend they were audited.
-2. Run `make lint` once. Attribute its findings to the appropriate layer. If the baseline is broken by unrelated errors, report the failure and do not continue semantic review.
+2. Run `make go-lint` once. Attribute its findings to the appropriate layer. If the baseline is broken by unrelated errors, report the failure and do not continue semantic review.
 3. For each in-scope layer, read the agent definition named in the auditor table above, the layer README, and any applicable nearest package README. The agent definition gives the audit role and output contract; `AGENTS.md` and the READMEs remain the source of truth for repository rules.
 4. Review layer-specific concerns:
 
@@ -74,7 +74,7 @@ This skill is read-only by default. Do not add `TODO` comments merely because th
    - **infrastructure:** implementation of domain interfaces; data orchestration only; generated-query use and error normalization according to the RDB and `pgerror` READMEs. Treat one-to-one repository/query correspondence as advisory because joins, multi-query operations, and dispatch are valid.
    - **pkg:** no `internal/` dependency; framework-agnostic and reusable; no feature-specific business logic. Honor an explicit subpackage README exception when present.
 
-5. Fan out independent in-scope roles concurrently when delegation is available; otherwise execute their instructions inline. Pass each layer auditor the resolved files and shared lint output, and never run `make lint` more than once. When the audited change touches domain code or the ADR / README corpus, also run `ddd-audit` with its `quick` scope preset through `.codex/agents/ddd-origin-auditor.toml`; it must not ask for scope again. Keep this separate from the per-layer audits: it compares the repository's documented DDD interpretation with Evans, flags divergences for a human, and never arbitrates or fixes them.
+5. Fan out independent in-scope roles concurrently when delegation is available; otherwise execute their instructions inline. Pass each layer auditor the resolved files and shared lint output, and never run `make go-lint` more than once. When the audited change touches domain code or the ADR / README corpus, also run `ddd-audit` with its `quick` scope preset through `.codex/agents/ddd-origin-auditor.toml`; it must not ask for scope again. Keep this separate from the per-layer audits: it compares the repository's documented DDD interpretation with Evans, flags divergences for a human, and never arbitrates or fixes them.
 
    When the scope is the full repository or named layers and includes `internal/domain/**`, also fan out `.codex/agents/ddd-modeling-reviewer.toml`. Pass the resolved current domain file list and no `baseRef`; passing a diff would reduce this lens to a smaller `impl-review`. Do not run it for changed-files scope. Add one report line stating that the DDD-modeling lens was skipped because diff review belongs to `impl-review`.
 6. Report in Japanese using this form:

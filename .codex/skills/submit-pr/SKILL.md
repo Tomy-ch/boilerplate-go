@@ -131,7 +131,7 @@ Fill each template section in Japanese:
 
 - **概要**: 1–3 sentences summarizing the PR's intent. Use commit messages as the primary source.
 - **変更内容**: Bullet list grouped by area (API / DB / 内部ロジック / テスト / ドキュメント など). Reference changed files and commit titles. Group meaningfully — do not paste a raw file list.
-- **動作確認方法**: Concrete verification steps. Adapt to what actually changed: `make serve` + curl for API changes, `make db-local-migrate-up` for migrations, `make test` for logic, etc.
+- **動作確認方法**: Concrete verification steps. Adapt to what actually changed: `make serve` + curl for API changes, `make db-local-migrate-up` for migrations, `make go-test` for logic, etc.
 
 If the branch name encodes an issue number, append `closes #N` at the bottom of the body (or fold it into 概要 if natural).
 
@@ -181,7 +181,7 @@ On push failure (non-fast-forward, permission denied, network error, etc.), repo
 
 `pre-push` runs the heavy Go gates through `make gate-go-push`. `.makefiles/load.mk` chooses from the number of open worktrees whether those gates run at full speed, throttled, or are deferred to CI. Let the hook make that decision: `make load-status` reports the resolved band, and `repo-ops` section 19 explains the policy.
 
-Do **not** run `make lint` or `make test` manually before pushing "to make sure." With several worktrees open, that needlessly saturates the host for minutes to rediscover what CI runs identically, and the saturation itself can make unrelated gates fail. In the `ci-first` band, pushing is the verification step.
+Do **not** run `make go-lint` or `make go-test` manually before pushing "to make sure." With several worktrees open, that needlessly saturates the host for minutes to rediscover what CI runs identically, and the saturation itself can make unrelated gates fail. In the `ci-first` band, pushing is the verification step.
 
 If the hook fails for a reason outside this change, follow the `--no-verify` carve-out in `repo-ops` section 11. When the resolved band deferred gates to CI, state that in the Japanese report in Step 8 and treat the PR as unverified until its checks land; never describe local verification as passed when it did not run.
 

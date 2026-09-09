@@ -2,14 +2,14 @@
 # -----Dockerコンテナ内で実行するコマンド群-----
 .PHONY: gen-bundle-oapi ## OpenAPIをバンドルしてOpenAPIファイルを一つにまとめます
 .PHONY: gen-api-docs ## OpenAPIに基づき、APIドキュメントを生成します
-.PHONY: lint-oapi ## OpenAPI定義を redocly lint で検証します
+.PHONY: oapi-lint ## OpenAPI定義を redocly lint で検証します
 .PHONY: stamp-openapi-version ## リリースブランチ名(REF=release/vX.Y.Z)から info.version を書き換えます
 # -----CI用ターゲット-----
 .PHONY: stamp-openapi-version-ci ## リリースブランチ名から info.version を書き換えます（CI用）
 .PHONY: gen-bundle-oapi-ci ## OpenAPIをバンドルしてOpenAPIファイルを一つにまとめます（CI用）
 .PHONY: gen-api-docs-ci ## OpenAPIに基づき、APIドキュメントを生成します（CI用）
-.PHONY: lint-oapi-ci ## OpenAPI定義を redocly lint で検証します（CI用）
-.PHONY: lint-oapi-security-ci ## OpenAPI定義を OWASP API Security ルールセットで検証します（CI用）
+.PHONY: oapi-lint-ci ## OpenAPI定義を redocly lint で検証します（CI用）
+.PHONY: oapi-security-lint-ci ## OpenAPI定義を OWASP API Security ルールセットで検証します（CI用）
 .PHONY: openapi-client-check ## frontend generator（orval）が bundle 済み OpenAPI から component 型を生成できることを確認します
 .PHONY: openapi-client-check-ci ## frontend generator（orval）が bundle 済み OpenAPI から component 型を生成できることを確認します（CI用）
 
@@ -20,8 +20,8 @@ gen-bundle-oapi:
 gen-api-docs:
 	@docker compose run --rm node_tool_runner make gen-api-docs-ci
 
-lint-oapi:
-	@docker compose run --rm node_tool_runner make lint-oapi-ci
+oapi-lint:
+	@docker compose run --rm node_tool_runner make oapi-lint-ci
 
 openapi-client-check:
 	@docker compose run --rm node_tool_runner make openapi-client-check-ci
@@ -38,7 +38,7 @@ gen-bundle-oapi-ci:
 gen-api-docs-ci:
 	redocly build-docs openapi/openapi.yaml --output docs/openapi/index.html
 
-lint-oapi-ci:
+oapi-lint-ci:
 	redocly lint openapi/openapi.yaml
 
 # release/vX.Y.Z 以外の ref は no-op（スキップして正常終了）。
@@ -48,11 +48,11 @@ stamp-openapi-version-ci:
 # OWASP API Security ルールセット（Spectral）による検証。redocly lint との棲み分けは
 # .github/workflows/README.md の Overlapping surfaces 表。コンテナを介さず直接実行する理由と
 # 事前準備（pnpm install --dir scripts --frozen-lockfile）は
-# .makefiles/README.md の lint-oapi-security-ci 行。
-lint-oapi-security-ci:
+# .makefiles/README.md の oapi-security-lint-ci 行。
+oapi-security-lint-ci:
 	$(PNPM_SCRIPTS) lint:openapi-security
 
 # frontend generator（orval）の contract check。確認する型と生成物の扱いは
-# .makefiles/README.md の openapi-client-check 行。事前準備は lint-oapi-security-ci と同じ。
+# .makefiles/README.md の openapi-client-check 行。事前準備は oapi-security-lint-ci と同じ。
 openapi-client-check-ci:
 	$(PNPM_SCRIPTS) check:openapi-client

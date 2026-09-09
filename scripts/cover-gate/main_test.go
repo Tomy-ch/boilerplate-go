@@ -250,7 +250,7 @@ func Test_run(t *testing.T) {
 
 			err := run([]string{"-profile", filepath.Join(t.TempDir(), "absent.out")}, stubTotal(100))
 
-			require.ErrorContains(t, err, "make test-cover-ci")
+			require.ErrorContains(t, err, "make go-test-cover-ci")
 		})
 
 		t.Run("総カバレッジを取得できなければ失敗する", func(t *testing.T) {

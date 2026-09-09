@@ -92,12 +92,12 @@ ERROR: template database "template1" has a collation version mismatch (SQLSTATE 
 変更したあとに `make gen`（または個別の `make gen-api` / `make gen-query`）を回していないと、ビルド時
 ではなくそこで捕まります。再生成して結果をコミットしてください。生成ファイルの手編集は行いません。
 
-### エディタの lint 結果が `make lint` と食い違う
+### エディタの lint 結果が `make go-lint` と食い違う
 
 意図的です。`golangci-lint` は暗黙に `.golangci.yaml` を拾い、これはエディタの応答性に合わせた最小構成
-です。権威あるゲートは `.golangci-full.yaml` で、`make lint` / `make fix` が明示的に渡し、レイヤー境界の
+です。権威あるゲートは `.golangci.yaml` で、`make go-lint` / `make go-fix` が明示的に渡し、レイヤー境界の
 depguard ルールを持つのもこちらです。エディタが静かなことは根拠になりません。理由は
-[ADR-0088（two-layer-golangci-config）](../adr/0088-two-layer-golangci-config.ja.md)。
+[ADR-0088（layered-golangci-config）](../adr/0088-layered-golangci-config.ja.md)。
 
 ### ローカルのゲートが動かなくなったように見える
 

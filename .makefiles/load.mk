@@ -64,13 +64,13 @@ define run_go_gates
 endef
 
 gate-go:
-	$(call run_go_gates,lint test-cached)
+	$(call run_go_gates,go-lint go-test-cached)
 
 gate-go-push:
-	$(call run_go_gates,test test-scripts)
+	$(call run_go_gates,go-test go-test-scripts)
 
 # 自動フォーマットの委譲先。`/commit` のように人手を介さず毎回走る経路はこちらを呼ぶ。
-# `make fix` を直接叩いたときは帯に関わらず実行する（明示したコマンドは書いたとおりに動く）。
+# `make go-fix` を直接叩いたときは帯に関わらず実行する（明示したコマンドは書いたとおりに動く）。
 #
 # fix は lint と同じ full config を回すため、委譲しないとここだけが帯をすり抜ける。
 # 委譲すると CI が赤くなってから直すことになり往復は増えるが、目的は負荷の低減であり、
@@ -79,7 +79,7 @@ gate-fix:
 	@$(LOAD_BAND); \
 	if [ "$$GOBP_LOAD_RESOLVED" = "ci-first" ]; then \
 		echo "⏭  自動フォーマット(fix)は委譲します（窓 $${GOBP_WINDOWS} 個 / GOBP_LOAD=$${GOBP_LOAD_RESOLVED}）。"; \
-		echo "   フォーマットのずれは CI の lint が指摘します。手元で直すなら: make fix GOBP_LOAD=low"; \
+		echo "   フォーマットのずれは CI の lint が指摘します。手元で直すなら: make go-fix GOBP_LOAD=low"; \
 	else \
-		$(MAKE) fix; \
+		$(MAKE) go-fix; \
 	fi

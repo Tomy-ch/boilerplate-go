@@ -251,7 +251,7 @@ Batch all approved Go modules into one `go get` (multiple `module@version` args)
 
 Run the checks that match what actually changed — a dependency patch rarely touches first-party source, so scope the verification to the ecosystems that moved rather than always running the full suite. Report each as OK / FAIL; do NOT auto-roll-back on failure — the user decides.
 
-Go changes at minimum build and vuln-scan clean (`go build ./...` + `govulncheck ./...`); run `make lint` / `make test` when a Go change is broad enough to warrant the full suite. A **major bump of a pnpm package** must be verified more closely — run that package's own `typecheck` + tests (e.g. `pnpm typecheck` + `pnpm test` in `docs-viewer/`), since a major can change the API the code calls.
+Go changes at minimum build and vuln-scan clean (`go build ./...` + `govulncheck ./...`); run `make go-lint` / `make go-test` when a Go change is broad enough to warrant the full suite. A **major bump of a pnpm package** must be verified more closely — run that package's own `typecheck` + tests (e.g. `pnpm typecheck` + `pnpm test` in `docs-viewer/`), since a major can change the API the code calls.
 
 The advisory database is the source of truth for the **real fix floor**, and it can differ from the user's list. Two cases to surface rather than silently resolve:
 
@@ -281,7 +281,7 @@ Generated-artifact drift — these deps drive code generators, so a bump can mov
 
 If regeneration produces changes, include them — a security bump that silently changes generated output must not leave the tree in a state where CI's drift check fails.
 
-**Tool-runner image drift (pnpm changes only).** The runner images bake `scripts/node_modules`, so they are build artifacts of `scripts/package.json` + `scripts/pnpm-lock.yaml` + `scripts/pnpm-workspace.yaml`. After changing any of those, the containerized gates (`make md-lint`, `make actions-lint`, `make lint-oapi`, …) fail with `ERR_PNPM_VERIFY_DEPS_BEFORE_RUN` until the image is rebuilt:
+**Tool-runner image drift (pnpm changes only).** The runner images bake `scripts/node_modules`, so they are build artifacts of `scripts/package.json` + `scripts/pnpm-lock.yaml` + `scripts/pnpm-workspace.yaml`. After changing any of those, the containerized gates (`make md-lint`, `make actions-lint`, `make oapi-lint`, …) fail with `ERR_PNPM_VERIFY_DEPS_BEFORE_RUN` until the image is rebuilt:
 
 ```sh
 make tool-runners-build
@@ -299,7 +299,7 @@ Summarize in Japanese:
 - Any `minimumReleaseAgeExclude` entry added: which packages got it, the version it exempts, and **the date it must be deleted** — stated as a follow-up the user owns, not as a closed item.
 - For each entry the cooldown caught: its triage band and the axis that drove it, so the record shows the adopt-or-wait call rested on evidence. Name any axis that came back unanswerable.
 - Any `not-present` / `needs-manual` entries the user must handle another way.
-- Verification results (`make lint` / `make test` / `pnpm audit` / frozen install / `govulncheck` / drift checks).
+- Verification results (`make go-lint` / `make go-test` / `pnpm audit` / frozen install / `govulncheck` / drift checks).
 - Regenerated artifacts, if any, and whether the tool-runner images were rebuilt.
 
 Do NOT commit, stage, or push. The user reviews the working tree and runs `/commit` manually. If they ask you to commit, note that a security patch commonly spans `docker/**` + `go.mod` + regenerated artifacts, so group them into a clear `Build:` / `Fix:` commit describing the CVEs.
@@ -334,7 +334,7 @@ Confirm before reporting completion:
 - [ ] Any approved `minimumReleaseAgeExclude` entry written as `pkg@version` with removal date + advisory + where it runs, added to **every** affected package, and the window settings themselves left untouched
 - [ ] Any override recorded as provisional in the report (reclaim — bump parent, drop override, re-audit — once the parent natively ships the fix)
 - [ ] Go via a single batched `go get module@ver ...` + `go mod tidy`; `go mod vendor` if the repo vendors
-- [ ] `pnpm install --frozen-lockfile` + `pnpm audit` for pnpm changes; `govulncheck` + build for Go changes; `make lint` / `make test` as scope warrants (major bumps verified more closely — typecheck / package tests)
+- [ ] `pnpm install --frozen-lockfile` + `pnpm audit` for pnpm changes; `govulncheck` + build for Go changes; `make go-lint` / `make go-test` as scope warrants (major bumps verified more closely — typecheck / package tests)
 - [ ] Generator drift checked for generator-feeding deps; regenerated artifacts included; tool-runner images rebuilt (`make tool-runners-build`) after a `scripts/` pnpm change before claiming a containerized gate passes
 - [ ] Final Japanese report: applied set, major/too-new/exclusion decisions with removal dates, deferred/skipped items, verification results
 - [ ] After updating `SKILL.md`, re-sync `SKILL.ja.md`

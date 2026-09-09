@@ -1,6 +1,6 @@
 ---
 name: tools-upgrade
-description: Audit this repository's pinned tool versions against upstream latest, with a configurable supply-chain quarantine. The audit surface is both declaration sites — `mise.toml` `[tools]` for everything mise resolves, and `python/*.in` for the PyPI tools that install from the hash-pinned lockfiles `python/*.txt` (ADR-0084 (mise-ssot-drift-gate)). For each tool the latest release is fetched from its backend (GitHub Releases for `aqua:` / `go:` tagged modules, npm registry for `npm:`, PyPI for `python/*.in` and any `pipx:`, language download manifests for `go` / `node` / `python`). Releases newer than `min_age_days` are reported as informational only — never applied automatically — to avoid pulling in newly-published malicious versions before upstream has time to detect and revoke them; when an advisory drove the run, each quarantined release is handed to `/supply-chain-triage` for a scored evidence verdict instead of only a day count. Confirms `min_age_days` and the per-tool update set via `AskUserQuestion`, rewrites approved entries atomically, regenerates the affected lockfiles with `make py-lock` when a `python/*.in` pin changed, runs `make sync-versions` if `go` / `node` / `python` changed, and verifies with `make lint` + `make test`. Use this skill on a routine cadence (monthly / quarterly) or after a security advisory.
+description: Audit this repository's pinned tool versions against upstream latest, with a configurable supply-chain quarantine. The audit surface is both declaration sites — `mise.toml` `[tools]` for everything mise resolves, and `python/*.in` for the PyPI tools that install from the hash-pinned lockfiles `python/*.txt` (ADR-0084 (mise-ssot-drift-gate)). For each tool the latest release is fetched from its backend (GitHub Releases for `aqua:` / `go:` tagged modules, npm registry for `npm:`, PyPI for `python/*.in` and any `pipx:`, language download manifests for `go` / `node` / `python`). Releases newer than `min_age_days` are reported as informational only — never applied automatically — to avoid pulling in newly-published malicious versions before upstream has time to detect and revoke them; when an advisory drove the run, each quarantined release is handed to `/supply-chain-triage` for a scored evidence verdict instead of only a day count. Confirms `min_age_days` and the per-tool update set via `AskUserQuestion`, rewrites approved entries atomically, regenerates the affected lockfiles with `make py-lock` when a `python/*.in` pin changed, runs `make sync-versions` if `go` / `node` / `python` changed, and verifies with `make go-lint` + `make go-test`. Use this skill on a routine cadence (monthly / quarterly) or after a security advisory.
 ---
 
 # Tool Version Upgrade
@@ -193,8 +193,8 @@ Skip this step entirely when step 7 was skipped (no runtime change → no tag ch
 ### 9. Verify
 
 ```sh
-make lint
-make test
+make go-lint
+make go-test
 ```
 
 If a `python/*.in` pin changed, also run:
@@ -245,7 +245,7 @@ Confirm the following before reporting completion:
 - [ ] `make tool-cooldown-audit` run if a `python/*.in` pin changed
 - [ ] `make sync-versions` run if go / node / python was updated
 - [ ] If a runtime was bumped: base image digests re-pinned (`make pin-images-resolve` + `pin-images-apply` + `pin-images-check`). A rule 3 fail-closed on the new tag is the expected outcome for a just-published image — surfaced with the coupling (bootstrap via `days=0` after triage, or hold the bump), never forced through, and never left as a tag/digest mismatch
-- [ ] `make lint` + `make test` run after writes
+- [ ] `make go-lint` + `make go-test` run after writes
 - [ ] Final result table reported to the user
 - [ ] After updating `SKILL.md`, also update `SKILL.ja.md` to keep the Japanese translation in sync
 - [ ] No commit / stage / push performed

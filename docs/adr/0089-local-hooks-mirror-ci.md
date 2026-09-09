@@ -37,14 +37,14 @@ commit-msg).
 
 **2. Bypass-then-verify-once.** The `commit` skill commits with `--no-verify` during the
 split phase to avoid repeated hook overhead on each partial commit, then executes the
-lefthook-defined commands directly — plus `make fix` — as a final verification gate.
+lefthook-defined commands directly — plus `make go-fix` — as a final verification gate.
 This guarantees CI parity without redundant per-commit overhead.
 
 The hook stages and their commands are:
 
 The stages and their commands are below. The names are the lefthook command names, which is
 what `--command` selects — they are not always the `make` target the command runs (`go-lint`
-runs `make lint`, `go-test` runs `make test-cached`).
+runs `make go-lint`, `go-test` runs `make go-test-cached`).
 
 - `pre-commit` (parallel, 13): `go-lint` (`.go`), `go-test` (`.go`),
   `go-test-scripts` (`scripts/**/*.go`), `sql-lint` (`.sql`), `md-lint` (`.md`),
@@ -56,7 +56,7 @@ runs `make lint`, `go-test` runs `make test-cached`).
   `migration-check-version` (`.sql`), `migration-check-gap` (`.sql`).
 - `commit-msg`: `commitlint`.
 - `pre-push` (parallel, 5): `secret-scan`, `test` (full, no cache, `.go`),
-  `test-scripts` (`scripts/**/*.go`), `gen-go-check` (generated artifact drift),
+  `go-test-scripts` (`scripts/**/*.go`), `gen-go-check` (generated artifact drift),
   `tidy-check` (`go.mod` / `go.sum`).
 
 ## Consequences

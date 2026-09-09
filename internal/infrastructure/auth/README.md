@@ -142,7 +142,7 @@ implementation below states what it closes over; the one that genuinely needs a 
 - **`useridentity`** — the exception here. It reads `user_identities` through the RDB driver, so the
   real-DB strategy in [`../README.md`](../README.md) governs it: a real database, `rdb/testkit`, and
   transaction rollback for state isolation. The identities it reads come from the seed, whose issuer is
-  environment-dependent, so it runs through `make test` rather than a bare `go test`.
+  environment-dependent, so it runs through `make go-test` rather than a bare `go test`.
 <!-- sample-api:end -->
 
 Which method a given environment receives is DI-layer scope and is verified there, not here.

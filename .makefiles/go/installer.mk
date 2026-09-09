@@ -25,7 +25,7 @@ install-tools:
 	@mise install lefthook
 	@mise install golangci-lint
 	@mise install aqua:zizmorcore/zizmor
-	# make test-scripts の actions-shellcheck のテストは実物の shellcheck を呼ぶ。無いと自分で skip
+	# make go-test-scripts の actions-shellcheck のテストは実物の shellcheck を呼ぶ。無いと自分で skip
 	# するため、host にも入れておかないと hook が緑でも検査されていない範囲が残る。
 	@mise install shellcheck
 	@mise reshim

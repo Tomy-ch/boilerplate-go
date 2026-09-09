@@ -27,7 +27,7 @@ Node configuration and the cross-package gates sit at the top level. What each t
 
 |Script|Description|Invoked By|
 |---|---|---|
-|`marker-baseline/`|Pin the number of removal-marker (`boilerplate-only` / `sample-api`) lines per file in `baseline.json`, and fail when the count moves. A marker that fires and a marker shown as an example look identical, so the removers carry a `MARKER_LITERAL_FILES` declaration for the latter; forgetting it either aborts the removal (loud) or silently deletes the illustrated passage (not loud — an emptied code fence is valid Markdown). An added marker line is the only signal either way, so it is made a decision: update the baseline, or declare the file. Regenerate with `tsx scripts/marker-baseline --write`.|`make test` (vitest) <!-- boilerplate-only:line -->|
+|`marker-baseline/`|Pin the number of removal-marker (`boilerplate-only` / `sample-api`) lines per file in `baseline.json`, and fail when the count moves. A marker that fires and a marker shown as an example look identical, so the removers carry a `MARKER_LITERAL_FILES` declaration for the latter; forgetting it either aborts the removal (loud) or silently deletes the illustrated passage (not loud — an emptied code fence is valid Markdown). An added marker line is the only signal either way, so it is made a decision: update the baseline, or declare the file. Regenerate with `tsx scripts/marker-baseline --write`.|`make go-test` (vitest) <!-- boilerplate-only:line -->|
 |`premise-lint/`|Mechanises the *No premise the document will outlive* rule from [docs/rules.md](../docs/rules.md). Reads every Markdown file that survives template instantiation — `docs/adr/**`, `docs/design/**`, `docs/rules.md`, the layer READMEs, … — with the marked regions removed, and fails on a self-reference that stops being true once a repository is created from the template. A premise belongs in `README*` / `docs/get-started/**`, which the setup rewrites or deletes, or inside a `boilerplate-only` / `sample-api` marker. Other senses of the same words are declared with a reason in `allowances.ts`.|`make md-premise-lint` <!-- boilerplate-only:line -->|
 |`mermaid-lint/`|Extract every ` ```mermaid ` fence from the repo's Markdown (same exclusions as `markdownlint-cli2`) and validate each with the real `mermaid.parse` (DOM provided by `linkedom`). Reports every broken diagram, then exits non-zero if there was any. Fills the gap that `markdownlint` only checks Markdown shape, never the diagram grammar.|`make md-lint` / `make md-mermaid-lint`|
 |`skill-lint/`|Check the skill / agent definitions under `.claude/**` semantically: frontmatter (`name` matches the directory / file name, `name` + `description` present), translation pairs (`SKILL.ja.md` exists, carries no frontmatter, opens with a sync note, and its heading-level sequence matches `SKILL.md`), reference existence (every `` `make <target>` `` resolves against `Makefile` / `.makefiles/**`, every repo-root-relative path in inline code exists), and cross-skill section references (`` `repo-ops` §19 `` resolves against the numbered sections `repo-ops/SKILL.md` actually declares — this one reads `.codex/**` too). Also checks that each skill / agent exists in `.codex/**` too. Fills the gap that a skill definition is an agent instruction sheet whose prose nothing else checks against reality, and that a skill landing on only one of the two AI environments goes unnoticed. See [Skill Lint](#skill-lint) for scope and the ignore directive.|`make md-lint` / `make md-skill-lint`|
@@ -251,7 +251,7 @@ a file with no real markers of its own, since that declaration removes it from t
 and the convention write-ups carry the `sample-api` marker form in their own prose, so a naive scan
 would harvest text that was never an instruction. Declaring the file is therefore the exception that
 keeps the scan honest, and forgetting one corrupts that file — `sample-removal-check.yaml` catches it
-as a failing `make test` / `md-markdownlint-ci` / `go build`.
+as a failing `make go-test` / `md-markdownlint-ci` / `go build`.
 <!-- sample-api:end -->
 
 ## Test Strategy
@@ -260,7 +260,7 @@ These tools are not a layer, so no layer README governs them; per section 11 of
 [`docs/testing-conventions.md`](../docs/testing-conventions.md) their viewpoints live here. The
 cross-cutting structure rules (`t.Parallel()`, subtest groups, assertions) still come from that
 document — only the viewpoints below are local. They hold for the Go tools and the TypeScript ones
-alike: the runner differs (`make test-scripts` vs. `make scripts-test`), the viewpoints do not.
+alike: the runner differs (`make go-test-scripts` vs. `make scripts-test`), the viewpoints do not.
 
 - **Test the decision, not the shell around it.** Each tool splits into an entry that only reads
   files, prints, and sets an exit code, and the decision modules beside it. In Go that entry is
@@ -305,8 +305,8 @@ alike: the runner differs (`make test-scripts` vs. `make scripts-test`), the vie
 
 ## Notes
 
-- The Go tools' unit tests run through `make test-scripts` / `make test-scripts-cached` alone —
-  `make test` excludes `scripts/`. How they are wired is in
+- The Go tools' unit tests run through `make go-test-scripts` / `make go-test-scripts-cached` alone —
+  `make go-test` excludes `scripts/`. How they are wired is in
   [`.makefiles/README.md`](../.makefiles/README.md)
 - `actions-shellcheck`'s tests shell out to the real `shellcheck` and skip themselves when it is
   absent. `REQUIRE_SHELLCHECK` turns those skips into failures, because a skip is invisible in the

@@ -26,7 +26,7 @@ Never edit `AGENTS.md`, generated files by hand, or protected documentation outp
 
 ## Apply and validate
 
-Make the smallest coherent change. Process related findings in one source file together only when that does not broaden behavior. Before committing a batch, run the narrowest relevant formatting, build, vet, and test commands; use `make fix`, `make lint`, and `make test` where appropriate.
+Make the smallest coherent change. Process related findings in one source file together only when that does not broaden behavior. Before committing a batch, run the narrowest relevant formatting, build, vet, and test commands; use `make go-fix`, `make go-lint`, and `make go-test` where appropriate.
 
 Do not commit a failing fix. If recovery requires judgment, revert the uncommitted local change safely and mark the finding deferred rather than guessing.
 

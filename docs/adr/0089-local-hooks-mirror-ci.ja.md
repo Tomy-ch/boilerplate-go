@@ -33,14 +33,14 @@ SQL と Markdown のリントをスキップする。グロブを持たないコ
 
 **2. バイパス後に一度検証。** `commit` スキルはスプリットフェーズ中に `--no-verify` でコミットし、
 各部分コミットの繰り返しフックオーバーヘッドを避け、その後 lefthook で定義されたコマンドを直接——
-加えて `make fix` を——最終検証ゲートとして実行する。これにより、コミットごとの冗長なオーバーヘッドなしに
+加えて `make go-fix` を——最終検証ゲートとして実行する。これにより、コミットごとの冗長なオーバーヘッドなしに
 CI パリティが保証される。
 
 フックステージとそのコマンド:
 
 ステージとそのコマンドは以下のとおり。名前は lefthook のコマンド名であり、`--command` が選ぶのはこちらである。
-コマンドが実行する `make` ターゲットとは必ずしも一致しない（`go-lint` は `make lint`、`go-test` は
-`make test-cached` を実行する）。
+コマンドが実行する `make` ターゲットとは必ずしも一致しない（`go-lint` は `make go-lint`、`go-test` は
+`make go-test-cached` を実行する）。
 
 - `pre-commit`（並列・13 件）: `go-lint`（`.go`）、`go-test`（`.go`）、
   `go-test-scripts`（`scripts/**/*.go`）、`sql-lint`（`.sql`）、`md-lint`（`.md`）、
@@ -52,7 +52,7 @@ CI パリティが保証される。
   `migration-check-version`（`.sql`）、`migration-check-gap`（`.sql`）。
 - `commit-msg`: `commitlint`。
 - `pre-push`（並列・5 件）: `secret-scan`、`test`（完全、キャッシュなし、`.go`）、
-  `test-scripts`（`scripts/**/*.go`）、`gen-go-check`（生成成果物ドリフト）、
+  `go-test-scripts`（`scripts/**/*.go`）、`gen-go-check`（生成成果物ドリフト）、
   `tidy-check`（`go.mod` / `go.sum`）。
 
 ## 影響

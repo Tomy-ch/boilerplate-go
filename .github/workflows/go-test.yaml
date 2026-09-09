@@ -208,7 +208,7 @@ jobs:
         run: make materialize-env
 
       # shellcheck: mise.toml holds the pinned version actions-shellcheck's tests are checked
-      # against, so the runner's own build is not enough (.makefiles/README.md, make test-scripts).
+      # against, so the runner's own build is not enough (.makefiles/README.md, make go-test-scripts).
       - name: Setup mise and required tools
         uses: ./.github/actions/setup-mise
         with:
@@ -222,7 +222,7 @@ jobs:
           REQUIRE_SHELLCHECK: '1'
         run: |
           set +e
-          make test-scripts 2>&1 | tee /tmp/go-test-scripts.log
+          make go-test-scripts 2>&1 | tee /tmp/go-test-scripts.log
           echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
           exit 0
 
@@ -246,7 +246,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          make test-cover-ci 2>&1 | tee /tmp/go-test-cover.log
+          make go-test-cover-ci 2>&1 | tee /tmp/go-test-cover.log
           echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
           exit 0
 
@@ -395,8 +395,8 @@ jobs:
             printf '\n' >> "$out"
           }
 
-          write_section 'make test-scripts' /tmp/go-test-scripts.log "$scripts_code"
-          write_section 'make test-cover-ci' /tmp/go-test-cover.log "$cover_code"
+          write_section 'make go-test-scripts' /tmp/go-test-scripts.log "$scripts_code"
+          write_section 'make go-test-cover-ci' /tmp/go-test-cover.log "$cover_code"
           write_section 'make cover-gate' /tmp/go-test-gate.log "$gate_code"
 
       - name: Comment Go test result on PR
@@ -433,10 +433,10 @@ jobs:
             exit 1
           fi
           if [ "$scripts_code" != "0" ]; then
-            echo "make test-scripts failed with exit code $scripts_code"
+            echo "make go-test-scripts failed with exit code $scripts_code"
           fi
           if [ "$cover_code" != "0" ]; then
-            echo "make test-cover-ci failed with exit code $cover_code"
+            echo "make go-test-cover-ci failed with exit code $cover_code"
           fi
           if [ "$gate_code" != "0" ]; then
             echo "make cover-gate failed with exit code $gate_code"

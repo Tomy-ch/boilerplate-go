@@ -223,7 +223,7 @@ make gen
 ## 10. テスト実行
 
 ```sh
-make test
+make go-test
 ```
 
 または
@@ -235,7 +235,7 @@ go test ./...
 ## 11. Lint 実行
 
 ```sh
-make lint
+make go-lint
 ```
 
 ## 12. 最終確認
@@ -248,8 +248,8 @@ make pin-images-check
 make tidy-lib
 make install-tools
 make gen
-make test
-make lint
+make go-test
+make go-lint
 make serve-build-clean
 make tool-runners-build-clean
 ```

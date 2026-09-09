@@ -204,7 +204,7 @@ make gen
 ## 10. Run tests
 
 ```sh
-make test
+make go-test
 ```
 
 or
@@ -216,7 +216,7 @@ go test ./...
 ## 11. Run lint
 
 ```sh
-make lint
+make go-lint
 ```
 
 ## 12. Final check
@@ -229,8 +229,8 @@ make pin-images-check
 make tidy-lib
 make install-tools
 make gen
-make test
-make lint
+make go-test
+make go-lint
 make serve-build-clean
 make tool-runners-build-clean
 ```

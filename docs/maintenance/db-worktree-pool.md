@@ -11,7 +11,7 @@ in parallel without colliding. Compose services are split into two layers:
 
 Worktree separation of the DB is "a different database inside the same instance"
 (`wt<N>_local` / `wt<N>_test`), not "a different container on a different port". That removes the
-need to allocate a host port per DB, so neither "another worktree holds 5432, so `make test` cannot
+need to allocate a host port per DB, so neither "another worktree holds 5432, so `make go-test` cannot
 run" nor "the main checkout's serve collides with a worktree's DB" can happen. For o11y, sharing is
 an advantage: the traces / metrics / logs of every checkout land in a single Grafana.
 
@@ -31,7 +31,7 @@ do so *silently*: the failure surfaces later as a test that passes against anoth
 migrations, or as a generated artifact rebuilt from a schema someone else was mid-migration on.
 `make require-db-owner` (`.makefiles/database/pool.mk`) is therefore a prerequisite of every target
 that resolves a database name — `db-migrate-*` / `db-seed` / `db-drop-tables` / `db-ensure` /
-`dump-schema`, plus `make test` / `test-cached` / `gen-test-repo` (a host-run `go test` reads
+`dump-schema`, plus `make go-test` / `go-test-cached` / `gen-test-repo` (a host-run `go test` reads
 `DB_NAME_TEST`) and `make serve` / `serve-build` / `serve-build-clean` (the app container reads
 the resolved `DB_LOCAL`). The check lives in `internal/cli/dbslot`. A linked worktree is identified by the
 `git-dir` ≠ `git-common-dir` split, so the main checkout and CI pass through untouched. The cases
@@ -40,7 +40,7 @@ containers) and no repository both pass through, since neither can be a worktree
 that *is* a repository whose layout `git` will not report fails instead — a worktree cannot be ruled
 out there, and falling back silently is precisely what this guard exists to prevent.
 
-The consequence to know about: in a worktree, `make test` fails until you run `make slot-acquire`.
+The consequence to know about: in a worktree, `make go-test` fails until you run `make slot-acquire`.
 That is the point — before this guard it quietly ran against the shared `test` database.
 
 ## How it works
@@ -94,7 +94,7 @@ That is the point — before this guard it quietly ran against the shared `test`
   in (see `database/seed/README.md`), so `db-reinit` / `db-seed` / `slot-acquire` all leave an identity
   that matches the environment. Data of this kind that you add later has to follow the slot the same
   way, rather than pinning the default port. Like the database name, the value reaches a host-run
-  `go test` only through `make` (`make test` / `test-cached` export it) — run DB-backed tests through
+  `go test` only through `make` (`make go-test` / `go-test-cached` export it) — run DB-backed tests through
   those targets, since a bare `go test` gets neither `DB_NAME_TEST` nor the slot's issuer.
 - **extension bootstrap**: after `CREATE DATABASE` (guarded by an existence check) for
   `wt<N>_local` / `wt<N>_test`, acquire sets the `pg_trgm` extension on each database (the same thing
@@ -147,7 +147,7 @@ Acquire a slot when working in a worktree in parallel.
 
 ```sh
 make slot-acquire    # lease a free slot and create/rebuild this worktree's databases
-make test            # connects from the host through localhost:5432 to wt<N>_test
+make go-test            # connects from the host through localhost:5432 to wt<N>_test
 make serve           # start the app as gobp-wt-N → curl localhost:$API_HOST_PORT (DB is the shared wt<N>_local)
 make slot-status     # show slot occupancy (database names / API ports)
 make slot-free       # release only the slot (databases stay warm, the worktree stays)
@@ -191,7 +191,7 @@ not passed. Run by mistake in the main checkout, it exits with an error without 
   same time, packages unrelated to your change fail with `failed to ping DB`, while `too many clients`
   never appears. The instance has connections to spare; what saturates is how many are being
   *established* at the same instant, and the ping budget expires while they queue. It does not take two
-  worktrees — lefthook's `pre-commit` / `pre-push` are `parallel: true`, so `make lint` and `make test`
+  worktrees — lefthook's `pre-commit` / `pre-push` are `parallel: true`, so `make go-lint` and `make go-test`
   overlap inside a single checkout. The test path is already tuned against this: see `DBCONN_MIN_CONNS`
   and `DB_PING_TIMEOUT` in `env/README.md` for what `ci` sets and why, mirrored by the test
   configuration in `internal/config` for the paths that do not load an env file. To diagnose a

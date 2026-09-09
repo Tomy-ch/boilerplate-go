@@ -82,6 +82,6 @@ accepted
 <!-- sample-api:replace-with -->
 <!-- = - lexicon パッケージ: まだ受け入れたものは無い。`internal/domain/lexicon/` は受け入れバーだけを持つ。 -->
 <!-- sample-api:replace-end -->
-- 強制: `.golangci-full.yaml` の depguard `maintain_a_sound_domain`（`internal/domain/` を deny、`internal/domain/lexicon` を allow）。
+- 強制: `.golangci.yaml` の depguard `maintain_a_sound_domain`（`internal/domain/` を deny、`internal/domain/lexicon` を allow）。
 - 受け入れバー: `internal/domain/lexicon/README.md`、レイヤールール: `docs/rules.md`。
 - これが可能にする 2 スケール数量モデル: [ADR-0038](0038-two-scale-quantity-model.ja.md)。

@@ -38,7 +38,7 @@ describe("expandBraces", () => {
       expect(expandBraces("{a,b}-{x,y}")).toEqual(["a-x", "a-y", "b-x", "b-y"]);
     });
     it("波括弧が無ければそのまま 1 件で返す", () => {
-      expect(expandBraces("make lint")).toEqual(["make lint"]);
+      expect(expandBraces("make go-lint")).toEqual(["make go-lint"]);
     });
   });
 });
@@ -142,7 +142,7 @@ describe("eachLineOutsideFence", () => {
 describe("extractInlineCode", () => {
   describe("正常系", () => {
     it("スパンの中身を前後の空白を落として返す", () => {
-      expect(extractInlineCode("実行は `make lint` です")).toEqual(["make lint"]);
+      expect(extractInlineCode("実行は `make go-lint` です")).toEqual(["make go-lint"]);
     });
     it("1 行の複数スパンを順に返す", () => {
       expect(extractInlineCode("`a` と `b`")).toEqual(["a", "b"]);
@@ -310,10 +310,10 @@ describe("collectMakeTargets", () => {
 describe("extractMakeTargets", () => {
   describe("正常系", () => {
     it("make に続くターゲット名を取り出す", () => {
-      expect(extractMakeTargets("make lint")).toEqual(["lint"]);
+      expect(extractMakeTargets("make go-lint")).toEqual(["go-lint"]);
     });
     it("複数ターゲットを取り出す", () => {
-      expect(extractMakeTargets("make lint test")).toEqual(["lint", "test"]);
+      expect(extractMakeTargets("make go-lint test")).toEqual(["go-lint", "test"]);
     });
     it("オプションを読み飛ばす", () => {
       expect(extractMakeTargets("make -s gate-heavy-skip")).toEqual(["gate-heavy-skip"]);
@@ -331,7 +331,7 @@ describe("extractMakeTargets", () => {
       expect(extractMakeTargets("makefile")).toEqual([]);
     });
     it("シェル演算子以降を引数と見なさない", () => {
-      expect(extractMakeTargets("make lint 2>&1")).toEqual(["lint"]);
+      expect(extractMakeTargets("make go-lint 2>&1")).toEqual(["go-lint"]);
     });
   });
 });

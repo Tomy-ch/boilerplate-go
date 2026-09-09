@@ -68,9 +68,9 @@ The gates that run on `pre-commit` and `pre-push` are the same ones CI runs, so 
 is one where you ran them first:
 
 ```sh
-make fix     # format + lint auto-fix
-make lint    # the authoritative golangci-lint gate
-make test    # tests with coverage (run `make db-init` first)
+make go-fix     # format + lint auto-fix
+make go-lint    # the authoritative golangci-lint gate
+make go-test    # tests with coverage (run `make db-init` first)
 make gen     # only when you changed OpenAPI, SQL, or anything else generated
 ```
 

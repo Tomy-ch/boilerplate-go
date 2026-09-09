@@ -1,6 +1,6 @@
 ---
 name: arch-check
-description: Integrator skill for architectural compliance checks. Confirms scope + TODO opt via `AskUserQuestion` (changed files vs full repo), detects which layers are touched, resolves the file list and runs `make lint` ONCE, then fans out the relevant read-only `arch-auditor-*` subagents (`arch-auditor-domain` / `-usecase` / `-controller` / `-infra` / `-pkg`) IN PARALLEL via the Agent tool — passing scope + resolved files + the shared lint output so each auditor skips its own scope question and does not re-run lint. When domain code or the ADR / README corpus is touched, it additionally fans out `ddd-origin-auditor` in quick mode, so a change that quietly moves the repo's DDD interpretation is caught in the same pass. Under a diff-independent scope (whole repo / a chosen layer) it also fans out `ddd-modeling-reviewer`, which is what makes this the entry point for a domain-modeling question that has no diff behind it — 「この集約境界は今のままで妥当か」「この規則はこのエンティティが持つべきか」「Order と Shipment の境界は意味的に整合するか」 — since `impl-review` owns that lens only for a change and all three of its scopes are diff-based; under "changed files" this integrator stands down and says so, so the two never double-report. Aggregates findings into a single Japanese report grouped by layer. Each auditor enforces its own README rules + lean A conventions (controller / infra have additional convention enforcement since they're scaffold-derived, not spec-driven). Detection is delegated to the read-only auditor subagents; the integrator itself only writes the optional `// TODO:` hand-off comments (single-threaded, after aggregation) when the user opts in. To audit a single layer, run this integrator and pick that layer in the scope question.
+description: Integrator skill for architectural compliance checks. Confirms scope + TODO opt via `AskUserQuestion` (changed files vs full repo), detects which layers are touched, resolves the file list and runs `make go-lint` ONCE, then fans out the relevant read-only `arch-auditor-*` subagents (`arch-auditor-domain` / `-usecase` / `-controller` / `-infra` / `-pkg`) IN PARALLEL via the Agent tool — passing scope + resolved files + the shared lint output so each auditor skips its own scope question and does not re-run lint. When domain code or the ADR / README corpus is touched, it additionally fans out `ddd-origin-auditor` in quick mode, so a change that quietly moves the repo's DDD interpretation is caught in the same pass. Under a diff-independent scope (whole repo / a chosen layer) it also fans out `ddd-modeling-reviewer`, which is what makes this the entry point for a domain-modeling question that has no diff behind it — 「この集約境界は今のままで妥当か」「この規則はこのエンティティが持つべきか」「Order と Shipment の境界は意味的に整合するか」 — since `impl-review` owns that lens only for a change and all three of its scopes are diff-based; under "changed files" this integrator stands down and says so, so the two never double-report. Aggregates findings into a single Japanese report grouped by layer. Each auditor enforces its own README rules + lean A conventions (controller / infra have additional convention enforcement since they're scaffold-derived, not spec-driven). Detection is delegated to the read-only auditor subagents; the integrator itself only writes the optional `// TODO:` hand-off comments (single-threaded, after aggregation) when the user opts in. To audit a single layer, run this integrator and pick that layer in the scope question.
 ---
 
 # Arch Check
@@ -19,7 +19,7 @@ To audit a single layer, run this integrator and pick that layer in the scope qu
 
 Do NOT use this skill for:
 
-- Style / formatting — `make fix` / `make lint`.
+- Style / formatting — `make go-fix` / `make go-lint`.
 - General code review — `/review` / `/ultrareview` / `impl-review`.
 - Spec validation — `verify-spec`.
 
@@ -137,12 +137,12 @@ For "specific layer" mode: ask user which layer(s), then fan out only those.
 
 If no layers detected (changed-files mode with no Go changes) → exit cleanly with message.
 
-## Step 2. Run `make lint` ONCE (shared baseline)
+## Step 2. Run `make go-lint` ONCE (shared baseline)
 
-`make lint` covers the whole repo, so run it a single time and share the output with every auditor — never let each auditor re-run it (that would be N concurrent full-repo lints):
+`make go-lint` covers the whole repo, so run it a single time and share the output with every auditor — never let each auditor re-run it (that would be N concurrent full-repo lints):
 
 ```sh
-make lint 2>&1 | tee /tmp/arch-check-lint.out
+make go-lint 2>&1 | tee /tmp/arch-check-lint.out
 ```
 
 If lint fails for reasons unrelated to the audited layers, surface the verbatim failure and stop (do not fan out auditors against a broken baseline).
@@ -187,7 +187,7 @@ Combine all auditor findings into a single Japanese report:
 arch-check 統合結果（スコープ: <scope>）
 
 [lint baseline]
-  make lint: OK / FAIL (<n>件)
+  make go-lint: OK / FAIL (<n>件)
 
 [domain] violations: N, suggestions: K
   internal/domain/foo/bar.go:12 ...
@@ -248,13 +248,13 @@ If the user opted "TODO 追加なし", skip this step entirely (strictly read-on
 
 ## AI Modification Scope
 
-- 読み込み: 各 layer の README + 関連ファイル（auditor subagent が実施）、`make lint`（integrator が1回実行、`/tmp/arch-check-lint.out`）
+- 読み込み: 各 layer の README + 関連ファイル（auditor subagent が実施）、`make go-lint`（integrator が1回実行、`/tmp/arch-check-lint.out`）
 - 書き込み: user opt 時のみ、`internal/{domain,controller,infrastructure}/**/*.go` の suggestion 位置への `// TODO:` hand-off コメント追加（**integrator が単一スレッドで実施**）。auditor subagent は一切書き込まない。
 
 ## Constraints
 
 - ❌ auditor を逐次起動する（必ず1メッセージ内で複数 Agent 呼び出し＝並列）
-- ❌ 各 auditor に `make lint` を再実行させる（共有 `lintOutput` を渡す）
+- ❌ 各 auditor に `make go-lint` を再実行させる（共有 `lintOutput` を渡す）
 - ❌ Skip scope + TODO opt `AskUserQuestion`
 - ❌ Heuristic findings (handler bloat 等) を hard violation 扱い（auditor が `suggestion` ラベル付け、integrator は respect）
 - ❌ `[ddd-origin]` の差異を violation に合算する / TODO hand-off の対象にする（裁定しない検出なので defer 先も無い）
@@ -271,7 +271,7 @@ If the user opted "TODO 追加なし", skip this step entirely (strictly read-on
 
 - [ ] Scope + TODO opt confirmed via `AskUserQuestion`
 - [ ] Layer detection + per-layer file list resolved from changed files / full repo
-- [ ] `make lint` を1回だけ実行し `/tmp/arch-check-lint.out` に保存
+- [ ] `make go-lint` を1回だけ実行し `/tmp/arch-check-lint.out` に保存
 - [ ] Touched layers の `arch-auditor-*` を **1メッセージ内で並列起動**（scope / files / baseRef / lintOutput を渡す）
 - [ ] domain / ADR / README が touched なら `ddd-origin-auditor` を同じメッセージで並列起動（`quick`、選択パターンごとに1つ）
 - [ ] 各 auditor が自身の README + lean A 規則を適用（read-only）

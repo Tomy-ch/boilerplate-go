@@ -158,9 +158,9 @@ GitHub の *Use this template* でリポジトリを作成し、自分のもの�
 | ステップ | コマンド | 補足 |
 | --- | --- | --- |
 | 生成 | `make gen` | OpenAPI → サーバコード / モック、SQL → 型安全な Go、続いてドキュメント。生成ファイルは手編集せず、CI が再生成して差分で落とします。 |
-| 自動修正 | `make fix` | Go の整形と lint 自動修正。Markdown / SQL は `make md-fix` / `make sql-fix`。 |
-| 静的解析 | `make lint` | golangci-lint。レイヤ境界をビルドエラーにする depguard ルールを含みます。 |
-| テスト | `make test` | カバレッジ付きの Go テスト。先に `make db-init` が必要です（マイグレーション**とシード**を前提とします）。 |
+| 自動修正 | `make go-fix` | Go の整形と lint 自動修正。Markdown / SQL は `make md-fix` / `make sql-fix`。 |
+| 静的解析 | `make go-lint` | golangci-lint。レイヤ境界をビルドエラーにする depguard ルールを含みます。 |
+| テスト | `make go-test` | カバレッジ付きの Go テスト。先に `make db-init` が必要です（マイグレーション**とシード**を前提とします）。 |
 
 レビューに頼らず機械的に検査されるもの:
 

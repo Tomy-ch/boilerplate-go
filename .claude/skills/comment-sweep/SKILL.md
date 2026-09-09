@@ -360,7 +360,7 @@ the stock nobody re-reads.
 Run this only when something was written. 報告のみ has nothing to verify; 自動適用 needs it most,
 because no human read the edits one at a time.
 
-- `make fix` then `make lint` over the touched packages — `revive exported` will catch a doc comment
+- `make go-fix` then `make go-lint` over the touched packages — `revive exported` will catch a doc comment
   deleted where the convention requires one.
 - `make md-lint` when a Markdown destination was written.
 - Re-read each edited comment once: does the residue still stand on its own for someone who does not

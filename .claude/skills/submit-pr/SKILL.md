@@ -141,7 +141,7 @@ Fill each template section in Japanese:
 
 - **概要**: 1–3 sentences summarizing the PR's intent. Use commit messages as the primary source.
 - **変更内容**: Bullet list grouped by area (API / DB / 内部ロジック / テスト / ドキュメント など). Reference changed files and commit titles. Group meaningfully — do not paste a raw file list.
-- **動作確認方法**: Concrete verification steps. Adapt to what actually changed: `make serve` + curl for API changes, `make db-local-migrate-up` for migrations, `make test` for logic, etc.
+- **動作確認方法**: Concrete verification steps. Adapt to what actually changed: `make serve` + curl for API changes, `make db-local-migrate-up` for migrations, `make go-test` for logic, etc.
 
 If the branch name encodes an issue number, append `closes #N` at the bottom of the body (or fold it into 概要 if natural).
 
@@ -191,7 +191,7 @@ On push failure (non-fast-forward, permission denied, network error, etc.), repo
 
 `pre-push` runs the heavy Go gates through `make gate-go-push`, and `.makefiles/load.mk` decides from the number of open worktrees whether they run at full speed, throttled, or are deferred to CI (`repo-ops` §19; `make load-status` reports the band). Let the hook make that call.
 
-Do **not** run `make lint` / `make test` by hand before pushing to "make sure" — with several windows open that is minutes of saturated host to rediscover what CI runs identically, and the saturation itself makes unrelated gates fail. Pushing *is* the verification step in the `ci-first` band. If the hook fails for a reason outside this change, `repo-ops` §11 covers the `--no-verify` carve-out.
+Do **not** run `make go-lint` / `make go-test` by hand before pushing to "make sure" — with several windows open that is minutes of saturated host to rediscover what CI runs identically, and the saturation itself makes unrelated gates fail. Pushing *is* the verification step in the `ci-first` band. If the hook fails for a reason outside this change, `repo-ops` §11 covers the `--no-verify` carve-out.
 
 When the band deferred gates to CI, say so in Step 8's report and treat the PR as unverified until its checks land — do not describe it as passing local verification it never ran.
 

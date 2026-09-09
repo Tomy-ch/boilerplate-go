@@ -52,7 +52,7 @@ not apply. `queue/` itself holds no Go code; these viewpoints govern the adapter
 adapter that needs its own is expected to declare one in its package README rather than widen this.
 
 - **The broker is a generated mock of the SDK's API client, and the container above is not a test
-  dependency.** `make test` starts nothing: the emulator table exists for `make serve` and for manual
+  dependency.** `make go-test` starts nothing: the emulator table exists for `make serve` and for manual
   verification of behaviour an SDK mock cannot represent (real visibility timeouts, redrive). Naming a
   queue URL in a test is a fixture string, never a connection.
 - **The SDK call is asserted, not just the outcome.** An adapter's job is to translate a boundary call

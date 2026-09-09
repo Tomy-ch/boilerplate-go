@@ -8,7 +8,7 @@
 
 1. **コード生成は Docker のツールランナーコンテナ内で root 実行される**（`go_tool_runner` / `node_tool_runner` / `python_tool_runner`）。`.:/app` バインドマウント越しなので生成物は root 所有で返り、ツールはホストではなくイメージ側に居る。
 2. **インフラは単一の共有 compose プロジェクト**。`database` / `observability` / `garage` は固定プロジェクト `gobp-shared` に**全 checkout で 1 インスタンス**だけ起動し、checkout 毎に分かれるのは `api_server` / `mock_auth_server` のみ。worktree の分離軸はポートではなく**データベース名**（`wt<N>_local` / `wt<N>_test`）。設計の正本は `docs/maintenance/db-worktree-pool.md`、全体像は `docs/maintenance/local-environment.md`。
-3. **`make lint` / `fix` / `test` はホスト実行**（mise 経由）。「全部 docker 化」の例外であり、ローカルと CI が食い違う原因になる。
+3. **`make go-lint` / `fix` / `test` はホスト実行**（mise 経由）。「全部 docker 化」の例外であり、ローカルと CI が食い違う原因になる。
 
 ## 契約
 
@@ -38,7 +38,7 @@
 | 触っていないパッケージの依存が無いとコンテナ側のゲートが言う / `make` では落ちるのに素の `docker compose run` では通る | §9 |
 | 自分の変更と無関係な理由でフックが落ちる | §10 |
 | 複数の worktree を開いている状態で、変更と無関係にゲートが落ちる／異常に遅い | §19 |
-| `make lint` がスキップ・低速化・CI 委譲された理由を知りたい | §19 |
+| `make go-lint` がスキップ・低速化・CI 委譲された理由を知りたい | §19 |
 | `pin-images-check` / `pin-actions-check` が未固定・未登録で落ちる | §11 → `images-pin` / `actions-pin` |
 | `tool-cooldown` / `go-cooldown` が宣言したばかりの版を弾く | §20 → `supply-chain-triage` |
 | ランタイムの昇格が、まだ上げられないツールを経由してゲートを壊す | §20 → `tools-upgrade` |
@@ -170,7 +170,7 @@ docker compose run --rm --user root go_tool_runner   chown -R $(id -u):$(id -g) 
   make db-reinit DB="$DB_NAME_TEST"
   ```
 
-- **素の `go test ./...` には `DB_NAME_TEST` が渡らない** — export しているのは make であってシェルではない — ため、黙って共有 `test` データベースへ繋ぐ。そこは別ブランチの migration が当たっているかもしれない。`make test` を使う（あるいは自分で export する）。
+- **素の `go test ./...` には `DB_NAME_TEST` が渡らない** — export しているのは make であってシェルではない — ため、黙って共有 `test` データベースへ繋ぐ。そこは別ブランチの migration が当たっているかもしれない。`make go-test` を使う（あるいは自分で export する）。
 
 統合テスト（`internal/integration`・`internal/infrastructure/rdb/**`）は自分でマイグレーションしない。migrate + seed 済みのデータベースを前提にする。migration の異なるブランチへ切り替えたら先に作り直すこと。スロットの DB は `make slot-acquire` が、共有 `test` は `make db-test-reinit` が担当する。`db-init` より `db-reinit` を優先すること: `db-init` は先に `migrate-down` を走らせるため、`.down.sql` が失われたダーティスキーマからは復帰できない。
 
@@ -196,14 +196,14 @@ make restore-env          # git restore env/.env
 
 ## 8. ホスト実行の lint / format / test と、2つの golangci 設定
 
-`make lint` / `make fix` は golangci-lint を**ホスト**の mise 経由で解決し（`mise which golangci-lint`）、`make test` もホストで `go test` を走らせる。バイナリが無ければ `mise install`。ここでコンテナに手を伸ばさない。
+`make go-lint` / `make go-fix` は golangci-lint を**ホスト**の mise 経由で解決し（`mise which golangci-lint`）、`make go-test` もホストで `go test` を走らせる。バイナリが無ければ `mise install`。ここでコンテナに手を伸ばさない。
 
 設定ファイルは2本あり、素の `golangci-lint run` は誤ったほうを拾う:
 
 ```bash
 golangci-lint run                                  # → .golangci.yaml（軽量。一部 linter が無効）
-make lint                                          # → .golangci-full.yaml。CI と同じ
-golangci-lint run --config .golangci-full.yaml     # 追加フラグを付けたいときはこちら
+make go-lint                                          # → .golangci.yaml。CI と同じ
+golangci-lint run --config .golangci.yaml     # 追加フラグを付けたいときはこちら
 ```
 
 CI の失敗を再現するときは必ず full 設定を使う。
@@ -214,7 +214,7 @@ CI の失敗を再現するときは必ず full 設定を使う。
 
 対象が複数パッケージにまたがる点は意外に映る。`docs-viewer/` だけに閉じた変更でも、両方とも単一の node ランナーへ install されるため、`scripts/` 側のゲートが走るイメージが古くなる。
 
-最後の症状は、変更との関係が見えにくい。`scripts/pnpm-workspace.yaml` は `verifyDepsBeforeRun: error` を設定しているため、その設定がイメージ内の `scripts/node_modules` を入れたときの設定と食い違うと、ランナー内の `pnpm run` はすべて `[ERR_PNPM_VERIFY_DEPS_BEFORE_RUN] The value of the <setting> setting has changed` で落ちる。倒れるのは変更と無関係に見えるゲート（`make md-lint` / `make actions-lint` / `make lint-oapi`）で、一方ホスト側の `-ci` ターゲットは緑のままである（ファイル変更時にホストのツリーは入れ直されているため）。`minimumReleaseAgeExclude` や `overrides` のエントリを 1 行足すだけで発火する。したがって**ホストで緑であることは、コンテナ側のゲートが通る証拠にならない**。先に再ビルドし、そのうえで報告するつもりのゲートを回し直すこと。
+最後の症状は、変更との関係が見えにくい。`scripts/pnpm-workspace.yaml` は `verifyDepsBeforeRun: error` を設定しているため、その設定がイメージ内の `scripts/node_modules` を入れたときの設定と食い違うと、ランナー内の `pnpm run` はすべて `[ERR_PNPM_VERIFY_DEPS_BEFORE_RUN] The value of the <setting> setting has changed` で落ちる。倒れるのは変更と無関係に見えるゲート（`make md-lint` / `make actions-lint` / `make oapi-lint`）で、一方ホスト側の `-ci` ターゲットは緑のままである（ファイル変更時にホストのツリーは入れ直されているため）。`minimumReleaseAgeExclude` や `overrides` のエントリを 1 行足すだけで発火する。したがって**ホストで緑であることは、コンテナ側のゲートが通る証拠にならない**。先に再ビルドし、そのうえで報告するつもりのゲートを回し直すこと。
 
 古いイメージは、**触ってすらいないパッケージの依存が見つからない、という形でコンテナ側のゲートを落とす**形でも現れる。1:1 テストゲート（`scripts/one-to-one.gate.test.ts`）は両パッケージを型検査するため、`docs-viewer/` が現在の manifest を得る前にビルドされたイメージは、`docs-viewer/src/**` に対して TS2307 `Cannot find module` を並べて返す。リポジトリが依存の宣言を忘れているように読めるが、探す木が違う。
 
@@ -243,9 +243,9 @@ pin を上げてはならない。
 
 | フック | glob → コマンド（抜粋） |
 | --- | --- |
-| pre-commit | `*.go` → `make gate-go`（`lint` + `test-cached` を束ねる）／`scripts/**/*.go` → `make test-scripts-cached`／`*.sql` → `make sql-lint`／`*.md` → `make md-lint`／`.github/workflows/**` → `make actions-lint`・`make pin-actions-check`／`openapi/**` → `make lint-oapi`／`docker/**/Dockerfile`・`docker-compose*.yaml` → `make docker-lint`・`make pin-images-check`／`database/migrations/*.sql` → migration の重複・ギャップ検査 |
+| pre-commit | `*.go` → `make gate-go`（`lint` + `go-test-cached` を束ねる）／`scripts/**/*.go` → `make go-test-scripts-cached`／`*.sql` → `make sql-lint`／`*.md` → `make md-lint`／`.github/workflows/**` → `make actions-lint`・`make pin-actions-check`／`openapi/**` → `make oapi-lint`／`docker/**/Dockerfile`・`docker-compose*.yaml` → `make docker-lint`・`make pin-images-check`／`database/migrations/*.sql` → migration の重複・ギャップ検査 |
 | commit-msg | `make commitlint COMMIT_MSG_FILE={1}` |
-| pre-push | `make secret-scan`／`*.go` → `make gate-go-push`（`test` + `test-scripts` を束ねる）／`*.go`・`openapi/**` → 再生成して `*.gen.go`・mock・`openapi.gen.yaml` を `git diff --exit-code`／`go.mod`・`go.sum` → `go mod tidy` + diff |
+| pre-push | `make secret-scan`／`*.go` → `make gate-go-push`（`test` + `go-test-scripts` を束ねる）／`*.go`・`openapi/**` → 再生成して `*.gen.go`・mock・`openapi.gen.yaml` を `git diff --exit-code`／`go.mod`・`go.sum` → `go mod tidy` + diff |
 
 Go のゲートは 1 コマンドずつ並べず `gate-go` / `gate-go-push` に**束ねてある**。lefthook はフック内の commands を並列に走らせるため、ゲートごとにエントリを置くと、開いている窓の数に**加えて**ゲートの数だけホスト負荷が乗算されるためである。どれだけ全力で走るかは §19 が決める。
 
@@ -307,7 +307,7 @@ setup / teardown 系ターゲットは `$(if $(DRY_RUN),--dry-run,)` と `[ -n "
 
 ## 18. 新しい worktree の `go: inconsistent vendoring` — `make serve` は成功と出るが API が応答しない
 
-`vendor/` は追跡外（`.gitignore`）である——サプライチェーン上の理由は `docs/design/security.md` に記録されている——ため、新しい worktree / clone には最初から存在しない。vendor モードを強制するビルド経路はちょうど 2 つで、air のホットリロードビルド（`.air.toml` の `go build --mod=vendor`）と runtime イメージビルド（`docker/server/Dockerfile` の `go build -mod=vendor`。`GOPROXY=off` 下なので取得へフォールバックできない）。それ以外——`make test`・`make lint`・ホストの `go run`——はモジュールキャッシュから解決して緑のままなので、アプリ本体がビルドされるまで何も警告してくれない:
+`vendor/` は追跡外（`.gitignore`）である——サプライチェーン上の理由は `docs/design/security.md` に記録されている——ため、新しい worktree / clone には最初から存在しない。vendor モードを強制するビルド経路はちょうど 2 つで、air のホットリロードビルド（`.air.toml` の `go build --mod=vendor`）と runtime イメージビルド（`docker/server/Dockerfile` の `go build -mod=vendor`。`GOPROXY=off` 下なので取得へフォールバックできない）。それ以外——`make go-test`・`make go-lint`・ホストの `go run`——はモジュールキャッシュから解決して緑のままなので、アプリ本体がビルドされるまで何も警告してくれない:
 
 ```txt
 go: inconsistent vendoring in /app:
@@ -325,7 +325,7 @@ make serve
 
 ## 19. 変更と無関係な理由でゲートが落ちた — 開いている窓の数を見る
 
-複数の worktree がそれぞれホスト全体を前提としたゲートを回すとホストが飽和し、ゲートは「変更の欠陥に見える形」で落ち始める。触っていないテストがタイムアウトし、`make lint` が 17 分かかり、`docker` が応答を返さなくなる（共有 DB 飽和・CPU 飽和の罠として現れることもある）。失われるのは所要時間ではなく、**ゲートの失敗がコードについての証拠でなくなること**である。
+複数の worktree がそれぞれホスト全体を前提としたゲートを回すとホストが飽和し、ゲートは「変更の欠陥に見える形」で落ち始める。触っていないテストがタイムアウトし、`make go-lint` が 17 分かかり、`docker` が応答を返さなくなる（共有 DB 飽和・CPU 飽和の罠として現れることもある）。失われるのは所要時間ではなく、**ゲートの失敗がコードについての証拠でなくなること**である。
 
 `.makefiles/load.mk` が make のパース時に `git worktree list` から重いゲートの規模を決めるため、誰も絞ることを覚えている必要はない。他を診断する前に、まず何が選ばれたかを訊く。
 
@@ -344,13 +344,13 @@ make load-status     # 帯・窓数・CPU シェア・各ツールへ渡るフ�
 残りを委譲したまま重いゲートを 1 つだけ手で回したいときは、呼び出し単位で上書きする。
 
 ```bash
-make lint GOBP_LOAD=low       # これだけ絞って走らせる
-make test GOBP_LOAD=full      # 帯を無視する（単一窓のマシン向け）
+make go-lint GOBP_LOAD=low       # これだけ絞って走らせる
+make go-test GOBP_LOAD=full      # 帯を無視する（単一窓のマシン向け）
 ```
 
 閾値は `GOBP_LOW_THRESHOLD` / `GOBP_CI_FIRST_THRESHOLD`。絞る対象は**毎コミット・毎 push で走る**ゲートだけで、単発の重い処理（イメージビルド・コード生成・Trivy）は放置する。ループで回すものではないためである。
 
-**窓が多いときに、CI の lint 失敗を再現するため `make lint` をローカルで回さないこと。** CI のログを読み、そこに名指しされた formatter / linter だけを当てる（config の選択は §8）。フルのローカル実行は、CI が既に出力した内容を再発見するために飽和したホストを数分間占有するだけである。
+**窓が多いときに、CI の lint 失敗を再現するため `make go-lint` をローカルで回さないこと。** CI のログを読み、そこに名指しされた formatter / linter だけを当てる（config の選択は §8）。フルのローカル実行は、CI が既に出力した内容を再発見するために飽和したホストを数分間占有するだけである。
 
 自分の変更と無関係な理由で既に赤いフックについては、§10 が `--no-verify` の例外を扱う。
 

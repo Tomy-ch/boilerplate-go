@@ -215,7 +215,7 @@ pnpm install --lockfile-only
 
 `--lockfile-only` は `node_modules/` を実体化せずに解決して `pnpm-lock.yaml` を書き直す。差分を読み戻し、意図した package だけが動いたことを確認する — pnpm の lockfile バンプは通常数行で、差分が広ければ他の何かが再解決されている。
 
-**pnpm — 推移的依存**: `<dir>/pnpm-workspace.yaml`（`package.json` ではない）に `overrides` エントリを追加し、本ファイル冒頭の注意に従って解決版域として書いてから `pnpm install --lockfile-only`。同一 major フロアの原則と暫定債務の原則は npm 節のまま適用する。
+**pnpm — 推移的依存**: `<dir>/pnpm-workspace.yaml`（`package.json` ではない）に `overrides` エントリを追加し、本ファイル冒頭の注意に従って解決版域として書いてから `pnpm install --lockfile-only`。同一 major フロアの原則と暫定債務の原則は上で述べたままに適用する。
 
 **pnpm — cooldown が阻む版を、Step 5 でユーザーが例外を承認した後に入れる場合**: そのパッケージの `pnpm-workspace.yaml` の `minimumReleaseAgeExclude` へ、既存エントリと同じ形式で追加する。
 
@@ -247,7 +247,7 @@ go mod vendor        # リポジトリが vendoring するとき（vendor/module
 
 実際に変わったものに合わせてチェックを走らせる — 依存パッチが一次ソースに触れることは稀なので、常にフルスイートを回すのではなく、動いたエコシステムに検証をスコープする。各々を OK / FAIL で報告し、失敗しても自動ロールバックしない — ユーザーが判断する。
 
-Go 変更は最低限ビルド + vuln スキャンが clean であること（`go build ./...` + `govulncheck ./...`）。Go 変更がフルスイートに値するほど広ければ `make lint` / `make test` を回す。**pnpm パッケージの major バンプ** はより入念に検証する — その package 自身の `typecheck` + テスト（例 `docs-viewer/` で `pnpm typecheck` + `pnpm test`）を回す。major は呼び出す API を変え得るため。
+Go 変更は最低限ビルド + vuln スキャンが clean であること（`go build ./...` + `govulncheck ./...`）。Go 変更がフルスイートに値するほど広ければ `make go-lint` / `make go-test` を回す。**pnpm パッケージの major バンプ** はより入念に検証する — その package 自身の `typecheck` + テスト（例 `docs-viewer/` で `pnpm typecheck` + `pnpm test`）を回す。major は呼び出す API を変え得るため。
 
 pnpm 変更 — 意図は同じで、変更した各 package ディレクトリで `pnpm audit`。加えて npm には不要な手順が 1 つある:
 
@@ -277,7 +277,7 @@ govulncheck ./...                # 利用可能なら。GHSA が解消するこ�
 
 再生成で変更が出たら含める — 生成出力を黙って変えるセキュリティバンプが、CI の drift チェックを落とす状態でツリーを残してはならない。
 
-**tool-runner イメージの drift（pnpm 変更時のみ）。** runner イメージは `scripts/node_modules` を焼き込むため、`scripts/package.json` + `scripts/pnpm-lock.yaml` + `scripts/pnpm-workspace.yaml` のビルド生成物である。それらを変えた後、コンテナ経由のゲート（`make md-lint` / `make actions-lint` / `make lint-oapi` 等）はイメージを再ビルドするまで `ERR_PNPM_VERIFY_DEPS_BEFORE_RUN` で落ちる:
+**tool-runner イメージの drift（pnpm 変更時のみ）。** runner イメージは `scripts/node_modules` を焼き込むため、`scripts/package.json` + `scripts/pnpm-lock.yaml` + `scripts/pnpm-workspace.yaml` のビルド生成物である。それらを変えた後、コンテナ経由のゲート（`make md-lint` / `make actions-lint` / `make oapi-lint` 等）はイメージを再ビルドするまで `ERR_PNPM_VERIFY_DEPS_BEFORE_RUN` で落ちる:
 
 ```sh
 make tool-runners-build
@@ -295,7 +295,7 @@ make tool-runners-build
 - 追加した `minimumReleaseAgeExclude` エントリ: どのパッケージに入れたか、どの版を免除するか、そして **いつ削除しなければならないか** — 完了項目ではなく、ユーザーが負うフォローアップとして書く。
 - cooldown が捕捉した各エントリについて、そのトリアージ・バンドとそれを決めた軸。採用か待機かの判断が証拠に基づいたことを記録に残すため。答えられなかった軸があればそれも挙げる。
 - ユーザーが別手段で対処すべき `not-present` / `needs-manual` エントリ。
-- 検証結果（`make lint` / `make test` / `npm audit` / `pnpm audit` / frozen install / `govulncheck` / drift チェック）。
+- 検証結果（`make go-lint` / `make go-test` / `npm audit` / `pnpm audit` / frozen install / `govulncheck` / drift チェック）。
 - 再生成物（あれば）と、tool-runner イメージを再ビルドしたかどうか。
 
 commit / stage / push はしない。ユーザーがツリーをレビューし `/commit` を手動実行する。コミットを求められた場合、セキュリティパッチは `docker/**` + `go.mod` + 再生成物にまたがることが多い旨を伝え、CVE を説明する明確な `Build:` / `Fix:` コミットにまとめる。
@@ -330,7 +330,7 @@ commit / stage / push はしない。ユーザーがツリーをレビューし 
 - [ ] 承認された `minimumReleaseAgeExclude` は `pkg@version` 形式で削除日 + advisory + 動作箇所を添えて書き、影響する **すべての** パッケージに入れ、窓の設定自体には触れていない
 - [ ] 追加した override を報告で暫定と明示した（親が修正版を native に出したら回収 — 親バンプ・override 削除・再 audit）
 - [ ] Go は 1 回にまとめた `go get module@ver ...` + `go mod tidy`、vendoring するなら `go mod vendor`
-- [ ] npm 変更に `npm audit`、pnpm 変更に `pnpm install --frozen-lockfile` + `pnpm audit`、Go 変更に `govulncheck` + build、スコープに応じ `make lint` / `make test`（major バンプはより入念に — typecheck / package テスト）
+- [ ] pnpm 変更に `pnpm install --frozen-lockfile` + `pnpm audit`、Go 変更に `govulncheck` + build、スコープに応じ `make go-lint` / `make go-test`（major バンプはより入念に — typecheck / package テスト）
 - [ ] 生成器を養う依存には drift を確認し再生成物を含めた。`scripts/` の pnpm 変更後、コンテナ経由のゲートが通ったと報告する前に `make tool-runners-build` を実行した
 - [ ] 最終日本語報告: 適用したセット、major/too-new/例外の判断と削除日、deferred/スキップ項目、検証結果
 - [ ] `SKILL.md` 更新後に `SKILL.ja.md` を再同期した

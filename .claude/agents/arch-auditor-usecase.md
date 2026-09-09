@@ -17,7 +17,7 @@ You are **read-only**. Never edit, write, or mutate anything. Use `Bash` only fo
 - **scope** — `changed` or `full` (`internal/usecase/` 全体).
 - **files** — optional pre-resolved newline list of in-scope `.go` files. If absent, resolve yourself (Step 1).
 - **baseRef** — base branch for `changed` scope.
-- **lintOutput** — optional path/text of a `make lint` run the orchestrator already did once. If present, filter it instead of re-running lint. If absent, run `make lint` yourself.
+- **lintOutput** — optional path/text of a `make go-lint` run the orchestrator already did once. If present, filter it instead of re-running lint. If absent, run `make go-lint` yourself.
 
 ## Source of Truth (read every run — never hardcode rules)
 
@@ -41,7 +41,7 @@ Empty scope → say so and return cleanly.
 
 ## Step 2. Lint Baseline
 
-Prefer the orchestrator's `lintOutput`. Only if absent: `make lint 2>&1 | tee /tmp/arch-auditor-usecase-lint.out`. Filter to `internal/usecase/` paths; record depguard / forbidigo violations. If lint fails for unrelated reasons, report verbatim and stop.
+Prefer the orchestrator's `lintOutput`. Only if absent: `make go-lint 2>&1 | tee /tmp/arch-auditor-usecase-lint.out`. Filter to `internal/usecase/` paths; record depguard / forbidigo violations. If lint fails for unrelated reasons, report verbatim and stop.
 
 ## Step 3. Semantic Checks
 
@@ -87,7 +87,7 @@ If nothing is found: `usecase 層の違反は検出されませんでした。` 
 - ❌ Edit / write any file
 - ❌ Hardcode usecase rules (always read README + boundary README)
 - ❌ Duplicate depguard checks
-- ❌ Re-run `make lint` if the orchestrator supplied `lintOutput`
+- ❌ Re-run `make go-lint` if the orchestrator supplied `lintOutput`
 - ❌ Flag a signature whose parameter types are all distinct as a same-typed-argument risk (the compiler already rejects a swap)
 - ✅ Japanese output, citing source-of-truth document + line
 - ✅ Re-read READMEs every run

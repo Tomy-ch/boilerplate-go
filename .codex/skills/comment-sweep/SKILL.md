@@ -182,7 +182,7 @@ remain untouched, and excluded files remain out of scope.
 
 ## 7. Verify
 
-Run this section only when something was written. Run `make fix`, then `make lint` over touched
+Run this section only when something was written. Run `make go-fix`, then `make go-lint` over touched
 packages. Run `make md-lint` whenever a Markdown destination was written. Finally, reread every
 edited comment against the residue test: it must stand alone for a reader who does not follow its
 link.

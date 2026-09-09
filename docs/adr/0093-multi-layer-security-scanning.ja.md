@@ -226,5 +226,5 @@ Trivy は CVE とシークレットの両方を走査できるが、意味解析
   [ADR-0094](0094-sha-pinned-actions.ja.md)
 - これらのスキャンとは別の関心事であるリリースイメージの完全性:
   [ADR-0105](0105-release-image-supply-chain.ja.md)
-- `.golangci-full.yaml` の `gosec` linter は静的解析時のインプロセスチェックとして追加的に機能する
-  （[ADR-0088](0088-two-layer-golangci-config.ja.md)）
+- `.golangci.yaml` の `gosec` linter は静的解析時のインプロセスチェックとして追加的に機能する
+  （[ADR-0088](0088-layered-golangci-config.ja.md)）

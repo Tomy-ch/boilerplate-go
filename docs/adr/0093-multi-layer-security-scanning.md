@@ -253,5 +253,5 @@ allowlist to move to.
   [ADR-0094](0094-sha-pinned-actions.md).
 - Release-image integrity, a separate concern from these scans:
   [ADR-0105](0105-release-image-supply-chain.md).
-- The `gosec` linter in `.golangci-full.yaml` provides an additional in-process security
-  check during static analysis (see [ADR-0088](0088-two-layer-golangci-config.md)).
+- The `gosec` linter in `.golangci.yaml` provides an additional in-process security
+  check during static analysis (see [ADR-0088](0088-layered-golangci-config.md)).

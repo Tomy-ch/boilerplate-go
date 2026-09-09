@@ -57,7 +57,7 @@ Add a package here **only when all** hold:
 
 ## Enforcement
 
-depguard (`maintain_a_sound_domain` in `.golangci-full.yaml`) denies `internal/domain/` for domain
+depguard (`maintain_a_sound_domain` in `.golangci.yaml`) denies `internal/domain/` for domain
 files but allows `internal/domain/lexicon`. So domain→lexicon is permitted while
 domain→other-aggregate is forbidden.
 

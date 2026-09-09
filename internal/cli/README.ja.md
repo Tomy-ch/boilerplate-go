@@ -36,7 +36,7 @@ OS シグナル / golang-migrate）を結線する composition root は `cmd/`�
 - 各コマンドは `internal/cli/` 配下の1コアパッケージ + `cmd/` 配下の1薄殻ファイルで構成。
 - コアは Cobra・`internal/di`・OS シグナル・infrastructure（`infrastructure/rdb/driver` の型を除く）を
   import してはならない。注入された interface / 関数シームに対して動作する。
-  `internal/config` は許可される。強制されている境界は `.golangci-full.yaml` の `independent_cli`
+  `internal/config` は許可される。強制されている境界は `.golangci.yaml` の `independent_cli`
   depguard ルールであり、上位の層は deny するが `config` は deny しない。
 - CLI 層は feature のビジネスロジックを持たない（それは usecase / domain の責務）。
 - コマンド追加手順: `cmd/<command>.go`（Cobra 定義 + 実依存の結線）を追加し、コアロジックを

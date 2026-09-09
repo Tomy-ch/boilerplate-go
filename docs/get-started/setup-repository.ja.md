@@ -164,8 +164,8 @@ make setup-verify
 テストと静的解析、コード生成、ヘルスチェックなど、基本的な機能が問題なく動作することを確認してください。
 
 ```sh
-make test
-make lint
+make go-test
+make go-lint
 make gen
 curl http://localhost:8080/health
 curl http://localhost:8080/ready

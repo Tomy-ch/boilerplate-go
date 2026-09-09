@@ -72,7 +72,7 @@ to be more than a declaration. A deployment that stores nothing can drop `object
 
 ## Test strategy
 
-- **Unit tests run against `gofakes3` in-process** — no container, so `make test` needs nothing
+- **Unit tests run against `gofakes3` in-process** — no container, so `make go-test` needs nothing
   running. The fake is started per test and speaks enough of the S3 API to exercise the adapter
 - **The Garage container is for `make serve`**, not for tests. Anything asserted about real
   delivery (public read, cache headers) is verified by hand against that container

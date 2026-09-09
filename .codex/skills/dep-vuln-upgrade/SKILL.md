@@ -154,7 +154,7 @@ Run checks matching changed ecosystems and report each result; do not auto-rever
 - pnpm: in every changed package directory run `pnpm install --frozen-lockfile`, then `pnpm audit`.
   The frozen install proves the lockfile still satisfies policy. An age-violation means an affected
   workspace lacks its necessary exclusion.
-- Go: run `go build ./...` and `govulncheck ./...` when available; add `make lint` and `make test`
+- Go: run `go build ./...` and `govulncheck ./...` when available; add `make go-lint` and `make go-test`
   when the Go change is broad enough.
 - For generator-feeding dependencies, run the existing generator target and check generated drift.
   For a changed `scripts/` pnpm manifest, lockfile, or workspace file, run `make tool-runners-build`

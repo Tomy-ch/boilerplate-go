@@ -187,8 +187,8 @@ make db-migrate-up-10 DB=local
 | `make gen-db-schema-ci` | Executes SchemaSpy container directly to generate schema docs. | CI target |
 | `make dump-schema` | Executes schema dump. | Used as preprocessing for SQLC generation and DML merge. Rebuilds the owner's throwaway database (`gen_schema`, or `gen_schema_wt<N>` while a slot is held) from this branch's migrations and dumps that. |
 | `make dump-schema-ci` | Executes `cmd/main.go dump-schema` directly without Docker. | CI target |
-| `make fix-collation` | Fixes database collation. | None |
-| `make fix-collation-ci` | Executes collation fix directly without Docker. | CI target |
+| `make sql-fix-collation` | Fixes database collation. | None |
+| `make sql-fix-collation-ci` | Executes collation fix directly without Docker. | CI target |
 
 ### DML merge related
 
@@ -332,15 +332,15 @@ overridden by `.gobp-db-slot` when a DB slot is held (see `internal/cli/dbslot/R
 | --- | --- | --- |
 | `make gen-bundle-oapi` | Bundles split OpenAPI definitions into a single file. | Generates `openapi/openapi.gen.yaml` from `openapi/openapi.yaml`. |
 | `make gen-api-docs` | Generates API documentation from OpenAPI definition. | None |
-| `make lint-oapi` | Validates the OpenAPI definition with `redocly lint`. | Invokes `make lint-oapi-ci` inside the `node_tool_runner` container. |
+| `make oapi-lint` | Validates the OpenAPI definition with `redocly lint`. | Invokes `make oapi-lint-ci` inside the `node_tool_runner` container. |
 | `make gen-bundle-oapi-ci` | Generates `openapi/openapi.gen.yaml` via `redocly bundle`. | CI target |
 | `make gen-api-docs-ci` | Generates `docs/openapi/index.html` via `redocly build-docs`. | CI target |
-| `make lint-oapi-ci` | Runs `redocly lint openapi/openapi.yaml` directly. | CI target |
+| `make oapi-lint-ci` | Runs `redocly lint openapi/openapi.yaml` directly. | CI target |
 | `make stamp-openapi-version` | Rewrites `info.version` from a release branch name. | Invokes `make stamp-openapi-version-ci` inside the `node_tool_runner` container. Takes `REF=release/vX.Y.Z`, falling back to `GITHUB_REF_NAME`; any other ref is a no-op. |
 | `make stamp-openapi-version-ci` | Runs `scripts/stamp-openapi-version/index.ts` directly. | CI target |
-| `make lint-oapi-security-ci` | Runs Spectral with the OWASP API Security ruleset. | CI target. Runs outside `node_tool_runner` so a spec-only check does not build the tool image; run `pnpm install --dir scripts --frozen-lockfile` first. |
+| `make oapi-security-lint-ci` | Runs Spectral with the OWASP API Security ruleset. | CI target. Runs outside `node_tool_runner` so a spec-only check does not build the tool image; run `pnpm install --dir scripts --frozen-lockfile` first. |
 | `make openapi-client-check` | Confirms the frontend generator (orval) can generate the SSE contract types (`DeliveryEvent` / `ControlEvent` / `StreamCursor`) from the bundled spec. | Invokes `make openapi-client-check-ci` inside the `node_tool_runner` container. Output goes to `tmp/openapi-client/` and is never committed. |
-| `make openapi-client-check-ci` | Runs `tsx scripts/openapi-client-check` directly. | CI target. Same preparation as `lint-oapi-security-ci`. |
+| `make openapi-client-check-ci` | Runs `tsx scripts/openapi-client-check` directly. | CI target. Same preparation as `oapi-security-lint-ci`. |
 
 ## `.makefiles/load` group
 
@@ -366,11 +366,11 @@ identically, so nothing goes unverified; it moves where the verification happens
 | Command | Description | Notes |
 | --- | --- | --- |
 | `make load-status` | Prints the resolved band, window count, CPU share and the flags each tool will receive. | Start here when a gate is behaving unexpectedly |
-| `make gate-go` | The `pre-commit` Go gate (`lint` + `test-cached`), bundled so the band decides parallel / serial / deferred. | Called by lefthook, not usually by hand |
-| `make gate-go-push` | The `pre-push` Go gate (`test` + `test-scripts`), same bundling. | Called by lefthook |
+| `make gate-go` | The `pre-commit` Go gate (`lint` + `go-test-cached`), bundled so the band decides parallel / serial / deferred. | Called by lefthook, not usually by hand |
+| `make gate-go-push` | The `pre-push` Go gate (`test` + `go-test-scripts`), same bundling. | Called by lefthook |
 | `make gate-heavy-skip` | Predicate for lefthook's `skip:` — exit 0 means "CI will do this". | Exit status is the whole interface |
 
-Override the band explicitly with `GOBP_LOAD=full|low|ci-first` (e.g. `make lint GOBP_LOAD=low` to run
+Override the band explicitly with `GOBP_LOAD=full|low|ci-first` (e.g. `make go-lint GOBP_LOAD=low` to run
 one heavy gate by hand while the rest stays deferred). The thresholds are `GOBP_LOW_THRESHOLD` and
 `GOBP_CI_FIRST_THRESHOLD`. Their defaults, and the band resolution itself, live in
 `scripts/load-band` and are evaluated when a gate recipe runs rather than when make parses.
@@ -402,8 +402,10 @@ in a loop.
 | Command | Description | Notes |
 | --- | --- | --- |
 | `make fmt` | Formats Go code. | Executes `go fmt ./...`. |
-| `make lint` | Executes static analysis via GolangCI-Lint. | None |
-| `make fix` | Executes auto-fix via GolangCI-Lint. | None |
+| `make go-lint` | Executes static analysis via GolangCI-Lint. | None |
+| `make go-lint-config-check` | Verifies that all three golangci configs parse (`golangci-lint config verify`). | CI runs it before the heavy lint. Only `.golangci.yaml` is consumed by a gate, so this is the one check the other two get (ADR-0088). |
+| `make go-lint-fast` | Static analysis with `.golangci-fast.yaml` — only the rules whose violation propagates. | Not a gate; `go-lint` / CI decide. Paired with `go-test-arch` while implementing (ADR-0088). |
+| `make go-fix` | Executes auto-fix via GolangCI-Lint. | None |
 | `make tidy-lib` | Cleans Go module dependencies and updates `vendor`. | Executes `go mod tidy` and `go mod vendor`. |
 | `make vendor-sync` | Regenerates `vendor` when it has drifted from `go.mod`. | Runs `go mod vendor` only when Go's own vendor consistency check fails, so it is a no-op in the normal case. Called by the `post-merge` / `post-checkout` hooks: `vendor` is gitignored, so the checkout that breaks is the one merely receiving someone else's `go.mod` change. |
 
@@ -411,20 +413,21 @@ in a loop.
 
 | Command | Description | Notes |
 | --- | --- | --- |
-| `make test` | Executes tests for CI. | Runs `go test` on packages excluding `gen` / `cmd` / `mock` / `apperror` / `scripts` (the `internal/cli` core is now included). |
-| `make test-cached` | Executes tests locally with the test cache enabled. | For pre-commit local runs. Same excluded packages as `test`, but omits `-count=1` so cached results are reused. |
+| `make go-test-arch` | Runs only `internal/architest`. | No DB required, ~1s. Carries the checks depguard cannot express (cross-aggregate import isolation, DI parity, route parity). Paired with `go-lint-fast` while implementing. |
+| `make go-test` | Executes tests for CI. | Runs `go test` on packages excluding `gen` / `cmd` / `mock` / `apperror` / `scripts` (the `internal/cli` core is now included). |
+| `make go-test-cached` | Executes tests locally with the test cache enabled. | For pre-commit local runs. Same excluded packages as `test`, but omits `-count=1` so cached results are reused. |
 | `make gen-test-repo` | Executes tests and generates HTML coverage report. | Output is `docs/coverage/index.html`. |
-| `make test-cover-ci` | Executes tests with coverage. | CI target, outputs `coverage.out`. |
-| `make cover-gate` | Fails if total coverage is below the threshold. | CI gate. `COVERAGE_THRESHOLD` (default 90). Requires `coverage.out` (run `test-cover-ci` first). |
-| `make test-scripts` | Executes the `scripts/` tool tests for CI. | `scripts/` is excluded from the coverage targets above, so its tests need their own entry point. Not part of `cover-gate`. `actions-shellcheck`'s tests need `shellcheck` on the host (installed by `install-tools`) and skip themselves without it; CI sets `REQUIRE_SHELLCHECK` so those skips fail instead. |
-| `make test-scripts-cached` | Executes the `scripts/` tool tests locally with the test cache enabled. | For pre-commit local runs. Same packages as `test-scripts`, without `-race -count=1`. |
+| `make go-test-cover-ci` | Executes tests with coverage. | CI target, outputs `coverage.out`. |
+| `make cover-gate` | Fails if total coverage is below the threshold. | CI gate. `COVERAGE_THRESHOLD` (default 90). Requires `coverage.out` (run `go-test-cover-ci` first). |
+| `make go-test-scripts` | Executes the `scripts/` tool tests for CI. | `scripts/` is excluded from the coverage targets above, so its tests need their own entry point. Not part of `cover-gate`. `actions-shellcheck`'s tests need `shellcheck` on the host (installed by `install-tools`) and skip themselves without it; CI sets `REQUIRE_SHELLCHECK` so those skips fail instead. |
+| `make go-test-scripts-cached` | Executes the `scripts/` tool tests locally with the test cache enabled. | For pre-commit local runs. Same packages as `go-test-scripts`, without `-race -count=1`. |
 
 ### Go tool installation related
 
 | Command | Description | Notes |
 | --- | --- | --- |
 | `make go-update` | Installs the Go runtime pinned in `mise.toml` via mise. See `docs/maintenance/go-upgrade.md`. | mise required |
-| `make install-tools` | Installs the host development tools via mise (versions from `mise.toml`). | Installs `gopls`, `gotests`, `impl`, `dlv`, `lefthook`, `golangci-lint`, `zizmor`, `shellcheck`. `golangci-lint` and `zizmor` are the tools the pre-commit hook runs on the host because no musl build exists for the Alpine tool-runners; `shellcheck` is there because the hook's `test-scripts` runs `actions-shellcheck`'s tests on the host and they shell out to the real binary. |
+| `make install-tools` | Installs the host development tools via mise (versions from `mise.toml`). | Installs `gopls`, `gotests`, `impl`, `dlv`, `lefthook`, `golangci-lint`, `zizmor`, `shellcheck`. `golangci-lint` and `zizmor` are the tools the pre-commit hook runs on the host because no musl build exists for the Alpine tool-runners; `shellcheck` is there because the hook's `go-test-scripts` runs `actions-shellcheck`'s tests on the host and they shell out to the real binary. |
 | `make activate-tools` | Executes `lefthook install` to set up Git hooks. | None |
 | `make sync-versions` | Propagates the `mise.toml` go / node / python versions into `go.mod` and the Dockerfile `FROM` lines. | Referenced by the `docs/maintenance/go-upgrade.md` procedure. Runs `scripts/sync-versions`. |
 

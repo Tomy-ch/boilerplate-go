@@ -223,7 +223,7 @@ test -d vendor && echo 'vendor: present' || echo 'vendor: absent'
 cat .gobp-db-slot 2>/dev/null || echo 'slot: none'
 ```
 
-スロットが無い・壊れているのは報告すべき事実であって、その場で直すべき障害ではない。`make slot-acquire` は DB 作業が実際に始まる直前 — 最初の `make test` / `make serve` / `psql` — に実行し、それより前には実行しない。`go mod vendor` も同じで、`vendor/` が無く、かつビルドが目前に迫っているときに走らせる。再開の儀式として走らせるものではない。
+スロットが無い・壊れているのは報告すべき事実であって、その場で直すべき障害ではない。`make slot-acquire` は DB 作業が実際に始まる直前 — 最初の `make go-test` / `make serve` / `psql` — に実行し、それより前には実行しない。`go mod vendor` も同じで、`vendor/` が無く、かつビルドが目前に迫っているときに走らせる。再開の儀式として走らせるものではない。
 
 **セッションを再開したというだけの理由でスロットを取得したり DB を再初期化したりしない。** `slot-acquire` と `db-*-reinit` はスロットの `wt<N>_local` / `wt<N>_test` を作り直すため、反射的な再開時取得は、まさに再開しようとしている実行の状態 — 投入済みのシード、途中まで当てた migration、障害の診断に使うはずだったデータ — を破壊する。
 
@@ -335,7 +335,7 @@ OpenAPI の description を 1 行変えるだけでも生成物は 3 つ動く: 
 
 ## Step 6 — ローカルゲート
 
-`make fix` → `make lint` / `make test`。worktree が多いときは CI へ委ねてよいが、**ローカル未実行であることを PR に書く**。黙っていると「検証済み」と読まれる。
+`make go-fix` → `make go-lint` / `make go-test`。worktree が多いときは CI へ委ねてよいが、**ローカル未実行であることを PR に書く**。黙っていると「検証済み」と読まれる。
 
 runtime 検証は意図的にここに置いていない。PR ができた後（Step 8）に置くことで、CI と並行して走らせられる。
 

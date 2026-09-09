@@ -1,6 +1,6 @@
 ## Node 補助スクリプト(TypeScript)のテスト/型検査コマンド群
 #
-# テストは Go 側（test / test-cached）と同じくフルとキャッシュ有効の 2 系統に分ける。
+# テストは Go 側（test / go-test-cached）と同じくフルとキャッシュ有効の 2 系統に分ける。
 # フル側はカバレッジ閾値（scripts/vitest.config.mts の thresholds）まで見るため、判定分岐を
 # 足してテストを書き忘れた変更をここで止められる。キャッシュ有効側は毎回走る経路（pre-push）
 # 用で、閾値の判定は持たない。

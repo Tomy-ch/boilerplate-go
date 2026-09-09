@@ -34,7 +34,7 @@ The gate is implemented in `.makefiles/go/test.mk`:
 - Excluded packages (`GO_TEST_EXCLUDE`) are `gen`, `cmd`, `mock`, `apperror`,
   and `scripts` — packages that are either generated, DI wiring, or utilities that
   cannot meaningfully be unit-tested in isolation.
-- `make test-cover-ci` runs tests with `-coverpkg` set to the same filtered package list
+- `make go-test-cover-ci` runs tests with `-coverpkg` set to the same filtered package list
   and writes `coverage.out`.
 - `make cover-gate` reads `coverage.out`, extracts the total line from
   `go tool cover -func`, and exits non-zero if the total falls below the threshold

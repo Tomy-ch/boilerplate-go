@@ -184,7 +184,7 @@ Python のツールは、`mise.toml` が全ツールのバージョンを持つ�
 
 **逃げ道は名前付きで狭く、grep できる。** `ContextWithAllowPrivateNetwork`、エラースキーマを詳細露出へ opt-in させる `details` プロパティ、宣言された認証例外としての `/metrics`（[ADR-0020](../adr/0020-metrics-endpoint-auth-exception.ja.md)）は、いずれも検索して列挙できる具体的な seam です。汎用フラグは 1 つもありません。汎用フラグは「全員が立てるもの」になるからです。
 
-2 つの不在は保留ではなく意図です。アプリ内 rate limiter は持たず（[ADR-0108](../adr/0108-no-in-app-rate-limiter.ja.md)）、レスポンスは spec に対して検証しません（[ADR-0016](../adr/0016-spec-driven-request-validation.ja.md)）。SQL インジェクションはレビューではなく構造で扱い、クエリは sqlc 生成のためパラメータ化されます（[ADR-0027](../adr/0027-sqlc-type-safe-sql.ja.md)）。`gosec` は権威ある golangci gate で動きます（[ADR-0088](../adr/0088-two-layer-golangci-config.ja.md)）。
+2 つの不在は保留ではなく意図です。アプリ内 rate limiter は持たず（[ADR-0108](../adr/0108-no-in-app-rate-limiter.ja.md)）、レスポンスは spec に対して検証しません（[ADR-0016](../adr/0016-spec-driven-request-validation.ja.md)）。SQL インジェクションはレビューではなく構造で扱い、クエリは sqlc 生成のためパラメータ化されます（[ADR-0027](../adr/0027-sqlc-type-safe-sql.ja.md)）。`gosec` は権威ある golangci gate で動きます（[ADR-0088](../adr/0088-layered-golangci-config.ja.md)）。
 
 再発見ではなくコピーする価値のある具体を 1 つ。Go の `netip.Addr.IsPrivate` は RFC1918 と ULA を覆いますが **CGNAT（`100.64.0.0/10`）を含みません**。そのためガードは自前の prefix チェックを持っています。標準ライブラリだけで dial ガードを再実装すると、この穴をそのまま引き継ぎます。
 
@@ -228,5 +228,5 @@ Python のツールは、`mise.toml` が全ツールのバージョンを持つ�
 - [ADR-0093](../adr/0093-multi-layer-security-scanning.ja.md) — 層構成スキャン、報告／ゲートの分離、ランナーのハードニング
 - [ADR-0094](../adr/0094-sha-pinned-actions.ja.md) — Actions の SHA 固定と供給網の隔離期間
 - [ADR-0105](../adr/0105-release-image-supply-chain.ja.md) — リリースイメージの完全性（署名・provenance・SBOM）
-- [ADR-0088](../adr/0088-two-layer-golangci-config.ja.md) — 静的解析時のインプロセスチェックとしての `gosec`
+- [ADR-0088](../adr/0088-layered-golangci-config.ja.md) — 静的解析時のインプロセスチェックとしての `gosec`
 - [`.github/workflows/README.md`](../../.github/workflows/README.md) — ワークフロー一覧と完全なトリガーマトリクス

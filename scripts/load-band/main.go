@@ -310,7 +310,7 @@ func advice(b band) string {
 		return "💡 窓が多いため CI-first です。重いゲート（lint / test）はローカルで走らせず、\n" +
 			"   push して CI で検証します。手元に残るのは commitlint / secret-scan / pin 検査など、\n" +
 			"   push 後では手遅れになる軽いゲートだけです。\n" +
-			"   一時的に手元で回すなら: make lint GOBP_LOAD=low\n"
+			"   一時的に手元で回すなら: make go-lint GOBP_LOAD=low\n"
 	case bandLow:
 		return fmt.Sprintf(
 			"💡 窓が多いため低負荷モードです。重いゲートは CPU share %d に絞り、逐次で走ります。\n"+

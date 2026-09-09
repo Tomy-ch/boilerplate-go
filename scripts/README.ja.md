@@ -27,7 +27,7 @@ Node の設定とパッケージ横断のゲートは直下に置く。各ツー
 
 |スクリプト|説明|実行元|
 |---|---|---|
-|`marker-baseline/`|撤去マーカー（`boilerplate-only` / `sample-api`）の行数をファイルごとに `baseline.json` へ固定し、動いたら落とす。発火する本物のマーカーと、規約を説明する例示とは同じ形をしているため、除去側は後者を `MARKER_LITERAL_FILES` で宣言する。宣言し忘れると、除去が中断する（声が出る）か、例示した区域が黙って消える（空フェンスは valid な Markdown なので誰も鳴らない）。どちらの経路でも唯一の手がかりは「マーカー行が増えたこと」なので、そこを判断の場にする——ベースラインを更新するか、ファイルを宣言するか。再生成は `tsx scripts/marker-baseline --write`。|`make test`（vitest） <!-- boilerplate-only:line -->|
+|`marker-baseline/`|撤去マーカー（`boilerplate-only` / `sample-api`）の行数をファイルごとに `baseline.json` へ固定し、動いたら落とす。発火する本物のマーカーと、規約を説明する例示とは同じ形をしているため、除去側は後者を `MARKER_LITERAL_FILES` で宣言する。宣言し忘れると、除去が中断する（声が出る）か、例示した区域が黙って消える（空フェンスは valid な Markdown なので誰も鳴らない）。どちらの経路でも唯一の手がかりは「マーカー行が増えたこと」なので、そこを判断の場にする——ベースラインを更新するか、ファイルを宣言するか。再生成は `tsx scripts/marker-baseline --write`。|`make go-test`（vitest） <!-- boilerplate-only:line -->|
 |`openapi-client-check/`|bundle 済み spec（`openapi/openapi.gen.yaml`）を frontend generator（`orval`）に渡して `tmp/openapi-client/` へ生成し、SSE の契約型（`DeliveryEvent` / `ControlEvent` / `StreamCursor`）が生成物に現れなければ失敗する。`redocly lint` と Spectral は spec を文書として判定するだけで、消費側の generator が component を型にできるかは見ない — サーバ側の契約破りが表面化するのは client の生成済み検証だけになる（[openapi/boundary-ownership.md](../openapi/boundary-ownership.ja.md)）という穴を埋める。生成物が空か宣言を含まない場合は「全型あり」ではなく退化入力（exit 2）として報告する。|`make openapi-client-check` / CI `oapi-lint.yaml`|
 |`doc-ref-lint/`|ADR のファイル名 / H1 / 参照の整合と、英日ドキュメント対の存在を検査する。ADR 参照は番号と併せてファイル名の slug を持つため、再採番が黙って別の ADR を指すことはない。`docs/spec/**` は日本語版の spec 一式が入るまで対訳存在チェックから意図的に除外している。|`make md-lint` / `make md-doc-ref-lint`|
 |`premise-lint/`|[docs/rules.md](../docs/rules.md) の *No premise the document will outlive* を機械化したもの。テンプレート作成後も残る Markdown（`docs/adr/**` / `docs/design/**` / `docs/rules.md` / 各層 README …）をマーカー除去後の姿で読み、テンプレートから作成した瞬間に真でなくなる自己参照があれば落とす。前提を書いてよいのは、セットアップが書き換え・削除する `README*` / `docs/get-started/**` と、`boilerplate-only` / `sample-api` マーカーで囲った領域だけ。同じ語の別語義は `allowances.ts` へ理由付きで宣言する。|`make md-premise-lint` <!-- boilerplate-only:line -->|
@@ -207,7 +207,7 @@ Realtime Delivery の table を `cmd/` のサブコマンドとして作り（[`
 [`docs/testing-conventions.md`](../docs/testing-conventions.md) の 11 節に従い、観点はここが持ちます。
 横断的な構造規則（`t.Parallel()`・サブテストのグループ・アサーション）は引き続きその文書が持ち、
 ここが持つのは以下の観点だけです。観点は Go のツールにも TypeScript のツールにも等しく効きます。
-違うのは走らせ方（`make test-scripts` か `make scripts-test` か）であって観点ではありません。
+違うのは走らせ方（`make go-test-scripts` か `make scripts-test` か）であって観点ではありません。
 
 - **判定を検査し、その外側の入口は検査しない。** どのツールも、ファイルを読み・出力し・終了コードを
   返すだけの入口と、その隣に並ぶ判定モジュールへ分かれる。Go では入口が `main` と `run` で、`run` は
@@ -249,8 +249,8 @@ Realtime Delivery の table を `cmd/` のサブコマンドとして作り（[`
 
 ## 注意点
 
-- Go ツールのユニットテストを実行するのは `make test-scripts` / `make test-scripts-cached` だけ。
-  `make test` は `scripts/` を除外する。配線の詳細は
+- Go ツールのユニットテストを実行するのは `make go-test-scripts` / `make go-test-scripts-cached` だけ。
+  `make go-test` は `scripts/` を除外する。配線の詳細は
   [`.makefiles/README.md`](../.makefiles/README.md) を参照
 - `actions-shellcheck` のテストは実物の `shellcheck` を呼び、無い環境では自分で skip する。
   `REQUIRE_SHELLCHECK` を立てるとその skip を失敗に変える。skip は既定の出力に現れないため、

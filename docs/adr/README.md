@@ -142,7 +142,7 @@ can enumerate them. The tag has no reader once setup is done.
 | [0085](0085-make-single-entrypoint.md) | Make is the single tool entrypoint with .mk registration and self-documenting help | accepted |
 | [0086](0086-scripts-in-node-go.md) | Operational scripts live in scripts/ as TypeScript or Go; shell scripting is not used | accepted |
 | [0087](0087-docker-compose-dev-environment.md) | Local dev environment is provided via Docker Compose with profile-separated services | accepted |
-| [0088](0088-two-layer-golangci-config.md) | Two-layer golangci config: minimal default vs full authoritative gate | accepted |
+| [0088](0088-layered-golangci-config.md) | Layered golangci configs, split by who runs them and how often | accepted |
 | [0089](0089-local-hooks-mirror-ci.md) | Local git hooks duplicate the CI contract (local == CI, glob-scoped, bypass-then-verify-once) | accepted |
 | [0090](0090-coverage-hard-gate.md) | Total coverage 90% is a CI hard gate, with an exception-governance path | accepted |
 | [0091](0091-ci-real-graph-boot-check.md) | CI boots the real fx graph against real Postgres (startup verification) | accepted |
