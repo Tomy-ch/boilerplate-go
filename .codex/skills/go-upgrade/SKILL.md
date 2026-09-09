@@ -1,6 +1,7 @@
 ---
 name: go-upgrade
-description: Upgrade the Go version used by this project. Follows the procedure in `docs/maintenance/go-upgrade.md` and updates `mise.toml`, runs `make sync-versions` to propagate the new version to `go.mod` and the relevant Dockerfile / README files, then rebuilds dependencies, tooling, and generated code and verifies with tests and lint. The target version is confirmed with the user at execution time, and the skill also offers an optional Go module dependency update (latest minor / patch-only / skip) as part of the same upgrade.
+description: >-
+  Upgrade the Go version used by this project, per `docs/maintenance/go-upgrade.md`: the target version is confirmed with the user, `mise.toml` is updated and propagated to `go.mod` and the Dockerfile / README files, then dependencies, tooling and generated code are rebuilt and verified. Optionally bundles a Go module dependency update (latest minor / patch-only / skip). Use it when moving to a new Go release. Do NOT use it to bump other pinned tools (`tools-upgrade`) or to patch a vulnerable dependency (`dep-vuln-upgrade`).
 ---
 
 # Go Version Upgrade Procedure

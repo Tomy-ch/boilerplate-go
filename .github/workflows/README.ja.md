@@ -129,6 +129,7 @@
 |OpenSSF Scorecard|`scorecard.yaml`|リポジトリのセキュリティ姿勢のスコアリングと結果の公開|
 |Go Cooldown|`go-cooldown.yaml`|cooldown 窓の内側で公開された direct Go モジュールを足す / 上げる PR をゲート|
 |Tool Cooldown|`tool-cooldown.yaml`|cooldown 窓の内側で公開された CLI ツール版（`mise.toml` / `python/*.in` の宣言）を pin する PR をゲート|
+|Tool Version Report|`tool-outdated-report.yaml`|週次で上流を調べ、窓を満たす新版が出ているピンを 1 つの issue に集めて開いておく（報告のみ）|
 |Pnpm Cooldown|`pnpm-cooldown.yaml`|期限が切れた・3 ヶ月を越えた・lockfile ともう一致しない `minimumReleaseAgeExclude` エントリを失敗させる|
 |Config Scan|`trivy-config.yaml`|Trivy による Dockerfile の設定不備スキャン（HIGH 以上でゲート）|
 |Checkov Scan|`checkov.yaml`|zizmor も Trivy も持たないルールセットによる、ワークフロー定義と Dockerfile への Checkov ポリシースキャン（報告専用）|
@@ -269,11 +270,11 @@ OSI の定義の外にあること自体は Bearer に固有ではありませ�
 | --- | --- |
 | ワークフローファイル。Sonar は `sonar-project.properties` も | — |
 | [`.github/egress.toml`](../egress.toml) の `[job."<workflow>:<job>"]` セクション | — |
-| [`.github/actions-pin.toml`](../actions-pin.toml) のうち他から参照されなくなったエントリ | `github/codeql-action@v4` — SARIF をアップロードする他のすべてのワークフローが参照する |
+| [`.github/actions-pin.toml`](../actions-pin.toml) のうち他から参照されなくなったエントリ | `github/codeql-action` — SARIF をアップロードする他のすべてのワークフローが参照する |
 | このファイルと `README.ja.md` の行および散文 | 残るスキャナの行 |
 | CodeQL の `.github/codeql/**` | — |
 
-lockfile の規則は例外リストではありません。スクリプトは残るワークフロー側の参照数を数え、0 になったエントリだけを削除します。`github/codeql-action@v4` は数えることがリストに勝つ理由を示す例です。CodeQL に紐づいて登録されたエントリですが、SARIF を publish するスキャナはいずれも同じアクションの `upload-sarif` を呼ぶため、CodeQL を撤去してもエントリは残ります。固定のリストなら消していたところです。`actions/download-artifact@v7` は逆の例で、いま使っているのは Sonar の report ジョブだけなので、Sonar の撤去が一緒に消します。`make pin-actions-check` と `make egress-check` はどちらも孤児で落ちるため、消し忘れは静かな残骸ではなく赤い run になります。
+lockfile の規則は例外リストではありません。スクリプトは残るワークフロー側の参照数を数え、0 になったエントリだけを削除します。`github/codeql-action` のエントリは数えることがリストに勝つ理由を示す例です。CodeQL に紐づいて登録されたエントリですが、SARIF を publish するスキャナはいずれも同じアクションの `upload-sarif` を呼ぶため、CodeQL を撤去してもエントリは残ります。固定のリストなら消していたところです。`actions/download-artifact` は逆の例で、いま使っているのは Sonar の report ジョブだけなので、Sonar の撤去が一緒に消します。`make pin-actions-check` と `make egress-check` はどちらも孤児で落ちるため、消し忘れは静かな残骸ではなく赤い run になります。
 
 この参照数の数え方は、1 つのスキャナを revert したときに `make pin-actions-check` が孤児ではなく**未登録の参照**で赤くなる理由でもあります。撤去対象どうしで共有するエントリは「最後の利用者を消したコミット」が削除するため、より前のスキャナを戻すと、後のコミットが既に消したエントリを参照する `uses:` が復活します。いまの 2 件は共有するエントリを持たないため、この形で赤くなることは現状ありません。3 つ目が加わった時点で戻ります。`make pin-actions-resolve` で戻せますし、どのエントリかは検査が名指しします。
 

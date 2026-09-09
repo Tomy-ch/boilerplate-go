@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -186,6 +187,10 @@ func run(args []string, client *http.Client, now time.Time) error {
 		return xerrors.Wrap(err, "❌ 宣言ファイルの解析")
 	}
 
+	if sub == "outdated" {
+		return reportOutdated(client, declared, opt, now)
+	}
+
 	bypasses, err := readBypasses(bypassFile)
 	if err != nil {
 		return xerrors.Wrap(err, "❌ "+bypassFile)
@@ -245,12 +250,13 @@ func run(args []string, client *http.Client, now time.Time) error {
 func parseArgs(args []string) (string, options, error) {
 	if len(args) == 0 {
 		return "", options{}, xerrors.Wrap(errUsage,
-			"❌ usage: tool-cooldown <gate|audit> [--base=<git-ref>] [--summary-out=<path>] [--github]")
+			"❌ usage: tool-cooldown <gate|audit|outdated> [--base=<git-ref>] [--summary-out=<path>] [--github]")
 	}
 
 	sub := args[0]
-	if sub != "gate" && sub != "audit" {
-		return "", options{}, xerrors.Wrap(errUsage, fmt.Sprintf("❌ 未知のサブコマンド %q（gate | audit）", sub))
+	if sub != "gate" && sub != "audit" && sub != "outdated" {
+		return "", options{}, xerrors.Wrap(errUsage,
+			fmt.Sprintf("❌ 未知のサブコマンド %q（gate | audit | outdated）", sub))
 	}
 
 	fs := flag.NewFlagSet(sub, flag.ContinueOnError)
@@ -624,9 +630,36 @@ func publishedAt(ctx context.Context, client *http.Client, t tool) (time.Time, e
 }
 
 func getJSON(ctx context.Context, client *http.Client, url string, into any) error {
+	body, err := fetchBody(ctx, client, url)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = body.Close() }()
+
+	return json.NewDecoder(body).Decode(into)
+}
+
+// getText は本文をそのまま読む。module proxy の @v/list だけが JSON ではない。
+func getText(ctx context.Context, client *http.Client, url string) (string, error) {
+	body, err := fetchBody(ctx, client, url)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = body.Close() }()
+
+	out, err := io.ReadAll(body)
+	if err != nil {
+		return "", xerrors.Wrap(err, "read "+url)
+	}
+
+	return string(out), nil
+}
+
+// fetchBody は GET して本文を返す。呼び出し側が Close する。
+func fetchBody(ctx context.Context, client *http.Client, url string) (io.ReadCloser, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return xerrors.Wrap(err, "new request")
+		return nil, xerrors.Wrap(err, "new request")
 	}
 	// 未認証の GitHub API は 60 req/hour（IP 単位）で、このツールの 1 回の実行を賄えない。
 	if strings.HasPrefix(url, githubAPI) {
@@ -636,17 +669,21 @@ func getJSON(ctx context.Context, client *http.Client, url string, into any) err
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return xerrors.Wrap(err, "fetch "+url)
+		return nil, xerrors.Wrap(err, "fetch "+url)
 	}
-	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
-		return xerrors.Wrap(errNotFound, url)
+		_ = resp.Body.Close()
+
+		return nil, xerrors.Wrap(errNotFound, url)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return xerrors.Wrap(errUpstreamStatus, fmt.Sprintf("%s: %d", url, resp.StatusCode))
+		_ = resp.Body.Close()
+
+		return nil, xerrors.Wrap(errUpstreamStatus, fmt.Sprintf("%s: %d", url, resp.StatusCode))
 	}
-	return json.NewDecoder(resp.Body).Decode(into)
+
+	return resp.Body, nil
 }
 
 // githubReleaseAt は Release の published_at を返す。タグに `v` を付ける流儀と付けない流儀が

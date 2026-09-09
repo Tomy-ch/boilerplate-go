@@ -1,6 +1,7 @@
 ---
 name: actions-pin
-description: Audit and update SHA-pinned GitHub Actions in `.github/workflows/**` and `.github/actions/**` using this repository's quarantine-aware lockfile workflow. `check` and `apply` fail closed on lockfile integrity and on `uses:` notation the pinner cannot rewrite (flow mapping, quoted key, block scalar, YAML alias); quarantine age uses the newer release or commit date. Use for routine Actions pin refreshes, a GitHub Actions security advisory, or a requested major upgrade. Default to same-major updates; accept `major` for major upgrades and `days=N` (default 14) for the minimum release age.
+description: >-
+  Audit and update SHA-pinned GitHub Actions in `.github/workflows/**` and `.github/actions/**` using this repository's quarantine-aware lockfile workflow, stepping back to the previous aged version rather than adopting a freshly published one. Use for routine Actions pin refreshes, a GitHub Actions security advisory, or a requested major upgrade. Default to same-major updates; accept `major` for major upgrades and `days=N` (default 14) for the minimum release age. Sibling of `tools-upgrade` (`mise.toml`) and `images-pin` (Docker image digests).
 ---
 
 # GitHub Actions Pin Update

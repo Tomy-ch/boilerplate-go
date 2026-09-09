@@ -1,7 +1,7 @@
 ---
 name: resolve-merge
 description: >-
-  Complete a requested branch merge by classifying every unmerged path, applying only the repository's existing mechanical resolution for its class, rebuilding generated and derived artifacts even after a conflict-free merge, and returning semantic conflicts to a human with their markers intact. Use whenever a merge reports conflicts, reports no conflicts but concatenated or derived outputs may be stale, or hand resolution makes untouched generated files fail gates; resolve the base from an existing PR's `baseRefName`, require an explicit base for hotfix work, merge rather than rebase, and finish in exactly one of two states based solely on whether non-mechanical work remains. Do NOT use for semantic implementation-conflict decisions, rebase or squash operations, colliding-registry-key decisions, or synchronization of a branch nobody asked to sync.
+  Complete a requested branch merge by classifying every unmerged path, applying only the repository's existing mechanical resolution for its class, rebuilding generated and derived artifacts even after a conflict-free merge, and returning semantic conflicts to a human with their markers intact. Use whenever a merge reports conflicts, reports no conflicts but concatenated or derived outputs may be stale, or hand resolution makes untouched generated files fail gates. It takes the base from an existing PR's `baseRefName`, requires an explicit base for hotfix work, and merges rather than rebases. Do NOT use for semantic implementation-conflict decisions, rebase or squash operations, colliding-registry-key decisions, or synchronization of a branch nobody asked to sync.
 argument-hint: '[--base=<ref>] [--class=<csv>] [--dry-run]'
 ---
 

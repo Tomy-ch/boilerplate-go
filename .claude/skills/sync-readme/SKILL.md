@@ -1,6 +1,7 @@
 ---
 name: sync-readme
-description: Update a specified canonical README so it matches the actual files and directories beneath its location. Detects drift between what the README documents and what exists on disk (missing files, renamed files, removed entries, outdated descriptions) and rewrites the README to reflect reality. For child directories that have their own README, includes only a short digest plus a reference link rather than recursing into their contents. After updating the canonical README, automatically chains into the `canonicalize-doc` skill to re-sync any sibling translation file. Confirms the target README path and update scope with the user via AskUserQuestion before writing.
+description: >-
+  Update a specified canonical README so it matches the actual files and directories beneath its location — missing files, renamed files, removed entries, outdated descriptions — and re-sync its sibling translation afterwards via `canonicalize-doc`. Use it when files were added, renamed or removed under a documented directory and its README no longer describes what is there. Do NOT use it to judge the README's prose quality (`readme-review` / `doc-reviewer`) or to fix README-to-code semantic drift (`back-prop`).
 ---
 
 # Sync README
