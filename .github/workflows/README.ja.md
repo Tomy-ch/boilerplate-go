@@ -129,6 +129,7 @@
 |OpenSSF Scorecard|`scorecard.yaml`|リポジトリのセキュリティ姿勢のスコアリングと結果の公開|
 |Go Cooldown|`go-cooldown.yaml`|cooldown 窓の内側で公開された direct Go モジュールを足す / 上げる PR をゲート|
 |Tool Cooldown|`tool-cooldown.yaml`|cooldown 窓の内側で公開された CLI ツール版（`mise.toml` / `python/*.in` の宣言）を pin する PR をゲート|
+|Tool Version Report|`tool-outdated-report.yaml`|週次で上流を調べ、窓を満たす新版が出ているピンを 1 つの issue に集めて開いておく（報告のみ）|
 |Pnpm Cooldown|`pnpm-cooldown.yaml`|期限が切れた・3 ヶ月を越えた・lockfile ともう一致しない `minimumReleaseAgeExclude` エントリを失敗させる|
 |Config Scan|`trivy-config.yaml`|Trivy による Dockerfile の設定不備スキャン（HIGH 以上でゲート）|
 |Checkov Scan|`checkov.yaml`|zizmor も Trivy も持たないルールセットによる、ワークフロー定義と Dockerfile への Checkov ポリシースキャン（報告専用）|

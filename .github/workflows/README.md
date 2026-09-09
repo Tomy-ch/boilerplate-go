@@ -130,6 +130,7 @@ takes the corresponding decision.
 |OpenSSF Scorecard|`scorecard.yaml`|Score the repository's security posture and publish the result|
 |Go Cooldown|`go-cooldown.yaml`|Gate a PR that adds or upgrades a direct Go module published inside the cooldown window|
 |Tool Cooldown|`tool-cooldown.yaml`|Gate a PR that pins a CLI tool version — declared in `mise.toml` or `python/*.in` — published inside the cooldown window|
+|Tool Version Report|`tool-outdated-report.yaml`|Survey upstream weekly and keep one issue open listing the pins a newer version has already cleared the window for (report-only)|
 |Pnpm Cooldown|`pnpm-cooldown.yaml`|Fail a `minimumReleaseAgeExclude` entry whose deadline has passed, reaches beyond three months, or no longer matches the lockfile|
 |Config Scan|`trivy-config.yaml`|Trivy misconfiguration scan of the Dockerfiles, gating at HIGH|
 |Checkov Scan|`checkov.yaml`|Checkov policy scan of the workflow definitions and the Dockerfiles, against a rule set neither zizmor nor Trivy ships (report-only)|
