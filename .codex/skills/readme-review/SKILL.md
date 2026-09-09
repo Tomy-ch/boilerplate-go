@@ -1,6 +1,7 @@
 ---
 name: readme-review
-description: Review a single README (canonical English) and judge whether it has "manual-worthy" characteristics for inclusion in the portal at `docs/portal/manifest.yaml`. The evaluation criteria are derived from patterns observed in currently-registered manifest entries (Role / Design Intent / Rules / Architecture diagram / Navigation / Notes / substantive prose). Produces a scorecard with strengths, gaps, concrete improvement suggestions, and a final classification (manual-worthy / borderline / not-yet-manual-grade / out-of-scope-for-portal). Read-only by default; never edits the README or the manifest. When the result is manual-worthy, the skill suggests chaining into `portal-manifest-sync` (curation flow) as the natural next step; it does not perform the addition itself.
+description: >-
+  Review a single README (canonical English) and judge whether it has "manual-worthy" characteristics for inclusion in the portal at `docs/portal/manifest.yaml`, producing a scorecard with strengths, gaps, improvement suggestions, and a classification (manual-worthy / borderline / not-yet-manual-grade / out-of-scope-for-portal). Use it when asking whether a README belongs in the portal or how to raise it to that bar. Read-only — it never edits the README or the manifest, and points at `portal-manifest-sync` for the actual curation. Do NOT use it to audit the whole manifest (`portal-manifest-sync`) or to fix README-to-disk structural drift (`sync-readme`).
 ---
 
 # Readme Review

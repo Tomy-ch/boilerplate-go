@@ -1,6 +1,7 @@
 ---
 name: comment-sweep
-description: Sweep the existing stock of source-code comments to decide whether their content belongs at the declaration, in its governing document, or consolidated at one owning declaration with the set-valued 集約 verdict. Use for bloated or essay-like comments, repeated or fragmented Why across files or packages, doc comments grown into design arguments, periodic hygiene of a package/layer/repository, and before a template cut; supports 確認して適用 (default), 自動適用 (`--apply`), and 報告のみ (`--report-only`). Japanese triggers include 「コメントが長すぎる」「コメントを整理して」「この Why はコードに置くべきか」「コメントを ADR に移したい」. Do not use for comments on a change just written, which `impl-review` / `comment-reviewer` own as diff scope; README or docs prose quality, which `doc-reviewer` owns; or README-to-code structural drift, which `back-prop` / `sync-readme` own.
+description: >-
+  Sweep the existing stock of source-code comments to decide whether their content belongs at the declaration, in its governing document (移設), or consolidated at one owning declaration (集約). Use for bloated or essay-like comments, repeated or fragmented Why across files or packages, doc comments grown into design arguments, periodic hygiene of a package/layer/repository, and before a template cut; supports 確認して適用 (default), 自動適用 (`--apply`), and 報告のみ (`--report-only`). Japanese triggers include 「コメントが長すぎる」「コメントを整理して」「この Why はコードに置くべきか」「コメントを ADR に移したい」. Do not use for comments on a change just written, which `impl-review` / `comment-reviewer` own as diff scope; README or docs prose quality, which `doc-reviewer` owns; or README-to-code structural drift, which `back-prop` / `sync-readme` own.
 ---
 
 # Comment Sweep

@@ -1,7 +1,7 @@
 ---
 name: how-to
 description: >-
-  Find the sanctioned way to perform an operational goal in this repository and return an executable, source-backed procedure with prerequisites, exact commands, success criteria, recovery, and destructive-operation warnings. Use whenever someone wants to do something but does not know the blessed route, wants to verify whether a remembered command is canonical, or needs the operational envelope around a known command. Route first to any skill that already owns the procedure; otherwise derive it from the make target registry, hooks, CI workflows, and operational documentation, and never invent a command to fill a gap. Default to read-only lookup unless `--mode=run` is explicit. Do NOT use for symptoms or failed gates (`repo-ops`), explanations of how the repository works (`repo-truth`), undecided comparisons (`research`), or implementing code changes (`impl-issue`).
+  Find the sanctioned way to perform an operational goal in this repository and return an executable, source-backed procedure with prerequisites, exact commands, success criteria, recovery, and destructive-operation warnings. Use whenever someone wants to do something but does not know the blessed route, wants to verify whether a remembered command is canonical, or needs the operational envelope around a known command. Routes first to any skill that already owns the procedure, and never invents a command to fill a gap. Defaults to read-only lookup unless `--mode=run` is explicit. Do NOT use for symptoms or failed gates (`repo-ops`), explanations of how the repository works (`repo-truth`), undecided comparisons (`research`), or implementing code changes (`impl-issue`).
 argument-hint: '[goal] [--mode=lookup|run] [--dry-run]'
 ---
 

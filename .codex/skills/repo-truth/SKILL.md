@@ -1,7 +1,7 @@
 ---
 name: repo-truth
 description: >-
-  Establish what is true in this repository right now from primary code and governing documents, keeping evidence separate from inference and publishing the exact search frontier behind every absence claim. Use when someone asks where behavior is implemented, which rule or canonical document governs it, why a design exists, what a repository term means, or whether a procedure or convention exists at all; search concern-owning indexes before keywords, verify graph discoveries in source, and distinguish 未定義 from 確認できず. Read-only: report conflicts and drift without resolving or editing them. Do NOT use for general programming questions with no repository-specific answer, known operational symptoms covered by `repo-ops`, undecided design choices needing `research`, change review, or issue filing.
+  Establish what is true in this repository right now from primary code and governing documents, keeping evidence separate from inference and publishing the exact search frontier behind every absence claim, so 未定義 stays distinct from 確認できず. Use when someone asks where behavior is implemented, which rule or canonical document governs it, why a design exists, what a repository term means, or whether a procedure or convention exists at all. Read-only: it reports conflicts and drift without resolving or editing them. Do NOT use for general programming questions with no repository-specific answer, known operational symptoms covered by `repo-ops`, undecided design choices needing `research`, change review, or issue filing.
 argument-hint: '[question] [--depth=quick|full] [--kind=fact|rule|rationale|procedure|vocabulary|history]'
 ---
 

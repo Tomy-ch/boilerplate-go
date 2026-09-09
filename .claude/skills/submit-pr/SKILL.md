@@ -1,6 +1,7 @@
 ---
 name: submit-pr
-description: Push the current feature branch to `origin` and create or update its GitHub pull request. Detects whether a PR already exists for the current branch via `gh pr view` and automatically chooses between "create" and "update". The PR body is filled from `.github/pull_request_template.md` (sections `概要` / `変更内容` / `動作確認方法`) using the commit history and diff. Title and body are written in Japanese per `CLAUDE.md`. The skill confirms with the user before any push, with the exact wording required by `CLAUDE.md` for the update path. As its first action (Phase 0, right after pre-flight) it asks whether to run a pre-push `/impl-review`; choosing to review cleanly cancels submit-pr and guides the user to review → fix → `/commit` → re-run (a local review produces fixes that must be committed before a clean push, so there is nothing to resume), keeping the review decision before anything is composed or pushed.
+description: >-
+  Push the current feature branch to `origin` and create or update its GitHub pull request, filling the body from `.github/pull_request_template.md` in Japanese and asking before any push. Its first action is to offer a pre-push `/impl-review`; choosing to review cancels submit-pr, since the fixes it produces must be committed first. Use it whenever the branch is ready to go up — 「PR 作って」「プルリクにして」. Do NOT use it to commit the working tree first (`commit`) or to merge the PR.
 ---
 
 # Submit PR
