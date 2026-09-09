@@ -55,7 +55,7 @@ export const SCANNER_DOMAINS: readonly ScannerDomain[] = [
     commitSubject: "CI: SonarQube Cloud のワークフローを撤去する",
     presenceMarker: ".github/workflows/sonarqube.yaml",
     paths: [".github/workflows/sonarqube.yaml", "sonar-project.properties"],
-    pinKeys: ["SonarSource/sonarqube-scan-action@v8.2.1", "actions/download-artifact@v7"],
+    pinKeys: ["SonarSource/sonarqube-scan-action@v8.2.1", "actions/download-artifact@v8"],
     egressJobs: [
       'sonarqube.yaml:preflight',
       'sonarqube.yaml:report',
@@ -138,7 +138,7 @@ export const SCANNER_DOMAINS: readonly ScannerDomain[] = [
       "scripts/setup/remove-licensed-scanners",
     ],
     // 他の workflow も upload-sarif に使うので、参照数の判定に委ねる（残っていれば消えない）。
-    pinKeys: ["github/codeql-action@v4.37.6"],
+    pinKeys: ["github/codeql-action@v4.37.9"],
     egressJobs: [
       'code-ql.yaml:codeql',
       'licensed-scanners-removal-check.yaml:licensed-scanners-removal-check',
