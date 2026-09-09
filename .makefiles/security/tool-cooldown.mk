@@ -2,6 +2,7 @@
 # -----ホスト上で実行するコマンド群-----
 .PHONY: tool-cooldown-gate ## 宣言の差分で追加/更新したツールが cooldown を満たすか検査(違反でfail)
 .PHONY: tool-cooldown-audit ## 宣言全件の cooldown 状況を棚卸し(警告のみ・ゲートしない)
+.PHONY: tool-cooldown-outdated ## 上流の新版を調べ窓を満たす更新先を報告(ゲートしない)
 
 # -----ホスト上で実行するコマンド群-----
 # mise 自身に短縮名の backend を解決させるため、mise が PATH に居ることを前提とする。
@@ -16,3 +17,8 @@ tool-cooldown-gate:
 # 棚卸しのみ。バイパスの期限切れだけ失敗させる扱いは go-cooldown-audit と同じ。
 tool-cooldown-audit:
 	@GITHUB_TOKEN="$${GITHUB_TOKEN:-$$(gh auth token 2>/dev/null)}" go run ./scripts/tool-cooldown audit
+
+# 上流に新版が出たことは gate も audit も見ない（どちらも宣言済みの版の齢しか測らない）ため、
+# 検出はこのターゲットが担う。更新の適用はせず、報告だけを出す。
+tool-cooldown-outdated:
+	@GITHUB_TOKEN="$${GITHUB_TOKEN:-$$(gh auth token 2>/dev/null)}" go run ./scripts/tool-cooldown outdated $(if $(OUT),--summary-out=$(OUT),)

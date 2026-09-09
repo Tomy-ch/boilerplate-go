@@ -1857,7 +1857,7 @@ func Test_parseArgs(t *testing.T) {
 			_, _, err := parseArgs(nil)
 
 			require.ErrorIs(t, err, errUsage)
-			assert.Contains(t, err.Error(), "usage: tool-cooldown <gate|audit>")
+			assert.Contains(t, err.Error(), "usage: tool-cooldown <gate|audit|outdated>")
 		})
 
 		t.Run("未知のサブコマンドはエラーにする", func(t *testing.T) {
