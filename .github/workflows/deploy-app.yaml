@@ -36,7 +36,7 @@ jobs:
       #       Fulcio / Rekor must add those hosts here as well, or the push and the
       #       signature fail at the network layer with no clue pointing at this step.
       - name: Harden the runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -224,7 +224,7 @@ jobs:
       # NOTE: Intentional duplication — this plays a different role than the SBOM in image-scan.yaml.
       #       Do not remove either one. This SBOM targets the pushed digest and is attached to the attestation.
       - name: Generate SBOM (SPDX) for pushed image
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:
           image: ${{ steps.meta_registry.outputs.registry }}/app@${{ steps.build.outputs.digest }}
           format: spdx-json
@@ -259,7 +259,7 @@ jobs:
       # — the OIDC token exchange this job holds `id-token: write` for is an outbound
       # call like any other.
       - name: Harden the runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: block
           allowed-endpoints: >
