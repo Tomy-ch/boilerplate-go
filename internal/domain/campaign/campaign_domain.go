@@ -52,6 +52,22 @@ type Attributes struct {
 	PerUserLimit int
 }
 
+// ClaimParams は、受け取り 1 件を受け付けるための入力です。同型の識別子が並ぶため構造体で受けます
+// （基準は docs/rules.md の Function Signature Rules）。
+type ClaimParams struct {
+	// ClaimedAt は、受け取り日時です。
+	ClaimedAt time.Time
+	// ClaimedByUser は、その利用者が既にこのキャンペーンから受け取った枚数です。
+	// 呼び出し元が数えて渡します（ドメインは I/O を持たないため）。
+	ClaimedByUser int
+	// ClaimID は、生まれる受け取り記録の ID です。
+	ClaimID uuid.UUID
+	// UserID は、受け取る利用者です。
+	UserID uuid.UUID
+	// CouponID は、この受け取りで発行されたクーポンです。
+	CouponID uuid.UUID
+}
+
 // New は、キャンペーンエンティティの検証と生成を行います。生成直後は 1 枚も配っておらず、停止していません。
 //
 // id・Code・Template が未設定、上限が 0 以下、配布期間が逆順の場合は検証エラーを返します。
@@ -175,22 +191,6 @@ func (c *Campaign) IsDistributing(now time.Time) bool {
 	return !c.IsSuspended() &&
 		!now.Before(c.startsAt) && now.Before(c.endsAt) &&
 		c.issuedCount < c.totalLimit
-}
-
-// ClaimParams は、受け取り 1 件を受け付けるための入力です。同型の識別子が並ぶため構造体で受けます
-// （基準は docs/rules.md の Function Signature Rules）。
-type ClaimParams struct {
-	// ClaimedAt は、受け取り日時です。
-	ClaimedAt time.Time
-	// ClaimedByUser は、その利用者が既にこのキャンペーンから受け取った枚数です。
-	// 呼び出し元が数えて渡します（ドメインは I/O を持たないため）。
-	ClaimedByUser int
-	// ClaimID は、生まれる受け取り記録の ID です。
-	ClaimID uuid.UUID
-	// UserID は、受け取る利用者です。
-	UserID uuid.UUID
-	// CouponID は、この受け取りで発行されたクーポンです。
-	CouponID uuid.UUID
 }
 
 // Claim は、受け取りを 1 件受け付け、発行済み枚数を 1 増やし、受け取りの事実を返します。

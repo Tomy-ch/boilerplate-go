@@ -425,3 +425,84 @@ func Test_unclaimable(t *testing.T) {
 		})
 	})
 }
+
+func Test_usecase_claimWithin(t *testing.T) {
+	t.Parallel()
+
+	// newInput は、受け取り 1 件の入力を組み立てます。
+	newInput := func(t *testing.T, target *domaincampaign.Campaign, userID uuid.UUID) claimInput {
+		t.Helper()
+
+		return claimInput{
+			Code:      target.Code(),
+			UserID:    userID,
+			CouponID:  newTestUUID(t),
+			ClaimID:   newTestUUID(t),
+			ClaimedAt: testNow,
+		}
+	}
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("ロックを取ってから枚数を数え、クーポンを発行して記録を書く", func(t *testing.T) {
+			t.Parallel()
+
+			// 呼び出し順そのものが直列化の前提なので、gomock の InOrder で固定する。
+			u, deps := newTestUsecase(t)
+			target := newTestCampaign(t, 10, 2)
+			userID := newTestUUID(t)
+
+			lock := deps.campaignRepo.EXPECT().LockByCode(gomock.Any(), target.Code()).Return(target, nil)
+			count := deps.campaignRepo.EXPECT().CountClaims(gomock.Any(), gomock.Any()).Return(0, nil).After(lock)
+			create := deps.couponRepo.EXPECT().Create(gomock.Any(), gomock.Any()).Return(nil).After(count)
+			deps.campaignRepo.EXPECT().RecordClaim(gomock.Any(), gomock.Any()).Return(nil).After(create)
+
+			in := newInput(t, target, userID)
+
+			got, err := u.claimWithin(t.Context(), in)
+
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			assert.Equal(t, in.CouponID, got.ID())
+			assert.Equal(t, userID, got.UserID())
+			assert.Equal(t, testNow, got.IssuedAt())
+			assert.Equal(t, 1, target.IssuedCount())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("キャンペーンが無い場合、NotFoundを検証エラーへ畳んで発行しない", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+			target := newTestCampaign(t, 10, 2)
+			deps.campaignRepo.EXPECT().
+				LockByCode(gomock.Any(), target.Code()).
+				Return(nil, apperror.ErrNotFound)
+
+			_, err := u.claimWithin(t.Context(), newInput(t, target, newTestUUID(t)))
+
+			require.ErrorIs(t, err, domaincampaign.ErrCodeUnknown)
+			require.NotErrorIs(t, err, apperror.ErrNotFound)
+		})
+
+		t.Run("上限に達している場合、検証エラーを返し発行しない", func(t *testing.T) {
+			t.Parallel()
+
+			u, deps := newTestUsecase(t)
+			target := newTestCampaign(t, 10, 2)
+			deps.campaignRepo.EXPECT().LockByCode(gomock.Any(), target.Code()).Return(target, nil)
+			deps.campaignRepo.EXPECT().
+				CountClaims(gomock.Any(), gomock.Any()).
+				Return(target.PerUserLimit(), nil)
+
+			_, err := u.claimWithin(t.Context(), newInput(t, target, newTestUUID(t)))
+
+			require.ErrorIs(t, err, domaincampaign.ErrPerUserLimitReached)
+			assert.Zero(t, target.IssuedCount())
+		})
+	})
+}

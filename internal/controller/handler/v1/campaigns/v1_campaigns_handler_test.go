@@ -104,7 +104,7 @@ func Test_server_PostCampaigns(t *testing.T) {
 			want := newCampaignView(t)
 			uc.EXPECT().
 				DefineCampaign(gomock.Any(), gomock.Any(), gomock.Any()).
-				DoAndReturn(func(_ any, _ any, params campaignuc.DefineCampaignParams) (campaignuc.CampaignView, error) {
+				DoAndReturn(func(_, _ any, params campaignuc.DefineCampaignParams) (campaignuc.CampaignView, error) {
 					// 正規化はドメインの責務なので、受け取った値をそのまま渡す。
 					assert.Equal(t, "welcome-2026", params.Code)
 					assert.Equal(t, "rate", params.DiscountKind)
@@ -215,7 +215,7 @@ func Test_toDefineCampaignParams(t *testing.T) {
 			body.Discount.MaxAmount = &maxAmount
 			body.Scope = gen.CouponScopeInput{
 				Kind:     gen.CouponScopeInputKindCategory,
-				TargetId: ptrOf(targetID.ToPrimitive()),
+				TargetId: toPrimitivePtr(&targetID),
 			}
 			body.MinPurchaseAmount = &minPurchase
 			body.UsableFrom = &usableFrom
@@ -333,8 +333,6 @@ func mustDecimal(t *testing.T, s string) decimal.Decimal {
 
 	return d
 }
-
-func ptrOf[T any](v T) *T { return &v }
 
 func TestBindHandler(t *testing.T) {
 	t.Parallel()

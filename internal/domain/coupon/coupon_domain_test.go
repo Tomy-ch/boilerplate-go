@@ -608,8 +608,8 @@ func TestCoupon_DiscountFor(t *testing.T) {
 		t.Run("最低購入金額ちょうどの場合は値引きする", func(t *testing.T) {
 			t.Parallel()
 
-			min := int64(5000)
-			c := newConditionedCoupon(t, &min, nil)
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
 			line, _ := newTestLine(t, "50.00")
 
 			got, err := c.DiscountFor([]Line{line})
@@ -635,8 +635,8 @@ func TestCoupon_DiscountFor(t *testing.T) {
 		t.Run("最低購入金額を満たさない場合は0を返す", func(t *testing.T) {
 			t.Parallel()
 
-			min := int64(5000)
-			c := newConditionedCoupon(t, &min, nil)
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
 			line, _ := newTestLine(t, "49.99")
 
 			got, err := c.DiscountFor([]Line{line})
@@ -649,14 +649,14 @@ func TestCoupon_DiscountFor(t *testing.T) {
 			t.Parallel()
 
 			// 対象は 20.00 だけだが、購入全体は 60.00 なので下限 50.00 を満たす。
-			min := int64(5000)
+			minAmount := int64(5000)
 			attrs := validCouponArgs(t)
 			target, targetAttrs := newTestLine(t, "20.00")
 			other, _ := newTestLine(t, "40.00")
 			scope, err := NewCategoryScope(targetAttrs.CategoryID)
 			require.NoError(t, err)
 			attrs.Scope = scope
-			attrs.MinPurchaseAmount = &min
+			attrs.MinPurchaseAmount = &minAmount
 			c, err := New(newTestUUID(t), attrs)
 			require.NoError(t, err)
 
@@ -950,8 +950,8 @@ func TestCoupon_MinPurchaseAmount(t *testing.T) {
 		t.Run("返した値を書き換えてもクーポンの条件は変わらない", func(t *testing.T) {
 			t.Parallel()
 
-			min := int64(5000)
-			c := newConditionedCoupon(t, &min, nil)
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
 
 			got := c.MinPurchaseAmount()
 			require.NotNil(t, got)
@@ -1046,8 +1046,8 @@ func TestCoupon_SatisfiesMinPurchase(t *testing.T) {
 		t.Run("下限に満たない場合は満たさない", func(t *testing.T) {
 			t.Parallel()
 
-			min := int64(5000)
-			c := newConditionedCoupon(t, &min, nil)
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
 
 			assert.False(t, c.SatisfiesMinPurchase(4999))
 		})
@@ -1055,8 +1055,8 @@ func TestCoupon_SatisfiesMinPurchase(t *testing.T) {
 		t.Run("下限ちょうどの場合は満たす", func(t *testing.T) {
 			t.Parallel()
 
-			min := int64(5000)
-			c := newConditionedCoupon(t, &min, nil)
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
 
 			assert.True(t, c.SatisfiesMinPurchase(5000))
 		})
@@ -1064,8 +1064,8 @@ func TestCoupon_SatisfiesMinPurchase(t *testing.T) {
 		t.Run("下限を超える場合は満たす", func(t *testing.T) {
 			t.Parallel()
 
-			min := int64(5000)
-			c := newConditionedCoupon(t, &min, nil)
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
 
 			assert.True(t, c.SatisfiesMinPurchase(5001))
 		})
@@ -1102,8 +1102,8 @@ func Test_validateConditions(t *testing.T) {
 			t.Parallel()
 
 			attrs := validCouponArgs(t)
-			min := int64(0)
-			attrs.MinPurchaseAmount = &min
+			minAmount := int64(0)
+			attrs.MinPurchaseAmount = &minAmount
 
 			require.ErrorIs(t, validateConditions(attrs), ErrInvalidMinPurchaseAmount)
 		})
@@ -1112,8 +1112,8 @@ func Test_validateConditions(t *testing.T) {
 			t.Parallel()
 
 			attrs := validCouponArgs(t)
-			min := int64(-1)
-			attrs.MinPurchaseAmount = &min
+			minAmount := int64(-1)
+			attrs.MinPurchaseAmount = &minAmount
 
 			require.ErrorIs(t, validateConditions(attrs), ErrInvalidMinPurchaseAmount)
 		})

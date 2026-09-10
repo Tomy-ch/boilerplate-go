@@ -32,6 +32,15 @@ var (
 	errLimitObserved = xerrors.New("limit observed")
 )
 
+// raceRowIDs は、後始末で物理削除する検証用の行の識別子です。同型の識別子が並ぶため構造体で受けます
+// （基準は docs/rules.md の Function Signature Rules）。
+type raceRowIDs struct {
+	// CampaignID は、検証用キャンペーンの ID です。
+	CampaignID uuid.UUID
+	// CouponID は、受け取り記録が参照する検証用クーポンの ID です。
+	CouponID uuid.UUID
+}
+
 // newRaceTxManager は、レース検証用に独立したトランザクションマネージャを返します。
 func newRaceTxManager(t *testing.T, testDB driver.DatabaseDriver) tx.Manager {
 	t.Helper()
@@ -77,6 +86,9 @@ func Test_lockByCodeSerializesConcurrentClaimsAgainstTotalLimit(t *testing.T) {
 	secondAcquiredAt := make(chan time.Time, 1)
 	var firstReleasedAt time.Time
 
+	// 入力は goroutine の外で組み立てる。testify のアサーションはテスト本体の goroutine でしか使えない。
+	secondParams := raceClaimParams(t, mustParse(t, seedAliceUserID), couponID, 0)
+
 	// 後続役: 先行役がキャンペーン行を押さえている間にロックへ入り、先行役の確定まで待たされる。
 	go func() {
 		defer close(secondDone)
@@ -88,9 +100,7 @@ func Test_lockByCodeSerializesConcurrentClaimsAgainstTotalLimit(t *testing.T) {
 				return xerrors.Join(errRollbackRaceTx, lockErr)
 			}
 			// ロックを取れた時点で上限に達していることが、直列化の成立を示す。
-			if _, claimErr := locked.Claim(
-				raceClaimParams(t, mustParse(t, seedAliceUserID), couponID, 0),
-			); claimErr != nil {
+			if _, claimErr := locked.Claim(secondParams); claimErr != nil {
 				return xerrors.Join(errRollbackRaceTx, errLimitObserved, claimErr)
 			}
 
@@ -162,6 +172,9 @@ func Test_lockByCodeSerializesConcurrentClaimsAgainstPerUserLimit(t *testing.T) 
 	secondAcquiredAt := make(chan time.Time, 1)
 	var firstReleasedAt time.Time
 
+	// 入力は goroutine の外で組み立てる（既受け取り枚数だけはロック下で数え直す）。
+	secondParams := raceClaimParams(t, userID, couponID, 0)
+
 	go func() {
 		defer close(secondDone)
 		<-firstLocked
@@ -180,7 +193,9 @@ func Test_lockByCodeSerializesConcurrentClaimsAgainstPerUserLimit(t *testing.T) 
 			if countErr != nil {
 				return xerrors.Join(errRollbackRaceTx, countErr)
 			}
-			if _, claimErr := locked.Claim(raceClaimParams(t, userID, couponID, claimed)); claimErr != nil {
+			params := secondParams
+			params.ClaimedByUser = claimed
+			if _, claimErr := locked.Claim(params); claimErr != nil {
 				return xerrors.Join(errRollbackRaceTx, errLimitObserved, claimErr)
 			}
 
@@ -254,15 +269,6 @@ func newRaceCampaign(t *testing.T, totalLimit, perUserLimit int) *domaincampaign
 	require.NoError(t, err)
 
 	return c
-}
-
-// raceRowIDs は、後始末で物理削除する検証用の行の識別子です。同型の識別子が並ぶため構造体で受けます
-// （基準は docs/rules.md の Function Signature Rules）。
-type raceRowIDs struct {
-	// CampaignID は、検証用キャンペーンの ID です。
-	CampaignID uuid.UUID
-	// CouponID は、受け取り記録が参照する検証用クーポンの ID です。
-	CouponID uuid.UUID
 }
 
 // cleanupRaceRows は、コミットして残した検証用の行を物理削除します。
