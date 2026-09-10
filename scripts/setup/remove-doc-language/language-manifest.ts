@@ -203,7 +203,7 @@ export const DOC_REPLACEMENTS: readonly DocReplacement[] = [
     ["are *tracked*, so they need these explicit globs. Hitting a `*.ja.md` is still useful as a\n**locator** (it proves the topic is documented); read the English original beside it, per\n`AGENTS.md`'s rule never to read `*.ja.md`.", "are *tracked*, so they need these explicit globs."],
   ]),
   ...forFile(".claude/skills/repo-truth/SKILL.md", [
-    ["adversarial on top of that — 495 `*.ja.md` mirrors that must not be read and 144 generated copies", "adversarial on top of that — 144 generated copies"],
+    ["518 canonical Markdown files (after excluding 495 `*.ja.md` mirrors and 144\ngenerated copies)", "518 canonical Markdown files (after excluding 144 generated copies)"],
     ["1,000 tracked `*.md`, over 40% are `*.ja.md` translations that `AGENTS.md` forbids reading, and\n`docs/portal/**` / `docs/godoc/**` / `docs/db-schema/**` / `docs/openapi/**` / `docs/coverage/**` are\ngenerated copies that lag their sources.", "the tracked `*.md`, `docs/portal/**` / `docs/godoc/**` / `docs/db-schema/**` / `docs/openapi/**` /\n`docs/coverage/**` are generated copies that lag their sources."],
     ["Two things `repo-ops` section 0 establishes that this skill must not soften:\n\n- **Never read a `*.ja.md`.** Hitting one is still useful as a *locator* — it proves the topic is\n  documented — but read the English original beside it.\n- **Precedence when sources disagree**", "One thing `repo-ops` section 0 establishes that this skill must not soften:\n\n- **Precedence when sources disagree**"],
     ["- ❌ Read or cite a `*.ja.md`, or cite generated output (`docs/portal/**`, `docs/godoc/**`,\n  `docs/db-schema/**`, `docs/openapi/**`, `docs/coverage/**`) as authority.", "- ❌ Cite generated output (`docs/portal/**`, `docs/godoc/**`, `docs/db-schema/**`,\n  `docs/openapi/**`, `docs/coverage/**`) as authority."],
@@ -460,12 +460,10 @@ export const DOC_REPLACEMENTS: readonly DocReplacement[] = [
     ["const README_JA = \".github/workflows/README.ja.md\";", "const README_JA = \".github/workflows/README.md\";"],
   ], "ja"),
   ...forFile(".claude/skills/manage-skill/SKILL.md", [
-    [" + mandatory `SKILL.ja.md` translation pair"],
     ["ALWAYS use it before hand-editing a `SKILL.md` or `SKILL.ja.md`.", "ALWAYS use it before hand-editing a `SKILL.md`."],
     ["those have `sync-readme` / `canonicalize-doc` / `back-prop`", "those have `sync-readme` / `back-prop`"],
   ]),
   ...forFile(".codex/skills/manage-skill/SKILL.md", [
-    [" + mandatory `SKILL.ja.md` translation pair"],
     ["ALWAYS use it before hand-editing a `SKILL.md` or `SKILL.ja.md`.", "ALWAYS use it before hand-editing a `SKILL.md`."],
     ["those have `sync-readme` / `canonicalize-doc` / `back-prop`", "those have `sync-readme` / `back-prop`"],
   ]),
