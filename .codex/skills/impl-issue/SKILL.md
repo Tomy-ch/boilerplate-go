@@ -48,6 +48,18 @@ Where this pipeline stops is a specification, not a judgment. It stops here and 
 | 4 | Step 7 | Which of the three peer review skills to run, each with its estimated return |
 | 5 | Step 8 | Runtime verification failed; and the merge itself |
 
+**Stopping means ending the turn, not merely asking a question.** If the list is read only as a ban
+on asking the user, it can be obeyed in form while being broken in effect: a phase completes, a
+progress report is the natural response, and the turn ends there. No approval was requested, so the
+Do / Do NOT prohibition never fires, but the run is over and its remaining work has been returned to
+the user — exactly the cost the closed list exists to prevent. Apply the five rows to turn endings:
+unless one of them applies or the run is finished, the reply does not end.
+
+Progress reports are not the problem; they keep a long run legible. Making one the final act of the
+turn is the problem. Write the report, then continue working in that same turn. The phrases
+`続けます` and `次は〜します` signal this bug rather than a plan: they show that the next step is
+already known and therefore not blocked. Perform that step instead of announcing it.
+
 Three moments look like stopping points and are not. Each is where an unlisted stop otherwise creeps
 in:
 
@@ -601,7 +613,8 @@ decision points this skill exists to create.
 - ✅ Get the plan approved before implementing, and keep it as a file so Step 5 can diff against it.
 - ✅ Put the plan through a model that is not the implementer's, and present that review's findings beside the plan rather than folded into it.
 - ✅ Treat the five trip-wires as mechanical triggers, not as things to notice.
-- ✅ Stop only at the five listed places and append every other call to the run record as it happens;
+- ✅ Stop only at the five listed places — where stopping means ending the turn, not only asking —
+  and append every other call to the run record as it happens;
   at a seam, write the record and recommend compacting: announce at the Step 5 seam, ask through
   Codex's explicit user-input interaction at the PR seam, and announce at both under standing full
   delegation while the user is away.
@@ -613,6 +626,7 @@ decision points this skill exists to create.
 - ❌ Present green CI as runtime verification.
 - ❌ Auto-apply a fix that changes the design, in any mode.
 - ❌ Ask for approval at a phase boundary, or treat a delegated agent's completion as one.
+- ❌ End a turn on a progress report; write the report and continue in the same turn.
 - ❌ Carry the run's decisions in context alone, or build Step 9's comment by recalling them.
 - ❌ Treat a seam as a stopping point, or wait at one.
 - ❌ Pick which review skills run, or run one on the assumption another chains it.
@@ -629,7 +643,8 @@ decision points this skill exists to create.
 - [ ] Plan built through the stages plan mode selected, every 3a question answered when 3a ran, all four sections present, seen by a model that is not the implementer's, and approved before implementation.
 - [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed, and
       every call appended to the run record when it happened.
-- [ ] No stop outside the five listed places.
+- [ ] No stop outside the five listed places, and no turn ended at a phase boundary or on a progress
+      report.
 - [ ] Both seams taken: run record written and compaction recommended; the Step 5 seam announced and
       continued, and the PR seam asked through Codex's explicit user-input interaction unless the run
       was under standing full delegation while the user was away, in which case it announced and
