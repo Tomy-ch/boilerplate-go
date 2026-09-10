@@ -341,6 +341,9 @@ func (r *repository) PurgeByIDs(ctx context.Context, ids []uuid.UUID) (int64, er
 	}
 
 	db := gen.New(driver.New(ctx, r.db))
+	if err := db.DeleteCampaignClaimsByUserIDs(ctx, ids); err != nil {
+		return 0, pgerror.NormalizeError(err)
+	}
 	if err := db.DeleteCouponsByUserIDs(ctx, ids); err != nil {
 		return 0, pgerror.NormalizeError(err)
 	}
