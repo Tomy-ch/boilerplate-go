@@ -61,10 +61,20 @@ findings** — 業務が使っていてモデルが使っていない語は、�
 | クーポン | 特定の利用者が持つ値引きの権利。受給者は発行時に確定し、以後移らない | coupon / Coupon | `coupon.Coupon` | — |
 | 値引き | クーポンがいくら引くかの決まり方と、その値の組。定額と定率がある | coupon / Coupon | `coupon.Discount` | — |
 | 適用範囲 | クーポンがどの明細を対象にするか。全体・カテゴリ限定・商品限定がある | coupon / Coupon | `coupon.Scope` | — |
+| 最低購入金額 | クーポンを使うために必要な購入額の下限。これに満たない購入には使えない | coupon / Coupon | `coupon.Coupon.MinPurchaseAmount` | `minPurchaseAmount` |
+| 値引き上限 | 定率の値引きが 1 回に引ける額の上限。定額の値引きには無い | coupon / Coupon | `coupon.Discount.MaxAmount` | `maxAmount` |
+| 利用開始日時 | クーポンが使えるようになる日時。これより前は、有効期限内であっても使えない | coupon / Coupon | `coupon.Coupon.UsableFrom` | `usableFrom` |
 | 発行 | 受給者を定めてクーポンを 1 枚生み出す行為。生まれた時点では未使用である | coupon / Coupon | `coupon.New` | `issuedAt` |
 | 引き換え | 保有するクーポンを購入へ適用し、使用済みにする行為 | coupon / Coupon | `coupon.Coupon.Redeem` | `usedAt` |
 | 返却 | 購入のキャンセルに伴い、有効期限内のクーポンを未使用へ戻す行為。失効していれば戻さない | coupon / Coupon | `coupon.Coupon.Restore` | `usedAt` |
 | 対象明細 | クーポンの適用範囲に入る明細。値引き額はこの小計から決まる | coupon / Coupon | `coupon.Line` | — |
+| キャンペーン | コードを配り、受け取った利用者へクーポンを 1 枚ずつ配る取り組み。配れる条件と枚数を定める | campaign / Campaign | `campaign.Campaign` | `CampaignResponse` |
+| キャンペーンコード | 利用者がキャンペーンからクーポンを受け取るために示す符号 | campaign / Campaign | `campaign.Code` | `code` |
+| 受け取り | 利用者がコードを示し、キャンペーンにクーポンを 1 枚発行させる行為 | campaign / Campaign | `campaign.Campaign.Claim` | — |
+| 配布期間 | キャンペーンが受け取りを認める期間 | campaign / Campaign | `campaign.Campaign.IsDistributing` | — |
+| 総枚数上限 | 1 つのキャンペーンが配れるクーポンの上限枚数 | campaign / Campaign | `campaign.Campaign.TotalLimit` | `totalLimit` |
+| 1 人あたり上限 | 1 人の利用者が同じキャンペーンから受け取れる上限枚数 | campaign / Campaign | `campaign.Campaign.PerUserLimit` | `perUserLimit` |
+| 停止 | キャンペーンの受け取りを配布期間の途中で打ち切る行為。取り消せない | campaign / Campaign | `campaign.Campaign.Suspend` | `suspendedAt` |
 | 値引き額 | 引き換えによって請求から差し引かれる額。決済スケールの整数 | purchase / Purchase | `purchase.Purchase.DiscountAmount` | `discount_amount` |
 | 在庫僅少 | 補充しなければ品切れが近い水準まで在庫が減っている状態 | product / Product | `product.Product.IsLowStock` | — |
 | 代表画像 | 商品を 1 枚で表すときに使う画像。出品者が並べた表示順の先頭がこれにあたる | product / Product | `product.Product.PrimaryImage` | `imagePath` |

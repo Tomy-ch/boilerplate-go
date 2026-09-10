@@ -47,7 +47,7 @@ type IssuePromotionalCouponsParams struct {
 	ScopeKind string
 	// ScopeTargetID は、適用範囲が絞る対象の識別子です。全体では nil です。
 	ScopeTargetID *uuid.UUID
-	// ExpiresAt は、発行するクーポンの有効期限です。キャンペーンの終了日を名指しするため絶対時刻で受けます。
+	// ExpiresAt は、発行するクーポンの有効期限です。販促の終了日を名指しするため絶対時刻で受けます。
 	ExpiresAt time.Time
 }
 
