@@ -47,14 +47,17 @@ func (r *repository) Create(ctx context.Context, c *coupon.Coupon) error {
 
 	db := gen.New(driver.New(ctx, r.db))
 	if err = db.CreateCoupon(ctx, &gen.CreateCouponParams{
-		ID:            c.ID(),
-		UserID:        c.UserID(),
-		DiscountKind:  discountKind,
-		DiscountValue: c.Discount().Value(),
-		ScopeKind:     scopeKind,
-		ScopeTargetID: c.Scope().TargetID(),
-		ExpiresAt:     c.ExpiresAt(),
-		IssuedAt:      c.IssuedAt(),
+		ID:                c.ID(),
+		UserID:            c.UserID(),
+		DiscountKind:      discountKind,
+		DiscountValue:     c.Discount().Value(),
+		DiscountMaxAmount: c.Discount().MaxAmount(),
+		ScopeKind:         scopeKind,
+		ScopeTargetID:     c.Scope().TargetID(),
+		MinPurchaseAmount: c.MinPurchaseAmount(),
+		UsableFrom:        c.UsableFrom(),
+		ExpiresAt:         c.ExpiresAt(),
+		IssuedAt:          c.IssuedAt(),
 	}); err != nil {
 		return pgerror.NormalizeError(err)
 	}
@@ -148,6 +151,12 @@ func rowToCoupon(row gen.Coupons) (*coupon.Coupon, error) {
 	if err != nil {
 		return nil, pgerror.NormalizeReconstructError(err)
 	}
+	if row.DiscountMaxAmount != nil {
+		discount, err = discount.WithMaxAmount(*row.DiscountMaxAmount)
+		if err != nil {
+			return nil, pgerror.NormalizeReconstructError(err)
+		}
+	}
 
 	scopeKind, err := coupon.NewScopeKind(int(row.ScopeKind))
 	if err != nil {
@@ -159,11 +168,13 @@ func rowToCoupon(row gen.Coupons) (*coupon.Coupon, error) {
 	}
 
 	c, err := coupon.Reconstruct(row.ID, coupon.Attributes{
-		UserID:    row.UserID,
-		Discount:  discount,
-		Scope:     scope,
-		ExpiresAt: row.ExpiresAt,
-		IssuedAt:  row.IssuedAt,
+		UserID:            row.UserID,
+		Discount:          discount,
+		Scope:             scope,
+		MinPurchaseAmount: row.MinPurchaseAmount,
+		UsableFrom:        row.UsableFrom,
+		ExpiresAt:         row.ExpiresAt,
+		IssuedAt:          row.IssuedAt,
 	}, row.UsedAt)
 	if err != nil {
 		return nil, pgerror.NormalizeReconstructError(err)

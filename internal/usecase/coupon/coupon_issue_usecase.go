@@ -24,6 +24,12 @@ type IssueCouponParams struct {
 	ScopeKind string
 	// ScopeTargetID は、適用範囲が絞る対象の識別子です。全体では nil です。
 	ScopeTargetID *uuid.UUID
+	// MaxAmount は、定率の値引きが 1 回に引ける額の上限（USD セント）です。上限を設けない場合は nil です。
+	MaxAmount *int64
+	// MinPurchaseAmount は、使うために必要な購入額の下限（USD セント）です。条件を課さない場合は nil です。
+	MinPurchaseAmount *int64
+	// UsableFrom は、使えるようになる日時です。発行時点から使えるようにする場合は nil です。
+	UsableFrom *time.Time
 	// ExpiresAt は、発行するクーポンの有効期限です。締切を名指しするため絶対時刻で受けます。
 	ExpiresAt time.Time
 }
@@ -48,6 +54,12 @@ func (u *usecase) IssueCoupon(
 	discount, err := newDiscount(params.DiscountKind, params.DiscountValue)
 	if err != nil {
 		return CouponView{}, err
+	}
+	if params.MaxAmount != nil {
+		discount, err = discount.WithMaxAmount(*params.MaxAmount)
+		if err != nil {
+			return CouponView{}, err
+		}
 	}
 
 	scope, err := newScope(params.ScopeKind, params.ScopeTargetID)
@@ -77,11 +89,13 @@ func (u *usecase) IssueCoupon(
 		}
 
 		c, cerr := coupon.New(id, coupon.Attributes{
-			UserID:    params.UserID,
-			Discount:  discount,
-			Scope:     scope,
-			ExpiresAt: params.ExpiresAt,
-			IssuedAt:  now,
+			UserID:            params.UserID,
+			Discount:          discount,
+			Scope:             scope,
+			MinPurchaseAmount: params.MinPurchaseAmount,
+			UsableFrom:        params.UsableFrom,
+			ExpiresAt:         params.ExpiresAt,
+			IssuedAt:          now,
 		})
 		if cerr != nil {
 			return cerr

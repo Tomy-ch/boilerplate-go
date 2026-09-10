@@ -28,3 +28,19 @@ properties:
       発行するクーポンの有効期限。締切を名指しする操作なので、日数ではなく絶対時刻で受け取ります。
       現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
     example: "2026-12-31T14:59:59Z"
+  minPurchaseAmount:
+    type: integer
+    format: int64
+    nullable: true
+    description: >-
+      発行するクーポンを使うために必要な購入額の下限。USD セント単位の整数です。任意で、
+      省略または null なら購入額を問わず使えます。0 以下を指定した場合は 422 を返します。
+    example: 5000
+  usableFrom:
+    type: string
+    format: date-time
+    nullable: true
+    description: >-
+      発行するクーポンが使えるようになる日時。任意で、省略または null なら発行した時点から使えます。
+      有効期限（expiresAt）以降を指定した場合は、一度も使えないクーポンになるため 422 を返します。
+    example: "2026-10-01T00:00:00Z"

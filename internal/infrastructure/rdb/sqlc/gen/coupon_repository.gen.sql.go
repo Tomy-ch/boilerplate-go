@@ -19,8 +19,11 @@ INSERT INTO coupons (
     user_id,
     discount_kind,
     discount_value,
+    discount_max_amount,
     scope_kind,
     scope_target_id,
+    min_purchase_amount,
+    usable_from,
     expires_at,
     issued_at
 ) VALUES
@@ -32,19 +35,25 @@ INSERT INTO coupons (
     $5,
     $6,
     $7,
-    $8
+    $8,
+    $9,
+    $10,
+    $11
 )
 `
 
 type CreateCouponParams struct {
-	ID            uuid.UUID
-	UserID        uuid.UUID
-	DiscountKind  int16
-	DiscountValue decimal.Decimal
-	ScopeKind     int16
-	ScopeTargetID *uuid.UUID
-	ExpiresAt     time.Time
-	IssuedAt      time.Time
+	ID                uuid.UUID
+	UserID            uuid.UUID
+	DiscountKind      int16
+	DiscountValue     decimal.Decimal
+	DiscountMaxAmount *int64
+	ScopeKind         int16
+	ScopeTargetID     *uuid.UUID
+	MinPurchaseAmount *int64
+	UsableFrom        *time.Time
+	ExpiresAt         time.Time
+	IssuedAt          time.Time
 }
 
 // === source: database/dml/repository/coupon/insert_coupon.sql ===
@@ -54,8 +63,11 @@ type CreateCouponParams struct {
 //	    user_id,
 //	    discount_kind,
 //	    discount_value,
+//	    discount_max_amount,
 //	    scope_kind,
 //	    scope_target_id,
+//	    min_purchase_amount,
+//	    usable_from,
 //	    expires_at,
 //	    issued_at
 //	) VALUES
@@ -67,7 +79,10 @@ type CreateCouponParams struct {
 //	    $5,
 //	    $6,
 //	    $7,
-//	    $8
+//	    $8,
+//	    $9,
+//	    $10,
+//	    $11
 //	)
 func (q *Queries) CreateCoupon(ctx context.Context, arg *CreateCouponParams) error {
 	_, err := q.db.Exec(ctx, createCoupon,
@@ -75,8 +90,11 @@ func (q *Queries) CreateCoupon(ctx context.Context, arg *CreateCouponParams) err
 		arg.UserID,
 		arg.DiscountKind,
 		arg.DiscountValue,
+		arg.DiscountMaxAmount,
 		arg.ScopeKind,
 		arg.ScopeTargetID,
+		arg.MinPurchaseAmount,
+		arg.UsableFrom,
 		arg.ExpiresAt,
 		arg.IssuedAt,
 	)
@@ -84,7 +102,7 @@ func (q *Queries) CreateCoupon(ctx context.Context, arg *CreateCouponParams) err
 }
 
 const listCouponsByUserID = `-- name: ListCouponsByUserID :many
-SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at
+SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at, c.min_purchase_amount, c.discount_max_amount, c.usable_from
 FROM coupons AS c
 WHERE c.user_id = $1
 ORDER BY c.issued_at DESC, c.id DESC
@@ -99,7 +117,7 @@ type ListCouponsByUserIDRow struct {
 // 使用済み・失効済みで絞らない理由は docs/spec/domain/coupon.md の
 // Repository Methods > FindByUserID を参照。
 //
-//	SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at
+//	SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at, c.min_purchase_amount, c.discount_max_amount, c.usable_from
 //	FROM coupons AS c
 //	WHERE c.user_id = $1
 //	ORDER BY c.issued_at DESC, c.id DESC
@@ -124,6 +142,9 @@ func (q *Queries) ListCouponsByUserID(ctx context.Context, userID uuid.UUID) ([]
 			&i.Coupons.IssuedAt,
 			&i.Coupons.CreatedAt,
 			&i.Coupons.UpdatedAt,
+			&i.Coupons.MinPurchaseAmount,
+			&i.Coupons.DiscountMaxAmount,
+			&i.Coupons.UsableFrom,
 		); err != nil {
 			return nil, err
 		}
@@ -136,7 +157,7 @@ func (q *Queries) ListCouponsByUserID(ctx context.Context, userID uuid.UUID) ([]
 }
 
 const lockCouponByID = `-- name: LockCouponByID :one
-SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at
+SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at, c.min_purchase_amount, c.discount_max_amount, c.usable_from
 FROM coupons AS c
 WHERE c.id = $1
 FOR UPDATE
@@ -153,7 +174,7 @@ type LockCouponByIDRow struct {
 // 取得位置の不変条件は docs/spec/usecase/purchase.md の CreatePurchase / CancelPurchase を参照
 // （ADR-0036 (ordered-pessimistic-row-locks)）。
 //
-//	SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at
+//	SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at, c.min_purchase_amount, c.discount_max_amount, c.usable_from
 //	FROM coupons AS c
 //	WHERE c.id = $1
 //	FOR UPDATE
@@ -172,6 +193,9 @@ func (q *Queries) LockCouponByID(ctx context.Context, id uuid.UUID) (*LockCoupon
 		&i.Coupons.IssuedAt,
 		&i.Coupons.CreatedAt,
 		&i.Coupons.UpdatedAt,
+		&i.Coupons.MinPurchaseAmount,
+		&i.Coupons.DiscountMaxAmount,
+		&i.Coupons.UsableFrom,
 	)
 	return &i, err
 }

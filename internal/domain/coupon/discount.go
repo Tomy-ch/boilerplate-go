@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"go-boilerplate/pkg/decimal"
+	"go-boilerplate/pkg/ptr"
 	"go-boilerplate/pkg/xerrors"
 )
 
@@ -36,10 +37,12 @@ type DiscountKind struct {
 // Discount は、値引きを表す値オブジェクトです。決まり方（種別）と、その種別における値の組です。
 //
 // 定額では value が差し引く金額（USD ドルの十進量）、定率では value が対象額に掛ける率です。
+// 定率は 1 回に引ける額の上限を持てます（[Discount.WithMaxAmount]）。定額は持ちません。
 // 適用範囲は関知しません。どの明細が対象かは [Scope] が答えます。
 type Discount struct {
-	kind  DiscountKind
-	value decimal.Decimal
+	kind      DiscountKind
+	value     decimal.Decimal
+	maxAmount *int64
 }
 
 // allDiscountKinds は、既知の値引き種別一覧です。code からの解決に用います。
@@ -111,8 +114,43 @@ func NewDiscount(kind DiscountKind, value decimal.Decimal) (Discount, error) {
 	}
 }
 
+// WithMaxAmount は、1 回に引ける額の上限を設けた値引きを返します。上限は決済スケール
+// （USD セント）の整数です。元の値引きは変わりません。
+//
+// 上限は定率にのみ意味を持ちます。定額に設定しようとした場合は ErrInvalidMaxAmount を返します
+// （定額は引く額そのものが決まっているため、上限は同じことを二重に述べるだけになります）。
+// 0 以下の上限は値引きを成立させないため、同じく ErrInvalidMaxAmount を返します。
+func (d Discount) WithMaxAmount(maxAmount int64) (Discount, error) {
+	if d.kind != DiscountKindRate {
+		return Discount{}, xerrors.Wrap(ErrInvalidMaxAmount, "max amount is only meaningful for a rate discount")
+	}
+	if maxAmount <= 0 {
+		return Discount{}, xerrors.Wrap(ErrInvalidMaxAmount, "max amount must be positive")
+	}
+
+	d.maxAmount = &maxAmount
+
+	return d, nil
+}
+
 // Kind は、値引きの決まり方を返します。
 func (d Discount) Kind() DiscountKind { return d.kind }
+
+// MaxAmount は、1 回に引ける額の上限を決済スケール（USD セント）で返します。上限が無い場合は nil です。
+func (d Discount) MaxAmount() *int64 { return ptr.Copy(d.maxAmount) }
+
+// LimitToMaxAmount は、決済スケール（USD セント）の値引き額へ上限を適用した額を返します。
+// 上限が無い場合と、上限に満たない場合はそのまま返します。
+//
+// 上限は決済スケール（USD セント）の額に対する条件です
+// （適用の位置は docs/spec/domain/coupon.md の Discount を参照）。
+func (d Discount) LimitToMaxAmount(cents int64) int64 {
+	if d.maxAmount == nil || cents <= *d.maxAmount {
+		return cents
+	}
+
+	return *d.maxAmount
+}
 
 // Value は、種別における値を返します。定額なら差し引く金額、定率なら掛ける率です。
 func (d Discount) Value() decimal.Decimal { return d.value }

@@ -22,3 +22,12 @@ properties:
       ドメインの検証に落ちる値（定率で 0 以下または 1 超など）は 422 を返します。
       JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
     example: "0.15"
+  maxAmount:
+    type: integer
+    format: int64
+    nullable: true
+    description: >-
+      定率の値引きが 1 回に引ける額の上限。USD セント単位の整数です。任意で、省略または null なら
+      上限を設けません。定額（`flat`）に対して指定した場合は、意味を持たない組み合わせとして 422 を
+      返します。0 以下を指定した場合も 422 です。
+    example: 2000

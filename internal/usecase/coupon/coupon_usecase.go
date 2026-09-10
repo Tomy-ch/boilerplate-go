@@ -40,6 +40,12 @@ type CouponView struct {
 	ScopeKind string
 	// ScopeTargetID は、適用範囲が絞る対象の識別子です。全体では nil です。
 	ScopeTargetID *uuid.UUID
+	// MaxAmount は、定率の値引きが 1 回に引ける額の上限（USD セント）です。上限が無い場合は nil です。
+	MaxAmount *int64
+	// MinPurchaseAmount は、使うために必要な購入額の下限（USD セント）です。条件が無い場合は nil です。
+	MinPurchaseAmount *int64
+	// UsableFrom は、使えるようになる日時です。発行時点から使える場合は nil です。
+	UsableFrom *time.Time
 	// ExpiresAt は、有効期限です。
 	ExpiresAt time.Time
 	// UsedAt は、使用日時です。未使用の場合は nil です。
@@ -141,6 +147,9 @@ func (u *usecase) ListMyCoupons(ctx context.Context, authn *auth.Authn) ([]Coupo
 
 // ListApplicableToMyCart は、カートの明細を対象にクーポンごとの値引き額を求め、0 になるものを落とします。
 // 対象明細の絞り込みは docs/spec/usecase/coupon.md の Workflow を参照。
+//
+// 最低購入金額に満たないクーポンは [coupon.Coupon.DiscountFor] が 0 を返すため、
+// 対象明細が 1 件も無い場合と同じ経路で落ちます。
 func (u *usecase) ListApplicableToMyCart(ctx context.Context, authn *auth.Authn) ([]CartCouponView, error) {
 	ctx, endSpan := u.tracer.Start(ctx)
 	defer endSpan()
@@ -170,7 +179,7 @@ func (u *usecase) ListApplicableToMyCart(ctx context.Context, authn *auth.Authn)
 
 	views := make([]CartCouponView, 0, len(coupons))
 	for _, c := range coupons {
-		if c.IsUsed() || c.IsExpired(now) {
+		if c.IsUsed() || c.IsExpired(now) || c.IsNotYetUsable(now) {
 			continue
 		}
 
@@ -257,14 +266,17 @@ func (u *usecase) buildLines(
 // toCouponView は、クーポン集約を出力 DTO の語彙へ写します。種別は code ではなく名前で出します。
 func toCouponView(c *coupon.Coupon) CouponView {
 	return CouponView{
-		ID:            c.ID(),
-		DiscountKind:  c.Discount().Kind().Name(),
-		DiscountValue: c.Discount().Value(),
-		ScopeKind:     c.Scope().Kind().Name(),
-		ScopeTargetID: c.Scope().TargetID(),
-		ExpiresAt:     c.ExpiresAt(),
-		UsedAt:        c.UsedAt(),
-		IssuedAt:      c.IssuedAt(),
+		ID:                c.ID(),
+		DiscountKind:      c.Discount().Kind().Name(),
+		DiscountValue:     c.Discount().Value(),
+		ScopeKind:         c.Scope().Kind().Name(),
+		ScopeTargetID:     c.Scope().TargetID(),
+		MaxAmount:         c.Discount().MaxAmount(),
+		MinPurchaseAmount: c.MinPurchaseAmount(),
+		UsableFrom:        c.UsableFrom(),
+		ExpiresAt:         c.ExpiresAt(),
+		UsedAt:            c.UsedAt(),
+		IssuedAt:          c.IssuedAt(),
 	}
 }
 

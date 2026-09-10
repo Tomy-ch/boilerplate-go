@@ -95,6 +95,14 @@ type CouponDiscount struct {
 	// Example: rate
 	Kind CouponDiscountKind `json:"kind"`
 
+	// MaxAmount 定率の値引きが 1 回に引ける額の上限。USD セント単位の整数です。
+	// 定率（`rate`）にのみ意味を持ち、定額（`flat`）では常に null です。
+	// 上限が無い場合も null で、そのときは対象額に率を掛けた額がそのまま引かれます。
+	//
+	//
+	// Example: 2000
+	MaxAmount *int64 `json:"maxAmount"`
+
 	// Value 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、
 	// 正確な十進量を保つ decimal 文字列で表します（例 `"0.10"` は 10% 引き）。
 	// JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
@@ -117,6 +125,11 @@ type CouponDiscountInput struct {
 	//
 	// Example: rate
 	Kind CouponDiscountInputKind `json:"kind"`
+
+	// MaxAmount 定率の値引きが 1 回に引ける額の上限。USD セント単位の整数です。任意で、省略または null なら 上限を設けません。定額（`flat`）に対して指定した場合は、意味を持たない組み合わせとして 422 を 返します。0 以下を指定した場合も 422 です。
+	//
+	// Example: 2000
+	MaxAmount *int64 `json:"maxAmount,omitempty"`
 
 	// Value 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、 正確な十進量を保つ decimal 文字列で表します（例 `"0.15"` は 15% 引き）。 ドメインの検証に落ちる値（定率で 0 以下または 1 超など）は 422 を返します。 JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
 	//
@@ -152,8 +165,19 @@ type CouponResponse struct {
 	// Example: 2026-09-01T00:00:00Z
 	IssuedAt time.Time `json:"issuedAt"`
 
+	// MinPurchaseAmount このクーポンを使うために必要な購入額の下限。USD セント単位の整数です。
+	// 条件が無い場合は null で、そのときは購入額を問わず使えます。
+	//
+	//
+	// Example: 5000
+	MinPurchaseAmount *int64 `json:"minPurchaseAmount"`
+
 	// Scope クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
 	Scope CouponScope `json:"scope"`
+
+	// UsableFrom 使えるようになる日時。この時刻ちょうどを含めて以降に使えます。
+	// 条件が無い場合は null で、そのときは発行した時点から使えます。
+	UsableFrom *time.Time `json:"usableFrom"`
 
 	// UsedAt 使用日時。未使用の場合は null です。使用済みへの遷移は一度きりで取り消せません。
 	UsedAt *time.Time `json:"usedAt"`
@@ -217,9 +241,19 @@ type CouponsPostRequest struct {
 	// Example: 2026-12-31T14:59:59Z
 	ExpiresAt time.Time `json:"expiresAt"`
 
+	// MinPurchaseAmount 発行するクーポンを使うために必要な購入額の下限。USD セント単位の整数です。任意で、 省略または null なら購入額を問わず使えます。0 以下を指定した場合は 422 を返します。
+	//
+	// Example: 5000
+	MinPurchaseAmount *int64 `json:"minPurchaseAmount,omitempty"`
+
 	// Scope 発行するクーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
 	// 応答側の CouponScope と同じ形ですが、要求として受け取る側は宣言に無いフィールドを拒むため別に持ちます。
 	Scope CouponScopeInput `json:"scope"`
+
+	// UsableFrom 発行するクーポンが使えるようになる日時。任意で、省略または null なら発行した時点から使えます。 有効期限（expiresAt）以降を指定した場合は、一度も使えないクーポンになるため 422 を返します。
+	//
+	// Example: 2026-10-01T00:00:00Z
+	UsableFrom *time.Time `json:"usableFrom,omitempty"`
 
 	// UserId 受給者の利用者 ID。退会していない利用者に限ります。存在しない、または退会済みの ID を 指定した場合は 404 を返します。受給者は発行時に確定し、以後移りません。
 	//

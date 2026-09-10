@@ -56,6 +56,14 @@ type CouponDiscount struct {
 	// Example: rate
 	Kind CouponDiscountKind `json:"kind"`
 
+	// MaxAmount 定率の値引きが 1 回に引ける額の上限。USD セント単位の整数です。
+	// 定率（`rate`）にのみ意味を持ち、定額（`flat`）では常に null です。
+	// 上限が無い場合も null で、そのときは対象額に率を掛けた額がそのまま引かれます。
+	//
+	//
+	// Example: 2000
+	MaxAmount *int64 `json:"maxAmount"`
+
 	// Value 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、
 	// 正確な十進量を保つ decimal 文字列で表します（例 `"0.10"` は 10% 引き）。
 	// JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
@@ -100,8 +108,19 @@ type CouponResponse struct {
 	// Example: 2026-09-01T00:00:00Z
 	IssuedAt time.Time `json:"issuedAt"`
 
+	// MinPurchaseAmount このクーポンを使うために必要な購入額の下限。USD セント単位の整数です。
+	// 条件が無い場合は null で、そのときは購入額を問わず使えます。
+	//
+	//
+	// Example: 5000
+	MinPurchaseAmount *int64 `json:"minPurchaseAmount"`
+
 	// Scope クーポンの適用範囲。どの明細が対象かを表します。値引き（いくら引くか）とは独立した軸です。
 	Scope CouponScope `json:"scope"`
+
+	// UsableFrom 使えるようになる日時。この時刻ちょうどを含めて以降に使えます。
+	// 条件が無い場合は null で、そのときは発行した時点から使えます。
+	UsableFrom *time.Time `json:"usableFrom"`
 
 	// UsedAt 使用日時。未使用の場合は null です。使用済みへの遷移は一度きりで取り消せません。
 	UsedAt *time.Time `json:"usedAt"`
