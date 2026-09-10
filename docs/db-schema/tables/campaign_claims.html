@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>prefectures - test.public</title>
+        <title>campaign_claims - test.public</title>
         <!-- Tell the browser to be responsive to screen width -->
         <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
         <link rel="icon" type="image/png" sizes="16x16" href="../favicon.png">
@@ -73,7 +73,7 @@
             <div class="content-wrapper">
                 <!-- Content Header (Page header) -->
                 <section class="content-header">
-                    <h1>prefectures</h1><br />
+                    <h1>campaign_claims</h1><br />
                     <div class="box box-primary">
                         <div class="box-header with-border">
                             <i class="fa fa-file-text-o"></i>
@@ -84,7 +84,7 @@
                             </div>
                         </div><!-- /.box-header -->
                         <div class="box-body clearfix">
-                            <p>都道府県</p>
+                            <p>キャンペーンの受け取り記録</p>
                         </div><!-- /.box-body -->
                     </div>
                 </section>
@@ -130,11 +130,6 @@
                                     <td>null</td>
                                     <td>
                                         <table border='0' cellspacing='0' cellpadding='0'>
-                                            <tr>
-                                                <td title="users.prefecture_id references prefectures.id via users_prefecture_id_foreign"><a href='users.html'>users</a><span class='relatedKey'>.prefecture_id</span></td>
-                                                <td class="constraint detail">users_prefecture_id_foreign</td>
-                                                <td class="constraint detail"><span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span></td>
-                                            </tr>
                                         </table>
                                     </td>
                                     <td>
@@ -144,9 +139,9 @@
                                     <td><p>ID</p></td>
                                 </tr>
                                 <tr>
-                                    <td class='indexedColumn' title='Indexed'><i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i><span id="name">name</span></td>
-                                    <td>varchar</td>
-                                    <td>100</td>
+                                    <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="campaign_id">campaign_id</span></td>
+                                    <td>uuid</td>
+                                    <td>2147483647</td>
                                     <td title=''></td>
                                     <td title=''></td>
                                     <td>null</td>
@@ -156,14 +151,19 @@
                                     </td>
                                     <td>
                                         <table border='0' cellspacing='0' cellpadding='0'>
+                                            <tr>
+                                                <td title="campaign_claims.campaign_id references campaigns.id via campaign_claims_campaign_id_foreign"><a href='campaigns.html'>campaigns</a><span class='relatedKey'>.id</span></td>
+                                                <td class="constraint detail">campaign_claims_campaign_id_foreign</td>
+                                                <td class="constraint detail"><span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span></td>
+                                            </tr>
                                         </table>
                                     </td>
-                                    <td><p>都道府県名</p></td>
+                                    <td><p>受け取り元のキャンペーンID</p></td>
                                 </tr>
                                 <tr>
-                                    <td class='indexedColumn' title='Indexed'><i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i><span id="code">code</span></td>
-                                    <td>int2</td>
-                                    <td>5</td>
+                                    <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="user_id">user_id</span></td>
+                                    <td>uuid</td>
+                                    <td>2147483647</td>
                                     <td title=''></td>
                                     <td title=''></td>
                                     <td>null</td>
@@ -173,14 +173,41 @@
                                     </td>
                                     <td>
                                         <table border='0' cellspacing='0' cellpadding='0'>
+                                            <tr>
+                                                <td title="campaign_claims.user_id references users.id via campaign_claims_user_id_foreign"><a href='users.html'>users</a><span class='relatedKey'>.id</span></td>
+                                                <td class="constraint detail">campaign_claims_user_id_foreign</td>
+                                                <td class="constraint detail"><span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span></td>
+                                            </tr>
                                         </table>
                                     </td>
-                                    <td><p>都道府県コード</p></td>
+                                    <td><p>受け取った利用者のユーザーID</p></td>
                                 </tr>
                                 <tr>
-                                    <td class='indexedColumn' title='Indexed'><i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i><span id="sort_key">sort_key</span></td>
-                                    <td>int2</td>
-                                    <td>5</td>
+                                    <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="coupon_id">coupon_id</span></td>
+                                    <td>uuid</td>
+                                    <td>2147483647</td>
+                                    <td title=''></td>
+                                    <td title=''></td>
+                                    <td>null</td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                            <tr>
+                                                <td title="campaign_claims.coupon_id references coupons.id via campaign_claims_coupon_id_foreign"><a href='coupons.html'>coupons</a><span class='relatedKey'>.id</span></td>
+                                                <td class="constraint detail">campaign_claims_coupon_id_foreign</td>
+                                                <td class="constraint detail"><span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td><p>受け取りで発行されたクーポンのID</p></td>
+                                </tr>
+                                <tr>
+                                    <td><span id="claimed_at">claimed_at</span></td>
+                                    <td>timestamptz</td>
+                                    <td>35,6</td>
                                     <td title=''></td>
                                     <td title=''></td>
                                     <td>null</td>
@@ -192,7 +219,7 @@
                                         <table border='0' cellspacing='0' cellpadding='0'>
                                         </table>
                                     </td>
-                                    <td><p>順序</p></td>
+                                    <td><p>受け取り日時</p></td>
                                 </tr>
                                 <tr>
                                     <td><span id="created_at">created_at</span></td>
@@ -259,28 +286,28 @@
                                 </thead>
                                 <tbody>
                                 <tr>
-                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey'></i> prefectures_id_primary</td>
+                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey'></i> campaign_claims_id_primary</td>
                                     <td>Primary key</td>
                                     <td><span title='Ascending'>Asc</span></td>
                                     <td>id</td>
                                 </tr>
                                 <tr>
-                                    <td class='uniqueKey' title='Unique Key'><i class='icon ion-key iconkey'></i> prefectures_code_unique</td>
-                                    <td>Must be unique</td>
-                                    <td><span title='Ascending'>Asc</span></td>
-                                    <td>code</td>
+                                    <td title='Indexed'>campaign_claims_campaign_id_user_id_idx</td>
+                                    <td>Performance</td>
+                                    <td><span title='Ascending'>Asc</span>/<span title='Ascending'>Asc</span></td>
+                                    <td>campaign_id + user_id</td>
                                 </tr>
                                 <tr>
-                                    <td class='uniqueKey' title='Unique Key'><i class='icon ion-key iconkey'></i> prefectures_name_unique</td>
-                                    <td>Must be unique</td>
+                                    <td title='Indexed'>campaign_claims_coupon_id_idx</td>
+                                    <td>Performance</td>
                                     <td><span title='Ascending'>Asc</span></td>
-                                    <td>name</td>
+                                    <td>coupon_id</td>
                                 </tr>
                                 <tr>
-                                    <td class='uniqueKey' title='Unique Key'><i class='icon ion-key iconkey'></i> prefectures_sort_key_unique</td>
-                                    <td>Must be unique</td>
+                                    <td title='Indexed'>campaign_claims_user_id_idx</td>
+                                    <td>Performance</td>
                                     <td><span title='Ascending'>Asc</span></td>
-                                    <td>sort_key</td>
+                                    <td>user_id</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -305,25 +332,28 @@
                                 <div class="tab-content no-padding">
                                     <div class="chart tab-pane active" id="oneDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="oneDegreeRelationshipsDiagram" name="oneDegreeRelationshipsDiagram">
-<area shape="rect" id="node1" href="users.html" target="_top" title="users" alt="" coords="363,5,541,211">
-<area shape="rect" id="node2" href="prefectures.html" target="_top" title="prefectures" alt="" coords="5,61,319,307">
+<area shape="rect" id="node1" href="campaign_claims.html" target="_top" title="campaign_claims" alt="" coords="619,68,984,343">
+<area shape="rect" id="node2" href="campaigns.html" target="_top" title="campaigns" alt="" coords="228,5,575,152">
+<area shape="rect" id="node3" href="coupons.html" target="_top" title="coupons" alt="" coords="268,205,535,352">
+<area shape="rect" id="node4" href="users.html" target="_top" title="users" alt="" coords="5,181,184,387">
 </map>
-                                        <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/prefectures.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/campaign_claims.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                     <div class="chart tab-pane " id="twodegreesDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="twoDegreesRelationshipsDiagram" name="twoDegreesRelationshipsDiagram">
-<area shape="rect" id="node1" href="campaign_claims.html" target="_top" title="campaign_claims" alt="" coords="861,238,1111,326">
-<area shape="rect" id="node2" href="coupons.html" target="_top" title="coupons" alt="" coords="617,294,782,382">
-<area shape="rect" id="node3" href="users.html" target="_top" title="users" alt="" coords="363,256,541,461">
-<area shape="rect" id="node10" href="prefectures.html" target="_top" title="prefectures" alt="" coords="5,312,319,557">
-<area shape="rect" id="node4" href="carts.html" target="_top" title="carts" alt="" coords="633,153,765,241">
-<area shape="rect" id="node5" href="inquiries.html" target="_top" title="inquiries" alt="" coords="615,48,784,136">
-<area shape="rect" id="node6" href="inquiry_messages.html" target="_top" title="inquiry_messages" alt="" coords="857,12,1115,100">
-<area shape="rect" id="node7" href="purchases.html" target="_top" title="purchases" alt="" coords="895,353,1077,441">
-<area shape="rect" id="node8" href="user_identities.html" target="_top" title="user_identities" alt="" coords="585,436,813,524">
-<area shape="rect" id="node9" href="user_roles.html" target="_top" title="user_roles" alt="" coords="607,541,791,629">
+<area shape="rect" id="node1" href="campaign_claims.html" target="_top" title="campaign_claims" alt="" coords="817,68,1183,343">
+<area shape="rect" id="node2" href="campaigns.html" target="_top" title="campaigns" alt="" coords="427,5,773,152">
+<area shape="rect" id="node3" href="coupons.html" target="_top" title="coupons" alt="" coords="517,205,683,293">
+<area shape="rect" id="node4" href="users.html" target="_top" title="users" alt="" coords="247,419,383,507">
+<area shape="rect" id="node11" href="prefectures.html" target="_top" title="prefectures" alt="" coords="5,416,203,504">
+<area shape="rect" id="node5" href="carts.html" target="_top" title="carts" alt="" coords="534,311,666,399">
+<area shape="rect" id="node6" href="inquiries.html" target="_top" title="inquiries" alt="" coords="515,452,685,540">
+<area shape="rect" id="node7" href="inquiry_messages.html" target="_top" title="inquiry_messages" alt="" coords="871,493,1129,581">
+<area shape="rect" id="node8" href="purchases.html" target="_top" title="purchases" alt="" coords="909,369,1091,457">
+<area shape="rect" id="node9" href="user_identities.html" target="_top" title="user_identities" alt="" coords="486,593,714,681">
+<area shape="rect" id="node10" href="user_roles.html" target="_top" title="user_roles" alt="" coords="508,699,692,787">
 </map>
-                                        <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/prefectures.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/campaign_claims.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                 </div>
                             </div>
