@@ -411,7 +411,7 @@ func Test_unclaimable(t *testing.T) {
 
 			meta, ok := apperror.MetaFrom(got)
 			require.True(t, ok)
-			assert.Equal(t, []string{domaincampaign.FieldCode}, meta.Details)
+			assert.Equal(t, []string{domaincampaign.FieldCode}, meta.Details())
 		})
 
 		t.Run("元のエラーは失われない", func(t *testing.T) {

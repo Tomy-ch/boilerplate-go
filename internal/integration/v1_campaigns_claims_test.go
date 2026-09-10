@@ -131,54 +131,136 @@ func TestV1CampaignsClaims_Integration(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
 			claims.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 
-			actual := StartServer(t, e).DoJSON(http.MethodPost, campaignClaimsPath, newBody(), nil)
+			// 冪等キーは載せる。欠くと認証より前に 400 で落ち、401 を検証できない。
+			headers := http.Header{}
+			headers.Set("Idempotency-Key", "claim-unauthenticated")
+
+			actual := StartServer(t, e).DoJSON(http.MethodPost, campaignClaimsPath, newBody(), headers)
 
 			assert.Equal(t, http.StatusUnauthorized, actual.StatusCode)
 		})
 
-		t.Run("受け取れないコードは理由を問わず 422 と details:[\"code\"] を返す", func(t *testing.T) {
+		// 受け取れない理由は外からは区別できない。5 つとも同じ 422 + details:["code"] になることを、
+		// 理由ごとに独立したケースで固定する（どれが壊れたかがテスト名に出るように）。
+		t.Run("存在しないコード は 422 と details:[\"code\"] を返す", func(t *testing.T) {
 			t.Parallel()
 
-			// 存在しない・期間外・停止済み・上限到達のいずれも、外からは同じ応答になる。
-			for name, ucErr := range map[string]error{
-				"存在しない":   domaincampaign.ErrCodeUnknown,
-				"配布期間の外":  domaincampaign.ErrNotDistributing,
-				"停止済み":    domaincampaign.ErrSuspended,
-				"総枚数上限":   domaincampaign.ErrTotalLimitReached,
-				"1人あたり上限": domaincampaign.ErrPerUserLimitReached,
-			} {
-				t.Run(name, func(t *testing.T) {
-					t.Parallel()
+			e := echo.New()
+			UseAppErrorHandler(t, e)
+			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
+			mockUC.EXPECT().ClaimCoupon(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(campaignuc.ClaimedCouponView{}, apperror.WithDetails(domaincampaign.ErrCodeUnknown, domaincampaign.FieldCode))
 
-					e := echo.New()
-					mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
-					mockUC.EXPECT().ClaimCoupon(gomock.Any(), gomock.Any(), gomock.Any()).
-						Return(campaignuc.ClaimedCouponView{}, ucErr)
+			claims.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 1, 0))
 
-					claims.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 1, 0))
+			actual := StartServer(t, e).DoJSON(
+				http.MethodPost, campaignClaimsPath, newBody(), availableClaimer(t, e, "claim-unknown"),
+			)
 
-					actual := StartServer(t, e).DoJSON(
-						http.MethodPost, campaignClaimsPath, newBody(), availableClaimer(t, e, "claim-"+name),
-					)
+			assert.Equal(t, http.StatusUnprocessableEntity, actual.StatusCode)
 
-					assert.Equal(t, http.StatusUnprocessableEntity, actual.StatusCode)
+			var body map[string]any
+			require.NoError(t, json.NewDecoder(actual.Body).Decode(&body))
+			assert.Equal(t, []any{"code"}, body["details"])
+		})
 
-					// 応答本文まで一致することを確かめる。ステータスだけを見ると、
-					// 理由ごとに details が食い違っていても気づけない。
-					var body map[string]any
-					require.NoError(t, json.NewDecoder(actual.Body).Decode(&body))
-					assert.Equal(t, []any{"code"}, body["details"])
-				})
-			}
+		t.Run("配布期間の外 は 422 と details:[\"code\"] を返す", func(t *testing.T) {
+			t.Parallel()
+
+			e := echo.New()
+			UseAppErrorHandler(t, e)
+			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
+			mockUC.EXPECT().ClaimCoupon(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(campaignuc.ClaimedCouponView{}, apperror.WithDetails(domaincampaign.ErrNotDistributing, domaincampaign.FieldCode))
+
+			claims.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 1, 0))
+
+			actual := StartServer(t, e).DoJSON(
+				http.MethodPost, campaignClaimsPath, newBody(), availableClaimer(t, e, "claim-not-distributing"),
+			)
+
+			assert.Equal(t, http.StatusUnprocessableEntity, actual.StatusCode)
+
+			var body map[string]any
+			require.NoError(t, json.NewDecoder(actual.Body).Decode(&body))
+			assert.Equal(t, []any{"code"}, body["details"])
+		})
+
+		t.Run("停止済み は 422 と details:[\"code\"] を返す", func(t *testing.T) {
+			t.Parallel()
+
+			e := echo.New()
+			UseAppErrorHandler(t, e)
+			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
+			mockUC.EXPECT().ClaimCoupon(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(campaignuc.ClaimedCouponView{}, apperror.WithDetails(domaincampaign.ErrSuspended, domaincampaign.FieldCode))
+
+			claims.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 1, 0))
+
+			actual := StartServer(t, e).DoJSON(
+				http.MethodPost, campaignClaimsPath, newBody(), availableClaimer(t, e, "claim-suspended"),
+			)
+
+			assert.Equal(t, http.StatusUnprocessableEntity, actual.StatusCode)
+
+			var body map[string]any
+			require.NoError(t, json.NewDecoder(actual.Body).Decode(&body))
+			assert.Equal(t, []any{"code"}, body["details"])
+		})
+
+		t.Run("総枚数上限に到達 は 422 と details:[\"code\"] を返す", func(t *testing.T) {
+			t.Parallel()
+
+			e := echo.New()
+			UseAppErrorHandler(t, e)
+			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
+			mockUC.EXPECT().ClaimCoupon(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(campaignuc.ClaimedCouponView{}, apperror.WithDetails(domaincampaign.ErrTotalLimitReached, domaincampaign.FieldCode))
+
+			claims.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 1, 0))
+
+			actual := StartServer(t, e).DoJSON(
+				http.MethodPost, campaignClaimsPath, newBody(), availableClaimer(t, e, "claim-total-limit"),
+			)
+
+			assert.Equal(t, http.StatusUnprocessableEntity, actual.StatusCode)
+
+			var body map[string]any
+			require.NoError(t, json.NewDecoder(actual.Body).Decode(&body))
+			assert.Equal(t, []any{"code"}, body["details"])
+		})
+
+		t.Run("1人あたり上限に到達 は 422 と details:[\"code\"] を返す", func(t *testing.T) {
+			t.Parallel()
+
+			e := echo.New()
+			UseAppErrorHandler(t, e)
+			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
+			mockUC.EXPECT().ClaimCoupon(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(campaignuc.ClaimedCouponView{}, apperror.WithDetails(domaincampaign.ErrPerUserLimitReached, domaincampaign.FieldCode))
+
+			claims.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 1, 0))
+
+			actual := StartServer(t, e).DoJSON(
+				http.MethodPost, campaignClaimsPath, newBody(), availableClaimer(t, e, "claim-per-user-limit"),
+			)
+
+			assert.Equal(t, http.StatusUnprocessableEntity, actual.StatusCode)
+
+			var body map[string]any
+			require.NoError(t, json.NewDecoder(actual.Body).Decode(&body))
+			assert.Equal(t, []any{"code"}, body["details"])
 		})
 
 		t.Run("Idempotency-Key を欠く場合は 400 を返す", func(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
 			claims.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 
@@ -193,6 +275,7 @@ func TestV1CampaignsClaims_Integration(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
 			mockUC.EXPECT().ClaimCoupon(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(campaignuc.ClaimedCouponView{}, apperror.ErrConflict)

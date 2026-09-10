@@ -142,6 +142,7 @@ func TestV1Campaigns_Integration(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
 			mockUC.EXPECT().ListCampaigns(gomock.Any(), gomock.Any(), gomock.Any()).Return(
 				campaignuc.CampaignListView{Campaigns: []campaignuc.CampaignView{newView(t)}, Total: 7}, nil,
@@ -166,10 +167,15 @@ func TestV1Campaigns_Integration(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
 			campaigns.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 
-			actual := StartServer(t, e).DoJSON(http.MethodPost, campaignsPath, newBody(), nil)
+			// 冪等キーは載せる。欠くと認証より前に 400 で落ち、401 を検証できない。
+			headers := http.Header{}
+			headers.Set("Idempotency-Key", "define-unauthenticated")
+
+			actual := StartServer(t, e).DoJSON(http.MethodPost, campaignsPath, newBody(), headers)
 
 			assert.Equal(t, http.StatusUnauthorized, actual.StatusCode)
 		})
@@ -178,6 +184,7 @@ func TestV1Campaigns_Integration(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
 			mockUC.EXPECT().DefineCampaign(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(campaignuc.CampaignView{}, apperror.ErrPermissionDenied)
@@ -194,6 +201,7 @@ func TestV1Campaigns_Integration(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
 			campaigns.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
 
@@ -206,6 +214,7 @@ func TestV1Campaigns_Integration(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
 			mockUC.EXPECT().DefineCampaign(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(campaignuc.CampaignView{}, apperror.ErrConflict)
@@ -222,8 +231,11 @@ func TestV1Campaigns_Integration(t *testing.T) {
 			t.Parallel()
 
 			e := echo.New()
+			UseAppErrorHandler(t, e)
 			mockUC := mock_campaign.NewMockUsecase(gomock.NewController(t))
+			mockUC.EXPECT().DefineCampaign(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 			campaigns.BindHandler(e, observability.NewNoopTracerFactory(t), mockUC, newIdempotencyDeps(t, 0, 0))
+			useOpenAPIValidation(t, e)
 
 			body := map[string]any{
 				"code":            "welcome-2026",
