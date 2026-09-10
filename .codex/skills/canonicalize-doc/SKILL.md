@@ -26,6 +26,19 @@ Supported mappings:
 
 Do not proceed if the pair cannot be determined safely.
 
+### Reading the translation side
+
+`AGENTS.md`'s instruction never to read a `*.ja.md` governs knowledge sourcing: a translation can
+lag its original, so reason from the English canonical instead. This skill operates on the pair
+itself, where that rule does not fit. Refusing to read the confirmed translation would force a blind
+overwrite that loses established terms and shared structure, or stop the sync and leave a canonical
+file beside a translation one generation behind.
+
+For the duration of this run, and only for the pair confirmed above, reading the `*.ja.md` is
+permitted to locate where a change lands and reuse the terms already in use there. English remains
+canonical; the translation is never a source of truth for facts about the system; do not open any
+other `*.ja.md`.
+
 ## Translate or synchronize
 
 1. Read the source file completely; for `sync-both`, read both files.
