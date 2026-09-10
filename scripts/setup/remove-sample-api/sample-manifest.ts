@@ -387,6 +387,10 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
       "internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go",
       "database/migrations/000025_add_purchases_coupon_columns.up.sql",
       "database/migrations/000025_add_purchases_coupon_columns.down.sql",
+      // coupons を ALTER するため、クーポン集約と運命を共にする（残すと撤去後の
+      // スキーマに対して「テーブルが無い」で migration が落ちる）。
+      "database/migrations/000026_add_coupons_condition_columns.up.sql",
+      "database/migrations/000026_add_coupons_condition_columns.down.sql",
       "internal/controller/handler/v1/users/me/coupons",
       "internal/controller/handler/v1/carts/coupons",
       "internal/integration/v1_users_me_coupons_test.go",
