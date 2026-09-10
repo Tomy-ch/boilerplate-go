@@ -387,6 +387,10 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
       "internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go",
       "database/migrations/000025_add_purchases_coupon_columns.up.sql",
       "database/migrations/000025_add_purchases_coupon_columns.down.sql",
+      // coupons を ALTER するため、クーポン集約と運命を共にする（残すと撤去後の
+      // スキーマに対して「テーブルが無い」で migration が落ちる）。
+      "database/migrations/000026_add_coupons_condition_columns.up.sql",
+      "database/migrations/000026_add_coupons_condition_columns.down.sql",
       "internal/controller/handler/v1/users/me/coupons",
       "internal/controller/handler/v1/carts/coupons",
       "internal/integration/v1_users_me_coupons_test.go",
@@ -398,6 +402,8 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
       "openapi/components/schemas/coupons",
       "openapi/components/responses/coupons",
       "openapi/components/requests/coupons",
+      // キャンペーンの定義・受け取りも同じ param と CouponResponse を使う。キャンペーンは
+      // クーポン集約そのものに依存するため、クーポンを撤去するならキャンペーンも撤去する。
       "openapi/components/parameters/idempotency/IdempotencyKeyRequiredParam.yaml",
 
       // 販促クーポンの一括発行。受給者を識別子で名指しできない書き込みの実例なので、
@@ -416,6 +422,39 @@ export const SAMPLE_DOMAINS: Readonly<Record<string, SampleDomain>> = {
 
       "docs/spec/domain/coupon.md",
       "docs/spec/usecase/coupon.md",
+    ],
+  },
+
+  campaign: {
+    description:
+      "サンプル キャンペーン集約（コードを配り、受け取った利用者へクーポンを 1 枚ずつ配る。クーポン集約を前提とする）",
+    paths: [
+      "database/migrations/000027_create_campaigns.up.sql",
+      "database/migrations/000027_create_campaigns.down.sql",
+      "database/migrations/000028_create_campaign_claims.up.sql",
+      "database/migrations/000028_create_campaign_claims.down.sql",
+
+      "internal/domain/campaign",
+      "internal/usecase/campaign",
+      "internal/infrastructure/rdb/repository/campaign",
+      "database/dml/repository/campaign",
+      "database/gen/campaign_repository.gen.sql",
+      "internal/infrastructure/rdb/sqlc/gen/campaign_repository.gen.sql.go",
+
+      "internal/controller/handler/v1/campaigns",
+      "internal/integration/v1_campaigns_test.go",
+      "internal/integration/v1_campaigns_claims_test.go",
+      "openapi/paths/v1/campaigns.yaml",
+      "openapi/paths/v1/campaigns",
+      "openapi/components/schemas/campaigns",
+      "openapi/components/responses/campaigns",
+      "openapi/components/requests/campaigns",
+      "openapi/components/parameters/campaign",
+
+      "database/seed/000042_campaigns.sql",
+
+      "docs/spec/domain/campaign.md",
+      "docs/spec/usecase/campaign.md",
     ],
   },
 

@@ -23,13 +23,15 @@ type Coupons []*Coupon
 // Coupon は、クーポンを表すドメインエンティティです。受給者は発行時に確定し、以後移りません。
 // 譲渡を表さない理由は docs/spec/domain/coupon.md の Overview を参照してください。
 type Coupon struct {
-	id        uuid.UUID
-	userID    uuid.UUID
-	discount  Discount
-	scope     Scope
-	expiresAt time.Time
-	usedAt    *time.Time
-	issuedAt  time.Time
+	id                uuid.UUID
+	userID            uuid.UUID
+	discount          Discount
+	scope             Scope
+	minPurchaseAmount *int64
+	usableFrom        *time.Time
+	expiresAt         time.Time
+	usedAt            *time.Time
+	issuedAt          time.Time
 }
 
 // Attributes は、クーポンの属性一式です。ExpiresAt と IssuedAt が同型のため構造体で受けます
@@ -41,6 +43,10 @@ type Attributes struct {
 	Discount Discount
 	// Scope は、どの明細が対象かです。
 	Scope Scope
+	// MinPurchaseAmount は、使うために必要な購入額の下限です。条件が無ければ nil です。
+	MinPurchaseAmount *int64
+	// UsableFrom は、使えるようになる日時です。発行時点から使えるなら nil です。
+	UsableFrom *time.Time
 	// ExpiresAt は、有効期限です。
 	ExpiresAt time.Time
 	// IssuedAt は、発行日時です。
@@ -94,18 +100,37 @@ func newCoupon(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, erro
 	if err := validateValidity(attrs.IssuedAt, attrs.ExpiresAt); err != nil {
 		return nil, err
 	}
+	if err := validateConditions(attrs); err != nil {
+		return nil, err
+	}
 
 	used := ptr.Copy(usedAt)
 
 	return &Coupon{
-		id:        id,
-		userID:    attrs.UserID,
-		discount:  attrs.Discount,
-		scope:     attrs.Scope,
-		expiresAt: attrs.ExpiresAt,
-		usedAt:    used,
-		issuedAt:  attrs.IssuedAt,
+		id:                id,
+		userID:            attrs.UserID,
+		discount:          attrs.Discount,
+		scope:             attrs.Scope,
+		minPurchaseAmount: ptr.Copy(attrs.MinPurchaseAmount),
+		usableFrom:        ptr.Copy(attrs.UsableFrom),
+		expiresAt:         attrs.ExpiresAt,
+		usedAt:            used,
+		issuedAt:          attrs.IssuedAt,
 	}, nil
+}
+
+// validateConditions は、使えるかどうかを決める条件の組を検証します。どちらも任意で、
+// 未設定（nil）は「条件なし」を表します
+// （利用開始日時と有効期限の関係は docs/spec/domain/coupon.md の Cross-field Invariants）。
+func validateConditions(attrs Attributes) error {
+	if attrs.MinPurchaseAmount != nil && *attrs.MinPurchaseAmount <= 0 {
+		return xerrors.Wrap(ErrInvalidMinPurchaseAmount, "minPurchaseAmount must be positive")
+	}
+	if attrs.UsableFrom != nil && !attrs.ExpiresAt.After(*attrs.UsableFrom) {
+		return xerrors.Wrap(ErrInvalidUsableFrom, "usableFrom must be before expiresAt")
+	}
+
+	return nil
 }
 
 // ID は、クーポン ID を返します。
@@ -119,6 +144,13 @@ func (c *Coupon) Discount() Discount { return c.discount }
 
 // Scope は、適用範囲を返します。
 func (c *Coupon) Scope() Scope { return c.scope }
+
+// MinPurchaseAmount は、使うために必要な購入額の下限を決済スケール（USD セント）で返します。
+// 条件が無い場合は nil です。
+func (c *Coupon) MinPurchaseAmount() *int64 { return ptr.Copy(c.minPurchaseAmount) }
+
+// UsableFrom は、使えるようになる日時を返します。発行時点から使える場合は nil です。
+func (c *Coupon) UsableFrom() *time.Time { return ptr.Copy(c.usableFrom) }
 
 // ExpiresAt は、有効期限を返します。
 func (c *Coupon) ExpiresAt() time.Time { return c.expiresAt }
@@ -137,15 +169,32 @@ func (c *Coupon) IsUsed() bool { return c.usedAt != nil }
 func (c *Coupon) IsHeldBy(userID uuid.UUID) bool { return c.userID == userID }
 
 // DiscountFor は、渡された明細のうち適用範囲に入るものを対象として、差し引く額を決済スケールの
-// 整数（USD セント）で返します。対象が 1 件も無い場合と、差し引く額が最小単位に満たない場合は 0 です。
+// 整数（USD セント）で返します。対象が 1 件も無い場合、購入額が最低購入金額に満たない場合、
+// 差し引く額が最小単位に満たない場合はいずれも 0 です。
+//
+// 最低購入金額が見るのは購入の小計で、値引き上限は丸めたあとの額に効きます
+// （根拠は docs/spec/domain/coupon.md の Behavior Methods > DiscountFor）。
 //
 // 丸めはこのメソッドでのみ行います（[Discount.Apply] は丸めません。ADR-0038 (two-scale-quantity-model)）。
-// 根拠は docs/spec/domain/coupon.md の Behavior Methods > DiscountFor を参照してください。
 func (c *Coupon) DiscountFor(lines []Line) (int, error) {
+	subtotal := decimal.FromInt(0)
 	eligible := decimal.FromInt(0)
 	for _, line := range lines {
+		subtotal = subtotal.Add(line.Subtotal())
 		if c.scope.Covers(line) {
 			eligible = eligible.Add(line.Subtotal())
+		}
+	}
+
+	// 条件を持たないクーポンは購入の小計を見ないので、決済スケールへの換算もしません。
+	// 換算を無条件に行うと、条件が無いクーポンにも小計由来の失敗経路が生まれます。
+	if c.minPurchaseAmount != nil {
+		subtotalCents, cerr := subtotal.Truncate(minorUnitDigits).ToScaledInt64(minorUnitDigits)
+		if cerr != nil {
+			return 0, xerrors.Wrap(ErrInvalidMinPurchaseAmount, "purchase subtotal exceeds the settlement range")
+		}
+		if !c.SatisfiesMinPurchase(subtotalCents) {
+			return 0, nil
 		}
 	}
 
@@ -154,18 +203,28 @@ func (c *Coupon) DiscountFor(lines []Line) (int, error) {
 		return 0, xerrors.Wrap(ErrInvalidDiscountValue, "discount exceeds the settlement range")
 	}
 
-	return int(cents), nil
+	return int(c.discount.LimitToMaxAmount(cents)), nil
+}
+
+// SatisfiesMinPurchase は、購入の小計が最低購入金額を満たすかどうかを返します。
+// 条件が無いクーポンは常に満たします。額は決済スケール（USD セント）の整数です。
+func (c *Coupon) SatisfiesMinPurchase(subtotalCents int64) bool {
+	return c.minPurchaseAmount == nil || subtotalCents >= *c.minPurchaseAmount
 }
 
 // Redeem は、クーポンを使用済みにします。使用済みから未使用へ戻すのは [Coupon.Restore] だけです。
 //
-// 既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えません。
+// 既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired、
+// 利用開始日時より前なら ErrNotYetUsable を返し、状態を変えません。
 func (c *Coupon) Redeem(now time.Time) error {
 	if c.IsUsed() {
 		return ErrAlreadyUsed
 	}
 	if c.IsExpired(now) {
 		return ErrExpired
+	}
+	if c.IsNotYetUsable(now) {
+		return ErrNotYetUsable
 	}
 
 	c.usedAt = &now
@@ -194,3 +253,10 @@ func (c *Coupon) Restore(now time.Time) (bool, error) {
 // IsExpired は、渡された時点でクーポンが失効しているかどうかを返します。有効期限ちょうども
 // 失効として扱います。判定の設計は docs/spec/domain/coupon.md の Behavior Methods を参照してください。
 func (c *Coupon) IsExpired(now time.Time) bool { return !now.Before(c.expiresAt) }
+
+// IsNotYetUsable は、渡された時点でクーポンがまだ使えないかどうかを返します。
+// 利用開始日時ちょうどは使える側に含めます。利用開始日時を持たないクーポンは常に false です
+// （区間の閉じ方は docs/spec/domain/coupon.md の Behavior Methods）。
+func (c *Coupon) IsNotYetUsable(now time.Time) bool {
+	return c.usableFrom != nil && now.Before(*c.usableFrom)
+}

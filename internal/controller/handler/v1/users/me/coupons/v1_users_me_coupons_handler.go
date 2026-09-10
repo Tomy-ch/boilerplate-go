@@ -78,15 +78,18 @@ func toCouponResponse(v couponuc.CouponView) gen.CouponResponse {
 	return gen.CouponResponse{
 		Id: v.ID.ToPrimitive(),
 		Discount: gen.CouponDiscount{
-			Kind:  gen.CouponDiscountKind(v.DiscountKind),
-			Value: v.DiscountValue.String(),
+			Kind:      gen.CouponDiscountKind(v.DiscountKind),
+			Value:     v.DiscountValue.String(),
+			MaxAmount: v.MaxAmount,
 		},
 		Scope: gen.CouponScope{
 			Kind:     gen.CouponScopeKind(v.ScopeKind),
 			TargetId: toPrimitivePtr(v.ScopeTargetID),
 		},
-		ExpiresAt: v.ExpiresAt,
-		UsedAt:    v.UsedAt,
-		IssuedAt:  v.IssuedAt,
+		MinPurchaseAmount: v.MinPurchaseAmount,
+		UsableFrom:        v.UsableFrom,
+		ExpiresAt:         v.ExpiresAt,
+		UsedAt:            v.UsedAt,
+		IssuedAt:          v.IssuedAt,
 	}
 }

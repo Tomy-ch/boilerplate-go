@@ -20,6 +20,11 @@
 メンバーが要り、軸を足すたび積で増える。2 つに割れば、それぞれが 1 つの問い（いくら引くか / どの明細が
 対象か）に答えるだけで済む。
 
+**「使えるか」は「いくら引くか」「どの明細か」と直交する第 3 の軸である。** 最低購入金額（`minPurchaseAmount`）と
+利用開始日時（`usableFrom`）は、値引きの決まり方にも適用範囲にも属さない。既存の 2 軸へ畳むと、
+「定率 × カテゴリ限定 × 5,000 セント以上」のような組み合わせが積で増える。有効期限が既にこの軸に属しており、
+利用開始日時はその対称にあたる。
+
 **値引き額の計算と適用範囲の判定はこの集約が持つ。** どちらも「このクーポンは何をするか」の問いで、
 1 枚について閉じている。丸めは `DiscountFor` の 1 箇所だけで起きる（[ADR-0038](../../adr/0038-two-scale-quantity-model.md)）。
 
@@ -47,6 +52,10 @@ fields:
   - name: scope
     type: Scope
     required: true          # ゼロ値の場合は ErrInvalidScope
+  - name: minPurchaseAmount
+    type: "*int64"          # nil 許容（条件なし）。決済スケール（USD セント）。0 以下は ErrInvalidMinPurchaseAmount
+  - name: usableFrom
+    type: "*time.Time"      # nil 許容（発行時点から使える）。expiresAt 以降は ErrInvalidUsableFrom
   - name: expiresAt
     type: time.Time
     required: true          # ゼロ値は ErrInvalidExpiresAt
@@ -61,6 +70,12 @@ fields:
 
 - `expiresAt > issuedAt`（違反は `ErrInvalidExpiresAt`）。発行した時点で既に使えないクーポンは
   発行の意味を持たないため、同時刻も許さない。`New` / `Reconstruct` が共有する検証ゲートで課す。
+- `usableFrom < expiresAt`（違反は `ErrInvalidUsableFrom`）。一度も使えない窓しか持たないクーポンを
+  作らないため、同時刻も許さない。条件を持たない（nil）場合は課さない。
+
+**条件は 3 つとも任意で、nil は「条件なし」を表す。** 既定値を置かないのは、条件を持たずに発行された
+過去のクーポンへ、後から条件を捏造しないためである。3 つとも nil のクーポンは、条件が導入される前と
+まったく同じ判定を通る。
 
 ## Behavior Methods
 
@@ -79,21 +94,45 @@ fields:
   signature: IsHeldBy(userID uuid.UUID) bool
   behavior: |
     そのユーザーが受給者かどうかを返す。受給者は発行時に確定し以後移らないため、等値比較で足りる。
+- name: IsNotYetUsable
+  signature: IsNotYetUsable(now time.Time) bool
+  behavior: |
+    渡された時点でまだ使えないかを返す。利用開始日時ちょうどは使える側に含める
+    （失効が期限ちょうどを含めるのと向きが逆になる。区間を [usableFrom, expiresAt) として閉じるため）。
+    利用開始日時を持たないクーポンは常に false。時刻はドメインの外から渡す。
+- name: SatisfiesMinPurchase
+  signature: SatisfiesMinPurchase(subtotalCents int64) bool
+  behavior: |
+    購入の小計が最低購入金額を満たすかを返す。条件を持たないクーポンは常に満たす。
+    額は決済スケール（USD セント）の整数。
+
+    **見るのは購入全体の小計であって、適用範囲が絞った対象小計ではない。**「◯◯円以上の購入で使える」は
+    購入額に対する条件であり、対象商品だけで◯◯円という条件は別物である（本 spec では表さない）。
+    事前確認（いまのカートに使えるクーポン）と購入確定は、同じこの述語を通る。
 - name: DiscountFor
   signature: DiscountFor(lines []Line) (int, error)
   behavior: |
     渡された明細のうち適用範囲に入るものを対象として、差し引く額を決済スケールの整数（USD セント）で返す。
     対象が 1 件も無い場合と、差し引く額が最小単位に満たない場合は 0。
 
+    購入の小計が最低購入金額に満たない場合も 0 を返す（判定は SatisfiesMinPurchase）。
+    対象が無い場合と同じ 0 に畳むのは、呼び出し側が次にすべきこと（別のクーポンを選ぶか外す）が
+    どちらも同じだからである。
+
     **値引き額の丸めはここが唯一の点。** 対象小計は価格スケールのまま合算し、差し引く額を求めてから
     一度だけ切り捨てる（ADR-0038）。事前確認と購入確定の双方がこのメソッドを通るため、見せた額と
     引かれる額が同じ規則で決まる。明細ごとに丸めないので端数の落ちも起きない。
+
+    **値引き上限は丸めたあとに効かせる。** 上限は決済スケール（セント）の額に対する条件なので、
+    価格スケールの途中値に当てると桁が合わない（Discount.LimitToMaxAmount）。
 - name: Redeem
   signature: Redeem(now time.Time) error
   behavior: |
     使用済みにする。未使用へ戻すのは Restore だけで、他に逆遷移は無い。
-    既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えない。
-    使用済みと失効が同時に成り立つ場合は使用済みを先に返す。
+    既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired、
+    利用開始日時より前なら ErrNotYetUsable を返し、状態を変えない。
+    使用済みと失効が同時に成り立つ場合は使用済みを先に返す。失効と利用開始前は同時に成り立たない
+    （usableFrom < expiresAt が不変条件のため）。
     日時は引数で受け取る（ドメインは時刻へ直接依存しない）。
 - name: Restore
   signature: Restore(now time.Time) (bool, error)
@@ -125,7 +164,7 @@ fields:
       returns: bool
 
 - name: Discount
-  underlying_type: struct    # kind DiscountKind / value decimal.Decimal
+  underlying_type: struct    # kind DiscountKind / value decimal.Decimal / maxAmount *int64
   validation: |
     定額は正の金額、定率は 0 より大きく 1 以下。範囲外は ErrInvalidDiscountValue。
     解決済みの種別から作る入口は NewDiscount で、種別ごとの生成関数へ振り分けるだけ。永続化された行
@@ -133,12 +172,21 @@ fields:
     永続化固有の状態を持たないため、復元と構築を分ける理由がない）。
     1 を超える率は対象額より多く差し引くことになり、値引きの意味を失うため許さない。
     適用範囲は関知しない。どの明細が対象かは Scope が答える。
-  factory: NewFlatDiscount / NewRateDiscount / NewDiscount
+
+    値引き上限（maxAmount）は任意で、WithMaxAmount が上限を設けた複製を返す。0 以下は
+    ErrInvalidMaxAmount。**定額には設けられない**（同じく ErrInvalidMaxAmount）——
+    定額は引く額そのものが決まっており、上限は同じことを二重に述べるだけになるためである。
+    上限は決済スケール（USD セント）で、価格スケールの value とは桁が違う。
+  factory: NewFlatDiscount / NewRateDiscount / NewDiscount / Discount.WithMaxAmount
   methods:
     - name: Kind
       returns: DiscountKind
     - name: Value
       returns: decimal.Decimal
+    - name: MaxAmount
+      returns: "*int64"
+    - name: LimitToMaxAmount
+      returns: int64          # 決済スケールの値引き額へ上限を適用する。Coupon.DiscountFor が唯一の呼び出し元
     - name: IsZero
       returns: bool
 

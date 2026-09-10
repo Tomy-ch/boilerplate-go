@@ -32,6 +32,10 @@ Repository / QueryService Rules が QueryService へ書くことを禁じてい�
 業務条件の著作権が infra へ移るため、Repository を束ねて usecase で結合し、判定はドメインへ渡す
 （`cart.GetCart` が同じ形の先例）。
 
+**コード配布（引き取り型）は本 spec の範囲外である。** 誰が受け取るかが事前に決まらない配布は
+[`campaign.md`](campaign.md) が持ち、キャンペーンのテンプレートからクーポンが 1 枚生まれる。
+両者はクーポン集約を共有するが経路は別で、押し出し型がキャンペーンを経由することはない。
+
 ## Interface
 
 ```yaml
@@ -107,7 +111,7 @@ input:
     - name: ScopeTargetID
       type: "*uuid.UUID"      # 全体では nil
     - name: ExpiresAt
-      type: time.Time         # 絶対時刻。キャンペーンの終了日を名指しする
+      type: time.Time         # 絶対時刻。販促の終了日を名指しする
 
 output:
   struct: IssuePromotionalCouponsView
@@ -183,6 +187,8 @@ output:
   behavior: |
     admin が受給者を名指しして、クーポンを 1 枚発行する。値引き・適用範囲・有効期限を受け取り、
     発行したクーポンを返す。発行直後は未使用。
+
+    最低購入金額・値引き上限・利用開始日時は任意で、省略すると条件を持たないクーポンになる。
 
     値引きと適用範囲は、名前の解決も値の検証もドメインへ委ねる（一括発行と同じ入口を使う）。
     適用範囲がカテゴリ・商品を指す場合はその存在を確認する。存在しない対象を範囲にしたクーポンは

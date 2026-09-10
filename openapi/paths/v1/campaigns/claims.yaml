@@ -1,0 +1,52 @@
+post:
+  operationId: PostCampaignsClaims
+  tags:
+    - v1/campaigns/claims
+  summary: コードによるクーポンの受け取り
+  description: |
+    キャンペーンコードを示して、クーポンを 1 枚受け取ります。認証必須で、受給者は認証主体自身です。
+    受け取ったクーポンは未使用の状態で作られ、GET /v1/users/me/coupons に並びます。
+    他の発行経路のクーポンと区別されません。
+    **受け取れない理由は区別しません。** 存在しないコード・配布期間の外・停止済み・総枚数上限に到達・
+    その利用者が 1 人あたり上限に到達、のいずれも `422` + `details: ["code"]` を返します。
+    区別できると、有効なコードを言い当てる手がかりになるためです。形式が不正なコードも同じ応答です。
+    次にすべきことはどの場合も同じ（別のコードを使うか諦める）なので、区別する必要もありません。
+    **総枚数上限と 1 人あたり上限は、同時に受け取りが殺到しても超えません。** キャンペーンの行を
+    先に押さえてから枚数を数えるため、判定と発行の間に他の受け取りが割り込みません。
+    その代わり、同じコードへの同時要求は順番に処理されます。
+    **Idempotency-Key は必須です**（欠くと 400）。受け取りは取り消せず、二度目の実行は
+    もう 1 枚配るためです。同一キーの再送は初回の結果をそのまま返します。
+    **別のキーで押し直した場合は、上限に達していなければ改めて 1 枚配られます。**
+    本 op は DB の SELECT / INSERT / UPDATE のみで外部依存を持ちませんが、認証段（外部 IdP の
+    JWKS 参照）の一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+  security:
+    - BearerAuth: []
+  parameters:
+    - $ref: '../../../components/parameters/idempotency/IdempotencyKeyRequiredParam.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../../components/requests/campaigns/CampaignClaimsPostRequest.yaml'
+  responses:
+    '201':
+      description: クーポンの受け取りに成功しました
+      content:
+        application/json:
+          schema:
+            $ref: '../../../components/schemas/coupons/CouponResponse.yaml'
+    '400':
+      $ref: '../../../components/schemas/errors/BadRequest400.yaml'
+    '401':
+      $ref: '../../../components/schemas/errors/Unauthorized401.yaml'
+    '405':
+      $ref: '../../../components/schemas/errors/MethodNotAllowed405.yaml'
+    '409':
+      $ref: '../../../components/schemas/errors/Conflict409.yaml'
+    '422':
+      $ref: '../../../components/schemas/errors/UnprocessableEntity422.yaml'
+    '500':
+      $ref: '../../../components/schemas/errors/InternalServerError500.yaml'
+    '503':
+      $ref: '../../../components/schemas/errors/ServiceUnavailable503.yaml'

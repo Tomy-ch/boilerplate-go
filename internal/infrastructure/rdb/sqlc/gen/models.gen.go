@@ -11,6 +11,64 @@ import (
 	uuid "go-boilerplate/pkg/uuid"
 )
 
+// キャンペーンの受け取り記録
+type CampaignClaims struct {
+	// ID
+	ID uuid.UUID
+	// 受け取り元のキャンペーンID
+	CampaignID uuid.UUID
+	// 受け取った利用者のユーザーID
+	UserID uuid.UUID
+	// 受け取りで発行されたクーポンのID
+	CouponID uuid.UUID
+	// 受け取り日時
+	ClaimedAt time.Time
+	// 作成日時
+	CreatedAt time.Time
+	// 更新日時
+	UpdatedAt time.Time
+}
+
+// キャンペーン
+type Campaigns struct {
+	// ID
+	ID uuid.UUID
+	// キャンペーンコード（正規化済み。大文字・前後空白なし）
+	Code string
+	// 配るクーポンの値引き種別の名前。閉じた集合を所有するのはクーポン側で、キャンペーンは名前を保つ
+	DiscountKind string
+	// 配るクーポンの値引きの値（定額なら金額、定率なら率）
+	DiscountValue decimal.Decimal
+	// 配るクーポンの値引き上限（上限なしまたは定額のときNULL）
+	DiscountMaxAmount *int64
+	// 配るクーポンの適用範囲種別の名前。閉じた集合を所有するのはクーポン側で、キャンペーンは名前を保つ
+	ScopeKind string
+	// 配るクーポンの適用範囲の対象ID（全体のときNULL）
+	ScopeTargetID *uuid.UUID
+	// 配るクーポンの最低購入金額（条件なしのときNULL）
+	CouponMinPurchaseAmount *int64
+	// 配るクーポンの利用開始日時（発行時点から使えるときNULL）
+	CouponUsableFrom *time.Time
+	// 配るクーポンの有効期限
+	CouponExpiresAt time.Time
+	// 配布期間の開始日時
+	StartsAt time.Time
+	// 配布期間の終了日時
+	EndsAt time.Time
+	// 総枚数上限
+	TotalLimit int32
+	// 1人あたり上限
+	PerUserLimit int32
+	// 発行済み枚数。返却では減らない
+	IssuedCount int32
+	// 停止日時（停止していないときNULL）
+	SuspendedAt *time.Time
+	// 作成日時
+	CreatedAt time.Time
+	// 更新日時
+	UpdatedAt time.Time
+}
+
 // カート明細
 type CartItems struct {
 	// ID
@@ -71,6 +129,12 @@ type Coupons struct {
 	CreatedAt time.Time
 	// 更新日時
 	UpdatedAt time.Time
+	// 使うために必要な購入額の下限（条件なしのときNULL）
+	MinPurchaseAmount *int64
+	// 定率の値引きが1回に引ける額の上限（上限なしまたは定額のときNULL）
+	DiscountMaxAmount *int64
+	// 使えるようになる日時（発行時点から使えるときNULL）
+	UsableFrom *time.Time
 }
 
 // 冪等性キー

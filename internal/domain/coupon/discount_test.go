@@ -453,3 +453,149 @@ func TestNewDiscountKindByName(t *testing.T) {
 		})
 	})
 }
+
+func TestDiscount_WithMaxAmount(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("定率に上限を設けた新しい値引きを返し、元の値引きは変わらない", func(t *testing.T) {
+			t.Parallel()
+
+			base, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+			require.NoError(t, err)
+
+			capped, err := base.WithMaxAmount(2000)
+
+			require.NoError(t, err)
+			require.NotNil(t, capped.MaxAmount())
+			assert.Equal(t, int64(2000), *capped.MaxAmount())
+			assert.Nil(t, base.MaxAmount())
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("定額に設けようとした場合はErrInvalidMaxAmountを返す", func(t *testing.T) {
+			t.Parallel()
+
+			base, err := NewFlatDiscount(newTestDecimal(t, "5.00"))
+			require.NoError(t, err)
+
+			_, err = base.WithMaxAmount(2000)
+
+			require.ErrorIs(t, err, ErrInvalidMaxAmount)
+		})
+
+		t.Run("0の場合はErrInvalidMaxAmountを返す", func(t *testing.T) {
+			t.Parallel()
+
+			base, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+			require.NoError(t, err)
+
+			_, err = base.WithMaxAmount(0)
+
+			require.ErrorIs(t, err, ErrInvalidMaxAmount)
+		})
+
+		t.Run("負の場合はErrInvalidMaxAmountを返す", func(t *testing.T) {
+			t.Parallel()
+
+			base, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+			require.NoError(t, err)
+
+			_, err = base.WithMaxAmount(-1)
+
+			require.ErrorIs(t, err, ErrInvalidMaxAmount)
+		})
+	})
+}
+
+func TestDiscount_MaxAmount(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上限を設けていない場合はnilを返す", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+			require.NoError(t, err)
+
+			assert.Nil(t, d.MaxAmount())
+		})
+
+		t.Run("返した値を書き換えても値引きの上限は変わらない", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+			require.NoError(t, err)
+			d, err = d.WithMaxAmount(2000)
+			require.NoError(t, err)
+
+			got := d.MaxAmount()
+			require.NotNil(t, got)
+			*got = 1
+
+			require.NotNil(t, d.MaxAmount())
+			assert.Equal(t, int64(2000), *d.MaxAmount())
+		})
+	})
+}
+
+func TestDiscount_LimitToMaxAmount(t *testing.T) {
+	t.Parallel()
+
+	capped := func(t *testing.T, maxAmount int64) Discount {
+		t.Helper()
+		d, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+		require.NoError(t, err)
+		d, err = d.WithMaxAmount(maxAmount)
+		require.NoError(t, err)
+
+		return d
+	}
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上限が無い場合はそのまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewRateDiscount(newTestDecimal(t, "0.10"))
+			require.NoError(t, err)
+
+			assert.Equal(t, int64(9999), d.LimitToMaxAmount(9999))
+		})
+
+		t.Run("上限を超える場合は上限を返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, int64(2000), capped(t, 2000).LimitToMaxAmount(2500))
+		})
+
+		t.Run("上限ちょうどの場合はそのまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, int64(2000), capped(t, 2000).LimitToMaxAmount(2000))
+		})
+
+		t.Run("上限に満たない場合はそのまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, int64(1999), capped(t, 2000).LimitToMaxAmount(1999))
+		})
+
+		t.Run("定額には上限を設けられないため常にそのまま返す", func(t *testing.T) {
+			t.Parallel()
+
+			d, err := NewFlatDiscount(newTestDecimal(t, "5.00"))
+			require.NoError(t, err)
+
+			assert.Equal(t, int64(500), d.LimitToMaxAmount(500))
+		})
+	})
+}

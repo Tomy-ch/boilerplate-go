@@ -1,6 +1,64 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <database name="test" schema="public" type="PostgreSQL - 18.4 (Debian 18.4-1.pgdg13+1)">
    <tables>
+      <table name="campaign_claims" remarks="キャンペーンの受け取り記録" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="campaign_id" nullable="false" remarks="受け取り元のキャンペーンID" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="campaign_claims_campaign_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="campaigns"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="user_id" nullable="false" remarks="受け取った利用者のユーザーID" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="campaign_claims_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="coupon_id" nullable="false" remarks="受け取りで発行されたクーポンのID" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="campaign_claims_coupon_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="coupons"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="4" name="claimed_at" nullable="false" remarks="受け取り日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="5" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="6" name="updated_at" nullable="false" remarks="更新日時" size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="campaign_claims_id_primary" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+         <index name="campaign_claims_campaign_id_user_id_idx" unique="false">
+            <column ascending="true" name="campaign_id"/>
+            <column ascending="true" name="user_id"/>
+         </index>
+         <index name="campaign_claims_coupon_id_idx" unique="false">
+            <column ascending="true" name="coupon_id"/>
+         </index>
+         <index name="campaign_claims_user_id_idx" unique="false">
+            <column ascending="true" name="user_id"/>
+         </index>
+      </table>
+      <table name="campaigns" remarks="キャンペーン" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111">
+            <child column="campaign_id" foreignKey="campaign_claims_campaign_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="campaign_claims"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="code" nullable="false" remarks="キャンペーンコード（正規化済み。大文字・前後空白なし）" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="discount_kind" nullable="false" remarks="配るクーポンの値引き種別の名前。閉じた集合を所有するのはクーポン側で、キャンペーンは名前を保つ" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="discount_value" nullable="false" remarks="配るクーポンの値引きの値（定額なら金額、定率なら率）" size="0" type="numeric" typeCode="2"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="discount_max_amount" nullable="true" remarks="配るクーポンの値引き上限（上限なしまたは定額のときNULL）" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="5" name="scope_kind" nullable="false" remarks="配るクーポンの適用範囲種別の名前。閉じた集合を所有するのはクーポン側で、キャンペーンは名前を保つ" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="6" name="scope_target_id" nullable="true" remarks="配るクーポンの適用範囲の対象ID（全体のときNULL）" size="2147483647" type="uuid" typeCode="1111"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="7" name="coupon_min_purchase_amount" nullable="true" remarks="配るクーポンの最低購入金額（条件なしのときNULL）" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="8" name="coupon_usable_from" nullable="true" remarks="配るクーポンの利用開始日時（発行時点から使えるときNULL）" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="9" name="coupon_expires_at" nullable="false" remarks="配るクーポンの有効期限" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="10" name="starts_at" nullable="false" remarks="配布期間の開始日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="11" name="ends_at" nullable="false" remarks="配布期間の終了日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="total_limit" nullable="false" remarks="総枚数上限" size="10" type="int4" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="13" name="per_user_limit" nullable="false" remarks="1人あたり上限" size="10" type="int4" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="0" digits="0" id="14" name="issued_count" nullable="false" remarks="発行済み枚数。返却では減らない" size="10" type="int4" typeCode="4"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="15" name="suspended_at" nullable="true" remarks="停止日時（停止していないときNULL）" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="16" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="17" name="updated_at" nullable="false" remarks="更新日時" size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="campaigns_id_primary" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+         <index name="campaigns_code_unique" unique="true">
+            <column ascending="true" name="code"/>
+         </index>
+      </table>
       <table name="cart_items" remarks="カート明細" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="cart_id" nullable="false" remarks="カートID" size="2147483647" type="uuid" typeCode="1111">
@@ -52,6 +110,7 @@
       </table>
       <table name="coupons" remarks="クーポン" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111">
+            <child column="coupon_id" foreignKey="campaign_claims_coupon_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="campaign_claims"/>
             <child column="coupon_id" foreignKey="purchases_coupon_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="purchases"/>
          </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="user_id" nullable="false" remarks="受給者のユーザーID" size="2147483647" type="uuid" typeCode="1111">
@@ -66,6 +125,9 @@
          <column autoUpdated="false" defaultValue="null" digits="6" id="8" name="issued_at" nullable="false" remarks="発行日時" size="35" type="timestamptz" typeCode="93"/>
          <column autoUpdated="false" defaultValue="now()" digits="6" id="9" name="created_at" nullable="false" remarks="作成日時" size="35" type="timestamptz" typeCode="93"/>
          <column autoUpdated="false" defaultValue="now()" digits="6" id="10" name="updated_at" nullable="false" remarks="更新日時" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="11" name="min_purchase_amount" nullable="true" remarks="使うために必要な購入額の下限（条件なしのときNULL）" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="12" name="discount_max_amount" nullable="true" remarks="定率の値引きが1回に引ける額の上限（上限なしまたは定額のときNULL）" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="13" name="usable_from" nullable="true" remarks="使えるようになる日時（発行時点から使えるときNULL）" size="35" type="timestamptz" typeCode="93"/>
          <primaryKey column="id" sequenceNumberInPK="1"/>
          <index name="coupons_id_primary" unique="true">
             <column ascending="true" name="id"/>
@@ -501,6 +563,7 @@
       </table>
       <table name="users" remarks="ユーザ" schema="public" type="TABLE">
          <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="id" nullable="false" remarks="ID" size="2147483647" type="uuid" typeCode="1111">
+            <child column="user_id" foreignKey="campaign_claims_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="campaign_claims"/>
             <child column="user_id" foreignKey="carts_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="carts"/>
             <child column="user_id" foreignKey="coupons_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="coupons"/>
             <child column="user_id" foreignKey="inquiries_user_id_foreign" implied="false" onDeleteCascade="false" schema="public" table="inquiries"/>

@@ -498,12 +498,12 @@
                                     <td>(status &#61; ANY (ARRAY[&#39;pending&#39;::text, &#39;published&#39;::text, &#39;dead&#39;::text]))</td>
                                 </tr>
                                 <tr>
-                                    <td>outbox_ordering_pair_check</td>
-                                    <td>((ordering_key IS NULL) &#61; (ordering_sequence IS NULL))</td>
-                                </tr>
-                                <tr>
                                     <td>outbox_delivery_channel_check</td>
                                     <td>(delivery_channel &#61; ANY (ARRAY[&#39;http&#39;::text, &#39;realtime&#39;::text]))</td>
+                                </tr>
+                                <tr>
+                                    <td>outbox_ordering_pair_check</td>
+                                    <td>((ordering_key IS NULL) &#61; (ordering_sequence IS NULL))</td>
                                 </tr>
                                 </tbody>
                             </table>

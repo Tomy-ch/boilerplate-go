@@ -57,7 +57,7 @@ type CouponBulkIssuePostRequest struct {
 	// 応答側の CouponDiscount と同じ形ですが、要求として受け取る側は宣言に無いフィールドを拒むため別に持ちます。
 	Discount CouponDiscountInput `json:"discount"`
 
-	// ExpiresAt 発行するクーポンの有効期限。キャンペーンの終了日を名指しする操作なので、日数ではなく絶対時刻で 受け取ります。現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
+	// ExpiresAt 発行するクーポンの有効期限。販促の終了日を名指しする操作なので、日数ではなく絶対時刻で 受け取ります。現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
 	//
 	// Example: 2026-12-31T14:59:59Z
 	ExpiresAt time.Time `json:"expiresAt"`
@@ -100,6 +100,11 @@ type CouponDiscountInput struct {
 	//
 	// Example: rate
 	Kind CouponDiscountInputKind `json:"kind"`
+
+	// MaxAmount 定率の値引きが 1 回に引ける額の上限。USD セント単位の整数です。任意で、省略または null なら 上限を設けません。定額（`flat`）に対して指定した場合は、意味を持たない組み合わせとして 422 を 返します。0 以下を指定した場合も 422 です。
+	//
+	// Example: 2000
+	MaxAmount *int64 `json:"maxAmount,omitempty"`
 
 	// Value 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、 正確な十進量を保つ decimal 文字列で表します（例 `"0.15"` は 15% 引き）。 ドメインの検証に落ちる値（定率で 0 以下または 1 超など）は 422 を返します。 JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
 	//

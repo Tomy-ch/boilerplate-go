@@ -73,6 +73,14 @@ type CouponDiscount struct {
 	// Example: rate
 	Kind CouponDiscountKind `json:"kind"`
 
+	// MaxAmount 定率の値引きが 1 回に引ける額の上限。USD セント単位の整数です。
+	// 定率（`rate`）にのみ意味を持ち、定額（`flat`）では常に null です。
+	// 上限が無い場合も null で、そのときは対象額に率を掛けた額がそのまま引かれます。
+	//
+	//
+	// Example: 2000
+	MaxAmount *int64 `json:"maxAmount"`
+
 	// Value 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、
 	// 正確な十進量を保つ decimal 文字列で表します（例 `"0.10"` は 10% 引き）。
 	// JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。

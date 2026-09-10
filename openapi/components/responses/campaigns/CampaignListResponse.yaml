@@ -1,0 +1,16 @@
+type: object
+description: キャンペーンの一覧。停止済みも含みます。
+required:
+  - campaigns
+  - total
+properties:
+  campaigns:
+    type: array
+    description: 配布期間の開始が新しい順に並んだキャンペーンです。
+    items:
+      $ref: '../../schemas/campaigns/CampaignResponse.yaml'
+  total:
+    type: integer
+    format: int32
+    description: キャンペーンの総件数
+    example: 12

@@ -576,6 +576,103 @@ func TestCoupon_DiscountFor(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, 1, got)
 		})
+
+		t.Run("値引き上限を超える場合は上限まで引く", func(t *testing.T) {
+			t.Parallel()
+
+			capped, err := rate(t, "0.10").WithMaxAmount(200)
+			require.NoError(t, err)
+			c := newScopedCoupon(t, capped, NewAllScope())
+			line, _ := newTestLine(t, "50.00")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.NoError(t, err)
+			assert.Equal(t, 200, got)
+		})
+
+		t.Run("値引き上限に満たない場合は上限に届かない額をそのまま引く", func(t *testing.T) {
+			t.Parallel()
+
+			capped, err := rate(t, "0.10").WithMaxAmount(2000)
+			require.NoError(t, err)
+			c := newScopedCoupon(t, capped, NewAllScope())
+			line, _ := newTestLine(t, "50.00")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.NoError(t, err)
+			assert.Equal(t, 500, got)
+		})
+
+		t.Run("最低購入金額ちょうどの場合は値引きする", func(t *testing.T) {
+			t.Parallel()
+
+			minAmount := int64(5000)
+			attrs := validCouponArgs(t)
+			attrs.Scope = NewAllScope()
+			attrs.MinPurchaseAmount = &minAmount
+			c, err := New(newTestUUID(t), attrs)
+			require.NoError(t, err)
+			line, _ := newTestLine(t, "50.00")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.NoError(t, err)
+			assert.Equal(t, 500, got)
+		})
+
+		t.Run("値引き上限ちょうどの場合はその額を引く", func(t *testing.T) {
+			t.Parallel()
+
+			capped, err := rate(t, "0.10").WithMaxAmount(500)
+			require.NoError(t, err)
+			c := newScopedCoupon(t, capped, NewAllScope())
+			line, _ := newTestLine(t, "50.00")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.NoError(t, err)
+			assert.Equal(t, 500, got)
+		})
+
+		t.Run("最低購入金額を満たさない場合は0を返す", func(t *testing.T) {
+			t.Parallel()
+
+			minAmount := int64(5000)
+			attrs := validCouponArgs(t)
+			attrs.Scope = NewAllScope()
+			attrs.MinPurchaseAmount = &minAmount
+			c, err := New(newTestUUID(t), attrs)
+			require.NoError(t, err)
+			line, _ := newTestLine(t, "49.99")
+
+			got, err := c.DiscountFor([]Line{line})
+
+			require.NoError(t, err)
+			assert.Zero(t, got)
+		})
+
+		t.Run("最低購入金額は適用範囲が絞る前の購入全体の小計で判定する", func(t *testing.T) {
+			t.Parallel()
+
+			// 対象は 20.00 だけだが、購入全体は 60.00 なので下限 50.00 を満たす。
+			minAmount := int64(5000)
+			attrs := validCouponArgs(t)
+			target, targetAttrs := newTestLine(t, "20.00")
+			other, _ := newTestLine(t, "40.00")
+			scope, err := NewCategoryScope(targetAttrs.CategoryID)
+			require.NoError(t, err)
+			attrs.Scope = scope
+			attrs.MinPurchaseAmount = &minAmount
+			c, err := New(newTestUUID(t), attrs)
+			require.NoError(t, err)
+
+			got, err := c.DiscountFor([]Line{target, other})
+
+			require.NoError(t, err)
+			assert.Equal(t, 200, got)
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
@@ -616,6 +713,20 @@ func TestCoupon_Redeem(t *testing.T) {
 			require.NotNil(t, c.UsedAt())
 			assert.Equal(t, usableAt, *c.UsedAt())
 		})
+
+		t.Run("利用開始日時ちょうどなら使用日時を刻む", func(t *testing.T) {
+			t.Parallel()
+
+			// 拒否側（1ns 前）だけでなく受理側も Redeem 経由で押さえ、比較の向きを両側から固定する。
+			from := testIssuedAt.Add(24 * time.Hour)
+			c := newConditionedCoupon(t, nil, &from)
+
+			require.NoError(t, c.Redeem(from))
+
+			assert.True(t, c.IsUsed())
+			require.NotNil(t, c.UsedAt())
+			assert.Equal(t, from, *c.UsedAt())
+		})
 	})
 
 	t.Run("異常系", func(t *testing.T) {
@@ -632,6 +743,18 @@ func TestCoupon_Redeem(t *testing.T) {
 			require.ErrorIs(t, err, ErrAlreadyUsed)
 			require.NotNil(t, c.UsedAt())
 			assert.Equal(t, usableAt, *c.UsedAt())
+		})
+
+		t.Run("利用開始日時より前の場合はErrNotYetUsableを返し状態を変えない", func(t *testing.T) {
+			t.Parallel()
+
+			from := testIssuedAt.Add(24 * time.Hour)
+			c := newConditionedCoupon(t, nil, &from)
+
+			err := c.Redeem(from.Add(-time.Nanosecond))
+
+			require.ErrorIs(t, err, ErrNotYetUsable)
+			assert.False(t, c.IsUsed())
 		})
 
 		t.Run("有効期限ちょうどの場合はErrExpiredを返す", func(t *testing.T) {
@@ -803,6 +926,224 @@ func Test_validateValidity(t *testing.T) {
 			t.Parallel()
 
 			require.ErrorIs(t, validateValidity(issuedAt, issuedAt.Add(-time.Hour)), ErrInvalidExpiresAt)
+		})
+	})
+}
+
+// newConditionedCoupon は、条件を持つクーポンを生成します。nil を渡した条件は設定されません。
+func newConditionedCoupon(t *testing.T, minPurchaseAmount *int64, usableFrom *time.Time) *Coupon {
+	t.Helper()
+
+	attrs := validCouponArgs(t)
+	attrs.MinPurchaseAmount = minPurchaseAmount
+	attrs.UsableFrom = usableFrom
+	c, err := New(newTestUUID(t), attrs)
+	require.NoError(t, err)
+
+	return c
+}
+
+func TestCoupon_MinPurchaseAmount(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("条件を持たない場合はnilを返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Nil(t, newTestCoupon(t).MinPurchaseAmount())
+		})
+
+		t.Run("返した値を書き換えてもクーポンの条件は変わらない", func(t *testing.T) {
+			t.Parallel()
+
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
+
+			got := c.MinPurchaseAmount()
+			require.NotNil(t, got)
+			*got = 1
+
+			require.NotNil(t, c.MinPurchaseAmount())
+			assert.Equal(t, int64(5000), *c.MinPurchaseAmount())
+		})
+	})
+}
+
+func TestCoupon_UsableFrom(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("条件を持たない場合はnilを返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.Nil(t, newTestCoupon(t).UsableFrom())
+		})
+
+		t.Run("返した値を書き換えてもクーポンの条件は変わらない", func(t *testing.T) {
+			t.Parallel()
+
+			from := testIssuedAt.Add(24 * time.Hour)
+			c := newConditionedCoupon(t, nil, &from)
+
+			got := c.UsableFrom()
+			require.NotNil(t, got)
+			*got = testIssuedAt
+
+			require.NotNil(t, c.UsableFrom())
+			assert.Equal(t, from, *c.UsableFrom())
+		})
+	})
+}
+
+func TestCoupon_IsNotYetUsable(t *testing.T) {
+	t.Parallel()
+
+	from := testIssuedAt.Add(24 * time.Hour)
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("利用開始日時を持たない場合は常にfalseを返す", func(t *testing.T) {
+			t.Parallel()
+
+			assert.False(t, newTestCoupon(t).IsNotYetUsable(testIssuedAt))
+		})
+
+		t.Run("利用開始日時より前の場合はtrueを返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newConditionedCoupon(t, nil, &from)
+
+			assert.True(t, c.IsNotYetUsable(from.Add(-time.Nanosecond)))
+		})
+
+		t.Run("利用開始日時ちょうどの場合はfalseを返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newConditionedCoupon(t, nil, &from)
+
+			assert.False(t, c.IsNotYetUsable(from))
+		})
+
+		t.Run("利用開始日時より後の場合はfalseを返す", func(t *testing.T) {
+			t.Parallel()
+
+			c := newConditionedCoupon(t, nil, &from)
+
+			assert.False(t, c.IsNotYetUsable(from.Add(time.Nanosecond)))
+		})
+	})
+}
+
+func TestCoupon_SatisfiesMinPurchase(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("最低購入金額を持たない場合は常に満たす", func(t *testing.T) {
+			t.Parallel()
+
+			assert.True(t, newTestCoupon(t).SatisfiesMinPurchase(0))
+		})
+
+		t.Run("下限に満たない場合は満たさない", func(t *testing.T) {
+			t.Parallel()
+
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
+
+			assert.False(t, c.SatisfiesMinPurchase(4999))
+		})
+
+		t.Run("下限ちょうどの場合は満たす", func(t *testing.T) {
+			t.Parallel()
+
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
+
+			assert.True(t, c.SatisfiesMinPurchase(5000))
+		})
+
+		t.Run("下限を超える場合は満たす", func(t *testing.T) {
+			t.Parallel()
+
+			minAmount := int64(5000)
+			c := newConditionedCoupon(t, &minAmount, nil)
+
+			assert.True(t, c.SatisfiesMinPurchase(5001))
+		})
+	})
+}
+
+func Test_validateConditions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("条件をどちらも持たない場合はエラーにならない", func(t *testing.T) {
+			t.Parallel()
+
+			require.NoError(t, validateConditions(validCouponArgs(t)))
+		})
+
+		t.Run("利用開始日時が有効期限より前ならエラーにならない", func(t *testing.T) {
+			t.Parallel()
+
+			attrs := validCouponArgs(t)
+			from := testExpiresAt.Add(-time.Nanosecond)
+			attrs.UsableFrom = &from
+
+			require.NoError(t, validateConditions(attrs))
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("最低購入金額が0の場合はErrInvalidMinPurchaseAmountを返す", func(t *testing.T) {
+			t.Parallel()
+
+			attrs := validCouponArgs(t)
+			minAmount := int64(0)
+			attrs.MinPurchaseAmount = &minAmount
+
+			require.ErrorIs(t, validateConditions(attrs), ErrInvalidMinPurchaseAmount)
+		})
+
+		t.Run("最低購入金額が負の場合はErrInvalidMinPurchaseAmountを返す", func(t *testing.T) {
+			t.Parallel()
+
+			attrs := validCouponArgs(t)
+			minAmount := int64(-1)
+			attrs.MinPurchaseAmount = &minAmount
+
+			require.ErrorIs(t, validateConditions(attrs), ErrInvalidMinPurchaseAmount)
+		})
+
+		t.Run("利用開始日時が有効期限ちょうどの場合はErrInvalidUsableFromを返す", func(t *testing.T) {
+			t.Parallel()
+
+			attrs := validCouponArgs(t)
+			from := testExpiresAt
+			attrs.UsableFrom = &from
+
+			require.ErrorIs(t, validateConditions(attrs), ErrInvalidUsableFrom)
+		})
+
+		t.Run("利用開始日時が有効期限より後の場合はErrInvalidUsableFromを返す", func(t *testing.T) {
+			t.Parallel()
+
+			attrs := validCouponArgs(t)
+			from := testExpiresAt.Add(time.Nanosecond)
+			attrs.UsableFrom = &from
+
+			require.ErrorIs(t, validateConditions(attrs), ErrInvalidUsableFrom)
 		})
 	})
 }

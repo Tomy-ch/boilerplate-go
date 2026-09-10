@@ -9,6 +9,8 @@ required:
   - expiresAt
   - usedAt
   - issuedAt
+  - minPurchaseAmount
+  - usableFrom
 properties:
   id:
     type: string
@@ -37,3 +39,19 @@ properties:
     format: date-time
     description: 発行日時
     example: "2026-09-01T00:00:00Z"
+  minPurchaseAmount:
+    type: integer
+    format: int64
+    nullable: true
+    description: |
+      このクーポンを使うために必要な購入額の下限。USD セント単位の整数です。
+      条件が無い場合は null で、そのときは購入額を問わず使えます。
+    example: 5000
+  usableFrom:
+    type: string
+    format: date-time
+    nullable: true
+    description: |
+      使えるようになる日時。この時刻ちょうどを含めて以降に使えます。
+      条件が無い場合は null で、そのときは発行した時点から使えます。
+    example: null

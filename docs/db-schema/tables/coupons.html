@@ -131,6 +131,11 @@
                                     <td>
                                         <table border='0' cellspacing='0' cellpadding='0'>
                                             <tr>
+                                                <td title="campaign_claims.coupon_id references coupons.id via campaign_claims_coupon_id_foreign"><a href='campaign_claims.html'>campaign_claims</a><span class='relatedKey'>.coupon_id</span></td>
+                                                <td class="constraint detail">campaign_claims_coupon_id_foreign</td>
+                                                <td class="constraint detail"><span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span></td>
+                                            </tr>
+                                            <tr>
                                                 <td title="purchases.coupon_id references coupons.id via purchases_coupon_id_foreign"><a href='purchases.html'>purchases</a><span class='relatedKey'>.coupon_id</span></td>
                                                 <td class="constraint detail">purchases_coupon_id_foreign</td>
                                                 <td class="constraint detail"><span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span></td>
@@ -318,6 +323,57 @@
                                     </td>
                                     <td><p>更新日時</p></td>
                                 </tr>
+                                <tr>
+                                    <td><span id="min_purchase_amount">min_purchase_amount</span></td>
+                                    <td>int8</td>
+                                    <td>19</td>
+                                    <td title='nullable'>√</td>
+                                    <td title=''></td>
+                                    <td>null</td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td><p>使うために必要な購入額の下限（条件なしのときNULL）</p></td>
+                                </tr>
+                                <tr>
+                                    <td><span id="discount_max_amount">discount_max_amount</span></td>
+                                    <td>int8</td>
+                                    <td>19</td>
+                                    <td title='nullable'>√</td>
+                                    <td title=''></td>
+                                    <td>null</td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td><p>定率の値引きが1回に引ける額の上限（上限なしまたは定額のときNULL）</p></td>
+                                </tr>
+                                <tr>
+                                    <td><span id="usable_from">usable_from</span></td>
+                                    <td>timestamptz</td>
+                                    <td>35,6</td>
+                                    <td title='nullable'>√</td>
+                                    <td title=''></td>
+                                    <td>null</td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td><p>使えるようになる日時（発行時点から使えるときNULL）</p></td>
+                                </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -383,25 +439,28 @@
                                 <div class="tab-content no-padding">
                                     <div class="chart tab-pane active" id="oneDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="oneDegreeRelationshipsDiagram" name="oneDegreeRelationshipsDiagram">
-<area shape="rect" id="node1" href="coupons.html" target="_top" title="coupons" alt="" coords="228,147,580,539">
-<area shape="rect" id="node2" href="users.html" target="_top" title="users" alt="" coords="5,125,184,331">
-<area shape="rect" id="node3" href="purchases.html" target="_top" title="purchases" alt="" coords="624,5,840,269">
+<area shape="rect" id="node1" href="campaign_claims.html" target="_top" title="campaign_claims" alt="" coords="689,5,939,211">
+<area shape="rect" id="node2" href="coupons.html" target="_top" title="coupons" alt="" coords="228,115,645,595">
+<area shape="rect" id="node3" href="users.html" target="_top" title="users" alt="" coords="5,147,184,352">
+<area shape="rect" id="node4" href="purchases.html" target="_top" title="purchases" alt="" coords="706,371,922,635">
 </map>
                                         <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/coupons.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                     <div class="chart tab-pane " id="twodegreesDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="twoDegreesRelationshipsDiagram" name="twoDegreesRelationshipsDiagram">
-<area shape="rect" id="node1" href="carts.html" target="_top" title="carts" alt="" coords="537,5,669,93">
-<area shape="rect" id="node2" href="users.html" target="_top" title="users" alt="" coords="247,627,383,715">
-<area shape="rect" id="node11" href="prefectures.html" target="_top" title="prefectures" alt="" coords="5,624,203,712">
-<area shape="rect" id="node3" href="coupons.html" target="_top" title="coupons" alt="" coords="427,147,779,539">
-<area shape="rect" id="node4" href="inquiries.html" target="_top" title="inquiries" alt="" coords="518,697,687,785">
-<area shape="rect" id="node5" href="inquiry_messages.html" target="_top" title="inquiry_messages" alt="" coords="823,660,1080,748">
-<area shape="rect" id="node6" href="purchase_details.html" target="_top" title="purchase_details" alt="" coords="1124,152,1372,240">
-<area shape="rect" id="node7" href="purchases.html" target="_top" title="purchases" alt="" coords="860,155,1043,243">
-<area shape="rect" id="node8" href="purchase_statuses.html" target="_top" title="purchase_statuses" alt="" coords="470,556,735,644">
-<area shape="rect" id="node9" href="user_identities.html" target="_top" title="user_identities" alt="" coords="489,803,717,891">
-<area shape="rect" id="node10" href="user_roles.html" target="_top" title="user_roles" alt="" coords="511,908,695,996">
+<area shape="rect" id="node1" href="campaign_claims.html" target="_top" title="campaign_claims" alt="" coords="892,287,1141,375">
+<area shape="rect" id="node2" href="campaigns.html" target="_top" title="campaigns" alt="" coords="541,5,729,93">
+<area shape="rect" id="node3" href="coupons.html" target="_top" title="coupons" alt="" coords="427,357,844,837">
+<area shape="rect" id="node4" href="users.html" target="_top" title="users" alt="" coords="247,627,383,715">
+<area shape="rect" id="node13" href="prefectures.html" target="_top" title="prefectures" alt="" coords="5,624,203,712">
+<area shape="rect" id="node5" href="carts.html" target="_top" title="carts" alt="" coords="569,855,701,943">
+<area shape="rect" id="node6" href="inquiries.html" target="_top" title="inquiries" alt="" coords="551,1137,720,1225">
+<area shape="rect" id="node7" href="inquiry_messages.html" target="_top" title="inquiry_messages" alt="" coords="888,1103,1145,1191">
+<area shape="rect" id="node8" href="purchase_details.html" target="_top" title="purchase_details" alt="" coords="1189,960,1437,1048">
+<area shape="rect" id="node9" href="purchases.html" target="_top" title="purchases" alt="" coords="925,963,1108,1051">
+<area shape="rect" id="node10" href="purchase_statuses.html" target="_top" title="purchase_statuses" alt="" coords="503,960,768,1048">
+<area shape="rect" id="node11" href="user_identities.html" target="_top" title="user_identities" alt="" coords="521,111,749,199">
+<area shape="rect" id="node12" href="user_roles.html" target="_top" title="user_roles" alt="" coords="543,216,727,304">
 </map>
                                         <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/coupons.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>

@@ -50,6 +50,12 @@ const (
 	// ActionCouponBulkIssue は、販促クーポンの一括発行（admin）を表します。
 	// 受給者を名指しする発行とは別の Action です。理由は docs/spec/usecase/coupon.md の Overview を参照。
 	ActionCouponBulkIssue Action = "coupon:bulk-issue"
+	// ActionCampaignDefine は、キャンペーンの定義（admin）を表します。
+	ActionCampaignDefine Action = "campaign:define"
+	// ActionCampaignList は、キャンペーンの列挙操作（admin）を表します。
+	ActionCampaignList Action = "campaign:list"
+	// ActionCampaignSuspend は、キャンペーンの停止（admin）を表します。
+	ActionCampaignSuspend Action = "campaign:suspend"
 )
 
 // sample-api:end

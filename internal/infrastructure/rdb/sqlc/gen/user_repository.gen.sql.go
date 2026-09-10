@@ -216,6 +216,32 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) error {
 	return err
 }
 
+const deleteCampaignClaimsByUserIDs = `-- name: DeleteCampaignClaimsByUserIDs :exec
+DELETE FROM campaign_claims
+WHERE user_id IN (
+        SELECT u.id
+        FROM users AS u
+        WHERE u.id = ANY($1::UUID[])
+            AND u.deleted_at IS NOT NULL
+    )
+`
+
+// coupons より先に呼ぶこと。受け取り記録は利用者とクーポンの両方を参照するため、
+// 残したまま DeleteCouponsByUserIDs を呼ぶと FK 違反になる。
+// 論理削除条件の理由は DeleteUserIdentitiesByUserIDs を参照。
+//
+//	DELETE FROM campaign_claims
+//	WHERE user_id IN (
+//	        SELECT u.id
+//	        FROM users AS u
+//	        WHERE u.id = ANY($1::UUID[])
+//	            AND u.deleted_at IS NOT NULL
+//	    )
+func (q *Queries) DeleteCampaignClaimsByUserIDs(ctx context.Context, userIds []uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteCampaignClaimsByUserIDs, userIds)
+	return err
+}
+
 const deleteCouponsByUserIDs = `-- name: DeleteCouponsByUserIDs :exec
 DELETE FROM coupons
 WHERE user_id IN (
@@ -252,8 +278,9 @@ WHERE user_id IN (
 `
 
 // === source: database/dml/repository/user/delete_purged_users.sql ===
-// users より先に呼ぶこと（FK 違反を避ける）。同じ順序制約は本ファイルの DeleteUserRolesByUserIDs /
-// DeleteCouponsByUserIDs も持つ。論理削除済みに限る条件は DeleteUsersByIDs の WHERE と揃えること
+// users より先に呼ぶこと（FK 違反を避ける）。同じ順序制約は本ファイルの
+// DeleteUserRolesByUserIDs / DeleteCouponsByUserIDs / DeleteCampaignClaimsByUserIDs も持つ。
+// 論理削除済みに限る条件は DeleteUsersByIDs の WHERE と揃えること
 // — ずれると、削除されないユーザーの従属行だけが失われる。
 //
 //	DELETE FROM user_identities

@@ -27,11 +27,20 @@ var (
 	ErrInvalidExpiresAt = xerrors.Wrap(errInvalid, "expiresAt failed")
 	// ErrInvalidIssuedAt は、発行日時の検証に失敗した場合のエラーです。
 	ErrInvalidIssuedAt = xerrors.Wrap(errInvalid, "issuedAt failed")
+	// ErrInvalidMaxAmount は、値引き上限の検証に失敗した場合のエラーです。
+	ErrInvalidMaxAmount = xerrors.Wrap(errInvalid, "maxAmount failed")
+	// ErrInvalidMinPurchaseAmount は、最低購入金額の検証に失敗した場合のエラーです。
+	ErrInvalidMinPurchaseAmount = xerrors.Wrap(errInvalid, "minPurchaseAmount failed")
+	// ErrInvalidUsableFrom は、利用開始日時の検証に失敗した場合のエラーです。
+	ErrInvalidUsableFrom = xerrors.Wrap(errInvalid, "usableFrom failed")
 	// ErrAlreadyUsed は、使用済みのクーポンを引き換えようとした場合のエラーです。
 	// 同じ内容の再送でも時間の経過でも解消しません。
 	ErrAlreadyUsed = xerrors.Wrap(errInvalid, "coupon is already used")
 	// ErrExpired は、失効したクーポンを引き換えようとした場合のエラーです。
 	ErrExpired = xerrors.Wrap(errInvalid, "coupon is expired")
+	// ErrNotYetUsable は、利用開始日時より前のクーポンを引き換えようとした場合のエラーです。
+	// 時間の経過で解消する点が ErrExpired と逆になります。
+	ErrNotYetUsable = xerrors.Wrap(errInvalid, "coupon is not yet usable")
 	// ErrNotHeld は、その利用者が保有していないクーポンを指した場合のエラーです。
 	// 存在しないクーポンもこのエラーに畳みます。区別できると保有していないクーポンの存在が漏れるためです
 	// （docs/spec/usecase/purchase.md の CreatePurchase）。
