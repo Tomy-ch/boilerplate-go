@@ -186,12 +186,16 @@ func (c *Coupon) DiscountFor(lines []Line) (int, error) {
 		}
 	}
 
-	subtotalCents, err := subtotal.Truncate(minorUnitDigits).ToScaledInt64(minorUnitDigits)
-	if err != nil {
-		return 0, xerrors.Wrap(ErrInvalidMinPurchaseAmount, "purchase subtotal exceeds the settlement range")
-	}
-	if !c.SatisfiesMinPurchase(subtotalCents) {
-		return 0, nil
+	// 条件を持たないクーポンは購入の小計を見ないので、決済スケールへの換算もしません。
+	// 換算を無条件に行うと、条件が無いクーポンにも小計由来の失敗経路が生まれます。
+	if c.minPurchaseAmount != nil {
+		subtotalCents, cerr := subtotal.Truncate(minorUnitDigits).ToScaledInt64(minorUnitDigits)
+		if cerr != nil {
+			return 0, xerrors.Wrap(ErrInvalidMinPurchaseAmount, "purchase subtotal exceeds the settlement range")
+		}
+		if !c.SatisfiesMinPurchase(subtotalCents) {
+			return 0, nil
+		}
 	}
 
 	cents, err := c.discount.Apply(eligible).Truncate(minorUnitDigits).ToScaledInt64(minorUnitDigits)

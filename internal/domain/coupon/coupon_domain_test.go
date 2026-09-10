@@ -609,7 +609,11 @@ func TestCoupon_DiscountFor(t *testing.T) {
 			t.Parallel()
 
 			minAmount := int64(5000)
-			c := newConditionedCoupon(t, &minAmount, nil)
+			attrs := validCouponArgs(t)
+			attrs.Scope = NewAllScope()
+			attrs.MinPurchaseAmount = &minAmount
+			c, err := New(newTestUUID(t), attrs)
+			require.NoError(t, err)
 			line, _ := newTestLine(t, "50.00")
 
 			got, err := c.DiscountFor([]Line{line})
@@ -636,7 +640,11 @@ func TestCoupon_DiscountFor(t *testing.T) {
 			t.Parallel()
 
 			minAmount := int64(5000)
-			c := newConditionedCoupon(t, &minAmount, nil)
+			attrs := validCouponArgs(t)
+			attrs.Scope = NewAllScope()
+			attrs.MinPurchaseAmount = &minAmount
+			c, err := New(newTestUUID(t), attrs)
+			require.NoError(t, err)
 			line, _ := newTestLine(t, "49.99")
 
 			got, err := c.DiscountFor([]Line{line})
