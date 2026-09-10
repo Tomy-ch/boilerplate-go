@@ -278,8 +278,9 @@ WHERE user_id IN (
 `
 
 // === source: database/dml/repository/user/delete_purged_users.sql ===
-// users より先に呼ぶこと（FK 違反を避ける）。同じ順序制約は本ファイルの DeleteUserRolesByUserIDs /
-// DeleteCouponsByUserIDs / DeleteCampaignClaimsByUserIDs も持つ。論理削除済みに限る条件は DeleteUsersByIDs の WHERE と揃えること
+// users より先に呼ぶこと（FK 違反を避ける）。同じ順序制約は本ファイルの
+// DeleteUserRolesByUserIDs / DeleteCouponsByUserIDs / DeleteCampaignClaimsByUserIDs も持つ。
+// 論理削除済みに限る条件は DeleteUsersByIDs の WHERE と揃えること
 // — ずれると、削除されないユーザーの従属行だけが失われる。
 //
 //	DELETE FROM user_identities
