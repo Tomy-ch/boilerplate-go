@@ -1,7 +1,7 @@
 ---
 name: context-map
 description: >-
-  Draft and land this repository's Context Map at `docs/design/context-map.md`, describing every boundary-crossing contact point with Evans's relationship vocabulary (Customer-Supplier, Conformist, Open Host Service, Published Language, Anticorruption Layer, and Separate Ways). Use when the map is missing, an external dependency has no mapped edge, someone asks how this system relates to neighbouring systems, or the DDD ledger marks `context-map` as uninterpreted; Japanese triggers include 「コンテキストマップを作って」「外部連携の関係を整理して」「境界の接触点を洗い出して」. It deterministically enumerates runtime ports and adapters, cites `file:line` evidence, and requires a human to confirm every relationship label—never infer one from code. Do NOT use for map-vs-code drift (`context-map-audit`), Evans-pattern auditing (`ddd-audit`), feature specifications (`new-spec`), or mechanics of a single integration.
+  Draft and land this repository's Context Map at `docs/design/context-map.md`, describing every boundary-crossing contact point with Evans's relationship vocabulary (Customer-Supplier, Conformist, Open Host Service, Published Language, Anticorruption Layer, and Separate Ways). A human confirms every relationship label — never infer one from code. Use when the map is missing, an external dependency has no mapped edge, someone asks how this system relates to neighbouring systems, or the DDD ledger marks `context-map` as uninterpreted; Japanese triggers include 「コンテキストマップを作って」「外部連携の関係を整理して」「境界の接触点を洗い出して」. Do NOT use for map-vs-code drift (`context-map-audit`), Evans-pattern auditing (`ddd-audit`), feature specifications (`new-spec`), or mechanics of a single integration.
 ---
 
 # Context Map

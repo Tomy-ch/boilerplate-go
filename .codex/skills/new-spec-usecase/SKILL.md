@@ -1,6 +1,7 @@
 ---
 name: new-spec-usecase
-description: Create the usecase layer spec template at `docs/spec/usecase/<pkgpath>.md`, where `<pkgpath>` is the Go package path under `internal/usecase/` (`address`, `product/ranking`, `user/search`) — the spec tree mirrors the package tree, so the package path is what fixes the file's location. Asks for the usecase package path + Usecase interface name (default `Usecase`) via `ask the user explicitly`, reads the section structure for the usecase layer from `.codex/scaffold-spec/usecase-spec.md`, then writes a Markdown file with YAML code-block placeholders and TODO markers (Overview / Interface / DTOs / Dependencies / Workflow). NEVER overwrites an existing file. Does not invent business content — gathers identity only. Reads the spec format file at runtime so format changes propagate automatically.
+description: >-
+  Create the usecase layer spec template at `docs/spec/usecase/<pkgpath>.md`, where `<pkgpath>` is the Go package path under `internal/usecase/` (`address`, `product/ranking`, `user/search`) — the spec tree mirrors the package tree. Asks for the package path + Usecase interface name (default `Usecase`), then writes a Markdown file with YAML placeholders and TODO markers. NEVER overwrites an existing file, and invents no business content. Use it when starting a new usecase package. Do NOT use it to scaffold both spec layers at once (`new-spec`) or to implement the layer (`scaffold-usecase`).
 ---
 
 # New Spec — Usecase

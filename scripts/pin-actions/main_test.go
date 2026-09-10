@@ -1820,9 +1820,14 @@ func useGitStub(t *testing.T) {
 }
 
 // githubAPIStub は GitHub API の代わりに応答するテストサーバを立て、その base URL を返す。
+// keep-alive は無効にする。githubGet が使う http.DefaultClient の接続プールはプロセス共有で、
+// httptest.Server.Close() はそのプールの idle 接続をまとめて閉じるため、接続が残っていると
+// 別の並列サブテストのサーバ終了が進行中のリクエストを切る。
 func githubAPIStub(t *testing.T, h http.HandlerFunc) string {
 	t.Helper()
-	srv := httptest.NewServer(h)
+	srv := httptest.NewUnstartedServer(h)
+	srv.Config.SetKeepAlivesEnabled(false)
+	srv.Start()
 	t.Cleanup(srv.Close)
 	return srv.URL
 }

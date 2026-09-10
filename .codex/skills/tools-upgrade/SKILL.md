@@ -1,6 +1,7 @@
 ---
 name: tools-upgrade
-description: Audit this repository's pinned tool versions against upstream latest, with a configurable supply-chain quarantine. The audit surface is both declaration sites — `mise.toml` `[tools]` for everything mise resolves, and `python/*.in` for the PyPI tools that install from the hash-pinned lockfiles `python/*.txt` (ADR-0084 (mise-ssot-drift-gate)). For each tool the latest release is fetched from its backend (GitHub Releases for `aqua:` / `go:` tagged modules, npm registry for `npm:`, PyPI for `python/*.in` and any `pipx:`, language download manifests for `go` / `node` / `python`). Releases newer than `min_age_days` are reported as informational only — never applied automatically — to avoid pulling in newly-published malicious versions before upstream has time to detect and revoke them; when an advisory drove the run, each quarantined release is handed to `supply-chain-triage` for a scored evidence verdict instead of only a day count. Confirms `min_age_days` and the per-tool update set via `ask the user explicitly`, rewrites approved entries atomically, regenerates the affected lockfiles with `make py-lock` when a `python/*.in` pin changed, runs `make sync-versions` if `go` / `node` / `python` changed, and verifies with `make go-lint` + `make go-test`. Use this skill on a routine cadence (monthly / quarterly) or after a security advisory.
+description: >-
+  Audit this repository's pinned tool versions against upstream latest, across both declaration sites — `mise.toml` `[tools]` and the `python/*.in` PyPI tools installed from the hash-pinned `python/*.txt` — with a configurable supply-chain quarantine. Releases newer than `min_age_days` are reported as informational only and never applied automatically, and when an advisory drove the run each quarantined release is handed to `supply-chain-triage` for a scored evidence verdict. The window and the per-tool update set are confirmed with the user before anything is applied. Use this skill on a routine cadence (monthly / quarterly) or after a security advisory. Do NOT use it to patch a specific advisory-flagged dependency (`dep-vuln-upgrade`), to upgrade the Go language version (`go-upgrade`), or to pin GitHub Actions or Docker images (`actions-pin`, `images-pin`).
 ---
 
 # Tool Version Upgrade
@@ -147,13 +148,14 @@ For each approved tool declared in `mise.toml`:
 - Locate the exact line in `mise.toml`
 - Replace the version literal only — preserve the original key (`aqua:owner/repo` / `go:path/to/module` / short name) and the original `v`-prefix convention if any
 - Do not reorder keys, do not touch unrelated keys, do not touch the `[settings]` table
+- **Never record why a pin sits below latest, and delete such a note when you meet one.** A note naming the upstream latest and its age restates a policy [ADR-0095](../../../docs/adr/0095-malicious-package-detection-via-cooldown.md) already states and `tool-cooldown` already enforces, and both of its facts rot: the age is wrong tomorrow, the named latest at the next upstream release. `make tool-cooldown-outdated` answers the same question every time without going stale, and against this repository's own window rather than upstream latest alone. What survives is a constraint that does not depend on a version — why a backend was chosen over another, a floor and the thing that requires it — and those stay.
 
 After computing all approved changes, write `mise.toml` **once** (atomic single-pass write). Read the file → apply all replacements in memory → write.
 
 For each approved tool declared in `python/*.in`:
 
 - Replace the version after `==` only — preserve the package name and its extras (`graphifyy[sql]`)
-- If the comment above the pin explains why the tool is held below latest (a quarantine note from an earlier run), rewrite or drop that comment to match reality. A stale "held back because it is too new" note outlives the condition it describes and reads as policy on the next run.
+- Delete any note above the pin that says why the tool is held below latest, by the rule stated for `mise.toml` above.
 - Then regenerate the lockfiles:
 
   ```sh
@@ -239,7 +241,8 @@ Confirm the following before reporting completion:
 - [ ] Pending releases triaged via `supply-chain-triage` when an advisory drove the run (baseline = the version currently pinned in the declarations); otherwise offered, not spent
 - [ ] If eligible set non-empty: user confirmed per-tool update set via `ask the user explicitly`; any early-adopted pending tool listed separately and deselected by default with its band
 - [ ] `mise.toml` rewritten atomically with only approved changes, preserving key formats and `v`-prefix convention
-- [ ] Approved `python/*.in` pins rewritten (package name and extras preserved, stale quarantine comments corrected), `make py-lock` run, and both files left in the tree; no `.txt` hand-edited
+- [ ] Approved `python/*.in` pins rewritten (package name and extras preserved), `make py-lock` run, and both files left in the tree; no `.txt` hand-edited
+- [ ] No note recording why a pin sits below latest was written, and any met along the way was deleted; version-independent constraints left in place
 - [ ] `make tool-cooldown-audit` run if a `python/*.in` pin changed
 - [ ] `make sync-versions` run if go / node / python was updated
 - [ ] If a runtime was bumped: base image digests re-pinned (`make pin-images-resolve` + `pin-images-apply` + `pin-images-check`). A rule 3 fail-closed on the new tag is the expected outcome for a just-published image — surfaced with the coupling (bootstrap via `days=0` after triage, or hold the bump), never forced through, and never left as a tag/digest mismatch

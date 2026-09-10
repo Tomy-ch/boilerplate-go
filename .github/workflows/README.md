@@ -130,6 +130,7 @@ takes the corresponding decision.
 |OpenSSF Scorecard|`scorecard.yaml`|Score the repository's security posture and publish the result|
 |Go Cooldown|`go-cooldown.yaml`|Gate a PR that adds or upgrades a direct Go module published inside the cooldown window|
 |Tool Cooldown|`tool-cooldown.yaml`|Gate a PR that pins a CLI tool version — declared in `mise.toml` or `python/*.in` — published inside the cooldown window|
+|Tool Version Report|`tool-outdated-report.yaml`|Survey upstream weekly and keep one issue open listing the pins a newer version has already cleared the window for (report-only)|
 |Pnpm Cooldown|`pnpm-cooldown.yaml`|Fail a `minimumReleaseAgeExclude` entry whose deadline has passed, reaches beyond three months, or no longer matches the lockfile|
 |Config Scan|`trivy-config.yaml`|Trivy misconfiguration scan of the Dockerfiles, gating at HIGH|
 |Checkov Scan|`checkov.yaml`|Checkov policy scan of the workflow definitions and the Dockerfiles, against a rule set neither zizmor nor Trivy ships (report-only)|
@@ -272,11 +273,11 @@ What the script takes with each product, and what has to survive:
 | --- | --- |
 | the workflow file, and `sonar-project.properties` for Sonar | — |
 | the `[job."<workflow>:<job>"]` sections in [`.github/egress.toml`](../egress.toml) | — |
-| the lockfile entries in [`.github/actions-pin.toml`](../actions-pin.toml) that nothing else references | `github/codeql-action@v4` — every other workflow that uploads SARIF references it |
+| the lockfile entries in [`.github/actions-pin.toml`](../actions-pin.toml) that nothing else references | `github/codeql-action` — every other workflow that uploads SARIF references it |
 | the rows and prose in this file and its `README.ja.md` translation | the rows of every scanner that stays |
 | `.github/codeql/**` for CodeQL | — |
 
-The lockfile rule is not a list of exceptions: the script counts references in the workflows that remain and deletes an entry only when the count reaches zero. `github/codeql-action@v4` is the case that shows why counting beats a list — it is registered with CodeQL, but every scanner that publishes SARIF calls `upload-sarif` from that same action, so removing CodeQL leaves the entry in place where a fixed list would have taken it. `actions/download-artifact@v7` is the opposite case: Sonar's report job is its only user today, so removing Sonar takes it along. `make pin-actions-check` and `make egress-check` both fail on an orphan, which is what turns a missed entry into a red run rather than a silent leftover.
+The lockfile rule is not a list of exceptions: the script counts references in the workflows that remain and deletes an entry only when the count reaches zero. The `github/codeql-action` entry is the case that shows why counting beats a list — it is registered with CodeQL, but every scanner that publishes SARIF calls `upload-sarif` from that same action, so removing CodeQL leaves the entry in place where a fixed list would have taken it. `actions/download-artifact` is the opposite case: Sonar's report job is its only user today, so removing Sonar takes it along. `make pin-actions-check` and `make egress-check` both fail on an orphan, which is what turns a missed entry into a red run rather than a silent leftover.
 
 The same counting is why reverting one scanner can leave `make pin-actions-check` red on an *unregistered* reference rather than an orphan: where two scanners in the removal set share an entry, it is deleted by whichever commit removed its last user, so restoring the earlier one brings back a `uses:` whose entry a later commit already took. The present set of two shares no such entry, so no revert hits this today — it returns the moment a third scanner joins. `make pin-actions-resolve` puts it back, and the check names the entry.
 

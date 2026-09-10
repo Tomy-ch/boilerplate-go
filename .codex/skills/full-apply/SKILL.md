@@ -1,6 +1,7 @@
 ---
 name: full-apply
-description: Apply corroborated findings from a `full-verify` review directory to source code in severity order. Use when the user asks to fix findings under `tmp/skills/reviews/` or another review ledger. Make only local, non-breaking fixes; defer ambiguous, design-sensitive, protected, or unverified findings with a reason; validate each batch; and record progress in the review ledger. Support `--reviews-dir`, `--severity`, `--scope`, `--pace`, and `--dry-run`.
+description: >-
+  Apply corroborated findings from a `full-verify` review directory to source code in severity order, deferring anything ambiguous, design-sensitive, protected, or unverified with a reason. Use when the user asks to fix findings under `tmp/skills/reviews/` or another review ledger. Supports `--reviews-dir`, `--severity`, `--scope`, `--pace`, and `--dry-run`. Do not use to produce the review itself (`full-verify`).
 ---
 
 # Apply Verification Findings

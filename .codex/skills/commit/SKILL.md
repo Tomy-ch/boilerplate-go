@@ -1,6 +1,7 @@
 ---
 name: commit
-description: Analyze working-tree changes, propose coherent Japanese Git commits, and create them after explicit approval. Use when the user asks to commit current changes or split a mixed change set. Enforce this repository's protected-branch, explicit-staging, commit-prefix, verification, and confirmation-gated push rules. Support `--dry-run` and `--scope=staged|all`.
+description: >-
+  Analyze working-tree changes, propose coherent Japanese Git commits, and create them after explicit approval. Use when the user asks to commit current changes or split a mixed change set. Enforces this repository's protected-branch, staging, commit-prefix and confirmation-gated push rules. Supports `--dry-run` and `--scope=staged|all`. Do not use to push or open a pull request (`submit-pr`).
 ---
 
 # Scoped Git Commit

@@ -1,7 +1,7 @@
 ---
 name: sync-ai
 description: >-
-  Reconcile a changed skill between this repository's Claude Code (`.claude/skills/`) and Codex (`.codex/skills/`) environments without blindly copying platform-specific instructions. Use after creating or materially updating a skill and when asked to synchronize, migrate, port, or compare a skill across Claude and Codex. Select one authoritative source direction, inspect the changed skill unit and its counterpart, then have the receiving environment's native `manage-skill` workflow adapt the intent, resources, and trigger description — handed over by running that environment's own CLI headlessly through the bundled handoff script, never by writing the other environment's skill directory directly. Do not use for ordinary documentation translation, implementation code synchronization, or automatic two-way merges.
+  Reconcile a changed skill between this repository's Claude Code (`.claude/skills/`) and Codex (`.codex/skills/`) environments without blindly copying platform-specific instructions — one authoritative source direction is chosen, and the receiving environment's own `manage-skill` adapts the intent rather than having its skill directory written directly. Use after creating or materially updating a skill, and when asked to synchronize, migrate, port, or compare a skill across Claude and Codex. Do NOT use it for ordinary documentation translation, implementation code synchronization, or automatic two-way merges.
 argument-hint: '[skill-name] [--from=claude|codex] [--to=claude|codex]'
 allowed-tools: Bash(ls:*), Bash(git status:*), Bash(git diff:*), Bash(sh -n:*), Bash(sh .claude/skills/sync-ai/scripts/handoff-to-codex.sh:*), Read, Write, Edit, Glob, Grep, AskUserQuestion, Skill
 ---

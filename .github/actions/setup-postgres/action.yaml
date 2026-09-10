@@ -44,6 +44,18 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Drop apt sources this job does not use
+      if: ${{ inputs.install_psql == 'true' }}
+      shell: bash
+      run: |
+        # `apt-get update` exits 100 if any single source fails, and the runner image ships
+        # third-party sources (Chrome, Microsoft) this job never installs from. Match on the host:
+        # the image may rename a list, and no match is the normal case rather than an error.
+        lists="$(sudo grep -rlE 'dl\.google\.com|packages\.microsoft\.com' /etc/apt/sources.list.d/ || true)"
+        if [ -n "$lists" ]; then
+          printf '%s\n' "$lists" | sudo xargs -r rm -f
+        fi
+
     - name: Update apt and install postgresql client dependencies
       if: ${{ inputs.install_psql == 'true' }}
       shell: bash

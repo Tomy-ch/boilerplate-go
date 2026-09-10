@@ -22,6 +22,27 @@ updates:
         patterns:
           - "*"
 
+  # ---- Node packages (pnpm) ----
+  # Every window here is at least 7 days because that is what `minimumReleaseAge` in each
+  # pnpm-workspace.yaml enforces at resolution time (ADR-0112). A shorter window would only
+  # produce pull requests pnpm then refuses to resolve.
+  - package-ecosystem: "npm"
+    directories:
+      - "/scripts"
+      - "/docs-viewer"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+      semver-patch-days: 7
+      semver-minor-days: 7
+      semver-major-days: 30
+    groups:
+      npm:
+        patterns:
+          - "*"
+
   # ---- Docker ----
   - package-ecosystem: "docker"
     directories:

@@ -1,6 +1,7 @@
 ---
 name: dep-vuln-upgrade
-description: Patch only advisory-named vulnerable dependencies across this repository's pnpm, Go, and PyPI resolution surfaces. Use for CVE, GHSA, pasted npm audit or pnpm audit reports, Dependabot, Trivy, or govulncheck findings that need minimal fixed-version updates, transitive overrides, per-lockfile release-age handling, and supply-chain triage for in-window candidates. Do not use for blanket tool updates, Go-version upgrades, general module refreshes, or PyPI pin changes; `/tools-upgrade` owns Python declarations and lock regeneration.
+description: >-
+  Patch only advisory-named vulnerable dependencies across this repository's pnpm, Go, and PyPI resolution surfaces. Use for CVE, GHSA, pasted npm audit or pnpm audit reports, Dependabot, Trivy, or govulncheck findings that need minimal fixed-version updates, transitive overrides, per-lockfile release-age handling, and supply-chain triage for in-window candidates. Do not use for blanket tool updates, Go-version upgrades, general module refreshes, or PyPI pin changes; `tools-upgrade` owns Python declarations and lock regeneration.
 ---
 
 # Targeted Dependency Vulnerability Upgrade

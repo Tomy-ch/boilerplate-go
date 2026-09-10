@@ -1,6 +1,7 @@
 ---
 name: supply-chain-triage
-description: Determine whether one quarantined supply-chain artifact version has direct evidence of a compromised publish, without changing anything. Use when `dep-vuln-upgrade`, `tools-upgrade`, `actions-pin`, or `images-pin` holds, defers, quarantines, or labels a candidate `too-new`/`pending`; when `make tool-cooldown-gate` blocks `mise.toml` or `python/*.in`; before a deliberate cooldown override (`days=0`, `--min-release-age=0`, pnpm `minimumReleaseAgeExclude`, PyPI bypass entry, or fresh `overrides` pin); or when a user asks whether a release is safe to take. Score publisher, source attestation, diff, and dependency/capability surface with cited evidence, then report in Japanese. Do NOT use to perform an upgrade, triage a CVE already adopted in the tree, scan first-party code, or routinely revisit an `images-pin` rule 2 hold.
+description: >-
+  Determine whether one quarantined supply-chain artifact version has direct evidence of a compromised publish, scoring four evidence axes with citations and changing nothing. Use when `dep-vuln-upgrade`, `tools-upgrade`, `actions-pin`, or `images-pin` holds, defers, quarantines, or labels a candidate `too-new`/`pending`; when `make tool-cooldown-gate` blocks `mise.toml` or `python/*.in`; before a deliberate cooldown override (`days=0`, `--min-release-age=0`, pnpm `minimumReleaseAgeExclude`, PyPI bypass entry, or fresh `overrides` pin); or when a user asks whether a release is safe to take. Do NOT use to perform an upgrade, triage a CVE already adopted in the tree, scan first-party code, or routinely revisit an `images-pin` rule 2 hold.
 ---
 
 # Supply-chain Triage

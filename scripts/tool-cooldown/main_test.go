@@ -1857,7 +1857,7 @@ func Test_parseArgs(t *testing.T) {
 			_, _, err := parseArgs(nil)
 
 			require.ErrorIs(t, err, errUsage)
-			assert.Contains(t, err.Error(), "usage: tool-cooldown <gate|audit>")
+			assert.Contains(t, err.Error(), "usage: tool-cooldown <gate|audit|outdated>")
 		})
 
 		t.Run("未知のサブコマンドはエラーにする", func(t *testing.T) {
@@ -2083,6 +2083,110 @@ func Test_run(t *testing.T) {
 
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "write GITHUB_OUTPUT")
+		})
+	})
+}
+
+//nolint:paralleltest // GITHUB_TOKEN を t.Setenv で差し替えるため並列化できない
+func Test_fetchBody(t *testing.T) {
+	t.Run("正常系", func(t *testing.T) {
+		t.Run("200 なら本文を読める形で返す", func(t *testing.T) {
+			client := fakeUpstream(t, respondJSON("/pkg", `{"name":"ok"}`))
+
+			body, err := fetchBody(t.Context(), client, npmBase+"pkg")
+
+			require.NoError(t, err)
+			defer func() { _ = body.Close() }()
+			out, readErr := io.ReadAll(body)
+			require.NoError(t, readErr)
+			assert.JSONEq(t, `{"name":"ok"}`, string(out))
+		})
+
+		// GitHub 以外の上流へトークンを送ると、資格情報を無関係な第三者へ渡すことになる。
+		t.Run("GitHub API にだけトークンを載せる", func(t *testing.T) {
+			t.Setenv("GITHUB_TOKEN", "test-token")
+			auth := make(chan string, 2)
+			client := fakeUpstream(t, func(w http.ResponseWriter, r *http.Request) {
+				auth <- r.Header.Get("Authorization")
+				_, _ = io.WriteString(w, "{}")
+			})
+
+			for _, url := range []string{githubAPI + "owner/repo", npmBase + "pkg"} {
+				body, err := fetchBody(t.Context(), client, url)
+				require.NoError(t, err)
+				_ = body.Close()
+			}
+
+			assert.Equal(t, "Bearer test-token", <-auth)
+			assert.Empty(t, <-auth)
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Run("404 と 410 は未検出として返す", func(t *testing.T) {
+			for _, status := range []int{http.StatusNotFound, http.StatusGone} {
+				client := fakeUpstream(t, func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(status)
+				})
+
+				_, err := fetchBody(t.Context(), client, npmBase+"pkg")
+
+				require.ErrorIs(t, err, errNotFound)
+			}
+		})
+
+		t.Run("その他の異常なステータスは状態エラーとして返す", func(t *testing.T) {
+			client := fakeUpstream(t, func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			})
+
+			_, err := fetchBody(t.Context(), client, npmBase+"pkg")
+
+			require.ErrorIs(t, err, errUpstreamStatus)
+		})
+
+		t.Run("要求を組み立てられなければエラーを返す", func(t *testing.T) {
+			_, err := fetchBody(t.Context(), offlineClient(), npmBase+"pkg\x7f")
+
+			require.Error(t, err)
+		})
+
+		t.Run("上流へ届かなければエラーを返す", func(t *testing.T) {
+			_, err := fetchBody(t.Context(), offlineClient(), npmBase+"pkg")
+
+			require.Error(t, err)
+		})
+	})
+}
+
+func Test_getText(t *testing.T) {
+	t.Parallel()
+
+	t.Run("正常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("本文をそのまま文字列で返す", func(t *testing.T) {
+			t.Parallel()
+			client := fakeUpstream(t, func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = io.WriteString(w, "v1.1.0\nv1.2.0\n")
+			})
+
+			body, err := getText(t.Context(), client, goProxyBase+"example.com/mod/@v/list")
+
+			require.NoError(t, err)
+			assert.Equal(t, "v1.1.0\nv1.2.0\n", body, "JSON ではない応答をそのまま扱えること")
+		})
+	})
+
+	t.Run("異常系", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("上流が応答しなければエラーを返す", func(t *testing.T) {
+			t.Parallel()
+
+			_, err := getText(t.Context(), offlineClient(), goProxyBase+"example.com/mod/@v/list")
+
+			require.Error(t, err)
 		})
 	})
 }
