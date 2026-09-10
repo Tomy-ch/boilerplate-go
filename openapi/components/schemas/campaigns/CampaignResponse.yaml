@@ -1,0 +1,87 @@
+type: object
+description: |
+  キャンペーン。コードを配り、受け取った利用者へクーポンを 1 枚ずつ配る取り組みです。
+  配るクーポンの内容はテンプレートとして固定され、受け取った時点でクーポンへ焼かれます。
+  以後この定義を変えても、既に配ったクーポンは動きません。
+required:
+  - id
+  - code
+  - discount
+  - scope
+  - minPurchaseAmount
+  - usableFrom
+  - couponExpiresAt
+  - startsAt
+  - endsAt
+  - totalLimit
+  - perUserLimit
+  - issuedCount
+  - suspendedAt
+properties:
+  id:
+    type: string
+    format: uuid
+    description: キャンペーンID
+    example: "0193a1c0-0002-7000-8000-000000000003"
+  code:
+    type: string
+    description: |
+      正規化済みのキャンペーンコード。前後の空白を落とし、大文字に揃えた値です。
+      受け取り時のコードも同じ正規化を経るため、大文字・小文字の違いは同じコードとして扱われます。
+    example: "WELCOME-2026"
+  discount:
+    $ref: '../coupons/CouponDiscount.yaml'
+  scope:
+    $ref: '../coupons/CouponScope.yaml'
+  minPurchaseAmount:
+    type: integer
+    format: int64
+    nullable: true
+    description: 配るクーポンの最低購入金額。USD セント単位の整数です。条件が無い場合は null です。
+    example: 5000
+  usableFrom:
+    type: string
+    format: date-time
+    nullable: true
+    description: 配るクーポンが使えるようになる日時。発行時点から使える場合は null です。
+    example: null
+  couponExpiresAt:
+    type: string
+    format: date-time
+    description: |
+      配るクーポンの有効期限。配布期間の終了より後である必要があります。
+      期間の終わりぎわに受け取った利用者へ、その時点で既に失効しているクーポンを渡さないためです。
+    example: "2026-12-31T14:59:59Z"
+  startsAt:
+    type: string
+    format: date-time
+    description: 配布期間の開始日時。この時刻ちょうどを含めて以降に受け取れます。
+    example: "2026-10-01T00:00:00Z"
+  endsAt:
+    type: string
+    format: date-time
+    description: 配布期間の終了日時。この時刻ちょうどを含めて以降は受け取れません。
+    example: "2026-11-30T14:59:59Z"
+  totalLimit:
+    type: integer
+    format: int32
+    description: 総枚数上限。このキャンペーンが配れるクーポンの上限枚数です。
+    example: 1000
+  perUserLimit:
+    type: integer
+    format: int32
+    description: 1 人あたり上限。1 人の利用者が受け取れる上限枚数です。
+    example: 1
+  issuedCount:
+    type: integer
+    format: int32
+    description: |
+      発行済み枚数。購入のキャンセルでクーポンが未使用へ戻っても減りません。
+      配った事実は取り消されないためです。
+    example: 42
+  suspendedAt:
+    type: string
+    format: date-time
+    nullable: true
+    description: 停止日時。停止していない場合は null です。停止は取り消せません。
+    example: null

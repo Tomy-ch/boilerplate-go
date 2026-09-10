@@ -1,0 +1,46 @@
+post:
+  operationId: PostCampaignsSuspend
+  tags:
+    - v1/campaigns/detail/suspend
+  summary: キャンペーンの停止
+  description: |
+    指定された UUID に該当するキャンペーンの受け取りを打ち切ります。認証必須で、管理者（admin）のみ
+    実行できます（非 admin は 403）。
+    配布期間が残っていても、以後そのコードでは受け取れなくなります。配布事故を止める口がこれです。
+    **停止は取り消せません。** 既に停止済みのキャンペーンへの再実行は 409 を返します。
+    409 はこの一義で、要求が版の食い違いで拒まれることはありません（本操作はバージョンを受け取らないため）。
+    **既に配ったクーポンは無効になりません。** 停止が止めるのは配布であって、配った 1 枚ではないためです。
+    発行済みのクーポンを失効させる経路は存在しません。
+    **Idempotency-Key を受け付けます**。同一キーの再送は初回の結果をそのまま返します。
+    本 op は DB の SELECT / UPDATE のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+    一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+  security:
+    - BearerAuth: []
+  parameters:
+    - $ref: '../../../../components/parameters/campaign/CampaignIdParam.yaml'
+    - $ref: '../../../../components/parameters/idempotency/IdempotencyKeyParam.yaml'
+  responses:
+    '200':
+      description: キャンペーンの停止に成功しました
+      content:
+        application/json:
+          schema:
+            $ref: '../../../../components/schemas/campaigns/CampaignResponse.yaml'
+    '400':
+      $ref: '../../../../components/schemas/errors/BadRequest400.yaml'
+    '401':
+      $ref: '../../../../components/schemas/errors/Unauthorized401.yaml'
+    '403':
+      $ref: '../../../../components/schemas/errors/Forbidden403.yaml'
+    '404':
+      $ref: '../../../../components/schemas/errors/NotFound404.yaml'
+    '405':
+      $ref: '../../../../components/schemas/errors/MethodNotAllowed405.yaml'
+    '409':
+      $ref: '../../../../components/schemas/errors/Conflict409.yaml'
+    '422':
+      $ref: '../../../../components/schemas/errors/UnprocessableEntity422.yaml'
+    '500':
+      $ref: '../../../../components/schemas/errors/InternalServerError500.yaml'
+    '503':
+      $ref: '../../../../components/schemas/errors/ServiceUnavailable503.yaml'

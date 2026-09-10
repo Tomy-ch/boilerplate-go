@@ -115,6 +115,12 @@ tags:
     description: クーポンの発行（admin のみ・受給者を名指しする単発発行・非 admin は 403）。
   - name: v1/coupons/bulk-issue
     description: 販促クーポンの一括発行（admin のみ・述語で決まる集合書き込み / CommandService サンプル・非 admin は 403）。
+  - name: v1/campaigns
+    description: キャンペーンの定義と一覧（admin のみ・コードを配る配布口・非 admin は 403）。
+  - name: v1/campaigns/detail/suspend
+    description: キャンペーンの停止（admin のみ・取り消せない一方向の遷移・非 admin は 403）。
+  - name: v1/campaigns/claims
+    description: コードによるクーポンの受け取り（認証必須・受給者は認証主体自身・拒否理由は区別しない）。
   - name: v1/inquiries
     description: 問い合わせ一覧（admin のみ・keyset ページング・本文を持たない要約）。
   - name: v1/inquiries/me/messages
@@ -221,6 +227,12 @@ paths:
     $ref: './paths/v1/coupons.yaml'
   /v1/coupons/bulk-issue:
     $ref: './paths/v1/coupons/bulk-issue.yaml'
+  /v1/campaigns:
+    $ref: './paths/v1/campaigns.yaml'
+  /v1/campaigns/claims:
+    $ref: './paths/v1/campaigns/claims.yaml'
+  /v1/campaigns/{campaignId}/suspend:
+    $ref: './paths/v1/campaigns/campaignId/suspend.yaml'
   /v1/inquiries:
     $ref: './paths/v1/inquiries.yaml'
   /v1/inquiries/me/messages:

@@ -1,0 +1,89 @@
+post:
+  operationId: PostCampaigns
+  tags:
+    - v1/campaigns
+  summary: キャンペーンの定義
+  description: |
+    コードを配るキャンペーンを 1 件定義します。認証必須で、管理者（admin）のみ実行できます
+    （非 admin は 403）。
+    定義した時点ではクーポンは 1 枚も配られません。利用者が POST /v1/campaigns/claims で
+    コードを示したときに、このテンプレートからクーポンが 1 枚発行されます。
+    **配るクーポンの内容は受け取った時点でクーポンへ焼かれます。** 以後この定義を変えても、
+    既に配ったクーポンは動きません。編集の口を持たないのはそのためで、配布を止めるには
+    POST /v1/campaigns/{campaignId}/suspend を使います。
+    テンプレートが実際にクーポンへ解決できるかはここで確かめます。誰も受け取れないキャンペーンを
+    作れてしまわないためです。値引き種別・適用範囲種別が既知でない場合は 422 を返します。
+    コードは前後の空白を落とし大文字に揃えて保存されます。**既に使われているコードは 409 です。**
+    本 op は DB の SELECT / INSERT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+    一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+  security:
+    - BearerAuth: []
+  parameters:
+    - $ref: '../../components/parameters/idempotency/IdempotencyKeyRequiredParam.yaml'
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/requests/campaigns/CampaignsPostRequest.yaml'
+  responses:
+    '201':
+      description: キャンペーンの定義に成功しました
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/campaigns/CampaignResponse.yaml'
+    '400':
+      $ref: '../../components/schemas/errors/BadRequest400.yaml'
+    '401':
+      $ref: '../../components/schemas/errors/Unauthorized401.yaml'
+    '403':
+      $ref: '../../components/schemas/errors/Forbidden403.yaml'
+    '405':
+      $ref: '../../components/schemas/errors/MethodNotAllowed405.yaml'
+    '409':
+      $ref: '../../components/schemas/errors/Conflict409.yaml'
+    '422':
+      $ref: '../../components/schemas/errors/UnprocessableEntity422.yaml'
+    '500':
+      $ref: '../../components/schemas/errors/InternalServerError500.yaml'
+    '503':
+      $ref: '../../components/schemas/errors/ServiceUnavailable503.yaml'
+get:
+  operationId: GetCampaigns
+  tags:
+    - v1/campaigns
+  summary: キャンペーンの一覧
+  description: |
+    キャンペーンを配布期間の開始が新しい順で返します。認証必須で、管理者（admin）のみ実行できます
+    （非 admin は 403）。停止済みと配布期間を過ぎたものも含みます。
+    残枚数は totalLimit と issuedCount の差から読めます。issuedCount は配った枚数であり、
+    購入のキャンセルでクーポンが未使用へ戻っても減りません。
+    本 op は DB の SELECT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+    一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+  security:
+    - BearerAuth: []
+  parameters:
+    - $ref: '../../components/parameters/pagination/PageParam.yaml'
+    - $ref: '../../components/parameters/pagination/PerPageParam.yaml'
+  responses:
+    '200':
+      description: キャンペーンの一覧の取得に成功しました
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/responses/campaigns/CampaignListResponse.yaml'
+    '400':
+      $ref: '../../components/schemas/errors/BadRequest400.yaml'
+    '401':
+      $ref: '../../components/schemas/errors/Unauthorized401.yaml'
+    '403':
+      $ref: '../../components/schemas/errors/Forbidden403.yaml'
+    '405':
+      $ref: '../../components/schemas/errors/MethodNotAllowed405.yaml'
+    '422':
+      $ref: '../../components/schemas/errors/UnprocessableEntity422.yaml'
+    '500':
+      $ref: '../../components/schemas/errors/InternalServerError500.yaml'
+    '503':
+      $ref: '../../components/schemas/errors/ServiceUnavailable503.yaml'

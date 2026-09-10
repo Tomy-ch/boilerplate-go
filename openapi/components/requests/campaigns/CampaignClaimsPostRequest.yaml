@@ -1,0 +1,16 @@
+type: object
+description: |
+  コードの提示による受け取りのリクエスト（application/json）。認証必須で、
+  認証主体自身がクーポンを 1 枚受け取ります。
+  コードはボディで受け取ります。URL に置くとアクセスログや Referer に残り、
+  コードそのものが受け取る資格である以上、それは資格情報を記録することになるためです。
+additionalProperties: false
+required:
+  - code
+properties:
+  code:
+    type: string
+    description: >-
+      キャンペーンコード。前後の空白と大文字・小文字の違いは無視されます。
+      受け取れない場合の理由（存在しない・配布期間外・停止済み・上限到達）は区別されません。
+    example: "WELCOME-2026"

@@ -23,6 +23,149 @@ COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching
 SET default_tablespace = '';
 SET default_table_access_method = heap;
 --
+-- Name: campaign_claims; Type: TABLE; Schema: public; Owner: -
+--
+CREATE TABLE public.campaign_claims (
+    id uuid NOT NULL,
+    campaign_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    coupon_id uuid NOT NULL,
+    claimed_at timestamp with time zone NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+--
+-- Name: TABLE campaign_claims; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON TABLE public.campaign_claims IS 'キャンペーンの受け取り記録';
+--
+-- Name: COLUMN campaign_claims.id; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaign_claims.id IS 'ID';
+--
+-- Name: COLUMN campaign_claims.campaign_id; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaign_claims.campaign_id IS '受け取り元のキャンペーンID';
+--
+-- Name: COLUMN campaign_claims.user_id; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaign_claims.user_id IS '受け取った利用者のユーザーID';
+--
+-- Name: COLUMN campaign_claims.coupon_id; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaign_claims.coupon_id IS '受け取りで発行されたクーポンのID';
+--
+-- Name: COLUMN campaign_claims.claimed_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaign_claims.claimed_at IS '受け取り日時';
+--
+-- Name: COLUMN campaign_claims.created_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaign_claims.created_at IS '作成日時';
+--
+-- Name: COLUMN campaign_claims.updated_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaign_claims.updated_at IS '更新日時';
+--
+-- Name: campaigns; Type: TABLE; Schema: public; Owner: -
+--
+CREATE TABLE public.campaigns (
+    id uuid NOT NULL,
+    code text NOT NULL,
+    discount_kind text NOT NULL,
+    discount_value numeric NOT NULL,
+    discount_max_amount bigint,
+    scope_kind text NOT NULL,
+    scope_target_id uuid,
+    coupon_min_purchase_amount bigint,
+    coupon_usable_from timestamp with time zone,
+    coupon_expires_at timestamp with time zone NOT NULL,
+    starts_at timestamp with time zone NOT NULL,
+    ends_at timestamp with time zone NOT NULL,
+    total_limit integer NOT NULL,
+    per_user_limit integer NOT NULL,
+    issued_count integer DEFAULT 0 NOT NULL,
+    suspended_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+--
+-- Name: TABLE campaigns; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON TABLE public.campaigns IS 'キャンペーン';
+--
+-- Name: COLUMN campaigns.id; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.id IS 'ID';
+--
+-- Name: COLUMN campaigns.code; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.code IS 'キャンペーンコード（正規化済み。大文字・前後空白なし）';
+--
+-- Name: COLUMN campaigns.discount_kind; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.discount_kind IS '配るクーポンの値引き種別の名前。閉じた集合を所有するのはクーポン側で、キャンペーンは名前を保つ';
+--
+-- Name: COLUMN campaigns.discount_value; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.discount_value IS '配るクーポンの値引きの値（定額なら金額、定率なら率）';
+--
+-- Name: COLUMN campaigns.discount_max_amount; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.discount_max_amount IS '配るクーポンの値引き上限（上限なしまたは定額のときNULL）';
+--
+-- Name: COLUMN campaigns.scope_kind; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.scope_kind IS '配るクーポンの適用範囲種別の名前。閉じた集合を所有するのはクーポン側で、キャンペーンは名前を保つ';
+--
+-- Name: COLUMN campaigns.scope_target_id; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.scope_target_id IS '配るクーポンの適用範囲の対象ID（全体のときNULL）';
+--
+-- Name: COLUMN campaigns.coupon_min_purchase_amount; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.coupon_min_purchase_amount IS '配るクーポンの最低購入金額（条件なしのときNULL）';
+--
+-- Name: COLUMN campaigns.coupon_usable_from; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.coupon_usable_from IS '配るクーポンの利用開始日時（発行時点から使えるときNULL）';
+--
+-- Name: COLUMN campaigns.coupon_expires_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.coupon_expires_at IS '配るクーポンの有効期限';
+--
+-- Name: COLUMN campaigns.starts_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.starts_at IS '配布期間の開始日時';
+--
+-- Name: COLUMN campaigns.ends_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.ends_at IS '配布期間の終了日時';
+--
+-- Name: COLUMN campaigns.total_limit; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.total_limit IS '総枚数上限';
+--
+-- Name: COLUMN campaigns.per_user_limit; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.per_user_limit IS '1人あたり上限';
+--
+-- Name: COLUMN campaigns.issued_count; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.issued_count IS '発行済み枚数。返却では減らない';
+--
+-- Name: COLUMN campaigns.suspended_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.suspended_at IS '停止日時（停止していないときNULL）';
+--
+-- Name: COLUMN campaigns.created_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.created_at IS '作成日時';
+--
+-- Name: COLUMN campaigns.updated_at; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.campaigns.updated_at IS '更新日時';
+--
 -- Name: cart_items; Type: TABLE; Schema: public; Owner: -
 --
 CREATE TABLE public.cart_items (
@@ -126,7 +269,10 @@ CREATE TABLE public.coupons (
     used_at timestamp with time zone,
     issued_at timestamp with time zone NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    min_purchase_amount bigint,
+    discount_max_amount bigint,
+    usable_from timestamp with time zone
 );
 --
 -- Name: TABLE coupons; Type: COMMENT; Schema: public; Owner: -
@@ -176,6 +322,18 @@ COMMENT ON COLUMN public.coupons.created_at IS '作成日時';
 -- Name: COLUMN coupons.updated_at; Type: COMMENT; Schema: public; Owner: -
 --
 COMMENT ON COLUMN public.coupons.updated_at IS '更新日時';
+--
+-- Name: COLUMN coupons.min_purchase_amount; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.coupons.min_purchase_amount IS '使うために必要な購入額の下限（条件なしのときNULL）';
+--
+-- Name: COLUMN coupons.discount_max_amount; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.coupons.discount_max_amount IS '定率の値引きが1回に引ける額の上限（上限なしまたは定額のときNULL）';
+--
+-- Name: COLUMN coupons.usable_from; Type: COMMENT; Schema: public; Owner: -
+--
+COMMENT ON COLUMN public.coupons.usable_from IS '使えるようになる日時（発行時点から使えるときNULL）';
 --
 -- Name: idempotency_keys; Type: TABLE; Schema: public; Owner: -
 --
@@ -1050,6 +1208,21 @@ COMMENT ON COLUMN public.users.updated_at IS '更新日時';
 --
 COMMENT ON COLUMN public.users.search_text IS '全文検索用テキスト';
 --
+-- Name: campaign_claims campaign_claims_id_primary; Type: CONSTRAINT; Schema: public; Owner: -
+--
+ALTER TABLE ONLY public.campaign_claims
+    ADD CONSTRAINT campaign_claims_id_primary PRIMARY KEY (id);
+--
+-- Name: campaigns campaigns_code_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+ALTER TABLE ONLY public.campaigns
+    ADD CONSTRAINT campaigns_code_unique UNIQUE (code);
+--
+-- Name: campaigns campaigns_id_primary; Type: CONSTRAINT; Schema: public; Owner: -
+--
+ALTER TABLE ONLY public.campaigns
+    ADD CONSTRAINT campaigns_id_primary PRIMARY KEY (id);
+--
 -- Name: cart_items cart_items_cart_id_product_id_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 ALTER TABLE ONLY public.cart_items
@@ -1285,6 +1458,18 @@ ALTER TABLE ONLY public.users
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_id_primary PRIMARY KEY (id);
 --
+-- Name: campaign_claims_campaign_id_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+CREATE INDEX campaign_claims_campaign_id_user_id_idx ON public.campaign_claims USING btree (campaign_id, user_id);
+--
+-- Name: campaign_claims_coupon_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+CREATE INDEX campaign_claims_coupon_id_idx ON public.campaign_claims USING btree (coupon_id);
+--
+-- Name: campaign_claims_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+CREATE INDEX campaign_claims_user_id_idx ON public.campaign_claims USING btree (user_id);
+--
 -- Name: carts_expires_at_index; Type: INDEX; Schema: public; Owner: -
 --
 CREATE INDEX carts_expires_at_index ON public.carts USING btree (expires_at);
@@ -1372,6 +1557,21 @@ CREATE INDEX purchases_user_id_ordered_at_id_idx ON public.purchases USING btree
 -- Name: users_search_text_trgm_idx; Type: INDEX; Schema: public; Owner: -
 --
 CREATE INDEX users_search_text_trgm_idx ON public.users USING gin (search_text public.gin_trgm_ops);
+--
+-- Name: campaign_claims campaign_claims_campaign_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+ALTER TABLE ONLY public.campaign_claims
+    ADD CONSTRAINT campaign_claims_campaign_id_foreign FOREIGN KEY (campaign_id) REFERENCES public.campaigns(id);
+--
+-- Name: campaign_claims campaign_claims_coupon_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+ALTER TABLE ONLY public.campaign_claims
+    ADD CONSTRAINT campaign_claims_coupon_id_foreign FOREIGN KEY (coupon_id) REFERENCES public.coupons(id);
+--
+-- Name: campaign_claims campaign_claims_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+ALTER TABLE ONLY public.campaign_claims
+    ADD CONSTRAINT campaign_claims_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id);
 --
 -- Name: cart_items cart_items_cart_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --

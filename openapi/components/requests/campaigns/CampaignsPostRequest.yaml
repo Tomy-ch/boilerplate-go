@@ -1,0 +1,69 @@
+type: object
+description: |
+  キャンペーン定義のリクエスト（application/json）。admin のみ実行できます（非 admin は 403）。
+  コードと、配るクーポンの内容・配布期間・上限を指定すると、そのコードで受け取れるようになります。
+additionalProperties: false
+required:
+  - code
+  - discount
+  - scope
+  - couponExpiresAt
+  - startsAt
+  - endsAt
+  - totalLimit
+  - perUserLimit
+properties:
+  code:
+    type: string
+    description: >-
+      キャンペーンコード。前後の空白を落とし大文字に揃えた結果が 8〜32 文字で、
+      英数字とハイフンのみである必要があります。総当たりの抑止をアプリケーション内に持たないため、
+      コードは推測されにくさを自分の長さで持ちます。既に使われているコードは 409 を返します。
+    example: "welcome-2026"
+  discount:
+    $ref: '../../schemas/coupons/CouponDiscountInput.yaml'
+  scope:
+    $ref: '../../schemas/coupons/CouponScopeInput.yaml'
+  minPurchaseAmount:
+    type: integer
+    format: int64
+    nullable: true
+    description: >-
+      配るクーポンを使うために必要な購入額の下限。USD セント単位の整数です。任意で、
+      省略または null なら購入額を問わず使えます。0 以下を指定した場合は 422 を返します。
+    example: 5000
+  usableFrom:
+    type: string
+    format: date-time
+    nullable: true
+    description: >-
+      配るクーポンが使えるようになる日時。任意で、省略または null なら発行した時点から使えます。
+      couponExpiresAt 以降を指定した場合は 422 を返します。
+    example: null
+  couponExpiresAt:
+    type: string
+    format: date-time
+    description: >-
+      配るクーポンの有効期限。endsAt より後である必要があります（満たさない場合は 422）。
+    example: "2026-12-31T14:59:59Z"
+  startsAt:
+    type: string
+    format: date-time
+    description: 配布期間の開始日時。この時刻ちょうどを含めて以降に受け取れます。
+    example: "2026-10-01T00:00:00Z"
+  endsAt:
+    type: string
+    format: date-time
+    description: 配布期間の終了日時。startsAt より後である必要があります（満たさない場合は 422）。
+    example: "2026-11-30T14:59:59Z"
+  totalLimit:
+    type: integer
+    format: int32
+    description: 総枚数上限。1 以上である必要があります。
+    example: 1000
+  perUserLimit:
+    type: integer
+    format: int32
+    description: >-
+      1 人あたり上限。1 以上で、totalLimit 以下である必要があります。
+    example: 1

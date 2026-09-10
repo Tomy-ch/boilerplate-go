@@ -6,6 +6,9 @@ import (
 	"go-boilerplate/internal/controller/handler/metrics"
 	"go-boilerplate/internal/controller/handler/ready"
 	addresseshandler "go-boilerplate/internal/controller/handler/v1/addresses"                             // sample-api:line
+	campaignshandler "go-boilerplate/internal/controller/handler/v1/campaigns"                             // sample-api:line
+	campaignsclaimshandler "go-boilerplate/internal/controller/handler/v1/campaigns/claims"                // sample-api:line
+	campaignssuspendhandler "go-boilerplate/internal/controller/handler/v1/campaigns/detail/suspend"       // sample-api:line
 	cartshandler "go-boilerplate/internal/controller/handler/v1/carts"                                     // sample-api:line
 	cartscouponshandler "go-boilerplate/internal/controller/handler/v1/carts/coupons"                      // sample-api:line
 	cartsitemshandler "go-boilerplate/internal/controller/handler/v1/carts/items"                          // sample-api:line
@@ -87,6 +90,9 @@ func ControllerModule() fx.Option {
 			cartsitemshandler.BindHandler,
 			cartsmergehandler.BindHandler,
 			cartscouponshandler.BindHandler,     // sample-api:line
+			campaignshandler.BindHandler,        // sample-api:line
+			campaignsclaimshandler.BindHandler,  // sample-api:line
+			campaignssuspendhandler.BindHandler, // sample-api:line
 			couponshandler.BindHandler,          // sample-api:line
 			couponsbulkissuehandler.BindHandler, // sample-api:line
 			inquirieshandler.BindHandler,

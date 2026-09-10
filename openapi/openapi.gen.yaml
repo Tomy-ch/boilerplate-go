@@ -107,6 +107,12 @@ tags:
     description: クーポンの発行（admin のみ・受給者を名指しする単発発行・非 admin は 403）。
   - name: v1/coupons/bulk-issue
     description: 販促クーポンの一括発行（admin のみ・述語で決まる集合書き込み / CommandService サンプル・非 admin は 403）。
+  - name: v1/campaigns
+    description: キャンペーンの定義と一覧（admin のみ・コードを配る配布口・非 admin は 403）。
+  - name: v1/campaigns/detail/suspend
+    description: キャンペーンの停止（admin のみ・取り消せない一方向の遷移・非 admin は 403）。
+  - name: v1/campaigns/claims
+    description: コードによるクーポンの受け取り（認証必須・受給者は認証主体自身・拒否理由は区別しない）。
   - name: v1/inquiries
     description: 問い合わせ一覧（admin のみ・keyset ページング・本文を持たない要約）。
   - name: v1/inquiries/me/messages
@@ -2187,6 +2193,196 @@ paths:
           $ref: '#/components/responses/InternalServerError500'
         '503':
           $ref: '#/components/responses/ServiceUnavailable503'
+  /v1/campaigns:
+    post:
+      operationId: PostCampaigns
+      tags:
+        - v1/campaigns
+      summary: キャンペーンの定義
+      description: |
+        コードを配るキャンペーンを 1 件定義します。認証必須で、管理者（admin）のみ実行できます
+        （非 admin は 403）。
+        定義した時点ではクーポンは 1 枚も配られません。利用者が POST /v1/campaigns/claims で
+        コードを示したときに、このテンプレートからクーポンが 1 枚発行されます。
+        **配るクーポンの内容は受け取った時点でクーポンへ焼かれます。** 以後この定義を変えても、
+        既に配ったクーポンは動きません。編集の口を持たないのはそのためで、配布を止めるには
+        POST /v1/campaigns/{campaignId}/suspend を使います。
+        テンプレートが実際にクーポンへ解決できるかはここで確かめます。誰も受け取れないキャンペーンを
+        作れてしまわないためです。値引き種別・適用範囲種別が既知でない場合は 422 を返します。
+        コードは前後の空白を落とし大文字に揃えて保存されます。**既に使われているコードは 409 です。**
+        本 op は DB の SELECT / INSERT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+        一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyRequiredParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignsPostRequest'
+      responses:
+        '201':
+          description: キャンペーンの定義に成功しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest400'
+        '401':
+          $ref: '#/components/responses/Unauthorized401'
+        '403':
+          $ref: '#/components/responses/Forbidden403'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed405'
+        '409':
+          $ref: '#/components/responses/Conflict409'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity422'
+        '500':
+          $ref: '#/components/responses/InternalServerError500'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable503'
+    get:
+      operationId: GetCampaigns
+      tags:
+        - v1/campaigns
+      summary: キャンペーンの一覧
+      description: |
+        キャンペーンを配布期間の開始が新しい順で返します。認証必須で、管理者（admin）のみ実行できます
+        （非 admin は 403）。停止済みと配布期間を過ぎたものも含みます。
+        残枚数は totalLimit と issuedCount の差から読めます。issuedCount は配った枚数であり、
+        購入のキャンセルでクーポンが未使用へ戻っても減りません。
+        本 op は DB の SELECT のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+        一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: キャンペーンの一覧の取得に成功しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest400'
+        '401':
+          $ref: '#/components/responses/Unauthorized401'
+        '403':
+          $ref: '#/components/responses/Forbidden403'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed405'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity422'
+        '500':
+          $ref: '#/components/responses/InternalServerError500'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable503'
+  /v1/campaigns/claims:
+    post:
+      operationId: PostCampaignsClaims
+      tags:
+        - v1/campaigns/claims
+      summary: コードによるクーポンの受け取り
+      description: |
+        キャンペーンコードを示して、クーポンを 1 枚受け取ります。認証必須で、受給者は認証主体自身です。
+        受け取ったクーポンは未使用の状態で作られ、GET /v1/users/me/coupons に並びます。
+        他の発行経路のクーポンと区別されません。
+        **受け取れない理由は区別しません。** 存在しないコード・配布期間の外・停止済み・総枚数上限に到達・
+        その利用者が 1 人あたり上限に到達、のいずれも `422` + `details: ["code"]` を返します。
+        区別できると、有効なコードを言い当てる手がかりになるためです。形式が不正なコードも同じ応答です。
+        次にすべきことはどの場合も同じ（別のコードを使うか諦める）なので、区別する必要もありません。
+        **総枚数上限と 1 人あたり上限は、同時に受け取りが殺到しても超えません。** キャンペーンの行を
+        先に押さえてから枚数を数えるため、判定と発行の間に他の受け取りが割り込みません。
+        その代わり、同じコードへの同時要求は順番に処理されます。
+        **Idempotency-Key は必須です**（欠くと 400）。受け取りは取り消せず、二度目の実行は
+        もう 1 枚配るためです。同一キーの再送は初回の結果をそのまま返します。
+        **別のキーで押し直した場合は、上限に達していなければ改めて 1 枚配られます。**
+        本 op は DB の SELECT / INSERT / UPDATE のみで外部依存を持ちませんが、認証段（外部 IdP の
+        JWKS 参照）の一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKeyRequiredParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignClaimsPostRequest'
+      responses:
+        '201':
+          description: クーポンの受け取りに成功しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest400'
+        '401':
+          $ref: '#/components/responses/Unauthorized401'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed405'
+        '409':
+          $ref: '#/components/responses/Conflict409'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity422'
+        '500':
+          $ref: '#/components/responses/InternalServerError500'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable503'
+  /v1/campaigns/{campaignId}/suspend:
+    post:
+      operationId: PostCampaignsSuspend
+      tags:
+        - v1/campaigns/detail/suspend
+      summary: キャンペーンの停止
+      description: |
+        指定された UUID に該当するキャンペーンの受け取りを打ち切ります。認証必須で、管理者（admin）のみ
+        実行できます（非 admin は 403）。
+        配布期間が残っていても、以後そのコードでは受け取れなくなります。配布事故を止める口がこれです。
+        **停止は取り消せません。** 既に停止済みのキャンペーンへの再実行は 409 を返します。
+        409 はこの一義で、要求が版の食い違いで拒まれることはありません（本操作はバージョンを受け取らないため）。
+        **既に配ったクーポンは無効になりません。** 停止が止めるのは配布であって、配った 1 枚ではないためです。
+        発行済みのクーポンを失効させる経路は存在しません。
+        **Idempotency-Key を受け付けます**。同一キーの再送は初回の結果をそのまま返します。
+        本 op は DB の SELECT / UPDATE のみで外部依存を持ちませんが、認証段（外部 IdP の JWKS 参照）の
+        一時障害で応答不能となり得るため、認証を伴う op の先例に倣い 503 を宣言します。
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignIdParam'
+        - $ref: '#/components/parameters/IdempotencyKeyParam'
+      responses:
+        '200':
+          description: キャンペーンの停止に成功しました
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest400'
+        '401':
+          $ref: '#/components/responses/Unauthorized401'
+        '403':
+          $ref: '#/components/responses/Forbidden403'
+        '404':
+          $ref: '#/components/responses/NotFound404'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed405'
+        '409':
+          $ref: '#/components/responses/Conflict409'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity422'
+        '500':
+          $ref: '#/components/responses/InternalServerError500'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable503'
   /v1/inquiries:
     get:
       operationId: GetInquiries
@@ -2963,6 +3159,17 @@ components:
         minLength: 1
         maxLength: 255
       example: 3f0c2d21-6c1e-4a2f-9f8b-4b1e7f0a2c11
+    CampaignIdParam:
+      name: campaignId
+      in: path
+      required: true
+      description: キャンペーンのUUID
+      schema:
+        type: string
+        format: uuid
+        pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        maxLength: 36
+        example: 0193a1c0-0002-7000-8000-000000000003
     AfterSequenceParam:
       name: afterSequence
       in: query
@@ -4562,6 +4769,7 @@ components:
       required:
         - kind
         - value
+        - maxAmount
       properties:
         kind:
           type: string
@@ -4579,6 +4787,15 @@ components:
             正確な十進量を保つ decimal 文字列で表します（例 `"0.10"` は 10% 引き）。
             JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
           example: '0.10'
+        maxAmount:
+          type: integer
+          format: int64
+          nullable: true
+          description: |
+            定率の値引きが 1 回に引ける額の上限。USD セント単位の整数です。
+            定率（`rate`）にのみ意味を持ち、定額（`flat`）では常に null です。
+            上限が無い場合も null で、そのときは対象額に率を掛けた額がそのまま引かれます。
+          example: 2000
     CouponScope:
       type: object
       description: |
@@ -4617,6 +4834,8 @@ components:
         - expiresAt
         - usedAt
         - issuedAt
+        - minPurchaseAmount
+        - usableFrom
       properties:
         id:
           type: string
@@ -4645,6 +4864,22 @@ components:
           format: date-time
           description: 発行日時
           example: '2026-09-01T00:00:00Z'
+        minPurchaseAmount:
+          type: integer
+          format: int64
+          nullable: true
+          description: |
+            このクーポンを使うために必要な購入額の下限。USD セント単位の整数です。
+            条件が無い場合は null で、そのときは購入額を問わず使えます。
+          example: 5000
+        usableFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            使えるようになる日時。この時刻ちょうどを含めて以降に使えます。
+            条件が無い場合は null で、そのときは発行した時点から使えます。
+          example: null
     CouponListResponse:
       type: object
       description: |
@@ -5487,6 +5722,12 @@ components:
           pattern: ^\d+(\.\d+)?$
           description: 種別における値。定額なら差し引く金額、定率なら対象額に掛ける率を、 正確な十進量を保つ decimal 文字列で表します（例 `"0.15"` は 15% 引き）。 ドメインの検証に落ちる値（定率で 0 以下または 1 超など）は 422 を返します。 JSON number は IEEE754 double として復元され精度を失うため、文字列で表現します。
           example: '0.15'
+        maxAmount:
+          type: integer
+          format: int64
+          nullable: true
+          description: 定率の値引きが 1 回に引ける額の上限。USD セント単位の整数です。任意で、省略または null なら 上限を設けません。定額（`flat`）に対して指定した場合は、意味を持たない組み合わせとして 422 を 返します。0 以下を指定した場合も 422 です。
+          example: 2000
     CouponScopeInput:
       type: object
       description: |
@@ -5540,6 +5781,18 @@ components:
           format: date-time
           description: 発行するクーポンの有効期限。締切を名指しする操作なので、日数ではなく絶対時刻で受け取ります。 現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
           example: '2026-12-31T14:59:59Z'
+        minPurchaseAmount:
+          type: integer
+          format: int64
+          nullable: true
+          description: 発行するクーポンを使うために必要な購入額の下限。USD セント単位の整数です。任意で、 省略または null なら購入額を問わず使えます。0 以下を指定した場合は 422 を返します。
+          example: 5000
+        usableFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: 発行するクーポンが使えるようになる日時。任意で、省略または null なら発行した時点から使えます。 有効期限（expiresAt）以降を指定した場合は、一度も使えないクーポンになるため 422 を返します。
+          example: '2026-10-01T00:00:00Z'
     CouponBulkIssuePostRequest:
       type: object
       description: |
@@ -5560,7 +5813,7 @@ components:
         expiresAt:
           type: string
           format: date-time
-          description: 発行するクーポンの有効期限。キャンペーンの終了日を名指しする操作なので、日数ではなく絶対時刻で 受け取ります。現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
+          description: 発行するクーポンの有効期限。販促の終了日を名指しする操作なので、日数ではなく絶対時刻で 受け取ります。現在時刻以前を指定した場合は、発行した瞬間に失効するクーポンになるため 422 を返します。
           example: '2026-12-31T14:59:59Z'
     CouponBulkIssueResponse:
       type: object
@@ -5594,6 +5847,187 @@ components:
           format: int64
           description: この実行で発行したクーポンの枚数。受給者 1 人につき 1 枚なので recipientCount と一致します。 一致しない場合はトランザクションが巻き戻り、この応答は返りません。
           example: 1204
+    CampaignResponse:
+      type: object
+      description: |
+        キャンペーン。コードを配り、受け取った利用者へクーポンを 1 枚ずつ配る取り組みです。
+        配るクーポンの内容はテンプレートとして固定され、受け取った時点でクーポンへ焼かれます。
+        以後この定義を変えても、既に配ったクーポンは動きません。
+      required:
+        - id
+        - code
+        - discount
+        - scope
+        - minPurchaseAmount
+        - usableFrom
+        - couponExpiresAt
+        - startsAt
+        - endsAt
+        - totalLimit
+        - perUserLimit
+        - issuedCount
+        - suspendedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: キャンペーンID
+          example: 0193a1c0-0002-7000-8000-000000000003
+        code:
+          type: string
+          description: |
+            正規化済みのキャンペーンコード。前後の空白を落とし、大文字に揃えた値です。
+            受け取り時のコードも同じ正規化を経るため、大文字・小文字の違いは同じコードとして扱われます。
+          example: WELCOME-2026
+        discount:
+          $ref: '#/components/schemas/CouponDiscount'
+        scope:
+          $ref: '#/components/schemas/CouponScope'
+        minPurchaseAmount:
+          type: integer
+          format: int64
+          nullable: true
+          description: 配るクーポンの最低購入金額。USD セント単位の整数です。条件が無い場合は null です。
+          example: 5000
+        usableFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: 配るクーポンが使えるようになる日時。発行時点から使える場合は null です。
+          example: null
+        couponExpiresAt:
+          type: string
+          format: date-time
+          description: |
+            配るクーポンの有効期限。配布期間の終了より後である必要があります。
+            期間の終わりぎわに受け取った利用者へ、その時点で既に失効しているクーポンを渡さないためです。
+          example: '2026-12-31T14:59:59Z'
+        startsAt:
+          type: string
+          format: date-time
+          description: 配布期間の開始日時。この時刻ちょうどを含めて以降に受け取れます。
+          example: '2026-10-01T00:00:00Z'
+        endsAt:
+          type: string
+          format: date-time
+          description: 配布期間の終了日時。この時刻ちょうどを含めて以降は受け取れません。
+          example: '2026-11-30T14:59:59Z'
+        totalLimit:
+          type: integer
+          format: int32
+          description: 総枚数上限。このキャンペーンが配れるクーポンの上限枚数です。
+          example: 1000
+        perUserLimit:
+          type: integer
+          format: int32
+          description: 1 人あたり上限。1 人の利用者が受け取れる上限枚数です。
+          example: 1
+        issuedCount:
+          type: integer
+          format: int32
+          description: |
+            発行済み枚数。購入のキャンセルでクーポンが未使用へ戻っても減りません。
+            配った事実は取り消されないためです。
+          example: 42
+        suspendedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 停止日時。停止していない場合は null です。停止は取り消せません。
+          example: null
+    CampaignListResponse:
+      type: object
+      description: キャンペーンの一覧。停止済みも含みます。
+      required:
+        - campaigns
+        - total
+      properties:
+        campaigns:
+          type: array
+          description: 配布期間の開始が新しい順に並んだキャンペーンです。
+          items:
+            $ref: '#/components/schemas/CampaignResponse'
+        total:
+          type: integer
+          format: int32
+          description: キャンペーンの総件数
+          example: 12
+    CampaignsPostRequest:
+      type: object
+      description: |
+        キャンペーン定義のリクエスト（application/json）。admin のみ実行できます（非 admin は 403）。
+        コードと、配るクーポンの内容・配布期間・上限を指定すると、そのコードで受け取れるようになります。
+      additionalProperties: false
+      required:
+        - code
+        - discount
+        - scope
+        - couponExpiresAt
+        - startsAt
+        - endsAt
+        - totalLimit
+        - perUserLimit
+      properties:
+        code:
+          type: string
+          description: キャンペーンコード。前後の空白を落とし大文字に揃えた結果が 8〜32 文字で、 英数字とハイフンのみである必要があります。総当たりの抑止をアプリケーション内に持たないため、 コードは推測されにくさを自分の長さで持ちます。既に使われているコードは 409 を返します。
+          example: welcome-2026
+        discount:
+          $ref: '#/components/schemas/CouponDiscountInput'
+        scope:
+          $ref: '#/components/schemas/CouponScopeInput'
+        minPurchaseAmount:
+          type: integer
+          format: int64
+          nullable: true
+          description: 配るクーポンを使うために必要な購入額の下限。USD セント単位の整数です。任意で、 省略または null なら購入額を問わず使えます。0 以下を指定した場合は 422 を返します。
+          example: 5000
+        usableFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: 配るクーポンが使えるようになる日時。任意で、省略または null なら発行した時点から使えます。 couponExpiresAt 以降を指定した場合は 422 を返します。
+          example: null
+        couponExpiresAt:
+          type: string
+          format: date-time
+          description: 配るクーポンの有効期限。endsAt より後である必要があります（満たさない場合は 422）。
+          example: '2026-12-31T14:59:59Z'
+        startsAt:
+          type: string
+          format: date-time
+          description: 配布期間の開始日時。この時刻ちょうどを含めて以降に受け取れます。
+          example: '2026-10-01T00:00:00Z'
+        endsAt:
+          type: string
+          format: date-time
+          description: 配布期間の終了日時。startsAt より後である必要があります（満たさない場合は 422）。
+          example: '2026-11-30T14:59:59Z'
+        totalLimit:
+          type: integer
+          format: int32
+          description: 総枚数上限。1 以上である必要があります。
+          example: 1000
+        perUserLimit:
+          type: integer
+          format: int32
+          description: 1 人あたり上限。1 以上で、totalLimit 以下である必要があります。
+          example: 1
+    CampaignClaimsPostRequest:
+      type: object
+      description: |
+        コードの提示による受け取りのリクエスト（application/json）。認証必須で、
+        認証主体自身がクーポンを 1 枚受け取ります。
+        コードはボディで受け取ります。URL に置くとアクセスログや Referer に残り、
+        コードそのものが受け取る資格である以上、それは資格情報を記録することになるためです。
+      additionalProperties: false
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: キャンペーンコード。前後の空白と大文字・小文字の違いは無視されます。 受け取れない場合の理由（存在しない・配布期間外・停止済み・上限到達）は区別されません。
+          example: WELCOME-2026
     InquirySummary:
       type: object
       description: |

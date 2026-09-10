@@ -9,6 +9,7 @@ import (
 	purchasedetailqs "go-boilerplate/internal/infrastructure/rdb/query_service/purchase"          // sample-api:line
 	purchasefeedqs "go-boilerplate/internal/infrastructure/rdb/query_service/purchase/feed"       // sample-api:line
 	purchasesummaryqs "go-boilerplate/internal/infrastructure/rdb/query_service/purchase/summary" // sample-api:line
+	campaignrepo "go-boilerplate/internal/infrastructure/rdb/repository/campaign"                 // sample-api:line
 	cartrepo "go-boilerplate/internal/infrastructure/rdb/repository/cart"                         // sample-api:line
 	couponrepo "go-boilerplate/internal/infrastructure/rdb/repository/coupon"                     // sample-api:line
 	inquiryrepo "go-boilerplate/internal/infrastructure/rdb/repository/inquiry"                   // sample-api:line
@@ -44,8 +45,9 @@ func persistenceModule() fx.Option {
 				purchaserepo.New,
 				purchasestatusrepo.New,
 				cartrepo.New,
-				couponrepo.New,  // sample-api:line
-				inquiryrepo.New, // sample-api:line
+				campaignrepo.New, // sample-api:line
+				couponrepo.New,   // sample-api:line
+				inquiryrepo.New,  // sample-api:line
 				// sample-api:end
 			),
 		),
