@@ -1015,6 +1015,13 @@ func Test_maxCreated(t *testing.T) {
 			assert.Equal(t, time.Date(2026, time.July, 8, 1, 2, 3, 400000000, time.UTC), got.UTC())
 		})
 
+		t.Run("行の並び順によらず最新を返す", func(t *testing.T) {
+			t.Parallel()
+			got, ok := maxCreated("2026-07-01 00:00:00 +0000 UTC\n2026-07-08 01:02:03 +0000 UTC\n")
+			require.True(t, ok)
+			assert.Equal(t, time.Date(2026, time.July, 8, 1, 2, 3, 0, time.UTC), got.UTC())
+		})
+
 		t.Run("フィールド数が足りない行と解析できない行は無視する", func(t *testing.T) {
 			t.Parallel()
 			got, ok := maxCreated("\nnot a time\n2026-07-08\n2026-07-08 01:02:03 +0000 UTC\n")
@@ -1148,6 +1155,14 @@ func Test_digestAgeDays(t *testing.T) { //nolint:paralleltest // useDockerStub �
 	})
 
 	t.Run("異常系", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
+		t.Run("created が未来時刻なら負の日数を返す", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
+			useDockerStub(t, dockerStubBody(digestAlpine, time.Now().UTC().Add(48*time.Hour)))
+
+			got, err := digestAgeDays(context.Background(), "alpine:3.24")
+			require.NoError(t, err)
+			assert.Negative(t, got)
+		})
+
 		t.Run("created を取得できなければエラーを返す", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
 			useDockerStub(t, "exit 1\n")
 
@@ -1216,6 +1231,15 @@ func Test_quarantine(t *testing.T) { //nolint:paralleltest // useDockerStub が 
 			require.NoError(t, err)
 			assert.Empty(t, use)
 			assert.Contains(t, note, "skip")
+		})
+
+		t.Run("created が未来時刻でも窓の内側として既存ピンへ退く", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
+			useDockerStub(t, dockerStubBody(digestFresh, time.Now().UTC().Add(48*time.Hour)))
+
+			use, note, err := quarantine(context.Background(), ref, key, digestFresh, 14, existing)
+			require.NoError(t, err)
+			assert.Equal(t, digestStale, use)
+			assert.Contains(t, note, "既存ピンを維持")
 		})
 
 		t.Run("経過日数を取得できなければ採用も skip もせずエラーを返す", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
