@@ -111,6 +111,15 @@ either says the target is new, but it is a delay against automated takeover, not
 against a forged date. Detecting the re-point itself is the lockfile's job: the resolved digest
 changes, the diff is small, and a human reads it.
 
+**An image's age follows the same direction.** A multi-architecture tag resolves to an index whose
+platform manifests each carry their own image-config `created`, and `pin-images` takes the *newest*
+of them. The alternative — the oldest — reads the tag as "how long has some form of this image
+existed", which the quarantine is not asking: what gets written to the lockfile is the index
+digest, so adding or rebuilding a single platform produces a reference that did not exist before
+and has had no time to be found compromised. Taking the oldest would also fail open rather than
+closed on a reproducible build, where `created` is pinned to a fixed instant (`SOURCE_DATE_EPOCH`,
+often the Unix epoch) and would report an age no window can exceed.
+
 **A `docker://` step reference belongs to the image lockfile, not the action one.** A workflow may
 run a container directly (`uses: docker://<image>[:<tag>|@<digest>]`), which is a registry
 reference rather than a GitHub repository. `pin-actions` resolves a ref to a commit SHA through

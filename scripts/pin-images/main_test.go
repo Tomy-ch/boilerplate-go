@@ -1002,22 +1002,22 @@ func Test_writeLock(t *testing.T) {
 	})
 }
 
-func Test_minCreated(t *testing.T) {
+func Test_maxCreated(t *testing.T) {
 	t.Parallel()
 
 	t.Run("正常系", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("マルチアーキの複数行から最古を返す", func(t *testing.T) {
+		t.Run("マルチアーキの複数行から最新を返す", func(t *testing.T) {
 			t.Parallel()
-			got, ok := minCreated("2026-07-08 01:02:03.4 +0000 UTC\n2026-07-01 00:00:00 +0000 UTC\n")
+			got, ok := maxCreated("2026-07-08 01:02:03.4 +0000 UTC\n2026-07-01 00:00:00 +0000 UTC\n")
 			require.True(t, ok)
-			assert.Equal(t, time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC), got.UTC())
+			assert.Equal(t, time.Date(2026, time.July, 8, 1, 2, 3, 400000000, time.UTC), got.UTC())
 		})
 
 		t.Run("フィールド数が足りない行と解析できない行は無視する", func(t *testing.T) {
 			t.Parallel()
-			got, ok := minCreated("\nnot a time\n2026-07-08\n2026-07-08 01:02:03 +0000 UTC\n")
+			got, ok := maxCreated("\nnot a time\n2026-07-08\n2026-07-08 01:02:03 +0000 UTC\n")
 			require.True(t, ok)
 			assert.Equal(t, time.Date(2026, time.July, 8, 1, 2, 3, 0, time.UTC), got.UTC())
 		})
@@ -1028,7 +1028,7 @@ func Test_minCreated(t *testing.T) {
 
 		t.Run("解析できる行が一つも無ければ見つからないと報告する", func(t *testing.T) {
 			t.Parallel()
-			_, ok := minCreated("no timestamps here\n")
+			_, ok := maxCreated("no timestamps here\n")
 			assert.False(t, ok)
 		})
 	})
@@ -1086,14 +1086,14 @@ func Test_resolveDigest(t *testing.T) { //nolint:paralleltest // useDockerStub �
 	})
 }
 
-func Test_earliestCreated(t *testing.T) { //nolint:paralleltest // useDockerStub が t.Setenv を使うため並列化不可
+func Test_latestCreated(t *testing.T) { //nolint:paralleltest // useDockerStub が t.Setenv を使うため並列化不可
 	t.Run("正常系", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
-		t.Run("マルチアーキは全アーキの created のうち最古を返す", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
+		t.Run("マルチアーキは全アーキの created のうち最新を返す", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
 			useDockerStub(t, "printf '2026-07-08 01:02:03 +0000 UTC\\n2026-07-01 00:00:00 +0000 UTC\\n'\n")
 
-			got, err := earliestCreated(context.Background(), "alpine:3.24")
+			got, err := latestCreated(context.Background(), "alpine:3.24")
 			require.NoError(t, err)
-			assert.Equal(t, time.Date(2026, time.July, 1, 0, 0, 0, 0, time.UTC), got.UTC())
+			assert.Equal(t, time.Date(2026, time.July, 8, 1, 2, 3, 0, time.UTC), got.UTC())
 		})
 
 		t.Run("index 用テンプレートで解析できなければ単一アーキ用へフォールバックする", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
@@ -1102,7 +1102,7 @@ func Test_earliestCreated(t *testing.T) { //nolint:paralleltest // useDockerStub
 				"esac\n"+
 				"printf '2026-07-08 01:02:03 +0000 UTC\\n'\n")
 
-			got, err := earliestCreated(context.Background(), "alpine:3.24")
+			got, err := latestCreated(context.Background(), "alpine:3.24")
 			require.NoError(t, err)
 			assert.Equal(t, time.Date(2026, time.July, 8, 1, 2, 3, 0, time.UTC), got.UTC())
 		})
@@ -1112,7 +1112,7 @@ func Test_earliestCreated(t *testing.T) { //nolint:paralleltest // useDockerStub
 		t.Run("inspect 自体が失敗し続ければ解析不能ではなくその失敗を返す", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
 			useDockerStub(t, "echo 'toomanyrequests' >&2\nexit 1\n")
 
-			_, err := earliestCreated(context.Background(), "alpine:3.24")
+			_, err := latestCreated(context.Background(), "alpine:3.24")
 			require.Error(t, err)
 			require.NotErrorIs(t, err, errCreatedUnparsable)
 			assert.Contains(t, err.Error(), "toomanyrequests")
@@ -1121,7 +1121,7 @@ func Test_earliestCreated(t *testing.T) { //nolint:paralleltest // useDockerStub
 		t.Run("どちらのテンプレートでも created を読めなければ解析不能として扱う", func(t *testing.T) { //nolint:paralleltest // t.Setenv 使用
 			useDockerStub(t, "printf 'no timestamps here\\n'\n")
 
-			_, err := earliestCreated(context.Background(), "alpine:3.24")
+			_, err := latestCreated(context.Background(), "alpine:3.24")
 			require.ErrorIs(t, err, errCreatedUnparsable)
 		})
 	})

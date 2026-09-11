@@ -457,16 +457,17 @@ func resolveDigest(ctx context.Context, ref string) (string, error) {
 }
 
 // digestAgeDays は image:tag が指す digest の image config created から経過日数を返す。
-// 公式イメージのビルド日は publish 日にほぼ一致する。マルチアーキの場合は最も古い created を採る。
+// 公式イメージのビルド日は publish 日にほぼ一致する。マルチアーキの場合は最も新しい created を採る
+// （向きの理由は docs/design/security.md の Build inputs 節を参照）。
 func digestAgeDays(ctx context.Context, ref string) (int, error) {
-	created, err := earliestCreated(ctx, ref)
+	created, err := latestCreated(ctx, ref)
 	if err != nil {
 		return 0, err
 	}
 	return int(time.Since(created).Hours() / hoursPerDay), nil
 }
 
-func earliestCreated(ctx context.Context, ref string) (time.Time, error) {
+func latestCreated(ctx context.Context, ref string) (time.Time, error) {
 	// マルチアーキ (index) は .Image が map、単一アーキは struct。前者→後者でフォールバックする。
 	// inspect 自体のエラー（429 等）は握り潰さず伝播し、テンプレート不一致のときだけ次を試す。
 	var lastErr error
@@ -479,7 +480,7 @@ func earliestCreated(ctx context.Context, ref string) (time.Time, error) {
 			lastErr = err
 			continue
 		}
-		if t, ok := minCreated(out); ok {
+		if t, ok := maxCreated(out); ok {
 			return t, nil
 		}
 	}
@@ -489,9 +490,9 @@ func earliestCreated(ctx context.Context, ref string) (time.Time, error) {
 	return time.Time{}, xerrors.Wrap(errCreatedUnparsable, ref)
 }
 
-// minCreated は inspect 出力の各行（"2006-01-02 15:04:05.9 +0000 UTC"）から最古の時刻を返す。
-func minCreated(out string) (time.Time, bool) {
-	var earliest time.Time
+// maxCreated は inspect 出力の各行（"2006-01-02 15:04:05.9 +0000 UTC"）から最新の時刻を返す。
+func maxCreated(out string) (time.Time, bool) {
+	var latest time.Time
 	found := false
 	for line := range strings.SplitSeq(out, "\n") {
 		fields := strings.Fields(line)
@@ -504,11 +505,11 @@ func minCreated(out string) (time.Time, bool) {
 		if err != nil {
 			continue
 		}
-		if !found || t.Before(earliest) {
-			earliest, found = t, true
+		if !found || t.After(latest) {
+			latest, found = t, true
 		}
 	}
-	return earliest, found
+	return latest, found
 }
 
 func inspect(ctx context.Context, ref string, extra ...string) (string, error) {
