@@ -116,9 +116,15 @@ platform manifests each carry their own image-config `created`, and `pin-images`
 of them. The alternative — the oldest — reads the tag as "how long has some form of this image
 existed", which the quarantine is not asking: what gets written to the lockfile is the index
 digest, so adding or rebuilding a single platform produces a reference that did not exist before
-and has had no time to be found compromised. Taking the oldest would also fail open rather than
-closed on a reproducible build, where `created` is pinned to a fixed instant (`SOURCE_DATE_EPOCH`,
-often the Unix epoch) and would report an age no window can exceed.
+and has had no time to be found compromised. The two directions also cost an attacker very
+differently, because `created` is a self-declared field of the image config that no registry
+signature covers: against the oldest, backdating the one platform you appended is enough to clear
+the whole index, while against the newest every platform has to look old at once.
+
+This narrows the window; it does not make `created` trustworthy. Where the platforms agree — a
+reproducible build pinning `created` to a fixed instant (`SOURCE_DATE_EPOCH`, often the Unix
+epoch) — oldest and newest return the same value, and an age no window can exceed is reported
+either way. The direction only decides what happens when the platforms disagree.
 
 **A `docker://` step reference belongs to the image lockfile, not the action one.** A workflow may
 run a container directly (`uses: docker://<image>[:<tag>|@<digest>]`), which is a registry
