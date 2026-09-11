@@ -48,6 +48,25 @@ Where this pipeline stops is a specification, not a judgment. It stops here and 
 | 4 | Step 7 | Which of the three peer review skills to run, each with its estimated return |
 | 5 | Step 8 | Runtime verification failed; and the merge itself |
 
+**A stop is the end of a turn, not a question.** Read as "asking the user something", the list is
+easy to satisfy while breaking it: the failure that actually happens asks nothing. A phase completes,
+a progress report is the natural thing to write, and the report ends the turn — no approval was
+requested, so the prohibition below never fires, yet the run is over and the rest of the work is back
+with the user. Apply the list to turn endings, not only to questions.
+
+Reports are how a long run stays legible; letting one be the last thing in the turn is the failure.
+Write it, then keep working in the same turn. 「続けます」 and 「次は〜します」 are evidence of this bug
+rather than a plan — you can only write them because you already know the next step, which means
+nothing is blocking you. Do that step instead of announcing it.
+
+**Being blocked is not stopping.** A turn also ends where the run has handed off to something outside
+itself — CI, a background command, a delegated agent — and nothing independent of that handoff is
+left to do. Nobody was asked to decide anything there, and what resumes the run is the notification
+rather than an answer; the Merge step is built on exactly this, which is why it waits through a
+background command instead of a foreground loop. The test is whether a decision about the work is
+sitting with the user: if one is, it is a stop and belongs to the five rows; if none is, the wait is
+a block, and the turn ends only when nothing is left that does not wait on the same thing.
+
 Three moments look like stopping points and are not. Each is where an unlisted stop otherwise creeps
 in:
 
@@ -568,7 +587,9 @@ until [ "$(gh pr checks <n> --json bucket --jq '[.[]|select(.bucket=="pending")]
 gh pr checks <n>
 ```
 
-Then `gh pr merge <n> --merge`.
+Then ask before merging. Row 5 of the stopping list puts the merge itself with the user, so green
+checks are the precondition for the question rather than the answer to it: report what CI said and
+what runtime verification found, and merge with `gh pr merge <n> --merge` once that is approved.
 
 ## Step 9 — Close out
 
@@ -624,7 +645,8 @@ decision points this skill exists to create.
 - ✅ Put the plan through a model that is not the implementer's, and present that review's findings
       beside the plan rather than folded into it.
 - ✅ Treat the five trip-wires as mechanical triggers, not as things to notice.
-- ✅ Stop only at the five listed places; append every other call to the run record as it happens.
+- ✅ Stop only at the five listed places — stopping means ending the turn, not only asking;
+      append every other call to the run record as it happens.
 - ✅ At a seam, write the record and recommend compacting — asking at the PR seam, announcing at the
   Step 5 one, and announcing at both when the user has delegated and left.
 - ✅ Pass every sub-skill its settled answers, apply mode included.
@@ -635,6 +657,7 @@ decision points this skill exists to create.
 - ❌ Present green CI as runtime verification.
 - ❌ Auto-apply a fix that changes the design, in any mode.
 - ❌ Ask for approval at a phase boundary, or treat a subagent's completion as one.
+- ❌ End a turn on a progress report. Write the report and continue in the same turn.
 - ❌ Let the framing stage return a plan, a recommendation, or a direction instead of questions.
 - ❌ Pick which review skills run, or run one on the assumption another chains it.
 - ❌ File an issue without checking for an existing one, unless issue mode says to.
@@ -658,7 +681,8 @@ decision points this skill exists to create.
       call appended to the run record when it happened.
 - [ ] Both seams taken: record written, compaction recommended, and the PR seam asked unless the run
       was unattended under standing delegation.
-- [ ] No stop outside the five listed places.
+- [ ] No stop outside the five listed places, and no turn ended at a phase boundary or on a
+      progress report.
 - [ ] Plan reconciled against the actual diff.
 - [ ] Local gates run, or their delegation to CI stated in the PR.
 - [ ] The three review skills each estimated and put to the user; the approved ones run with their

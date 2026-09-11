@@ -45,8 +45,16 @@ The source of truth for design, rules, and flows is under `docs/` and the per-pa
 
 **Documentation scope for agents** — the canonical sources are the English `README.md` and
 `docs/**/*.md`. **Never read `*.ja.md` files: they are human-facing Japanese translations of
-those canonical sources — read the canonical English original instead.** Also ignore the
-documentation-portal UI assets:
+those canonical sources — read the canonical English original instead.**
+
+**One exception, and it is not an agent's to extend:** the skill that maintains a canonical /
+translation pair (`canonicalize-doc`) may read the `*.ja.md` of the single pair it has been pointed
+at, for that run only, because that pair is its subject — a sync that cannot read the side it
+updates has to overwrite it blind or hand the work back, which ships a canonical beside a
+translation a generation behind. This licenses no other `*.ja.md`, and everything else is still
+reasoned from the English original.
+
+Also ignore the documentation-portal UI assets:
 
 ```txt
 **/*.ja.md

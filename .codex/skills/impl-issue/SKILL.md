@@ -48,6 +48,25 @@ Where this pipeline stops is a specification, not a judgment. It stops here and 
 | 4 | Step 7 | Which of the three peer review skills to run, each with its estimated return |
 | 5 | Step 8 | Runtime verification failed; and the merge itself |
 
+**A stop is the end of a turn, not a question.** Read as "asking the user something", the list is
+easy to satisfy while breaking it: the failure that actually happens asks nothing. A phase completes,
+a progress report is the natural thing to write, and the report ends the turn — no approval was
+requested, so the prohibition below never fires, yet the run is over and the rest of the work is back
+with the user. Apply the list to turn endings, not only to questions.
+
+Reports are how a long run stays legible; letting one be the last thing in the turn is the failure.
+Write it, then keep working in the same turn. 「続けます」 and 「次は〜します」 are evidence of this bug
+rather than a plan — you can only write them because you already know the next step, which means
+nothing is blocking you. Do that step instead of announcing it.
+
+**Being blocked is not stopping.** A turn also ends where the run has handed off to something outside
+itself — CI, a background command, a delegated agent — and nothing independent of that handoff is
+left to do. Nobody was asked to decide anything there, and what resumes the run is the notification
+rather than an answer; the Merge step is built on exactly this, which is why it waits through a
+background command instead of a foreground loop. The test is whether a decision about the work is
+sitting with the user: if one is, it is a stop and belongs to the five rows; if none is, the wait is
+a block, and the turn ends only when nothing is left that does not wait on the same thing.
+
 Three moments look like stopping points and are not. Each is where an unlisted stop otherwise creeps
 in:
 
@@ -547,7 +566,10 @@ until [ "$(gh pr checks <n> --json bucket --jq '[.[]|select(.bucket=="pending")]
 gh pr checks <n>
 ```
 
-Then `gh pr merge <n> --merge`.
+Then use Codex's `ask the user explicitly` interaction to ask before merging. Row 5 of the stopping
+list puts the merge itself with the user, so green checks are the precondition for the question rather
+than the answer to it: report what CI said and what runtime verification found, and merge with
+`gh pr merge <n> --merge` once that is approved.
 
 ## Step 9 — Close out
 
@@ -601,7 +623,8 @@ decision points this skill exists to create.
 - ✅ Get the plan approved before implementing, and keep it as a file so Step 5 can diff against it.
 - ✅ Put the plan through a model that is not the implementer's, and present that review's findings beside the plan rather than folded into it.
 - ✅ Treat the five trip-wires as mechanical triggers, not as things to notice.
-- ✅ Stop only at the five listed places and append every other call to the run record as it happens;
+- ✅ Stop only at the five listed places — where stopping means ending the turn, not only asking —
+  and append every other call to the run record as it happens;
   at a seam, write the record and recommend compacting: announce at the Step 5 seam, ask through
   Codex's explicit user-input interaction at the PR seam, and announce at both under standing full
   delegation while the user is away.
@@ -613,6 +636,7 @@ decision points this skill exists to create.
 - ❌ Present green CI as runtime verification.
 - ❌ Auto-apply a fix that changes the design, in any mode.
 - ❌ Ask for approval at a phase boundary, or treat a delegated agent's completion as one.
+- ❌ End a turn on a progress report; write the report and continue in the same turn.
 - ❌ Carry the run's decisions in context alone, or build Step 9's comment by recalling them.
 - ❌ Treat a seam as a stopping point, or wait at one.
 - ❌ Pick which review skills run, or run one on the assumption another chains it.
@@ -629,7 +653,8 @@ decision points this skill exists to create.
 - [ ] Plan built through the stages plan mode selected, every 3a question answered when 3a ran, all four sections present, seen by a model that is not the implementer's, and approved before implementation.
 - [ ] Trip-wires handled per their row's default and the flow mode; nothing silently absorbed, and
       every call appended to the run record when it happened.
-- [ ] No stop outside the five listed places.
+- [ ] No stop outside the five listed places, and no turn ended at a phase boundary or on a progress
+      report.
 - [ ] Both seams taken: run record written and compaction recommended; the Step 5 seam announced and
       continued, and the PR seam asked through Codex's explicit user-input interaction unless the run
       was under standing full delegation while the user was away, in which case it announced and

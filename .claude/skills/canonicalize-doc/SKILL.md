@@ -94,6 +94,26 @@ The following remain protected even during skill execution:
 - Generated files (`**/*.gen.go`, `*.sql.go`, `*_mock.go`, `**/openapi.gen.yaml`, generated content under `docs/`)
 - Any path listed under `permissions.deny` in `.claude/settings.json`
 
+### Reading the translation side
+
+`AGENTS.md` tells agents never to read a `*.ja.md`, and that rule is about knowledge sourcing: a
+translation lags its original, so reasoning from it produces stale answers and the English canonical
+is what to read instead.
+
+This skill's subject is the pair itself, which is the one case that reasoning does not cover. A sync
+that may not read the side it is updating has to overwrite it blind — discarding the wording already
+established there and the structure the two files hold in common — or else stop and hand the work
+back, which is how a `SKILL.md` ends up shipped beside a translation a generation behind it.
+
+`AGENTS.md` carries the exception for exactly this case; read it there rather than inferring it from
+the paragraph above. **The permission is not this skill's to grant**, and nothing here widens it: it
+covers the pair confirmed in the first step, for the duration of this run, for the purpose of
+locating where a change lands and reusing the terms already in use. English stays canonical, the
+translation is never the source of truth for a fact about the system, and no `*.ja.md` outside the
+confirmed pair is opened. If `AGENTS.md` does not carry that exception, stop and ask a human — a
+skill declaring its own exemption from a repository rule is the loophole `AGENTS.md` forbids, not a
+shortcut around a gap in it.
+
 ## Execution Steps
 
 ### 1. Read the source
