@@ -48,17 +48,24 @@ Where this pipeline stops is a specification, not a judgment. It stops here and 
 | 4 | Step 7 | Which of the three peer review skills to run, each with its estimated return |
 | 5 | Step 8 | Runtime verification failed; and the merge itself |
 
-**Stopping means ending the turn, not merely asking a question.** If the list is read only as a ban
-on asking the user, it can be obeyed in form while being broken in effect: a phase completes, a
-progress report is the natural response, and the turn ends there. No approval was requested, so the
-Do / Do NOT prohibition never fires, but the run is over and its remaining work has been returned to
-the user — exactly the cost the closed list exists to prevent. Apply the five rows to turn endings:
-unless one of them applies or the run is finished, the reply does not end.
+**A stop is the end of a turn, not a question.** Read as "asking the user something", the list is
+easy to satisfy while breaking it: the failure that actually happens asks nothing. A phase completes,
+a progress report is the natural thing to write, and the report ends the turn — no approval was
+requested, so the prohibition below never fires, yet the run is over and the rest of the work is back
+with the user. Apply the list to turn endings, not only to questions.
 
-Progress reports are not the problem; they keep a long run legible. Making one the final act of the
-turn is the problem. Write the report, then continue working in that same turn. The phrases
-`続けます` and `次は〜します` signal this bug rather than a plan: they show that the next step is
-already known and therefore not blocked. Perform that step instead of announcing it.
+Reports are how a long run stays legible; letting one be the last thing in the turn is the failure.
+Write it, then keep working in the same turn. 「続けます」 and 「次は〜します」 are evidence of this bug
+rather than a plan — you can only write them because you already know the next step, which means
+nothing is blocking you. Do that step instead of announcing it.
+
+**Being blocked is not stopping.** A turn also ends where the run has handed off to something outside
+itself — CI, a background command, a delegated agent — and nothing independent of that handoff is
+left to do. Nobody was asked to decide anything there, and what resumes the run is the notification
+rather than an answer; the Merge step is built on exactly this, which is why it waits through a
+background command instead of a foreground loop. The test is whether a decision about the work is
+sitting with the user: if one is, it is a stop and belongs to the five rows; if none is, the wait is
+a block, and the turn ends only when nothing is left that does not wait on the same thing.
 
 Three moments look like stopping points and are not. Each is where an unlisted stop otherwise creeps
 in:
@@ -559,7 +566,10 @@ until [ "$(gh pr checks <n> --json bucket --jq '[.[]|select(.bucket=="pending")]
 gh pr checks <n>
 ```
 
-Then `gh pr merge <n> --merge`.
+Then use Codex's `ask the user explicitly` interaction to ask before merging. Row 5 of the stopping
+list puts the merge itself with the user, so green checks are the precondition for the question rather
+than the answer to it: report what CI said and what runtime verification found, and merge with
+`gh pr merge <n> --merge` once that is approved.
 
 ## Step 9 — Close out
 
