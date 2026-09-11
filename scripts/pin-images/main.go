@@ -130,7 +130,8 @@ type target struct {
 	exemptTagless func(data string) map[string]bool
 }
 
-// imageRef は FROM が参照する registry image 1 件。key は image:tag。
+// imageRef は走査対象（Dockerfile FROM / compose image: / workflow uses: docker:// と service image:）が
+// 参照する registry image 1 件。key は image:tag。
 type imageRef struct {
 	image string // 例: golang, nginx, ghcr.io/foo/bar
 	tag   string // 例: 1.26.5-alpine
@@ -326,7 +327,7 @@ func globFiles(root, pat string) ([]string, error) {
 	return m, nil
 }
 
-// parseRef は FROM / compose image の ref を image:tag へ分解する。第2戻り値が false なら対象外
+// parseRef は参照 ref を image:tag へ分解する。第2戻り値が false なら対象外
 // （tag 無し＝ビルドステージ参照 / scratch、あるいは registry port を tag と誤認する形）。
 func parseRef(ref string) (imageRef, bool) {
 	name, _, _ := strings.Cut(ref, "@") // 既存の @digest を捨てる
@@ -457,16 +458,17 @@ func resolveDigest(ctx context.Context, ref string) (string, error) {
 }
 
 // digestAgeDays は image:tag が指す digest の image config created から経過日数を返す。
-// 公式イメージのビルド日は publish 日にほぼ一致する。マルチアーキの場合は最も古い created を採る。
+// 公式イメージのビルド日は publish 日にほぼ一致する。マルチアーキの場合は最も新しい created を採る
+// （向きの理由は docs/design/security.md の Build inputs 節を参照）。
 func digestAgeDays(ctx context.Context, ref string) (int, error) {
-	created, err := earliestCreated(ctx, ref)
+	created, err := latestCreated(ctx, ref)
 	if err != nil {
 		return 0, err
 	}
 	return int(time.Since(created).Hours() / hoursPerDay), nil
 }
 
-func earliestCreated(ctx context.Context, ref string) (time.Time, error) {
+func latestCreated(ctx context.Context, ref string) (time.Time, error) {
 	// マルチアーキ (index) は .Image が map、単一アーキは struct。前者→後者でフォールバックする。
 	// inspect 自体のエラー（429 等）は握り潰さず伝播し、テンプレート不一致のときだけ次を試す。
 	var lastErr error
@@ -479,7 +481,7 @@ func earliestCreated(ctx context.Context, ref string) (time.Time, error) {
 			lastErr = err
 			continue
 		}
-		if t, ok := minCreated(out); ok {
+		if t, ok := maxCreated(out); ok {
 			return t, nil
 		}
 	}
@@ -489,9 +491,9 @@ func earliestCreated(ctx context.Context, ref string) (time.Time, error) {
 	return time.Time{}, xerrors.Wrap(errCreatedUnparsable, ref)
 }
 
-// minCreated は inspect 出力の各行（"2006-01-02 15:04:05.9 +0000 UTC"）から最古の時刻を返す。
-func minCreated(out string) (time.Time, bool) {
-	var earliest time.Time
+// maxCreated は inspect 出力の各行（"2006-01-02 15:04:05.9 +0000 UTC"）から最新の時刻を返す。
+func maxCreated(out string) (time.Time, bool) {
+	var latest time.Time
 	found := false
 	for line := range strings.SplitSeq(out, "\n") {
 		fields := strings.Fields(line)
@@ -504,11 +506,11 @@ func minCreated(out string) (time.Time, bool) {
 		if err != nil {
 			continue
 		}
-		if !found || t.Before(earliest) {
-			earliest, found = t, true
+		if !found || t.After(latest) {
+			latest, found = t, true
 		}
 	}
-	return earliest, found
+	return latest, found
 }
 
 func inspect(ctx context.Context, ref string, extra ...string) (string, error) {
@@ -525,7 +527,7 @@ func inspect(ctx context.Context, ref string, extra ...string) (string, error) {
 	return string(out), nil
 }
 
-// rewritePins は lock を元に FROM を digest 固定した内容と、lock 未登録の image キー一覧を返す。
+// rewritePins は lock を元に image 参照を digest 固定した内容と、lock 未登録の image キー一覧を返す。
 // lock に無い image は「未登録」として報告し、行は書き換えない（digest は剥がさない）。
 func rewritePins(data string, re *regexp.Regexp, lock map[string]string) (string, []string) {
 	var missing []string
@@ -545,7 +547,7 @@ func rewritePins(data string, re *regexp.Regexp, lock map[string]string) (string
 	return out, missing
 }
 
-// applyOrCheck は lockfile を SSOT に FROM を digest 固定する。dryRun=true は書き換えず
+// applyOrCheck は lockfile を SSOT に image 参照を digest 固定する。dryRun=true は書き換えず
 // 未固定/未登録/drift を非ゼロ終了で報告する。tag のみへ戻す正規化はしない（fail-closed）。
 //
 // 全ファイルを読み切って未登録の有無を確定させてから書き込む。1 ファイルずつ書きながら進むと、

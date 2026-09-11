@@ -1,7 +1,6 @@
 package authz
 
 // sample-api:begin
-// サンプル EC の操作。Action 型と String は基盤として残す。
 const (
 	// ActionUserList は、ユーザーの列挙操作（一覧・フィード・検索、admin）を表します。
 	ActionUserList Action = "user:list"
@@ -20,7 +19,8 @@ const (
 	// ActionProductStockUpdate は、商品在庫の増減操作（admin）を表します。
 	ActionProductStockUpdate Action = "product:stock:update"
 	// ActionProductDiscontinue は、商品の廃番操作と、その影響の見積もりの参照（admin）を表します。
-	// 見積もりは廃番を実行できる主体だけが見るべき情報なので、実行と同じ権限で守ります。
+	// 参照が実行と同一の Action を共有する理由は docs/spec/usecase/product.md の
+	// GetDiscontinueImpact を参照。
 	ActionProductDiscontinue Action = "product:discontinue"
 	// ActionProductListLowStock は、在庫僅少商品一覧の参照操作（admin）を表します。
 	ActionProductListLowStock Action = "product:low-stock:list"
