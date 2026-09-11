@@ -130,7 +130,8 @@ type target struct {
 	exemptTagless func(data string) map[string]bool
 }
 
-// imageRef は FROM が参照する registry image 1 件。key は image:tag。
+// imageRef は走査対象（Dockerfile FROM / compose image: / workflow uses: docker:// と service image:）が
+// 参照する registry image 1 件。key は image:tag。
 type imageRef struct {
 	image string // 例: golang, nginx, ghcr.io/foo/bar
 	tag   string // 例: 1.26.5-alpine
@@ -326,7 +327,7 @@ func globFiles(root, pat string) ([]string, error) {
 	return m, nil
 }
 
-// parseRef は FROM / compose image の ref を image:tag へ分解する。第2戻り値が false なら対象外
+// parseRef は参照 ref を image:tag へ分解する。第2戻り値が false なら対象外
 // （tag 無し＝ビルドステージ参照 / scratch、あるいは registry port を tag と誤認する形）。
 func parseRef(ref string) (imageRef, bool) {
 	name, _, _ := strings.Cut(ref, "@") // 既存の @digest を捨てる
@@ -526,7 +527,7 @@ func inspect(ctx context.Context, ref string, extra ...string) (string, error) {
 	return string(out), nil
 }
 
-// rewritePins は lock を元に FROM を digest 固定した内容と、lock 未登録の image キー一覧を返す。
+// rewritePins は lock を元に image 参照を digest 固定した内容と、lock 未登録の image キー一覧を返す。
 // lock に無い image は「未登録」として報告し、行は書き換えない（digest は剥がさない）。
 func rewritePins(data string, re *regexp.Regexp, lock map[string]string) (string, []string) {
 	var missing []string
@@ -546,7 +547,7 @@ func rewritePins(data string, re *regexp.Regexp, lock map[string]string) (string
 	return out, missing
 }
 
-// applyOrCheck は lockfile を SSOT に FROM を digest 固定する。dryRun=true は書き換えず
+// applyOrCheck は lockfile を SSOT に image 参照を digest 固定する。dryRun=true は書き換えず
 // 未固定/未登録/drift を非ゼロ終了で報告する。tag のみへ戻す正規化はしない（fail-closed）。
 //
 // 全ファイルを読み切って未登録の有無を確定させてから書き込む。1 ファイルずつ書きながら進むと、

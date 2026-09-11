@@ -1,7 +1,6 @@
 package authz
 
 // sample-api:begin
-// サンプル EC の操作。Action 型と String は基盤として残す。
 const (
 	// ActionUserList は、ユーザーの列挙操作（一覧・フィード・検索、admin）を表します。
 	ActionUserList Action = "user:list"
