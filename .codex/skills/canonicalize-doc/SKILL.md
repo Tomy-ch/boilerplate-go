@@ -28,16 +28,23 @@ Do not proceed if the pair cannot be determined safely.
 
 ### Reading the translation side
 
-`AGENTS.md`'s instruction never to read a `*.ja.md` governs knowledge sourcing: a translation can
-lag its original, so reason from the English canonical instead. This skill operates on the pair
-itself, where that rule does not fit. Refusing to read the confirmed translation would force a blind
-overwrite that loses established terms and shared structure, or stop the sync and leave a canonical
-file beside a translation one generation behind.
+`AGENTS.md` tells agents never to read a `*.ja.md`, and that rule is about knowledge sourcing: a
+translation lags its original, so reasoning from it produces stale answers and the English canonical
+is what to read instead.
 
-For the duration of this run, and only for the pair confirmed above, reading the `*.ja.md` is
-permitted to locate where a change lands and reuse the terms already in use there. English remains
-canonical; the translation is never a source of truth for facts about the system; do not open any
-other `*.ja.md`.
+This skill's subject is the pair itself, which is the one case that reasoning does not cover. A sync
+that may not read the side it is updating has to overwrite it blind — discarding the wording already
+established there and the structure the two files hold in common — or else stop and hand the work
+back, which is how a canonical file ends up shipped beside a translation a generation behind it.
+
+`AGENTS.md` carries the exception for exactly this case; read it there rather than inferring it from
+the paragraph above. **The permission is not this skill's to grant**, and nothing here widens it: it
+covers the pair confirmed above, for the duration of this run, for the purpose of locating where a
+change lands and reusing the terms already in use. English stays canonical, the translation is never
+the source of truth for a fact about the system, and no `*.ja.md` outside the confirmed pair is
+opened. If `AGENTS.md` does not carry that exception, stop and ask a human — a skill declaring its
+own exemption from a repository rule is the loophole `AGENTS.md` forbids, not a shortcut around a
+gap in it.
 
 ## Translate or synchronize
 
