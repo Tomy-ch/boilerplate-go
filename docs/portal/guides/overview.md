@@ -162,9 +162,9 @@ a pull request.
 | Step | Command | Notes |
 | --- | --- | --- |
 | Generate | `make gen` | OpenAPI → server code / mocks, SQL → type-safe Go, then the docs. Generated files are never hand-edited; CI regenerates and fails on a diff. |
-| Auto-fix | `make fix` | Go formatting and lint auto-fix. `make md-fix` / `make sql-fix` for Markdown and SQL. |
-| Static analysis | `make lint` | golangci-lint, including the depguard rules that make the layer boundaries a build error. |
-| Test | `make test` | Go tests with coverage. Run `make db-init` first — the suite expects a DB that is migrated **and** seeded. |
+| Auto-fix | `make go-fix` | Go formatting and lint auto-fix. `make md-fix` / `make sql-fix` for Markdown and SQL. |
+| Static analysis | `make go-lint` | golangci-lint, including the depguard rules that make the layer boundaries a build error. |
+| Test | `make go-test` | Go tests with coverage. Run `make db-init` first — the suite expects a DB that is migrated **and** seeded. |
 
 What is checked mechanically, so review does not have to:
 

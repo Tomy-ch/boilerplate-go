@@ -231,7 +231,7 @@
 <span id="L174" class="ln">   174  </span>	}
 <span id="L175" class="ln">   175  </span>	price, err := money.NewPrice(parsed)
 <span id="L176" class="ln">   176  </span>	if err != nil {
-<span id="L177" class="ln">   177  </span>		return nil, err
+<span id="L177" class="ln">   177  </span>		return nil, apperror.WithDetails(err, product.FieldPrice)
 <span id="L178" class="ln">   178  </span>	}
 <span id="L179" class="ln">   179  </span>
 <span id="L180" class="ln">   180  </span>	return &amp;price, nil

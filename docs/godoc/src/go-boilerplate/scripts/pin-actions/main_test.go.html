@@ -1877,166 +1877,171 @@
 <span id="L1820" class="ln">  1820  </span>}
 <span id="L1821" class="ln">  1821  </span>
 <span id="L1822" class="ln">  1822  </span><span class="comment">// githubAPIStub は GitHub API の代わりに応答するテストサーバを立て、その base URL を返す。</span>
-<span id="L1823" class="ln">  1823  </span>func githubAPIStub(t *testing.T, h http.HandlerFunc) string {
-<span id="L1824" class="ln">  1824  </span>	t.Helper()
-<span id="L1825" class="ln">  1825  </span>	srv := httptest.NewServer(h)
-<span id="L1826" class="ln">  1826  </span>	t.Cleanup(srv.Close)
-<span id="L1827" class="ln">  1827  </span>	return srv.URL
-<span id="L1828" class="ln">  1828  </span>}
-<span id="L1829" class="ln">  1829  </span>
-<span id="L1830" class="ln">  1830  </span><span class="comment">// githubTimesStub は releases/tags に publishedAgo 日前、commits に committedAgo 日前を返す</span>
-<span id="L1831" class="ln">  1831  </span><span class="comment">// スタブを立てる。日数が absentRelease なら該当エンドポイントは 404 を返す。</span>
-<span id="L1832" class="ln">  1832  </span>func githubTimesStub(t *testing.T, publishedAgo, committedAgo int) string {
-<span id="L1833" class="ln">  1833  </span>	t.Helper()
-<span id="L1834" class="ln">  1834  </span>	return githubAPIStub(t, func(w http.ResponseWriter, r *http.Request) {
-<span id="L1835" class="ln">  1835  </span>		if strings.Contains(r.URL.Path, &#34;/commits/&#34;) {
-<span id="L1836" class="ln">  1836  </span>			if committedAgo == absentRelease {
-<span id="L1837" class="ln">  1837  </span>				w.WriteHeader(http.StatusNotFound)
-<span id="L1838" class="ln">  1838  </span>				return
-<span id="L1839" class="ln">  1839  </span>			}
-<span id="L1840" class="ln">  1840  </span>			writeCommitDate(w, committedAgo)
-<span id="L1841" class="ln">  1841  </span>			return
-<span id="L1842" class="ln">  1842  </span>		}
-<span id="L1843" class="ln">  1843  </span>		if publishedAgo == absentRelease {
-<span id="L1844" class="ln">  1844  </span>			w.WriteHeader(http.StatusNotFound)
-<span id="L1845" class="ln">  1845  </span>			return
-<span id="L1846" class="ln">  1846  </span>		}
-<span id="L1847" class="ln">  1847  </span>		writePublishedAt(w, publishedAgo)
-<span id="L1848" class="ln">  1848  </span>	})
-<span id="L1849" class="ln">  1849  </span>}
-<span id="L1850" class="ln">  1850  </span>
-<span id="L1851" class="ln">  1851  </span><span class="comment">// writePublishedAt は releases/tags の応答として daysAgo 日前の published_at を書く。</span>
-<span id="L1852" class="ln">  1852  </span>func writePublishedAt(w http.ResponseWriter, daysAgo int) {
-<span id="L1853" class="ln">  1853  </span>	_, _ = fmt.Fprintf(w, `{&#34;published_at&#34;:%q}`, agoRFC3339(daysAgo))
+<span id="L1823" class="ln">  1823  </span><span class="comment">// keep-alive は無効にする。githubGet が使う http.DefaultClient の接続プールはプロセス共有で、</span>
+<span id="L1824" class="ln">  1824  </span><span class="comment">// httptest.Server.Close() はそのプールの idle 接続をまとめて閉じるため、接続が残っていると</span>
+<span id="L1825" class="ln">  1825  </span><span class="comment">// 別の並列サブテストのサーバ終了が進行中のリクエストを切る。</span>
+<span id="L1826" class="ln">  1826  </span>func githubAPIStub(t *testing.T, h http.HandlerFunc) string {
+<span id="L1827" class="ln">  1827  </span>	t.Helper()
+<span id="L1828" class="ln">  1828  </span>	srv := httptest.NewUnstartedServer(h)
+<span id="L1829" class="ln">  1829  </span>	srv.Config.SetKeepAlivesEnabled(false)
+<span id="L1830" class="ln">  1830  </span>	srv.Start()
+<span id="L1831" class="ln">  1831  </span>	t.Cleanup(srv.Close)
+<span id="L1832" class="ln">  1832  </span>	return srv.URL
+<span id="L1833" class="ln">  1833  </span>}
+<span id="L1834" class="ln">  1834  </span>
+<span id="L1835" class="ln">  1835  </span><span class="comment">// githubTimesStub は releases/tags に publishedAgo 日前、commits に committedAgo 日前を返す</span>
+<span id="L1836" class="ln">  1836  </span><span class="comment">// スタブを立てる。日数が absentRelease なら該当エンドポイントは 404 を返す。</span>
+<span id="L1837" class="ln">  1837  </span>func githubTimesStub(t *testing.T, publishedAgo, committedAgo int) string {
+<span id="L1838" class="ln">  1838  </span>	t.Helper()
+<span id="L1839" class="ln">  1839  </span>	return githubAPIStub(t, func(w http.ResponseWriter, r *http.Request) {
+<span id="L1840" class="ln">  1840  </span>		if strings.Contains(r.URL.Path, &#34;/commits/&#34;) {
+<span id="L1841" class="ln">  1841  </span>			if committedAgo == absentRelease {
+<span id="L1842" class="ln">  1842  </span>				w.WriteHeader(http.StatusNotFound)
+<span id="L1843" class="ln">  1843  </span>				return
+<span id="L1844" class="ln">  1844  </span>			}
+<span id="L1845" class="ln">  1845  </span>			writeCommitDate(w, committedAgo)
+<span id="L1846" class="ln">  1846  </span>			return
+<span id="L1847" class="ln">  1847  </span>		}
+<span id="L1848" class="ln">  1848  </span>		if publishedAgo == absentRelease {
+<span id="L1849" class="ln">  1849  </span>			w.WriteHeader(http.StatusNotFound)
+<span id="L1850" class="ln">  1850  </span>			return
+<span id="L1851" class="ln">  1851  </span>		}
+<span id="L1852" class="ln">  1852  </span>		writePublishedAt(w, publishedAgo)
+<span id="L1853" class="ln">  1853  </span>	})
 <span id="L1854" class="ln">  1854  </span>}
 <span id="L1855" class="ln">  1855  </span>
-<span id="L1856" class="ln">  1856  </span><span class="comment">// writeCommitDate は commits の応答として daysAgo 日前の committer date を書く。</span>
-<span id="L1857" class="ln">  1857  </span>func writeCommitDate(w http.ResponseWriter, daysAgo int) {
-<span id="L1858" class="ln">  1858  </span>	_, _ = fmt.Fprintf(w, `{&#34;commit&#34;:{&#34;committer&#34;:{&#34;date&#34;:%q}}}`, agoRFC3339(daysAgo))
+<span id="L1856" class="ln">  1856  </span><span class="comment">// writePublishedAt は releases/tags の応答として daysAgo 日前の published_at を書く。</span>
+<span id="L1857" class="ln">  1857  </span>func writePublishedAt(w http.ResponseWriter, daysAgo int) {
+<span id="L1858" class="ln">  1858  </span>	_, _ = fmt.Fprintf(w, `{&#34;published_at&#34;:%q}`, agoRFC3339(daysAgo))
 <span id="L1859" class="ln">  1859  </span>}
 <span id="L1860" class="ln">  1860  </span>
-<span id="L1861" class="ln">  1861  </span><span class="comment">// agoRFC3339 は n 日前の時刻を RFC3339 で返す。</span>
-<span id="L1862" class="ln">  1862  </span><span class="comment">// daysSince が切り捨てで n を返すよう、境界のちょうど上ではなく僅かに古い側へ寄せる。</span>
-<span id="L1863" class="ln">  1863  </span>func agoRFC3339(n int) string {
-<span id="L1864" class="ln">  1864  </span>	return time.Now().Add(-time.Duration(n)*hoursPerDay*time.Hour - time.Minute).Format(time.RFC3339)
-<span id="L1865" class="ln">  1865  </span>}
-<span id="L1866" class="ln">  1866  </span>
-<span id="L1867" class="ln">  1867  </span><span class="comment">// stubWD は、固定のディレクトリを返す作業ディレクトリの取得手段です。</span>
-<span id="L1868" class="ln">  1868  </span>func stubWD(root string) func() (string, error) {
-<span id="L1869" class="ln">  1869  </span>	return func() (string, error) { return root, nil }
+<span id="L1861" class="ln">  1861  </span><span class="comment">// writeCommitDate は commits の応答として daysAgo 日前の committer date を書く。</span>
+<span id="L1862" class="ln">  1862  </span>func writeCommitDate(w http.ResponseWriter, daysAgo int) {
+<span id="L1863" class="ln">  1863  </span>	_, _ = fmt.Fprintf(w, `{&#34;commit&#34;:{&#34;committer&#34;:{&#34;date&#34;:%q}}}`, agoRFC3339(daysAgo))
+<span id="L1864" class="ln">  1864  </span>}
+<span id="L1865" class="ln">  1865  </span>
+<span id="L1866" class="ln">  1866  </span><span class="comment">// agoRFC3339 は n 日前の時刻を RFC3339 で返す。</span>
+<span id="L1867" class="ln">  1867  </span><span class="comment">// daysSince が切り捨てで n を返すよう、境界のちょうど上ではなく僅かに古い側へ寄せる。</span>
+<span id="L1868" class="ln">  1868  </span>func agoRFC3339(n int) string {
+<span id="L1869" class="ln">  1869  </span>	return time.Now().Add(-time.Duration(n)*hoursPerDay*time.Hour - time.Minute).Format(time.RFC3339)
 <span id="L1870" class="ln">  1870  </span>}
 <span id="L1871" class="ln">  1871  </span>
-<span id="L1872" class="ln">  1872  </span>func Test_run(t *testing.T) {
-<span id="L1873" class="ln">  1873  </span>	t.Parallel()
-<span id="L1874" class="ln">  1874  </span>
-<span id="L1875" class="ln">  1875  </span>	lock := map[string]string{&#34;actions/setup-go@v6&#34;: shaSetupGo}
-<span id="L1876" class="ln">  1876  </span>	unpinned := &#34;      - uses: actions/setup-go@v6\n&#34;
-<span id="L1877" class="ln">  1877  </span>	pinned := &#34;      - uses: actions/setup-go@&#34; + shaSetupGo + &#34; # v6\n&#34;
-<span id="L1878" class="ln">  1878  </span>
-<span id="L1879" class="ln">  1879  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1880" class="ln">  1880  </span>		t.Parallel()
-<span id="L1881" class="ln">  1881  </span>
-<span id="L1882" class="ln">  1882  </span>		t.Run(&#34;resolve は走査結果で lockfile を書き直す&#34;, func(t *testing.T) {
-<span id="L1883" class="ln">  1883  </span>			t.Parallel()
-<span id="L1884" class="ln">  1884  </span>			root := t.TempDir()
-<span id="L1885" class="ln">  1885  </span>			writeLockAt(t, root, testLock())
+<span id="L1872" class="ln">  1872  </span><span class="comment">// stubWD は、固定のディレクトリを返す作業ディレクトリの取得手段です。</span>
+<span id="L1873" class="ln">  1873  </span>func stubWD(root string) func() (string, error) {
+<span id="L1874" class="ln">  1874  </span>	return func() (string, error) { return root, nil }
+<span id="L1875" class="ln">  1875  </span>}
+<span id="L1876" class="ln">  1876  </span>
+<span id="L1877" class="ln">  1877  </span>func Test_run(t *testing.T) {
+<span id="L1878" class="ln">  1878  </span>	t.Parallel()
+<span id="L1879" class="ln">  1879  </span>
+<span id="L1880" class="ln">  1880  </span>	lock := map[string]string{&#34;actions/setup-go@v6&#34;: shaSetupGo}
+<span id="L1881" class="ln">  1881  </span>	unpinned := &#34;      - uses: actions/setup-go@v6\n&#34;
+<span id="L1882" class="ln">  1882  </span>	pinned := &#34;      - uses: actions/setup-go@&#34; + shaSetupGo + &#34; # v6\n&#34;
+<span id="L1883" class="ln">  1883  </span>
+<span id="L1884" class="ln">  1884  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1885" class="ln">  1885  </span>		t.Parallel()
 <span id="L1886" class="ln">  1886  </span>
-<span id="L1887" class="ln">  1887  </span>			require.NoError(t, run([]string{&#34;resolve&#34;}, stubWD(root), &#34;&#34;))
-<span id="L1888" class="ln">  1888  </span>
-<span id="L1889" class="ln">  1889  </span>			got, err := readLock(filepath.Join(root, lockFile))
-<span id="L1890" class="ln">  1890  </span>			require.NoError(t, err)
-<span id="L1891" class="ln">  1891  </span>			assert.Empty(t, got, &#34;resolve 以外へ振り分けると lockfile が据え置かれる&#34;)
-<span id="L1892" class="ln">  1892  </span>		})
+<span id="L1887" class="ln">  1887  </span>		t.Run(&#34;resolve は走査結果で lockfile を書き直す&#34;, func(t *testing.T) {
+<span id="L1888" class="ln">  1888  </span>			t.Parallel()
+<span id="L1889" class="ln">  1889  </span>			root := t.TempDir()
+<span id="L1890" class="ln">  1890  </span>			writeLockAt(t, root, testLock())
+<span id="L1891" class="ln">  1891  </span>
+<span id="L1892" class="ln">  1892  </span>			require.NoError(t, run([]string{&#34;resolve&#34;}, stubWD(root), &#34;&#34;))
 <span id="L1893" class="ln">  1893  </span>
-<span id="L1894" class="ln">  1894  </span>		t.Run(&#34;apply は lockfile の SHA でファイルを固定する&#34;, func(t *testing.T) {
-<span id="L1895" class="ln">  1895  </span>			t.Parallel()
-<span id="L1896" class="ln">  1896  </span>			root := t.TempDir()
-<span id="L1897" class="ln">  1897  </span>			writeLockAt(t, root, lock)
-<span id="L1898" class="ln">  1898  </span>			path := writeFile(t, root, &#34;.github/workflows/a.yml&#34;, unpinned)
-<span id="L1899" class="ln">  1899  </span>
-<span id="L1900" class="ln">  1900  </span>			require.NoError(t, run([]string{&#34;apply&#34;}, stubWD(root), &#34;&#34;))
-<span id="L1901" class="ln">  1901  </span>
-<span id="L1902" class="ln">  1902  </span>			data, err := os.ReadFile(path) <span class="comment">//nolint:gosec // path は t.TempDir() 由来</span>
-<span id="L1903" class="ln">  1903  </span>			require.NoError(t, err)
-<span id="L1904" class="ln">  1904  </span>			assert.Equal(t, pinned, string(data))
-<span id="L1905" class="ln">  1905  </span>		})
+<span id="L1894" class="ln">  1894  </span>			got, err := readLock(filepath.Join(root, lockFile))
+<span id="L1895" class="ln">  1895  </span>			require.NoError(t, err)
+<span id="L1896" class="ln">  1896  </span>			assert.Empty(t, got, &#34;resolve 以外へ振り分けると lockfile が据え置かれる&#34;)
+<span id="L1897" class="ln">  1897  </span>		})
+<span id="L1898" class="ln">  1898  </span>
+<span id="L1899" class="ln">  1899  </span>		t.Run(&#34;apply は lockfile の SHA でファイルを固定する&#34;, func(t *testing.T) {
+<span id="L1900" class="ln">  1900  </span>			t.Parallel()
+<span id="L1901" class="ln">  1901  </span>			root := t.TempDir()
+<span id="L1902" class="ln">  1902  </span>			writeLockAt(t, root, lock)
+<span id="L1903" class="ln">  1903  </span>			path := writeFile(t, root, &#34;.github/workflows/a.yml&#34;, unpinned)
+<span id="L1904" class="ln">  1904  </span>
+<span id="L1905" class="ln">  1905  </span>			require.NoError(t, run([]string{&#34;apply&#34;}, stubWD(root), &#34;&#34;))
 <span id="L1906" class="ln">  1906  </span>
-<span id="L1907" class="ln">  1907  </span>		t.Run(&#34;check は作業ツリーも lockfile も書き換えない&#34;, func(t *testing.T) {
-<span id="L1908" class="ln">  1908  </span>			t.Parallel()
-<span id="L1909" class="ln">  1909  </span>			root := t.TempDir()
-<span id="L1910" class="ln">  1910  </span>			writeLockAt(t, root, lock)
-<span id="L1911" class="ln">  1911  </span>			path := writeFile(t, root, &#34;.github/workflows/a.yml&#34;, pinned)
-<span id="L1912" class="ln">  1912  </span>
-<span id="L1913" class="ln">  1913  </span>			require.NoError(t, run([]string{&#34;check&#34;}, stubWD(root), &#34;&#34;))
-<span id="L1914" class="ln">  1914  </span>
-<span id="L1915" class="ln">  1915  </span>			data, err := os.ReadFile(path) <span class="comment">//nolint:gosec // path は t.TempDir() 由来</span>
-<span id="L1916" class="ln">  1916  </span>			require.NoError(t, err)
-<span id="L1917" class="ln">  1917  </span>			assert.Equal(t, pinned, string(data))
-<span id="L1918" class="ln">  1918  </span>
-<span id="L1919" class="ln">  1919  </span>			got, err := readLock(filepath.Join(root, lockFile))
-<span id="L1920" class="ln">  1920  </span>			require.NoError(t, err)
-<span id="L1921" class="ln">  1921  </span>			assert.Equal(t, lock, got, &#34;resolve へ振り分けると lockfile が書き直される&#34;)
-<span id="L1922" class="ln">  1922  </span>		})
+<span id="L1907" class="ln">  1907  </span>			data, err := os.ReadFile(path) <span class="comment">//nolint:gosec // path は t.TempDir() 由来</span>
+<span id="L1908" class="ln">  1908  </span>			require.NoError(t, err)
+<span id="L1909" class="ln">  1909  </span>			assert.Equal(t, pinned, string(data))
+<span id="L1910" class="ln">  1910  </span>		})
+<span id="L1911" class="ln">  1911  </span>
+<span id="L1912" class="ln">  1912  </span>		t.Run(&#34;check は作業ツリーも lockfile も書き換えない&#34;, func(t *testing.T) {
+<span id="L1913" class="ln">  1913  </span>			t.Parallel()
+<span id="L1914" class="ln">  1914  </span>			root := t.TempDir()
+<span id="L1915" class="ln">  1915  </span>			writeLockAt(t, root, lock)
+<span id="L1916" class="ln">  1916  </span>			path := writeFile(t, root, &#34;.github/workflows/a.yml&#34;, pinned)
+<span id="L1917" class="ln">  1917  </span>
+<span id="L1918" class="ln">  1918  </span>			require.NoError(t, run([]string{&#34;check&#34;}, stubWD(root), &#34;&#34;))
+<span id="L1919" class="ln">  1919  </span>
+<span id="L1920" class="ln">  1920  </span>			data, err := os.ReadFile(path) <span class="comment">//nolint:gosec // path は t.TempDir() 由来</span>
+<span id="L1921" class="ln">  1921  </span>			require.NoError(t, err)
+<span id="L1922" class="ln">  1922  </span>			assert.Equal(t, pinned, string(data))
 <span id="L1923" class="ln">  1923  </span>
-<span id="L1924" class="ln">  1924  </span>		t.Run(&#34;ヘルプ要求は失敗にしない&#34;, func(t *testing.T) {
-<span id="L1925" class="ln">  1925  </span>			t.Parallel()
-<span id="L1926" class="ln">  1926  </span>			root := t.TempDir()
-<span id="L1927" class="ln">  1927  </span>			writeLockAt(t, root, lock)
+<span id="L1924" class="ln">  1924  </span>			got, err := readLock(filepath.Join(root, lockFile))
+<span id="L1925" class="ln">  1925  </span>			require.NoError(t, err)
+<span id="L1926" class="ln">  1926  </span>			assert.Equal(t, lock, got, &#34;resolve へ振り分けると lockfile が書き直される&#34;)
+<span id="L1927" class="ln">  1927  </span>		})
 <span id="L1928" class="ln">  1928  </span>
-<span id="L1929" class="ln">  1929  </span>			require.NoError(t, run([]string{&#34;resolve&#34;, &#34;-h&#34;}, stubWD(root), &#34;&#34;))
-<span id="L1930" class="ln">  1930  </span>
-<span id="L1931" class="ln">  1931  </span>			got, err := readLock(filepath.Join(root, lockFile))
-<span id="L1932" class="ln">  1932  </span>			require.NoError(t, err)
-<span id="L1933" class="ln">  1933  </span>			assert.Equal(t, lock, got, &#34;ヘルプ要求で resolve まで進むと lockfile が書き直される&#34;)
-<span id="L1934" class="ln">  1934  </span>		})
-<span id="L1935" class="ln">  1935  </span>	})
-<span id="L1936" class="ln">  1936  </span>
-<span id="L1937" class="ln">  1937  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1938" class="ln">  1938  </span>		t.Parallel()
-<span id="L1939" class="ln">  1939  </span>
-<span id="L1940" class="ln">  1940  </span>		t.Run(&#34;サブコマンドが無ければ使い方を返す&#34;, func(t *testing.T) {
-<span id="L1941" class="ln">  1941  </span>			t.Parallel()
-<span id="L1942" class="ln">  1942  </span>
-<span id="L1943" class="ln">  1943  </span>			err := run(nil, stubWD(t.TempDir()), &#34;&#34;)
+<span id="L1929" class="ln">  1929  </span>		t.Run(&#34;ヘルプ要求は失敗にしない&#34;, func(t *testing.T) {
+<span id="L1930" class="ln">  1930  </span>			t.Parallel()
+<span id="L1931" class="ln">  1931  </span>			root := t.TempDir()
+<span id="L1932" class="ln">  1932  </span>			writeLockAt(t, root, lock)
+<span id="L1933" class="ln">  1933  </span>
+<span id="L1934" class="ln">  1934  </span>			require.NoError(t, run([]string{&#34;resolve&#34;, &#34;-h&#34;}, stubWD(root), &#34;&#34;))
+<span id="L1935" class="ln">  1935  </span>
+<span id="L1936" class="ln">  1936  </span>			got, err := readLock(filepath.Join(root, lockFile))
+<span id="L1937" class="ln">  1937  </span>			require.NoError(t, err)
+<span id="L1938" class="ln">  1938  </span>			assert.Equal(t, lock, got, &#34;ヘルプ要求で resolve まで進むと lockfile が書き直される&#34;)
+<span id="L1939" class="ln">  1939  </span>		})
+<span id="L1940" class="ln">  1940  </span>	})
+<span id="L1941" class="ln">  1941  </span>
+<span id="L1942" class="ln">  1942  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1943" class="ln">  1943  </span>		t.Parallel()
 <span id="L1944" class="ln">  1944  </span>
-<span id="L1945" class="ln">  1945  </span>			require.ErrorIs(t, err, errUsage)
-<span id="L1946" class="ln">  1946  </span>		})
+<span id="L1945" class="ln">  1945  </span>		t.Run(&#34;サブコマンドが無ければ使い方を返す&#34;, func(t *testing.T) {
+<span id="L1946" class="ln">  1946  </span>			t.Parallel()
 <span id="L1947" class="ln">  1947  </span>
-<span id="L1948" class="ln">  1948  </span>		t.Run(&#34;未知のサブコマンドは使い方を返す&#34;, func(t *testing.T) {
-<span id="L1949" class="ln">  1949  </span>			t.Parallel()
-<span id="L1950" class="ln">  1950  </span>
-<span id="L1951" class="ln">  1951  </span>			err := run([]string{&#34;bogus&#34;}, stubWD(t.TempDir()), &#34;&#34;)
+<span id="L1948" class="ln">  1948  </span>			err := run(nil, stubWD(t.TempDir()), &#34;&#34;)
+<span id="L1949" class="ln">  1949  </span>
+<span id="L1950" class="ln">  1950  </span>			require.ErrorIs(t, err, errUsage)
+<span id="L1951" class="ln">  1951  </span>		})
 <span id="L1952" class="ln">  1952  </span>
-<span id="L1953" class="ln">  1953  </span>			require.ErrorIs(t, err, errUsage)
-<span id="L1954" class="ln">  1954  </span>		})
+<span id="L1953" class="ln">  1953  </span>		t.Run(&#34;未知のサブコマンドは使い方を返す&#34;, func(t *testing.T) {
+<span id="L1954" class="ln">  1954  </span>			t.Parallel()
 <span id="L1955" class="ln">  1955  </span>
-<span id="L1956" class="ln">  1956  </span>		t.Run(&#34;作業ディレクトリを取得できなければ失敗する&#34;, func(t *testing.T) {
-<span id="L1957" class="ln">  1957  </span>			t.Parallel()
-<span id="L1958" class="ln">  1958  </span>
-<span id="L1959" class="ln">  1959  </span>			err := run([]string{&#34;check&#34;}, func() (string, error) { return &#34;&#34;, errWD }, &#34;&#34;)
+<span id="L1956" class="ln">  1956  </span>			err := run([]string{&#34;bogus&#34;}, stubWD(t.TempDir()), &#34;&#34;)
+<span id="L1957" class="ln">  1957  </span>
+<span id="L1958" class="ln">  1958  </span>			require.ErrorIs(t, err, errUsage)
+<span id="L1959" class="ln">  1959  </span>		})
 <span id="L1960" class="ln">  1960  </span>
-<span id="L1961" class="ln">  1961  </span>			require.ErrorIs(t, err, errWD)
-<span id="L1962" class="ln">  1962  </span>			assert.ErrorContains(t, err, &#34;getwd&#34;)
-<span id="L1963" class="ln">  1963  </span>		})
-<span id="L1964" class="ln">  1964  </span>
-<span id="L1965" class="ln">  1965  </span>		t.Run(&#34;走査対象を集められなければ失敗する&#34;, func(t *testing.T) {
-<span id="L1966" class="ln">  1966  </span>			t.Parallel()
-<span id="L1967" class="ln">  1967  </span>
-<span id="L1968" class="ln">  1968  </span>			err := run([]string{&#34;check&#34;}, stubWD(filepath.Join(t.TempDir(), &#34;x[&#34;)), &#34;&#34;)
+<span id="L1961" class="ln">  1961  </span>		t.Run(&#34;作業ディレクトリを取得できなければ失敗する&#34;, func(t *testing.T) {
+<span id="L1962" class="ln">  1962  </span>			t.Parallel()
+<span id="L1963" class="ln">  1963  </span>
+<span id="L1964" class="ln">  1964  </span>			err := run([]string{&#34;check&#34;}, func() (string, error) { return &#34;&#34;, errWD }, &#34;&#34;)
+<span id="L1965" class="ln">  1965  </span>
+<span id="L1966" class="ln">  1966  </span>			require.ErrorIs(t, err, errWD)
+<span id="L1967" class="ln">  1967  </span>			assert.ErrorContains(t, err, &#34;getwd&#34;)
+<span id="L1968" class="ln">  1968  </span>		})
 <span id="L1969" class="ln">  1969  </span>
-<span id="L1970" class="ln">  1970  </span>			require.ErrorIs(t, err, filepath.ErrBadPattern)
-<span id="L1971" class="ln">  1971  </span>		})
+<span id="L1970" class="ln">  1970  </span>		t.Run(&#34;走査対象を集められなければ失敗する&#34;, func(t *testing.T) {
+<span id="L1971" class="ln">  1971  </span>			t.Parallel()
 <span id="L1972" class="ln">  1972  </span>
-<span id="L1973" class="ln">  1973  </span>		t.Run(&#34;未知のフラグはヘルプ要求と混同せず失敗する&#34;, func(t *testing.T) {
-<span id="L1974" class="ln">  1974  </span>			t.Parallel()
-<span id="L1975" class="ln">  1975  </span>
-<span id="L1976" class="ln">  1976  </span>			err := run([]string{&#34;resolve&#34;, &#34;-bogus&#34;}, stubWD(t.TempDir()), &#34;&#34;)
+<span id="L1973" class="ln">  1973  </span>			err := run([]string{&#34;check&#34;}, stubWD(filepath.Join(t.TempDir(), &#34;x[&#34;)), &#34;&#34;)
+<span id="L1974" class="ln">  1974  </span>
+<span id="L1975" class="ln">  1975  </span>			require.ErrorIs(t, err, filepath.ErrBadPattern)
+<span id="L1976" class="ln">  1976  </span>		})
 <span id="L1977" class="ln">  1977  </span>
-<span id="L1978" class="ln">  1978  </span>			require.ErrorContains(t, err, &#34;failed to parse flags&#34;)
-<span id="L1979" class="ln">  1979  </span>		})
-<span id="L1980" class="ln">  1980  </span>	})
-<span id="L1981" class="ln">  1981  </span>}
+<span id="L1978" class="ln">  1978  </span>		t.Run(&#34;未知のフラグはヘルプ要求と混同せず失敗する&#34;, func(t *testing.T) {
+<span id="L1979" class="ln">  1979  </span>			t.Parallel()
+<span id="L1980" class="ln">  1980  </span>
+<span id="L1981" class="ln">  1981  </span>			err := run([]string{&#34;resolve&#34;, &#34;-bogus&#34;}, stubWD(t.TempDir()), &#34;&#34;)
 <span id="L1982" class="ln">  1982  </span>
+<span id="L1983" class="ln">  1983  </span>			require.ErrorContains(t, err, &#34;failed to parse flags&#34;)
+<span id="L1984" class="ln">  1984  </span>		})
+<span id="L1985" class="ln">  1985  </span>	})
+<span id="L1986" class="ln">  1986  </span>}
+<span id="L1987" class="ln">  1987  </span>
 </pre><p><a href="../../../../src/go-boilerplate/scripts/pin-actions/main_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -180,6 +180,11 @@
 				
 			
 				
+				<dd><a href="#CreateCouponParams">type CreateCouponParams</a></dd>
+				
+				
+			
+				
 				<dd><a href="#CreateInquiryIfAbsentParams">type CreateInquiryIfAbsentParams</a></dd>
 				
 				
@@ -216,6 +221,11 @@
 			
 				
 				<dd><a href="#CreateProductParams">type CreateProductParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#CreateUserIdentityParams">type CreateUserIdentityParams</a></dd>
 				
 				
 			
@@ -385,7 +395,7 @@
 				
 			
 				
-				<dd><a href="#InsertDiscontinueCouponsParams">type InsertDiscontinueCouponsParams</a></dd>
+				<dd><a href="#InsertCouponsParams">type InsertCouponsParams</a></dd>
 				
 				
 			
@@ -835,6 +845,9 @@
 					<dd>    <a href="#Queries.CreateCartItem">func (q *Queries) CreateCartItem(ctx context.Context, arg *CreateCartItemParams) error</a></dd>
 				
 					
+					<dd>    <a href="#Queries.CreateCoupon">func (q *Queries) CreateCoupon(ctx context.Context, arg *CreateCouponParams) error</a></dd>
+				
+					
 					<dd>    <a href="#Queries.CreateInquiryIfAbsent">func (q *Queries) CreateInquiryIfAbsent(ctx context.Context, arg *CreateInquiryIfAbsentParams) (*CreateInquiryIfAbsentRow, error)</a></dd>
 				
 					
@@ -854,6 +867,9 @@
 				
 					
 					<dd>    <a href="#Queries.CreateUser">func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) error</a></dd>
+				
+					
+					<dd>    <a href="#Queries.CreateUserIdentity">func (q *Queries) CreateUserIdentity(ctx context.Context, arg *CreateUserIdentityParams) error</a></dd>
 				
 					
 					<dd>    <a href="#Queries.CurrentStreamSequence">func (q *Queries) CurrentStreamSequence(ctx context.Context, streamID string) (int64, error)</a></dd>
@@ -955,7 +971,7 @@
 					<dd>    <a href="#Queries.GetUserRolesByUserID">func (q *Queries) GetUserRolesByUserID(ctx context.Context, userIDParam uuid.UUID) ([]*GetUserRolesByUserIDRow, error)</a></dd>
 				
 					
-					<dd>    <a href="#Queries.InsertDiscontinueCoupons">func (q *Queries) InsertDiscontinueCoupons(ctx context.Context, arg *InsertDiscontinueCouponsParams) (int64, error)</a></dd>
+					<dd>    <a href="#Queries.InsertCoupons">func (q *Queries) InsertCoupons(ctx context.Context, arg *InsertCouponsParams) (int64, error)</a></dd>
 				
 					
 					<dd>    <a href="#Queries.InsertOutbox">func (q *Queries) InsertOutbox(ctx context.Context, arg *InsertOutboxParams) (*InsertOutboxRow, error)</a></dd>
@@ -1120,6 +1136,9 @@
 					<dd>    <a href="#Queries.SearchUsers">func (q *Queries) SearchUsers(ctx context.Context, arg *SearchUsersParams) ([]*SearchUsersRow, error)</a></dd>
 				
 					
+					<dd>    <a href="#Queries.SelectBulkIssueRecipients">func (q *Queries) SelectBulkIssueRecipients(ctx context.Context) ([]uuid.UUID, error)</a></dd>
+				
+					
 					<dd>    <a href="#Queries.SelectDiscontinueCouponRecipients">func (q *Queries) SelectDiscontinueCouponRecipients(ctx context.Context, productID uuid.UUID) ([]uuid.UUID, error)</a></dd>
 				
 					
@@ -1148,6 +1167,9 @@
 				
 					
 					<dd>    <a href="#Queries.UpdateCart">func (q *Queries) UpdateCart(ctx context.Context, arg *UpdateCartParams) (int64, error)</a></dd>
+				
+					
+					<dd>    <a href="#Queries.UpdateCouponUnused">func (q *Queries) UpdateCouponUnused(ctx context.Context, id uuid.UUID) (int64, error)</a></dd>
 				
 					
 					<dd>    <a href="#Queries.UpdateCouponUsed">func (q *Queries) UpdateCouponUsed(ctx context.Context, arg *UpdateCouponUsedParams) (int64, error)</a></dd>
@@ -1357,6 +1379,8 @@
 			<span style="font-size:90%">
 			
 				<a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/cart_repository.gen.sql.go.html">cart_repository.gen.sql.go</a>
+			
+				<a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_command_service.gen.sql.go.html">coupon_command_service.gen.sql.go</a>
 			
 				<a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html">coupon_repository.gen.sql.go</a>
 			
@@ -1890,6 +1914,38 @@
 		
 			
 			
+			<h2 id="CreateCouponParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=502:735#L29">CreateCouponParams</a>
+				<a class="permalink" href="#CreateCouponParams">¶</a>
+				
+				
+			</h2>
+			
+			<pre>type CreateCouponParams struct {
+<span id="CreateCouponParams.ID"></span>    ID            <a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="CreateCouponParams.UserID"></span>    UserID        <a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="CreateCouponParams.DiscountKind"></span>    DiscountKind  <a href="../../../../../../builtin/#int16">int16</a>
+<span id="CreateCouponParams.DiscountValue"></span>    DiscountValue <a href="../../../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+<span id="CreateCouponParams.ScopeKind"></span>    ScopeKind     <a href="../../../../../../builtin/#int16">int16</a>
+<span id="CreateCouponParams.ScopeTargetID"></span>    ScopeTargetID *<a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="CreateCouponParams.ExpiresAt"></span>    ExpiresAt     <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
+<span id="CreateCouponParams.IssuedAt"></span>    IssuedAt      <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
 			<h2 id="CreateInquiryIfAbsentParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/inquiry_repository.gen.sql.go.html?s=519:598#L20">CreateInquiryIfAbsentParams</a>
 				<a class="permalink" href="#CreateInquiryIfAbsentParams">¶</a>
 				
@@ -2097,6 +2153,34 @@
 <span id="CreateProductParams.PublishedAt"></span>    PublishedAt           *<a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
 <span id="CreateProductParams.DiscontinuedAt"></span>    DiscontinuedAt        *<a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
 <span id="CreateProductParams.CreatedAt"></span>    CreatedAt             <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="CreateUserIdentityParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?s=377:487#L20">CreateUserIdentityParams</a>
+				<a class="permalink" href="#CreateUserIdentityParams">¶</a>
+				
+				
+			</h2>
+			
+			<pre>type CreateUserIdentityParams struct {
+<span id="CreateUserIdentityParams.ID"></span>    ID      <a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="CreateUserIdentityParams.UserID"></span>    UserID  <a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="CreateUserIdentityParams.Issuer"></span>    Issuer  <a href="../../../../../../builtin/#string">string</a>
+<span id="CreateUserIdentityParams.Subject"></span>    Subject <a href="../../../../../../builtin/#string">string</a>
 }
 </pre>
 
@@ -3072,21 +3156,21 @@
 		
 			
 			
-			<h2 id="InsertDiscontinueCouponsParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/product_command_service.gen.sql.go.html?s=1572:1821#L56">InsertDiscontinueCouponsParams</a>
-				<a class="permalink" href="#InsertDiscontinueCouponsParams">¶</a>
+			<h2 id="InsertCouponsParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_command_service.gen.sql.go.html?s=735:973#L36">InsertCouponsParams</a>
+				<a class="permalink" href="#InsertCouponsParams">¶</a>
 				
 				
 			</h2>
 			
-			<pre>type InsertDiscontinueCouponsParams struct {
-<span id="InsertDiscontinueCouponsParams.DiscountKind"></span>    DiscountKind  <a href="../../../../../../builtin/#int16">int16</a>
-<span id="InsertDiscontinueCouponsParams.DiscountValue"></span>    DiscountValue <a href="../../../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
-<span id="InsertDiscontinueCouponsParams.ScopeKind"></span>    ScopeKind     <a href="../../../../../../builtin/#int16">int16</a>
-<span id="InsertDiscontinueCouponsParams.ScopeTargetID"></span>    ScopeTargetID *<a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
-<span id="InsertDiscontinueCouponsParams.ExpiresAt"></span>    ExpiresAt     <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
-<span id="InsertDiscontinueCouponsParams.IssuedAt"></span>    IssuedAt      <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
-<span id="InsertDiscontinueCouponsParams.Ids"></span>    Ids           []<a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
-<span id="InsertDiscontinueCouponsParams.UserIds"></span>    UserIds       []<a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+			<pre>type InsertCouponsParams struct {
+<span id="InsertCouponsParams.DiscountKind"></span>    DiscountKind  <a href="../../../../../../builtin/#int16">int16</a>
+<span id="InsertCouponsParams.DiscountValue"></span>    DiscountValue <a href="../../../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+<span id="InsertCouponsParams.ScopeKind"></span>    ScopeKind     <a href="../../../../../../builtin/#int16">int16</a>
+<span id="InsertCouponsParams.ScopeTargetID"></span>    ScopeTargetID *<a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="InsertCouponsParams.ExpiresAt"></span>    ExpiresAt     <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
+<span id="InsertCouponsParams.IssuedAt"></span>    IssuedAt      <a href="../../../../../../time/">time</a>.<a href="../../../../../../time/#Time">Time</a>
+<span id="InsertCouponsParams.Ids"></span>    Ids           []<a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="InsertCouponsParams.UserIds"></span>    UserIds       []<a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
 }
 </pre>
 
@@ -3679,7 +3763,7 @@
 		
 			
 			
-			<h2 id="ListCouponsByUserIDRow">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=486:541#L12">ListCouponsByUserIDRow</a>
+			<h2 id="ListCouponsByUserIDRow">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=1672:1727#L83">ListCouponsByUserIDRow</a>
 				<a class="permalink" href="#ListCouponsByUserIDRow">¶</a>
 				
 				
@@ -4844,7 +4928,7 @@
 		
 			
 			
-			<h2 id="LockCouponByIDRow">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=2145:2195#L64">LockCouponByIDRow</a>
+			<h2 id="LockCouponByIDRow">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=3331:3381#L135">LockCouponByIDRow</a>
 				<a class="permalink" href="#LockCouponByIDRow">¶</a>
 				
 				
@@ -5655,7 +5739,7 @@ WHERE u.deleted_at IS NOT NULL
 				
 			
 				
-				<h3 id="Queries.CountDiscontinueAffectedCarts">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/product_command_service.gen.sql.go.html?s=804:908#L19">CountDiscontinueAffectedCarts</a>
+				<h3 id="Queries.CountDiscontinueAffectedCarts">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/product_command_service.gen.sql.go.html?s=758:862#L17">CountDiscontinueAffectedCarts</a>
 					<a class="permalink" href="#Queries.CountDiscontinueAffectedCarts">¶</a>
 					
 					
@@ -5934,6 +6018,40 @@ FROM users
 				
 			
 				
+				<h3 id="Queries.CreateCoupon">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=1093:1175#L62">CreateCoupon</a>
+					<a class="permalink" href="#Queries.CreateCoupon">¶</a>
+					
+					
+				</h3>
+				<pre>func (q *<a href="#Queries">Queries</a>) CreateCoupon(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, arg *<a href="#CreateCouponParams">CreateCouponParams</a>) <a href="../../../../../../builtin/#error">error</a></pre>
+				<p>=== source: database/dml/repository/coupon/insert_coupon.sql ===
+</p><pre>INSERT INTO coupons (
+    id,
+    user_id,
+    discount_kind,
+    discount_value,
+    scope_kind,
+    scope_target_id,
+    expires_at,
+    issued_at
+) VALUES
+(
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8
+)
+</pre>
+
+				
+				
+				
+			
+				
 				<h3 id="Queries.CreateInquiryIfAbsent">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/inquiry_repository.gen.sql.go.html?s=1682:1811#L48">CreateInquiryIfAbsent</a>
 					<a class="permalink" href="#Queries.CreateInquiryIfAbsent">¶</a>
 					
@@ -6169,6 +6287,32 @@ ON CONFLICT ON CONSTRAINT product_images_id_primary DO NOTHING
     $10,
     $11,
     $12
+)
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Queries.CreateUserIdentity">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?s=729:823#L41">CreateUserIdentity</a>
+					<a class="permalink" href="#Queries.CreateUserIdentity">¶</a>
+					
+					
+				</h3>
+				<pre>func (q *<a href="#Queries">Queries</a>) CreateUserIdentity(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, arg *<a href="#CreateUserIdentityParams">CreateUserIdentityParams</a>) <a href="../../../../../../builtin/#error">error</a></pre>
+				<p>=== source: database/dml/repository/user_identity/insert_user_identity.sql ===
+</p><pre>INSERT INTO user_identities (
+    id,
+    user_id,
+    issuer,
+    subject
+) VALUES
+(
+    $1,
+    $2,
+    $3,
+    $4
 )
 </pre>
 
@@ -6919,15 +7063,17 @@ ORDER BY r.sort_key
 				
 			
 				
-				<h3 id="Queries.InsertDiscontinueCoupons">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/product_command_service.gen.sql.go.html?s=2915:3030#L100">InsertDiscontinueCoupons</a>
-					<a class="permalink" href="#Queries.InsertDiscontinueCoupons">¶</a>
+				<h3 id="Queries.InsertCoupons">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_command_service.gen.sql.go.html?s=2214:2307#L82">InsertCoupons</a>
+					<a class="permalink" href="#Queries.InsertCoupons">¶</a>
 					
 					
 				</h3>
-				<pre>func (q *<a href="#Queries">Queries</a>) InsertDiscontinueCoupons(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, arg *<a href="#InsertDiscontinueCouponsParams">InsertDiscontinueCouponsParams</a>) (<a href="../../../../../../builtin/#int64">int64</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
-				<p>=== source: database/dml/command_service/product/insert_discontinue_coupons.sql ===
+				<pre>func (q *<a href="#Queries">Queries</a>) InsertCoupons(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, arg *<a href="#InsertCouponsParams">InsertCouponsParams</a>) (<a href="../../../../../../builtin/#int64">int64</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>=== source: database/dml/command_service/coupon/insert_coupons.sql ===
 採番済みの id と受給者 user_id を 1 対 1 で zip し、同じ条件のクーポンを一括発行する
-（2 文に分かれる理由と往復コストは ADR-0034 の Worked instances を参照）。
+（2 文に分かれる理由と往復コストは ADR-0114 と ADR-0034 の Worked instances を参照）。
+発行経路ごとに複製せずこの 1 文を再利用する
+（internal/infrastructure/rdb/README.md の command_service を参照）。
 2 つの配列は WITH ORDINALITY の行番号で突き合わせる（sqlc が 2 引数形の unnest を解決できない）。
 長さが食い違うと内部結合で余った側が落ちるため、呼び出し側が必ず同じ長さで渡す。
 </p><pre>INSERT INTO coupons (
@@ -7487,7 +7633,7 @@ ORDER BY ci.added_at, ci.id
 				
 			
 				
-				<h3 id="Queries.ListCouponsByUserID">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=1123:1234#L25">ListCouponsByUserID</a>
+				<h3 id="Queries.ListCouponsByUserID">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=2309:2420#L96">ListCouponsByUserID</a>
 					<a class="permalink" href="#Queries.ListCouponsByUserID">¶</a>
 					
 					
@@ -8460,7 +8606,7 @@ FOR UPDATE
 				
 			
 				
-				<h3 id="Queries.LockCouponByID">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=2897:2992#L79">LockCouponByID</a>
+				<h3 id="Queries.LockCouponByID">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=4100:4195#L150">LockCouponByID</a>
 					<a class="permalink" href="#Queries.LockCouponByID">¶</a>
 					
 					
@@ -8470,7 +8616,7 @@ FOR UPDATE
 ID からクーポンを 1 件、悲観ロック（FOR UPDATE）して取得する。不存在は 0 行（NotFound）。
 使用済み・失効・受給者では絞らない理由は docs/spec/domain/coupon.md の
 Repository Methods &gt; LockByID を参照。
-取得位置の不変条件は docs/spec/usecase/purchase.md の CreatePurchase を参照
+取得位置の不変条件は docs/spec/usecase/purchase.md の CreatePurchase / CancelPurchase を参照
 （ADR-0036 (ordered-pessimistic-row-locks)）。
 </p><pre>SELECT c.id, c.user_id, c.discount_kind, c.discount_value, c.scope_kind, c.scope_target_id, c.expires_at, c.used_at, c.issued_at, c.created_at, c.updated_at
 FROM coupons AS c
@@ -8661,7 +8807,7 @@ WHERE status = &#39;dead&#39;
 				
 			
 				
-				<h3 id="Queries.ResolveUserByIdentity">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?s=843:972#L34">ResolveUserByIdentity</a>
+				<h3 id="Queries.ResolveUserByIdentity">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?s=1593:1722#L80">ResolveUserByIdentity</a>
 					<a class="permalink" href="#Queries.ResolveUserByIdentity">¶</a>
 					
 					
@@ -8741,7 +8887,27 @@ LIMIT $3 OFFSET $2
 				
 			
 				
-				<h3 id="Queries.SelectDiscontinueCouponRecipients">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/product_command_service.gen.sql.go.html?s=4237:4351#L137">SelectDiscontinueCouponRecipients</a>
+				<h3 id="Queries.SelectBulkIssueRecipients">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_command_service.gen.sql.go.html?s=3243:3328#L113">SelectBulkIssueRecipients</a>
+					<a class="permalink" href="#Queries.SelectBulkIssueRecipients">¶</a>
+					
+					
+				</h3>
+				<pre>func (q *<a href="#Queries">Queries</a>) SelectBulkIssueRecipients(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>) ([]<a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>=== source: database/dml/command_service/coupon/select_bulk_issue_recipients.sql ===
+退会していないすべての利用者を受給者として返す。
+述語が退会の除外だけなのは、この操作が不特定多数への配布であるため。絞り込みの表現力は持たない
+（述語と母集団は docs/spec/usecase/coupon.md の Workflow — IssuePromotionalCoupons の invariants を参照）。
+</p><pre>SELECT u.id::UUID AS user_id
+FROM users AS u
+WHERE u.deleted_at IS NULL
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Queries.SelectDiscontinueCouponRecipients">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/product_command_service.gen.sql.go.html?s=1930:2044#L44">SelectDiscontinueCouponRecipients</a>
 					<a class="permalink" href="#Queries.SelectDiscontinueCouponRecipients">¶</a>
 					
 					
@@ -9021,7 +9187,31 @@ WHERE carts.id = $4
 				
 			
 				
-				<h3 id="Queries.UpdateCouponUsed">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=4162:4261#L124">UpdateCouponUsed</a>
+				<h3 id="Queries.UpdateCouponUnused">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=5327:5413#L190">UpdateCouponUnused</a>
+					<a class="permalink" href="#Queries.UpdateCouponUnused">¶</a>
+					
+					
+				</h3>
+				<pre>func (q *<a href="#Queries">Queries</a>) UpdateCouponUnused(ctx <a href="../../../../../../context/">context</a>.<a href="../../../../../../context/#Context">Context</a>, id <a href="../../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>) (<a href="../../../../../../builtin/#int64">int64</a>, <a href="../../../../../../builtin/#error">error</a>)</pre>
+				<p>=== source: database/dml/repository/coupon/update_coupon_unused.sql ===
+使用済みのクーポンを未使用へ戻す。更新件数を返す。
+WHERE の used_at IS NOT NULL は、行ロックを取らずに呼ばれた場合に備える二重防御
+（該当行なしは呼び出し側が未使用として扱う）。詳細は docs/spec/domain/coupon.md の
+Repository Methods &gt; UpdateUnused を参照。
+</p><pre>UPDATE coupons
+SET
+    used_at = NULL,
+    updated_at = NOW()
+WHERE coupons.id = $1
+    AND coupons.used_at IS NOT NULL
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Queries.UpdateCouponUsed">func (*Queries) <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=6339:6438#L224">UpdateCouponUsed</a>
 					<a class="permalink" href="#Queries.UpdateCouponUsed">¶</a>
 					
 					
@@ -9318,7 +9508,7 @@ ON CONFLICT ON CONSTRAINT cart_items_cart_id_product_id_unique DO UPDATE
 		
 			
 			
-			<h2 id="ResolveUserByIdentityParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?s=412:497#L15">ResolveUserByIdentityParams</a>
+			<h2 id="ResolveUserByIdentityParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?s=1162:1247#L61">ResolveUserByIdentityParams</a>
 				<a class="permalink" href="#ResolveUserByIdentityParams">¶</a>
 				
 				
@@ -9344,7 +9534,7 @@ ON CONFLICT ON CONSTRAINT cart_items_cart_id_product_id_unique DO UPDATE
 		
 			
 			
-			<h2 id="ResolveUserByIdentityRow">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?s=499:582#L20">ResolveUserByIdentityRow</a>
+			<h2 id="ResolveUserByIdentityRow">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?s=1249:1332#L66">ResolveUserByIdentityRow</a>
 				<a class="permalink" href="#ResolveUserByIdentityRow">¶</a>
 				
 				
@@ -9859,7 +10049,7 @@ ON CONFLICT ON CONSTRAINT cart_items_cart_id_product_id_unique DO UPDATE
 		
 			
 			
-			<h2 id="UpdateCouponUsedParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=3547:3622#L107">UpdateCouponUsedParams</a>
+			<h2 id="UpdateCouponUsedParams">type <a href="../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/coupon_repository.gen.sql.go.html?s=5724:5799#L207">UpdateCouponUsedParams</a>
 				<a class="permalink" href="#UpdateCouponUsedParams">¶</a>
 				
 				

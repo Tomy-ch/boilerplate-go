@@ -1,0 +1,275 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>coupon - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../../src/go-boilerplate/internal/usecase">usecase</a>/<a href="../../../../../src/go-boilerplate/internal/usecase/coupon">coupon</a>/<span class="text-muted">coupon_bulk_issue_usecase.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../../go-boilerplate/internal/usecase/coupon">go-boilerplate/internal/usecase/coupon</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package coupon
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;context&#34;
+<span id="L5" class="ln">     5  </span>	&#34;time&#34;
+<span id="L6" class="ln">     6  </span>
+<span id="L7" class="ln">     7  </span>	&#34;go-boilerplate/internal/apperror&#34;
+<span id="L8" class="ln">     8  </span>	&#34;go-boilerplate/internal/domain/coupon&#34;
+<span id="L9" class="ln">     9  </span>	&#34;go-boilerplate/internal/usecase/boundary/auth&#34;
+<span id="L10" class="ln">    10  </span>	&#34;go-boilerplate/internal/usecase/boundary/authz&#34;
+<span id="L11" class="ln">    11  </span>	&#34;go-boilerplate/internal/usecase/coupon/command&#34;
+<span id="L12" class="ln">    12  </span>	&#34;go-boilerplate/pkg/decimal&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/ptr&#34;
+<span id="L14" class="ln">    14  </span>	&#34;go-boilerplate/pkg/uuid&#34;
+<span id="L15" class="ln">    15  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L16" class="ln">    16  </span>)
+<span id="L17" class="ln">    17  </span>
+<span id="L18" class="ln">    18  </span><span class="comment">// maxPromotionRecipients は、1 回の一括発行で配れる上限です。この操作は取り消せないため、誤った</span>
+<span id="L19" class="ln">    19  </span><span class="comment">// 条件のまま事故的に配り切ることを防ぎます。placeholder であり、実要件が立った時点で改めます</span>
+<span id="L20" class="ln">    20  </span><span class="comment">// （分類は docs/spec/usecase/coupon.md の Workflow — IssuePromotionalCoupons の invariants を参照）。</span>
+<span id="L21" class="ln">    21  </span>const maxPromotionRecipients int64 = 10_000
+<span id="L22" class="ln">    22  </span>
+<span id="L23" class="ln">    23  </span><span class="comment">// maxPromotionFlatDiscountValue は、[maxPromotionFlatDiscount] の値です。decimal は const に</span>
+<span id="L24" class="ln">    24  </span><span class="comment">// できないため、数値だけを const として持ちます（ドメインの maxDiscountRate と同じ形）。</span>
+<span id="L25" class="ln">    25  </span>const maxPromotionFlatDiscountValue int64 = 100_000
+<span id="L26" class="ln">    26  </span>
+<span id="L27" class="ln">    27  </span><span class="comment">// maxPromotionFlatDiscount は、1 回の一括発行で配れる定額値引きの上限です。取り消せない操作で</span>
+<span id="L28" class="ln">    28  </span><span class="comment">// 桁を 1 つ多く打つだけで全利用者へ届くため、件数と同じく上限を置きます。placeholder であり、</span>
+<span id="L29" class="ln">    29  </span><span class="comment">// 実要件が立った時点で改めます（定率との非対称は [ensureFlatDiscountWithinCap]、分類は</span>
+<span id="L30" class="ln">    30  </span><span class="comment">// docs/spec/usecase/coupon.md の Workflow — IssuePromotionalCoupons の invariants を参照）。</span>
+<span id="L31" class="ln">    31  </span>var maxPromotionFlatDiscount = decimal.FromInt(maxPromotionFlatDiscountValue)
+<span id="L32" class="ln">    32  </span>
+<span id="L33" class="ln">    33  </span><span class="comment">// ErrFlatDiscountTooLarge は、定額値引きが maxPromotionFlatDiscount を超えたことを表します。</span>
+<span id="L34" class="ln">    34  </span>var ErrFlatDiscountTooLarge = xerrors.Wrap(apperror.ErrValidation, &#34;coupon: flat discount exceeds the bulk issuance cap&#34;)
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span><span class="comment">// ErrTooManyRecipients は、受給対象が maxPromotionRecipients を超えたことを表します。</span>
+<span id="L37" class="ln">    37  </span><span class="comment">// 要求の形ではなく母集団の状態が原因なので 409 へ写します。</span>
+<span id="L38" class="ln">    38  </span>var ErrTooManyRecipients = xerrors.Wrap(apperror.ErrConflict, &#34;coupon: too many recipients for a bulk issuance&#34;)
+<span id="L39" class="ln">    39  </span>
+<span id="L40" class="ln">    40  </span><span class="comment">// IssuePromotionalCouponsParams は、販促クーポンを一括発行する要求の入力です。</span>
+<span id="L41" class="ln">    41  </span>type IssuePromotionalCouponsParams struct {
+<span id="L42" class="ln">    42  </span>	<span class="comment">// DiscountKind は、値引きの決まり方の名前です（&#34;flat&#34; / &#34;rate&#34;）。</span>
+<span id="L43" class="ln">    43  </span>	DiscountKind string
+<span id="L44" class="ln">    44  </span>	<span class="comment">// DiscountValue は、種別における値です。定額なら金額、定率なら率です。</span>
+<span id="L45" class="ln">    45  </span>	DiscountValue decimal.Decimal
+<span id="L46" class="ln">    46  </span>	<span class="comment">// ScopeKind は、適用範囲の決まり方の名前です（&#34;all&#34; / &#34;category&#34; / &#34;product&#34;）。</span>
+<span id="L47" class="ln">    47  </span>	ScopeKind string
+<span id="L48" class="ln">    48  </span>	<span class="comment">// ScopeTargetID は、適用範囲が絞る対象の識別子です。全体では nil です。</span>
+<span id="L49" class="ln">    49  </span>	ScopeTargetID *uuid.UUID
+<span id="L50" class="ln">    50  </span>	<span class="comment">// ExpiresAt は、発行するクーポンの有効期限です。キャンペーンの終了日を名指しするため絶対時刻で受けます。</span>
+<span id="L51" class="ln">    51  </span>	ExpiresAt time.Time
+<span id="L52" class="ln">    52  </span>}
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span><span class="comment">// IssuePromotionalCouponsView は、一括発行の実行結果です。</span>
+<span id="L55" class="ln">    55  </span>type IssuePromotionalCouponsView struct {
+<span id="L56" class="ln">    56  </span>	<span class="comment">// IssuedAt は、発行が確定した日時です。</span>
+<span id="L57" class="ln">    57  </span>	IssuedAt time.Time
+<span id="L58" class="ln">    58  </span>	<span class="comment">// ExpiresAt は、発行したクーポンの有効期限です。</span>
+<span id="L59" class="ln">    59  </span>	ExpiresAt time.Time
+<span id="L60" class="ln">    60  </span>	<span class="comment">// RecipientCount は、受給対象になった利用者の数です。</span>
+<span id="L61" class="ln">    61  </span>	RecipientCount int64
+<span id="L62" class="ln">    62  </span>	<span class="comment">// IssuedCouponCount は、実際に発行したクーポンの枚数です。</span>
+<span id="L63" class="ln">    63  </span>	IssuedCouponCount int64
+<span id="L64" class="ln">    64  </span>}
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span><span class="comment">// IssuePromotionalCoupons は、admin が退会していないすべての利用者へクーポンを一括発行し、</span>
+<span id="L67" class="ln">    67  </span><span class="comment">// 何が起きたかを件数で返します。</span>
+<span id="L68" class="ln">    68  </span><span class="comment">//</span>
+<span id="L69" class="ln">    69  </span><span class="comment">// 受給者は述語でしか決まらないため、書き込みは [command.CommandService.IssuePromotionalCoupons]</span>
+<span id="L70" class="ln">    70  </span><span class="comment">// が担います。</span>
+<span id="L71" class="ln">    71  </span>func (u *usecase) IssuePromotionalCoupons(
+<span id="L72" class="ln">    72  </span>	ctx context.Context,
+<span id="L73" class="ln">    73  </span>	authn *auth.Authn,
+<span id="L74" class="ln">    74  </span>	params IssuePromotionalCouponsParams,
+<span id="L75" class="ln">    75  </span>) (IssuePromotionalCouponsView, error) {
+<span id="L76" class="ln">    76  </span>	ctx, endSpan := u.tracer.Start(ctx)
+<span id="L77" class="ln">    77  </span>	defer endSpan()
+<span id="L78" class="ln">    78  </span>
+<span id="L79" class="ln">    79  </span>	if err := u.authorizer.Authorize(
+<span id="L80" class="ln">    80  </span>		ctx, authn, authz.ActionCouponBulkIssue, authz.NewResource(&#34;coupon&#34;, nil),
+<span id="L81" class="ln">    81  </span>	); err != nil {
+<span id="L82" class="ln">    82  </span>		return IssuePromotionalCouponsView{}, err
+<span id="L83" class="ln">    83  </span>	}
+<span id="L84" class="ln">    84  </span>
+<span id="L85" class="ln">    85  </span>	discount, err := newDiscount(params.DiscountKind, params.DiscountValue)
+<span id="L86" class="ln">    86  </span>	if err != nil {
+<span id="L87" class="ln">    87  </span>		return IssuePromotionalCouponsView{}, err
+<span id="L88" class="ln">    88  </span>	}
+<span id="L89" class="ln">    89  </span>	if err = ensureFlatDiscountWithinCap(discount); err != nil {
+<span id="L90" class="ln">    90  </span>		return IssuePromotionalCouponsView{}, err
+<span id="L91" class="ln">    91  </span>	}
+<span id="L92" class="ln">    92  </span>
+<span id="L93" class="ln">    93  </span>	scope, err := newScope(params.ScopeKind, params.ScopeTargetID)
+<span id="L94" class="ln">    94  </span>	if err != nil {
+<span id="L95" class="ln">    95  </span>		return IssuePromotionalCouponsView{}, err
+<span id="L96" class="ln">    96  </span>	}
+<span id="L97" class="ln">    97  </span>
+<span id="L98" class="ln">    98  </span>	now := u.clock.Now()
+<span id="L99" class="ln">    99  </span>
+<span id="L100" class="ln">   100  </span>	var view IssuePromotionalCouponsView
+<span id="L101" class="ln">   101  </span>	err = u.txm.Do(ctx, func(ctx context.Context) error {
+<span id="L102" class="ln">   102  </span>		<span class="comment">// 対象の存在確認は書き込みと同じトランザクションで行います。Idempotency-Key の有無で</span>
+<span id="L103" class="ln">   103  </span>		<span class="comment">// idempotency.Run がトランザクションを開くかどうかが変わるため、外に置くと境界が要求次第になります。</span>
+<span id="L104" class="ln">   104  </span>		if serr := u.ensureScopeTargetExists(ctx, scope); serr != nil {
+<span id="L105" class="ln">   105  </span>			return serr
+<span id="L106" class="ln">   106  </span>		}
+<span id="L107" class="ln">   107  </span>
+<span id="L108" class="ln">   108  </span>		<span class="comment">// 上限は書き込みの前に判定します（分類は docs/spec/usecase/coupon.md の</span>
+<span id="L109" class="ln">   109  </span>		<span class="comment">// Workflow — IssuePromotionalCoupons の invariants を参照）。</span>
+<span id="L110" class="ln">   110  </span>		recipients, cerr := u.userRepo.CountByActive(ctx, ptr.To(true))
+<span id="L111" class="ln">   111  </span>		if cerr != nil {
+<span id="L112" class="ln">   112  </span>			return cerr
+<span id="L113" class="ln">   113  </span>		}
+<span id="L114" class="ln">   114  </span>		if recipients &gt; maxPromotionRecipients {
+<span id="L115" class="ln">   115  </span>			return ErrTooManyRecipients
+<span id="L116" class="ln">   116  </span>		}
+<span id="L117" class="ln">   117  </span>
+<span id="L118" class="ln">   118  </span>		result, ierr := u.bulkIssueCmd.IssuePromotionalCoupons(ctx, command.IssuePromotionalCouponsParams{
+<span id="L119" class="ln">   119  </span>			Scope:     scope,
+<span id="L120" class="ln">   120  </span>			Discount:  discount,
+<span id="L121" class="ln">   121  </span>			ExpiresAt: params.ExpiresAt,
+<span id="L122" class="ln">   122  </span>			IssuedAt:  now,
+<span id="L123" class="ln">   123  </span>		})
+<span id="L124" class="ln">   124  </span>		if ierr != nil {
+<span id="L125" class="ln">   125  </span>			return ierr
+<span id="L126" class="ln">   126  </span>		}
+<span id="L127" class="ln">   127  </span>
+<span id="L128" class="ln">   128  </span>		<span class="comment">// 事前判定だけでは上限が破れるため、実際に書いた枚数で締めます（母集団の性質は</span>
+<span id="L129" class="ln">   129  </span>		<span class="comment">// docs/spec/usecase/coupon.md の Workflow — IssuePromotionalCoupons の invariants を参照）。</span>
+<span id="L130" class="ln">   130  </span>		if result.IssuedCouponCount &gt; maxPromotionRecipients {
+<span id="L131" class="ln">   131  </span>			return ErrTooManyRecipients
+<span id="L132" class="ln">   132  </span>		}
+<span id="L133" class="ln">   133  </span>
+<span id="L134" class="ln">   134  </span>		view = IssuePromotionalCouponsView{
+<span id="L135" class="ln">   135  </span>			IssuedAt:          now,
+<span id="L136" class="ln">   136  </span>			ExpiresAt:         params.ExpiresAt,
+<span id="L137" class="ln">   137  </span>			RecipientCount:    result.RecipientCount,
+<span id="L138" class="ln">   138  </span>			IssuedCouponCount: result.IssuedCouponCount,
+<span id="L139" class="ln">   139  </span>		}
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span>		return nil
+<span id="L142" class="ln">   142  </span>	})
+<span id="L143" class="ln">   143  </span>	if err != nil {
+<span id="L144" class="ln">   144  </span>		return IssuePromotionalCouponsView{}, err
+<span id="L145" class="ln">   145  </span>	}
+<span id="L146" class="ln">   146  </span>
+<span id="L147" class="ln">   147  </span>	return view, nil
+<span id="L148" class="ln">   148  </span>}
+<span id="L149" class="ln">   149  </span>
+<span id="L150" class="ln">   150  </span><span class="comment">// newDiscount は、要求が渡した名前をドメインの値引きへ写します。</span>
+<span id="L151" class="ln">   151  </span><span class="comment">// 名前の解決も値の検証もドメインが行い、ここは 2 つを繋ぐだけです。</span>
+<span id="L152" class="ln">   152  </span>func newDiscount(kindName string, value decimal.Decimal) (coupon.Discount, error) {
+<span id="L153" class="ln">   153  </span>	kind, err := coupon.NewDiscountKindByName(kindName)
+<span id="L154" class="ln">   154  </span>	if err != nil {
+<span id="L155" class="ln">   155  </span>		return coupon.Discount{}, err
+<span id="L156" class="ln">   156  </span>	}
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>	return coupon.NewDiscount(kind, value)
+<span id="L159" class="ln">   159  </span>}
+<span id="L160" class="ln">   160  </span>
+<span id="L161" class="ln">   161  </span><span class="comment">// ensureFlatDiscountWithinCap は、定額値引きが一括発行の上限に収まることを確かめます。</span>
+<span id="L162" class="ln">   162  </span><span class="comment">//</span>
+<span id="L163" class="ln">   163  </span><span class="comment">// 定率はドメインが 1 を上限に持つため、際限なく大きくなり得るのは定額だけです。</span>
+<span id="L164" class="ln">   164  </span>func ensureFlatDiscountWithinCap(discount coupon.Discount) error {
+<span id="L165" class="ln">   165  </span>	if discount.Kind() != coupon.DiscountKindFlat {
+<span id="L166" class="ln">   166  </span>		return nil
+<span id="L167" class="ln">   167  </span>	}
+<span id="L168" class="ln">   168  </span>	if discount.Value().Cmp(maxPromotionFlatDiscount) &gt; 0 {
+<span id="L169" class="ln">   169  </span>		return ErrFlatDiscountTooLarge
+<span id="L170" class="ln">   170  </span>	}
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>	return nil
+<span id="L173" class="ln">   173  </span>}
+<span id="L174" class="ln">   174  </span>
+<span id="L175" class="ln">   175  </span><span class="comment">// newScope は、要求が渡した名前と対象 ID をドメインの適用範囲へ写します。</span>
+<span id="L176" class="ln">   176  </span><span class="comment">// 対象 ID の要否は種別ごとに決まりますが、その規則はドメインが持ちます。</span>
+<span id="L177" class="ln">   177  </span>func newScope(kindName string, targetID *uuid.UUID) (coupon.Scope, error) {
+<span id="L178" class="ln">   178  </span>	kind, err := coupon.NewScopeKindByName(kindName)
+<span id="L179" class="ln">   179  </span>	if err != nil {
+<span id="L180" class="ln">   180  </span>		return coupon.Scope{}, err
+<span id="L181" class="ln">   181  </span>	}
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>	return coupon.NewScope(kind, targetID)
+<span id="L184" class="ln">   184  </span>}
+<span id="L185" class="ln">   185  </span>
+<span id="L186" class="ln">   186  </span><span class="comment">// ensureScopeTargetExists は、適用範囲が指す対象の存在を確かめます。</span>
+<span id="L187" class="ln">   187  </span><span class="comment">//</span>
+<span id="L188" class="ln">   188  </span><span class="comment">// 存在しない対象を範囲にしたクーポンは誰にも使えません。発行は取り消せないため、配ってから</span>
+<span id="L189" class="ln">   189  </span><span class="comment">// 気づくことを避けます。全体の適用範囲は対象を持たないので何も確認しません。</span>
+<span id="L190" class="ln">   190  </span>func (u *usecase) ensureScopeTargetExists(ctx context.Context, scope coupon.Scope) error {
+<span id="L191" class="ln">   191  </span>	targetID := scope.TargetID()
+<span id="L192" class="ln">   192  </span>	if targetID == nil {
+<span id="L193" class="ln">   193  </span>		return nil
+<span id="L194" class="ln">   194  </span>	}
+<span id="L195" class="ln">   195  </span>
+<span id="L196" class="ln">   196  </span>	switch scope.Kind() {
+<span id="L197" class="ln">   197  </span>	case coupon.ScopeKindCategory:
+<span id="L198" class="ln">   198  </span>		_, err := u.categoryRepo.FindByID(ctx, *targetID)
+<span id="L199" class="ln">   199  </span>
+<span id="L200" class="ln">   200  </span>		return err
+<span id="L201" class="ln">   201  </span>	case coupon.ScopeKindProduct:
+<span id="L202" class="ln">   202  </span>		_, err := u.productRepo.FindByID(ctx, *targetID)
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span>		return err
+<span id="L205" class="ln">   205  </span>	default:
+<span id="L206" class="ln">   206  </span>		return nil
+<span id="L207" class="ln">   207  </span>	}
+<span id="L208" class="ln">   208  </span>}
+<span id="L209" class="ln">   209  </span>
+</pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/coupon/coupon_bulk_issue_usecase.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

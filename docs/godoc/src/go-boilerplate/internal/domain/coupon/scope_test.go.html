@@ -273,7 +273,7 @@
 <span id="L216" class="ln">   216  </span>	})
 <span id="L217" class="ln">   217  </span>}
 <span id="L218" class="ln">   218  </span>
-<span id="L219" class="ln">   219  </span>func TestReconstructScope(t *testing.T) {
+<span id="L219" class="ln">   219  </span>func TestNewScope(t *testing.T) {
 <span id="L220" class="ln">   220  </span>	t.Parallel()
 <span id="L221" class="ln">   221  </span>
 <span id="L222" class="ln">   222  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
@@ -282,7 +282,7 @@
 <span id="L225" class="ln">   225  </span>		t.Run(&#34;全体を再構築する&#34;, func(t *testing.T) {
 <span id="L226" class="ln">   226  </span>			t.Parallel()
 <span id="L227" class="ln">   227  </span>
-<span id="L228" class="ln">   228  </span>			actual, err := ReconstructScope(ScopeKindAll, nil)
+<span id="L228" class="ln">   228  </span>			actual, err := NewScope(ScopeKindAll, nil)
 <span id="L229" class="ln">   229  </span>
 <span id="L230" class="ln">   230  </span>			require.NoError(t, err)
 <span id="L231" class="ln">   231  </span>			assert.Equal(t, ScopeKindAll, actual.Kind())
@@ -293,7 +293,7 @@
 <span id="L236" class="ln">   236  </span>
 <span id="L237" class="ln">   237  </span>			categoryID := newTestUUID(t)
 <span id="L238" class="ln">   238  </span>
-<span id="L239" class="ln">   239  </span>			actual, err := ReconstructScope(ScopeKindCategory, &amp;categoryID)
+<span id="L239" class="ln">   239  </span>			actual, err := NewScope(ScopeKindCategory, &amp;categoryID)
 <span id="L240" class="ln">   240  </span>
 <span id="L241" class="ln">   241  </span>			require.NoError(t, err)
 <span id="L242" class="ln">   242  </span>			require.NotNil(t, actual.TargetID())
@@ -305,7 +305,7 @@
 <span id="L248" class="ln">   248  </span>
 <span id="L249" class="ln">   249  </span>			productID := newTestUUID(t)
 <span id="L250" class="ln">   250  </span>
-<span id="L251" class="ln">   251  </span>			actual, err := ReconstructScope(ScopeKindProduct, &amp;productID)
+<span id="L251" class="ln">   251  </span>			actual, err := NewScope(ScopeKindProduct, &amp;productID)
 <span id="L252" class="ln">   252  </span>
 <span id="L253" class="ln">   253  </span>			require.NoError(t, err)
 <span id="L254" class="ln">   254  </span>			require.NotNil(t, actual.TargetID())
@@ -321,7 +321,7 @@
 <span id="L264" class="ln">   264  </span>
 <span id="L265" class="ln">   265  </span>			targetID := newTestUUID(t)
 <span id="L266" class="ln">   266  </span>
-<span id="L267" class="ln">   267  </span>			actual, err := ReconstructScope(ScopeKindAll, &amp;targetID)
+<span id="L267" class="ln">   267  </span>			actual, err := NewScope(ScopeKindAll, &amp;targetID)
 <span id="L268" class="ln">   268  </span>
 <span id="L269" class="ln">   269  </span>			require.ErrorIs(t, err, ErrInvalidScopeTarget)
 <span id="L270" class="ln">   270  </span>			assert.True(t, actual.IsZero())
@@ -330,7 +330,7 @@
 <span id="L273" class="ln">   273  </span>		t.Run(&#34;カテゴリ限定が対象を持たない場合、ErrInvalidScopeTargetを返す&#34;, func(t *testing.T) {
 <span id="L274" class="ln">   274  </span>			t.Parallel()
 <span id="L275" class="ln">   275  </span>
-<span id="L276" class="ln">   276  </span>			actual, err := ReconstructScope(ScopeKindCategory, nil)
+<span id="L276" class="ln">   276  </span>			actual, err := NewScope(ScopeKindCategory, nil)
 <span id="L277" class="ln">   277  </span>
 <span id="L278" class="ln">   278  </span>			require.ErrorIs(t, err, ErrInvalidScopeTarget)
 <span id="L279" class="ln">   279  </span>			assert.True(t, actual.IsZero())
@@ -339,7 +339,7 @@
 <span id="L282" class="ln">   282  </span>		t.Run(&#34;商品限定が対象を持たない場合、ErrInvalidScopeTargetを返す&#34;, func(t *testing.T) {
 <span id="L283" class="ln">   283  </span>			t.Parallel()
 <span id="L284" class="ln">   284  </span>
-<span id="L285" class="ln">   285  </span>			actual, err := ReconstructScope(ScopeKindProduct, nil)
+<span id="L285" class="ln">   285  </span>			actual, err := NewScope(ScopeKindProduct, nil)
 <span id="L286" class="ln">   286  </span>
 <span id="L287" class="ln">   287  </span>			require.ErrorIs(t, err, ErrInvalidScopeTarget)
 <span id="L288" class="ln">   288  </span>			assert.True(t, actual.IsZero())
@@ -348,7 +348,7 @@
 <span id="L291" class="ln">   291  </span>		t.Run(&#34;種別が未設定の場合、ErrInvalidScopeKindを返す&#34;, func(t *testing.T) {
 <span id="L292" class="ln">   292  </span>			t.Parallel()
 <span id="L293" class="ln">   293  </span>
-<span id="L294" class="ln">   294  </span>			actual, err := ReconstructScope(ScopeKind{}, nil)
+<span id="L294" class="ln">   294  </span>			actual, err := NewScope(ScopeKind{}, nil)
 <span id="L295" class="ln">   295  </span>
 <span id="L296" class="ln">   296  </span>			require.ErrorIs(t, err, ErrInvalidScopeKind)
 <span id="L297" class="ln">   297  </span>			assert.True(t, actual.IsZero())
@@ -496,6 +496,53 @@
 <span id="L439" class="ln">   439  </span>	})
 <span id="L440" class="ln">   440  </span>}
 <span id="L441" class="ln">   441  </span>
+<span id="L442" class="ln">   442  </span>func TestNewScopeKindByName(t *testing.T) {
+<span id="L443" class="ln">   443  </span>	t.Parallel()
+<span id="L444" class="ln">   444  </span>
+<span id="L445" class="ln">   445  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L446" class="ln">   446  </span>		t.Parallel()
+<span id="L447" class="ln">   447  </span>
+<span id="L448" class="ln">   448  </span>		t.Run(&#34;全体の名前から種別を解決する&#34;, func(t *testing.T) {
+<span id="L449" class="ln">   449  </span>			t.Parallel()
+<span id="L450" class="ln">   450  </span>
+<span id="L451" class="ln">   451  </span>			got, err := NewScopeKindByName(ScopeKindAll.Name())
+<span id="L452" class="ln">   452  </span>
+<span id="L453" class="ln">   453  </span>			require.NoError(t, err)
+<span id="L454" class="ln">   454  </span>			assert.Equal(t, ScopeKindAll, got)
+<span id="L455" class="ln">   455  </span>		})
+<span id="L456" class="ln">   456  </span>
+<span id="L457" class="ln">   457  </span>		t.Run(&#34;カテゴリ限定の名前から種別を解決する&#34;, func(t *testing.T) {
+<span id="L458" class="ln">   458  </span>			t.Parallel()
+<span id="L459" class="ln">   459  </span>
+<span id="L460" class="ln">   460  </span>			got, err := NewScopeKindByName(ScopeKindCategory.Name())
+<span id="L461" class="ln">   461  </span>
+<span id="L462" class="ln">   462  </span>			require.NoError(t, err)
+<span id="L463" class="ln">   463  </span>			assert.Equal(t, ScopeKindCategory, got)
+<span id="L464" class="ln">   464  </span>		})
+<span id="L465" class="ln">   465  </span>
+<span id="L466" class="ln">   466  </span>		t.Run(&#34;商品限定の名前から種別を解決する&#34;, func(t *testing.T) {
+<span id="L467" class="ln">   467  </span>			t.Parallel()
+<span id="L468" class="ln">   468  </span>
+<span id="L469" class="ln">   469  </span>			got, err := NewScopeKindByName(ScopeKindProduct.Name())
+<span id="L470" class="ln">   470  </span>
+<span id="L471" class="ln">   471  </span>			require.NoError(t, err)
+<span id="L472" class="ln">   472  </span>			assert.Equal(t, ScopeKindProduct, got)
+<span id="L473" class="ln">   473  </span>		})
+<span id="L474" class="ln">   474  </span>	})
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L477" class="ln">   477  </span>		t.Parallel()
+<span id="L478" class="ln">   478  </span>
+<span id="L479" class="ln">   479  </span>		t.Run(&#34;未知の名前は検証エラーになる&#34;, func(t *testing.T) {
+<span id="L480" class="ln">   480  </span>			t.Parallel()
+<span id="L481" class="ln">   481  </span>
+<span id="L482" class="ln">   482  </span>			_, err := NewScopeKindByName(&#34;unknown&#34;)
+<span id="L483" class="ln">   483  </span>
+<span id="L484" class="ln">   484  </span>			require.ErrorIs(t, err, ErrInvalidScopeKind)
+<span id="L485" class="ln">   485  </span>		})
+<span id="L486" class="ln">   486  </span>	})
+<span id="L487" class="ln">   487  </span>}
+<span id="L488" class="ln">   488  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/domain/coupon/scope_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

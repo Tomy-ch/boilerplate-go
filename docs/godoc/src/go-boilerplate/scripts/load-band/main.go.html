@@ -367,7 +367,7 @@
 <span id="L310" class="ln">   310  </span>		return &#34;💡 窓が多いため CI-first です。重いゲート（lint / test）はローカルで走らせず、\n&#34; +
 <span id="L311" class="ln">   311  </span>			&#34;   push して CI で検証します。手元に残るのは commitlint / secret-scan / pin 検査など、\n&#34; +
 <span id="L312" class="ln">   312  </span>			&#34;   push 後では手遅れになる軽いゲートだけです。\n&#34; +
-<span id="L313" class="ln">   313  </span>			&#34;   一時的に手元で回すなら: make lint GOBP_LOAD=low\n&#34;
+<span id="L313" class="ln">   313  </span>			&#34;   一時的に手元で回すなら: make go-lint GOBP_LOAD=low\n&#34;
 <span id="L314" class="ln">   314  </span>	case bandLow:
 <span id="L315" class="ln">   315  </span>		return fmt.Sprintf(
 <span id="L316" class="ln">   316  </span>			&#34;💡 窓が多いため低負荷モードです。重いゲートは CPU share %d に絞り、逐次で走ります。\n&#34;+

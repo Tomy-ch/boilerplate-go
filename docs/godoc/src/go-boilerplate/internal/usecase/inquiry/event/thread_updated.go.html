@@ -71,8 +71,8 @@
 <span id="L14" class="ln">    14  </span><span class="comment">// SchemaVersionThreadUpdated は、threadUpdated payload の schema 版です。</span>
 <span id="L15" class="ln">    15  </span>const SchemaVersionThreadUpdated = 1
 <span id="L16" class="ln">    16  </span>
-<span id="L17" class="ln">    17  </span><span class="comment">// threadUpdated は、inquiry.thread.updated.v1 の自己完結 snapshot payload です。</span>
-<span id="L18" class="ln">    18  </span><span class="comment">// 一覧画面の更新に要るものだけを載せ、本文は持ちません。</span>
+<span id="L17" class="ln">    17  </span><span class="comment">// threadUpdated は、inquiry.thread.updated.v1 の通知 payload です（payload_parity.yaml の kind: notification）。</span>
+<span id="L18" class="ln">    18  </span><span class="comment">// 本文を持たない理由は docs/spec/usecase/inquiry.md の Notes を参照してください。</span>
 <span id="L19" class="ln">    19  </span>type threadUpdated struct {
 <span id="L20" class="ln">    20  </span>	InquiryID string `json:&#34;inquiryId&#34;`
 <span id="L21" class="ln">    21  </span>	UserID    string `json:&#34;userId&#34;`

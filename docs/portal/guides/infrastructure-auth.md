@@ -2,7 +2,7 @@
 
 `internal/infrastructure/auth` is a directory that provides **Authentication Infrastructure**.
 
-This directory contains the **implementations of the auth Boundary interfaces** (`Authenticator` and `IdentityResolver`) used by the application.  
+This directory contains the **implementations of the auth Boundary interfaces** (`Authenticator`, `IdentityResolver` and `IdentityRegistrar`) used by the application.  
 Authenticator implementations are **separated by verification method (local / jwt, etc.)**, and the DI layer selects which method to wire **per environment**.
 
 The abstraction interface for authentication is defined as a **Boundary in the Usecase layer**.
@@ -87,12 +87,14 @@ Here, the following are performed.
 
 IdP-specific dialects (Cognito `token_use`, Azure AD `scp`, opaque tokens, EC keys) are out of scope and documented as extension points. See `jwt/README.md` for details.
 
-## IdentityResolver Implementations
+## IdentityResolver / IdentityRegistrar Implementations
 
-Besides `Authenticator`, this directory also holds implementations of the `IdentityResolver` boundary (resolving an authenticated external identity — issuer + subject — to an internal user):
+Besides `Authenticator`, this directory also holds implementations of the two identity boundaries. `IdentityResolver` reads the mapping from an authenticated external identity (issuer + subject) to an internal user; `IdentityRegistrar` creates that mapping, and is what a registration usecase calls inside its own transaction.
 
-- `identity` — the substrate default (`passthrough`) that leaves the internal UserID unresolved; wired when no user store is present.
-- `useridentity` — resolves the internal user from the `user_identities` table (sample; removed together with the user sample, after which DI falls back to `identity`). <!-- sample-api:line -->
+- `identity` — the substrate default (`passthrough`) that leaves the internal UserID unresolved; wired when no user store is present. It implements the resolver only: with no user store there is nothing to register into.
+- `useridentity` — reads (`resolver.go`) and writes (`registrar.go`) the `user_identities` table (sample; removed together with the user sample, after which DI falls back to `identity`). <!-- sample-api:line -->
+
+The two are wired from different places because their callers differ. The resolver is used only by the auth middleware, so it is provided by the server-only `core.AuthnModule`; the registrar is used by a usecase, so it is provided by `identityModule()` under `InfrastructureModule` and is therefore reachable from every application that builds that usecase. <!-- sample-api:line -->
 
 ## Registration to DI
 
@@ -140,7 +142,7 @@ implementation below states what it closes over; the one that genuinely needs a 
 - **`useridentity`** — the exception here. It reads `user_identities` through the RDB driver, so the
   real-DB strategy in [`../README.md`](../README.md) governs it: a real database, `rdb/testkit`, and
   transaction rollback for state isolation. The identities it reads come from the seed, whose issuer is
-  environment-dependent, so it runs through `make test` rather than a bare `go test`.
+  environment-dependent, so it runs through `make go-test` rather than a bare `go test`.
 <!-- sample-api:end -->
 
 Which method a given environment receives is DI-layer scope and is verified there, not here.

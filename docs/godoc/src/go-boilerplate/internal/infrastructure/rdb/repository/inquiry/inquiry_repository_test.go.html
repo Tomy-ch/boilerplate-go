@@ -427,7 +427,7 @@
 <span id="L370" class="ln">   370  </span>
 <span id="L371" class="ln">   371  </span>		<span class="comment">// 表には更新日時と作成日時の前後関係を強制する制約が無いため、この分岐は</span>
 <span id="L372" class="ln">   372  </span>		<span class="comment">// 破損した行から現実に到達する（構造的に到達不能な防御ではない）。</span>
-<span id="L373" class="ln">   373  </span>		t.Run(&#34;更新日時が作成日時より前の行はErrInvalidTimeを返す&#34;, func(t *testing.T) {
+<span id="L373" class="ln">   373  </span>		t.Run(&#34;更新日時が作成日時より前の行はErrInternalへ正規化し元の分類は露出しない&#34;, func(t *testing.T) {
 <span id="L374" class="ln">   374  </span>			t.Parallel()
 <span id="L375" class="ln">   375  </span>			createdAt := time.Date(2026, time.September, 1, 10, 0, 0, 0, time.UTC)
 <span id="L376" class="ln">   376  </span>
@@ -438,94 +438,96 @@
 <span id="L381" class="ln">   381  </span>				UpdatedAt: createdAt.Add(-time.Nanosecond),
 <span id="L382" class="ln">   382  </span>			})
 <span id="L383" class="ln">   383  </span>
-<span id="L384" class="ln">   384  </span>			require.ErrorIs(t, err, domaininquiry.ErrInvalidTime)
-<span id="L385" class="ln">   385  </span>		})
-<span id="L386" class="ln">   386  </span>
-<span id="L387" class="ln">   387  </span>		t.Run(&#34;利用者が未設定の行はErrInvalidUserIDを返す&#34;, func(t *testing.T) {
-<span id="L388" class="ln">   388  </span>			t.Parallel()
-<span id="L389" class="ln">   389  </span>
-<span id="L390" class="ln">   390  </span>			_, err := reconstruct(gen.Inquiries{ID: mustNewUUID(t)})
-<span id="L391" class="ln">   391  </span>
-<span id="L392" class="ln">   392  </span>			require.ErrorIs(t, err, domaininquiry.ErrInvalidUserID)
-<span id="L393" class="ln">   393  </span>		})
-<span id="L394" class="ln">   394  </span>	})
-<span id="L395" class="ln">   395  </span>}
-<span id="L396" class="ln">   396  </span>
-<span id="L397" class="ln">   397  </span>func Test_flatten(t *testing.T) {
-<span id="L398" class="ln">   398  </span>	t.Parallel()
-<span id="L399" class="ln">   399  </span>
-<span id="L400" class="ln">   400  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L401" class="ln">   401  </span>		t.Parallel()
-<span id="L402" class="ln">   402  </span>
-<span id="L403" class="ln">   403  </span>		t.Run(&#34;埋め込み行から表の行だけを取り出す&#34;, func(t *testing.T) {
-<span id="L404" class="ln">   404  </span>			t.Parallel()
-<span id="L405" class="ln">   405  </span>			first, second := mustNewUUID(t), mustNewUUID(t)
-<span id="L406" class="ln">   406  </span>			rows := []*gen.ListInquiriesForOperatorFirstRow{
-<span id="L407" class="ln">   407  </span>				{Inquiries: gen.Inquiries{ID: first}},
-<span id="L408" class="ln">   408  </span>				{Inquiries: gen.Inquiries{ID: second}},
-<span id="L409" class="ln">   409  </span>			}
-<span id="L410" class="ln">   410  </span>
-<span id="L411" class="ln">   411  </span>			got := flatten(rows, func(row *gen.ListInquiriesForOperatorFirstRow) gen.Inquiries {
-<span id="L412" class="ln">   412  </span>				return row.Inquiries
-<span id="L413" class="ln">   413  </span>			})
-<span id="L414" class="ln">   414  </span>
-<span id="L415" class="ln">   415  </span>			require.Len(t, got, 2)
-<span id="L416" class="ln">   416  </span>			assert.Equal(t, first, got[0].ID)
-<span id="L417" class="ln">   417  </span>			assert.Equal(t, second, got[1].ID)
-<span id="L418" class="ln">   418  </span>		})
-<span id="L419" class="ln">   419  </span>
-<span id="L420" class="ln">   420  </span>		t.Run(&#34;空の入力では空のスライスを返す&#34;, func(t *testing.T) {
-<span id="L421" class="ln">   421  </span>			t.Parallel()
-<span id="L422" class="ln">   422  </span>
-<span id="L423" class="ln">   423  </span>			got := flatten(nil, func(row *gen.ListInquiriesForOperatorFirstRow) gen.Inquiries {
-<span id="L424" class="ln">   424  </span>				return row.Inquiries
-<span id="L425" class="ln">   425  </span>			})
-<span id="L426" class="ln">   426  </span>
-<span id="L427" class="ln">   427  </span>			assert.NotNil(t, got)
-<span id="L428" class="ln">   428  </span>			assert.Empty(t, got)
-<span id="L429" class="ln">   429  </span>		})
-<span id="L430" class="ln">   430  </span>	})
-<span id="L431" class="ln">   431  </span>}
-<span id="L432" class="ln">   432  </span>
-<span id="L433" class="ln">   433  </span>func Test_repository_listRows(t *testing.T) {
-<span id="L434" class="ln">   434  </span>	t.Parallel()
-<span id="L435" class="ln">   435  </span>
-<span id="L436" class="ln">   436  </span>	testDB := testkit.NewTestDB(t)
-<span id="L437" class="ln">   437  </span>	repo := &amp;repository{tracer: observability.NewMockInfraLayerTracer(t), db: testDB}
-<span id="L438" class="ln">   438  </span>	txm := testkit.NewTestTransactionRunner(t)
-<span id="L439" class="ln">   439  </span>
-<span id="L440" class="ln">   440  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L441" class="ln">   441  </span>		t.Parallel()
-<span id="L442" class="ln">   442  </span>
-<span id="L443" class="ln">   443  </span>		t.Run(&#34;cursorが無ければ先頭ページのクエリを選ぶ&#34;, func(t *testing.T) {
-<span id="L444" class="ln">   444  </span>			t.Parallel()
-<span id="L445" class="ln">   445  </span>
-<span id="L446" class="ln">   446  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L447" class="ln">   447  </span>				db := gen.New(driver.New(ctx, testDB))
-<span id="L448" class="ln">   448  </span>
-<span id="L449" class="ln">   449  </span>				got, err := repo.listRows(ctx, db, nil, 1)
+<span id="L384" class="ln">   384  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L385" class="ln">   385  </span>			require.NotErrorIs(t, err, domaininquiry.ErrInvalidTime)
+<span id="L386" class="ln">   386  </span>		})
+<span id="L387" class="ln">   387  </span>
+<span id="L388" class="ln">   388  </span>		t.Run(&#34;利用者が未設定の行はErrInternalへ正規化し元の分類は露出しない&#34;, func(t *testing.T) {
+<span id="L389" class="ln">   389  </span>			t.Parallel()
+<span id="L390" class="ln">   390  </span>
+<span id="L391" class="ln">   391  </span>			_, err := reconstruct(gen.Inquiries{ID: mustNewUUID(t)})
+<span id="L392" class="ln">   392  </span>
+<span id="L393" class="ln">   393  </span>			require.ErrorIs(t, err, apperror.ErrInternal)
+<span id="L394" class="ln">   394  </span>			require.NotErrorIs(t, err, domaininquiry.ErrInvalidUserID)
+<span id="L395" class="ln">   395  </span>		})
+<span id="L396" class="ln">   396  </span>	})
+<span id="L397" class="ln">   397  </span>}
+<span id="L398" class="ln">   398  </span>
+<span id="L399" class="ln">   399  </span>func Test_flatten(t *testing.T) {
+<span id="L400" class="ln">   400  </span>	t.Parallel()
+<span id="L401" class="ln">   401  </span>
+<span id="L402" class="ln">   402  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L403" class="ln">   403  </span>		t.Parallel()
+<span id="L404" class="ln">   404  </span>
+<span id="L405" class="ln">   405  </span>		t.Run(&#34;埋め込み行から表の行だけを取り出す&#34;, func(t *testing.T) {
+<span id="L406" class="ln">   406  </span>			t.Parallel()
+<span id="L407" class="ln">   407  </span>			first, second := mustNewUUID(t), mustNewUUID(t)
+<span id="L408" class="ln">   408  </span>			rows := []*gen.ListInquiriesForOperatorFirstRow{
+<span id="L409" class="ln">   409  </span>				{Inquiries: gen.Inquiries{ID: first}},
+<span id="L410" class="ln">   410  </span>				{Inquiries: gen.Inquiries{ID: second}},
+<span id="L411" class="ln">   411  </span>			}
+<span id="L412" class="ln">   412  </span>
+<span id="L413" class="ln">   413  </span>			got := flatten(rows, func(row *gen.ListInquiriesForOperatorFirstRow) gen.Inquiries {
+<span id="L414" class="ln">   414  </span>				return row.Inquiries
+<span id="L415" class="ln">   415  </span>			})
+<span id="L416" class="ln">   416  </span>
+<span id="L417" class="ln">   417  </span>			require.Len(t, got, 2)
+<span id="L418" class="ln">   418  </span>			assert.Equal(t, first, got[0].ID)
+<span id="L419" class="ln">   419  </span>			assert.Equal(t, second, got[1].ID)
+<span id="L420" class="ln">   420  </span>		})
+<span id="L421" class="ln">   421  </span>
+<span id="L422" class="ln">   422  </span>		t.Run(&#34;空の入力では空のスライスを返す&#34;, func(t *testing.T) {
+<span id="L423" class="ln">   423  </span>			t.Parallel()
+<span id="L424" class="ln">   424  </span>
+<span id="L425" class="ln">   425  </span>			got := flatten(nil, func(row *gen.ListInquiriesForOperatorFirstRow) gen.Inquiries {
+<span id="L426" class="ln">   426  </span>				return row.Inquiries
+<span id="L427" class="ln">   427  </span>			})
+<span id="L428" class="ln">   428  </span>
+<span id="L429" class="ln">   429  </span>			assert.NotNil(t, got)
+<span id="L430" class="ln">   430  </span>			assert.Empty(t, got)
+<span id="L431" class="ln">   431  </span>		})
+<span id="L432" class="ln">   432  </span>	})
+<span id="L433" class="ln">   433  </span>}
+<span id="L434" class="ln">   434  </span>
+<span id="L435" class="ln">   435  </span>func Test_repository_listRows(t *testing.T) {
+<span id="L436" class="ln">   436  </span>	t.Parallel()
+<span id="L437" class="ln">   437  </span>
+<span id="L438" class="ln">   438  </span>	testDB := testkit.NewTestDB(t)
+<span id="L439" class="ln">   439  </span>	repo := &amp;repository{tracer: observability.NewMockInfraLayerTracer(t), db: testDB}
+<span id="L440" class="ln">   440  </span>	txm := testkit.NewTestTransactionRunner(t)
+<span id="L441" class="ln">   441  </span>
+<span id="L442" class="ln">   442  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L443" class="ln">   443  </span>		t.Parallel()
+<span id="L444" class="ln">   444  </span>
+<span id="L445" class="ln">   445  </span>		t.Run(&#34;cursorが無ければ先頭ページのクエリを選ぶ&#34;, func(t *testing.T) {
+<span id="L446" class="ln">   446  </span>			t.Parallel()
+<span id="L447" class="ln">   447  </span>
+<span id="L448" class="ln">   448  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L449" class="ln">   449  </span>				db := gen.New(driver.New(ctx, testDB))
 <span id="L450" class="ln">   450  </span>
-<span id="L451" class="ln">   451  </span>				require.NoError(t, err)
-<span id="L452" class="ln">   452  </span>				assert.LessOrEqual(t, len(got), 1)
-<span id="L453" class="ln">   453  </span>			})
-<span id="L454" class="ln">   454  </span>		})
-<span id="L455" class="ln">   455  </span>
-<span id="L456" class="ln">   456  </span>		t.Run(&#34;cursorがあれば続きのページのクエリを選ぶ&#34;, func(t *testing.T) {
-<span id="L457" class="ln">   457  </span>			t.Parallel()
-<span id="L458" class="ln">   458  </span>
-<span id="L459" class="ln">   459  </span>			txm.WithinTx(func(ctx context.Context) {
-<span id="L460" class="ln">   460  </span>				db := gen.New(driver.New(ctx, testDB))
-<span id="L461" class="ln">   461  </span>				cursor := &amp;domaininquiry.Cursor{UpdatedAt: time.Now().UTC(), ID: mustNewUUID(t)}
-<span id="L462" class="ln">   462  </span>
-<span id="L463" class="ln">   463  </span>				got, err := repo.listRows(ctx, db, cursor, 1)
+<span id="L451" class="ln">   451  </span>				got, err := repo.listRows(ctx, db, nil, 1)
+<span id="L452" class="ln">   452  </span>
+<span id="L453" class="ln">   453  </span>				require.NoError(t, err)
+<span id="L454" class="ln">   454  </span>				assert.LessOrEqual(t, len(got), 1)
+<span id="L455" class="ln">   455  </span>			})
+<span id="L456" class="ln">   456  </span>		})
+<span id="L457" class="ln">   457  </span>
+<span id="L458" class="ln">   458  </span>		t.Run(&#34;cursorがあれば続きのページのクエリを選ぶ&#34;, func(t *testing.T) {
+<span id="L459" class="ln">   459  </span>			t.Parallel()
+<span id="L460" class="ln">   460  </span>
+<span id="L461" class="ln">   461  </span>			txm.WithinTx(func(ctx context.Context) {
+<span id="L462" class="ln">   462  </span>				db := gen.New(driver.New(ctx, testDB))
+<span id="L463" class="ln">   463  </span>				cursor := &amp;domaininquiry.Cursor{UpdatedAt: time.Now().UTC(), ID: mustNewUUID(t)}
 <span id="L464" class="ln">   464  </span>
-<span id="L465" class="ln">   465  </span>				require.NoError(t, err)
-<span id="L466" class="ln">   466  </span>				assert.LessOrEqual(t, len(got), 1)
-<span id="L467" class="ln">   467  </span>			})
-<span id="L468" class="ln">   468  </span>		})
-<span id="L469" class="ln">   469  </span>	})
-<span id="L470" class="ln">   470  </span>}
-<span id="L471" class="ln">   471  </span>
+<span id="L465" class="ln">   465  </span>				got, err := repo.listRows(ctx, db, cursor, 1)
+<span id="L466" class="ln">   466  </span>
+<span id="L467" class="ln">   467  </span>				require.NoError(t, err)
+<span id="L468" class="ln">   468  </span>				assert.LessOrEqual(t, len(got), 1)
+<span id="L469" class="ln">   469  </span>			})
+<span id="L470" class="ln">   470  </span>		})
+<span id="L471" class="ln">   471  </span>	})
+<span id="L472" class="ln">   472  </span>}
+<span id="L473" class="ln">   473  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/repository/inquiry/inquiry_repository_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -68,7 +68,7 @@
 <span id="L11" class="ln">    11  </span><span class="comment">// TypePaid は、購入支払いの outbox イベント種別（version 込み）です。</span>
 <span id="L12" class="ln">    12  </span>const TypePaid = &#34;purchase.paid.v1&#34;
 <span id="L13" class="ln">    13  </span>
-<span id="L14" class="ln">    14  </span><span class="comment">// paid は、purchase.paid.v1 の自己完結 snapshot payload です。</span>
+<span id="L14" class="ln">    14  </span><span class="comment">// paid は、purchase.paid.v1 の通知 payload です（payload_parity.yaml の kind: notification）。</span>
 <span id="L15" class="ln">    15  </span>type paid struct {
 <span id="L16" class="ln">    16  </span>	PurchaseID string `json:&#34;purchaseId&#34;`
 <span id="L17" class="ln">    17  </span>	Code       string `json:&#34;code&#34;`
@@ -77,7 +77,7 @@
 <span id="L20" class="ln">    20  </span>	PaidAt     string `json:&#34;paidAt&#34;`
 <span id="L21" class="ln">    21  </span>}
 <span id="L22" class="ln">    22  </span>
-<span id="L23" class="ln">    23  </span><span class="comment">// BuildPaid は、購入集約から purchase.paid.v1 の自己完結 snapshot payload を marshal します。</span>
+<span id="L23" class="ln">    23  </span><span class="comment">// BuildPaid は、購入集約から purchase.paid.v1 の通知 payload を marshal します。</span>
 <span id="L24" class="ln">    24  </span>func BuildPaid(p *purchase.Purchase) ([]byte, error) {
 <span id="L25" class="ln">    25  </span>	var paidAt string
 <span id="L26" class="ln">    26  </span>	if at := p.PaidAt(); at != nil {

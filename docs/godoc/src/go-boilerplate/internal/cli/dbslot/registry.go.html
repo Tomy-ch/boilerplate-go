@@ -215,45 +215,58 @@
 <span id="L158" class="ln">   158  </span>	return ok &amp;&amp; m.Owner == r.owner
 <span id="L159" class="ln">   159  </span>}
 <span id="L160" class="ln">   160  </span>
-<span id="L161" class="ln">   161  </span><span class="comment">// IsStale は、他 worktree のリースが heartbeat TTL を超過しているかを返します（自分の保持は常に非 stale）。</span>
-<span id="L162" class="ln">   162  </span>func (r *Registry) IsStale(slot int) bool {
-<span id="L163" class="ln">   163  </span>	m, ok := r.ReadMeta(slot)
-<span id="L164" class="ln">   164  </span>	if !ok {
-<span id="L165" class="ln">   165  </span>		return true
-<span id="L166" class="ln">   166  </span>	}
-<span id="L167" class="ln">   167  </span>	if m.Owner == r.owner {
-<span id="L168" class="ln">   168  </span>		return false
-<span id="L169" class="ln">   169  </span>	}
-<span id="L170" class="ln">   170  </span>	if m.Heartbeat.IsZero() {
-<span id="L171" class="ln">   171  </span>		return true
-<span id="L172" class="ln">   172  </span>	}
-<span id="L173" class="ln">   173  </span>	return r.now().Sub(m.Heartbeat) &gt; r.ttl
-<span id="L174" class="ln">   174  </span>}
-<span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span><span class="comment">// Release は、スロットのロックを解放します（自分の保持のときのみ）。</span>
-<span id="L177" class="ln">   177  </span>func (r *Registry) Release(slot int) {
-<span id="L178" class="ln">   178  </span>	if r.OwnedBySelf(slot) {
-<span id="L179" class="ln">   179  </span>		_ = os.RemoveAll(r.lockDir(slot))
+<span id="L161" class="ln">   161  </span><span class="comment">// HeldByOther は、meta を読み取れて、かつ保持者が自分でないことを返します。</span>
+<span id="L162" class="ln">   162  </span><span class="comment">// 読み取れなかった場合は false です。「他 worktree が保持している」と「判定できなかった」を</span>
+<span id="L163" class="ln">   163  </span><span class="comment">// 同じ真に畳むと、レジストリを一度読めなかっただけで自分の後始末を取り下げることになります。</span>
+<span id="L164" class="ln">   164  </span>func (r *Registry) HeldByOther(slot int) bool {
+<span id="L165" class="ln">   165  </span>	m, ok := r.ReadMeta(slot)
+<span id="L166" class="ln">   166  </span>	return ok &amp;&amp; m.Owner != r.owner
+<span id="L167" class="ln">   167  </span>}
+<span id="L168" class="ln">   168  </span>
+<span id="L169" class="ln">   169  </span><span class="comment">// IsStale は、他 worktree のリースが heartbeat TTL を超過しているかを返します（自分の保持は常に非 stale）。</span>
+<span id="L170" class="ln">   170  </span>func (r *Registry) IsStale(slot int) bool {
+<span id="L171" class="ln">   171  </span>	m, ok := r.ReadMeta(slot)
+<span id="L172" class="ln">   172  </span>	if !ok {
+<span id="L173" class="ln">   173  </span>		return true
+<span id="L174" class="ln">   174  </span>	}
+<span id="L175" class="ln">   175  </span>	if m.Owner == r.owner {
+<span id="L176" class="ln">   176  </span>		return false
+<span id="L177" class="ln">   177  </span>	}
+<span id="L178" class="ln">   178  </span>	if m.Heartbeat.IsZero() {
+<span id="L179" class="ln">   179  </span>		return true
 <span id="L180" class="ln">   180  </span>	}
-<span id="L181" class="ln">   181  </span>}
-<span id="L182" class="ln">   182  </span>
-<span id="L183" class="ln">   183  </span><span class="comment">// AgeSeconds は、スロットの heartbeat からの経過秒数を返します（meta 無しは -1）。</span>
-<span id="L184" class="ln">   184  </span>func (r *Registry) AgeSeconds(slot int) int64 {
-<span id="L185" class="ln">   185  </span>	m, ok := r.ReadMeta(slot)
-<span id="L186" class="ln">   186  </span>	if !ok || m.Heartbeat.IsZero() {
-<span id="L187" class="ln">   187  </span>		return -1
-<span id="L188" class="ln">   188  </span>	}
-<span id="L189" class="ln">   189  </span>	return int64(r.now().Sub(m.Heartbeat).Seconds())
-<span id="L190" class="ln">   190  </span>}
-<span id="L191" class="ln">   191  </span>
-<span id="L192" class="ln">   192  </span>func (r *Registry) lockDir(slot int) string {
-<span id="L193" class="ln">   193  </span>	return filepath.Join(r.dir, fmt.Sprintf(&#34;slot-%d.lock&#34;, slot))
+<span id="L181" class="ln">   181  </span>	return r.now().Sub(m.Heartbeat) &gt; r.ttl
+<span id="L182" class="ln">   182  </span>}
+<span id="L183" class="ln">   183  </span>
+<span id="L184" class="ln">   184  </span><span class="comment">// Release は、スロットのロックを解放します（自分の保持のときのみ）。解放したかを返します。</span>
+<span id="L185" class="ln">   185  </span><span class="comment">// 保持を確認できないロックは残します。meta を書く前の取得直後と区別できず、消せば他 worktree の</span>
+<span id="L186" class="ln">   186  </span><span class="comment">// 取得を壊すためです。残っても meta の無いロックは stale として次の走査が回収します。</span>
+<span id="L187" class="ln">   187  </span>func (r *Registry) Release(slot int) bool {
+<span id="L188" class="ln">   188  </span>	if !r.OwnedBySelf(slot) {
+<span id="L189" class="ln">   189  </span>		return false
+<span id="L190" class="ln">   190  </span>	}
+<span id="L191" class="ln">   191  </span>	_ = os.RemoveAll(r.lockDir(slot))
+<span id="L192" class="ln">   192  </span>
+<span id="L193" class="ln">   193  </span>	return true
 <span id="L194" class="ln">   194  </span>}
 <span id="L195" class="ln">   195  </span>
-<span id="L196" class="ln">   196  </span>func (r *Registry) metaPath(slot int) string {
-<span id="L197" class="ln">   197  </span>	return filepath.Join(r.lockDir(slot), &#34;meta&#34;)
-<span id="L198" class="ln">   198  </span>}
-<span id="L199" class="ln">   199  </span>
+<span id="L196" class="ln">   196  </span><span class="comment">// AgeSeconds は、スロットの heartbeat からの経過秒数を返します（meta 無しは -1）。</span>
+<span id="L197" class="ln">   197  </span>func (r *Registry) AgeSeconds(slot int) int64 {
+<span id="L198" class="ln">   198  </span>	m, ok := r.ReadMeta(slot)
+<span id="L199" class="ln">   199  </span>	if !ok || m.Heartbeat.IsZero() {
+<span id="L200" class="ln">   200  </span>		return -1
+<span id="L201" class="ln">   201  </span>	}
+<span id="L202" class="ln">   202  </span>	return int64(r.now().Sub(m.Heartbeat).Seconds())
+<span id="L203" class="ln">   203  </span>}
+<span id="L204" class="ln">   204  </span>
+<span id="L205" class="ln">   205  </span>func (r *Registry) lockDir(slot int) string {
+<span id="L206" class="ln">   206  </span>	return filepath.Join(r.dir, fmt.Sprintf(&#34;slot-%d.lock&#34;, slot))
+<span id="L207" class="ln">   207  </span>}
+<span id="L208" class="ln">   208  </span>
+<span id="L209" class="ln">   209  </span>func (r *Registry) metaPath(slot int) string {
+<span id="L210" class="ln">   210  </span>	return filepath.Join(r.lockDir(slot), &#34;meta&#34;)
+<span id="L211" class="ln">   211  </span>}
+<span id="L212" class="ln">   212  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/cli/dbslot/registry.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

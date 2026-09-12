@@ -118,113 +118,140 @@
 <span id="L61" class="ln">    61  </span>	return newCoupon(id, attrs, usedAt)
 <span id="L62" class="ln">    62  </span>}
 <span id="L63" class="ln">    63  </span>
-<span id="L64" class="ln">    64  </span><span class="comment">// newCoupon は、生成・再構築に共通の検証を行いクーポンエンティティを構築します。</span>
-<span id="L65" class="ln">    65  </span>func newCoupon(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, error) {
-<span id="L66" class="ln">    66  </span>	if id.IsNil() {
-<span id="L67" class="ln">    67  </span>		return nil, xerrors.Wrap(ErrInvalidID, &#34;id is required&#34;)
-<span id="L68" class="ln">    68  </span>	}
-<span id="L69" class="ln">    69  </span>	if attrs.UserID.IsNil() {
-<span id="L70" class="ln">    70  </span>		return nil, xerrors.Wrap(ErrInvalidUserID, &#34;userID is required&#34;)
-<span id="L71" class="ln">    71  </span>	}
-<span id="L72" class="ln">    72  </span>	if attrs.Discount.IsZero() {
-<span id="L73" class="ln">    73  </span>		return nil, ErrInvalidDiscount
-<span id="L74" class="ln">    74  </span>	}
-<span id="L75" class="ln">    75  </span>	if attrs.Scope.IsZero() {
-<span id="L76" class="ln">    76  </span>		return nil, ErrInvalidScope
-<span id="L77" class="ln">    77  </span>	}
-<span id="L78" class="ln">    78  </span>	if attrs.IssuedAt.IsZero() {
-<span id="L79" class="ln">    79  </span>		return nil, xerrors.Wrap(ErrInvalidIssuedAt, &#34;issuedAt is required&#34;)
-<span id="L80" class="ln">    80  </span>	}
-<span id="L81" class="ln">    81  </span>	if attrs.ExpiresAt.IsZero() {
-<span id="L82" class="ln">    82  </span>		return nil, xerrors.Wrap(ErrInvalidExpiresAt, &#34;expiresAt is required&#34;)
-<span id="L83" class="ln">    83  </span>	}
-<span id="L84" class="ln">    84  </span>	if !attrs.ExpiresAt.After(attrs.IssuedAt) {
-<span id="L85" class="ln">    85  </span>		return nil, xerrors.Wrap(ErrInvalidExpiresAt, &#34;expiresAt must be after issuedAt&#34;)
-<span id="L86" class="ln">    86  </span>	}
-<span id="L87" class="ln">    87  </span>
-<span id="L88" class="ln">    88  </span>	used := ptr.Copy(usedAt)
-<span id="L89" class="ln">    89  </span>
-<span id="L90" class="ln">    90  </span>	return &amp;Coupon{
-<span id="L91" class="ln">    91  </span>		id:        id,
-<span id="L92" class="ln">    92  </span>		userID:    attrs.UserID,
-<span id="L93" class="ln">    93  </span>		discount:  attrs.Discount,
-<span id="L94" class="ln">    94  </span>		scope:     attrs.Scope,
-<span id="L95" class="ln">    95  </span>		expiresAt: attrs.ExpiresAt,
-<span id="L96" class="ln">    96  </span>		usedAt:    used,
-<span id="L97" class="ln">    97  </span>		issuedAt:  attrs.IssuedAt,
-<span id="L98" class="ln">    98  </span>	}, nil
-<span id="L99" class="ln">    99  </span>}
-<span id="L100" class="ln">   100  </span>
-<span id="L101" class="ln">   101  </span><span class="comment">// ID は、クーポン ID を返します。</span>
-<span id="L102" class="ln">   102  </span>func (c *Coupon) ID() uuid.UUID { return c.id }
-<span id="L103" class="ln">   103  </span>
-<span id="L104" class="ln">   104  </span><span class="comment">// UserID は、受給者のユーザー ID を返します。</span>
-<span id="L105" class="ln">   105  </span>func (c *Coupon) UserID() uuid.UUID { return c.userID }
-<span id="L106" class="ln">   106  </span>
-<span id="L107" class="ln">   107  </span><span class="comment">// Discount は、値引きを返します。</span>
-<span id="L108" class="ln">   108  </span>func (c *Coupon) Discount() Discount { return c.discount }
-<span id="L109" class="ln">   109  </span>
-<span id="L110" class="ln">   110  </span><span class="comment">// Scope は、適用範囲を返します。</span>
-<span id="L111" class="ln">   111  </span>func (c *Coupon) Scope() Scope { return c.scope }
-<span id="L112" class="ln">   112  </span>
-<span id="L113" class="ln">   113  </span><span class="comment">// ExpiresAt は、有効期限を返します。</span>
-<span id="L114" class="ln">   114  </span>func (c *Coupon) ExpiresAt() time.Time { return c.expiresAt }
-<span id="L115" class="ln">   115  </span>
-<span id="L116" class="ln">   116  </span><span class="comment">// IssuedAt は、発行日時を返します。</span>
-<span id="L117" class="ln">   117  </span>func (c *Coupon) IssuedAt() time.Time { return c.issuedAt }
-<span id="L118" class="ln">   118  </span>
-<span id="L119" class="ln">   119  </span><span class="comment">// UsedAt は、使用日時を返します。未使用の場合は nil です。</span>
-<span id="L120" class="ln">   120  </span>func (c *Coupon) UsedAt() *time.Time { return ptr.Copy(c.usedAt) }
-<span id="L121" class="ln">   121  </span>
-<span id="L122" class="ln">   122  </span><span class="comment">// IsUsed は、クーポンが使用済みかどうかを返します。</span>
-<span id="L123" class="ln">   123  </span>func (c *Coupon) IsUsed() bool { return c.usedAt != nil }
-<span id="L124" class="ln">   124  </span>
-<span id="L125" class="ln">   125  </span><span class="comment">// IsHeldBy は、そのユーザーがこのクーポンの受給者かどうかを返します。</span>
-<span id="L126" class="ln">   126  </span><span class="comment">// 受給者は変わらないため（[Coupon] を参照）、判定は等値比較だけで足ります。</span>
-<span id="L127" class="ln">   127  </span>func (c *Coupon) IsHeldBy(userID uuid.UUID) bool { return c.userID == userID }
+<span id="L64" class="ln">    64  </span><span class="comment">// validateValidity は、発行日時と有効期限の組を検証します。有効期限は発行日時より後である必要があります</span>
+<span id="L65" class="ln">    65  </span><span class="comment">// （理由は docs/spec/domain/coupon.md の Cross-field Invariants を参照）。</span>
+<span id="L66" class="ln">    66  </span>func validateValidity(issuedAt, expiresAt time.Time) error {
+<span id="L67" class="ln">    67  </span>	if issuedAt.IsZero() {
+<span id="L68" class="ln">    68  </span>		return xerrors.Wrap(ErrInvalidIssuedAt, &#34;issuedAt is required&#34;)
+<span id="L69" class="ln">    69  </span>	}
+<span id="L70" class="ln">    70  </span>	if expiresAt.IsZero() {
+<span id="L71" class="ln">    71  </span>		return xerrors.Wrap(ErrInvalidExpiresAt, &#34;expiresAt is required&#34;)
+<span id="L72" class="ln">    72  </span>	}
+<span id="L73" class="ln">    73  </span>	if !expiresAt.After(issuedAt) {
+<span id="L74" class="ln">    74  </span>		return xerrors.Wrap(ErrInvalidExpiresAt, &#34;expiresAt must be after issuedAt&#34;)
+<span id="L75" class="ln">    75  </span>	}
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>	return nil
+<span id="L78" class="ln">    78  </span>}
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span><span class="comment">// newCoupon は、生成・再構築に共通の検証を行いクーポンエンティティを構築します。</span>
+<span id="L81" class="ln">    81  </span>func newCoupon(id uuid.UUID, attrs Attributes, usedAt *time.Time) (*Coupon, error) {
+<span id="L82" class="ln">    82  </span>	if id.IsNil() {
+<span id="L83" class="ln">    83  </span>		return nil, xerrors.Wrap(ErrInvalidID, &#34;id is required&#34;)
+<span id="L84" class="ln">    84  </span>	}
+<span id="L85" class="ln">    85  </span>	if attrs.UserID.IsNil() {
+<span id="L86" class="ln">    86  </span>		return nil, xerrors.Wrap(ErrInvalidUserID, &#34;userID is required&#34;)
+<span id="L87" class="ln">    87  </span>	}
+<span id="L88" class="ln">    88  </span>	if attrs.Discount.IsZero() {
+<span id="L89" class="ln">    89  </span>		return nil, ErrInvalidDiscount
+<span id="L90" class="ln">    90  </span>	}
+<span id="L91" class="ln">    91  </span>	if attrs.Scope.IsZero() {
+<span id="L92" class="ln">    92  </span>		return nil, ErrInvalidScope
+<span id="L93" class="ln">    93  </span>	}
+<span id="L94" class="ln">    94  </span>	if err := validateValidity(attrs.IssuedAt, attrs.ExpiresAt); err != nil {
+<span id="L95" class="ln">    95  </span>		return nil, err
+<span id="L96" class="ln">    96  </span>	}
+<span id="L97" class="ln">    97  </span>
+<span id="L98" class="ln">    98  </span>	used := ptr.Copy(usedAt)
+<span id="L99" class="ln">    99  </span>
+<span id="L100" class="ln">   100  </span>	return &amp;Coupon{
+<span id="L101" class="ln">   101  </span>		id:        id,
+<span id="L102" class="ln">   102  </span>		userID:    attrs.UserID,
+<span id="L103" class="ln">   103  </span>		discount:  attrs.Discount,
+<span id="L104" class="ln">   104  </span>		scope:     attrs.Scope,
+<span id="L105" class="ln">   105  </span>		expiresAt: attrs.ExpiresAt,
+<span id="L106" class="ln">   106  </span>		usedAt:    used,
+<span id="L107" class="ln">   107  </span>		issuedAt:  attrs.IssuedAt,
+<span id="L108" class="ln">   108  </span>	}, nil
+<span id="L109" class="ln">   109  </span>}
+<span id="L110" class="ln">   110  </span>
+<span id="L111" class="ln">   111  </span><span class="comment">// ID は、クーポン ID を返します。</span>
+<span id="L112" class="ln">   112  </span>func (c *Coupon) ID() uuid.UUID { return c.id }
+<span id="L113" class="ln">   113  </span>
+<span id="L114" class="ln">   114  </span><span class="comment">// UserID は、受給者のユーザー ID を返します。</span>
+<span id="L115" class="ln">   115  </span>func (c *Coupon) UserID() uuid.UUID { return c.userID }
+<span id="L116" class="ln">   116  </span>
+<span id="L117" class="ln">   117  </span><span class="comment">// Discount は、値引きを返します。</span>
+<span id="L118" class="ln">   118  </span>func (c *Coupon) Discount() Discount { return c.discount }
+<span id="L119" class="ln">   119  </span>
+<span id="L120" class="ln">   120  </span><span class="comment">// Scope は、適用範囲を返します。</span>
+<span id="L121" class="ln">   121  </span>func (c *Coupon) Scope() Scope { return c.scope }
+<span id="L122" class="ln">   122  </span>
+<span id="L123" class="ln">   123  </span><span class="comment">// ExpiresAt は、有効期限を返します。</span>
+<span id="L124" class="ln">   124  </span>func (c *Coupon) ExpiresAt() time.Time { return c.expiresAt }
+<span id="L125" class="ln">   125  </span>
+<span id="L126" class="ln">   126  </span><span class="comment">// IssuedAt は、発行日時を返します。</span>
+<span id="L127" class="ln">   127  </span>func (c *Coupon) IssuedAt() time.Time { return c.issuedAt }
 <span id="L128" class="ln">   128  </span>
-<span id="L129" class="ln">   129  </span><span class="comment">// DiscountFor は、渡された明細のうち適用範囲に入るものを対象として、差し引く額を決済スケールの</span>
-<span id="L130" class="ln">   130  </span><span class="comment">// 整数（USD セント）で返します。対象が 1 件も無い場合と、差し引く額が最小単位に満たない場合は 0 です。</span>
-<span id="L131" class="ln">   131  </span><span class="comment">//</span>
-<span id="L132" class="ln">   132  </span><span class="comment">// 丸めはこのメソッドでのみ行います（[Discount.Apply] は丸めません。ADR-0038 (two-scale-quantity-model)）。</span>
-<span id="L133" class="ln">   133  </span><span class="comment">// 根拠は docs/spec/domain/coupon.md の Behavior Methods &gt; DiscountFor を参照してください。</span>
-<span id="L134" class="ln">   134  </span>func (c *Coupon) DiscountFor(lines []Line) (int, error) {
-<span id="L135" class="ln">   135  </span>	eligible := decimal.FromInt(0)
-<span id="L136" class="ln">   136  </span>	for _, line := range lines {
-<span id="L137" class="ln">   137  </span>		if c.scope.Covers(line) {
-<span id="L138" class="ln">   138  </span>			eligible = eligible.Add(line.Subtotal())
-<span id="L139" class="ln">   139  </span>		}
-<span id="L140" class="ln">   140  </span>	}
-<span id="L141" class="ln">   141  </span>
-<span id="L142" class="ln">   142  </span>	cents, err := c.discount.Apply(eligible).Truncate(minorUnitDigits).ToScaledInt64(minorUnitDigits)
-<span id="L143" class="ln">   143  </span>	if err != nil {
-<span id="L144" class="ln">   144  </span>		return 0, xerrors.Wrap(ErrInvalidDiscountValue, &#34;discount exceeds the settlement range&#34;)
-<span id="L145" class="ln">   145  </span>	}
-<span id="L146" class="ln">   146  </span>
-<span id="L147" class="ln">   147  </span>	return int(cents), nil
-<span id="L148" class="ln">   148  </span>}
-<span id="L149" class="ln">   149  </span>
-<span id="L150" class="ln">   150  </span><span class="comment">// Redeem は、クーポンを使用済みにします。使用済みへの遷移は一度きりで、取り消せません。</span>
-<span id="L151" class="ln">   151  </span><span class="comment">//</span>
-<span id="L152" class="ln">   152  </span><span class="comment">// 既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えません。</span>
-<span id="L153" class="ln">   153  </span><span class="comment">// 日時は引数で受け取ります（internal/domain/README.md の Handling time and ID を参照）。</span>
-<span id="L154" class="ln">   154  </span>func (c *Coupon) Redeem(now time.Time) error {
-<span id="L155" class="ln">   155  </span>	if c.IsUsed() {
-<span id="L156" class="ln">   156  </span>		return ErrAlreadyUsed
-<span id="L157" class="ln">   157  </span>	}
-<span id="L158" class="ln">   158  </span>	if c.IsExpired(now) {
-<span id="L159" class="ln">   159  </span>		return ErrExpired
-<span id="L160" class="ln">   160  </span>	}
-<span id="L161" class="ln">   161  </span>
-<span id="L162" class="ln">   162  </span>	c.usedAt = &amp;now
-<span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span>	return nil
-<span id="L165" class="ln">   165  </span>}
-<span id="L166" class="ln">   166  </span>
-<span id="L167" class="ln">   167  </span><span class="comment">// IsExpired は、渡された時点でクーポンが失効しているかどうかを返します。有効期限ちょうども</span>
-<span id="L168" class="ln">   168  </span><span class="comment">// 失効として扱います。判定の設計は docs/spec/domain/coupon.md の Behavior Methods を参照してください。</span>
-<span id="L169" class="ln">   169  </span>func (c *Coupon) IsExpired(now time.Time) bool { return !now.Before(c.expiresAt) }
+<span id="L129" class="ln">   129  </span><span class="comment">// UsedAt は、使用日時を返します。未使用の場合は nil です。</span>
+<span id="L130" class="ln">   130  </span>func (c *Coupon) UsedAt() *time.Time { return ptr.Copy(c.usedAt) }
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span><span class="comment">// IsUsed は、クーポンが使用済みかどうかを返します。</span>
+<span id="L133" class="ln">   133  </span>func (c *Coupon) IsUsed() bool { return c.usedAt != nil }
+<span id="L134" class="ln">   134  </span>
+<span id="L135" class="ln">   135  </span><span class="comment">// IsHeldBy は、そのユーザーがこのクーポンの受給者かどうかを返します。</span>
+<span id="L136" class="ln">   136  </span><span class="comment">// 受給者は変わらないため（[Coupon] を参照）、判定は等値比較だけで足ります。</span>
+<span id="L137" class="ln">   137  </span>func (c *Coupon) IsHeldBy(userID uuid.UUID) bool { return c.userID == userID }
+<span id="L138" class="ln">   138  </span>
+<span id="L139" class="ln">   139  </span><span class="comment">// DiscountFor は、渡された明細のうち適用範囲に入るものを対象として、差し引く額を決済スケールの</span>
+<span id="L140" class="ln">   140  </span><span class="comment">// 整数（USD セント）で返します。対象が 1 件も無い場合と、差し引く額が最小単位に満たない場合は 0 です。</span>
+<span id="L141" class="ln">   141  </span><span class="comment">//</span>
+<span id="L142" class="ln">   142  </span><span class="comment">// 丸めはこのメソッドでのみ行います（[Discount.Apply] は丸めません。ADR-0038 (two-scale-quantity-model)）。</span>
+<span id="L143" class="ln">   143  </span><span class="comment">// 根拠は docs/spec/domain/coupon.md の Behavior Methods &gt; DiscountFor を参照してください。</span>
+<span id="L144" class="ln">   144  </span>func (c *Coupon) DiscountFor(lines []Line) (int, error) {
+<span id="L145" class="ln">   145  </span>	eligible := decimal.FromInt(0)
+<span id="L146" class="ln">   146  </span>	for _, line := range lines {
+<span id="L147" class="ln">   147  </span>		if c.scope.Covers(line) {
+<span id="L148" class="ln">   148  </span>			eligible = eligible.Add(line.Subtotal())
+<span id="L149" class="ln">   149  </span>		}
+<span id="L150" class="ln">   150  </span>	}
+<span id="L151" class="ln">   151  </span>
+<span id="L152" class="ln">   152  </span>	cents, err := c.discount.Apply(eligible).Truncate(minorUnitDigits).ToScaledInt64(minorUnitDigits)
+<span id="L153" class="ln">   153  </span>	if err != nil {
+<span id="L154" class="ln">   154  </span>		return 0, xerrors.Wrap(ErrInvalidDiscountValue, &#34;discount exceeds the settlement range&#34;)
+<span id="L155" class="ln">   155  </span>	}
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>	return int(cents), nil
+<span id="L158" class="ln">   158  </span>}
+<span id="L159" class="ln">   159  </span>
+<span id="L160" class="ln">   160  </span><span class="comment">// Redeem は、クーポンを使用済みにします。使用済みから未使用へ戻すのは [Coupon.Restore] だけです。</span>
+<span id="L161" class="ln">   161  </span><span class="comment">//</span>
+<span id="L162" class="ln">   162  </span><span class="comment">// 既に使用済みなら ErrAlreadyUsed、渡された時点で失効しているなら ErrExpired を返し、状態を変えません。</span>
+<span id="L163" class="ln">   163  </span>func (c *Coupon) Redeem(now time.Time) error {
+<span id="L164" class="ln">   164  </span>	if c.IsUsed() {
+<span id="L165" class="ln">   165  </span>		return ErrAlreadyUsed
+<span id="L166" class="ln">   166  </span>	}
+<span id="L167" class="ln">   167  </span>	if c.IsExpired(now) {
+<span id="L168" class="ln">   168  </span>		return ErrExpired
+<span id="L169" class="ln">   169  </span>	}
 <span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>	c.usedAt = &amp;now
+<span id="L172" class="ln">   172  </span>
+<span id="L173" class="ln">   173  </span>	return nil
+<span id="L174" class="ln">   174  </span>}
+<span id="L175" class="ln">   175  </span>
+<span id="L176" class="ln">   176  </span><span class="comment">// Restore は、使用済みのクーポンを未使用へ戻し、戻したかどうかを返します。</span>
+<span id="L177" class="ln">   177  </span><span class="comment">//</span>
+<span id="L178" class="ln">   178  </span><span class="comment">// 渡された時点で失効している場合は状態を変えず false を返します（理由は</span>
+<span id="L179" class="ln">   179  </span><span class="comment">// docs/spec/domain/coupon.md の Behavior Methods &gt; Restore を参照）。</span>
+<span id="L180" class="ln">   180  </span><span class="comment">// 未使用のクーポンには ErrNotUsed を返します。</span>
+<span id="L181" class="ln">   181  </span>func (c *Coupon) Restore(now time.Time) (bool, error) {
+<span id="L182" class="ln">   182  </span>	if !c.IsUsed() {
+<span id="L183" class="ln">   183  </span>		return false, ErrNotUsed
+<span id="L184" class="ln">   184  </span>	}
+<span id="L185" class="ln">   185  </span>	if c.IsExpired(now) {
+<span id="L186" class="ln">   186  </span>		return false, nil
+<span id="L187" class="ln">   187  </span>	}
+<span id="L188" class="ln">   188  </span>
+<span id="L189" class="ln">   189  </span>	c.usedAt = nil
+<span id="L190" class="ln">   190  </span>
+<span id="L191" class="ln">   191  </span>	return true, nil
+<span id="L192" class="ln">   192  </span>}
+<span id="L193" class="ln">   193  </span>
+<span id="L194" class="ln">   194  </span><span class="comment">// IsExpired は、渡された時点でクーポンが失効しているかどうかを返します。有効期限ちょうども</span>
+<span id="L195" class="ln">   195  </span><span class="comment">// 失効として扱います。判定の設計は docs/spec/domain/coupon.md の Behavior Methods を参照してください。</span>
+<span id="L196" class="ln">   196  </span>func (c *Coupon) IsExpired(now time.Time) bool { return !now.Before(c.expiresAt) }
+<span id="L197" class="ln">   197  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/domain/coupon/coupon_domain.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

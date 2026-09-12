@@ -159,13 +159,13 @@
 		
 			
 			
-			<h2 id="BuildWithdrawn">func <a href="../../../../../src/go-boilerplate/internal/usecase/user/event/withdrawn.go.html?s=1023:1072#L17">BuildWithdrawn</a>
+			<h2 id="BuildWithdrawn">func <a href="../../../../../src/go-boilerplate/internal/usecase/user/event/withdrawn.go.html?s=1184:1233#L18">BuildWithdrawn</a>
 				<a class="permalink" href="#BuildWithdrawn">¶</a>
 				
 				
 			</h2>
 			<pre>func BuildWithdrawn(u *<a href="../../../../../go-boilerplate/internal/domain/user/">user</a>.<a href="../../../../../go-boilerplate/internal/domain/user/#User">User</a>) ([]<a href="../../../../../builtin/#byte">byte</a>, <a href="../../../../../builtin/#error">error</a>)</pre>
-			<p>BuildWithdrawn は、ユーザー集約から user.withdrawn.v1 の自己完結 snapshot payload を marshal します。
+			<p>BuildWithdrawn は、ユーザー集約から user.withdrawn.v1 の通知 payload を marshal します。
 退会していないユーザーを渡した場合、payload の deletedAt は空文字列になります。
 
 			
@@ -175,12 +175,13 @@
 		
 			
 			
-			</p><h2 id="Withdrawn">type <a href="../../../../../src/go-boilerplate/internal/usecase/user/event/withdrawn.go.html?s=687:783#L10">Withdrawn</a>
+			</p><h2 id="Withdrawn">type <a href="../../../../../src/go-boilerplate/internal/usecase/user/event/withdrawn.go.html?s=863:959#L11">Withdrawn</a>
 				<a class="permalink" href="#Withdrawn">¶</a>
 				
 				
 			</h2>
-			<p>Withdrawn は、user.withdrawn.v1 の自己完結 snapshot payload です。
+			<p>Withdrawn は、user.withdrawn.v1 の通知 payload です（payload_parity.yaml の kind: notification）。
+他の payload と違って公開しているのは、退会アーカイブのワーカーが ParseWithdrawn で読み戻すためです。
 
 			</p><pre>type Withdrawn struct {
 <span id="Withdrawn.UserID"></span>    UserID    <a href="../../../../../builtin/#string">string</a> `json:&#34;userId&#34;`
@@ -198,7 +199,7 @@
 
 			
 				
-				<h3 id="ParseWithdrawn">func <a href="../../../../../src/go-boilerplate/internal/usecase/user/event/withdrawn.go.html?s=1666:1720#L36">ParseWithdrawn</a>
+				<h3 id="ParseWithdrawn">func <a href="../../../../../src/go-boilerplate/internal/usecase/user/event/withdrawn.go.html?s=1827:1881#L37">ParseWithdrawn</a>
 					<a class="permalink" href="#ParseWithdrawn">¶</a>
 					
 					

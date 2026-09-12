@@ -1,0 +1,1279 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>architest - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Source file
+    <a href="/src">src</a>/<a href="../../../../src/go-boilerplate">go-boilerplate</a>/<a href="../../../../src/go-boilerplate/internal">internal</a>/<a href="../../../../src/go-boilerplate/internal/architest">architest</a>/<span class="text-muted">outbox_payload_parity_test.go</span>
+  </h1>
+
+
+
+
+
+  <h2>
+    Documentation: <a href="../../../../go-boilerplate/internal/architest">go-boilerplate/internal/architest</a>
+  </h2>
+
+
+
+<div id="nav"></div>
+
+
+
+<pre><span id="L1" class="ln">     1  </span>package architest
+<span id="L2" class="ln">     2  </span>
+<span id="L3" class="ln">     3  </span>import (
+<span id="L4" class="ln">     4  </span>	&#34;fmt&#34;
+<span id="L5" class="ln">     5  </span>	&#34;io/fs&#34;
+<span id="L6" class="ln">     6  </span>	&#34;path/filepath&#34;
+<span id="L7" class="ln">     7  </span>	&#34;regexp&#34;
+<span id="L8" class="ln">     8  </span>	&#34;sort&#34;
+<span id="L9" class="ln">     9  </span>	&#34;strings&#34;
+<span id="L10" class="ln">    10  </span>	&#34;testing&#34;
+<span id="L11" class="ln">    11  </span>
+<span id="L12" class="ln">    12  </span>	pkgfs &#34;go-boilerplate/pkg/fs&#34;
+<span id="L13" class="ln">    13  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
+<span id="L14" class="ln">    14  </span>
+<span id="L15" class="ln">    15  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L16" class="ln">    16  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L17" class="ln">    17  </span>	&#34;gopkg.in/yaml.v3&#34;
+<span id="L18" class="ln">    18  </span>)
+<span id="L19" class="ln">    19  </span>
+<span id="L20" class="ln">    20  </span><span class="comment">// usecaseRoot は、event パッケージを探す起点です。</span>
+<span id="L21" class="ln">    21  </span>const usecaseRoot = &#34;internal/usecase&#34;
+<span id="L22" class="ln">    22  </span>
+<span id="L23" class="ln">    23  </span><span class="comment">// domainStructName は、陽性対照が書く集約 struct の名前です。</span>
+<span id="L24" class="ln">    24  </span><span class="comment">// 宣言の `of:` が指す先を 1 つに固定しておくと、テストの読み手は名前ではなく形に集中できます。</span>
+<span id="L25" class="ln">    25  </span>const domainStructName = &#34;Thing&#34;
+<span id="L26" class="ln">    26  </span>
+<span id="L27" class="ln">    27  </span><span class="comment">// parityFileName は、各 event パッケージが置く対応宣言のファイル名です。</span>
+<span id="L28" class="ln">    28  </span>const parityFileName = &#34;payload_parity.yaml&#34;
+<span id="L29" class="ln">    29  </span>
+<span id="L30" class="ln">    30  </span><span class="comment">// buildFuncRe は、payload を組み立てる `func Build&lt;Name&gt;(` にマッチし Name を捕捉します。</span>
+<span id="L31" class="ln">    31  </span>var buildFuncRe = regexp.MustCompile(`^func Build(\w+)\(`)
+<span id="L32" class="ln">    32  </span>
+<span id="L33" class="ln">    33  </span><span class="comment">// structOpenRe は、`type &lt;Name&gt; struct {` にマッチし Name を捕捉します。</span>
+<span id="L34" class="ln">    34  </span>var structOpenRe = regexp.MustCompile(`^type (\w+) struct \{$`)
+<span id="L35" class="ln">    35  </span>
+<span id="L36" class="ln">    36  </span><span class="comment">// structFieldRe は、gofmt 済み struct の 1 フィールド行にマッチし名前を捕捉します。</span>
+<span id="L37" class="ln">    37  </span>var structFieldRe = regexp.MustCompile(`^\t(\w+) +\S`)
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span><span class="comment">// jsonTagRe は、struct タグから JSON 名（オプションを除いた部分）を捕捉します。</span>
+<span id="L40" class="ln">    40  </span>var jsonTagRe = regexp.MustCompile(`json:&#34;([^&#34;,]+)`)
+<span id="L41" class="ln">    41  </span>
+<span id="L42" class="ln">    42  </span><span class="comment">// payloadParityDoc は、payload_parity.yaml の全体です。</span>
+<span id="L43" class="ln">    43  </span>type payloadParityDoc struct {
+<span id="L44" class="ln">    44  </span>	Payloads map[string]payloadParityEntry `yaml:&#34;payloads&#34;`
+<span id="L45" class="ln">    45  </span>}
+<span id="L46" class="ln">    46  </span>
+<span id="L47" class="ln">    47  </span><span class="comment">// payloadParityEntry は、payload 1 つ分の宣言です。Fields は snapshot のときだけ書きます。</span>
+<span id="L48" class="ln">    48  </span>type payloadParityEntry struct {
+<span id="L49" class="ln">    49  </span>	Kind   string                      `yaml:&#34;kind&#34;`
+<span id="L50" class="ln">    50  </span>	Of     string                      `yaml:&#34;of&#34;`
+<span id="L51" class="ln">    51  </span>	Fields map[string]payloadFieldRule `yaml:&#34;fields&#34;`
+<span id="L52" class="ln">    52  </span>}
+<span id="L53" class="ln">    53  </span>
+<span id="L54" class="ln">    54  </span><span class="comment">// payloadFieldRule は、集約のフィールド 1 つの扱いです。</span>
+<span id="L55" class="ln">    55  </span><span class="comment">// スカラは運ぶ（値は payload の JSON 名）、マッピングは運ばない（omit に理由）を表します。</span>
+<span id="L56" class="ln">    56  </span>type payloadFieldRule struct {
+<span id="L57" class="ln">    57  </span>	Carried string
+<span id="L58" class="ln">    58  </span>	Omit    string
+<span id="L59" class="ln">    59  </span>}
+<span id="L60" class="ln">    60  </span>
+<span id="L61" class="ln">    61  </span><span class="comment">// UnmarshalYAML は、スカラ形と `{omit: ...}` 形の両方を受け取ります。</span>
+<span id="L62" class="ln">    62  </span>func (r *payloadFieldRule) UnmarshalYAML(value *yaml.Node) error {
+<span id="L63" class="ln">    63  </span>	if value.Kind == yaml.ScalarNode {
+<span id="L64" class="ln">    64  </span>		r.Carried = value.Value
+<span id="L65" class="ln">    65  </span>
+<span id="L66" class="ln">    66  </span>		return nil
+<span id="L67" class="ln">    67  </span>	}
+<span id="L68" class="ln">    68  </span>
+<span id="L69" class="ln">    69  </span>	var m struct {
+<span id="L70" class="ln">    70  </span>		Omit string `yaml:&#34;omit&#34;`
+<span id="L71" class="ln">    71  </span>	}
+<span id="L72" class="ln">    72  </span>	if err := value.Decode(&amp;m); err != nil {
+<span id="L73" class="ln">    73  </span>		return err
+<span id="L74" class="ln">    74  </span>	}
+<span id="L75" class="ln">    75  </span>	r.Omit = m.Omit
+<span id="L76" class="ln">    76  </span>
+<span id="L77" class="ln">    77  </span>	return nil
+<span id="L78" class="ln">    78  </span>}
+<span id="L79" class="ln">    79  </span>
+<span id="L80" class="ln">    80  </span><span class="comment">// TestOutboxPayloadParity は、outbox の payload と、その写し元となる集約との対応が</span>
+<span id="L81" class="ln">    81  </span><span class="comment">// 宣言されていることを機械検証します。</span>
+<span id="L82" class="ln">    82  </span><span class="comment">//</span>
+<span id="L83" class="ln">    83  </span><span class="comment">// 集約にフィールドが増えたとき、payload 側は黙って古いままになれます。#1473 では</span>
+<span id="L84" class="ln">    84  </span><span class="comment">// 課税の基礎を値引き後へ変えたのに purchase.created.v1 が値引き額を運ばず、購読側で</span>
+<span id="L85" class="ln">    85  </span><span class="comment">// subtotal + tax + shipping が total と一致しない payload が出荷されました。これを</span>
+<span id="L86" class="ln">    86  </span><span class="comment">// 落とすのがこの検査です。</span>
+<span id="L87" class="ln">    87  </span><span class="comment">//</span>
+<span id="L88" class="ln">    88  </span><span class="comment">// 「自己完結」を名乗るだけでは判別式になりません。8 payload はすべてそう名乗りますが、</span>
+<span id="L89" class="ln">    89  </span><span class="comment">// 状態を運ぶもの（snapshot）と、起きた事実と識別子だけを運ぶもの（notification）が</span>
+<span id="L90" class="ln">    90  </span><span class="comment">// 混ざっており、後者が集約の全フィールドを持たないのは正しい姿です。そこで各 payload に</span>
+<span id="L91" class="ln">    91  </span><span class="comment">// 種別を宣言させ、snapshot に限って集約の全フィールドが「運ぶ / 運ばない（理由つき）」に</span>
+<span id="L92" class="ln">    92  </span><span class="comment">// 分類されていることを課します（ADR-0113 (outbox-payload-kinds-and-parity-declaration)）。</span>
+<span id="L93" class="ln">    93  </span><span class="comment">//</span>
+<span id="L94" class="ln">    94  </span><span class="comment">// 突き合わせる集合と、各方向が捕まえる間違いは次のとおりです。</span>
+<span id="L95" class="ln">    95  </span><span class="comment">//</span>
+<span id="L96" class="ln">    96  </span><span class="comment">//	X: internal/usecase/**/event/ で Build* を持つディレクトリ</span>
+<span id="L97" class="ln">    97  </span><span class="comment">//	Y: payload_parity.yaml を持つディレクトリ</span>
+<span id="L98" class="ln">    98  </span><span class="comment">//	  X ⊆ Y … event パッケージを書いたが宣言していない（この検査が在る理由）</span>
+<span id="L99" class="ln">    99  </span><span class="comment">//	  Y ⊆ X … 宣言だけが孤立している（走査が黙って縮んだときに落ちる側）</span>
+<span id="L100" class="ln">   100  </span><span class="comment">//	P: Build* から導く payload 型名 / D: 宣言のキー</span>
+<span id="L101" class="ln">   101  </span><span class="comment">//	  P ⊆ D … payload を足したが宣言していない</span>
+<span id="L102" class="ln">   102  </span><span class="comment">//	  D ⊆ P … 消えた payload の宣言が残っている</span>
+<span id="L103" class="ln">   103  </span><span class="comment">//	F: snapshot の写し元 struct のフィールド / K: 宣言の分類キー</span>
+<span id="L104" class="ln">   104  </span><span class="comment">//	  F ⊆ K … 集約が増えたのに分類されていない（#1473 の形）</span>
+<span id="L105" class="ln">   105  </span><span class="comment">//	  K ⊆ F … 集約から消えたフィールドの宣言が残っている</span>
+<span id="L106" class="ln">   106  </span><span class="comment">//</span>
+<span id="L107" class="ln">   107  </span><span class="comment">// 対象 0 件は許容します（sample API 撤去後は event パッケージごと消えるため、</span>
+<span id="L108" class="ln">   108  </span><span class="comment">// ここに canary は置けません。internal/architest/README.md の Notes を参照）。</span>
+<span id="L109" class="ln">   109  </span><span class="comment">// この許容の代償として、**実ツリーの走査が縮退して 0 件になった場合と、本当に</span>
+<span id="L110" class="ln">   110  </span><span class="comment">// 対象が無い場合を、このテストは区別しません。** 下の陽性対照と Test_collect* が</span>
+<span id="L111" class="ln">   111  </span><span class="comment">// 固定するのは走査ロジックであって、実ツリーを歩く経路そのものではありません</span>
+<span id="L112" class="ln">   112  </span><span class="comment">// （README はその walk を「認識すべき構文の形を持たない」として viewpoint の外に置いています）。</span>
+<span id="L113" class="ln">   113  </span>func TestOutboxPayloadParity(t *testing.T) {
+<span id="L114" class="ln">   114  </span>	t.Parallel()
+<span id="L115" class="ln">   115  </span>
+<span id="L116" class="ln">   116  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L117" class="ln">   117  </span>		t.Parallel()
+<span id="L118" class="ln">   118  </span>
+<span id="L119" class="ln">   119  </span>		t.Run(&#34;すべての event パッケージが対応を宣言し、宣言が実物と一致する&#34;, func(t *testing.T) {
+<span id="L120" class="ln">   120  </span>			t.Parallel()
+<span id="L121" class="ln">   121  </span>
+<span id="L122" class="ln">   122  </span>			violations, err := collectOutboxPayloadParityViolations(moduleRoot(t))
+<span id="L123" class="ln">   123  </span>			require.NoError(t, err)
+<span id="L124" class="ln">   124  </span>			assert.Empty(t, violations,
+<span id="L125" class="ln">   125  </span>				&#34;outbox payload と集約の対応宣言が実物とずれている。&#34;+
+<span id="L126" class="ln">   126  </span>					&#34;payload_parity.yaml を実物へ合わせるか、集約に増えたフィールドの扱いを宣言すること&#34;+
+<span id="L127" class="ln">   127  </span>					&#34;（ADR-0113 (outbox-payload-kinds-and-parity-declaration)）&#34;)
+<span id="L128" class="ln">   128  </span>		})
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>		t.Run(&#34;event パッケージが 1 つも無いツリーは違反なしで通す&#34;, func(t *testing.T) {
+<span id="L131" class="ln">   131  </span>			t.Parallel()
+<span id="L132" class="ln">   132  </span>
+<span id="L133" class="ln">   133  </span>			<span class="comment">// sample API 撤去後は internal/usecase ごと消えるため、対象 0 件は正常。</span>
+<span id="L134" class="ln">   134  </span>			<span class="comment">// 走査が黙って空になる縮退のほうは Test_collect* が受け持つ。</span>
+<span id="L135" class="ln">   135  </span>			violations, err := collectOutboxPayloadParityViolations(t.TempDir())
+<span id="L136" class="ln">   136  </span>
+<span id="L137" class="ln">   137  </span>			require.NoError(t, err)
+<span id="L138" class="ln">   138  </span>			assert.Empty(t, violations)
+<span id="L139" class="ln">   139  </span>		})
+<span id="L140" class="ln">   140  </span>
+<span id="L141" class="ln">   141  </span>		t.Run(&#34;宣言の無い event パッケージを検出する&#34;, func(t *testing.T) {
+<span id="L142" class="ln">   142  </span>			t.Parallel()
+<span id="L143" class="ln">   143  </span>
+<span id="L144" class="ln">   144  </span>			root := t.TempDir()
+<span id="L145" class="ln">   145  </span>			writeEventPackage(t, root, &#34;alpha&#34;, &#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L146" class="ln">   146  </span>
+<span id="L147" class="ln">   147  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L148" class="ln">   148  </span>			require.NoError(t, err)
+<span id="L149" class="ln">   149  </span>			assert.Equal(t, []string{
+<span id="L150" class="ln">   150  </span>				&#34;internal/usecase/alpha/event: payload_parity.yaml が無い（payload: Opened）&#34;,
+<span id="L151" class="ln">   151  </span>			}, violations)
+<span id="L152" class="ln">   152  </span>		})
+<span id="L153" class="ln">   153  </span>
+<span id="L154" class="ln">   154  </span>		t.Run(&#34;宣言から漏れた集約フィールドを検出する&#34;, func(t *testing.T) {
+<span id="L155" class="ln">   155  </span>			t.Parallel()
+<span id="L156" class="ln">   156  </span>
+<span id="L157" class="ln">   157  </span>			root := t.TempDir()
+<span id="L158" class="ln">   158  </span>			writeEventPackage(t, root, &#34;beta&#34;,
+<span id="L159" class="ln">   159  </span>				&#34;package event\n\ntype opened struct {\n\tID string `json:\&#34;id\&#34;`\n}\n\n&#34;+
+<span id="L160" class="ln">   160  </span>					&#34;func BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L161" class="ln">   161  </span>			writeParityYAML(t, root, &#34;beta&#34;, &#34;payloads:\n  opened:\n    kind: snapshot\n    of: beta.Thing\n    fields:\n      id: id\n&#34;)
+<span id="L162" class="ln">   162  </span>			writeDomainStruct(t, root, &#34;beta&#34;, &#34;\tid   string\n\tname string\n&#34;)
+<span id="L163" class="ln">   163  </span>
+<span id="L164" class="ln">   164  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L165" class="ln">   165  </span>			require.NoError(t, err)
+<span id="L166" class="ln">   166  </span>			assert.Equal(t, []string{
+<span id="L167" class="ln">   167  </span>				&#34;internal/usecase/beta/event/payload_parity.yaml: opened: 集約 beta.Thing のフィールド name が未分類&#34;,
+<span id="L168" class="ln">   168  </span>			}, violations)
+<span id="L169" class="ln">   169  </span>		})
+<span id="L170" class="ln">   170  </span>
+<span id="L171" class="ln">   171  </span>		t.Run(&#34;notification は集約の全フィールドを持たなくても違反にしない&#34;, func(t *testing.T) {
+<span id="L172" class="ln">   172  </span>			t.Parallel()
+<span id="L173" class="ln">   173  </span>
+<span id="L174" class="ln">   174  </span>			<span class="comment">// 起きた事実と識別子だけを運ぶのが notification の正しい姿なので、</span>
+<span id="L175" class="ln">   175  </span>			<span class="comment">// フィールド並列の対象から外れることを carve-out として固定する。</span>
+<span id="L176" class="ln">   176  </span>			root := t.TempDir()
+<span id="L177" class="ln">   177  </span>			writeEventPackage(t, root, &#34;delta&#34;,
+<span id="L178" class="ln">   178  </span>				&#34;package event\n\ntype closed struct {\n\tID string `json:\&#34;id\&#34;`\n}\n\n&#34;+
+<span id="L179" class="ln">   179  </span>					&#34;func BuildClosed(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L180" class="ln">   180  </span>			writeParityYAML(t, root, &#34;delta&#34;, &#34;payloads:\n  closed:\n    kind: notification\n    of: delta.Thing\n&#34;)
+<span id="L181" class="ln">   181  </span>			writeDomainStruct(t, root, &#34;delta&#34;, &#34;\tid   string\n\tname string\n&#34;)
+<span id="L182" class="ln">   182  </span>
+<span id="L183" class="ln">   183  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L184" class="ln">   184  </span>			require.NoError(t, err)
+<span id="L185" class="ln">   185  </span>			assert.Empty(t, violations)
+<span id="L186" class="ln">   186  </span>		})
+<span id="L187" class="ln">   187  </span>
+<span id="L188" class="ln">   188  </span>		t.Run(&#34;複数 payload のうち一部の宣言漏れを検出する&#34;, func(t *testing.T) {
+<span id="L189" class="ln">   189  </span>			t.Parallel()
+<span id="L190" class="ln">   190  </span>
+<span id="L191" class="ln">   191  </span>			<span class="comment">// 宣言ファイルごと欠けている場合は readParityDoc が早期に返すため、</span>
+<span id="L192" class="ln">   192  </span>			<span class="comment">// 集合の差分そのものはこのケースでしか通らない。</span>
+<span id="L193" class="ln">   193  </span>			root := t.TempDir()
+<span id="L194" class="ln">   194  </span>			writeEventPackage(t, root, &#34;epsilon&#34;,
+<span id="L195" class="ln">   195  </span>				&#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;+
+<span id="L196" class="ln">   196  </span>					&#34;\nfunc BuildClosed(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L197" class="ln">   197  </span>			writeParityYAML(t, root, &#34;epsilon&#34;, &#34;payloads:\n  Opened:\n    kind: notification\n    of: epsilon.Thing\n&#34;)
+<span id="L198" class="ln">   198  </span>			writeDomainStruct(t, root, &#34;epsilon&#34;, &#34;\tid string\n&#34;)
+<span id="L199" class="ln">   199  </span>
+<span id="L200" class="ln">   200  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L201" class="ln">   201  </span>			require.NoError(t, err)
+<span id="L202" class="ln">   202  </span>			assert.Equal(t, []string{
+<span id="L203" class="ln">   203  </span>				&#34;internal/usecase/epsilon/event/payload_parity.yaml: payload Closed が宣言されていない&#34;,
+<span id="L204" class="ln">   204  </span>			}, violations)
+<span id="L205" class="ln">   205  </span>		})
+<span id="L206" class="ln">   206  </span>
+<span id="L207" class="ln">   207  </span>		t.Run(&#34;Build 関数の無い宣言を検出する&#34;, func(t *testing.T) {
+<span id="L208" class="ln">   208  </span>			t.Parallel()
+<span id="L209" class="ln">   209  </span>
+<span id="L210" class="ln">   210  </span>			<span class="comment">// 走査が黙って縮んだときに loud に落ちるのはこの向き。</span>
+<span id="L211" class="ln">   211  </span>			root := t.TempDir()
+<span id="L212" class="ln">   212  </span>			writeEventPackage(t, root, &#34;zeta&#34;,
+<span id="L213" class="ln">   213  </span>				&#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L214" class="ln">   214  </span>			writeParityYAML(t, root, &#34;zeta&#34;,
+<span id="L215" class="ln">   215  </span>				&#34;payloads:\n  Opened:\n    kind: notification\n    of: zeta.Thing\n&#34;+
+<span id="L216" class="ln">   216  </span>					&#34;  Removed:\n    kind: notification\n    of: zeta.Thing\n&#34;)
+<span id="L217" class="ln">   217  </span>			writeDomainStruct(t, root, &#34;zeta&#34;, &#34;\tid string\n&#34;)
+<span id="L218" class="ln">   218  </span>
+<span id="L219" class="ln">   219  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L220" class="ln">   220  </span>			require.NoError(t, err)
+<span id="L221" class="ln">   221  </span>			assert.Equal(t, []string{
+<span id="L222" class="ln">   222  </span>				&#34;internal/usecase/zeta/event/payload_parity.yaml: 宣言 Removed に対応する Build 関数が無い&#34;,
+<span id="L223" class="ln">   223  </span>			}, violations)
+<span id="L224" class="ln">   224  </span>		})
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>		t.Run(&#34;集約から消えたフィールドの宣言が残っていることを検出する&#34;, func(t *testing.T) {
+<span id="L227" class="ln">   227  </span>			t.Parallel()
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span>			root := t.TempDir()
+<span id="L230" class="ln">   230  </span>			writeEventPackage(t, root, &#34;eta&#34;,
+<span id="L231" class="ln">   231  </span>				&#34;package event\n\ntype opened struct {\n\tID string `json:\&#34;id\&#34;`\n}\n\n&#34;+
+<span id="L232" class="ln">   232  </span>					&#34;func BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L233" class="ln">   233  </span>			writeParityYAML(t, root, &#34;eta&#34;,
+<span id="L234" class="ln">   234  </span>				&#34;payloads:\n  opened:\n    kind: snapshot\n    of: eta.Thing\n&#34;+
+<span id="L235" class="ln">   235  </span>					&#34;    fields:\n      id: id\n      gone:\n        omit: 使われていない\n&#34;)
+<span id="L236" class="ln">   236  </span>			writeDomainStruct(t, root, &#34;eta&#34;, &#34;\tid string\n&#34;)
+<span id="L237" class="ln">   237  </span>
+<span id="L238" class="ln">   238  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L239" class="ln">   239  </span>			require.NoError(t, err)
+<span id="L240" class="ln">   240  </span>			assert.Equal(t, []string{
+<span id="L241" class="ln">   241  </span>				&#34;internal/usecase/eta/event/payload_parity.yaml: opened: 宣言 gone は集約 eta.Thing に無い&#34;,
+<span id="L242" class="ln">   242  </span>			}, violations)
+<span id="L243" class="ln">   243  </span>		})
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span>		t.Run(&#34;テストファイルに書かれた Build 関数は走査対象にしない&#34;, func(t *testing.T) {
+<span id="L246" class="ln">   246  </span>			t.Parallel()
+<span id="L247" class="ln">   247  </span>
+<span id="L248" class="ln">   248  </span>			root := t.TempDir()
+<span id="L249" class="ln">   249  </span>			dir := filepath.Join(root, usecaseRoot, &#34;theta&#34;, &#34;event&#34;)
+<span id="L250" class="ln">   250  </span>			require.NoError(t, pkgfs.OS{}.MkdirAll(dir, 0o750))
+<span id="L251" class="ln">   251  </span>			require.NoError(t, pkgfs.OS{}.WriteFile(
+<span id="L252" class="ln">   252  </span>				filepath.Join(dir, &#34;theta_event_test.go&#34;),
+<span id="L253" class="ln">   253  </span>				[]byte(&#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;),
+<span id="L254" class="ln">   254  </span>				0o600,
+<span id="L255" class="ln">   255  </span>			))
+<span id="L256" class="ln">   256  </span>
+<span id="L257" class="ln">   257  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L258" class="ln">   258  </span>			require.NoError(t, err)
+<span id="L259" class="ln">   259  </span>			assert.Empty(t, violations)
+<span id="L260" class="ln">   260  </span>		})
+<span id="L261" class="ln">   261  </span>
+<span id="L262" class="ln">   262  </span>		t.Run(&#34;複数の違反が安定した順序でまとめて返る&#34;, func(t *testing.T) {
+<span id="L263" class="ln">   263  </span>			t.Parallel()
+<span id="L264" class="ln">   264  </span>
+<span id="L265" class="ln">   265  </span>			root := t.TempDir()
+<span id="L266" class="ln">   266  </span>			writeEventPackage(t, root, &#34;iota&#34;,
+<span id="L267" class="ln">   267  </span>				&#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L268" class="ln">   268  </span>			writeEventPackage(t, root, &#34;kappa&#34;,
+<span id="L269" class="ln">   269  </span>				&#34;package event\n\nfunc BuildClosed(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L270" class="ln">   270  </span>
+<span id="L271" class="ln">   271  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L272" class="ln">   272  </span>			require.NoError(t, err)
+<span id="L273" class="ln">   273  </span>			assert.Equal(t, []string{
+<span id="L274" class="ln">   274  </span>				&#34;internal/usecase/iota/event: payload_parity.yaml が無い（payload: Opened）&#34;,
+<span id="L275" class="ln">   275  </span>				&#34;internal/usecase/kappa/event: payload_parity.yaml が無い（payload: Closed）&#34;,
+<span id="L276" class="ln">   276  </span>			}, violations)
+<span id="L277" class="ln">   277  </span>		})
+<span id="L278" class="ln">   278  </span>
+<span id="L279" class="ln">   279  </span>		t.Run(&#34;写し元の集約が見つからない宣言を検出する&#34;, func(t *testing.T) {
+<span id="L280" class="ln">   280  </span>			t.Parallel()
+<span id="L281" class="ln">   281  </span>
+<span id="L282" class="ln">   282  </span>			<span class="comment">// of: のタイプミスを黙って通すと、そのフィールド分類は誰にも突き合わされない。</span>
+<span id="L283" class="ln">   283  </span>			root := t.TempDir()
+<span id="L284" class="ln">   284  </span>			writeEventPackage(t, root, &#34;lambda&#34;,
+<span id="L285" class="ln">   285  </span>				&#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L286" class="ln">   286  </span>			writeParityYAML(t, root, &#34;lambda&#34;, &#34;payloads:\n  Opened:\n    kind: notification\n    of: lambda.Missing\n&#34;)
+<span id="L287" class="ln">   287  </span>			writeDomainStruct(t, root, &#34;lambda&#34;, &#34;\tid string\n&#34;)
+<span id="L288" class="ln">   288  </span>
+<span id="L289" class="ln">   289  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L290" class="ln">   290  </span>			require.NoError(t, err)
+<span id="L291" class="ln">   291  </span>			assert.Equal(t, []string{
+<span id="L292" class="ln">   292  </span>				&#34;internal/usecase/lambda/event/payload_parity.yaml: Opened: 写し元 lambda.Missing が見つからない&#34;,
+<span id="L293" class="ln">   293  </span>			}, violations)
+<span id="L294" class="ln">   294  </span>		})
+<span id="L295" class="ln">   295  </span>
+<span id="L296" class="ln">   296  </span>		t.Run(&#34;既知でない kind を検出する&#34;, func(t *testing.T) {
+<span id="L297" class="ln">   297  </span>			t.Parallel()
+<span id="L298" class="ln">   298  </span>
+<span id="L299" class="ln">   299  </span>			root := t.TempDir()
+<span id="L300" class="ln">   300  </span>			writeEventPackage(t, root, &#34;mu&#34;,
+<span id="L301" class="ln">   301  </span>				&#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L302" class="ln">   302  </span>			writeParityYAML(t, root, &#34;mu&#34;, &#34;payloads:\n  Opened:\n    kind: shapshot\n    of: mu.Thing\n&#34;)
+<span id="L303" class="ln">   303  </span>			writeDomainStruct(t, root, &#34;mu&#34;, &#34;\tid string\n&#34;)
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L306" class="ln">   306  </span>			require.NoError(t, err)
+<span id="L307" class="ln">   307  </span>			assert.Equal(t, []string{
+<span id="L308" class="ln">   308  </span>				`internal/usecase/mu/event/payload_parity.yaml: Opened: kind は snapshot か notification のどちらかにすること（実際: &#34;shapshot&#34;）`,
+<span id="L309" class="ln">   309  </span>			}, violations)
+<span id="L310" class="ln">   310  </span>		})
+<span id="L311" class="ln">   311  </span>
+<span id="L312" class="ln">   312  </span>		t.Run(&#34;壊れた宣言ファイルはエラーとして返す&#34;, func(t *testing.T) {
+<span id="L313" class="ln">   313  </span>			t.Parallel()
+<span id="L314" class="ln">   314  </span>
+<span id="L315" class="ln">   315  </span>			root := t.TempDir()
+<span id="L316" class="ln">   316  </span>			writeEventPackage(t, root, &#34;nu&#34;,
+<span id="L317" class="ln">   317  </span>				&#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L318" class="ln">   318  </span>			writeParityYAML(t, root, &#34;nu&#34;, &#34;payloads:\n  Opened:\n   - これは対応表ではない\n&#34;)
+<span id="L319" class="ln">   319  </span>
+<span id="L320" class="ln">   320  </span>			_, err := collectOutboxPayloadParityViolations(root)
+<span id="L321" class="ln">   321  </span>
+<span id="L322" class="ln">   322  </span>			require.Error(t, err)
+<span id="L323" class="ln">   323  </span>		})
+<span id="L324" class="ln">   324  </span>
+<span id="L325" class="ln">   325  </span>		t.Run(&#34;宣言が運ぶと言う JSON 名が payload に無いことを検出する&#34;, func(t *testing.T) {
+<span id="L326" class="ln">   326  </span>			t.Parallel()
+<span id="L327" class="ln">   327  </span>
+<span id="L328" class="ln">   328  </span>			root := t.TempDir()
+<span id="L329" class="ln">   329  </span>			writeEventPackage(t, root, &#34;gamma&#34;,
+<span id="L330" class="ln">   330  </span>				&#34;package event\n\ntype opened struct {\n\tID string `json:\&#34;id\&#34;`\n}\n\n&#34;+
+<span id="L331" class="ln">   331  </span>					&#34;func BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L332" class="ln">   332  </span>			writeParityYAML(t, root, &#34;gamma&#34;,
+<span id="L333" class="ln">   333  </span>				&#34;payloads:\n  opened:\n    kind: snapshot\n    of: gamma.Thing\n&#34;+
+<span id="L334" class="ln">   334  </span>					&#34;    fields:\n      id: id\n      name: fullName\n&#34;)
+<span id="L335" class="ln">   335  </span>			writeDomainStruct(t, root, &#34;gamma&#34;, &#34;\tid   string\n\tname string\n&#34;)
+<span id="L336" class="ln">   336  </span>
+<span id="L337" class="ln">   337  </span>			violations, err := collectOutboxPayloadParityViolations(root)
+<span id="L338" class="ln">   338  </span>			require.NoError(t, err)
+<span id="L339" class="ln">   339  </span>			assert.Equal(t, []string{
+<span id="L340" class="ln">   340  </span>				&#34;internal/usecase/gamma/event/payload_parity.yaml: opened: 運ぶと宣言した fullName が payload の JSON タグに無い&#34;,
+<span id="L341" class="ln">   341  </span>			}, violations)
+<span id="L342" class="ln">   342  </span>		})
+<span id="L343" class="ln">   343  </span>	})
+<span id="L344" class="ln">   344  </span>}
+<span id="L345" class="ln">   345  </span>
+<span id="L346" class="ln">   346  </span><span class="comment">// writeEventPackage は、陽性対照用に internal/usecase/&lt;agg&gt;/event/&lt;agg&gt;_event.go を書きます。</span>
+<span id="L347" class="ln">   347  </span>func writeEventPackage(t *testing.T, root, agg, src string) {
+<span id="L348" class="ln">   348  </span>	t.Helper()
+<span id="L349" class="ln">   349  </span>
+<span id="L350" class="ln">   350  </span>	dir := filepath.Join(root, usecaseRoot, agg, &#34;event&#34;)
+<span id="L351" class="ln">   351  </span>	require.NoError(t, pkgfs.OS{}.MkdirAll(dir, 0o750))
+<span id="L352" class="ln">   352  </span>	require.NoError(t, pkgfs.OS{}.WriteFile(filepath.Join(dir, agg+&#34;_event.go&#34;), []byte(src), 0o600))
+<span id="L353" class="ln">   353  </span>}
+<span id="L354" class="ln">   354  </span>
+<span id="L355" class="ln">   355  </span><span class="comment">// writeParityYAML は、陽性対照用に対応宣言を書きます。</span>
+<span id="L356" class="ln">   356  </span>func writeParityYAML(t *testing.T, root, agg, src string) {
+<span id="L357" class="ln">   357  </span>	t.Helper()
+<span id="L358" class="ln">   358  </span>
+<span id="L359" class="ln">   359  </span>	path := filepath.Join(root, usecaseRoot, agg, &#34;event&#34;, parityFileName)
+<span id="L360" class="ln">   360  </span>	require.NoError(t, pkgfs.OS{}.WriteFile(path, []byte(src), 0o600))
+<span id="L361" class="ln">   361  </span>}
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span><span class="comment">// writeDomainStruct は、陽性対照用に internal/domain/&lt;pkg&gt;/&lt;pkg&gt;.go へ集約 struct を書きます。</span>
+<span id="L364" class="ln">   364  </span>func writeDomainStruct(t *testing.T, root, pkg, fields string) {
+<span id="L365" class="ln">   365  </span>	t.Helper()
+<span id="L366" class="ln">   366  </span>
+<span id="L367" class="ln">   367  </span>	dir := filepath.Join(root, &#34;internal&#34;, &#34;domain&#34;, pkg)
+<span id="L368" class="ln">   368  </span>	require.NoError(t, pkgfs.OS{}.MkdirAll(dir, 0o750))
+<span id="L369" class="ln">   369  </span>	src := &#34;package &#34; + pkg + &#34;\n\ntype &#34; + domainStructName + &#34; struct {\n&#34; + fields + &#34;}\n&#34;
+<span id="L370" class="ln">   370  </span>	require.NoError(t, pkgfs.OS{}.WriteFile(filepath.Join(dir, pkg+&#34;.go&#34;), []byte(src), 0o600))
+<span id="L371" class="ln">   371  </span>}
+<span id="L372" class="ln">   372  </span>
+<span id="L373" class="ln">   373  </span><span class="comment">// collectOutboxPayloadParityViolations は、root 配下の event パッケージを走査して違反を集めます。</span>
+<span id="L374" class="ln">   374  </span><span class="comment">// 戻り値はソート済みで、同じツリーからは常に同じ並びになります。</span>
+<span id="L375" class="ln">   375  </span>func collectOutboxPayloadParityViolations(root string) ([]string, error) {
+<span id="L376" class="ln">   376  </span>	dirs, err := collectEventPackages(root)
+<span id="L377" class="ln">   377  </span>	if err != nil {
+<span id="L378" class="ln">   378  </span>		return nil, err
+<span id="L379" class="ln">   379  </span>	}
+<span id="L380" class="ln">   380  </span>
+<span id="L381" class="ln">   381  </span>	violations := []string{}
+<span id="L382" class="ln">   382  </span>	for _, dir := range dirs {
+<span id="L383" class="ln">   383  </span>		found, verr := verifyEventPackage(root, dir)
+<span id="L384" class="ln">   384  </span>		if verr != nil {
+<span id="L385" class="ln">   385  </span>			return nil, verr
+<span id="L386" class="ln">   386  </span>		}
+<span id="L387" class="ln">   387  </span>		violations = append(violations, found...)
+<span id="L388" class="ln">   388  </span>	}
+<span id="L389" class="ln">   389  </span>	sort.Strings(violations)
+<span id="L390" class="ln">   390  </span>
+<span id="L391" class="ln">   391  </span>	return violations, nil
+<span id="L392" class="ln">   392  </span>}
+<span id="L393" class="ln">   393  </span>
+<span id="L394" class="ln">   394  </span><span class="comment">// collectEventPackages は、`func Build*` を持つ event パッケージのディレクトリを返します。</span>
+<span id="L395" class="ln">   395  </span>func collectEventPackages(root string) ([]string, error) {
+<span id="L396" class="ln">   396  </span>	base := filepath.Join(root, usecaseRoot)
+<span id="L397" class="ln">   397  </span>	dirs := map[string]struct{}{}
+<span id="L398" class="ln">   398  </span>
+<span id="L399" class="ln">   399  </span>	err := filepath.WalkDir(base, func(path string, d fs.DirEntry, walkErr error) error {
+<span id="L400" class="ln">   400  </span>		if walkErr != nil {
+<span id="L401" class="ln">   401  </span>			if isNotExist(walkErr) {
+<span id="L402" class="ln">   402  </span>				return filepath.SkipAll
+<span id="L403" class="ln">   403  </span>			}
+<span id="L404" class="ln">   404  </span>
+<span id="L405" class="ln">   405  </span>			return walkErr
+<span id="L406" class="ln">   406  </span>		}
+<span id="L407" class="ln">   407  </span>		if d.IsDir() || !isPlainGoFile(path) || filepath.Base(filepath.Dir(path)) != &#34;event&#34; {
+<span id="L408" class="ln">   408  </span>			return nil
+<span id="L409" class="ln">   409  </span>		}
+<span id="L410" class="ln">   410  </span>
+<span id="L411" class="ln">   411  </span>		names, rerr := collectBuildPayloadNames(path)
+<span id="L412" class="ln">   412  </span>		if rerr != nil {
+<span id="L413" class="ln">   413  </span>			return rerr
+<span id="L414" class="ln">   414  </span>		}
+<span id="L415" class="ln">   415  </span>		if len(names) &gt; 0 {
+<span id="L416" class="ln">   416  </span>			dirs[filepath.Dir(path)] = struct{}{}
+<span id="L417" class="ln">   417  </span>		}
+<span id="L418" class="ln">   418  </span>
+<span id="L419" class="ln">   419  </span>		return nil
+<span id="L420" class="ln">   420  </span>	})
+<span id="L421" class="ln">   421  </span>	if err != nil {
+<span id="L422" class="ln">   422  </span>		return nil, err
+<span id="L423" class="ln">   423  </span>	}
+<span id="L424" class="ln">   424  </span>
+<span id="L425" class="ln">   425  </span>	out := make([]string, 0, len(dirs))
+<span id="L426" class="ln">   426  </span>	for d := range dirs {
+<span id="L427" class="ln">   427  </span>		out = append(out, d)
+<span id="L428" class="ln">   428  </span>	}
+<span id="L429" class="ln">   429  </span>	sort.Strings(out)
+<span id="L430" class="ln">   430  </span>
+<span id="L431" class="ln">   431  </span>	return out, nil
+<span id="L432" class="ln">   432  </span>}
+<span id="L433" class="ln">   433  </span>
+<span id="L434" class="ln">   434  </span><span class="comment">// isPlainGoFile は、生成物でもテストでもない Go ファイルかどうかを返します。</span>
+<span id="L435" class="ln">   435  </span>func isPlainGoFile(path string) bool {
+<span id="L436" class="ln">   436  </span>	return strings.HasSuffix(path, &#34;.go&#34;) &amp;&amp;
+<span id="L437" class="ln">   437  </span>		!strings.HasSuffix(path, &#34;_test.go&#34;) &amp;&amp;
+<span id="L438" class="ln">   438  </span>		!strings.HasSuffix(path, &#34;.gen.go&#34;)
+<span id="L439" class="ln">   439  </span>}
+<span id="L440" class="ln">   440  </span>
+<span id="L441" class="ln">   441  </span><span class="comment">// isNotExist は、対象が存在しないだけのエラーかどうかを返します。</span>
+<span id="L442" class="ln">   442  </span>func isNotExist(err error) bool {
+<span id="L443" class="ln">   443  </span>	return xerrors.Is(err, fs.ErrNotExist)
+<span id="L444" class="ln">   444  </span>}
+<span id="L445" class="ln">   445  </span>
+<span id="L446" class="ln">   446  </span><span class="comment">// collectBuildPayloadNames は、ファイルを読んで payloadNamesFromLines へ渡します。</span>
+<span id="L447" class="ln">   447  </span>func collectBuildPayloadNames(path string) ([]string, error) {
+<span id="L448" class="ln">   448  </span>	lines, err := readLines(path)
+<span id="L449" class="ln">   449  </span>	if err != nil {
+<span id="L450" class="ln">   450  </span>		return nil, err
+<span id="L451" class="ln">   451  </span>	}
+<span id="L452" class="ln">   452  </span>
+<span id="L453" class="ln">   453  </span>	return payloadNamesFromLines(lines), nil
+<span id="L454" class="ln">   454  </span>}
+<span id="L455" class="ln">   455  </span>
+<span id="L456" class="ln">   456  </span><span class="comment">// payloadNamesFromLines は、`func Build&lt;Name&gt;(` から payload 型名を導きます。</span>
+<span id="L457" class="ln">   457  </span><span class="comment">// 同じファイルに &lt;Name&gt; の非公開形が在ればそちらを、無ければ &lt;Name&gt; をそのまま採ります。</span>
+<span id="L458" class="ln">   458  </span>func payloadNamesFromLines(lines []string) []string {
+<span id="L459" class="ln">   459  </span>	declared := map[string]struct{}{}
+<span id="L460" class="ln">   460  </span>	for _, line := range lines {
+<span id="L461" class="ln">   461  </span>		if m := structOpenRe.FindStringSubmatch(line); m != nil {
+<span id="L462" class="ln">   462  </span>			declared[m[1]] = struct{}{}
+<span id="L463" class="ln">   463  </span>		}
+<span id="L464" class="ln">   464  </span>	}
+<span id="L465" class="ln">   465  </span>
+<span id="L466" class="ln">   466  </span>	names := []string{}
+<span id="L467" class="ln">   467  </span>	for _, line := range lines {
+<span id="L468" class="ln">   468  </span>		m := buildFuncRe.FindStringSubmatch(line)
+<span id="L469" class="ln">   469  </span>		if m == nil {
+<span id="L470" class="ln">   470  </span>			continue
+<span id="L471" class="ln">   471  </span>		}
+<span id="L472" class="ln">   472  </span>		lower := lowerFirst(m[1])
+<span id="L473" class="ln">   473  </span>		if _, ok := declared[lower]; ok {
+<span id="L474" class="ln">   474  </span>			names = append(names, lower)
+<span id="L475" class="ln">   475  </span>
+<span id="L476" class="ln">   476  </span>			continue
+<span id="L477" class="ln">   477  </span>		}
+<span id="L478" class="ln">   478  </span>		names = append(names, m[1])
+<span id="L479" class="ln">   479  </span>	}
+<span id="L480" class="ln">   480  </span>
+<span id="L481" class="ln">   481  </span>	return names
+<span id="L482" class="ln">   482  </span>}
+<span id="L483" class="ln">   483  </span>
+<span id="L484" class="ln">   484  </span><span class="comment">// lowerFirst は、先頭 1 文字を小文字にします（ASCII の識別子のみを想定します）。</span>
+<span id="L485" class="ln">   485  </span>func lowerFirst(s string) string {
+<span id="L486" class="ln">   486  </span>	if s == &#34;&#34; {
+<span id="L487" class="ln">   487  </span>		return s
+<span id="L488" class="ln">   488  </span>	}
+<span id="L489" class="ln">   489  </span>
+<span id="L490" class="ln">   490  </span>	return strings.ToLower(s[:1]) + s[1:]
+<span id="L491" class="ln">   491  </span>}
+<span id="L492" class="ln">   492  </span>
+<span id="L493" class="ln">   493  </span><span class="comment">// readLines は、ファイルを行へ分割して返します。</span>
+<span id="L494" class="ln">   494  </span>func readLines(path string) ([]string, error) {
+<span id="L495" class="ln">   495  </span>	src, err := pkgfs.OS{}.ReadFile(path)
+<span id="L496" class="ln">   496  </span>	if err != nil {
+<span id="L497" class="ln">   497  </span>		return nil, err
+<span id="L498" class="ln">   498  </span>	}
+<span id="L499" class="ln">   499  </span>
+<span id="L500" class="ln">   500  </span>	return strings.Split(string(src), &#34;\n&#34;), nil
+<span id="L501" class="ln">   501  </span>}
+<span id="L502" class="ln">   502  </span>
+<span id="L503" class="ln">   503  </span><span class="comment">// verifyEventPackage は、1 つの event パッケージについて宣言と実物を突き合わせます。</span>
+<span id="L504" class="ln">   504  </span>func verifyEventPackage(root, dir string) ([]string, error) {
+<span id="L505" class="ln">   505  </span>	rel := relPath(root, dir)
+<span id="L506" class="ln">   506  </span>
+<span id="L507" class="ln">   507  </span>	payloads, err := collectDirPayloadNames(dir)
+<span id="L508" class="ln">   508  </span>	if err != nil {
+<span id="L509" class="ln">   509  </span>		return nil, err
+<span id="L510" class="ln">   510  </span>	}
+<span id="L511" class="ln">   511  </span>
+<span id="L512" class="ln">   512  </span>	doc, ok, err := readParityDoc(dir)
+<span id="L513" class="ln">   513  </span>	if err != nil {
+<span id="L514" class="ln">   514  </span>		return nil, err
+<span id="L515" class="ln">   515  </span>	}
+<span id="L516" class="ln">   516  </span>	if !ok {
+<span id="L517" class="ln">   517  </span>		return []string{fmt.Sprintf(&#34;%s: %s が無い（payload: %s）&#34;, rel, parityFileName, strings.Join(payloads, &#34;, &#34;))}, nil
+<span id="L518" class="ln">   518  </span>	}
+<span id="L519" class="ln">   519  </span>
+<span id="L520" class="ln">   520  </span>	violations := diffPayloadNames(rel, payloads, doc)
+<span id="L521" class="ln">   521  </span>	for _, name := range payloads {
+<span id="L522" class="ln">   522  </span>		entry, declared := doc.Payloads[name]
+<span id="L523" class="ln">   523  </span>		if !declared {
+<span id="L524" class="ln">   524  </span>			continue
+<span id="L525" class="ln">   525  </span>		}
+<span id="L526" class="ln">   526  </span>		found, eerr := verifyPayloadEntry(root, dir, name, entry)
+<span id="L527" class="ln">   527  </span>		if eerr != nil {
+<span id="L528" class="ln">   528  </span>			return nil, eerr
+<span id="L529" class="ln">   529  </span>		}
+<span id="L530" class="ln">   530  </span>		violations = append(violations, found...)
+<span id="L531" class="ln">   531  </span>	}
+<span id="L532" class="ln">   532  </span>
+<span id="L533" class="ln">   533  </span>	return violations, nil
+<span id="L534" class="ln">   534  </span>}
+<span id="L535" class="ln">   535  </span>
+<span id="L536" class="ln">   536  </span><span class="comment">// collectDirPayloadNames は、ディレクトリ内の全 Go ファイルから payload 型名を集めます。</span>
+<span id="L537" class="ln">   537  </span>func collectDirPayloadNames(dir string) ([]string, error) {
+<span id="L538" class="ln">   538  </span>	paths, err := plainGoFiles(dir)
+<span id="L539" class="ln">   539  </span>	if err != nil {
+<span id="L540" class="ln">   540  </span>		return nil, err
+<span id="L541" class="ln">   541  </span>	}
+<span id="L542" class="ln">   542  </span>
+<span id="L543" class="ln">   543  </span>	names := []string{}
+<span id="L544" class="ln">   544  </span>	for _, path := range paths {
+<span id="L545" class="ln">   545  </span>		found, rerr := collectBuildPayloadNames(path)
+<span id="L546" class="ln">   546  </span>		if rerr != nil {
+<span id="L547" class="ln">   547  </span>			return nil, rerr
+<span id="L548" class="ln">   548  </span>		}
+<span id="L549" class="ln">   549  </span>		names = append(names, found...)
+<span id="L550" class="ln">   550  </span>	}
+<span id="L551" class="ln">   551  </span>	sort.Strings(names)
+<span id="L552" class="ln">   552  </span>
+<span id="L553" class="ln">   553  </span>	return names, nil
+<span id="L554" class="ln">   554  </span>}
+<span id="L555" class="ln">   555  </span>
+<span id="L556" class="ln">   556  </span><span class="comment">// plainGoFiles は、ディレクトリ直下の生成物でもテストでもない Go ファイルをソートして返します。</span>
+<span id="L557" class="ln">   557  </span>func plainGoFiles(dir string) ([]string, error) {
+<span id="L558" class="ln">   558  </span>	matches, err := pkgfs.OS{}.Glob(filepath.Join(dir, &#34;*.go&#34;))
+<span id="L559" class="ln">   559  </span>	if err != nil {
+<span id="L560" class="ln">   560  </span>		return nil, err
+<span id="L561" class="ln">   561  </span>	}
+<span id="L562" class="ln">   562  </span>
+<span id="L563" class="ln">   563  </span>	paths := []string{}
+<span id="L564" class="ln">   564  </span>	for _, m := range matches {
+<span id="L565" class="ln">   565  </span>		if isPlainGoFile(m) {
+<span id="L566" class="ln">   566  </span>			paths = append(paths, m)
+<span id="L567" class="ln">   567  </span>		}
+<span id="L568" class="ln">   568  </span>	}
+<span id="L569" class="ln">   569  </span>	sort.Strings(paths)
+<span id="L570" class="ln">   570  </span>
+<span id="L571" class="ln">   571  </span>	return paths, nil
+<span id="L572" class="ln">   572  </span>}
+<span id="L573" class="ln">   573  </span>
+<span id="L574" class="ln">   574  </span><span class="comment">// readParityDoc は、ディレクトリの対応宣言を読みます。宣言が無い場合は ok=false を返します。</span>
+<span id="L575" class="ln">   575  </span>func readParityDoc(dir string) (payloadParityDoc, bool, error) {
+<span id="L576" class="ln">   576  </span>	src, err := pkgfs.OS{}.ReadFile(filepath.Join(dir, parityFileName))
+<span id="L577" class="ln">   577  </span>	if err != nil {
+<span id="L578" class="ln">   578  </span>		if isNotExist(err) {
+<span id="L579" class="ln">   579  </span>			return payloadParityDoc{}, false, nil
+<span id="L580" class="ln">   580  </span>		}
+<span id="L581" class="ln">   581  </span>
+<span id="L582" class="ln">   582  </span>		return payloadParityDoc{}, false, err
+<span id="L583" class="ln">   583  </span>	}
+<span id="L584" class="ln">   584  </span>
+<span id="L585" class="ln">   585  </span>	var doc payloadParityDoc
+<span id="L586" class="ln">   586  </span>	if uerr := yaml.Unmarshal(src, &amp;doc); uerr != nil {
+<span id="L587" class="ln">   587  </span>		return payloadParityDoc{}, false, uerr
+<span id="L588" class="ln">   588  </span>	}
+<span id="L589" class="ln">   589  </span>
+<span id="L590" class="ln">   590  </span>	return doc, true, nil
+<span id="L591" class="ln">   591  </span>}
+<span id="L592" class="ln">   592  </span>
+<span id="L593" class="ln">   593  </span><span class="comment">// diffPayloadNames は、実在する payload と宣言されている payload の双方向の差を違反にします。</span>
+<span id="L594" class="ln">   594  </span>func diffPayloadNames(rel string, payloads []string, doc payloadParityDoc) []string {
+<span id="L595" class="ln">   595  </span>	declared := map[string]struct{}{}
+<span id="L596" class="ln">   596  </span>	for name := range doc.Payloads {
+<span id="L597" class="ln">   597  </span>		declared[name] = struct{}{}
+<span id="L598" class="ln">   598  </span>	}
+<span id="L599" class="ln">   599  </span>
+<span id="L600" class="ln">   600  </span>	violations := []string{}
+<span id="L601" class="ln">   601  </span>	for _, name := range payloads {
+<span id="L602" class="ln">   602  </span>		if _, ok := declared[name]; !ok {
+<span id="L603" class="ln">   603  </span>			violations = append(violations, fmt.Sprintf(&#34;%s/%s: payload %s が宣言されていない&#34;, rel, parityFileName, name))
+<span id="L604" class="ln">   604  </span>		}
+<span id="L605" class="ln">   605  </span>		delete(declared, name)
+<span id="L606" class="ln">   606  </span>	}
+<span id="L607" class="ln">   607  </span>	for name := range declared {
+<span id="L608" class="ln">   608  </span>		violations = append(violations, fmt.Sprintf(&#34;%s/%s: 宣言 %s に対応する Build 関数が無い&#34;, rel, parityFileName, name))
+<span id="L609" class="ln">   609  </span>	}
+<span id="L610" class="ln">   610  </span>
+<span id="L611" class="ln">   611  </span>	return violations
+<span id="L612" class="ln">   612  </span>}
+<span id="L613" class="ln">   613  </span>
+<span id="L614" class="ln">   614  </span><span class="comment">// verifyPayloadEntry は、宣言 1 件を実物へ突き合わせます。</span>
+<span id="L615" class="ln">   615  </span>func verifyPayloadEntry(root, dir, name string, entry payloadParityEntry) ([]string, error) {
+<span id="L616" class="ln">   616  </span>	rel := relPath(root, dir) + &#34;/&#34; + parityFileName
+<span id="L617" class="ln">   617  </span>
+<span id="L618" class="ln">   618  </span>	fields, ok, err := lookupAggregateFields(root, entry.Of)
+<span id="L619" class="ln">   619  </span>	if err != nil {
+<span id="L620" class="ln">   620  </span>		return nil, err
+<span id="L621" class="ln">   621  </span>	}
+<span id="L622" class="ln">   622  </span>	if !ok {
+<span id="L623" class="ln">   623  </span>		return []string{fmt.Sprintf(&#34;%s: %s: 写し元 %s が見つからない&#34;, rel, name, entry.Of)}, nil
+<span id="L624" class="ln">   624  </span>	}
+<span id="L625" class="ln">   625  </span>
+<span id="L626" class="ln">   626  </span>	switch entry.Kind {
+<span id="L627" class="ln">   627  </span>	case &#34;notification&#34;:
+<span id="L628" class="ln">   628  </span>		return nil, nil
+<span id="L629" class="ln">   629  </span>	case &#34;snapshot&#34;:
+<span id="L630" class="ln">   630  </span>		tags, terr := collectPayloadJSONTags(dir, name)
+<span id="L631" class="ln">   631  </span>		if terr != nil {
+<span id="L632" class="ln">   632  </span>			return nil, terr
+<span id="L633" class="ln">   633  </span>		}
+<span id="L634" class="ln">   634  </span>
+<span id="L635" class="ln">   635  </span>		return verifySnapshotFields(rel, name, entry, fields, tags), nil
+<span id="L636" class="ln">   636  </span>	default:
+<span id="L637" class="ln">   637  </span>		msg := fmt.Sprintf(&#34;%s: %s: kind は snapshot か notification のどちらかにすること（実際: %q）&#34;, rel, name, entry.Kind)
+<span id="L638" class="ln">   638  </span>
+<span id="L639" class="ln">   639  </span>		return []string{msg}, nil
+<span id="L640" class="ln">   640  </span>	}
+<span id="L641" class="ln">   641  </span>}
+<span id="L642" class="ln">   642  </span>
+<span id="L643" class="ln">   643  </span><span class="comment">// verifySnapshotFields は、snapshot の分類が集約の全フィールドを覆い、</span>
+<span id="L644" class="ln">   644  </span><span class="comment">// 運ぶと宣言した JSON 名が payload に実在することを確かめます。</span>
+<span id="L645" class="ln">   645  </span>func verifySnapshotFields(rel, name string, entry payloadParityEntry, fields, tags []string) []string {
+<span id="L646" class="ln">   646  </span>	rules := entry.Fields
+<span id="L647" class="ln">   647  </span>	violations := []string{}
+<span id="L648" class="ln">   648  </span>
+<span id="L649" class="ln">   649  </span>	tagSet := map[string]struct{}{}
+<span id="L650" class="ln">   650  </span>	for _, tag := range tags {
+<span id="L651" class="ln">   651  </span>		tagSet[tag] = struct{}{}
+<span id="L652" class="ln">   652  </span>	}
+<span id="L653" class="ln">   653  </span>
+<span id="L654" class="ln">   654  </span>	remaining := map[string]struct{}{}
+<span id="L655" class="ln">   655  </span>	for field := range rules {
+<span id="L656" class="ln">   656  </span>		remaining[field] = struct{}{}
+<span id="L657" class="ln">   657  </span>	}
+<span id="L658" class="ln">   658  </span>
+<span id="L659" class="ln">   659  </span>	for _, field := range fields {
+<span id="L660" class="ln">   660  </span>		rule, declared := rules[field]
+<span id="L661" class="ln">   661  </span>		if !declared {
+<span id="L662" class="ln">   662  </span>			violations = append(violations, fmt.Sprintf(&#34;%s: %s: 集約 %s のフィールド %s が未分類&#34;, rel, name, entry.Of, field))
+<span id="L663" class="ln">   663  </span>
+<span id="L664" class="ln">   664  </span>			continue
+<span id="L665" class="ln">   665  </span>		}
+<span id="L666" class="ln">   666  </span>		delete(remaining, field)
+<span id="L667" class="ln">   667  </span>		violations = append(violations, verifyFieldRule(rel, name, field, rule, tagSet)...)
+<span id="L668" class="ln">   668  </span>	}
+<span id="L669" class="ln">   669  </span>
+<span id="L670" class="ln">   670  </span>	for field := range remaining {
+<span id="L671" class="ln">   671  </span>		violations = append(violations, fmt.Sprintf(&#34;%s: %s: 宣言 %s は集約 %s に無い&#34;, rel, name, field, entry.Of))
+<span id="L672" class="ln">   672  </span>	}
+<span id="L673" class="ln">   673  </span>
+<span id="L674" class="ln">   674  </span>	return violations
+<span id="L675" class="ln">   675  </span>}
+<span id="L676" class="ln">   676  </span>
+<span id="L677" class="ln">   677  </span><span class="comment">// verifyFieldRule は、1 フィールドの宣言が実物と噛み合っているかを確かめます。</span>
+<span id="L678" class="ln">   678  </span>func verifyFieldRule(rel, name, field string, rule payloadFieldRule, tagSet map[string]struct{}) []string {
+<span id="L679" class="ln">   679  </span>	if rule.Carried == &#34;&#34; &amp;&amp; strings.TrimSpace(rule.Omit) == &#34;&#34; {
+<span id="L680" class="ln">   680  </span>		return []string{fmt.Sprintf(&#34;%s: %s: %s は運ぶ JSON 名か omit の理由のどちらかを書くこと&#34;, rel, name, field)}
+<span id="L681" class="ln">   681  </span>	}
+<span id="L682" class="ln">   682  </span>	if rule.Carried == &#34;&#34; {
+<span id="L683" class="ln">   683  </span>		return nil
+<span id="L684" class="ln">   684  </span>	}
+<span id="L685" class="ln">   685  </span>	if _, ok := tagSet[rule.Carried]; !ok {
+<span id="L686" class="ln">   686  </span>		return []string{fmt.Sprintf(&#34;%s: %s: 運ぶと宣言した %s が payload の JSON タグに無い&#34;, rel, name, rule.Carried)}
+<span id="L687" class="ln">   687  </span>	}
+<span id="L688" class="ln">   688  </span>
+<span id="L689" class="ln">   689  </span>	return nil
+<span id="L690" class="ln">   690  </span>}
+<span id="L691" class="ln">   691  </span>
+<span id="L692" class="ln">   692  </span><span class="comment">// lookupAggregateFields は、`&lt;pkg&gt;.&lt;Struct&gt;` 形の写し元から internal/domain 配下の struct を探し、</span>
+<span id="L693" class="ln">   693  </span><span class="comment">// gofmt 済み前提でトップレベルのフィールド名を宣言順に返します。</span>
+<span id="L694" class="ln">   694  </span>func lookupAggregateFields(root, of string) ([]string, bool, error) {
+<span id="L695" class="ln">   695  </span>	pkg, name, ok := strings.Cut(of, &#34;.&#34;)
+<span id="L696" class="ln">   696  </span>	if !ok {
+<span id="L697" class="ln">   697  </span>		return nil, false, nil
+<span id="L698" class="ln">   698  </span>	}
+<span id="L699" class="ln">   699  </span>
+<span id="L700" class="ln">   700  </span>	paths, err := plainGoFiles(filepath.Join(root, &#34;internal&#34;, &#34;domain&#34;, pkg))
+<span id="L701" class="ln">   701  </span>	if err != nil {
+<span id="L702" class="ln">   702  </span>		return nil, false, err
+<span id="L703" class="ln">   703  </span>	}
+<span id="L704" class="ln">   704  </span>
+<span id="L705" class="ln">   705  </span>	for _, path := range paths {
+<span id="L706" class="ln">   706  </span>		lines, rerr := readLines(path)
+<span id="L707" class="ln">   707  </span>		if rerr != nil {
+<span id="L708" class="ln">   708  </span>			return nil, false, rerr
+<span id="L709" class="ln">   709  </span>		}
+<span id="L710" class="ln">   710  </span>		if fields, found := collectStructFields(lines, name); found {
+<span id="L711" class="ln">   711  </span>			return fields, true, nil
+<span id="L712" class="ln">   712  </span>		}
+<span id="L713" class="ln">   713  </span>	}
+<span id="L714" class="ln">   714  </span>
+<span id="L715" class="ln">   715  </span>	return nil, false, nil
+<span id="L716" class="ln">   716  </span>}
+<span id="L717" class="ln">   717  </span>
+<span id="L718" class="ln">   718  </span><span class="comment">// collectStructFields は、`type &lt;name&gt; struct {` から `}` までのフィールド名を返します。</span>
+<span id="L719" class="ln">   719  </span><span class="comment">// 埋め込みや複数名宣言のように解析できない行は、黙って読み飛ばさず擬似フィールド名として返し、</span>
+<span id="L720" class="ln">   720  </span><span class="comment">// 呼び出し側で未分類として loud に落とします。</span>
+<span id="L721" class="ln">   721  </span>func collectStructFields(lines []string, name string) ([]string, bool) {
+<span id="L722" class="ln">   722  </span>	open := &#34;type &#34; + name + &#34; struct {&#34;
+<span id="L723" class="ln">   723  </span>	fields := []string{}
+<span id="L724" class="ln">   724  </span>	inside := false
+<span id="L725" class="ln">   725  </span>
+<span id="L726" class="ln">   726  </span>	for _, line := range lines {
+<span id="L727" class="ln">   727  </span>		if !inside {
+<span id="L728" class="ln">   728  </span>			inside = line == open
+<span id="L729" class="ln">   729  </span>
+<span id="L730" class="ln">   730  </span>			continue
+<span id="L731" class="ln">   731  </span>		}
+<span id="L732" class="ln">   732  </span>		if line == &#34;}&#34; {
+<span id="L733" class="ln">   733  </span>			return fields, true
+<span id="L734" class="ln">   734  </span>		}
+<span id="L735" class="ln">   735  </span>		if trimmed := strings.TrimSpace(line); trimmed == &#34;&#34; || strings.HasPrefix(trimmed, &#34;//&#34;) {
+<span id="L736" class="ln">   736  </span>			continue
+<span id="L737" class="ln">   737  </span>		}
+<span id="L738" class="ln">   738  </span>		if m := structFieldRe.FindStringSubmatch(line); m != nil {
+<span id="L739" class="ln">   739  </span>			fields = append(fields, m[1])
+<span id="L740" class="ln">   740  </span>
+<span id="L741" class="ln">   741  </span>			continue
+<span id="L742" class="ln">   742  </span>		}
+<span id="L743" class="ln">   743  </span>		fields = append(fields, &#34;&lt;解析できない行: &#34;+strings.TrimSpace(line)+&#34;&gt;&#34;)
+<span id="L744" class="ln">   744  </span>	}
+<span id="L745" class="ln">   745  </span>
+<span id="L746" class="ln">   746  </span>	return nil, false
+<span id="L747" class="ln">   747  </span>}
+<span id="L748" class="ln">   748  </span>
+<span id="L749" class="ln">   749  </span><span class="comment">// collectPayloadJSONTags は、payload struct が持つ JSON 名を返します。</span>
+<span id="L750" class="ln">   750  </span>func collectPayloadJSONTags(dir, name string) ([]string, error) {
+<span id="L751" class="ln">   751  </span>	paths, err := plainGoFiles(dir)
+<span id="L752" class="ln">   752  </span>	if err != nil {
+<span id="L753" class="ln">   753  </span>		return nil, err
+<span id="L754" class="ln">   754  </span>	}
+<span id="L755" class="ln">   755  </span>
+<span id="L756" class="ln">   756  </span>	for _, path := range paths {
+<span id="L757" class="ln">   757  </span>		lines, rerr := readLines(path)
+<span id="L758" class="ln">   758  </span>		if rerr != nil {
+<span id="L759" class="ln">   759  </span>			return nil, rerr
+<span id="L760" class="ln">   760  </span>		}
+<span id="L761" class="ln">   761  </span>		if tags, found := extractJSONTags(lines, name); found {
+<span id="L762" class="ln">   762  </span>			return tags, nil
+<span id="L763" class="ln">   763  </span>		}
+<span id="L764" class="ln">   764  </span>	}
+<span id="L765" class="ln">   765  </span>
+<span id="L766" class="ln">   766  </span>	return nil, nil
+<span id="L767" class="ln">   767  </span>}
+<span id="L768" class="ln">   768  </span>
+<span id="L769" class="ln">   769  </span><span class="comment">// extractJSONTags は、指定 struct のブロック内に現れる JSON 名を集めます。</span>
+<span id="L770" class="ln">   770  </span>func extractJSONTags(lines []string, name string) ([]string, bool) {
+<span id="L771" class="ln">   771  </span>	open := &#34;type &#34; + name + &#34; struct {&#34;
+<span id="L772" class="ln">   772  </span>	tags := []string{}
+<span id="L773" class="ln">   773  </span>	inside := false
+<span id="L774" class="ln">   774  </span>
+<span id="L775" class="ln">   775  </span>	for _, line := range lines {
+<span id="L776" class="ln">   776  </span>		if !inside {
+<span id="L777" class="ln">   777  </span>			inside = line == open
+<span id="L778" class="ln">   778  </span>
+<span id="L779" class="ln">   779  </span>			continue
+<span id="L780" class="ln">   780  </span>		}
+<span id="L781" class="ln">   781  </span>		if line == &#34;}&#34; {
+<span id="L782" class="ln">   782  </span>			return tags, true
+<span id="L783" class="ln">   783  </span>		}
+<span id="L784" class="ln">   784  </span>		if m := jsonTagRe.FindStringSubmatch(line); m != nil {
+<span id="L785" class="ln">   785  </span>			tags = append(tags, m[1])
+<span id="L786" class="ln">   786  </span>		}
+<span id="L787" class="ln">   787  </span>	}
+<span id="L788" class="ln">   788  </span>
+<span id="L789" class="ln">   789  </span>	return nil, false
+<span id="L790" class="ln">   790  </span>}
+<span id="L791" class="ln">   791  </span>
+<span id="L792" class="ln">   792  </span><span class="comment">// relPath は、root からの相対パスをスラッシュ区切りで返します。</span>
+<span id="L793" class="ln">   793  </span>func relPath(root, path string) string {
+<span id="L794" class="ln">   794  </span>	rel, err := filepath.Rel(root, path)
+<span id="L795" class="ln">   795  </span>	if err != nil {
+<span id="L796" class="ln">   796  </span>		return path
+<span id="L797" class="ln">   797  </span>	}
+<span id="L798" class="ln">   798  </span>
+<span id="L799" class="ln">   799  </span>	return filepath.ToSlash(rel)
+<span id="L800" class="ln">   800  </span>}
+<span id="L801" class="ln">   801  </span>
+<span id="L802" class="ln">   802  </span>func Test_payloadNamesFromLines(t *testing.T) {
+<span id="L803" class="ln">   803  </span>	t.Parallel()
+<span id="L804" class="ln">   804  </span>
+<span id="L805" class="ln">   805  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L806" class="ln">   806  </span>		t.Parallel()
+<span id="L807" class="ln">   807  </span>
+<span id="L808" class="ln">   808  </span>		t.Run(&#34;同じファイルに非公開の型が在ればそちらを payload 名にする&#34;, func(t *testing.T) {
+<span id="L809" class="ln">   809  </span>			t.Parallel()
+<span id="L810" class="ln">   810  </span>
+<span id="L811" class="ln">   811  </span>			lines := []string{
+<span id="L812" class="ln">   812  </span>				&#34;type created struct {&#34;,
+<span id="L813" class="ln">   813  </span>				&#34;}&#34;,
+<span id="L814" class="ln">   814  </span>				&#34;func BuildCreated(p *purchase.Purchase) ([]byte, error) {&#34;,
+<span id="L815" class="ln">   815  </span>			}
+<span id="L816" class="ln">   816  </span>
+<span id="L817" class="ln">   817  </span>			assert.Equal(t, []string{&#34;created&#34;}, payloadNamesFromLines(lines))
+<span id="L818" class="ln">   818  </span>		})
+<span id="L819" class="ln">   819  </span>
+<span id="L820" class="ln">   820  </span>		t.Run(&#34;非公開の型が無ければ公開名をそのまま採る&#34;, func(t *testing.T) {
+<span id="L821" class="ln">   821  </span>			t.Parallel()
+<span id="L822" class="ln">   822  </span>
+<span id="L823" class="ln">   823  </span>			lines := []string{
+<span id="L824" class="ln">   824  </span>				&#34;type Withdrawn struct {&#34;,
+<span id="L825" class="ln">   825  </span>				&#34;}&#34;,
+<span id="L826" class="ln">   826  </span>				&#34;func BuildWithdrawn(u *user.User) ([]byte, error) {&#34;,
+<span id="L827" class="ln">   827  </span>			}
+<span id="L828" class="ln">   828  </span>
+<span id="L829" class="ln">   829  </span>			assert.Equal(t, []string{&#34;Withdrawn&#34;}, payloadNamesFromLines(lines))
+<span id="L830" class="ln">   830  </span>		})
+<span id="L831" class="ln">   831  </span>
+<span id="L832" class="ln">   832  </span>		t.Run(&#34;Build で始まらない関数は拾わない&#34;, func(t *testing.T) {
+<span id="L833" class="ln">   833  </span>			t.Parallel()
+<span id="L834" class="ln">   834  </span>
+<span id="L835" class="ln">   835  </span>			lines := []string{&#34;func WireType(t purchase.EventType) (string, error) {&#34;}
+<span id="L836" class="ln">   836  </span>
+<span id="L837" class="ln">   837  </span>			assert.Empty(t, payloadNamesFromLines(lines))
+<span id="L838" class="ln">   838  </span>		})
+<span id="L839" class="ln">   839  </span>	})
+<span id="L840" class="ln">   840  </span>}
+<span id="L841" class="ln">   841  </span>
+<span id="L842" class="ln">   842  </span>func Test_collectStructFields(t *testing.T) {
+<span id="L843" class="ln">   843  </span>	t.Parallel()
+<span id="L844" class="ln">   844  </span>
+<span id="L845" class="ln">   845  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L846" class="ln">   846  </span>		t.Parallel()
+<span id="L847" class="ln">   847  </span>
+<span id="L848" class="ln">   848  </span>		t.Run(&#34;宣言順にフィールド名を返す&#34;, func(t *testing.T) {
+<span id="L849" class="ln">   849  </span>			t.Parallel()
+<span id="L850" class="ln">   850  </span>
+<span id="L851" class="ln">   851  </span>			lines := []string{
+<span id="L852" class="ln">   852  </span>				&#34;type Thing struct {&#34;,
+<span id="L853" class="ln">   853  </span>				&#34;\tid   uuid.UUID&#34;,
+<span id="L854" class="ln">   854  </span>				&#34;\tname string&#34;,
+<span id="L855" class="ln">   855  </span>				&#34;}&#34;,
+<span id="L856" class="ln">   856  </span>			}
+<span id="L857" class="ln">   857  </span>
+<span id="L858" class="ln">   858  </span>			fields, found := collectStructFields(lines, &#34;Thing&#34;)
+<span id="L859" class="ln">   859  </span>
+<span id="L860" class="ln">   860  </span>			assert.True(t, found)
+<span id="L861" class="ln">   861  </span>			assert.Equal(t, []string{&#34;id&#34;, &#34;name&#34;}, fields)
+<span id="L862" class="ln">   862  </span>		})
+<span id="L863" class="ln">   863  </span>
+<span id="L864" class="ln">   864  </span>		t.Run(&#34;空行とコメント行は読み飛ばす&#34;, func(t *testing.T) {
+<span id="L865" class="ln">   865  </span>			t.Parallel()
+<span id="L866" class="ln">   866  </span>
+<span id="L867" class="ln">   867  </span>			lines := []string{
+<span id="L868" class="ln">   868  </span>				&#34;type Thing struct {&#34;,
+<span id="L869" class="ln">   869  </span>				&#34;\t// id は識別子です。&#34;,
+<span id="L870" class="ln">   870  </span>				&#34;&#34;,
+<span id="L871" class="ln">   871  </span>				&#34;\tid uuid.UUID&#34;,
+<span id="L872" class="ln">   872  </span>				&#34;}&#34;,
+<span id="L873" class="ln">   873  </span>			}
+<span id="L874" class="ln">   874  </span>
+<span id="L875" class="ln">   875  </span>			fields, found := collectStructFields(lines, &#34;Thing&#34;)
+<span id="L876" class="ln">   876  </span>
+<span id="L877" class="ln">   877  </span>			assert.True(t, found)
+<span id="L878" class="ln">   878  </span>			assert.Equal(t, []string{&#34;id&#34;}, fields)
+<span id="L879" class="ln">   879  </span>		})
+<span id="L880" class="ln">   880  </span>
+<span id="L881" class="ln">   881  </span>		t.Run(&#34;解析できない行は擬似フィールドとして返し、未分類として落とさせる&#34;, func(t *testing.T) {
+<span id="L882" class="ln">   882  </span>			t.Parallel()
+<span id="L883" class="ln">   883  </span>
+<span id="L884" class="ln">   884  </span>			<span class="comment">// 埋め込みや複数名宣言を黙って読み飛ばすと、走査が縮んだことに気づけなくなる。</span>
+<span id="L885" class="ln">   885  </span>			lines := []string{
+<span id="L886" class="ln">   886  </span>				&#34;type Thing struct {&#34;,
+<span id="L887" class="ln">   887  </span>				&#34;\tembedded.Base&#34;,
+<span id="L888" class="ln">   888  </span>				&#34;\ta, b int&#34;,
+<span id="L889" class="ln">   889  </span>				&#34;}&#34;,
+<span id="L890" class="ln">   890  </span>			}
+<span id="L891" class="ln">   891  </span>
+<span id="L892" class="ln">   892  </span>			fields, found := collectStructFields(lines, &#34;Thing&#34;)
+<span id="L893" class="ln">   893  </span>
+<span id="L894" class="ln">   894  </span>			assert.True(t, found)
+<span id="L895" class="ln">   895  </span>			assert.Equal(t, []string{
+<span id="L896" class="ln">   896  </span>				&#34;&lt;解析できない行: embedded.Base&gt;&#34;,
+<span id="L897" class="ln">   897  </span>				&#34;&lt;解析できない行: a, b int&gt;&#34;,
+<span id="L898" class="ln">   898  </span>			}, fields)
+<span id="L899" class="ln">   899  </span>		})
+<span id="L900" class="ln">   900  </span>
+<span id="L901" class="ln">   901  </span>		t.Run(&#34;目当ての struct が無ければ見つからないと返す&#34;, func(t *testing.T) {
+<span id="L902" class="ln">   902  </span>			t.Parallel()
+<span id="L903" class="ln">   903  </span>
+<span id="L904" class="ln">   904  </span>			_, found := collectStructFields([]string{&#34;type Other struct {&#34;, &#34;}&#34;}, &#34;Thing&#34;)
+<span id="L905" class="ln">   905  </span>
+<span id="L906" class="ln">   906  </span>			assert.False(t, found)
+<span id="L907" class="ln">   907  </span>		})
+<span id="L908" class="ln">   908  </span>	})
+<span id="L909" class="ln">   909  </span>}
+<span id="L910" class="ln">   910  </span>
+<span id="L911" class="ln">   911  </span>func Test_extractJSONTags(t *testing.T) {
+<span id="L912" class="ln">   912  </span>	t.Parallel()
+<span id="L913" class="ln">   913  </span>
+<span id="L914" class="ln">   914  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L915" class="ln">   915  </span>		t.Parallel()
+<span id="L916" class="ln">   916  </span>
+<span id="L917" class="ln">   917  </span>		t.Run(&#34;オプション付きのタグは名前だけを採る&#34;, func(t *testing.T) {
+<span id="L918" class="ln">   918  </span>			t.Parallel()
+<span id="L919" class="ln">   919  </span>
+<span id="L920" class="ln">   920  </span>			lines := []string{
+<span id="L921" class="ln">   921  </span>				&#34;type created struct {&#34;,
+<span id="L922" class="ln">   922  </span>				&#34;\tPurchaseID string `json:\&#34;purchaseId\&#34;`&#34;,
+<span id="L923" class="ln">   923  </span>				&#34;\tCouponID   *string `json:\&#34;couponId,omitempty\&#34;`&#34;,
+<span id="L924" class="ln">   924  </span>				&#34;}&#34;,
+<span id="L925" class="ln">   925  </span>			}
+<span id="L926" class="ln">   926  </span>
+<span id="L927" class="ln">   927  </span>			tags, found := extractJSONTags(lines, &#34;created&#34;)
+<span id="L928" class="ln">   928  </span>
+<span id="L929" class="ln">   929  </span>			assert.True(t, found)
+<span id="L930" class="ln">   930  </span>			assert.Equal(t, []string{&#34;purchaseId&#34;, &#34;couponId&#34;}, tags)
+<span id="L931" class="ln">   931  </span>		})
+<span id="L932" class="ln">   932  </span>
+<span id="L933" class="ln">   933  </span>		t.Run(&#34;名前を持たないタグは JSON 名として拾わない&#34;, func(t *testing.T) {
+<span id="L934" class="ln">   934  </span>			t.Parallel()
+<span id="L935" class="ln">   935  </span>
+<span id="L936" class="ln">   936  </span>			<span class="comment">// `json:&#34;,omitempty&#34;` はフィールド名をそのまま使う慣用形で、名前は書かれていない。</span>
+<span id="L937" class="ln">   937  </span>			<span class="comment">// `json:&#34;-&#34;` は出力しない宣言。どちらも「運ぶと宣言できる名前」ではない。</span>
+<span id="L938" class="ln">   938  </span>			lines := []string{
+<span id="L939" class="ln">   939  </span>				&#34;type created struct {&#34;,
+<span id="L940" class="ln">   940  </span>				&#34;\tKept    string `json:\&#34;kept\&#34;`&#34;,
+<span id="L941" class="ln">   941  </span>				&#34;\tImplied string `json:\&#34;,omitempty\&#34;`&#34;,
+<span id="L942" class="ln">   942  </span>				&#34;\tHidden  string `json:\&#34;-\&#34;`&#34;,
+<span id="L943" class="ln">   943  </span>				&#34;}&#34;,
+<span id="L944" class="ln">   944  </span>			}
+<span id="L945" class="ln">   945  </span>
+<span id="L946" class="ln">   946  </span>			tags, found := extractJSONTags(lines, &#34;created&#34;)
+<span id="L947" class="ln">   947  </span>
+<span id="L948" class="ln">   948  </span>			assert.True(t, found)
+<span id="L949" class="ln">   949  </span>			assert.Equal(t, []string{&#34;kept&#34;, &#34;-&#34;}, tags)
+<span id="L950" class="ln">   950  </span>		})
+<span id="L951" class="ln">   951  </span>
+<span id="L952" class="ln">   952  </span>		t.Run(&#34;目当ての struct が無ければ見つからないと返す&#34;, func(t *testing.T) {
+<span id="L953" class="ln">   953  </span>			t.Parallel()
+<span id="L954" class="ln">   954  </span>
+<span id="L955" class="ln">   955  </span>			_, found := extractJSONTags([]string{&#34;type other struct {&#34;, &#34;}&#34;}, &#34;created&#34;)
+<span id="L956" class="ln">   956  </span>
+<span id="L957" class="ln">   957  </span>			assert.False(t, found)
+<span id="L958" class="ln">   958  </span>		})
+<span id="L959" class="ln">   959  </span>	})
+<span id="L960" class="ln">   960  </span>}
+<span id="L961" class="ln">   961  </span>
+<span id="L962" class="ln">   962  </span>func Test_verifyFieldRule(t *testing.T) {
+<span id="L963" class="ln">   963  </span>	t.Parallel()
+<span id="L964" class="ln">   964  </span>
+<span id="L965" class="ln">   965  </span>	tags := map[string]struct{}{&#34;orderedAt&#34;: {}}
+<span id="L966" class="ln">   966  </span>
+<span id="L967" class="ln">   967  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L968" class="ln">   968  </span>		t.Parallel()
+<span id="L969" class="ln">   969  </span>
+<span id="L970" class="ln">   970  </span>		t.Run(&#34;運ぶ宣言の JSON 名が payload に在れば違反にしない&#34;, func(t *testing.T) {
+<span id="L971" class="ln">   971  </span>			t.Parallel()
+<span id="L972" class="ln">   972  </span>
+<span id="L973" class="ln">   973  </span>			rule := payloadFieldRule{Carried: &#34;orderedAt&#34;}
+<span id="L974" class="ln">   974  </span>
+<span id="L975" class="ln">   975  </span>			assert.Empty(t, verifyFieldRule(&#34;f&#34;, &#34;created&#34;, &#34;orderedAt&#34;, rule, tags))
+<span id="L976" class="ln">   976  </span>		})
+<span id="L977" class="ln">   977  </span>
+<span id="L978" class="ln">   978  </span>		t.Run(&#34;理由のある omit は違反にしない&#34;, func(t *testing.T) {
+<span id="L979" class="ln">   979  </span>			t.Parallel()
+<span id="L980" class="ln">   980  </span>
+<span id="L981" class="ln">   981  </span>			rule := payloadFieldRule{Omit: &#34;作成時点では常に未設定&#34;}
+<span id="L982" class="ln">   982  </span>
+<span id="L983" class="ln">   983  </span>			assert.Empty(t, verifyFieldRule(&#34;f&#34;, &#34;created&#34;, &#34;paidAt&#34;, rule, tags))
+<span id="L984" class="ln">   984  </span>		})
+<span id="L985" class="ln">   985  </span>	})
+<span id="L986" class="ln">   986  </span>
+<span id="L987" class="ln">   987  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L988" class="ln">   988  </span>		t.Parallel()
+<span id="L989" class="ln">   989  </span>
+<span id="L990" class="ln">   990  </span>		t.Run(&#34;運ぶと言いながら payload に JSON 名が無ければ違反にする&#34;, func(t *testing.T) {
+<span id="L991" class="ln">   991  </span>			t.Parallel()
+<span id="L992" class="ln">   992  </span>
+<span id="L993" class="ln">   993  </span>			rule := payloadFieldRule{Carried: &#34;missing&#34;}
+<span id="L994" class="ln">   994  </span>
+<span id="L995" class="ln">   995  </span>			assert.Equal(t, []string{
+<span id="L996" class="ln">   996  </span>				&#34;f: created: 運ぶと宣言した missing が payload の JSON タグに無い&#34;,
+<span id="L997" class="ln">   997  </span>			}, verifyFieldRule(&#34;f&#34;, &#34;created&#34;, &#34;code&#34;, rule, tags))
+<span id="L998" class="ln">   998  </span>		})
+<span id="L999" class="ln">   999  </span>
+<span id="L1000" class="ln">  1000  </span>		t.Run(&#34;理由の無い omit は違反にする&#34;, func(t *testing.T) {
+<span id="L1001" class="ln">  1001  </span>			t.Parallel()
+<span id="L1002" class="ln">  1002  </span>
+<span id="L1003" class="ln">  1003  </span>			rule := payloadFieldRule{Omit: &#34;   &#34;}
+<span id="L1004" class="ln">  1004  </span>
+<span id="L1005" class="ln">  1005  </span>			assert.Equal(t, []string{
+<span id="L1006" class="ln">  1006  </span>				&#34;f: created: paidAt は運ぶ JSON 名か omit の理由のどちらかを書くこと&#34;,
+<span id="L1007" class="ln">  1007  </span>			}, verifyFieldRule(&#34;f&#34;, &#34;created&#34;, &#34;paidAt&#34;, rule, tags))
+<span id="L1008" class="ln">  1008  </span>		})
+<span id="L1009" class="ln">  1009  </span>	})
+<span id="L1010" class="ln">  1010  </span>}
+<span id="L1011" class="ln">  1011  </span>
+<span id="L1012" class="ln">  1012  </span>func Test_isPlainGoFile(t *testing.T) {
+<span id="L1013" class="ln">  1013  </span>	t.Parallel()
+<span id="L1014" class="ln">  1014  </span>
+<span id="L1015" class="ln">  1015  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1016" class="ln">  1016  </span>		t.Parallel()
+<span id="L1017" class="ln">  1017  </span>
+<span id="L1018" class="ln">  1018  </span>		t.Run(&#34;通常の Go ファイルは走査する&#34;, func(t *testing.T) {
+<span id="L1019" class="ln">  1019  </span>			t.Parallel()
+<span id="L1020" class="ln">  1020  </span>
+<span id="L1021" class="ln">  1021  </span>			assert.True(t, isPlainGoFile(&#34;internal/usecase/purchase/event/created.go&#34;))
+<span id="L1022" class="ln">  1022  </span>		})
+<span id="L1023" class="ln">  1023  </span>
+<span id="L1024" class="ln">  1024  </span>		t.Run(&#34;テストファイルは走査しない&#34;, func(t *testing.T) {
+<span id="L1025" class="ln">  1025  </span>			t.Parallel()
+<span id="L1026" class="ln">  1026  </span>
+<span id="L1027" class="ln">  1027  </span>			assert.False(t, isPlainGoFile(&#34;internal/usecase/purchase/event/created_test.go&#34;))
+<span id="L1028" class="ln">  1028  </span>		})
+<span id="L1029" class="ln">  1029  </span>
+<span id="L1030" class="ln">  1030  </span>		t.Run(&#34;生成物は走査しない&#34;, func(t *testing.T) {
+<span id="L1031" class="ln">  1031  </span>			t.Parallel()
+<span id="L1032" class="ln">  1032  </span>
+<span id="L1033" class="ln">  1033  </span>			assert.False(t, isPlainGoFile(&#34;internal/usecase/purchase/event/created.gen.go&#34;))
+<span id="L1034" class="ln">  1034  </span>		})
+<span id="L1035" class="ln">  1035  </span>
+<span id="L1036" class="ln">  1036  </span>		t.Run(&#34;Go ファイルでないものは走査しない&#34;, func(t *testing.T) {
+<span id="L1037" class="ln">  1037  </span>			t.Parallel()
+<span id="L1038" class="ln">  1038  </span>
+<span id="L1039" class="ln">  1039  </span>			assert.False(t, isPlainGoFile(&#34;internal/usecase/purchase/event/payload_parity.yaml&#34;))
+<span id="L1040" class="ln">  1040  </span>		})
+<span id="L1041" class="ln">  1041  </span>	})
+<span id="L1042" class="ln">  1042  </span>}
+<span id="L1043" class="ln">  1043  </span>
+<span id="L1044" class="ln">  1044  </span>func Test_diffPayloadNames(t *testing.T) {
+<span id="L1045" class="ln">  1045  </span>	t.Parallel()
+<span id="L1046" class="ln">  1046  </span>
+<span id="L1047" class="ln">  1047  </span>	doc := payloadParityDoc{Payloads: map[string]payloadParityEntry{&#34;created&#34;: {Kind: &#34;snapshot&#34;}}}
+<span id="L1048" class="ln">  1048  </span>
+<span id="L1049" class="ln">  1049  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1050" class="ln">  1050  </span>		t.Parallel()
+<span id="L1051" class="ln">  1051  </span>
+<span id="L1052" class="ln">  1052  </span>		t.Run(&#34;実在と宣言が一致していれば違反にしない&#34;, func(t *testing.T) {
+<span id="L1053" class="ln">  1053  </span>			t.Parallel()
+<span id="L1054" class="ln">  1054  </span>
+<span id="L1055" class="ln">  1055  </span>			assert.Empty(t, diffPayloadNames(&#34;e&#34;, []string{&#34;created&#34;}, doc))
+<span id="L1056" class="ln">  1056  </span>		})
+<span id="L1057" class="ln">  1057  </span>
+<span id="L1058" class="ln">  1058  </span>		t.Run(&#34;宣言に無い payload を検出する&#34;, func(t *testing.T) {
+<span id="L1059" class="ln">  1059  </span>			t.Parallel()
+<span id="L1060" class="ln">  1060  </span>
+<span id="L1061" class="ln">  1061  </span>			assert.Equal(t, []string{
+<span id="L1062" class="ln">  1062  </span>				&#34;e/payload_parity.yaml: payload paid が宣言されていない&#34;,
+<span id="L1063" class="ln">  1063  </span>			}, diffPayloadNames(&#34;e&#34;, []string{&#34;created&#34;, &#34;paid&#34;}, doc))
+<span id="L1064" class="ln">  1064  </span>		})
+<span id="L1065" class="ln">  1065  </span>
+<span id="L1066" class="ln">  1066  </span>		t.Run(&#34;実体の無い宣言を検出する&#34;, func(t *testing.T) {
+<span id="L1067" class="ln">  1067  </span>			t.Parallel()
+<span id="L1068" class="ln">  1068  </span>
+<span id="L1069" class="ln">  1069  </span>			<span class="comment">// 走査が黙って縮んだときに loud に落ちるのはこの向き。</span>
+<span id="L1070" class="ln">  1070  </span>			assert.Equal(t, []string{
+<span id="L1071" class="ln">  1071  </span>				&#34;e/payload_parity.yaml: 宣言 created に対応する Build 関数が無い&#34;,
+<span id="L1072" class="ln">  1072  </span>			}, diffPayloadNames(&#34;e&#34;, nil, doc))
+<span id="L1073" class="ln">  1073  </span>		})
+<span id="L1074" class="ln">  1074  </span>	})
+<span id="L1075" class="ln">  1075  </span>}
+<span id="L1076" class="ln">  1076  </span>
+<span id="L1077" class="ln">  1077  </span>func Test_lookupAggregateFields(t *testing.T) {
+<span id="L1078" class="ln">  1078  </span>	t.Parallel()
+<span id="L1079" class="ln">  1079  </span>
+<span id="L1080" class="ln">  1080  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1081" class="ln">  1081  </span>		t.Parallel()
+<span id="L1082" class="ln">  1082  </span>
+<span id="L1083" class="ln">  1083  </span>		t.Run(&#34;集約 struct のフィールドを宣言順で返す&#34;, func(t *testing.T) {
+<span id="L1084" class="ln">  1084  </span>			t.Parallel()
+<span id="L1085" class="ln">  1085  </span>
+<span id="L1086" class="ln">  1086  </span>			root := t.TempDir()
+<span id="L1087" class="ln">  1087  </span>			writeDomainStruct(t, root, &#34;omicron&#34;, &#34;\tid   string\n\tname string\n&#34;)
+<span id="L1088" class="ln">  1088  </span>
+<span id="L1089" class="ln">  1089  </span>			fields, ok, err := lookupAggregateFields(root, &#34;omicron.Thing&#34;)
+<span id="L1090" class="ln">  1090  </span>
+<span id="L1091" class="ln">  1091  </span>			require.NoError(t, err)
+<span id="L1092" class="ln">  1092  </span>			assert.True(t, ok)
+<span id="L1093" class="ln">  1093  </span>			assert.Equal(t, []string{&#34;id&#34;, &#34;name&#34;}, fields)
+<span id="L1094" class="ln">  1094  </span>		})
+<span id="L1095" class="ln">  1095  </span>
+<span id="L1096" class="ln">  1096  </span>		t.Run(&#34;パッケージ名と struct 名に割れない指定は見つからないと返す&#34;, func(t *testing.T) {
+<span id="L1097" class="ln">  1097  </span>			t.Parallel()
+<span id="L1098" class="ln">  1098  </span>
+<span id="L1099" class="ln">  1099  </span>			_, ok, err := lookupAggregateFields(t.TempDir(), &#34;Thing&#34;)
+<span id="L1100" class="ln">  1100  </span>
+<span id="L1101" class="ln">  1101  </span>			require.NoError(t, err)
+<span id="L1102" class="ln">  1102  </span>			assert.False(t, ok)
+<span id="L1103" class="ln">  1103  </span>		})
+<span id="L1104" class="ln">  1104  </span>
+<span id="L1105" class="ln">  1105  </span>		t.Run(&#34;domain パッケージが無ければ見つからないと返す&#34;, func(t *testing.T) {
+<span id="L1106" class="ln">  1106  </span>			t.Parallel()
+<span id="L1107" class="ln">  1107  </span>
+<span id="L1108" class="ln">  1108  </span>			_, ok, err := lookupAggregateFields(t.TempDir(), &#34;nosuchpkg.Thing&#34;)
+<span id="L1109" class="ln">  1109  </span>
+<span id="L1110" class="ln">  1110  </span>			require.NoError(t, err)
+<span id="L1111" class="ln">  1111  </span>			assert.False(t, ok)
+<span id="L1112" class="ln">  1112  </span>		})
+<span id="L1113" class="ln">  1113  </span>
+<span id="L1114" class="ln">  1114  </span>		t.Run(&#34;パッケージはあるが struct が無ければ見つからないと返す&#34;, func(t *testing.T) {
+<span id="L1115" class="ln">  1115  </span>			t.Parallel()
+<span id="L1116" class="ln">  1116  </span>
+<span id="L1117" class="ln">  1117  </span>			root := t.TempDir()
+<span id="L1118" class="ln">  1118  </span>			writeDomainStruct(t, root, &#34;pi&#34;, &#34;\tid string\n&#34;)
+<span id="L1119" class="ln">  1119  </span>
+<span id="L1120" class="ln">  1120  </span>			_, ok, err := lookupAggregateFields(root, &#34;pi.Missing&#34;)
+<span id="L1121" class="ln">  1121  </span>
+<span id="L1122" class="ln">  1122  </span>			require.NoError(t, err)
+<span id="L1123" class="ln">  1123  </span>			assert.False(t, ok)
+<span id="L1124" class="ln">  1124  </span>		})
+<span id="L1125" class="ln">  1125  </span>	})
+<span id="L1126" class="ln">  1126  </span>}
+<span id="L1127" class="ln">  1127  </span>
+<span id="L1128" class="ln">  1128  </span>func Test_collectEventPackages(t *testing.T) {
+<span id="L1129" class="ln">  1129  </span>	t.Parallel()
+<span id="L1130" class="ln">  1130  </span>
+<span id="L1131" class="ln">  1131  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1132" class="ln">  1132  </span>		t.Parallel()
+<span id="L1133" class="ln">  1133  </span>
+<span id="L1134" class="ln">  1134  </span>		t.Run(&#34;event ディレクトリの Build 関数だけを拾う&#34;, func(t *testing.T) {
+<span id="L1135" class="ln">  1135  </span>			t.Parallel()
+<span id="L1136" class="ln">  1136  </span>
+<span id="L1137" class="ln">  1137  </span>			<span class="comment">// event 以外にも Build* を持つ関数は在る（例: usecase 直下の BuildReferenceAmount）ので、</span>
+<span id="L1138" class="ln">  1138  </span>			<span class="comment">// ディレクトリ名での絞り込みが効いていることを単独で固定する。</span>
+<span id="L1139" class="ln">  1139  </span>			root := t.TempDir()
+<span id="L1140" class="ln">  1140  </span>			writeEventPackage(t, root, &#34;rho&#34;, &#34;package event\n\nfunc BuildOpened(x int) ([]byte, error) { return nil, nil }\n&#34;)
+<span id="L1141" class="ln">  1141  </span>			other := filepath.Join(root, usecaseRoot, &#34;rho&#34;)
+<span id="L1142" class="ln">  1142  </span>			require.NoError(t, pkgfs.OS{}.WriteFile(
+<span id="L1143" class="ln">  1143  </span>				filepath.Join(other, &#34;rho_usecase.go&#34;),
+<span id="L1144" class="ln">  1144  </span>				[]byte(&#34;package rho\n\nfunc BuildSomething(x int) ([]byte, error) { return nil, nil }\n&#34;),
+<span id="L1145" class="ln">  1145  </span>				0o600,
+<span id="L1146" class="ln">  1146  </span>			))
+<span id="L1147" class="ln">  1147  </span>
+<span id="L1148" class="ln">  1148  </span>			dirs, err := collectEventPackages(root)
+<span id="L1149" class="ln">  1149  </span>
+<span id="L1150" class="ln">  1150  </span>			require.NoError(t, err)
+<span id="L1151" class="ln">  1151  </span>			assert.Equal(t, []string{filepath.Join(root, usecaseRoot, &#34;rho&#34;, &#34;event&#34;)}, dirs)
+<span id="L1152" class="ln">  1152  </span>		})
+<span id="L1153" class="ln">  1153  </span>
+<span id="L1154" class="ln">  1154  </span>		t.Run(&#34;走査の起点が無いツリーは空で返す&#34;, func(t *testing.T) {
+<span id="L1155" class="ln">  1155  </span>			t.Parallel()
+<span id="L1156" class="ln">  1156  </span>
+<span id="L1157" class="ln">  1157  </span>			dirs, err := collectEventPackages(t.TempDir())
+<span id="L1158" class="ln">  1158  </span>
+<span id="L1159" class="ln">  1159  </span>			require.NoError(t, err)
+<span id="L1160" class="ln">  1160  </span>			assert.Empty(t, dirs)
+<span id="L1161" class="ln">  1161  </span>		})
+<span id="L1162" class="ln">  1162  </span>	})
+<span id="L1163" class="ln">  1163  </span>}
+<span id="L1164" class="ln">  1164  </span>
+<span id="L1165" class="ln">  1165  </span>func Test_payloadFieldRule_UnmarshalYAML(t *testing.T) {
+<span id="L1166" class="ln">  1166  </span>	t.Parallel()
+<span id="L1167" class="ln">  1167  </span>
+<span id="L1168" class="ln">  1168  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1169" class="ln">  1169  </span>		t.Parallel()
+<span id="L1170" class="ln">  1170  </span>
+<span id="L1171" class="ln">  1171  </span>		t.Run(&#34;スカラは運ぶ JSON 名として読む&#34;, func(t *testing.T) {
+<span id="L1172" class="ln">  1172  </span>			t.Parallel()
+<span id="L1173" class="ln">  1173  </span>
+<span id="L1174" class="ln">  1174  </span>			var doc payloadParityDoc
+<span id="L1175" class="ln">  1175  </span>			require.NoError(t, yaml.Unmarshal([]byte(
+<span id="L1176" class="ln">  1176  </span>				&#34;payloads:\n  created:\n    kind: snapshot\n    fields:\n      id: purchaseId\n&#34;,
+<span id="L1177" class="ln">  1177  </span>			), &amp;doc))
+<span id="L1178" class="ln">  1178  </span>
+<span id="L1179" class="ln">  1179  </span>			rule := doc.Payloads[&#34;created&#34;].Fields[&#34;id&#34;]
+<span id="L1180" class="ln">  1180  </span>			assert.Equal(t, &#34;purchaseId&#34;, rule.Carried)
+<span id="L1181" class="ln">  1181  </span>			assert.Empty(t, rule.Omit)
+<span id="L1182" class="ln">  1182  </span>		})
+<span id="L1183" class="ln">  1183  </span>
+<span id="L1184" class="ln">  1184  </span>		t.Run(&#34;マッピングは omit の理由として読む&#34;, func(t *testing.T) {
+<span id="L1185" class="ln">  1185  </span>			t.Parallel()
+<span id="L1186" class="ln">  1186  </span>
+<span id="L1187" class="ln">  1187  </span>			var doc payloadParityDoc
+<span id="L1188" class="ln">  1188  </span>			require.NoError(t, yaml.Unmarshal([]byte(
+<span id="L1189" class="ln">  1189  </span>				&#34;payloads:\n  created:\n    kind: snapshot\n    fields:\n      statusID:\n        omit: 内部 FK\n&#34;,
+<span id="L1190" class="ln">  1190  </span>			), &amp;doc))
+<span id="L1191" class="ln">  1191  </span>
+<span id="L1192" class="ln">  1192  </span>			rule := doc.Payloads[&#34;created&#34;].Fields[&#34;statusID&#34;]
+<span id="L1193" class="ln">  1193  </span>			assert.Empty(t, rule.Carried)
+<span id="L1194" class="ln">  1194  </span>			assert.Equal(t, &#34;内部 FK&#34;, rule.Omit)
+<span id="L1195" class="ln">  1195  </span>		})
+<span id="L1196" class="ln">  1196  </span>	})
+<span id="L1197" class="ln">  1197  </span>
+<span id="L1198" class="ln">  1198  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1199" class="ln">  1199  </span>		t.Parallel()
+<span id="L1200" class="ln">  1200  </span>
+<span id="L1201" class="ln">  1201  </span>		t.Run(&#34;スカラでもマッピングでもない値はエラーにする&#34;, func(t *testing.T) {
+<span id="L1202" class="ln">  1202  </span>			t.Parallel()
+<span id="L1203" class="ln">  1203  </span>
+<span id="L1204" class="ln">  1204  </span>			var doc payloadParityDoc
+<span id="L1205" class="ln">  1205  </span>			err := yaml.Unmarshal([]byte(
+<span id="L1206" class="ln">  1206  </span>				&#34;payloads:\n  created:\n    kind: snapshot\n    fields:\n      id:\n        - a\n        - b\n&#34;,
+<span id="L1207" class="ln">  1207  </span>			), &amp;doc)
+<span id="L1208" class="ln">  1208  </span>
+<span id="L1209" class="ln">  1209  </span>			require.Error(t, err)
+<span id="L1210" class="ln">  1210  </span>		})
+<span id="L1211" class="ln">  1211  </span>	})
+<span id="L1212" class="ln">  1212  </span>}
+<span id="L1213" class="ln">  1213  </span>
+</pre><p><a href="../../../../src/go-boilerplate/internal/architest/outbox_payload_parity_test.go.html?m=text">View as plain text</a></p>
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

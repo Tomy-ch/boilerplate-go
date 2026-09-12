@@ -36,7 +36,7 @@ under `internal/` as cross-cutting concerns. The domain layer may depend on
 - Must not contain business logic
 - Must not depend on `internal/` packages
 - Must not depend on infrastructure or framework-specific packages
-- Must not depend on other `pkg/` packages. Two exceptions are permitted, both enforced by depguard `independent_pkg` in `.golangci-full.yaml`: `pkg/xerrors` may be imported by any package, and a `testkit` sub-package may import its own parent (the rule's file pattern excludes `**/pkg/**/testkit/**.go`)
+- Must not depend on other `pkg/` packages. Two exceptions are permitted, both enforced by depguard `independent_pkg` in `.golangci.yaml`: `pkg/xerrors` may be imported by any package, and a `testkit` sub-package may import its own parent (the rule's file pattern excludes `**/pkg/**/testkit/**.go`)
 - Each package must have a single responsibility
 
 ### Doc comments must stay context-independent too

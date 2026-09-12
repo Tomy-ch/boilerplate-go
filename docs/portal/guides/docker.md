@@ -21,9 +21,9 @@ The infra layer holds every service that can only run on a fixed host port, whic
 |File|Role|
 |---|---|
 |`docker-compose.yaml`|Definitions of all services|
-|`docker-compose.attach.yaml`|app layer override, **always** overlaid (`docker compose -f docker-compose.yaml -f docker-compose.attach.yaml`)|
+|`docker-compose.attach.yaml`|app layer override, overlaid on every app-layer invocation through `COMPOSE_APP` (`docker compose -f docker-compose.yaml -f docker-compose.attach.yaml`); the sole exception is `db-slot release`'s `down`, for the reason in [`internal/cli/dbslot/README.md`](../internal/cli/dbslot/README.md)|
 
-`docker-compose.attach.yaml` publishes the `api_server` host ports as `${API_HOST_PORT:-8080}` / `${DLV_HOST_PORT:-2345}` / `${PPROF_HOST_PORT:-6060}`, narrows `depends_on` to `mock_auth_server` alone (the infra layer is already up), and points the app at the shared infra by overriding `DB_HOST=host.docker.internal` / `DB_NAME=${DB_NAME_LOCAL:-local}` / `ENDPOINT_OTLP=http://host.docker.internal:4318` / `ENDPOINT_OBJECT_STORAGE=http://host.docker.internal:3900` / `AUTH_ISSUER=http://localhost:${MOCK_AUTH_HOST_PORT:-2010}/default`. The provider needs no matching override: it derives the issuer from the `Host` it was reached through.
+`docker-compose.attach.yaml` publishes the `api_server` host ports as `${API_HOST_PORT:-8080}` / `${DLV_HOST_PORT:-2345}` / `${PPROF_HOST_PORT:-6060}`, narrows `depends_on` to `mock_auth_server` alone (the infra layer is already up), and points the app at the shared infra by overriding `DB_HOST=host.docker.internal` / `DB_NAME=${DB_LOCAL:?…}` / `ENDPOINT_OTLP=http://host.docker.internal:4318` / `ENDPOINT_OBJECT_STORAGE=http://host.docker.internal:3900` / `AUTH_ISSUER=${AUTH_ISSUER:?…}`. The provider needs no matching override: it derives the issuer from the `Host` it was reached through. `AUTH_ISSUER`, `DB_NAME` and the Realtime Delivery names (`REALTIME_TOPIC` / `REALTIME_QUEUE_PREFIX` / `REALTIME_TABLE_SUFFIX`) are demanded rather than defaulted (`${VAR:?…}`) because `db-slot env` owns their values whether or not a slot is held — see [`docs/maintenance/db-worktree-pool.md`](../docs/maintenance/db-worktree-pool.md).
 
 |Purpose|Reference|
 |---|---|
@@ -134,7 +134,7 @@ Development OIDC provider. Nothing is built here — the service runs the upstre
 
 - `config.json` is mounted read-only at `/etc/mock-oauth2-server/config.json` and passed via `JSON_CONFIG_PATH`. It declares the whole token contract: the `issuerId` (which becomes both the issuer's path segment and the JWKS `kid`), the `at+jwt` type header the resource server requires (RFC 9068), the `aud` / `azp` pair that lets one claim set satisfy both the resource server and an OIDC client (see [`docs/design/auth.md`](../docs/design/auth.md) § 3.3.1), and `${subject}`, which resolves to the login form's — or the password grant's — `username` and becomes the `sub` claim
 - The internal port is always `4000` (`SERVER_PORT`); the process runs as a non-root UID from the upstream image
-- The issuer is derived from the `Host` of the request that minted the token, so nothing has to declare it here — a token taken through the published host port carries an `iss` matching `AUTH_ISSUER`. `docker-compose.attach.yaml` only has to keep the API's `AUTH_ISSUER` on the slot's port
+- The issuer is derived from the `Host` of the request that minted the token, so nothing has to declare it here — a token taken through the published host port carries an `iss` matching `AUTH_ISSUER`. `docker-compose.attach.yaml` only has to pass the API the `AUTH_ISSUER` that `db-slot env` resolves for the slot's port
 - Signing keys are generated at startup rather than checked in, so tokens are not reproducible across restarts. Nothing depends on them being reproducible: the resource server resolves keys from the JWKS at runtime, and the fixed keys the JWKS rotation test needs are its own (`internal/integration/testdata/`)
 
 ## database

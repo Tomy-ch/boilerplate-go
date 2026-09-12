@@ -336,6 +336,30 @@ since that is the only place a reader can see what was left out.
 - Interface name should be unified as `Usecase` (e.g., `user.Usecase`).
 - Constructor should be named `New`, registered in `di/module/usecase.go`.
 
+### `event/payload_parity.yaml` — the one non-Go file in a usecase package
+
+A package that publishes outbox events (`<aggregate>/event/`, holding the `Build*` that marshals each
+payload) also carries a `payload_parity.yaml` beside them. It is the only non-Go file this layer
+declares, so its presence is deliberate rather than a stray artifact.
+
+It states, per payload, whether that payload is a `snapshot` of its aggregate or a `notification`
+about it, and for a `snapshot` how every field of the source struct is treated:
+
+```yaml
+payloads:
+  <Go payload type name>:
+    kind: snapshot | notification
+    of: <domain package>.<aggregate struct>
+    fields:                     # snapshot only; a notification writes none
+      <aggregate field>: <payload JSON name>   # carried
+      <aggregate field>:
+        omit: <reason>                          # not carried; the reason is required
+``` The declaration
+belongs to this layer because the wire format does: the event's *name* is domain vocabulary, its
+representation is not (`internal/domain/README.md` § Domain events). `TestOutboxPayloadParity`
+reconciles the declaration with the code, so adding a field to an aggregate fails until the payload's
+treatment of it is written down — see [ADR-0113](../../docs/adr/0113-outbox-payload-kinds-and-parity-declaration.md).
+
 ### Doc comments: interface vs implementation
 
 An interface and its implementation live in the same package here (`Usecase` and the unexported

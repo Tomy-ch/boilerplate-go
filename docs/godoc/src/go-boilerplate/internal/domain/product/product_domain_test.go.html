@@ -576,1194 +576,1264 @@
 <span id="L519" class="ln">   519  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
 <span id="L520" class="ln">   520  </span>		t.Parallel()
 <span id="L521" class="ln">   521  </span>
-<span id="L522" class="ln">   522  </span>		t.Run(&#34;廃番かつ公開の場合、ErrDiscontinuedCannotBePublishedを返し違反フィールドとしてpublishedAtを報告する&#34;, func(t *testing.T) {
+<span id="L522" class="ln">   522  </span>		t.Run(&#34;廃番かつ公開の場合、ErrDiscontinuedCannotBePublishedを返し識別子は付けない&#34;, func(t *testing.T) {
 <span id="L523" class="ln">   523  </span>			t.Parallel()
 <span id="L524" class="ln">   524  </span>
 <span id="L525" class="ln">   525  </span>			err := validateDiscontinuedAt(discontinuedAt, publishedAt)
 <span id="L526" class="ln">   526  </span>
 <span id="L527" class="ln">   527  </span>			require.ErrorIs(t, err, ErrDiscontinuedCannotBePublished)
-<span id="L528" class="ln">   528  </span>			meta, ok := apperror.MetaFrom(err)
-<span id="L529" class="ln">   529  </span>			require.True(t, ok)
-<span id="L530" class="ln">   530  </span>			assert.Equal(t, []string{FieldPublishedAt}, meta.Details())
-<span id="L531" class="ln">   531  </span>		})
-<span id="L532" class="ln">   532  </span>	})
-<span id="L533" class="ln">   533  </span>}
-<span id="L534" class="ln">   534  </span>
-<span id="L535" class="ln">   535  </span>func Test_validateStockWarningThreshold(t *testing.T) {
-<span id="L536" class="ln">   536  </span>	t.Parallel()
-<span id="L537" class="ln">   537  </span>
-<span id="L538" class="ln">   538  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L539" class="ln">   539  </span>		t.Parallel()
-<span id="L540" class="ln">   540  </span>
-<span id="L541" class="ln">   541  </span>		t.Run(&#34;nilの場合、未設定として扱いエラーを返さない&#34;, func(t *testing.T) {
-<span id="L542" class="ln">   542  </span>			t.Parallel()
-<span id="L543" class="ln">   543  </span>			require.NoError(t, validateStockWarningThreshold(nil))
-<span id="L544" class="ln">   544  </span>		})
-<span id="L545" class="ln">   545  </span>
-<span id="L546" class="ln">   546  </span>		t.Run(&#34;最小値の場合、エラーを返さない&#34;, func(t *testing.T) {
-<span id="L547" class="ln">   547  </span>			t.Parallel()
-<span id="L548" class="ln">   548  </span>			require.NoError(t, validateStockWarningThreshold(ptr.To(minThreshold)))
-<span id="L549" class="ln">   549  </span>		})
-<span id="L550" class="ln">   550  </span>
-<span id="L551" class="ln">   551  </span>		t.Run(&#34;最大値の場合、エラーを返さない&#34;, func(t *testing.T) {
-<span id="L552" class="ln">   552  </span>			t.Parallel()
-<span id="L553" class="ln">   553  </span>			require.NoError(t, validateStockWarningThreshold(ptr.To(maxThreshold)))
-<span id="L554" class="ln">   554  </span>		})
-<span id="L555" class="ln">   555  </span>	})
-<span id="L556" class="ln">   556  </span>
-<span id="L557" class="ln">   557  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L558" class="ln">   558  </span>		t.Parallel()
-<span id="L559" class="ln">   559  </span>
-<span id="L560" class="ln">   560  </span>		t.Run(&#34;最小値未満の場合、ErrInvalidStockWarningThresholdを返す&#34;, func(t *testing.T) {
-<span id="L561" class="ln">   561  </span>			t.Parallel()
-<span id="L562" class="ln">   562  </span>			require.ErrorIs(t, validateStockWarningThreshold(ptr.To(minThreshold-1)), ErrInvalidStockWarningThreshold)
-<span id="L563" class="ln">   563  </span>		})
-<span id="L564" class="ln">   564  </span>
-<span id="L565" class="ln">   565  </span>		t.Run(&#34;最大値を超える場合、ErrInvalidStockWarningThresholdを返す&#34;, func(t *testing.T) {
-<span id="L566" class="ln">   566  </span>			t.Parallel()
-<span id="L567" class="ln">   567  </span>			require.ErrorIs(t, validateStockWarningThreshold(ptr.To(maxThreshold+1)), ErrInvalidStockWarningThreshold)
-<span id="L568" class="ln">   568  </span>		})
-<span id="L569" class="ln">   569  </span>	})
-<span id="L570" class="ln">   570  </span>}
-<span id="L571" class="ln">   571  </span>
-<span id="L572" class="ln">   572  </span>func Test_validateAttributes(t *testing.T) {
-<span id="L573" class="ln">   573  </span>	t.Parallel()
-<span id="L574" class="ln">   574  </span>
-<span id="L575" class="ln">   575  </span>	valid := Attributes{
-<span id="L576" class="ln">   576  </span>		Name:                  &#34;ワイヤレスイヤホン&#34;,
-<span id="L577" class="ln">   577  </span>		Quantity:              1,
-<span id="L578" class="ln">   578  </span>		StockWarningThreshold: ptr.To(1),
-<span id="L579" class="ln">   579  </span>		Status:                mustStatusRef(t, &#34;validate_attributes_status_id&#34;, &#34;在庫あり&#34;),
-<span id="L580" class="ln">   580  </span>		Category:              mustCategoryRef(t, &#34;validate_attributes_category_id&#34;, &#34;電子機器&#34;),
-<span id="L581" class="ln">   581  </span>	}
-<span id="L582" class="ln">   582  </span>
-<span id="L583" class="ln">   583  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L584" class="ln">   584  </span>		t.Parallel()
-<span id="L585" class="ln">   585  </span>
-<span id="L586" class="ln">   586  </span>		t.Run(&#34;nameが最小長の場合、エラーを返さない&#34;, func(t *testing.T) {
-<span id="L587" class="ln">   587  </span>			t.Parallel()
-<span id="L588" class="ln">   588  </span>			attrs := valid
-<span id="L589" class="ln">   589  </span>			attrs.Name = strings.Repeat(&#34;あ&#34;, minNameLength)
-<span id="L590" class="ln">   590  </span>			require.NoError(t, validateAttributes(attrs))
-<span id="L591" class="ln">   591  </span>		})
-<span id="L592" class="ln">   592  </span>
-<span id="L593" class="ln">   593  </span>		t.Run(&#34;nameが最大長の場合、エラーを返さない&#34;, func(t *testing.T) {
-<span id="L594" class="ln">   594  </span>			t.Parallel()
-<span id="L595" class="ln">   595  </span>			attrs := valid
-<span id="L596" class="ln">   596  </span>			attrs.Name = strings.Repeat(&#34;あ&#34;, maxNameLength)
-<span id="L597" class="ln">   597  </span>			require.NoError(t, validateAttributes(attrs))
-<span id="L598" class="ln">   598  </span>		})
-<span id="L599" class="ln">   599  </span>
-<span id="L600" class="ln">   600  </span>		t.Run(&#34;quantityとstockWarningThresholdが最小値の場合、エラーを返さない&#34;, func(t *testing.T) {
-<span id="L601" class="ln">   601  </span>			t.Parallel()
-<span id="L602" class="ln">   602  </span>			attrs := valid
-<span id="L603" class="ln">   603  </span>			attrs.Quantity = minQuantity
-<span id="L604" class="ln">   604  </span>			attrs.StockWarningThreshold = ptr.To(minThreshold)
-<span id="L605" class="ln">   605  </span>			require.NoError(t, validateAttributes(attrs))
-<span id="L606" class="ln">   606  </span>		})
-<span id="L607" class="ln">   607  </span>
-<span id="L608" class="ln">   608  </span>		t.Run(&#34;stockWarningThresholdがnilの場合、閾値検証をスキップしてエラーを返さない&#34;, func(t *testing.T) {
-<span id="L609" class="ln">   609  </span>			t.Parallel()
-<span id="L610" class="ln">   610  </span>			attrs := valid
-<span id="L611" class="ln">   611  </span>			attrs.Quantity = minQuantity
-<span id="L612" class="ln">   612  </span>			attrs.StockWarningThreshold = nil
-<span id="L613" class="ln">   613  </span>			require.NoError(t, validateAttributes(attrs))
-<span id="L614" class="ln">   614  </span>		})
-<span id="L615" class="ln">   615  </span>	})
-<span id="L616" class="ln">   616  </span>
-<span id="L617" class="ln">   617  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L618" class="ln">   618  </span>		t.Parallel()
-<span id="L619" class="ln">   619  </span>
-<span id="L620" class="ln">   620  </span>		t.Run(&#34;nameが最小長未満の場合、ErrInvalidNameを返す&#34;, func(t *testing.T) {
-<span id="L621" class="ln">   621  </span>			t.Parallel()
-<span id="L622" class="ln">   622  </span>			attrs := valid
-<span id="L623" class="ln">   623  </span>			attrs.Name = &#34;&#34;
-<span id="L624" class="ln">   624  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidName)
-<span id="L625" class="ln">   625  </span>		})
-<span id="L626" class="ln">   626  </span>
-<span id="L627" class="ln">   627  </span>		t.Run(&#34;nameが最大長を超える場合、ErrInvalidNameを返す&#34;, func(t *testing.T) {
-<span id="L628" class="ln">   628  </span>			t.Parallel()
-<span id="L629" class="ln">   629  </span>			attrs := valid
-<span id="L630" class="ln">   630  </span>			attrs.Name = strings.Repeat(&#34;あ&#34;, maxNameLength+1)
-<span id="L631" class="ln">   631  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidName)
-<span id="L632" class="ln">   632  </span>		})
-<span id="L633" class="ln">   633  </span>
-<span id="L634" class="ln">   634  </span>		t.Run(&#34;quantityが最小値未満の場合、ErrInvalidQuantityを返す&#34;, func(t *testing.T) {
-<span id="L635" class="ln">   635  </span>			t.Parallel()
-<span id="L636" class="ln">   636  </span>			attrs := valid
-<span id="L637" class="ln">   637  </span>			attrs.Quantity = minQuantity - 1
-<span id="L638" class="ln">   638  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidQuantity)
-<span id="L639" class="ln">   639  </span>		})
-<span id="L640" class="ln">   640  </span>
-<span id="L641" class="ln">   641  </span>		t.Run(&#34;stockWarningThresholdが最小値未満の場合、ErrInvalidStockWarningThresholdを返す&#34;, func(t *testing.T) {
-<span id="L642" class="ln">   642  </span>			t.Parallel()
-<span id="L643" class="ln">   643  </span>			attrs := valid
-<span id="L644" class="ln">   644  </span>			attrs.Quantity = minQuantity
-<span id="L645" class="ln">   645  </span>			attrs.StockWarningThreshold = ptr.To(minThreshold - 1)
-<span id="L646" class="ln">   646  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidStockWarningThreshold)
-<span id="L647" class="ln">   647  </span>		})
-<span id="L648" class="ln">   648  </span>
-<span id="L649" class="ln">   649  </span>		t.Run(&#34;stockWarningThresholdが最大値を超える場合、ErrInvalidStockWarningThresholdを返す&#34;, func(t *testing.T) {
-<span id="L650" class="ln">   650  </span>			t.Parallel()
-<span id="L651" class="ln">   651  </span>			attrs := valid
-<span id="L652" class="ln">   652  </span>			attrs.StockWarningThreshold = ptr.To(maxThreshold + 1)
-<span id="L653" class="ln">   653  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidStockWarningThreshold)
-<span id="L654" class="ln">   654  </span>		})
+<span id="L528" class="ln">   528  </span>			_, ok := apperror.MetaFrom(err)
+<span id="L529" class="ln">   529  </span>			assert.False(t, ok)
+<span id="L530" class="ln">   530  </span>		})
+<span id="L531" class="ln">   531  </span>	})
+<span id="L532" class="ln">   532  </span>}
+<span id="L533" class="ln">   533  </span>
+<span id="L534" class="ln">   534  </span>func Test_validateStockWarningThreshold(t *testing.T) {
+<span id="L535" class="ln">   535  </span>	t.Parallel()
+<span id="L536" class="ln">   536  </span>
+<span id="L537" class="ln">   537  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L538" class="ln">   538  </span>		t.Parallel()
+<span id="L539" class="ln">   539  </span>
+<span id="L540" class="ln">   540  </span>		t.Run(&#34;nilの場合、未設定として扱いエラーを返さない&#34;, func(t *testing.T) {
+<span id="L541" class="ln">   541  </span>			t.Parallel()
+<span id="L542" class="ln">   542  </span>			require.NoError(t, validateStockWarningThreshold(nil))
+<span id="L543" class="ln">   543  </span>		})
+<span id="L544" class="ln">   544  </span>
+<span id="L545" class="ln">   545  </span>		t.Run(&#34;最小値の場合、エラーを返さない&#34;, func(t *testing.T) {
+<span id="L546" class="ln">   546  </span>			t.Parallel()
+<span id="L547" class="ln">   547  </span>			require.NoError(t, validateStockWarningThreshold(ptr.To(minThreshold)))
+<span id="L548" class="ln">   548  </span>		})
+<span id="L549" class="ln">   549  </span>
+<span id="L550" class="ln">   550  </span>		t.Run(&#34;最大値の場合、エラーを返さない&#34;, func(t *testing.T) {
+<span id="L551" class="ln">   551  </span>			t.Parallel()
+<span id="L552" class="ln">   552  </span>			require.NoError(t, validateStockWarningThreshold(ptr.To(maxThreshold)))
+<span id="L553" class="ln">   553  </span>		})
+<span id="L554" class="ln">   554  </span>	})
+<span id="L555" class="ln">   555  </span>
+<span id="L556" class="ln">   556  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L557" class="ln">   557  </span>		t.Parallel()
+<span id="L558" class="ln">   558  </span>
+<span id="L559" class="ln">   559  </span>		t.Run(&#34;最小値未満の場合、ErrInvalidStockWarningThresholdを返す&#34;, func(t *testing.T) {
+<span id="L560" class="ln">   560  </span>			t.Parallel()
+<span id="L561" class="ln">   561  </span>			require.ErrorIs(t, validateStockWarningThreshold(ptr.To(minThreshold-1)), ErrInvalidStockWarningThreshold)
+<span id="L562" class="ln">   562  </span>		})
+<span id="L563" class="ln">   563  </span>
+<span id="L564" class="ln">   564  </span>		t.Run(&#34;最大値を超える場合、ErrInvalidStockWarningThresholdを返す&#34;, func(t *testing.T) {
+<span id="L565" class="ln">   565  </span>			t.Parallel()
+<span id="L566" class="ln">   566  </span>			require.ErrorIs(t, validateStockWarningThreshold(ptr.To(maxThreshold+1)), ErrInvalidStockWarningThreshold)
+<span id="L567" class="ln">   567  </span>		})
+<span id="L568" class="ln">   568  </span>	})
+<span id="L569" class="ln">   569  </span>}
+<span id="L570" class="ln">   570  </span>
+<span id="L571" class="ln">   571  </span>func Test_validateAttributes(t *testing.T) {
+<span id="L572" class="ln">   572  </span>	t.Parallel()
+<span id="L573" class="ln">   573  </span>
+<span id="L574" class="ln">   574  </span>	valid := Attributes{
+<span id="L575" class="ln">   575  </span>		Name:                  &#34;ワイヤレスイヤホン&#34;,
+<span id="L576" class="ln">   576  </span>		Quantity:              1,
+<span id="L577" class="ln">   577  </span>		StockWarningThreshold: ptr.To(1),
+<span id="L578" class="ln">   578  </span>		Status:                mustStatusRef(t, &#34;validate_attributes_status_id&#34;, &#34;在庫あり&#34;),
+<span id="L579" class="ln">   579  </span>		Category:              mustCategoryRef(t, &#34;validate_attributes_category_id&#34;, &#34;電子機器&#34;),
+<span id="L580" class="ln">   580  </span>	}
+<span id="L581" class="ln">   581  </span>
+<span id="L582" class="ln">   582  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L583" class="ln">   583  </span>		t.Parallel()
+<span id="L584" class="ln">   584  </span>
+<span id="L585" class="ln">   585  </span>		t.Run(&#34;nameが最小長の場合、エラーを返さない&#34;, func(t *testing.T) {
+<span id="L586" class="ln">   586  </span>			t.Parallel()
+<span id="L587" class="ln">   587  </span>			attrs := valid
+<span id="L588" class="ln">   588  </span>			attrs.Name = strings.Repeat(&#34;あ&#34;, minNameLength)
+<span id="L589" class="ln">   589  </span>			require.NoError(t, validateAttributes(attrs))
+<span id="L590" class="ln">   590  </span>		})
+<span id="L591" class="ln">   591  </span>
+<span id="L592" class="ln">   592  </span>		t.Run(&#34;nameが最大長の場合、エラーを返さない&#34;, func(t *testing.T) {
+<span id="L593" class="ln">   593  </span>			t.Parallel()
+<span id="L594" class="ln">   594  </span>			attrs := valid
+<span id="L595" class="ln">   595  </span>			attrs.Name = strings.Repeat(&#34;あ&#34;, maxNameLength)
+<span id="L596" class="ln">   596  </span>			require.NoError(t, validateAttributes(attrs))
+<span id="L597" class="ln">   597  </span>		})
+<span id="L598" class="ln">   598  </span>
+<span id="L599" class="ln">   599  </span>		t.Run(&#34;quantityとstockWarningThresholdが最小値の場合、エラーを返さない&#34;, func(t *testing.T) {
+<span id="L600" class="ln">   600  </span>			t.Parallel()
+<span id="L601" class="ln">   601  </span>			attrs := valid
+<span id="L602" class="ln">   602  </span>			attrs.Quantity = minQuantity
+<span id="L603" class="ln">   603  </span>			attrs.StockWarningThreshold = ptr.To(minThreshold)
+<span id="L604" class="ln">   604  </span>			require.NoError(t, validateAttributes(attrs))
+<span id="L605" class="ln">   605  </span>		})
+<span id="L606" class="ln">   606  </span>
+<span id="L607" class="ln">   607  </span>		t.Run(&#34;stockWarningThresholdがnilの場合、閾値検証をスキップしてエラーを返さない&#34;, func(t *testing.T) {
+<span id="L608" class="ln">   608  </span>			t.Parallel()
+<span id="L609" class="ln">   609  </span>			attrs := valid
+<span id="L610" class="ln">   610  </span>			attrs.Quantity = minQuantity
+<span id="L611" class="ln">   611  </span>			attrs.StockWarningThreshold = nil
+<span id="L612" class="ln">   612  </span>			require.NoError(t, validateAttributes(attrs))
+<span id="L613" class="ln">   613  </span>		})
+<span id="L614" class="ln">   614  </span>	})
+<span id="L615" class="ln">   615  </span>
+<span id="L616" class="ln">   616  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L617" class="ln">   617  </span>		t.Parallel()
+<span id="L618" class="ln">   618  </span>
+<span id="L619" class="ln">   619  </span>		t.Run(&#34;nameが最小長未満の場合、ErrInvalidNameを返す&#34;, func(t *testing.T) {
+<span id="L620" class="ln">   620  </span>			t.Parallel()
+<span id="L621" class="ln">   621  </span>			attrs := valid
+<span id="L622" class="ln">   622  </span>			attrs.Name = &#34;&#34;
+<span id="L623" class="ln">   623  </span>
+<span id="L624" class="ln">   624  </span>			err := validateAttributes(attrs)
+<span id="L625" class="ln">   625  </span>			require.ErrorIs(t, err, ErrInvalidName)
+<span id="L626" class="ln">   626  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L627" class="ln">   627  </span>			require.True(t, ok)
+<span id="L628" class="ln">   628  </span>			assert.Equal(t, []string{FieldName}, meta.Details())
+<span id="L629" class="ln">   629  </span>		})
+<span id="L630" class="ln">   630  </span>
+<span id="L631" class="ln">   631  </span>		t.Run(&#34;nameが最大長を超える場合、ErrInvalidNameを返す&#34;, func(t *testing.T) {
+<span id="L632" class="ln">   632  </span>			t.Parallel()
+<span id="L633" class="ln">   633  </span>			attrs := valid
+<span id="L634" class="ln">   634  </span>			attrs.Name = strings.Repeat(&#34;あ&#34;, maxNameLength+1)
+<span id="L635" class="ln">   635  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidName)
+<span id="L636" class="ln">   636  </span>		})
+<span id="L637" class="ln">   637  </span>
+<span id="L638" class="ln">   638  </span>		t.Run(&#34;quantityが最小値未満の場合、ErrInvalidQuantityを返す&#34;, func(t *testing.T) {
+<span id="L639" class="ln">   639  </span>			t.Parallel()
+<span id="L640" class="ln">   640  </span>			attrs := valid
+<span id="L641" class="ln">   641  </span>			attrs.Quantity = minQuantity - 1
+<span id="L642" class="ln">   642  </span>
+<span id="L643" class="ln">   643  </span>			err := validateAttributes(attrs)
+<span id="L644" class="ln">   644  </span>			require.ErrorIs(t, err, ErrInvalidQuantity)
+<span id="L645" class="ln">   645  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L646" class="ln">   646  </span>			require.True(t, ok)
+<span id="L647" class="ln">   647  </span>			assert.Equal(t, []string{FieldQuantity}, meta.Details())
+<span id="L648" class="ln">   648  </span>		})
+<span id="L649" class="ln">   649  </span>
+<span id="L650" class="ln">   650  </span>		t.Run(&#34;stockWarningThresholdが最小値未満の場合、ErrInvalidStockWarningThresholdを返す&#34;, func(t *testing.T) {
+<span id="L651" class="ln">   651  </span>			t.Parallel()
+<span id="L652" class="ln">   652  </span>			attrs := valid
+<span id="L653" class="ln">   653  </span>			attrs.Quantity = minQuantity
+<span id="L654" class="ln">   654  </span>			attrs.StockWarningThreshold = ptr.To(minThreshold - 1)
 <span id="L655" class="ln">   655  </span>
-<span id="L656" class="ln">   656  </span>		t.Run(&#34;statusがゼロ値の場合、ErrInvalidStatusIDを返す&#34;, func(t *testing.T) {
-<span id="L657" class="ln">   657  </span>			t.Parallel()
-<span id="L658" class="ln">   658  </span>			attrs := valid
-<span id="L659" class="ln">   659  </span>			attrs.Status = StatusRef{}
-<span id="L660" class="ln">   660  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidStatusID)
+<span id="L656" class="ln">   656  </span>			err := validateAttributes(attrs)
+<span id="L657" class="ln">   657  </span>			require.ErrorIs(t, err, ErrInvalidStockWarningThreshold)
+<span id="L658" class="ln">   658  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L659" class="ln">   659  </span>			require.True(t, ok)
+<span id="L660" class="ln">   660  </span>			assert.Equal(t, []string{FieldStockWarningThreshold}, meta.Details())
 <span id="L661" class="ln">   661  </span>		})
 <span id="L662" class="ln">   662  </span>
-<span id="L663" class="ln">   663  </span>		t.Run(&#34;categoryがゼロ値の場合、ErrInvalidCategoryIDを返す&#34;, func(t *testing.T) {
+<span id="L663" class="ln">   663  </span>		t.Run(&#34;stockWarningThresholdが最大値を超える場合、ErrInvalidStockWarningThresholdを返す&#34;, func(t *testing.T) {
 <span id="L664" class="ln">   664  </span>			t.Parallel()
 <span id="L665" class="ln">   665  </span>			attrs := valid
-<span id="L666" class="ln">   666  </span>			attrs.Category = CategoryRef{}
-<span id="L667" class="ln">   667  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidCategoryID)
+<span id="L666" class="ln">   666  </span>			attrs.StockWarningThreshold = ptr.To(maxThreshold + 1)
+<span id="L667" class="ln">   667  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidStockWarningThreshold)
 <span id="L668" class="ln">   668  </span>		})
 <span id="L669" class="ln">   669  </span>
-<span id="L670" class="ln">   670  </span>		t.Run(&#34;画像の不変条件違反を伝播する&#34;, func(t *testing.T) {
+<span id="L670" class="ln">   670  </span>		t.Run(&#34;statusがゼロ値の場合、ErrInvalidStatusIDを返す&#34;, func(t *testing.T) {
 <span id="L671" class="ln">   671  </span>			t.Parallel()
 <span id="L672" class="ln">   672  </span>			attrs := valid
-<span id="L673" class="ln">   673  </span>			attrs.Images = []Image{mustImage(t, &#34;out_of_range_image&#34;, &#34;products/a.png&#34;, maxImageDisplaySort+1)}
-<span id="L674" class="ln">   674  </span>			require.ErrorIs(t, validateAttributes(attrs), ErrInvalidImageDisplaySort)
-<span id="L675" class="ln">   675  </span>		})
-<span id="L676" class="ln">   676  </span>	})
-<span id="L677" class="ln">   677  </span>}
-<span id="L678" class="ln">   678  </span>
-<span id="L679" class="ln">   679  </span>func TestProduct_Update(t *testing.T) {
-<span id="L680" class="ln">   680  </span>	t.Parallel()
+<span id="L673" class="ln">   673  </span>			attrs.Status = StatusRef{}
+<span id="L674" class="ln">   674  </span>
+<span id="L675" class="ln">   675  </span>			err := validateAttributes(attrs)
+<span id="L676" class="ln">   676  </span>			require.ErrorIs(t, err, ErrInvalidStatusID)
+<span id="L677" class="ln">   677  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L678" class="ln">   678  </span>			require.True(t, ok)
+<span id="L679" class="ln">   679  </span>			assert.Equal(t, []string{FieldStatusID}, meta.Details())
+<span id="L680" class="ln">   680  </span>		})
 <span id="L681" class="ln">   681  </span>
-<span id="L682" class="ln">   682  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L683" class="ln">   683  </span>		t.Parallel()
-<span id="L684" class="ln">   684  </span>
-<span id="L685" class="ln">   685  </span>		t.Run(&#34;全属性が有効な場合、属性が更新されバージョンは進まない&#34;, func(t *testing.T) {
-<span id="L686" class="ln">   686  </span>			t.Parallel()
-<span id="L687" class="ln">   687  </span>
-<span id="L688" class="ln">   688  </span>			p := newTestProduct(t)
-<span id="L689" class="ln">   689  </span>			attrs := updatedProductAttributes(t)
-<span id="L690" class="ln">   690  </span>
-<span id="L691" class="ln">   691  </span>			require.NoError(t, p.Update(attrs))
-<span id="L692" class="ln">   692  </span>			assert.Equal(t, attrs.Name, p.Name())
-<span id="L693" class="ln">   693  </span>			assert.Equal(t, attrs.Description, p.Description())
-<span id="L694" class="ln">   694  </span>			assert.Equal(t, attrs.Price, p.Price())
-<span id="L695" class="ln">   695  </span>			assert.Equal(t, attrs.Quantity, p.Quantity())
-<span id="L696" class="ln">   696  </span>			assert.Equal(t, attrs.StockWarningThreshold, p.StockWarningThreshold())
-<span id="L697" class="ln">   697  </span>			assert.Equal(t, attrs.Status, p.Status())
-<span id="L698" class="ln">   698  </span>			assert.Equal(t, attrs.Category, p.Category())
-<span id="L699" class="ln">   699  </span>			assert.Equal(t, attrs.PublishedAt, p.PublishedAt())
-<span id="L700" class="ln">   700  </span>			assert.Equal(t, attrs.Images, p.Images())
-<span id="L701" class="ln">   701  </span>			assert.Equal(t, initialVersion, p.Version())
-<span id="L702" class="ln">   702  </span>		})
-<span id="L703" class="ln">   703  </span>
-<span id="L704" class="ln">   704  </span>		t.Run(&#34;廃番日時を設定した場合、エンティティへ反映される&#34;, func(t *testing.T) {
-<span id="L705" class="ln">   705  </span>			t.Parallel()
-<span id="L706" class="ln">   706  </span>
-<span id="L707" class="ln">   707  </span>			p := newTestProduct(t)
-<span id="L708" class="ln">   708  </span>			attrs := updatedProductAttributes(t)
-<span id="L709" class="ln">   709  </span>			attrs.PublishedAt = nil
-<span id="L710" class="ln">   710  </span>			attrs.DiscontinuedAt = ptr.To(testCreatedAt)
-<span id="L711" class="ln">   711  </span>
-<span id="L712" class="ln">   712  </span>			require.NoError(t, p.Update(attrs))
-<span id="L713" class="ln">   713  </span>
-<span id="L714" class="ln">   714  </span>			require.NotNil(t, p.DiscontinuedAt())
-<span id="L715" class="ln">   715  </span>			assert.Equal(t, testCreatedAt, *p.DiscontinuedAt())
-<span id="L716" class="ln">   716  </span>			assert.True(t, p.IsDiscontinued())
-<span id="L717" class="ln">   717  </span>		})
-<span id="L718" class="ln">   718  </span>
-<span id="L719" class="ln">   719  </span>		t.Run(&#34;画像の枚数がちょうど上限の場合、更新される&#34;, func(t *testing.T) {
-<span id="L720" class="ln">   720  </span>			t.Parallel()
-<span id="L721" class="ln">   721  </span>
-<span id="L722" class="ln">   722  </span>			p := newTestProduct(t)
-<span id="L723" class="ln">   723  </span>			attrs := updatedProductAttributes(t)
-<span id="L724" class="ln">   724  </span>			attrs.Images = imagesOfCount(t, maxImages)
+<span id="L682" class="ln">   682  </span>		t.Run(&#34;categoryがゼロ値の場合、ErrInvalidCategoryIDを返す&#34;, func(t *testing.T) {
+<span id="L683" class="ln">   683  </span>			t.Parallel()
+<span id="L684" class="ln">   684  </span>			attrs := valid
+<span id="L685" class="ln">   685  </span>			attrs.Category = CategoryRef{}
+<span id="L686" class="ln">   686  </span>
+<span id="L687" class="ln">   687  </span>			err := validateAttributes(attrs)
+<span id="L688" class="ln">   688  </span>			require.ErrorIs(t, err, ErrInvalidCategoryID)
+<span id="L689" class="ln">   689  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L690" class="ln">   690  </span>			require.True(t, ok)
+<span id="L691" class="ln">   691  </span>			assert.Equal(t, []string{FieldCategoryID}, meta.Details())
+<span id="L692" class="ln">   692  </span>		})
+<span id="L693" class="ln">   693  </span>
+<span id="L694" class="ln">   694  </span>		t.Run(&#34;画像の不変条件違反を伝播する&#34;, func(t *testing.T) {
+<span id="L695" class="ln">   695  </span>			t.Parallel()
+<span id="L696" class="ln">   696  </span>			attrs := valid
+<span id="L697" class="ln">   697  </span>			attrs.Images = []Image{mustImage(t, &#34;out_of_range_image&#34;, &#34;products/a.png&#34;, maxImageDisplaySort+1)}
+<span id="L698" class="ln">   698  </span>
+<span id="L699" class="ln">   699  </span>			err := validateAttributes(attrs)
+<span id="L700" class="ln">   700  </span>			require.ErrorIs(t, err, ErrInvalidImageDisplaySort)
+<span id="L701" class="ln">   701  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L702" class="ln">   702  </span>			require.True(t, ok)
+<span id="L703" class="ln">   703  </span>			assert.Equal(t, []string{FieldImages}, meta.Details())
+<span id="L704" class="ln">   704  </span>		})
+<span id="L705" class="ln">   705  </span>
+<span id="L706" class="ln">   706  </span>		t.Run(&#34;画像IDの欠落はサーバ内部の不正なので識別子を付けない&#34;, func(t *testing.T) {
+<span id="L707" class="ln">   707  </span>			t.Parallel()
+<span id="L708" class="ln">   708  </span>			attrs := valid
+<span id="L709" class="ln">   709  </span>			attrs.Images = []Image{{}}
+<span id="L710" class="ln">   710  </span>
+<span id="L711" class="ln">   711  </span>			err := validateAttributes(attrs)
+<span id="L712" class="ln">   712  </span>			require.ErrorIs(t, err, ErrInvalidID)
+<span id="L713" class="ln">   713  </span>			_, ok := apperror.MetaFrom(err)
+<span id="L714" class="ln">   714  </span>			assert.False(t, ok)
+<span id="L715" class="ln">   715  </span>		})
+<span id="L716" class="ln">   716  </span>
+<span id="L717" class="ln">   717  </span>		t.Run(&#34;廃番と公開の同時成立が他項目の違反を握りつぶさない&#34;, func(t *testing.T) {
+<span id="L718" class="ln">   718  </span>			t.Parallel()
+<span id="L719" class="ln">   719  </span>			at := time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC)
+<span id="L720" class="ln">   720  </span>			attrs := valid
+<span id="L721" class="ln">   721  </span>			attrs.Name = &#34;&#34;
+<span id="L722" class="ln">   722  </span>			attrs.DiscontinuedAt = ptr.To(at)
+<span id="L723" class="ln">   723  </span>			attrs.PublishedAt = ptr.To(at)
+<span id="L724" class="ln">   724  </span>			attrs.Images = []Image{mustImage(t, &#34;combined_image&#34;, &#34;products/a.png&#34;, maxImageDisplaySort+1)}
 <span id="L725" class="ln">   725  </span>
-<span id="L726" class="ln">   726  </span>			require.NoError(t, p.Update(attrs))
-<span id="L727" class="ln">   727  </span>			assert.Len(t, p.Images(), maxImages)
-<span id="L728" class="ln">   728  </span>		})
-<span id="L729" class="ln">   729  </span>
-<span id="L730" class="ln">   730  </span>		t.Run(&#34;description・stockWarningThreshold・publishedAtをnil、画像を空で更新した場合、未設定になる&#34;, func(t *testing.T) {
-<span id="L731" class="ln">   731  </span>			t.Parallel()
-<span id="L732" class="ln">   732  </span>
-<span id="L733" class="ln">   733  </span>			p := newTestProduct(t)
-<span id="L734" class="ln">   734  </span>			attrs := updatedProductAttributes(t)
-<span id="L735" class="ln">   735  </span>			attrs.Description = nil
-<span id="L736" class="ln">   736  </span>			attrs.StockWarningThreshold = nil
-<span id="L737" class="ln">   737  </span>			attrs.PublishedAt = nil
-<span id="L738" class="ln">   738  </span>			attrs.Images = nil
-<span id="L739" class="ln">   739  </span>
-<span id="L740" class="ln">   740  </span>			require.NoError(t, p.Update(attrs))
-<span id="L741" class="ln">   741  </span>			assert.Nil(t, p.Description())
-<span id="L742" class="ln">   742  </span>			assert.Nil(t, p.StockWarningThreshold())
-<span id="L743" class="ln">   743  </span>			assert.Nil(t, p.PublishedAt())
-<span id="L744" class="ln">   744  </span>			assert.Empty(t, p.Images())
-<span id="L745" class="ln">   745  </span>		})
+<span id="L726" class="ln">   726  </span>			err := validateAttributes(attrs)
+<span id="L727" class="ln">   727  </span>			require.ErrorIs(t, err, ErrInvalidName)
+<span id="L728" class="ln">   728  </span>			require.ErrorIs(t, err, ErrDiscontinuedCannotBePublished)
+<span id="L729" class="ln">   729  </span>			require.ErrorIs(t, err, ErrInvalidImageDisplaySort)
+<span id="L730" class="ln">   730  </span>
+<span id="L731" class="ln">   731  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L732" class="ln">   732  </span>			require.True(t, ok)
+<span id="L733" class="ln">   733  </span>			assert.ElementsMatch(t, []string{FieldName, FieldPublishedAt, FieldImages}, meta.Details())
+<span id="L734" class="ln">   734  </span>		})
+<span id="L735" class="ln">   735  </span>	})
+<span id="L736" class="ln">   736  </span>}
+<span id="L737" class="ln">   737  </span>
+<span id="L738" class="ln">   738  </span>func TestProduct_Update(t *testing.T) {
+<span id="L739" class="ln">   739  </span>	t.Parallel()
+<span id="L740" class="ln">   740  </span>
+<span id="L741" class="ln">   741  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L742" class="ln">   742  </span>		t.Parallel()
+<span id="L743" class="ln">   743  </span>
+<span id="L744" class="ln">   744  </span>		t.Run(&#34;全属性が有効な場合、属性が更新されバージョンは進まない&#34;, func(t *testing.T) {
+<span id="L745" class="ln">   745  </span>			t.Parallel()
 <span id="L746" class="ln">   746  </span>
-<span id="L747" class="ln">   747  </span>		t.Run(&#34;更新後に引数のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
-<span id="L748" class="ln">   748  </span>			t.Parallel()
+<span id="L747" class="ln">   747  </span>			p := newTestProduct(t)
+<span id="L748" class="ln">   748  </span>			attrs := updatedProductAttributes(t)
 <span id="L749" class="ln">   749  </span>
-<span id="L750" class="ln">   750  </span>			p := newTestProduct(t)
-<span id="L751" class="ln">   751  </span>			attrs := updatedProductAttributes(t)
-<span id="L752" class="ln">   752  </span>
-<span id="L753" class="ln">   753  </span>			require.NoError(t, p.Update(attrs))
-<span id="L754" class="ln">   754  </span>
-<span id="L755" class="ln">   755  </span>			expectedDescription, expectedThreshold := *attrs.Description, *attrs.StockWarningThreshold
-<span id="L756" class="ln">   756  </span>			expectedPublishedAt := *attrs.PublishedAt
-<span id="L757" class="ln">   757  </span>			expectedImages := slices.Clone(attrs.Images)
-<span id="L758" class="ln">   758  </span>
-<span id="L759" class="ln">   759  </span>			*attrs.Description = &#34;書き換え後の説明&#34;
-<span id="L760" class="ln">   760  </span>			*attrs.StockWarningThreshold = minThreshold
-<span id="L761" class="ln">   761  </span>			*attrs.PublishedAt = time.Time{}
-<span id="L762" class="ln">   762  </span>			attrs.Images[0] = mustImage(t, &#34;mutated_image_id&#34;, &#34;products/mutated.png&#34;, 9)
-<span id="L763" class="ln">   763  </span>
-<span id="L764" class="ln">   764  </span>			require.NotNil(t, p.Description())
-<span id="L765" class="ln">   765  </span>			assert.Equal(t, expectedDescription, *p.Description())
-<span id="L766" class="ln">   766  </span>			require.NotNil(t, p.StockWarningThreshold())
-<span id="L767" class="ln">   767  </span>			assert.Equal(t, expectedThreshold, *p.StockWarningThreshold())
-<span id="L768" class="ln">   768  </span>			require.NotNil(t, p.PublishedAt())
-<span id="L769" class="ln">   769  </span>			assert.Equal(t, expectedPublishedAt, *p.PublishedAt())
-<span id="L770" class="ln">   770  </span>			assert.Equal(t, expectedImages, p.Images())
-<span id="L771" class="ln">   771  </span>		})
-<span id="L772" class="ln">   772  </span>	})
-<span id="L773" class="ln">   773  </span>
-<span id="L774" class="ln">   774  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L775" class="ln">   775  </span>		t.Parallel()
-<span id="L776" class="ln">   776  </span>
-<span id="L777" class="ln">   777  </span>		t.Run(&#34;廃番の商品に公開日時を設定した場合、ErrDiscontinuedCannotBePublishedを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
-<span id="L778" class="ln">   778  </span>			t.Parallel()
-<span id="L779" class="ln">   779  </span>
-<span id="L780" class="ln">   780  </span>			p := newTestProduct(t)
-<span id="L781" class="ln">   781  </span>			discontinued := updatedProductAttributes(t)
-<span id="L782" class="ln">   782  </span>			discontinued.PublishedAt = nil
-<span id="L783" class="ln">   783  </span>			discontinued.DiscontinuedAt = ptr.To(testCreatedAt)
-<span id="L784" class="ln">   784  </span>			require.NoError(t, p.Update(discontinued))
-<span id="L785" class="ln">   785  </span>
-<span id="L786" class="ln">   786  </span>			snapshot := *p
-<span id="L787" class="ln">   787  </span>			republish := discontinued
-<span id="L788" class="ln">   788  </span>			republish.PublishedAt = ptr.To(testCreatedAt)
-<span id="L789" class="ln">   789  </span>
-<span id="L790" class="ln">   790  </span>			err := p.Update(republish)
+<span id="L750" class="ln">   750  </span>			require.NoError(t, p.Update(attrs))
+<span id="L751" class="ln">   751  </span>			assert.Equal(t, attrs.Name, p.Name())
+<span id="L752" class="ln">   752  </span>			assert.Equal(t, attrs.Description, p.Description())
+<span id="L753" class="ln">   753  </span>			assert.Equal(t, attrs.Price, p.Price())
+<span id="L754" class="ln">   754  </span>			assert.Equal(t, attrs.Quantity, p.Quantity())
+<span id="L755" class="ln">   755  </span>			assert.Equal(t, attrs.StockWarningThreshold, p.StockWarningThreshold())
+<span id="L756" class="ln">   756  </span>			assert.Equal(t, attrs.Status, p.Status())
+<span id="L757" class="ln">   757  </span>			assert.Equal(t, attrs.Category, p.Category())
+<span id="L758" class="ln">   758  </span>			assert.Equal(t, attrs.PublishedAt, p.PublishedAt())
+<span id="L759" class="ln">   759  </span>			assert.Equal(t, attrs.Images, p.Images())
+<span id="L760" class="ln">   760  </span>			assert.Equal(t, initialVersion, p.Version())
+<span id="L761" class="ln">   761  </span>		})
+<span id="L762" class="ln">   762  </span>
+<span id="L763" class="ln">   763  </span>		t.Run(&#34;廃番日時を設定した場合、エンティティへ反映される&#34;, func(t *testing.T) {
+<span id="L764" class="ln">   764  </span>			t.Parallel()
+<span id="L765" class="ln">   765  </span>
+<span id="L766" class="ln">   766  </span>			p := newTestProduct(t)
+<span id="L767" class="ln">   767  </span>			attrs := updatedProductAttributes(t)
+<span id="L768" class="ln">   768  </span>			attrs.PublishedAt = nil
+<span id="L769" class="ln">   769  </span>			attrs.DiscontinuedAt = ptr.To(testCreatedAt)
+<span id="L770" class="ln">   770  </span>
+<span id="L771" class="ln">   771  </span>			require.NoError(t, p.Update(attrs))
+<span id="L772" class="ln">   772  </span>
+<span id="L773" class="ln">   773  </span>			require.NotNil(t, p.DiscontinuedAt())
+<span id="L774" class="ln">   774  </span>			assert.Equal(t, testCreatedAt, *p.DiscontinuedAt())
+<span id="L775" class="ln">   775  </span>			assert.True(t, p.IsDiscontinued())
+<span id="L776" class="ln">   776  </span>		})
+<span id="L777" class="ln">   777  </span>
+<span id="L778" class="ln">   778  </span>		t.Run(&#34;画像の枚数がちょうど上限の場合、更新される&#34;, func(t *testing.T) {
+<span id="L779" class="ln">   779  </span>			t.Parallel()
+<span id="L780" class="ln">   780  </span>
+<span id="L781" class="ln">   781  </span>			p := newTestProduct(t)
+<span id="L782" class="ln">   782  </span>			attrs := updatedProductAttributes(t)
+<span id="L783" class="ln">   783  </span>			attrs.Images = imagesOfCount(t, maxImages)
+<span id="L784" class="ln">   784  </span>
+<span id="L785" class="ln">   785  </span>			require.NoError(t, p.Update(attrs))
+<span id="L786" class="ln">   786  </span>			assert.Len(t, p.Images(), maxImages)
+<span id="L787" class="ln">   787  </span>		})
+<span id="L788" class="ln">   788  </span>
+<span id="L789" class="ln">   789  </span>		t.Run(&#34;description・stockWarningThreshold・publishedAtをnil、画像を空で更新した場合、未設定になる&#34;, func(t *testing.T) {
+<span id="L790" class="ln">   790  </span>			t.Parallel()
 <span id="L791" class="ln">   791  </span>
-<span id="L792" class="ln">   792  </span>			require.ErrorIs(t, err, ErrDiscontinuedCannotBePublished)
-<span id="L793" class="ln">   793  </span>			assert.Equal(t, snapshot, *p)
-<span id="L794" class="ln">   794  </span>
-<span id="L795" class="ln">   795  </span>			meta, ok := apperror.MetaFrom(err)
-<span id="L796" class="ln">   796  </span>			require.True(t, ok)
-<span id="L797" class="ln">   797  </span>			assert.Equal(t, []string{FieldPublishedAt}, meta.Details())
-<span id="L798" class="ln">   798  </span>		})
-<span id="L799" class="ln">   799  </span>
-<span id="L800" class="ln">   800  </span>		t.Run(&#34;quantityが最小値未満の場合、ErrInvalidQuantityを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
-<span id="L801" class="ln">   801  </span>			t.Parallel()
-<span id="L802" class="ln">   802  </span>
-<span id="L803" class="ln">   803  </span>			p := newTestProduct(t)
-<span id="L804" class="ln">   804  </span>			snapshot := *p
-<span id="L805" class="ln">   805  </span>			attrs := updatedProductAttributes(t)
-<span id="L806" class="ln">   806  </span>			attrs.Quantity = minQuantity - 1
-<span id="L807" class="ln">   807  </span>
-<span id="L808" class="ln">   808  </span>			require.ErrorIs(t, p.Update(attrs), ErrInvalidQuantity)
-<span id="L809" class="ln">   809  </span>			assert.Equal(t, snapshot, *p)
-<span id="L810" class="ln">   810  </span>		})
+<span id="L792" class="ln">   792  </span>			p := newTestProduct(t)
+<span id="L793" class="ln">   793  </span>			attrs := updatedProductAttributes(t)
+<span id="L794" class="ln">   794  </span>			attrs.Description = nil
+<span id="L795" class="ln">   795  </span>			attrs.StockWarningThreshold = nil
+<span id="L796" class="ln">   796  </span>			attrs.PublishedAt = nil
+<span id="L797" class="ln">   797  </span>			attrs.Images = nil
+<span id="L798" class="ln">   798  </span>
+<span id="L799" class="ln">   799  </span>			require.NoError(t, p.Update(attrs))
+<span id="L800" class="ln">   800  </span>			assert.Nil(t, p.Description())
+<span id="L801" class="ln">   801  </span>			assert.Nil(t, p.StockWarningThreshold())
+<span id="L802" class="ln">   802  </span>			assert.Nil(t, p.PublishedAt())
+<span id="L803" class="ln">   803  </span>			assert.Empty(t, p.Images())
+<span id="L804" class="ln">   804  </span>		})
+<span id="L805" class="ln">   805  </span>
+<span id="L806" class="ln">   806  </span>		t.Run(&#34;更新後に引数のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
+<span id="L807" class="ln">   807  </span>			t.Parallel()
+<span id="L808" class="ln">   808  </span>
+<span id="L809" class="ln">   809  </span>			p := newTestProduct(t)
+<span id="L810" class="ln">   810  </span>			attrs := updatedProductAttributes(t)
 <span id="L811" class="ln">   811  </span>
-<span id="L812" class="ln">   812  </span>		t.Run(&#34;nameが最大長を超える場合、ErrInvalidNameを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
-<span id="L813" class="ln">   813  </span>			t.Parallel()
-<span id="L814" class="ln">   814  </span>
-<span id="L815" class="ln">   815  </span>			p := newTestProduct(t)
-<span id="L816" class="ln">   816  </span>			snapshot := *p
-<span id="L817" class="ln">   817  </span>			attrs := updatedProductAttributes(t)
-<span id="L818" class="ln">   818  </span>			attrs.Name = strings.Repeat(&#34;あ&#34;, maxNameLength+1)
-<span id="L819" class="ln">   819  </span>
-<span id="L820" class="ln">   820  </span>			require.ErrorIs(t, p.Update(attrs), ErrInvalidName)
-<span id="L821" class="ln">   821  </span>			assert.Equal(t, snapshot, *p)
-<span id="L822" class="ln">   822  </span>		})
-<span id="L823" class="ln">   823  </span>
-<span id="L824" class="ln">   824  </span>		t.Run(&#34;画像の枚数が上限を超える場合、ErrTooManyImagesを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
-<span id="L825" class="ln">   825  </span>			t.Parallel()
-<span id="L826" class="ln">   826  </span>
-<span id="L827" class="ln">   827  </span>			p := newTestProduct(t)
-<span id="L828" class="ln">   828  </span>			snapshot := *p
-<span id="L829" class="ln">   829  </span>			attrs := updatedProductAttributes(t)
-<span id="L830" class="ln">   830  </span>			attrs.Images = imagesOfCount(t, maxImages+1)
-<span id="L831" class="ln">   831  </span>
-<span id="L832" class="ln">   832  </span>			require.ErrorIs(t, p.Update(attrs), ErrTooManyImages)
-<span id="L833" class="ln">   833  </span>			assert.Equal(t, snapshot, *p)
-<span id="L834" class="ln">   834  </span>		})
-<span id="L835" class="ln">   835  </span>	})
-<span id="L836" class="ln">   836  </span>}
-<span id="L837" class="ln">   837  </span>
-<span id="L838" class="ln">   838  </span>func TestProduct_AdjustStock(t *testing.T) {
-<span id="L839" class="ln">   839  </span>	t.Parallel()
-<span id="L840" class="ln">   840  </span>
-<span id="L841" class="ln">   841  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L842" class="ln">   842  </span>		t.Parallel()
-<span id="L843" class="ln">   843  </span>
-<span id="L844" class="ln">   844  </span>		t.Run(&#34;正のdeltaを渡した場合、在庫が加算されバージョンは進まない&#34;, func(t *testing.T) {
-<span id="L845" class="ln">   845  </span>			t.Parallel()
-<span id="L846" class="ln">   846  </span>
-<span id="L847" class="ln">   847  </span>			p := newTestProduct(t)
-<span id="L848" class="ln">   848  </span>			before := p.Quantity()
-<span id="L849" class="ln">   849  </span>
-<span id="L850" class="ln">   850  </span>			require.NoError(t, p.AdjustStock(50))
-<span id="L851" class="ln">   851  </span>			assert.Equal(t, before+50, p.Quantity())
-<span id="L852" class="ln">   852  </span>			assert.Equal(t, initialVersion, p.Version())
-<span id="L853" class="ln">   853  </span>		})
-<span id="L854" class="ln">   854  </span>
-<span id="L855" class="ln">   855  </span>		t.Run(&#34;負のdeltaを渡した場合、在庫が減算される&#34;, func(t *testing.T) {
-<span id="L856" class="ln">   856  </span>			t.Parallel()
-<span id="L857" class="ln">   857  </span>
-<span id="L858" class="ln">   858  </span>			p := newTestProduct(t)
-<span id="L859" class="ln">   859  </span>			before := p.Quantity()
-<span id="L860" class="ln">   860  </span>
-<span id="L861" class="ln">   861  </span>			require.NoError(t, p.AdjustStock(-30))
-<span id="L862" class="ln">   862  </span>			assert.Equal(t, before-30, p.Quantity())
-<span id="L863" class="ln">   863  </span>		})
-<span id="L864" class="ln">   864  </span>
-<span id="L865" class="ln">   865  </span>		t.Run(&#34;deltaが0の場合、在庫は変わらない&#34;, func(t *testing.T) {
-<span id="L866" class="ln">   866  </span>			t.Parallel()
-<span id="L867" class="ln">   867  </span>
-<span id="L868" class="ln">   868  </span>			p := newTestProduct(t)
-<span id="L869" class="ln">   869  </span>			before := p.Quantity()
+<span id="L812" class="ln">   812  </span>			require.NoError(t, p.Update(attrs))
+<span id="L813" class="ln">   813  </span>
+<span id="L814" class="ln">   814  </span>			expectedDescription, expectedThreshold := *attrs.Description, *attrs.StockWarningThreshold
+<span id="L815" class="ln">   815  </span>			expectedPublishedAt := *attrs.PublishedAt
+<span id="L816" class="ln">   816  </span>			expectedImages := slices.Clone(attrs.Images)
+<span id="L817" class="ln">   817  </span>
+<span id="L818" class="ln">   818  </span>			*attrs.Description = &#34;書き換え後の説明&#34;
+<span id="L819" class="ln">   819  </span>			*attrs.StockWarningThreshold = minThreshold
+<span id="L820" class="ln">   820  </span>			*attrs.PublishedAt = time.Time{}
+<span id="L821" class="ln">   821  </span>			attrs.Images[0] = mustImage(t, &#34;mutated_image_id&#34;, &#34;products/mutated.png&#34;, 9)
+<span id="L822" class="ln">   822  </span>
+<span id="L823" class="ln">   823  </span>			require.NotNil(t, p.Description())
+<span id="L824" class="ln">   824  </span>			assert.Equal(t, expectedDescription, *p.Description())
+<span id="L825" class="ln">   825  </span>			require.NotNil(t, p.StockWarningThreshold())
+<span id="L826" class="ln">   826  </span>			assert.Equal(t, expectedThreshold, *p.StockWarningThreshold())
+<span id="L827" class="ln">   827  </span>			require.NotNil(t, p.PublishedAt())
+<span id="L828" class="ln">   828  </span>			assert.Equal(t, expectedPublishedAt, *p.PublishedAt())
+<span id="L829" class="ln">   829  </span>			assert.Equal(t, expectedImages, p.Images())
+<span id="L830" class="ln">   830  </span>		})
+<span id="L831" class="ln">   831  </span>	})
+<span id="L832" class="ln">   832  </span>
+<span id="L833" class="ln">   833  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L834" class="ln">   834  </span>		t.Parallel()
+<span id="L835" class="ln">   835  </span>
+<span id="L836" class="ln">   836  </span>		t.Run(&#34;廃番の商品に公開日時を設定した場合、ErrDiscontinuedCannotBePublishedを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
+<span id="L837" class="ln">   837  </span>			t.Parallel()
+<span id="L838" class="ln">   838  </span>
+<span id="L839" class="ln">   839  </span>			p := newTestProduct(t)
+<span id="L840" class="ln">   840  </span>			discontinued := updatedProductAttributes(t)
+<span id="L841" class="ln">   841  </span>			discontinued.PublishedAt = nil
+<span id="L842" class="ln">   842  </span>			discontinued.DiscontinuedAt = ptr.To(testCreatedAt)
+<span id="L843" class="ln">   843  </span>			require.NoError(t, p.Update(discontinued))
+<span id="L844" class="ln">   844  </span>
+<span id="L845" class="ln">   845  </span>			snapshot := *p
+<span id="L846" class="ln">   846  </span>			republish := discontinued
+<span id="L847" class="ln">   847  </span>			republish.PublishedAt = ptr.To(testCreatedAt)
+<span id="L848" class="ln">   848  </span>
+<span id="L849" class="ln">   849  </span>			err := p.Update(republish)
+<span id="L850" class="ln">   850  </span>
+<span id="L851" class="ln">   851  </span>			require.ErrorIs(t, err, ErrDiscontinuedCannotBePublished)
+<span id="L852" class="ln">   852  </span>			assert.Equal(t, snapshot, *p)
+<span id="L853" class="ln">   853  </span>
+<span id="L854" class="ln">   854  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L855" class="ln">   855  </span>			require.True(t, ok)
+<span id="L856" class="ln">   856  </span>			assert.Equal(t, []string{FieldPublishedAt}, meta.Details())
+<span id="L857" class="ln">   857  </span>		})
+<span id="L858" class="ln">   858  </span>
+<span id="L859" class="ln">   859  </span>		t.Run(&#34;quantityが最小値未満の場合、ErrInvalidQuantityを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
+<span id="L860" class="ln">   860  </span>			t.Parallel()
+<span id="L861" class="ln">   861  </span>
+<span id="L862" class="ln">   862  </span>			p := newTestProduct(t)
+<span id="L863" class="ln">   863  </span>			snapshot := *p
+<span id="L864" class="ln">   864  </span>			attrs := updatedProductAttributes(t)
+<span id="L865" class="ln">   865  </span>			attrs.Quantity = minQuantity - 1
+<span id="L866" class="ln">   866  </span>
+<span id="L867" class="ln">   867  </span>			require.ErrorIs(t, p.Update(attrs), ErrInvalidQuantity)
+<span id="L868" class="ln">   868  </span>			assert.Equal(t, snapshot, *p)
+<span id="L869" class="ln">   869  </span>		})
 <span id="L870" class="ln">   870  </span>
-<span id="L871" class="ln">   871  </span>			require.NoError(t, p.AdjustStock(0))
-<span id="L872" class="ln">   872  </span>			assert.Equal(t, before, p.Quantity())
-<span id="L873" class="ln">   873  </span>		})
-<span id="L874" class="ln">   874  </span>
-<span id="L875" class="ln">   875  </span>		t.Run(&#34;減算後がちょうど最小値になる場合、在庫が最小値になる&#34;, func(t *testing.T) {
-<span id="L876" class="ln">   876  </span>			t.Parallel()
-<span id="L877" class="ln">   877  </span>
-<span id="L878" class="ln">   878  </span>			p := newTestProduct(t)
-<span id="L879" class="ln">   879  </span>
-<span id="L880" class="ln">   880  </span>			require.NoError(t, p.AdjustStock(minQuantity-p.Quantity()))
-<span id="L881" class="ln">   881  </span>			assert.Equal(t, minQuantity, p.Quantity())
-<span id="L882" class="ln">   882  </span>		})
-<span id="L883" class="ln">   883  </span>
-<span id="L884" class="ln">   884  </span>		t.Run(&#34;加算後がちょうど最大値になる場合、在庫が最大値になる&#34;, func(t *testing.T) {
-<span id="L885" class="ln">   885  </span>			t.Parallel()
-<span id="L886" class="ln">   886  </span>
-<span id="L887" class="ln">   887  </span>			p := newTestProduct(t)
-<span id="L888" class="ln">   888  </span>
-<span id="L889" class="ln">   889  </span>			require.NoError(t, p.AdjustStock(maxQuantity-p.Quantity()))
-<span id="L890" class="ln">   890  </span>			assert.Equal(t, maxQuantity, p.Quantity())
-<span id="L891" class="ln">   891  </span>		})
-<span id="L892" class="ln">   892  </span>
-<span id="L893" class="ln">   893  </span>		t.Run(&#34;在庫以外の属性は変わらない&#34;, func(t *testing.T) {
-<span id="L894" class="ln">   894  </span>			t.Parallel()
-<span id="L895" class="ln">   895  </span>
-<span id="L896" class="ln">   896  </span>			p := newTestProduct(t)
-<span id="L897" class="ln">   897  </span>			snapshot := *p
-<span id="L898" class="ln">   898  </span>
-<span id="L899" class="ln">   899  </span>			require.NoError(t, p.AdjustStock(1))
-<span id="L900" class="ln">   900  </span>
-<span id="L901" class="ln">   901  </span>			snapshot.quantity = p.Quantity()
-<span id="L902" class="ln">   902  </span>			assert.Equal(t, snapshot, *p)
-<span id="L903" class="ln">   903  </span>		})
-<span id="L904" class="ln">   904  </span>	})
+<span id="L871" class="ln">   871  </span>		t.Run(&#34;nameが最大長を超える場合、ErrInvalidNameを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
+<span id="L872" class="ln">   872  </span>			t.Parallel()
+<span id="L873" class="ln">   873  </span>
+<span id="L874" class="ln">   874  </span>			p := newTestProduct(t)
+<span id="L875" class="ln">   875  </span>			snapshot := *p
+<span id="L876" class="ln">   876  </span>			attrs := updatedProductAttributes(t)
+<span id="L877" class="ln">   877  </span>			attrs.Name = strings.Repeat(&#34;あ&#34;, maxNameLength+1)
+<span id="L878" class="ln">   878  </span>
+<span id="L879" class="ln">   879  </span>			require.ErrorIs(t, p.Update(attrs), ErrInvalidName)
+<span id="L880" class="ln">   880  </span>			assert.Equal(t, snapshot, *p)
+<span id="L881" class="ln">   881  </span>		})
+<span id="L882" class="ln">   882  </span>
+<span id="L883" class="ln">   883  </span>		t.Run(&#34;画像の枚数が上限を超える場合、ErrTooManyImagesを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
+<span id="L884" class="ln">   884  </span>			t.Parallel()
+<span id="L885" class="ln">   885  </span>
+<span id="L886" class="ln">   886  </span>			p := newTestProduct(t)
+<span id="L887" class="ln">   887  </span>			snapshot := *p
+<span id="L888" class="ln">   888  </span>			attrs := updatedProductAttributes(t)
+<span id="L889" class="ln">   889  </span>			attrs.Images = imagesOfCount(t, maxImages+1)
+<span id="L890" class="ln">   890  </span>
+<span id="L891" class="ln">   891  </span>			require.ErrorIs(t, p.Update(attrs), ErrTooManyImages)
+<span id="L892" class="ln">   892  </span>			assert.Equal(t, snapshot, *p)
+<span id="L893" class="ln">   893  </span>		})
+<span id="L894" class="ln">   894  </span>	})
+<span id="L895" class="ln">   895  </span>}
+<span id="L896" class="ln">   896  </span>
+<span id="L897" class="ln">   897  </span>func TestProduct_AdjustStock(t *testing.T) {
+<span id="L898" class="ln">   898  </span>	t.Parallel()
+<span id="L899" class="ln">   899  </span>
+<span id="L900" class="ln">   900  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L901" class="ln">   901  </span>		t.Parallel()
+<span id="L902" class="ln">   902  </span>
+<span id="L903" class="ln">   903  </span>		t.Run(&#34;正のdeltaを渡した場合、在庫が加算されバージョンは進まない&#34;, func(t *testing.T) {
+<span id="L904" class="ln">   904  </span>			t.Parallel()
 <span id="L905" class="ln">   905  </span>
-<span id="L906" class="ln">   906  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L907" class="ln">   907  </span>		t.Parallel()
+<span id="L906" class="ln">   906  </span>			p := newTestProduct(t)
+<span id="L907" class="ln">   907  </span>			before := p.Quantity()
 <span id="L908" class="ln">   908  </span>
-<span id="L909" class="ln">   909  </span>		t.Run(&#34;減算後が最小値未満になる場合、ErrInvalidQuantityを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
-<span id="L910" class="ln">   910  </span>			t.Parallel()
-<span id="L911" class="ln">   911  </span>
-<span id="L912" class="ln">   912  </span>			p := newTestProduct(t)
-<span id="L913" class="ln">   913  </span>			snapshot := *p
-<span id="L914" class="ln">   914  </span>
-<span id="L915" class="ln">   915  </span>			err := p.AdjustStock(minQuantity - p.Quantity() - 1)
-<span id="L916" class="ln">   916  </span>			require.ErrorIs(t, err, ErrInvalidQuantity)
-<span id="L917" class="ln">   917  </span>			require.ErrorIs(t, err, apperror.ErrValidation)
-<span id="L918" class="ln">   918  </span>			assert.Equal(t, snapshot, *p)
-<span id="L919" class="ln">   919  </span>		})
-<span id="L920" class="ln">   920  </span>
-<span id="L921" class="ln">   921  </span>		t.Run(&#34;加算後が最大値を超える場合、ErrInvalidQuantityを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
-<span id="L922" class="ln">   922  </span>			t.Parallel()
+<span id="L909" class="ln">   909  </span>			require.NoError(t, p.AdjustStock(50))
+<span id="L910" class="ln">   910  </span>			assert.Equal(t, before+50, p.Quantity())
+<span id="L911" class="ln">   911  </span>			assert.Equal(t, initialVersion, p.Version())
+<span id="L912" class="ln">   912  </span>		})
+<span id="L913" class="ln">   913  </span>
+<span id="L914" class="ln">   914  </span>		t.Run(&#34;負のdeltaを渡した場合、在庫が減算される&#34;, func(t *testing.T) {
+<span id="L915" class="ln">   915  </span>			t.Parallel()
+<span id="L916" class="ln">   916  </span>
+<span id="L917" class="ln">   917  </span>			p := newTestProduct(t)
+<span id="L918" class="ln">   918  </span>			before := p.Quantity()
+<span id="L919" class="ln">   919  </span>
+<span id="L920" class="ln">   920  </span>			require.NoError(t, p.AdjustStock(-30))
+<span id="L921" class="ln">   921  </span>			assert.Equal(t, before-30, p.Quantity())
+<span id="L922" class="ln">   922  </span>		})
 <span id="L923" class="ln">   923  </span>
-<span id="L924" class="ln">   924  </span>			p := newTestProduct(t)
-<span id="L925" class="ln">   925  </span>			snapshot := *p
+<span id="L924" class="ln">   924  </span>		t.Run(&#34;deltaが0の場合、在庫は変わらない&#34;, func(t *testing.T) {
+<span id="L925" class="ln">   925  </span>			t.Parallel()
 <span id="L926" class="ln">   926  </span>
-<span id="L927" class="ln">   927  </span>			err := p.AdjustStock(maxQuantity - p.Quantity() + 1)
-<span id="L928" class="ln">   928  </span>			require.ErrorIs(t, err, ErrInvalidQuantity)
-<span id="L929" class="ln">   929  </span>			require.ErrorIs(t, err, apperror.ErrValidation)
-<span id="L930" class="ln">   930  </span>			assert.Equal(t, snapshot, *p)
-<span id="L931" class="ln">   931  </span>		})
-<span id="L932" class="ln">   932  </span>	})
-<span id="L933" class="ln">   933  </span>}
-<span id="L934" class="ln">   934  </span>
-<span id="L935" class="ln">   935  </span>func TestProduct_EnsureVersion(t *testing.T) {
-<span id="L936" class="ln">   936  </span>	t.Parallel()
-<span id="L937" class="ln">   937  </span>
-<span id="L938" class="ln">   938  </span>	id, attrs := validProductArgs(t)
-<span id="L939" class="ln">   939  </span>
-<span id="L940" class="ln">   940  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L941" class="ln">   941  </span>		t.Parallel()
+<span id="L927" class="ln">   927  </span>			p := newTestProduct(t)
+<span id="L928" class="ln">   928  </span>			before := p.Quantity()
+<span id="L929" class="ln">   929  </span>
+<span id="L930" class="ln">   930  </span>			require.NoError(t, p.AdjustStock(0))
+<span id="L931" class="ln">   931  </span>			assert.Equal(t, before, p.Quantity())
+<span id="L932" class="ln">   932  </span>		})
+<span id="L933" class="ln">   933  </span>
+<span id="L934" class="ln">   934  </span>		t.Run(&#34;減算後がちょうど最小値になる場合、在庫が最小値になる&#34;, func(t *testing.T) {
+<span id="L935" class="ln">   935  </span>			t.Parallel()
+<span id="L936" class="ln">   936  </span>
+<span id="L937" class="ln">   937  </span>			p := newTestProduct(t)
+<span id="L938" class="ln">   938  </span>
+<span id="L939" class="ln">   939  </span>			require.NoError(t, p.AdjustStock(minQuantity-p.Quantity()))
+<span id="L940" class="ln">   940  </span>			assert.Equal(t, minQuantity, p.Quantity())
+<span id="L941" class="ln">   941  </span>		})
 <span id="L942" class="ln">   942  </span>
-<span id="L943" class="ln">   943  </span>		t.Run(&#34;期待バージョンが現在のバージョンと一致する場合、nilを返す&#34;, func(t *testing.T) {
+<span id="L943" class="ln">   943  </span>		t.Run(&#34;加算後がちょうど最大値になる場合、在庫が最大値になる&#34;, func(t *testing.T) {
 <span id="L944" class="ln">   944  </span>			t.Parallel()
 <span id="L945" class="ln">   945  </span>
 <span id="L946" class="ln">   946  </span>			p := newTestProduct(t)
-<span id="L947" class="ln">   947  </span>			require.NoError(t, p.EnsureVersion(initialVersion))
-<span id="L948" class="ln">   948  </span>		})
-<span id="L949" class="ln">   949  </span>	})
-<span id="L950" class="ln">   950  </span>
-<span id="L951" class="ln">   951  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L952" class="ln">   952  </span>		t.Parallel()
-<span id="L953" class="ln">   953  </span>
-<span id="L954" class="ln">   954  </span>		t.Run(&#34;期待バージョンが現在のバージョンと一致しない場合、Conflictに分類されるErrVersionConflictを返す&#34;, func(t *testing.T) {
-<span id="L955" class="ln">   955  </span>			t.Parallel()
-<span id="L956" class="ln">   956  </span>
-<span id="L957" class="ln">   957  </span>			p, err := Reconstruct(id, attrs, initialVersion+1, testCreatedAt)
-<span id="L958" class="ln">   958  </span>			require.NoError(t, err)
+<span id="L947" class="ln">   947  </span>
+<span id="L948" class="ln">   948  </span>			require.NoError(t, p.AdjustStock(maxQuantity-p.Quantity()))
+<span id="L949" class="ln">   949  </span>			assert.Equal(t, maxQuantity, p.Quantity())
+<span id="L950" class="ln">   950  </span>		})
+<span id="L951" class="ln">   951  </span>
+<span id="L952" class="ln">   952  </span>		t.Run(&#34;在庫以外の属性は変わらない&#34;, func(t *testing.T) {
+<span id="L953" class="ln">   953  </span>			t.Parallel()
+<span id="L954" class="ln">   954  </span>
+<span id="L955" class="ln">   955  </span>			p := newTestProduct(t)
+<span id="L956" class="ln">   956  </span>			snapshot := *p
+<span id="L957" class="ln">   957  </span>
+<span id="L958" class="ln">   958  </span>			require.NoError(t, p.AdjustStock(1))
 <span id="L959" class="ln">   959  </span>
-<span id="L960" class="ln">   960  </span>			err = p.EnsureVersion(initialVersion)
-<span id="L961" class="ln">   961  </span>			require.ErrorIs(t, err, ErrVersionConflict)
-<span id="L962" class="ln">   962  </span>			require.ErrorIs(t, err, apperror.ErrConflict)
-<span id="L963" class="ln">   963  </span>		})
-<span id="L964" class="ln">   964  </span>	})
-<span id="L965" class="ln">   965  </span>}
-<span id="L966" class="ln">   966  </span>
-<span id="L967" class="ln">   967  </span>func TestProduct_Price(t *testing.T) {
-<span id="L968" class="ln">   968  </span>	t.Parallel()
-<span id="L969" class="ln">   969  </span>
-<span id="L970" class="ln">   970  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L971" class="ln">   971  </span>		t.Parallel()
-<span id="L972" class="ln">   972  </span>
-<span id="L973" class="ln">   973  </span>		t.Run(&#34;サブセント精度を保持した価格スナップショットを返す&#34;, func(t *testing.T) {
-<span id="L974" class="ln">   974  </span>			t.Parallel()
-<span id="L975" class="ln">   975  </span>
-<span id="L976" class="ln">   976  </span>			id, attrs := validProductArgs(t)
-<span id="L977" class="ln">   977  </span>			attrs.Price = mustPrice(t, &#34;19.995&#34;)
-<span id="L978" class="ln">   978  </span>
-<span id="L979" class="ln">   979  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L980" class="ln">   980  </span>			require.NoError(t, err)
-<span id="L981" class="ln">   981  </span>			assert.Equal(t, &#34;19.995&#34;, p.Price().String())
-<span id="L982" class="ln">   982  </span>			assert.True(t, p.Price().Decimal().Equal(decimaltestkit.MustParse(t, &#34;19.995&#34;)))
-<span id="L983" class="ln">   983  </span>		})
-<span id="L984" class="ln">   984  </span>	})
-<span id="L985" class="ln">   985  </span>}
-<span id="L986" class="ln">   986  </span>
-<span id="L987" class="ln">   987  </span>func TestProduct_Version(t *testing.T) {
-<span id="L988" class="ln">   988  </span>	t.Parallel()
-<span id="L989" class="ln">   989  </span>
-<span id="L990" class="ln">   990  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L991" class="ln">   991  </span>		t.Parallel()
-<span id="L992" class="ln">   992  </span>
-<span id="L993" class="ln">   993  </span>		t.Run(&#34;再構築で渡した楽観ロックのバージョンを返す&#34;, func(t *testing.T) {
-<span id="L994" class="ln">   994  </span>			t.Parallel()
-<span id="L995" class="ln">   995  </span>
-<span id="L996" class="ln">   996  </span>			id, attrs := validProductArgs(t)
-<span id="L997" class="ln">   997  </span>			p, err := Reconstruct(id, attrs, initialVersion+2, testCreatedAt)
-<span id="L998" class="ln">   998  </span>			require.NoError(t, err)
-<span id="L999" class="ln">   999  </span>			assert.Equal(t, initialVersion+2, p.Version())
-<span id="L1000" class="ln">  1000  </span>		})
-<span id="L1001" class="ln">  1001  </span>	})
-<span id="L1002" class="ln">  1002  </span>}
-<span id="L1003" class="ln">  1003  </span>
-<span id="L1004" class="ln">  1004  </span>func TestProduct_Category(t *testing.T) {
-<span id="L1005" class="ln">  1005  </span>	t.Parallel()
-<span id="L1006" class="ln">  1006  </span>
-<span id="L1007" class="ln">  1007  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1008" class="ln">  1008  </span>		t.Parallel()
+<span id="L960" class="ln">   960  </span>			snapshot.quantity = p.Quantity()
+<span id="L961" class="ln">   961  </span>			assert.Equal(t, snapshot, *p)
+<span id="L962" class="ln">   962  </span>		})
+<span id="L963" class="ln">   963  </span>	})
+<span id="L964" class="ln">   964  </span>
+<span id="L965" class="ln">   965  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L966" class="ln">   966  </span>		t.Parallel()
+<span id="L967" class="ln">   967  </span>
+<span id="L968" class="ln">   968  </span>		t.Run(&#34;減算後が最小値未満になる場合、ErrInvalidQuantityを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
+<span id="L969" class="ln">   969  </span>			t.Parallel()
+<span id="L970" class="ln">   970  </span>
+<span id="L971" class="ln">   971  </span>			p := newTestProduct(t)
+<span id="L972" class="ln">   972  </span>			snapshot := *p
+<span id="L973" class="ln">   973  </span>
+<span id="L974" class="ln">   974  </span>			err := p.AdjustStock(minQuantity - p.Quantity() - 1)
+<span id="L975" class="ln">   975  </span>			require.ErrorIs(t, err, ErrInvalidQuantity)
+<span id="L976" class="ln">   976  </span>			require.ErrorIs(t, err, apperror.ErrValidation)
+<span id="L977" class="ln">   977  </span>			assert.Equal(t, snapshot, *p)
+<span id="L978" class="ln">   978  </span>		})
+<span id="L979" class="ln">   979  </span>
+<span id="L980" class="ln">   980  </span>		t.Run(&#34;加算後が最大値を超える場合、ErrInvalidQuantityを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
+<span id="L981" class="ln">   981  </span>			t.Parallel()
+<span id="L982" class="ln">   982  </span>
+<span id="L983" class="ln">   983  </span>			p := newTestProduct(t)
+<span id="L984" class="ln">   984  </span>			snapshot := *p
+<span id="L985" class="ln">   985  </span>
+<span id="L986" class="ln">   986  </span>			err := p.AdjustStock(maxQuantity - p.Quantity() + 1)
+<span id="L987" class="ln">   987  </span>			require.ErrorIs(t, err, ErrInvalidQuantity)
+<span id="L988" class="ln">   988  </span>			require.ErrorIs(t, err, apperror.ErrValidation)
+<span id="L989" class="ln">   989  </span>			assert.Equal(t, snapshot, *p)
+<span id="L990" class="ln">   990  </span>		})
+<span id="L991" class="ln">   991  </span>
+<span id="L992" class="ln">   992  </span>		t.Run(&#34;識別子は付けない（呼び出し元が決める）&#34;, func(t *testing.T) {
+<span id="L993" class="ln">   993  </span>			t.Parallel()
+<span id="L994" class="ln">   994  </span>
+<span id="L995" class="ln">   995  </span>			p := newTestProduct(t)
+<span id="L996" class="ln">   996  </span>
+<span id="L997" class="ln">   997  </span>			err := p.AdjustStock(-p.Quantity() - 1)
+<span id="L998" class="ln">   998  </span>			require.ErrorIs(t, err, ErrInvalidQuantity)
+<span id="L999" class="ln">   999  </span>			_, ok := apperror.MetaFrom(err)
+<span id="L1000" class="ln">  1000  </span>			assert.False(t, ok)
+<span id="L1001" class="ln">  1001  </span>		})
+<span id="L1002" class="ln">  1002  </span>	})
+<span id="L1003" class="ln">  1003  </span>}
+<span id="L1004" class="ln">  1004  </span>
+<span id="L1005" class="ln">  1005  </span>func TestProduct_EnsureVersion(t *testing.T) {
+<span id="L1006" class="ln">  1006  </span>	t.Parallel()
+<span id="L1007" class="ln">  1007  </span>
+<span id="L1008" class="ln">  1008  </span>	id, attrs := validProductArgs(t)
 <span id="L1009" class="ln">  1009  </span>
-<span id="L1010" class="ln">  1010  </span>		t.Run(&#34;生成時のカテゴリ参照をIDと名称ごと返す&#34;, func(t *testing.T) {
-<span id="L1011" class="ln">  1011  </span>			t.Parallel()
+<span id="L1010" class="ln">  1010  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1011" class="ln">  1011  </span>		t.Parallel()
 <span id="L1012" class="ln">  1012  </span>
-<span id="L1013" class="ln">  1013  </span>			id, attrs := validProductArgs(t)
-<span id="L1014" class="ln">  1014  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1015" class="ln">  1015  </span>			require.NoError(t, err)
-<span id="L1016" class="ln">  1016  </span>
-<span id="L1017" class="ln">  1017  </span>			assert.Equal(t, attrs.Category, p.Category())
-<span id="L1018" class="ln">  1018  </span>			assert.Equal(t, &#34;電子機器&#34;, p.Category().Name())
-<span id="L1019" class="ln">  1019  </span>		})
-<span id="L1020" class="ln">  1020  </span>	})
-<span id="L1021" class="ln">  1021  </span>}
-<span id="L1022" class="ln">  1022  </span>
-<span id="L1023" class="ln">  1023  </span>func TestProduct_Description(t *testing.T) {
-<span id="L1024" class="ln">  1024  </span>	t.Parallel()
-<span id="L1025" class="ln">  1025  </span>
-<span id="L1026" class="ln">  1026  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1027" class="ln">  1027  </span>		t.Parallel()
-<span id="L1028" class="ln">  1028  </span>
-<span id="L1029" class="ln">  1029  </span>		t.Run(&#34;生成時の商品説明を返す&#34;, func(t *testing.T) {
-<span id="L1030" class="ln">  1030  </span>			t.Parallel()
-<span id="L1031" class="ln">  1031  </span>
-<span id="L1032" class="ln">  1032  </span>			id, attrs := validProductArgs(t)
-<span id="L1033" class="ln">  1033  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1034" class="ln">  1034  </span>			require.NoError(t, err)
-<span id="L1035" class="ln">  1035  </span>
-<span id="L1036" class="ln">  1036  </span>			require.NotNil(t, p.Description())
-<span id="L1037" class="ln">  1037  </span>			assert.Equal(t, &#34;ノイズキャンセリング対応&#34;, *p.Description())
-<span id="L1038" class="ln">  1038  </span>		})
+<span id="L1013" class="ln">  1013  </span>		t.Run(&#34;期待バージョンが現在のバージョンと一致する場合、nilを返す&#34;, func(t *testing.T) {
+<span id="L1014" class="ln">  1014  </span>			t.Parallel()
+<span id="L1015" class="ln">  1015  </span>
+<span id="L1016" class="ln">  1016  </span>			p := newTestProduct(t)
+<span id="L1017" class="ln">  1017  </span>			require.NoError(t, p.EnsureVersion(initialVersion))
+<span id="L1018" class="ln">  1018  </span>		})
+<span id="L1019" class="ln">  1019  </span>	})
+<span id="L1020" class="ln">  1020  </span>
+<span id="L1021" class="ln">  1021  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1022" class="ln">  1022  </span>		t.Parallel()
+<span id="L1023" class="ln">  1023  </span>
+<span id="L1024" class="ln">  1024  </span>		t.Run(&#34;期待バージョンが現在のバージョンと一致しない場合、Conflictに分類されるErrVersionConflictを返す&#34;, func(t *testing.T) {
+<span id="L1025" class="ln">  1025  </span>			t.Parallel()
+<span id="L1026" class="ln">  1026  </span>
+<span id="L1027" class="ln">  1027  </span>			p, err := Reconstruct(id, attrs, initialVersion+1, testCreatedAt)
+<span id="L1028" class="ln">  1028  </span>			require.NoError(t, err)
+<span id="L1029" class="ln">  1029  </span>
+<span id="L1030" class="ln">  1030  </span>			err = p.EnsureVersion(initialVersion)
+<span id="L1031" class="ln">  1031  </span>			require.ErrorIs(t, err, ErrVersionConflict)
+<span id="L1032" class="ln">  1032  </span>			require.ErrorIs(t, err, apperror.ErrConflict)
+<span id="L1033" class="ln">  1033  </span>		})
+<span id="L1034" class="ln">  1034  </span>	})
+<span id="L1035" class="ln">  1035  </span>}
+<span id="L1036" class="ln">  1036  </span>
+<span id="L1037" class="ln">  1037  </span>func TestProduct_Price(t *testing.T) {
+<span id="L1038" class="ln">  1038  </span>	t.Parallel()
 <span id="L1039" class="ln">  1039  </span>
-<span id="L1040" class="ln">  1040  </span>		t.Run(&#34;未設定の場合、nilを返す&#34;, func(t *testing.T) {
-<span id="L1041" class="ln">  1041  </span>			t.Parallel()
+<span id="L1040" class="ln">  1040  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1041" class="ln">  1041  </span>		t.Parallel()
 <span id="L1042" class="ln">  1042  </span>
-<span id="L1043" class="ln">  1043  </span>			id, attrs := validProductArgs(t)
-<span id="L1044" class="ln">  1044  </span>			attrs.Description = nil
-<span id="L1045" class="ln">  1045  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1046" class="ln">  1046  </span>			require.NoError(t, err)
-<span id="L1047" class="ln">  1047  </span>
-<span id="L1048" class="ln">  1048  </span>			assert.Nil(t, p.Description())
-<span id="L1049" class="ln">  1049  </span>		})
-<span id="L1050" class="ln">  1050  </span>
-<span id="L1051" class="ln">  1051  </span>		t.Run(&#34;返り値のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
-<span id="L1052" class="ln">  1052  </span>			t.Parallel()
-<span id="L1053" class="ln">  1053  </span>
-<span id="L1054" class="ln">  1054  </span>			id, attrs := validProductArgs(t)
-<span id="L1055" class="ln">  1055  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1056" class="ln">  1056  </span>			require.NoError(t, err)
-<span id="L1057" class="ln">  1057  </span>
-<span id="L1058" class="ln">  1058  </span>			got := p.Description()
-<span id="L1059" class="ln">  1059  </span>			*got = &#34;書き換え後の説明&#34;
-<span id="L1060" class="ln">  1060  </span>
-<span id="L1061" class="ln">  1061  </span>			require.NotNil(t, p.Description())
-<span id="L1062" class="ln">  1062  </span>			assert.NotEqual(t, *got, *p.Description())
-<span id="L1063" class="ln">  1063  </span>			assert.Equal(t, &#34;ノイズキャンセリング対応&#34;, *p.Description())
-<span id="L1064" class="ln">  1064  </span>		})
-<span id="L1065" class="ln">  1065  </span>	})
-<span id="L1066" class="ln">  1066  </span>}
-<span id="L1067" class="ln">  1067  </span>
-<span id="L1068" class="ln">  1068  </span>func TestProduct_ID(t *testing.T) {
-<span id="L1069" class="ln">  1069  </span>	t.Parallel()
-<span id="L1070" class="ln">  1070  </span>
-<span id="L1071" class="ln">  1071  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1072" class="ln">  1072  </span>		t.Parallel()
+<span id="L1043" class="ln">  1043  </span>		t.Run(&#34;サブセント精度を保持した価格スナップショットを返す&#34;, func(t *testing.T) {
+<span id="L1044" class="ln">  1044  </span>			t.Parallel()
+<span id="L1045" class="ln">  1045  </span>
+<span id="L1046" class="ln">  1046  </span>			id, attrs := validProductArgs(t)
+<span id="L1047" class="ln">  1047  </span>			attrs.Price = mustPrice(t, &#34;19.995&#34;)
+<span id="L1048" class="ln">  1048  </span>
+<span id="L1049" class="ln">  1049  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1050" class="ln">  1050  </span>			require.NoError(t, err)
+<span id="L1051" class="ln">  1051  </span>			assert.Equal(t, &#34;19.995&#34;, p.Price().String())
+<span id="L1052" class="ln">  1052  </span>			assert.True(t, p.Price().Decimal().Equal(decimaltestkit.MustParse(t, &#34;19.995&#34;)))
+<span id="L1053" class="ln">  1053  </span>		})
+<span id="L1054" class="ln">  1054  </span>	})
+<span id="L1055" class="ln">  1055  </span>}
+<span id="L1056" class="ln">  1056  </span>
+<span id="L1057" class="ln">  1057  </span>func TestProduct_Version(t *testing.T) {
+<span id="L1058" class="ln">  1058  </span>	t.Parallel()
+<span id="L1059" class="ln">  1059  </span>
+<span id="L1060" class="ln">  1060  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1061" class="ln">  1061  </span>		t.Parallel()
+<span id="L1062" class="ln">  1062  </span>
+<span id="L1063" class="ln">  1063  </span>		t.Run(&#34;再構築で渡した楽観ロックのバージョンを返す&#34;, func(t *testing.T) {
+<span id="L1064" class="ln">  1064  </span>			t.Parallel()
+<span id="L1065" class="ln">  1065  </span>
+<span id="L1066" class="ln">  1066  </span>			id, attrs := validProductArgs(t)
+<span id="L1067" class="ln">  1067  </span>			p, err := Reconstruct(id, attrs, initialVersion+2, testCreatedAt)
+<span id="L1068" class="ln">  1068  </span>			require.NoError(t, err)
+<span id="L1069" class="ln">  1069  </span>			assert.Equal(t, initialVersion+2, p.Version())
+<span id="L1070" class="ln">  1070  </span>		})
+<span id="L1071" class="ln">  1071  </span>	})
+<span id="L1072" class="ln">  1072  </span>}
 <span id="L1073" class="ln">  1073  </span>
-<span id="L1074" class="ln">  1074  </span>		t.Run(&#34;生成時のIDを返す&#34;, func(t *testing.T) {
-<span id="L1075" class="ln">  1075  </span>			t.Parallel()
+<span id="L1074" class="ln">  1074  </span>func TestProduct_Category(t *testing.T) {
+<span id="L1075" class="ln">  1075  </span>	t.Parallel()
 <span id="L1076" class="ln">  1076  </span>
-<span id="L1077" class="ln">  1077  </span>			id, attrs := validProductArgs(t)
-<span id="L1078" class="ln">  1078  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1079" class="ln">  1079  </span>			require.NoError(t, err)
-<span id="L1080" class="ln">  1080  </span>
-<span id="L1081" class="ln">  1081  </span>			assert.Equal(t, id, p.ID())
-<span id="L1082" class="ln">  1082  </span>		})
-<span id="L1083" class="ln">  1083  </span>	})
-<span id="L1084" class="ln">  1084  </span>}
-<span id="L1085" class="ln">  1085  </span>
-<span id="L1086" class="ln">  1086  </span>func TestProduct_Images(t *testing.T) {
-<span id="L1087" class="ln">  1087  </span>	t.Parallel()
-<span id="L1088" class="ln">  1088  </span>
-<span id="L1089" class="ln">  1089  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1090" class="ln">  1090  </span>		t.Parallel()
-<span id="L1091" class="ln">  1091  </span>
-<span id="L1092" class="ln">  1092  </span>		t.Run(&#34;生成時の画像を表示順の昇順で返す&#34;, func(t *testing.T) {
-<span id="L1093" class="ln">  1093  </span>			t.Parallel()
-<span id="L1094" class="ln">  1094  </span>
-<span id="L1095" class="ln">  1095  </span>			id, attrs := validProductArgs(t)
-<span id="L1096" class="ln">  1096  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1097" class="ln">  1097  </span>			require.NoError(t, err)
+<span id="L1077" class="ln">  1077  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1078" class="ln">  1078  </span>		t.Parallel()
+<span id="L1079" class="ln">  1079  </span>
+<span id="L1080" class="ln">  1080  </span>		t.Run(&#34;生成時のカテゴリ参照をIDと名称ごと返す&#34;, func(t *testing.T) {
+<span id="L1081" class="ln">  1081  </span>			t.Parallel()
+<span id="L1082" class="ln">  1082  </span>
+<span id="L1083" class="ln">  1083  </span>			id, attrs := validProductArgs(t)
+<span id="L1084" class="ln">  1084  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1085" class="ln">  1085  </span>			require.NoError(t, err)
+<span id="L1086" class="ln">  1086  </span>
+<span id="L1087" class="ln">  1087  </span>			assert.Equal(t, attrs.Category, p.Category())
+<span id="L1088" class="ln">  1088  </span>			assert.Equal(t, &#34;電子機器&#34;, p.Category().Name())
+<span id="L1089" class="ln">  1089  </span>		})
+<span id="L1090" class="ln">  1090  </span>	})
+<span id="L1091" class="ln">  1091  </span>}
+<span id="L1092" class="ln">  1092  </span>
+<span id="L1093" class="ln">  1093  </span>func TestProduct_Description(t *testing.T) {
+<span id="L1094" class="ln">  1094  </span>	t.Parallel()
+<span id="L1095" class="ln">  1095  </span>
+<span id="L1096" class="ln">  1096  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1097" class="ln">  1097  </span>		t.Parallel()
 <span id="L1098" class="ln">  1098  </span>
-<span id="L1099" class="ln">  1099  </span>			images := p.Images()
-<span id="L1100" class="ln">  1100  </span>			require.Len(t, images, 2)
-<span id="L1101" class="ln">  1101  </span>			assert.Equal(t, &#34;products/earphone.png&#34;, images[0].ImagePath())
-<span id="L1102" class="ln">  1102  </span>			assert.Equal(t, 1, images[0].DisplaySort())
-<span id="L1103" class="ln">  1103  </span>			assert.Equal(t, &#34;products/earphone-sub.png&#34;, images[1].ImagePath())
-<span id="L1104" class="ln">  1104  </span>			assert.Equal(t, 2, images[1].DisplaySort())
-<span id="L1105" class="ln">  1105  </span>		})
-<span id="L1106" class="ln">  1106  </span>
-<span id="L1107" class="ln">  1107  </span>		t.Run(&#34;表示順が降順で渡された場合でも昇順に並べ替えて返す&#34;, func(t *testing.T) {
-<span id="L1108" class="ln">  1108  </span>			t.Parallel()
+<span id="L1099" class="ln">  1099  </span>		t.Run(&#34;生成時の商品説明を返す&#34;, func(t *testing.T) {
+<span id="L1100" class="ln">  1100  </span>			t.Parallel()
+<span id="L1101" class="ln">  1101  </span>
+<span id="L1102" class="ln">  1102  </span>			id, attrs := validProductArgs(t)
+<span id="L1103" class="ln">  1103  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1104" class="ln">  1104  </span>			require.NoError(t, err)
+<span id="L1105" class="ln">  1105  </span>
+<span id="L1106" class="ln">  1106  </span>			require.NotNil(t, p.Description())
+<span id="L1107" class="ln">  1107  </span>			assert.Equal(t, &#34;ノイズキャンセリング対応&#34;, *p.Description())
+<span id="L1108" class="ln">  1108  </span>		})
 <span id="L1109" class="ln">  1109  </span>
-<span id="L1110" class="ln">  1110  </span>			id, attrs := validProductArgs(t)
-<span id="L1111" class="ln">  1111  </span>			attrs.Images = []Image{
-<span id="L1112" class="ln">  1112  </span>				mustImage(t, &#34;product_image_id_2&#34;, &#34;products/earphone-sub.png&#34;, 2),
-<span id="L1113" class="ln">  1113  </span>				mustImage(t, &#34;product_image_id_1&#34;, &#34;products/earphone.png&#34;, 1),
-<span id="L1114" class="ln">  1114  </span>			}
+<span id="L1110" class="ln">  1110  </span>		t.Run(&#34;未設定の場合、nilを返す&#34;, func(t *testing.T) {
+<span id="L1111" class="ln">  1111  </span>			t.Parallel()
+<span id="L1112" class="ln">  1112  </span>
+<span id="L1113" class="ln">  1113  </span>			id, attrs := validProductArgs(t)
+<span id="L1114" class="ln">  1114  </span>			attrs.Description = nil
 <span id="L1115" class="ln">  1115  </span>			p, err := New(id, attrs, testCreatedAt)
 <span id="L1116" class="ln">  1116  </span>			require.NoError(t, err)
 <span id="L1117" class="ln">  1117  </span>
-<span id="L1118" class="ln">  1118  </span>			images := p.Images()
-<span id="L1119" class="ln">  1119  </span>			require.Len(t, images, 2)
-<span id="L1120" class="ln">  1120  </span>			assert.Equal(t, 1, images[0].DisplaySort())
-<span id="L1121" class="ln">  1121  </span>			assert.Equal(t, 2, images[1].DisplaySort())
-<span id="L1122" class="ln">  1122  </span>		})
+<span id="L1118" class="ln">  1118  </span>			assert.Nil(t, p.Description())
+<span id="L1119" class="ln">  1119  </span>		})
+<span id="L1120" class="ln">  1120  </span>
+<span id="L1121" class="ln">  1121  </span>		t.Run(&#34;返り値のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
+<span id="L1122" class="ln">  1122  </span>			t.Parallel()
 <span id="L1123" class="ln">  1123  </span>
-<span id="L1124" class="ln">  1124  </span>		t.Run(&#34;未設定の場合、空を返す&#34;, func(t *testing.T) {
-<span id="L1125" class="ln">  1125  </span>			t.Parallel()
-<span id="L1126" class="ln">  1126  </span>
-<span id="L1127" class="ln">  1127  </span>			id, attrs := validProductArgs(t)
-<span id="L1128" class="ln">  1128  </span>			attrs.Images = nil
-<span id="L1129" class="ln">  1129  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1130" class="ln">  1130  </span>			require.NoError(t, err)
-<span id="L1131" class="ln">  1131  </span>
-<span id="L1132" class="ln">  1132  </span>			assert.Empty(t, p.Images())
-<span id="L1133" class="ln">  1133  </span>		})
-<span id="L1134" class="ln">  1134  </span>
-<span id="L1135" class="ln">  1135  </span>		t.Run(&#34;返り値のスライスを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
-<span id="L1136" class="ln">  1136  </span>			t.Parallel()
+<span id="L1124" class="ln">  1124  </span>			id, attrs := validProductArgs(t)
+<span id="L1125" class="ln">  1125  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1126" class="ln">  1126  </span>			require.NoError(t, err)
+<span id="L1127" class="ln">  1127  </span>
+<span id="L1128" class="ln">  1128  </span>			got := p.Description()
+<span id="L1129" class="ln">  1129  </span>			*got = &#34;書き換え後の説明&#34;
+<span id="L1130" class="ln">  1130  </span>
+<span id="L1131" class="ln">  1131  </span>			require.NotNil(t, p.Description())
+<span id="L1132" class="ln">  1132  </span>			assert.NotEqual(t, *got, *p.Description())
+<span id="L1133" class="ln">  1133  </span>			assert.Equal(t, &#34;ノイズキャンセリング対応&#34;, *p.Description())
+<span id="L1134" class="ln">  1134  </span>		})
+<span id="L1135" class="ln">  1135  </span>	})
+<span id="L1136" class="ln">  1136  </span>}
 <span id="L1137" class="ln">  1137  </span>
-<span id="L1138" class="ln">  1138  </span>			id, attrs := validProductArgs(t)
-<span id="L1139" class="ln">  1139  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1140" class="ln">  1140  </span>			require.NoError(t, err)
-<span id="L1141" class="ln">  1141  </span>
-<span id="L1142" class="ln">  1142  </span>			got := p.Images()
-<span id="L1143" class="ln">  1143  </span>			got[0] = mustImage(t, &#34;mutated_image_id&#34;, &#34;products/mutated.png&#34;, 9)
-<span id="L1144" class="ln">  1144  </span>
-<span id="L1145" class="ln">  1145  </span>			require.Len(t, p.Images(), 2)
-<span id="L1146" class="ln">  1146  </span>			assert.Equal(t, &#34;products/earphone.png&#34;, p.Images()[0].ImagePath())
-<span id="L1147" class="ln">  1147  </span>		})
-<span id="L1148" class="ln">  1148  </span>	})
-<span id="L1149" class="ln">  1149  </span>}
+<span id="L1138" class="ln">  1138  </span>func TestProduct_ID(t *testing.T) {
+<span id="L1139" class="ln">  1139  </span>	t.Parallel()
+<span id="L1140" class="ln">  1140  </span>
+<span id="L1141" class="ln">  1141  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1142" class="ln">  1142  </span>		t.Parallel()
+<span id="L1143" class="ln">  1143  </span>
+<span id="L1144" class="ln">  1144  </span>		t.Run(&#34;生成時のIDを返す&#34;, func(t *testing.T) {
+<span id="L1145" class="ln">  1145  </span>			t.Parallel()
+<span id="L1146" class="ln">  1146  </span>
+<span id="L1147" class="ln">  1147  </span>			id, attrs := validProductArgs(t)
+<span id="L1148" class="ln">  1148  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1149" class="ln">  1149  </span>			require.NoError(t, err)
 <span id="L1150" class="ln">  1150  </span>
-<span id="L1151" class="ln">  1151  </span>func TestProduct_Name(t *testing.T) {
-<span id="L1152" class="ln">  1152  </span>	t.Parallel()
-<span id="L1153" class="ln">  1153  </span>
-<span id="L1154" class="ln">  1154  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1155" class="ln">  1155  </span>		t.Parallel()
-<span id="L1156" class="ln">  1156  </span>
-<span id="L1157" class="ln">  1157  </span>		t.Run(&#34;生成時の商品名を返す&#34;, func(t *testing.T) {
-<span id="L1158" class="ln">  1158  </span>			t.Parallel()
-<span id="L1159" class="ln">  1159  </span>
-<span id="L1160" class="ln">  1160  </span>			id, attrs := validProductArgs(t)
-<span id="L1161" class="ln">  1161  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1162" class="ln">  1162  </span>			require.NoError(t, err)
-<span id="L1163" class="ln">  1163  </span>
-<span id="L1164" class="ln">  1164  </span>			assert.Equal(t, &#34;ワイヤレスイヤホン&#34;, p.Name())
-<span id="L1165" class="ln">  1165  </span>		})
-<span id="L1166" class="ln">  1166  </span>	})
-<span id="L1167" class="ln">  1167  </span>}
+<span id="L1151" class="ln">  1151  </span>			assert.Equal(t, id, p.ID())
+<span id="L1152" class="ln">  1152  </span>		})
+<span id="L1153" class="ln">  1153  </span>	})
+<span id="L1154" class="ln">  1154  </span>}
+<span id="L1155" class="ln">  1155  </span>
+<span id="L1156" class="ln">  1156  </span>func TestProduct_Images(t *testing.T) {
+<span id="L1157" class="ln">  1157  </span>	t.Parallel()
+<span id="L1158" class="ln">  1158  </span>
+<span id="L1159" class="ln">  1159  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1160" class="ln">  1160  </span>		t.Parallel()
+<span id="L1161" class="ln">  1161  </span>
+<span id="L1162" class="ln">  1162  </span>		t.Run(&#34;生成時の画像を表示順の昇順で返す&#34;, func(t *testing.T) {
+<span id="L1163" class="ln">  1163  </span>			t.Parallel()
+<span id="L1164" class="ln">  1164  </span>
+<span id="L1165" class="ln">  1165  </span>			id, attrs := validProductArgs(t)
+<span id="L1166" class="ln">  1166  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1167" class="ln">  1167  </span>			require.NoError(t, err)
 <span id="L1168" class="ln">  1168  </span>
-<span id="L1169" class="ln">  1169  </span>func TestProduct_CreatedAt(t *testing.T) {
-<span id="L1170" class="ln">  1170  </span>	t.Parallel()
-<span id="L1171" class="ln">  1171  </span>
-<span id="L1172" class="ln">  1172  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1173" class="ln">  1173  </span>		t.Parallel()
-<span id="L1174" class="ln">  1174  </span>
-<span id="L1175" class="ln">  1175  </span>		t.Run(&#34;生成時の登録日時を返す&#34;, func(t *testing.T) {
-<span id="L1176" class="ln">  1176  </span>			t.Parallel()
-<span id="L1177" class="ln">  1177  </span>
-<span id="L1178" class="ln">  1178  </span>			id, attrs := validProductArgs(t)
-<span id="L1179" class="ln">  1179  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1180" class="ln">  1180  </span>			require.NoError(t, err)
-<span id="L1181" class="ln">  1181  </span>
-<span id="L1182" class="ln">  1182  </span>			assert.Equal(t, testCreatedAt, p.CreatedAt())
-<span id="L1183" class="ln">  1183  </span>		})
-<span id="L1184" class="ln">  1184  </span>
-<span id="L1185" class="ln">  1185  </span>		t.Run(&#34;公開日時とは別の値を保持する&#34;, func(t *testing.T) {
-<span id="L1186" class="ln">  1186  </span>			t.Parallel()
+<span id="L1169" class="ln">  1169  </span>			images := p.Images()
+<span id="L1170" class="ln">  1170  </span>			require.Len(t, images, 2)
+<span id="L1171" class="ln">  1171  </span>			assert.Equal(t, &#34;products/earphone.png&#34;, images[0].ImagePath())
+<span id="L1172" class="ln">  1172  </span>			assert.Equal(t, 1, images[0].DisplaySort())
+<span id="L1173" class="ln">  1173  </span>			assert.Equal(t, &#34;products/earphone-sub.png&#34;, images[1].ImagePath())
+<span id="L1174" class="ln">  1174  </span>			assert.Equal(t, 2, images[1].DisplaySort())
+<span id="L1175" class="ln">  1175  </span>		})
+<span id="L1176" class="ln">  1176  </span>
+<span id="L1177" class="ln">  1177  </span>		t.Run(&#34;表示順が降順で渡された場合でも昇順に並べ替えて返す&#34;, func(t *testing.T) {
+<span id="L1178" class="ln">  1178  </span>			t.Parallel()
+<span id="L1179" class="ln">  1179  </span>
+<span id="L1180" class="ln">  1180  </span>			id, attrs := validProductArgs(t)
+<span id="L1181" class="ln">  1181  </span>			attrs.Images = []Image{
+<span id="L1182" class="ln">  1182  </span>				mustImage(t, &#34;product_image_id_2&#34;, &#34;products/earphone-sub.png&#34;, 2),
+<span id="L1183" class="ln">  1183  </span>				mustImage(t, &#34;product_image_id_1&#34;, &#34;products/earphone.png&#34;, 1),
+<span id="L1184" class="ln">  1184  </span>			}
+<span id="L1185" class="ln">  1185  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1186" class="ln">  1186  </span>			require.NoError(t, err)
 <span id="L1187" class="ln">  1187  </span>
-<span id="L1188" class="ln">  1188  </span>			id, attrs := validProductArgs(t)
-<span id="L1189" class="ln">  1189  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1190" class="ln">  1190  </span>			require.NoError(t, err)
-<span id="L1191" class="ln">  1191  </span>
-<span id="L1192" class="ln">  1192  </span>			require.NotNil(t, p.PublishedAt())
-<span id="L1193" class="ln">  1193  </span>			assert.NotEqual(t, *p.PublishedAt(), p.CreatedAt())
-<span id="L1194" class="ln">  1194  </span>		})
-<span id="L1195" class="ln">  1195  </span>
-<span id="L1196" class="ln">  1196  </span>		t.Run(&#34;再構築時は永続化されていた登録日時を返す&#34;, func(t *testing.T) {
-<span id="L1197" class="ln">  1197  </span>			t.Parallel()
-<span id="L1198" class="ln">  1198  </span>
-<span id="L1199" class="ln">  1199  </span>			id, attrs := validProductArgs(t)
-<span id="L1200" class="ln">  1200  </span>			persisted := time.Date(2024, time.June, 1, 12, 0, 0, 0, time.UTC)
-<span id="L1201" class="ln">  1201  </span>			p, err := Reconstruct(id, attrs, initialVersion, persisted)
-<span id="L1202" class="ln">  1202  </span>			require.NoError(t, err)
-<span id="L1203" class="ln">  1203  </span>
-<span id="L1204" class="ln">  1204  </span>			assert.Equal(t, persisted, p.CreatedAt())
-<span id="L1205" class="ln">  1205  </span>		})
-<span id="L1206" class="ln">  1206  </span>	})
-<span id="L1207" class="ln">  1207  </span>}
-<span id="L1208" class="ln">  1208  </span>
-<span id="L1209" class="ln">  1209  </span>func TestProduct_PublishedAt(t *testing.T) {
-<span id="L1210" class="ln">  1210  </span>	t.Parallel()
+<span id="L1188" class="ln">  1188  </span>			images := p.Images()
+<span id="L1189" class="ln">  1189  </span>			require.Len(t, images, 2)
+<span id="L1190" class="ln">  1190  </span>			assert.Equal(t, 1, images[0].DisplaySort())
+<span id="L1191" class="ln">  1191  </span>			assert.Equal(t, 2, images[1].DisplaySort())
+<span id="L1192" class="ln">  1192  </span>		})
+<span id="L1193" class="ln">  1193  </span>
+<span id="L1194" class="ln">  1194  </span>		t.Run(&#34;未設定の場合、空を返す&#34;, func(t *testing.T) {
+<span id="L1195" class="ln">  1195  </span>			t.Parallel()
+<span id="L1196" class="ln">  1196  </span>
+<span id="L1197" class="ln">  1197  </span>			id, attrs := validProductArgs(t)
+<span id="L1198" class="ln">  1198  </span>			attrs.Images = nil
+<span id="L1199" class="ln">  1199  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1200" class="ln">  1200  </span>			require.NoError(t, err)
+<span id="L1201" class="ln">  1201  </span>
+<span id="L1202" class="ln">  1202  </span>			assert.Empty(t, p.Images())
+<span id="L1203" class="ln">  1203  </span>		})
+<span id="L1204" class="ln">  1204  </span>
+<span id="L1205" class="ln">  1205  </span>		t.Run(&#34;返り値のスライスを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
+<span id="L1206" class="ln">  1206  </span>			t.Parallel()
+<span id="L1207" class="ln">  1207  </span>
+<span id="L1208" class="ln">  1208  </span>			id, attrs := validProductArgs(t)
+<span id="L1209" class="ln">  1209  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1210" class="ln">  1210  </span>			require.NoError(t, err)
 <span id="L1211" class="ln">  1211  </span>
-<span id="L1212" class="ln">  1212  </span>	publishedAt := time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)
-<span id="L1213" class="ln">  1213  </span>
-<span id="L1214" class="ln">  1214  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1215" class="ln">  1215  </span>		t.Parallel()
-<span id="L1216" class="ln">  1216  </span>
-<span id="L1217" class="ln">  1217  </span>		t.Run(&#34;生成時の公開日時を返す&#34;, func(t *testing.T) {
-<span id="L1218" class="ln">  1218  </span>			t.Parallel()
-<span id="L1219" class="ln">  1219  </span>
-<span id="L1220" class="ln">  1220  </span>			id, attrs := validProductArgs(t)
-<span id="L1221" class="ln">  1221  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1222" class="ln">  1222  </span>			require.NoError(t, err)
+<span id="L1212" class="ln">  1212  </span>			got := p.Images()
+<span id="L1213" class="ln">  1213  </span>			got[0] = mustImage(t, &#34;mutated_image_id&#34;, &#34;products/mutated.png&#34;, 9)
+<span id="L1214" class="ln">  1214  </span>
+<span id="L1215" class="ln">  1215  </span>			require.Len(t, p.Images(), 2)
+<span id="L1216" class="ln">  1216  </span>			assert.Equal(t, &#34;products/earphone.png&#34;, p.Images()[0].ImagePath())
+<span id="L1217" class="ln">  1217  </span>		})
+<span id="L1218" class="ln">  1218  </span>	})
+<span id="L1219" class="ln">  1219  </span>}
+<span id="L1220" class="ln">  1220  </span>
+<span id="L1221" class="ln">  1221  </span>func TestProduct_Name(t *testing.T) {
+<span id="L1222" class="ln">  1222  </span>	t.Parallel()
 <span id="L1223" class="ln">  1223  </span>
-<span id="L1224" class="ln">  1224  </span>			require.NotNil(t, p.PublishedAt())
-<span id="L1225" class="ln">  1225  </span>			assert.Equal(t, publishedAt, *p.PublishedAt())
-<span id="L1226" class="ln">  1226  </span>		})
-<span id="L1227" class="ln">  1227  </span>
-<span id="L1228" class="ln">  1228  </span>		t.Run(&#34;未公開の場合、nilを返す&#34;, func(t *testing.T) {
-<span id="L1229" class="ln">  1229  </span>			t.Parallel()
-<span id="L1230" class="ln">  1230  </span>
-<span id="L1231" class="ln">  1231  </span>			id, attrs := validProductArgs(t)
-<span id="L1232" class="ln">  1232  </span>			attrs.PublishedAt = nil
-<span id="L1233" class="ln">  1233  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1234" class="ln">  1234  </span>			require.NoError(t, err)
-<span id="L1235" class="ln">  1235  </span>
-<span id="L1236" class="ln">  1236  </span>			assert.Nil(t, p.PublishedAt())
-<span id="L1237" class="ln">  1237  </span>		})
+<span id="L1224" class="ln">  1224  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1225" class="ln">  1225  </span>		t.Parallel()
+<span id="L1226" class="ln">  1226  </span>
+<span id="L1227" class="ln">  1227  </span>		t.Run(&#34;生成時の商品名を返す&#34;, func(t *testing.T) {
+<span id="L1228" class="ln">  1228  </span>			t.Parallel()
+<span id="L1229" class="ln">  1229  </span>
+<span id="L1230" class="ln">  1230  </span>			id, attrs := validProductArgs(t)
+<span id="L1231" class="ln">  1231  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1232" class="ln">  1232  </span>			require.NoError(t, err)
+<span id="L1233" class="ln">  1233  </span>
+<span id="L1234" class="ln">  1234  </span>			assert.Equal(t, &#34;ワイヤレスイヤホン&#34;, p.Name())
+<span id="L1235" class="ln">  1235  </span>		})
+<span id="L1236" class="ln">  1236  </span>	})
+<span id="L1237" class="ln">  1237  </span>}
 <span id="L1238" class="ln">  1238  </span>
-<span id="L1239" class="ln">  1239  </span>		t.Run(&#34;返り値のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
-<span id="L1240" class="ln">  1240  </span>			t.Parallel()
+<span id="L1239" class="ln">  1239  </span>func TestProduct_CreatedAt(t *testing.T) {
+<span id="L1240" class="ln">  1240  </span>	t.Parallel()
 <span id="L1241" class="ln">  1241  </span>
-<span id="L1242" class="ln">  1242  </span>			id, attrs := validProductArgs(t)
-<span id="L1243" class="ln">  1243  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1244" class="ln">  1244  </span>			require.NoError(t, err)
-<span id="L1245" class="ln">  1245  </span>
-<span id="L1246" class="ln">  1246  </span>			got := p.PublishedAt()
-<span id="L1247" class="ln">  1247  </span>			*got = time.Date(2030, time.December, 31, 0, 0, 0, 0, time.UTC)
-<span id="L1248" class="ln">  1248  </span>
-<span id="L1249" class="ln">  1249  </span>			require.NotNil(t, p.PublishedAt())
-<span id="L1250" class="ln">  1250  </span>			assert.NotEqual(t, *got, *p.PublishedAt())
-<span id="L1251" class="ln">  1251  </span>			assert.Equal(t, publishedAt, *p.PublishedAt())
-<span id="L1252" class="ln">  1252  </span>		})
-<span id="L1253" class="ln">  1253  </span>	})
-<span id="L1254" class="ln">  1254  </span>}
-<span id="L1255" class="ln">  1255  </span>
-<span id="L1256" class="ln">  1256  </span>func TestProduct_Quantity(t *testing.T) {
-<span id="L1257" class="ln">  1257  </span>	t.Parallel()
-<span id="L1258" class="ln">  1258  </span>
-<span id="L1259" class="ln">  1259  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1260" class="ln">  1260  </span>		t.Parallel()
+<span id="L1242" class="ln">  1242  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1243" class="ln">  1243  </span>		t.Parallel()
+<span id="L1244" class="ln">  1244  </span>
+<span id="L1245" class="ln">  1245  </span>		t.Run(&#34;生成時の登録日時を返す&#34;, func(t *testing.T) {
+<span id="L1246" class="ln">  1246  </span>			t.Parallel()
+<span id="L1247" class="ln">  1247  </span>
+<span id="L1248" class="ln">  1248  </span>			id, attrs := validProductArgs(t)
+<span id="L1249" class="ln">  1249  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1250" class="ln">  1250  </span>			require.NoError(t, err)
+<span id="L1251" class="ln">  1251  </span>
+<span id="L1252" class="ln">  1252  </span>			assert.Equal(t, testCreatedAt, p.CreatedAt())
+<span id="L1253" class="ln">  1253  </span>		})
+<span id="L1254" class="ln">  1254  </span>
+<span id="L1255" class="ln">  1255  </span>		t.Run(&#34;公開日時とは別の値を保持する&#34;, func(t *testing.T) {
+<span id="L1256" class="ln">  1256  </span>			t.Parallel()
+<span id="L1257" class="ln">  1257  </span>
+<span id="L1258" class="ln">  1258  </span>			id, attrs := validProductArgs(t)
+<span id="L1259" class="ln">  1259  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1260" class="ln">  1260  </span>			require.NoError(t, err)
 <span id="L1261" class="ln">  1261  </span>
-<span id="L1262" class="ln">  1262  </span>		t.Run(&#34;生成時の在庫数を返す&#34;, func(t *testing.T) {
-<span id="L1263" class="ln">  1263  </span>			t.Parallel()
-<span id="L1264" class="ln">  1264  </span>
-<span id="L1265" class="ln">  1265  </span>			id, attrs := validProductArgs(t)
-<span id="L1266" class="ln">  1266  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1267" class="ln">  1267  </span>			require.NoError(t, err)
+<span id="L1262" class="ln">  1262  </span>			require.NotNil(t, p.PublishedAt())
+<span id="L1263" class="ln">  1263  </span>			assert.NotEqual(t, *p.PublishedAt(), p.CreatedAt())
+<span id="L1264" class="ln">  1264  </span>		})
+<span id="L1265" class="ln">  1265  </span>
+<span id="L1266" class="ln">  1266  </span>		t.Run(&#34;再構築時は永続化されていた登録日時を返す&#34;, func(t *testing.T) {
+<span id="L1267" class="ln">  1267  </span>			t.Parallel()
 <span id="L1268" class="ln">  1268  </span>
-<span id="L1269" class="ln">  1269  </span>			assert.Equal(t, 100, p.Quantity())
-<span id="L1270" class="ln">  1270  </span>		})
-<span id="L1271" class="ln">  1271  </span>
-<span id="L1272" class="ln">  1272  </span>		t.Run(&#34;在庫数が下限値の場合、その値を返す&#34;, func(t *testing.T) {
-<span id="L1273" class="ln">  1273  </span>			t.Parallel()
-<span id="L1274" class="ln">  1274  </span>
-<span id="L1275" class="ln">  1275  </span>			id, attrs := validProductArgs(t)
-<span id="L1276" class="ln">  1276  </span>			attrs.Quantity = minQuantity
-<span id="L1277" class="ln">  1277  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1278" class="ln">  1278  </span>			require.NoError(t, err)
-<span id="L1279" class="ln">  1279  </span>
-<span id="L1280" class="ln">  1280  </span>			assert.Equal(t, minQuantity, p.Quantity())
-<span id="L1281" class="ln">  1281  </span>		})
-<span id="L1282" class="ln">  1282  </span>	})
-<span id="L1283" class="ln">  1283  </span>}
-<span id="L1284" class="ln">  1284  </span>
-<span id="L1285" class="ln">  1285  </span>func TestProduct_Status(t *testing.T) {
-<span id="L1286" class="ln">  1286  </span>	t.Parallel()
-<span id="L1287" class="ln">  1287  </span>
-<span id="L1288" class="ln">  1288  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1289" class="ln">  1289  </span>		t.Parallel()
-<span id="L1290" class="ln">  1290  </span>
-<span id="L1291" class="ln">  1291  </span>		t.Run(&#34;生成時のステータス参照をIDと名称ごと返す&#34;, func(t *testing.T) {
-<span id="L1292" class="ln">  1292  </span>			t.Parallel()
+<span id="L1269" class="ln">  1269  </span>			id, attrs := validProductArgs(t)
+<span id="L1270" class="ln">  1270  </span>			persisted := time.Date(2024, time.June, 1, 12, 0, 0, 0, time.UTC)
+<span id="L1271" class="ln">  1271  </span>			p, err := Reconstruct(id, attrs, initialVersion, persisted)
+<span id="L1272" class="ln">  1272  </span>			require.NoError(t, err)
+<span id="L1273" class="ln">  1273  </span>
+<span id="L1274" class="ln">  1274  </span>			assert.Equal(t, persisted, p.CreatedAt())
+<span id="L1275" class="ln">  1275  </span>		})
+<span id="L1276" class="ln">  1276  </span>	})
+<span id="L1277" class="ln">  1277  </span>}
+<span id="L1278" class="ln">  1278  </span>
+<span id="L1279" class="ln">  1279  </span>func TestProduct_PublishedAt(t *testing.T) {
+<span id="L1280" class="ln">  1280  </span>	t.Parallel()
+<span id="L1281" class="ln">  1281  </span>
+<span id="L1282" class="ln">  1282  </span>	publishedAt := time.Date(2026, time.January, 2, 3, 4, 5, 0, time.UTC)
+<span id="L1283" class="ln">  1283  </span>
+<span id="L1284" class="ln">  1284  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1285" class="ln">  1285  </span>		t.Parallel()
+<span id="L1286" class="ln">  1286  </span>
+<span id="L1287" class="ln">  1287  </span>		t.Run(&#34;生成時の公開日時を返す&#34;, func(t *testing.T) {
+<span id="L1288" class="ln">  1288  </span>			t.Parallel()
+<span id="L1289" class="ln">  1289  </span>
+<span id="L1290" class="ln">  1290  </span>			id, attrs := validProductArgs(t)
+<span id="L1291" class="ln">  1291  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1292" class="ln">  1292  </span>			require.NoError(t, err)
 <span id="L1293" class="ln">  1293  </span>
-<span id="L1294" class="ln">  1294  </span>			id, attrs := validProductArgs(t)
-<span id="L1295" class="ln">  1295  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1296" class="ln">  1296  </span>			require.NoError(t, err)
+<span id="L1294" class="ln">  1294  </span>			require.NotNil(t, p.PublishedAt())
+<span id="L1295" class="ln">  1295  </span>			assert.Equal(t, publishedAt, *p.PublishedAt())
+<span id="L1296" class="ln">  1296  </span>		})
 <span id="L1297" class="ln">  1297  </span>
-<span id="L1298" class="ln">  1298  </span>			assert.Equal(t, attrs.Status, p.Status())
-<span id="L1299" class="ln">  1299  </span>			assert.Equal(t, &#34;在庫あり&#34;, p.Status().Name())
-<span id="L1300" class="ln">  1300  </span>		})
-<span id="L1301" class="ln">  1301  </span>	})
-<span id="L1302" class="ln">  1302  </span>}
-<span id="L1303" class="ln">  1303  </span>
-<span id="L1304" class="ln">  1304  </span>func TestProduct_StockWarningThreshold(t *testing.T) {
-<span id="L1305" class="ln">  1305  </span>	t.Parallel()
-<span id="L1306" class="ln">  1306  </span>
-<span id="L1307" class="ln">  1307  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1308" class="ln">  1308  </span>		t.Parallel()
-<span id="L1309" class="ln">  1309  </span>
-<span id="L1310" class="ln">  1310  </span>		t.Run(&#34;生成時の在庫警告閾値を返す&#34;, func(t *testing.T) {
-<span id="L1311" class="ln">  1311  </span>			t.Parallel()
-<span id="L1312" class="ln">  1312  </span>
-<span id="L1313" class="ln">  1313  </span>			id, attrs := validProductArgs(t)
-<span id="L1314" class="ln">  1314  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1315" class="ln">  1315  </span>			require.NoError(t, err)
-<span id="L1316" class="ln">  1316  </span>
-<span id="L1317" class="ln">  1317  </span>			require.NotNil(t, p.StockWarningThreshold())
-<span id="L1318" class="ln">  1318  </span>			assert.Equal(t, 10, *p.StockWarningThreshold())
-<span id="L1319" class="ln">  1319  </span>		})
-<span id="L1320" class="ln">  1320  </span>
-<span id="L1321" class="ln">  1321  </span>		t.Run(&#34;未設定の場合、nilを返す&#34;, func(t *testing.T) {
-<span id="L1322" class="ln">  1322  </span>			t.Parallel()
-<span id="L1323" class="ln">  1323  </span>
-<span id="L1324" class="ln">  1324  </span>			id, attrs := validProductArgs(t)
-<span id="L1325" class="ln">  1325  </span>			attrs.StockWarningThreshold = nil
-<span id="L1326" class="ln">  1326  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1327" class="ln">  1327  </span>			require.NoError(t, err)
+<span id="L1298" class="ln">  1298  </span>		t.Run(&#34;未公開の場合、nilを返す&#34;, func(t *testing.T) {
+<span id="L1299" class="ln">  1299  </span>			t.Parallel()
+<span id="L1300" class="ln">  1300  </span>
+<span id="L1301" class="ln">  1301  </span>			id, attrs := validProductArgs(t)
+<span id="L1302" class="ln">  1302  </span>			attrs.PublishedAt = nil
+<span id="L1303" class="ln">  1303  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1304" class="ln">  1304  </span>			require.NoError(t, err)
+<span id="L1305" class="ln">  1305  </span>
+<span id="L1306" class="ln">  1306  </span>			assert.Nil(t, p.PublishedAt())
+<span id="L1307" class="ln">  1307  </span>		})
+<span id="L1308" class="ln">  1308  </span>
+<span id="L1309" class="ln">  1309  </span>		t.Run(&#34;返り値のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
+<span id="L1310" class="ln">  1310  </span>			t.Parallel()
+<span id="L1311" class="ln">  1311  </span>
+<span id="L1312" class="ln">  1312  </span>			id, attrs := validProductArgs(t)
+<span id="L1313" class="ln">  1313  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1314" class="ln">  1314  </span>			require.NoError(t, err)
+<span id="L1315" class="ln">  1315  </span>
+<span id="L1316" class="ln">  1316  </span>			got := p.PublishedAt()
+<span id="L1317" class="ln">  1317  </span>			*got = time.Date(2030, time.December, 31, 0, 0, 0, 0, time.UTC)
+<span id="L1318" class="ln">  1318  </span>
+<span id="L1319" class="ln">  1319  </span>			require.NotNil(t, p.PublishedAt())
+<span id="L1320" class="ln">  1320  </span>			assert.NotEqual(t, *got, *p.PublishedAt())
+<span id="L1321" class="ln">  1321  </span>			assert.Equal(t, publishedAt, *p.PublishedAt())
+<span id="L1322" class="ln">  1322  </span>		})
+<span id="L1323" class="ln">  1323  </span>	})
+<span id="L1324" class="ln">  1324  </span>}
+<span id="L1325" class="ln">  1325  </span>
+<span id="L1326" class="ln">  1326  </span>func TestProduct_Quantity(t *testing.T) {
+<span id="L1327" class="ln">  1327  </span>	t.Parallel()
 <span id="L1328" class="ln">  1328  </span>
-<span id="L1329" class="ln">  1329  </span>			assert.Nil(t, p.StockWarningThreshold())
-<span id="L1330" class="ln">  1330  </span>		})
+<span id="L1329" class="ln">  1329  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1330" class="ln">  1330  </span>		t.Parallel()
 <span id="L1331" class="ln">  1331  </span>
-<span id="L1332" class="ln">  1332  </span>		t.Run(&#34;返り値のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
+<span id="L1332" class="ln">  1332  </span>		t.Run(&#34;生成時の在庫数を返す&#34;, func(t *testing.T) {
 <span id="L1333" class="ln">  1333  </span>			t.Parallel()
 <span id="L1334" class="ln">  1334  </span>
 <span id="L1335" class="ln">  1335  </span>			id, attrs := validProductArgs(t)
 <span id="L1336" class="ln">  1336  </span>			p, err := New(id, attrs, testCreatedAt)
 <span id="L1337" class="ln">  1337  </span>			require.NoError(t, err)
 <span id="L1338" class="ln">  1338  </span>
-<span id="L1339" class="ln">  1339  </span>			got := p.StockWarningThreshold()
-<span id="L1340" class="ln">  1340  </span>			*got = minThreshold
+<span id="L1339" class="ln">  1339  </span>			assert.Equal(t, 100, p.Quantity())
+<span id="L1340" class="ln">  1340  </span>		})
 <span id="L1341" class="ln">  1341  </span>
-<span id="L1342" class="ln">  1342  </span>			require.NotNil(t, p.StockWarningThreshold())
-<span id="L1343" class="ln">  1343  </span>			assert.NotEqual(t, *got, *p.StockWarningThreshold())
-<span id="L1344" class="ln">  1344  </span>			assert.Equal(t, 10, *p.StockWarningThreshold())
-<span id="L1345" class="ln">  1345  </span>		})
-<span id="L1346" class="ln">  1346  </span>	})
-<span id="L1347" class="ln">  1347  </span>}
-<span id="L1348" class="ln">  1348  </span>
-<span id="L1349" class="ln">  1349  </span>func TestProduct_IsPublished(t *testing.T) {
-<span id="L1350" class="ln">  1350  </span>	t.Parallel()
-<span id="L1351" class="ln">  1351  </span>
-<span id="L1352" class="ln">  1352  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1353" class="ln">  1353  </span>		t.Parallel()
+<span id="L1342" class="ln">  1342  </span>		t.Run(&#34;在庫数が下限値の場合、その値を返す&#34;, func(t *testing.T) {
+<span id="L1343" class="ln">  1343  </span>			t.Parallel()
+<span id="L1344" class="ln">  1344  </span>
+<span id="L1345" class="ln">  1345  </span>			id, attrs := validProductArgs(t)
+<span id="L1346" class="ln">  1346  </span>			attrs.Quantity = minQuantity
+<span id="L1347" class="ln">  1347  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1348" class="ln">  1348  </span>			require.NoError(t, err)
+<span id="L1349" class="ln">  1349  </span>
+<span id="L1350" class="ln">  1350  </span>			assert.Equal(t, minQuantity, p.Quantity())
+<span id="L1351" class="ln">  1351  </span>		})
+<span id="L1352" class="ln">  1352  </span>	})
+<span id="L1353" class="ln">  1353  </span>}
 <span id="L1354" class="ln">  1354  </span>
-<span id="L1355" class="ln">  1355  </span>		t.Run(&#34;公開日時が設定されている場合、trueを返す&#34;, func(t *testing.T) {
-<span id="L1356" class="ln">  1356  </span>			t.Parallel()
+<span id="L1355" class="ln">  1355  </span>func TestProduct_Status(t *testing.T) {
+<span id="L1356" class="ln">  1356  </span>	t.Parallel()
 <span id="L1357" class="ln">  1357  </span>
-<span id="L1358" class="ln">  1358  </span>			id, attrs := validProductArgs(t)
-<span id="L1359" class="ln">  1359  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1360" class="ln">  1360  </span>			require.NoError(t, err)
-<span id="L1361" class="ln">  1361  </span>
-<span id="L1362" class="ln">  1362  </span>			assert.True(t, p.IsPublished())
-<span id="L1363" class="ln">  1363  </span>		})
-<span id="L1364" class="ln">  1364  </span>
-<span id="L1365" class="ln">  1365  </span>		t.Run(&#34;公開日時が未設定の場合、falseを返す&#34;, func(t *testing.T) {
-<span id="L1366" class="ln">  1366  </span>			t.Parallel()
+<span id="L1358" class="ln">  1358  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1359" class="ln">  1359  </span>		t.Parallel()
+<span id="L1360" class="ln">  1360  </span>
+<span id="L1361" class="ln">  1361  </span>		t.Run(&#34;生成時のステータス参照をIDと名称ごと返す&#34;, func(t *testing.T) {
+<span id="L1362" class="ln">  1362  </span>			t.Parallel()
+<span id="L1363" class="ln">  1363  </span>
+<span id="L1364" class="ln">  1364  </span>			id, attrs := validProductArgs(t)
+<span id="L1365" class="ln">  1365  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1366" class="ln">  1366  </span>			require.NoError(t, err)
 <span id="L1367" class="ln">  1367  </span>
-<span id="L1368" class="ln">  1368  </span>			id, attrs := validProductArgs(t)
-<span id="L1369" class="ln">  1369  </span>			attrs.PublishedAt = nil
-<span id="L1370" class="ln">  1370  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1371" class="ln">  1371  </span>			require.NoError(t, err)
-<span id="L1372" class="ln">  1372  </span>
-<span id="L1373" class="ln">  1373  </span>			assert.False(t, p.IsPublished())
-<span id="L1374" class="ln">  1374  </span>		})
-<span id="L1375" class="ln">  1375  </span>	})
-<span id="L1376" class="ln">  1376  </span>}
-<span id="L1377" class="ln">  1377  </span>
-<span id="L1378" class="ln">  1378  </span>func TestProduct_Discontinue(t *testing.T) {
-<span id="L1379" class="ln">  1379  </span>	t.Parallel()
-<span id="L1380" class="ln">  1380  </span>
-<span id="L1381" class="ln">  1381  </span>	discontinuedAt := time.Date(2026, time.September, 5, 0, 0, 0, 0, time.UTC)
+<span id="L1368" class="ln">  1368  </span>			assert.Equal(t, attrs.Status, p.Status())
+<span id="L1369" class="ln">  1369  </span>			assert.Equal(t, &#34;在庫あり&#34;, p.Status().Name())
+<span id="L1370" class="ln">  1370  </span>		})
+<span id="L1371" class="ln">  1371  </span>	})
+<span id="L1372" class="ln">  1372  </span>}
+<span id="L1373" class="ln">  1373  </span>
+<span id="L1374" class="ln">  1374  </span>func TestProduct_StockWarningThreshold(t *testing.T) {
+<span id="L1375" class="ln">  1375  </span>	t.Parallel()
+<span id="L1376" class="ln">  1376  </span>
+<span id="L1377" class="ln">  1377  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1378" class="ln">  1378  </span>		t.Parallel()
+<span id="L1379" class="ln">  1379  </span>
+<span id="L1380" class="ln">  1380  </span>		t.Run(&#34;生成時の在庫警告閾値を返す&#34;, func(t *testing.T) {
+<span id="L1381" class="ln">  1381  </span>			t.Parallel()
 <span id="L1382" class="ln">  1382  </span>
-<span id="L1383" class="ln">  1383  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1384" class="ln">  1384  </span>		t.Parallel()
-<span id="L1385" class="ln">  1385  </span>
-<span id="L1386" class="ln">  1386  </span>		t.Run(&#34;廃番日時を設定し、同時に公開を取り下げる&#34;, func(t *testing.T) {
-<span id="L1387" class="ln">  1387  </span>			t.Parallel()
-<span id="L1388" class="ln">  1388  </span>
-<span id="L1389" class="ln">  1389  </span>			p := newTestProduct(t)
-<span id="L1390" class="ln">  1390  </span>			assert.True(t, p.IsPublished())
-<span id="L1391" class="ln">  1391  </span>
-<span id="L1392" class="ln">  1392  </span>			require.NoError(t, p.Discontinue(discontinuedAt))
+<span id="L1383" class="ln">  1383  </span>			id, attrs := validProductArgs(t)
+<span id="L1384" class="ln">  1384  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1385" class="ln">  1385  </span>			require.NoError(t, err)
+<span id="L1386" class="ln">  1386  </span>
+<span id="L1387" class="ln">  1387  </span>			require.NotNil(t, p.StockWarningThreshold())
+<span id="L1388" class="ln">  1388  </span>			assert.Equal(t, 10, *p.StockWarningThreshold())
+<span id="L1389" class="ln">  1389  </span>		})
+<span id="L1390" class="ln">  1390  </span>
+<span id="L1391" class="ln">  1391  </span>		t.Run(&#34;未設定の場合、nilを返す&#34;, func(t *testing.T) {
+<span id="L1392" class="ln">  1392  </span>			t.Parallel()
 <span id="L1393" class="ln">  1393  </span>
-<span id="L1394" class="ln">  1394  </span>			assert.True(t, p.IsDiscontinued())
-<span id="L1395" class="ln">  1395  </span>			require.NotNil(t, p.DiscontinuedAt())
-<span id="L1396" class="ln">  1396  </span>			assert.Equal(t, discontinuedAt, *p.DiscontinuedAt())
-<span id="L1397" class="ln">  1397  </span>			assert.False(t, p.IsPublished())
-<span id="L1398" class="ln">  1398  </span>			assert.Nil(t, p.PublishedAt())
-<span id="L1399" class="ln">  1399  </span>		})
-<span id="L1400" class="ln">  1400  </span>
-<span id="L1401" class="ln">  1401  </span>		t.Run(&#34;既に廃番の場合、状態を変えずエラーも返さない&#34;, func(t *testing.T) {
-<span id="L1402" class="ln">  1402  </span>			t.Parallel()
-<span id="L1403" class="ln">  1403  </span>
-<span id="L1404" class="ln">  1404  </span>			p := newTestProduct(t)
-<span id="L1405" class="ln">  1405  </span>			require.NoError(t, p.Discontinue(discontinuedAt))
-<span id="L1406" class="ln">  1406  </span>			snapshot := *p
-<span id="L1407" class="ln">  1407  </span>
-<span id="L1408" class="ln">  1408  </span>			require.NoError(t, p.Discontinue(discontinuedAt.Add(24*time.Hour)))
-<span id="L1409" class="ln">  1409  </span>
-<span id="L1410" class="ln">  1410  </span>			assert.Equal(t, snapshot, *p)
-<span id="L1411" class="ln">  1411  </span>			require.NotNil(t, p.DiscontinuedAt())
-<span id="L1412" class="ln">  1412  </span>			assert.Equal(t, discontinuedAt, *p.DiscontinuedAt())
-<span id="L1413" class="ln">  1413  </span>		})
-<span id="L1414" class="ln">  1414  </span>
-<span id="L1415" class="ln">  1415  </span>		t.Run(&#34;未公開の商品も廃番にできる&#34;, func(t *testing.T) {
-<span id="L1416" class="ln">  1416  </span>			t.Parallel()
-<span id="L1417" class="ln">  1417  </span>
-<span id="L1418" class="ln">  1418  </span>			id, attrs := validProductArgs(t)
-<span id="L1419" class="ln">  1419  </span>			attrs.PublishedAt = nil
-<span id="L1420" class="ln">  1420  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1421" class="ln">  1421  </span>			require.NoError(t, err)
-<span id="L1422" class="ln">  1422  </span>
-<span id="L1423" class="ln">  1423  </span>			require.NoError(t, p.Discontinue(discontinuedAt))
+<span id="L1394" class="ln">  1394  </span>			id, attrs := validProductArgs(t)
+<span id="L1395" class="ln">  1395  </span>			attrs.StockWarningThreshold = nil
+<span id="L1396" class="ln">  1396  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1397" class="ln">  1397  </span>			require.NoError(t, err)
+<span id="L1398" class="ln">  1398  </span>
+<span id="L1399" class="ln">  1399  </span>			assert.Nil(t, p.StockWarningThreshold())
+<span id="L1400" class="ln">  1400  </span>		})
+<span id="L1401" class="ln">  1401  </span>
+<span id="L1402" class="ln">  1402  </span>		t.Run(&#34;返り値のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
+<span id="L1403" class="ln">  1403  </span>			t.Parallel()
+<span id="L1404" class="ln">  1404  </span>
+<span id="L1405" class="ln">  1405  </span>			id, attrs := validProductArgs(t)
+<span id="L1406" class="ln">  1406  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1407" class="ln">  1407  </span>			require.NoError(t, err)
+<span id="L1408" class="ln">  1408  </span>
+<span id="L1409" class="ln">  1409  </span>			got := p.StockWarningThreshold()
+<span id="L1410" class="ln">  1410  </span>			*got = minThreshold
+<span id="L1411" class="ln">  1411  </span>
+<span id="L1412" class="ln">  1412  </span>			require.NotNil(t, p.StockWarningThreshold())
+<span id="L1413" class="ln">  1413  </span>			assert.NotEqual(t, *got, *p.StockWarningThreshold())
+<span id="L1414" class="ln">  1414  </span>			assert.Equal(t, 10, *p.StockWarningThreshold())
+<span id="L1415" class="ln">  1415  </span>		})
+<span id="L1416" class="ln">  1416  </span>	})
+<span id="L1417" class="ln">  1417  </span>}
+<span id="L1418" class="ln">  1418  </span>
+<span id="L1419" class="ln">  1419  </span>func TestProduct_IsPublished(t *testing.T) {
+<span id="L1420" class="ln">  1420  </span>	t.Parallel()
+<span id="L1421" class="ln">  1421  </span>
+<span id="L1422" class="ln">  1422  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1423" class="ln">  1423  </span>		t.Parallel()
 <span id="L1424" class="ln">  1424  </span>
-<span id="L1425" class="ln">  1425  </span>			assert.True(t, p.IsDiscontinued())
-<span id="L1426" class="ln">  1426  </span>		})
-<span id="L1427" class="ln">  1427  </span>	})
-<span id="L1428" class="ln">  1428  </span>
-<span id="L1429" class="ln">  1429  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1430" class="ln">  1430  </span>		t.Parallel()
+<span id="L1425" class="ln">  1425  </span>		t.Run(&#34;公開日時が設定されている場合、trueを返す&#34;, func(t *testing.T) {
+<span id="L1426" class="ln">  1426  </span>			t.Parallel()
+<span id="L1427" class="ln">  1427  </span>
+<span id="L1428" class="ln">  1428  </span>			id, attrs := validProductArgs(t)
+<span id="L1429" class="ln">  1429  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1430" class="ln">  1430  </span>			require.NoError(t, err)
 <span id="L1431" class="ln">  1431  </span>
-<span id="L1432" class="ln">  1432  </span>		t.Run(&#34;nowがゼロ値の場合、ErrInvalidDiscontinuedAtを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
-<span id="L1433" class="ln">  1433  </span>			t.Parallel()
+<span id="L1432" class="ln">  1432  </span>			assert.True(t, p.IsPublished())
+<span id="L1433" class="ln">  1433  </span>		})
 <span id="L1434" class="ln">  1434  </span>
-<span id="L1435" class="ln">  1435  </span>			p := newTestProduct(t)
-<span id="L1436" class="ln">  1436  </span>			snapshot := *p
+<span id="L1435" class="ln">  1435  </span>		t.Run(&#34;公開日時が未設定の場合、falseを返す&#34;, func(t *testing.T) {
+<span id="L1436" class="ln">  1436  </span>			t.Parallel()
 <span id="L1437" class="ln">  1437  </span>
-<span id="L1438" class="ln">  1438  </span>			require.ErrorIs(t, p.Discontinue(time.Time{}), ErrInvalidDiscontinuedAt)
-<span id="L1439" class="ln">  1439  </span>			assert.Equal(t, snapshot, *p)
-<span id="L1440" class="ln">  1440  </span>		})
-<span id="L1441" class="ln">  1441  </span>	})
-<span id="L1442" class="ln">  1442  </span>}
-<span id="L1443" class="ln">  1443  </span>
-<span id="L1444" class="ln">  1444  </span>func TestProduct_IsDiscontinued(t *testing.T) {
-<span id="L1445" class="ln">  1445  </span>	t.Parallel()
-<span id="L1446" class="ln">  1446  </span>
-<span id="L1447" class="ln">  1447  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1448" class="ln">  1448  </span>		t.Parallel()
-<span id="L1449" class="ln">  1449  </span>
-<span id="L1450" class="ln">  1450  </span>		t.Run(&#34;廃番日時が設定されている場合、trueを返す&#34;, func(t *testing.T) {
-<span id="L1451" class="ln">  1451  </span>			t.Parallel()
+<span id="L1438" class="ln">  1438  </span>			id, attrs := validProductArgs(t)
+<span id="L1439" class="ln">  1439  </span>			attrs.PublishedAt = nil
+<span id="L1440" class="ln">  1440  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1441" class="ln">  1441  </span>			require.NoError(t, err)
+<span id="L1442" class="ln">  1442  </span>
+<span id="L1443" class="ln">  1443  </span>			assert.False(t, p.IsPublished())
+<span id="L1444" class="ln">  1444  </span>		})
+<span id="L1445" class="ln">  1445  </span>	})
+<span id="L1446" class="ln">  1446  </span>}
+<span id="L1447" class="ln">  1447  </span>
+<span id="L1448" class="ln">  1448  </span>func TestProduct_Discontinue(t *testing.T) {
+<span id="L1449" class="ln">  1449  </span>	t.Parallel()
+<span id="L1450" class="ln">  1450  </span>
+<span id="L1451" class="ln">  1451  </span>	discontinuedAt := time.Date(2026, time.September, 5, 0, 0, 0, 0, time.UTC)
 <span id="L1452" class="ln">  1452  </span>
-<span id="L1453" class="ln">  1453  </span>			id, attrs := validProductArgs(t)
-<span id="L1454" class="ln">  1454  </span>			attrs.PublishedAt = nil
-<span id="L1455" class="ln">  1455  </span>			attrs.DiscontinuedAt = ptr.To(testCreatedAt)
-<span id="L1456" class="ln">  1456  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1457" class="ln">  1457  </span>			require.NoError(t, err)
+<span id="L1453" class="ln">  1453  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1454" class="ln">  1454  </span>		t.Parallel()
+<span id="L1455" class="ln">  1455  </span>
+<span id="L1456" class="ln">  1456  </span>		t.Run(&#34;廃番日時を設定し、同時に公開を取り下げる&#34;, func(t *testing.T) {
+<span id="L1457" class="ln">  1457  </span>			t.Parallel()
 <span id="L1458" class="ln">  1458  </span>
-<span id="L1459" class="ln">  1459  </span>			assert.True(t, p.IsDiscontinued())
-<span id="L1460" class="ln">  1460  </span>		})
+<span id="L1459" class="ln">  1459  </span>			p := newTestProduct(t)
+<span id="L1460" class="ln">  1460  </span>			assert.True(t, p.IsPublished())
 <span id="L1461" class="ln">  1461  </span>
-<span id="L1462" class="ln">  1462  </span>		t.Run(&#34;廃番日時が未設定の場合、falseを返す&#34;, func(t *testing.T) {
-<span id="L1463" class="ln">  1463  </span>			t.Parallel()
-<span id="L1464" class="ln">  1464  </span>
-<span id="L1465" class="ln">  1465  </span>			id, attrs := validProductArgs(t)
-<span id="L1466" class="ln">  1466  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1467" class="ln">  1467  </span>			require.NoError(t, err)
-<span id="L1468" class="ln">  1468  </span>
-<span id="L1469" class="ln">  1469  </span>			assert.False(t, p.IsDiscontinued())
-<span id="L1470" class="ln">  1470  </span>		})
-<span id="L1471" class="ln">  1471  </span>	})
-<span id="L1472" class="ln">  1472  </span>}
+<span id="L1462" class="ln">  1462  </span>			require.NoError(t, p.Discontinue(discontinuedAt))
+<span id="L1463" class="ln">  1463  </span>
+<span id="L1464" class="ln">  1464  </span>			assert.True(t, p.IsDiscontinued())
+<span id="L1465" class="ln">  1465  </span>			require.NotNil(t, p.DiscontinuedAt())
+<span id="L1466" class="ln">  1466  </span>			assert.Equal(t, discontinuedAt, *p.DiscontinuedAt())
+<span id="L1467" class="ln">  1467  </span>			assert.False(t, p.IsPublished())
+<span id="L1468" class="ln">  1468  </span>			assert.Nil(t, p.PublishedAt())
+<span id="L1469" class="ln">  1469  </span>		})
+<span id="L1470" class="ln">  1470  </span>
+<span id="L1471" class="ln">  1471  </span>		t.Run(&#34;既に廃番の場合、状態を変えずエラーも返さない&#34;, func(t *testing.T) {
+<span id="L1472" class="ln">  1472  </span>			t.Parallel()
 <span id="L1473" class="ln">  1473  </span>
-<span id="L1474" class="ln">  1474  </span>func TestIsDiscontinued(t *testing.T) {
-<span id="L1475" class="ln">  1475  </span>	t.Parallel()
-<span id="L1476" class="ln">  1476  </span>
-<span id="L1477" class="ln">  1477  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1478" class="ln">  1478  </span>		t.Parallel()
+<span id="L1474" class="ln">  1474  </span>			p := newTestProduct(t)
+<span id="L1475" class="ln">  1475  </span>			require.NoError(t, p.Discontinue(discontinuedAt))
+<span id="L1476" class="ln">  1476  </span>			snapshot := *p
+<span id="L1477" class="ln">  1477  </span>
+<span id="L1478" class="ln">  1478  </span>			require.NoError(t, p.Discontinue(discontinuedAt.Add(24*time.Hour)))
 <span id="L1479" class="ln">  1479  </span>
-<span id="L1480" class="ln">  1480  </span>		t.Run(&#34;廃番日時が設定されている場合、trueを返す&#34;, func(t *testing.T) {
-<span id="L1481" class="ln">  1481  </span>			t.Parallel()
-<span id="L1482" class="ln">  1482  </span>
-<span id="L1483" class="ln">  1483  </span>			assert.True(t, IsDiscontinued(ptr.To(time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC))))
-<span id="L1484" class="ln">  1484  </span>		})
-<span id="L1485" class="ln">  1485  </span>
-<span id="L1486" class="ln">  1486  </span>		t.Run(&#34;廃番日時が未設定の場合、falseを返す&#34;, func(t *testing.T) {
-<span id="L1487" class="ln">  1487  </span>			t.Parallel()
-<span id="L1488" class="ln">  1488  </span>
-<span id="L1489" class="ln">  1489  </span>			assert.False(t, IsDiscontinued(nil))
-<span id="L1490" class="ln">  1490  </span>		})
-<span id="L1491" class="ln">  1491  </span>	})
-<span id="L1492" class="ln">  1492  </span>}
-<span id="L1493" class="ln">  1493  </span>
-<span id="L1494" class="ln">  1494  </span>func TestProduct_DiscontinuedAt(t *testing.T) {
-<span id="L1495" class="ln">  1495  </span>	t.Parallel()
-<span id="L1496" class="ln">  1496  </span>
-<span id="L1497" class="ln">  1497  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1498" class="ln">  1498  </span>		t.Parallel()
-<span id="L1499" class="ln">  1499  </span>
-<span id="L1500" class="ln">  1500  </span>		t.Run(&#34;保持している廃番日時を返す&#34;, func(t *testing.T) {
-<span id="L1501" class="ln">  1501  </span>			t.Parallel()
-<span id="L1502" class="ln">  1502  </span>
-<span id="L1503" class="ln">  1503  </span>			id, attrs := validProductArgs(t)
-<span id="L1504" class="ln">  1504  </span>			attrs.PublishedAt = nil
-<span id="L1505" class="ln">  1505  </span>			attrs.DiscontinuedAt = ptr.To(testCreatedAt)
-<span id="L1506" class="ln">  1506  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1507" class="ln">  1507  </span>			require.NoError(t, err)
-<span id="L1508" class="ln">  1508  </span>
-<span id="L1509" class="ln">  1509  </span>			require.NotNil(t, p.DiscontinuedAt())
-<span id="L1510" class="ln">  1510  </span>			assert.Equal(t, testCreatedAt, *p.DiscontinuedAt())
-<span id="L1511" class="ln">  1511  </span>		})
-<span id="L1512" class="ln">  1512  </span>
-<span id="L1513" class="ln">  1513  </span>		t.Run(&#34;廃番でない場合はnilを返す&#34;, func(t *testing.T) {
-<span id="L1514" class="ln">  1514  </span>			t.Parallel()
-<span id="L1515" class="ln">  1515  </span>
-<span id="L1516" class="ln">  1516  </span>			id, attrs := validProductArgs(t)
-<span id="L1517" class="ln">  1517  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1518" class="ln">  1518  </span>			require.NoError(t, err)
+<span id="L1480" class="ln">  1480  </span>			assert.Equal(t, snapshot, *p)
+<span id="L1481" class="ln">  1481  </span>			require.NotNil(t, p.DiscontinuedAt())
+<span id="L1482" class="ln">  1482  </span>			assert.Equal(t, discontinuedAt, *p.DiscontinuedAt())
+<span id="L1483" class="ln">  1483  </span>		})
+<span id="L1484" class="ln">  1484  </span>
+<span id="L1485" class="ln">  1485  </span>		t.Run(&#34;未公開の商品も廃番にできる&#34;, func(t *testing.T) {
+<span id="L1486" class="ln">  1486  </span>			t.Parallel()
+<span id="L1487" class="ln">  1487  </span>
+<span id="L1488" class="ln">  1488  </span>			id, attrs := validProductArgs(t)
+<span id="L1489" class="ln">  1489  </span>			attrs.PublishedAt = nil
+<span id="L1490" class="ln">  1490  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1491" class="ln">  1491  </span>			require.NoError(t, err)
+<span id="L1492" class="ln">  1492  </span>
+<span id="L1493" class="ln">  1493  </span>			require.NoError(t, p.Discontinue(discontinuedAt))
+<span id="L1494" class="ln">  1494  </span>
+<span id="L1495" class="ln">  1495  </span>			assert.True(t, p.IsDiscontinued())
+<span id="L1496" class="ln">  1496  </span>		})
+<span id="L1497" class="ln">  1497  </span>	})
+<span id="L1498" class="ln">  1498  </span>
+<span id="L1499" class="ln">  1499  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1500" class="ln">  1500  </span>		t.Parallel()
+<span id="L1501" class="ln">  1501  </span>
+<span id="L1502" class="ln">  1502  </span>		t.Run(&#34;nowがゼロ値の場合、ErrInvalidDiscontinuedAtを返しエンティティを一切変更しない&#34;, func(t *testing.T) {
+<span id="L1503" class="ln">  1503  </span>			t.Parallel()
+<span id="L1504" class="ln">  1504  </span>
+<span id="L1505" class="ln">  1505  </span>			p := newTestProduct(t)
+<span id="L1506" class="ln">  1506  </span>			snapshot := *p
+<span id="L1507" class="ln">  1507  </span>
+<span id="L1508" class="ln">  1508  </span>			require.ErrorIs(t, p.Discontinue(time.Time{}), ErrInvalidDiscontinuedAt)
+<span id="L1509" class="ln">  1509  </span>			assert.Equal(t, snapshot, *p)
+<span id="L1510" class="ln">  1510  </span>		})
+<span id="L1511" class="ln">  1511  </span>	})
+<span id="L1512" class="ln">  1512  </span>}
+<span id="L1513" class="ln">  1513  </span>
+<span id="L1514" class="ln">  1514  </span>func TestProduct_IsDiscontinued(t *testing.T) {
+<span id="L1515" class="ln">  1515  </span>	t.Parallel()
+<span id="L1516" class="ln">  1516  </span>
+<span id="L1517" class="ln">  1517  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1518" class="ln">  1518  </span>		t.Parallel()
 <span id="L1519" class="ln">  1519  </span>
-<span id="L1520" class="ln">  1520  </span>			assert.Nil(t, p.DiscontinuedAt())
-<span id="L1521" class="ln">  1521  </span>		})
+<span id="L1520" class="ln">  1520  </span>		t.Run(&#34;廃番日時が設定されている場合、trueを返す&#34;, func(t *testing.T) {
+<span id="L1521" class="ln">  1521  </span>			t.Parallel()
 <span id="L1522" class="ln">  1522  </span>
-<span id="L1523" class="ln">  1523  </span>		t.Run(&#34;返り値のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
-<span id="L1524" class="ln">  1524  </span>			t.Parallel()
-<span id="L1525" class="ln">  1525  </span>
-<span id="L1526" class="ln">  1526  </span>			id, attrs := validProductArgs(t)
-<span id="L1527" class="ln">  1527  </span>			attrs.PublishedAt = nil
-<span id="L1528" class="ln">  1528  </span>			attrs.DiscontinuedAt = ptr.To(testCreatedAt)
-<span id="L1529" class="ln">  1529  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1530" class="ln">  1530  </span>			require.NoError(t, err)
+<span id="L1523" class="ln">  1523  </span>			id, attrs := validProductArgs(t)
+<span id="L1524" class="ln">  1524  </span>			attrs.PublishedAt = nil
+<span id="L1525" class="ln">  1525  </span>			attrs.DiscontinuedAt = ptr.To(testCreatedAt)
+<span id="L1526" class="ln">  1526  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1527" class="ln">  1527  </span>			require.NoError(t, err)
+<span id="L1528" class="ln">  1528  </span>
+<span id="L1529" class="ln">  1529  </span>			assert.True(t, p.IsDiscontinued())
+<span id="L1530" class="ln">  1530  </span>		})
 <span id="L1531" class="ln">  1531  </span>
-<span id="L1532" class="ln">  1532  </span>			got := p.DiscontinuedAt()
-<span id="L1533" class="ln">  1533  </span>			*got = time.Date(2030, time.December, 31, 0, 0, 0, 0, time.UTC)
+<span id="L1532" class="ln">  1532  </span>		t.Run(&#34;廃番日時が未設定の場合、falseを返す&#34;, func(t *testing.T) {
+<span id="L1533" class="ln">  1533  </span>			t.Parallel()
 <span id="L1534" class="ln">  1534  </span>
-<span id="L1535" class="ln">  1535  </span>			require.NotNil(t, p.DiscontinuedAt())
-<span id="L1536" class="ln">  1536  </span>			assert.NotEqual(t, *got, *p.DiscontinuedAt())
-<span id="L1537" class="ln">  1537  </span>			assert.Equal(t, testCreatedAt, *p.DiscontinuedAt())
-<span id="L1538" class="ln">  1538  </span>		})
-<span id="L1539" class="ln">  1539  </span>	})
-<span id="L1540" class="ln">  1540  </span>}
-<span id="L1541" class="ln">  1541  </span>
-<span id="L1542" class="ln">  1542  </span>func TestIsPublished(t *testing.T) {
-<span id="L1543" class="ln">  1543  </span>	t.Parallel()
-<span id="L1544" class="ln">  1544  </span>
-<span id="L1545" class="ln">  1545  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1546" class="ln">  1546  </span>		t.Parallel()
-<span id="L1547" class="ln">  1547  </span>
-<span id="L1548" class="ln">  1548  </span>		t.Run(&#34;公開日時が設定されている場合、trueを返す&#34;, func(t *testing.T) {
-<span id="L1549" class="ln">  1549  </span>			t.Parallel()
-<span id="L1550" class="ln">  1550  </span>
-<span id="L1551" class="ln">  1551  </span>			assert.True(t, IsPublished(ptr.To(time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC))))
-<span id="L1552" class="ln">  1552  </span>		})
-<span id="L1553" class="ln">  1553  </span>
-<span id="L1554" class="ln">  1554  </span>		t.Run(&#34;公開日時が未設定の場合、falseを返す&#34;, func(t *testing.T) {
-<span id="L1555" class="ln">  1555  </span>			t.Parallel()
-<span id="L1556" class="ln">  1556  </span>
-<span id="L1557" class="ln">  1557  </span>			assert.False(t, IsPublished(nil))
-<span id="L1558" class="ln">  1558  </span>		})
-<span id="L1559" class="ln">  1559  </span>	})
-<span id="L1560" class="ln">  1560  </span>}
-<span id="L1561" class="ln">  1561  </span>
-<span id="L1562" class="ln">  1562  </span>func TestProduct_PrimaryImage(t *testing.T) {
-<span id="L1563" class="ln">  1563  </span>	t.Parallel()
-<span id="L1564" class="ln">  1564  </span>
-<span id="L1565" class="ln">  1565  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1566" class="ln">  1566  </span>		t.Parallel()
-<span id="L1567" class="ln">  1567  </span>
-<span id="L1568" class="ln">  1568  </span>		t.Run(&#34;画像を持つ場合、表示順が最小の画像を代表画像として返す&#34;, func(t *testing.T) {
-<span id="L1569" class="ln">  1569  </span>			t.Parallel()
-<span id="L1570" class="ln">  1570  </span>
-<span id="L1571" class="ln">  1571  </span>			id, attrs := validProductArgs(t)
-<span id="L1572" class="ln">  1572  </span>			attrs.Images = []Image{
-<span id="L1573" class="ln">  1573  </span>				mustImage(t, &#34;primary_image_second&#34;, &#34;products/second.png&#34;, 2),
-<span id="L1574" class="ln">  1574  </span>				mustImage(t, &#34;primary_image_first&#34;, &#34;products/first.png&#34;, 1),
-<span id="L1575" class="ln">  1575  </span>			}
+<span id="L1535" class="ln">  1535  </span>			id, attrs := validProductArgs(t)
+<span id="L1536" class="ln">  1536  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1537" class="ln">  1537  </span>			require.NoError(t, err)
+<span id="L1538" class="ln">  1538  </span>
+<span id="L1539" class="ln">  1539  </span>			assert.False(t, p.IsDiscontinued())
+<span id="L1540" class="ln">  1540  </span>		})
+<span id="L1541" class="ln">  1541  </span>	})
+<span id="L1542" class="ln">  1542  </span>}
+<span id="L1543" class="ln">  1543  </span>
+<span id="L1544" class="ln">  1544  </span>func TestIsDiscontinued(t *testing.T) {
+<span id="L1545" class="ln">  1545  </span>	t.Parallel()
+<span id="L1546" class="ln">  1546  </span>
+<span id="L1547" class="ln">  1547  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1548" class="ln">  1548  </span>		t.Parallel()
+<span id="L1549" class="ln">  1549  </span>
+<span id="L1550" class="ln">  1550  </span>		t.Run(&#34;廃番日時が設定されている場合、trueを返す&#34;, func(t *testing.T) {
+<span id="L1551" class="ln">  1551  </span>			t.Parallel()
+<span id="L1552" class="ln">  1552  </span>
+<span id="L1553" class="ln">  1553  </span>			assert.True(t, IsDiscontinued(ptr.To(time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC))))
+<span id="L1554" class="ln">  1554  </span>		})
+<span id="L1555" class="ln">  1555  </span>
+<span id="L1556" class="ln">  1556  </span>		t.Run(&#34;廃番日時が未設定の場合、falseを返す&#34;, func(t *testing.T) {
+<span id="L1557" class="ln">  1557  </span>			t.Parallel()
+<span id="L1558" class="ln">  1558  </span>
+<span id="L1559" class="ln">  1559  </span>			assert.False(t, IsDiscontinued(nil))
+<span id="L1560" class="ln">  1560  </span>		})
+<span id="L1561" class="ln">  1561  </span>	})
+<span id="L1562" class="ln">  1562  </span>}
+<span id="L1563" class="ln">  1563  </span>
+<span id="L1564" class="ln">  1564  </span>func TestProduct_DiscontinuedAt(t *testing.T) {
+<span id="L1565" class="ln">  1565  </span>	t.Parallel()
+<span id="L1566" class="ln">  1566  </span>
+<span id="L1567" class="ln">  1567  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1568" class="ln">  1568  </span>		t.Parallel()
+<span id="L1569" class="ln">  1569  </span>
+<span id="L1570" class="ln">  1570  </span>		t.Run(&#34;保持している廃番日時を返す&#34;, func(t *testing.T) {
+<span id="L1571" class="ln">  1571  </span>			t.Parallel()
+<span id="L1572" class="ln">  1572  </span>
+<span id="L1573" class="ln">  1573  </span>			id, attrs := validProductArgs(t)
+<span id="L1574" class="ln">  1574  </span>			attrs.PublishedAt = nil
+<span id="L1575" class="ln">  1575  </span>			attrs.DiscontinuedAt = ptr.To(testCreatedAt)
 <span id="L1576" class="ln">  1576  </span>			p, err := New(id, attrs, testCreatedAt)
 <span id="L1577" class="ln">  1577  </span>			require.NoError(t, err)
 <span id="L1578" class="ln">  1578  </span>
-<span id="L1579" class="ln">  1579  </span>			actual, ok := p.PrimaryImage()
-<span id="L1580" class="ln">  1580  </span>
-<span id="L1581" class="ln">  1581  </span>			require.True(t, ok)
-<span id="L1582" class="ln">  1582  </span>			assert.Equal(t, &#34;products/first.png&#34;, actual.ImagePath())
-<span id="L1583" class="ln">  1583  </span>		})
-<span id="L1584" class="ln">  1584  </span>
-<span id="L1585" class="ln">  1585  </span>		t.Run(&#34;画像を持たない場合、代表画像を持たない&#34;, func(t *testing.T) {
-<span id="L1586" class="ln">  1586  </span>			t.Parallel()
-<span id="L1587" class="ln">  1587  </span>
-<span id="L1588" class="ln">  1588  </span>			id, attrs := validProductArgs(t)
-<span id="L1589" class="ln">  1589  </span>			attrs.Images = nil
-<span id="L1590" class="ln">  1590  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1591" class="ln">  1591  </span>			require.NoError(t, err)
+<span id="L1579" class="ln">  1579  </span>			require.NotNil(t, p.DiscontinuedAt())
+<span id="L1580" class="ln">  1580  </span>			assert.Equal(t, testCreatedAt, *p.DiscontinuedAt())
+<span id="L1581" class="ln">  1581  </span>		})
+<span id="L1582" class="ln">  1582  </span>
+<span id="L1583" class="ln">  1583  </span>		t.Run(&#34;廃番でない場合はnilを返す&#34;, func(t *testing.T) {
+<span id="L1584" class="ln">  1584  </span>			t.Parallel()
+<span id="L1585" class="ln">  1585  </span>
+<span id="L1586" class="ln">  1586  </span>			id, attrs := validProductArgs(t)
+<span id="L1587" class="ln">  1587  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1588" class="ln">  1588  </span>			require.NoError(t, err)
+<span id="L1589" class="ln">  1589  </span>
+<span id="L1590" class="ln">  1590  </span>			assert.Nil(t, p.DiscontinuedAt())
+<span id="L1591" class="ln">  1591  </span>		})
 <span id="L1592" class="ln">  1592  </span>
-<span id="L1593" class="ln">  1593  </span>			actual, ok := p.PrimaryImage()
-<span id="L1594" class="ln">  1594  </span>
-<span id="L1595" class="ln">  1595  </span>			assert.False(t, ok)
-<span id="L1596" class="ln">  1596  </span>			assert.Empty(t, actual.ImagePath())
-<span id="L1597" class="ln">  1597  </span>		})
-<span id="L1598" class="ln">  1598  </span>	})
-<span id="L1599" class="ln">  1599  </span>}
-<span id="L1600" class="ln">  1600  </span>
-<span id="L1601" class="ln">  1601  </span>func TestProduct_IsLowStock(t *testing.T) {
-<span id="L1602" class="ln">  1602  </span>	t.Parallel()
-<span id="L1603" class="ln">  1603  </span>
-<span id="L1604" class="ln">  1604  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1605" class="ln">  1605  </span>		t.Parallel()
-<span id="L1606" class="ln">  1606  </span>
-<span id="L1607" class="ln">  1607  </span>		t.Run(&#34;在庫が閾値を下回る場合、trueを返す&#34;, func(t *testing.T) {
-<span id="L1608" class="ln">  1608  </span>			t.Parallel()
-<span id="L1609" class="ln">  1609  </span>
-<span id="L1610" class="ln">  1610  </span>			id, attrs := validProductArgs(t)
-<span id="L1611" class="ln">  1611  </span>			attrs.StockWarningThreshold = ptr.To(10)
-<span id="L1612" class="ln">  1612  </span>			attrs.Quantity = 9
-<span id="L1613" class="ln">  1613  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1614" class="ln">  1614  </span>			require.NoError(t, err)
-<span id="L1615" class="ln">  1615  </span>
-<span id="L1616" class="ln">  1616  </span>			assert.True(t, p.IsLowStock())
-<span id="L1617" class="ln">  1617  </span>		})
-<span id="L1618" class="ln">  1618  </span>
-<span id="L1619" class="ln">  1619  </span>		t.Run(&#34;在庫が閾値と等しい場合、境界を含むためtrueを返す&#34;, func(t *testing.T) {
-<span id="L1620" class="ln">  1620  </span>			t.Parallel()
-<span id="L1621" class="ln">  1621  </span>
-<span id="L1622" class="ln">  1622  </span>			id, attrs := validProductArgs(t)
-<span id="L1623" class="ln">  1623  </span>			attrs.StockWarningThreshold = ptr.To(10)
-<span id="L1624" class="ln">  1624  </span>			attrs.Quantity = 10
-<span id="L1625" class="ln">  1625  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1626" class="ln">  1626  </span>			require.NoError(t, err)
-<span id="L1627" class="ln">  1627  </span>
-<span id="L1628" class="ln">  1628  </span>			assert.True(t, p.IsLowStock())
-<span id="L1629" class="ln">  1629  </span>		})
-<span id="L1630" class="ln">  1630  </span>
-<span id="L1631" class="ln">  1631  </span>		t.Run(&#34;在庫が閾値を上回る場合、falseを返す&#34;, func(t *testing.T) {
-<span id="L1632" class="ln">  1632  </span>			t.Parallel()
-<span id="L1633" class="ln">  1633  </span>
-<span id="L1634" class="ln">  1634  </span>			id, attrs := validProductArgs(t)
-<span id="L1635" class="ln">  1635  </span>			attrs.StockWarningThreshold = ptr.To(10)
-<span id="L1636" class="ln">  1636  </span>			attrs.Quantity = 11
-<span id="L1637" class="ln">  1637  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1638" class="ln">  1638  </span>			require.NoError(t, err)
-<span id="L1639" class="ln">  1639  </span>
-<span id="L1640" class="ln">  1640  </span>			assert.False(t, p.IsLowStock())
-<span id="L1641" class="ln">  1641  </span>		})
-<span id="L1642" class="ln">  1642  </span>
-<span id="L1643" class="ln">  1643  </span>		t.Run(&#34;閾値が未設定の場合、在庫が0でも警告対象を持たないためfalseを返す&#34;, func(t *testing.T) {
-<span id="L1644" class="ln">  1644  </span>			t.Parallel()
-<span id="L1645" class="ln">  1645  </span>
-<span id="L1646" class="ln">  1646  </span>			id, attrs := validProductArgs(t)
-<span id="L1647" class="ln">  1647  </span>			attrs.StockWarningThreshold = nil
-<span id="L1648" class="ln">  1648  </span>			attrs.Quantity = 0
-<span id="L1649" class="ln">  1649  </span>			p, err := New(id, attrs, testCreatedAt)
-<span id="L1650" class="ln">  1650  </span>			require.NoError(t, err)
-<span id="L1651" class="ln">  1651  </span>
-<span id="L1652" class="ln">  1652  </span>			assert.False(t, p.IsLowStock())
+<span id="L1593" class="ln">  1593  </span>		t.Run(&#34;返り値のポインタを書き換えてもエンティティ内部は変わらない&#34;, func(t *testing.T) {
+<span id="L1594" class="ln">  1594  </span>			t.Parallel()
+<span id="L1595" class="ln">  1595  </span>
+<span id="L1596" class="ln">  1596  </span>			id, attrs := validProductArgs(t)
+<span id="L1597" class="ln">  1597  </span>			attrs.PublishedAt = nil
+<span id="L1598" class="ln">  1598  </span>			attrs.DiscontinuedAt = ptr.To(testCreatedAt)
+<span id="L1599" class="ln">  1599  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1600" class="ln">  1600  </span>			require.NoError(t, err)
+<span id="L1601" class="ln">  1601  </span>
+<span id="L1602" class="ln">  1602  </span>			got := p.DiscontinuedAt()
+<span id="L1603" class="ln">  1603  </span>			*got = time.Date(2030, time.December, 31, 0, 0, 0, 0, time.UTC)
+<span id="L1604" class="ln">  1604  </span>
+<span id="L1605" class="ln">  1605  </span>			require.NotNil(t, p.DiscontinuedAt())
+<span id="L1606" class="ln">  1606  </span>			assert.NotEqual(t, *got, *p.DiscontinuedAt())
+<span id="L1607" class="ln">  1607  </span>			assert.Equal(t, testCreatedAt, *p.DiscontinuedAt())
+<span id="L1608" class="ln">  1608  </span>		})
+<span id="L1609" class="ln">  1609  </span>	})
+<span id="L1610" class="ln">  1610  </span>}
+<span id="L1611" class="ln">  1611  </span>
+<span id="L1612" class="ln">  1612  </span>func TestIsPublished(t *testing.T) {
+<span id="L1613" class="ln">  1613  </span>	t.Parallel()
+<span id="L1614" class="ln">  1614  </span>
+<span id="L1615" class="ln">  1615  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1616" class="ln">  1616  </span>		t.Parallel()
+<span id="L1617" class="ln">  1617  </span>
+<span id="L1618" class="ln">  1618  </span>		t.Run(&#34;公開日時が設定されている場合、trueを返す&#34;, func(t *testing.T) {
+<span id="L1619" class="ln">  1619  </span>			t.Parallel()
+<span id="L1620" class="ln">  1620  </span>
+<span id="L1621" class="ln">  1621  </span>			assert.True(t, IsPublished(ptr.To(time.Date(2026, time.July, 23, 0, 0, 0, 0, time.UTC))))
+<span id="L1622" class="ln">  1622  </span>		})
+<span id="L1623" class="ln">  1623  </span>
+<span id="L1624" class="ln">  1624  </span>		t.Run(&#34;公開日時が未設定の場合、falseを返す&#34;, func(t *testing.T) {
+<span id="L1625" class="ln">  1625  </span>			t.Parallel()
+<span id="L1626" class="ln">  1626  </span>
+<span id="L1627" class="ln">  1627  </span>			assert.False(t, IsPublished(nil))
+<span id="L1628" class="ln">  1628  </span>		})
+<span id="L1629" class="ln">  1629  </span>	})
+<span id="L1630" class="ln">  1630  </span>}
+<span id="L1631" class="ln">  1631  </span>
+<span id="L1632" class="ln">  1632  </span>func TestProduct_PrimaryImage(t *testing.T) {
+<span id="L1633" class="ln">  1633  </span>	t.Parallel()
+<span id="L1634" class="ln">  1634  </span>
+<span id="L1635" class="ln">  1635  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1636" class="ln">  1636  </span>		t.Parallel()
+<span id="L1637" class="ln">  1637  </span>
+<span id="L1638" class="ln">  1638  </span>		t.Run(&#34;画像を持つ場合、表示順が最小の画像を代表画像として返す&#34;, func(t *testing.T) {
+<span id="L1639" class="ln">  1639  </span>			t.Parallel()
+<span id="L1640" class="ln">  1640  </span>
+<span id="L1641" class="ln">  1641  </span>			id, attrs := validProductArgs(t)
+<span id="L1642" class="ln">  1642  </span>			attrs.Images = []Image{
+<span id="L1643" class="ln">  1643  </span>				mustImage(t, &#34;primary_image_second&#34;, &#34;products/second.png&#34;, 2),
+<span id="L1644" class="ln">  1644  </span>				mustImage(t, &#34;primary_image_first&#34;, &#34;products/first.png&#34;, 1),
+<span id="L1645" class="ln">  1645  </span>			}
+<span id="L1646" class="ln">  1646  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1647" class="ln">  1647  </span>			require.NoError(t, err)
+<span id="L1648" class="ln">  1648  </span>
+<span id="L1649" class="ln">  1649  </span>			actual, ok := p.PrimaryImage()
+<span id="L1650" class="ln">  1650  </span>
+<span id="L1651" class="ln">  1651  </span>			require.True(t, ok)
+<span id="L1652" class="ln">  1652  </span>			assert.Equal(t, &#34;products/first.png&#34;, actual.ImagePath())
 <span id="L1653" class="ln">  1653  </span>		})
-<span id="L1654" class="ln">  1654  </span>	})
-<span id="L1655" class="ln">  1655  </span>}
-<span id="L1656" class="ln">  1656  </span>
-<span id="L1657" class="ln">  1657  </span>func TestProduct_ensureDiscontinuationKept(t *testing.T) {
-<span id="L1658" class="ln">  1658  </span>	t.Parallel()
-<span id="L1659" class="ln">  1659  </span>
-<span id="L1660" class="ln">  1660  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L1661" class="ln">  1661  </span>		t.Parallel()
+<span id="L1654" class="ln">  1654  </span>
+<span id="L1655" class="ln">  1655  </span>		t.Run(&#34;画像を持たない場合、代表画像を持たない&#34;, func(t *testing.T) {
+<span id="L1656" class="ln">  1656  </span>			t.Parallel()
+<span id="L1657" class="ln">  1657  </span>
+<span id="L1658" class="ln">  1658  </span>			id, attrs := validProductArgs(t)
+<span id="L1659" class="ln">  1659  </span>			attrs.Images = nil
+<span id="L1660" class="ln">  1660  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1661" class="ln">  1661  </span>			require.NoError(t, err)
 <span id="L1662" class="ln">  1662  </span>
-<span id="L1663" class="ln">  1663  </span>		t.Run(&#34;未廃番の商品は廃番日時が nil のままでも通る&#34;, func(t *testing.T) {
-<span id="L1664" class="ln">  1664  </span>			t.Parallel()
-<span id="L1665" class="ln">  1665  </span>
-<span id="L1666" class="ln">  1666  </span>			p := newTestProduct(t)
-<span id="L1667" class="ln">  1667  </span>
-<span id="L1668" class="ln">  1668  </span>			require.NoError(t, p.ensureDiscontinuationKept(nil))
-<span id="L1669" class="ln">  1669  </span>		})
+<span id="L1663" class="ln">  1663  </span>			actual, ok := p.PrimaryImage()
+<span id="L1664" class="ln">  1664  </span>
+<span id="L1665" class="ln">  1665  </span>			assert.False(t, ok)
+<span id="L1666" class="ln">  1666  </span>			assert.Empty(t, actual.ImagePath())
+<span id="L1667" class="ln">  1667  </span>		})
+<span id="L1668" class="ln">  1668  </span>	})
+<span id="L1669" class="ln">  1669  </span>}
 <span id="L1670" class="ln">  1670  </span>
-<span id="L1671" class="ln">  1671  </span>		t.Run(&#34;未廃番から廃番への向きは拒まない&#34;, func(t *testing.T) {
-<span id="L1672" class="ln">  1672  </span>			t.Parallel()
+<span id="L1671" class="ln">  1671  </span>func TestProduct_IsLowStock(t *testing.T) {
+<span id="L1672" class="ln">  1672  </span>	t.Parallel()
 <span id="L1673" class="ln">  1673  </span>
-<span id="L1674" class="ln">  1674  </span>			p := newTestProduct(t)
-<span id="L1675" class="ln">  1675  </span>
-<span id="L1676" class="ln">  1676  </span>			require.NoError(t, p.ensureDiscontinuationKept(ptr.To(testCreatedAt)))
-<span id="L1677" class="ln">  1677  </span>		})
-<span id="L1678" class="ln">  1678  </span>
-<span id="L1679" class="ln">  1679  </span>		t.Run(&#34;廃番済みの商品が廃番日時を保ったままなら通る&#34;, func(t *testing.T) {
-<span id="L1680" class="ln">  1680  </span>			t.Parallel()
-<span id="L1681" class="ln">  1681  </span>
-<span id="L1682" class="ln">  1682  </span>			p := newTestProduct(t)
-<span id="L1683" class="ln">  1683  </span>			require.NoError(t, p.Discontinue(testCreatedAt))
-<span id="L1684" class="ln">  1684  </span>
-<span id="L1685" class="ln">  1685  </span>			require.NoError(t, p.ensureDiscontinuationKept(p.DiscontinuedAt()))
-<span id="L1686" class="ln">  1686  </span>		})
-<span id="L1687" class="ln">  1687  </span>	})
+<span id="L1674" class="ln">  1674  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1675" class="ln">  1675  </span>		t.Parallel()
+<span id="L1676" class="ln">  1676  </span>
+<span id="L1677" class="ln">  1677  </span>		t.Run(&#34;在庫が閾値を下回る場合、trueを返す&#34;, func(t *testing.T) {
+<span id="L1678" class="ln">  1678  </span>			t.Parallel()
+<span id="L1679" class="ln">  1679  </span>
+<span id="L1680" class="ln">  1680  </span>			id, attrs := validProductArgs(t)
+<span id="L1681" class="ln">  1681  </span>			attrs.StockWarningThreshold = ptr.To(10)
+<span id="L1682" class="ln">  1682  </span>			attrs.Quantity = 9
+<span id="L1683" class="ln">  1683  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1684" class="ln">  1684  </span>			require.NoError(t, err)
+<span id="L1685" class="ln">  1685  </span>
+<span id="L1686" class="ln">  1686  </span>			assert.True(t, p.IsLowStock())
+<span id="L1687" class="ln">  1687  </span>		})
 <span id="L1688" class="ln">  1688  </span>
-<span id="L1689" class="ln">  1689  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
-<span id="L1690" class="ln">  1690  </span>		t.Parallel()
+<span id="L1689" class="ln">  1689  </span>		t.Run(&#34;在庫が閾値と等しい場合、境界を含むためtrueを返す&#34;, func(t *testing.T) {
+<span id="L1690" class="ln">  1690  </span>			t.Parallel()
 <span id="L1691" class="ln">  1691  </span>
-<span id="L1692" class="ln">  1692  </span>		t.Run(&#34;廃番済みの商品を未廃番へ戻そうとした場合、取り消し不可のエラーを返す&#34;, func(t *testing.T) {
-<span id="L1693" class="ln">  1693  </span>			t.Parallel()
-<span id="L1694" class="ln">  1694  </span>
-<span id="L1695" class="ln">  1695  </span>			p := newTestProduct(t)
-<span id="L1696" class="ln">  1696  </span>			require.NoError(t, p.Discontinue(testCreatedAt))
+<span id="L1692" class="ln">  1692  </span>			id, attrs := validProductArgs(t)
+<span id="L1693" class="ln">  1693  </span>			attrs.StockWarningThreshold = ptr.To(10)
+<span id="L1694" class="ln">  1694  </span>			attrs.Quantity = 10
+<span id="L1695" class="ln">  1695  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1696" class="ln">  1696  </span>			require.NoError(t, err)
 <span id="L1697" class="ln">  1697  </span>
-<span id="L1698" class="ln">  1698  </span>			err := p.ensureDiscontinuationKept(nil)
-<span id="L1699" class="ln">  1699  </span>
-<span id="L1700" class="ln">  1700  </span>			require.ErrorIs(t, err, ErrDiscontinuationIrreversible)
-<span id="L1701" class="ln">  1701  </span>			require.ErrorIs(t, err, apperror.ErrValidation)
-<span id="L1702" class="ln">  1702  </span>
-<span id="L1703" class="ln">  1703  </span>			meta, ok := apperror.MetaFrom(err)
-<span id="L1704" class="ln">  1704  </span>			require.True(t, ok)
-<span id="L1705" class="ln">  1705  </span>			assert.Equal(t, []string{FieldDiscontinuedAt}, meta.Details())
-<span id="L1706" class="ln">  1706  </span>		})
-<span id="L1707" class="ln">  1707  </span>	})
-<span id="L1708" class="ln">  1708  </span>}
+<span id="L1698" class="ln">  1698  </span>			assert.True(t, p.IsLowStock())
+<span id="L1699" class="ln">  1699  </span>		})
+<span id="L1700" class="ln">  1700  </span>
+<span id="L1701" class="ln">  1701  </span>		t.Run(&#34;在庫が閾値を上回る場合、falseを返す&#34;, func(t *testing.T) {
+<span id="L1702" class="ln">  1702  </span>			t.Parallel()
+<span id="L1703" class="ln">  1703  </span>
+<span id="L1704" class="ln">  1704  </span>			id, attrs := validProductArgs(t)
+<span id="L1705" class="ln">  1705  </span>			attrs.StockWarningThreshold = ptr.To(10)
+<span id="L1706" class="ln">  1706  </span>			attrs.Quantity = 11
+<span id="L1707" class="ln">  1707  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1708" class="ln">  1708  </span>			require.NoError(t, err)
 <span id="L1709" class="ln">  1709  </span>
+<span id="L1710" class="ln">  1710  </span>			assert.False(t, p.IsLowStock())
+<span id="L1711" class="ln">  1711  </span>		})
+<span id="L1712" class="ln">  1712  </span>
+<span id="L1713" class="ln">  1713  </span>		t.Run(&#34;閾値が未設定の場合、在庫が0でも警告対象を持たないためfalseを返す&#34;, func(t *testing.T) {
+<span id="L1714" class="ln">  1714  </span>			t.Parallel()
+<span id="L1715" class="ln">  1715  </span>
+<span id="L1716" class="ln">  1716  </span>			id, attrs := validProductArgs(t)
+<span id="L1717" class="ln">  1717  </span>			attrs.StockWarningThreshold = nil
+<span id="L1718" class="ln">  1718  </span>			attrs.Quantity = 0
+<span id="L1719" class="ln">  1719  </span>			p, err := New(id, attrs, testCreatedAt)
+<span id="L1720" class="ln">  1720  </span>			require.NoError(t, err)
+<span id="L1721" class="ln">  1721  </span>
+<span id="L1722" class="ln">  1722  </span>			assert.False(t, p.IsLowStock())
+<span id="L1723" class="ln">  1723  </span>		})
+<span id="L1724" class="ln">  1724  </span>	})
+<span id="L1725" class="ln">  1725  </span>}
+<span id="L1726" class="ln">  1726  </span>
+<span id="L1727" class="ln">  1727  </span>func TestProduct_ensureDiscontinuationKept(t *testing.T) {
+<span id="L1728" class="ln">  1728  </span>	t.Parallel()
+<span id="L1729" class="ln">  1729  </span>
+<span id="L1730" class="ln">  1730  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L1731" class="ln">  1731  </span>		t.Parallel()
+<span id="L1732" class="ln">  1732  </span>
+<span id="L1733" class="ln">  1733  </span>		t.Run(&#34;未廃番の商品は廃番日時が nil のままでも通る&#34;, func(t *testing.T) {
+<span id="L1734" class="ln">  1734  </span>			t.Parallel()
+<span id="L1735" class="ln">  1735  </span>
+<span id="L1736" class="ln">  1736  </span>			p := newTestProduct(t)
+<span id="L1737" class="ln">  1737  </span>
+<span id="L1738" class="ln">  1738  </span>			require.NoError(t, p.ensureDiscontinuationKept(nil))
+<span id="L1739" class="ln">  1739  </span>		})
+<span id="L1740" class="ln">  1740  </span>
+<span id="L1741" class="ln">  1741  </span>		t.Run(&#34;未廃番から廃番への向きは拒まない&#34;, func(t *testing.T) {
+<span id="L1742" class="ln">  1742  </span>			t.Parallel()
+<span id="L1743" class="ln">  1743  </span>
+<span id="L1744" class="ln">  1744  </span>			p := newTestProduct(t)
+<span id="L1745" class="ln">  1745  </span>
+<span id="L1746" class="ln">  1746  </span>			require.NoError(t, p.ensureDiscontinuationKept(ptr.To(testCreatedAt)))
+<span id="L1747" class="ln">  1747  </span>		})
+<span id="L1748" class="ln">  1748  </span>
+<span id="L1749" class="ln">  1749  </span>		t.Run(&#34;廃番済みの商品が廃番日時を保ったままなら通る&#34;, func(t *testing.T) {
+<span id="L1750" class="ln">  1750  </span>			t.Parallel()
+<span id="L1751" class="ln">  1751  </span>
+<span id="L1752" class="ln">  1752  </span>			p := newTestProduct(t)
+<span id="L1753" class="ln">  1753  </span>			require.NoError(t, p.Discontinue(testCreatedAt))
+<span id="L1754" class="ln">  1754  </span>
+<span id="L1755" class="ln">  1755  </span>			require.NoError(t, p.ensureDiscontinuationKept(p.DiscontinuedAt()))
+<span id="L1756" class="ln">  1756  </span>		})
+<span id="L1757" class="ln">  1757  </span>	})
+<span id="L1758" class="ln">  1758  </span>
+<span id="L1759" class="ln">  1759  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L1760" class="ln">  1760  </span>		t.Parallel()
+<span id="L1761" class="ln">  1761  </span>
+<span id="L1762" class="ln">  1762  </span>		t.Run(&#34;廃番済みの商品を未廃番へ戻そうとした場合、取り消し不可のエラーを返す&#34;, func(t *testing.T) {
+<span id="L1763" class="ln">  1763  </span>			t.Parallel()
+<span id="L1764" class="ln">  1764  </span>
+<span id="L1765" class="ln">  1765  </span>			p := newTestProduct(t)
+<span id="L1766" class="ln">  1766  </span>			require.NoError(t, p.Discontinue(testCreatedAt))
+<span id="L1767" class="ln">  1767  </span>
+<span id="L1768" class="ln">  1768  </span>			err := p.ensureDiscontinuationKept(nil)
+<span id="L1769" class="ln">  1769  </span>
+<span id="L1770" class="ln">  1770  </span>			require.ErrorIs(t, err, ErrDiscontinuationIrreversible)
+<span id="L1771" class="ln">  1771  </span>			require.ErrorIs(t, err, apperror.ErrValidation)
+<span id="L1772" class="ln">  1772  </span>
+<span id="L1773" class="ln">  1773  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L1774" class="ln">  1774  </span>			require.True(t, ok)
+<span id="L1775" class="ln">  1775  </span>			assert.Equal(t, []string{FieldDiscontinuedAt}, meta.Details())
+<span id="L1776" class="ln">  1776  </span>		})
+<span id="L1777" class="ln">  1777  </span>	})
+<span id="L1778" class="ln">  1778  </span>}
+<span id="L1779" class="ln">  1779  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/domain/product/product_domain_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

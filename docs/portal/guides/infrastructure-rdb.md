@@ -198,26 +198,44 @@ See details below.
 ## command_service
 
 `command_service` implements a **CommandService** — the write-side counterpart of QueryService
-(interface in the Usecase layer alongside QueryService, implementation here). It is reserved for multi-aggregate writes
-that require single-transaction atomicity (see [ADR-0032 (lightweight-cqrs)](../../../docs/adr/0032-lightweight-cqrs.md)
-/ [ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md)),
+(interface in the Usecase layer alongside QueryService, implementation here). It is reserved for a write
+that cannot be decomposed into per-aggregate saves — because it must be atomic across aggregates, or
+because its target rows are named only by a predicate (see [ADR-0032 (lightweight-cqrs)](../../../docs/adr/0032-lightweight-cqrs.md)
+/ [ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md)
+/ [ADR-0114 (predicate-defined-set-writes-on-commandservice)](../../../docs/adr/0114-predicate-defined-set-writes-on-commandservice.md)),
 and the write ordering follows
 [ADR-0036 (ordered-pessimistic-row-locks)](../../../docs/adr/0036-ordered-pessimistic-row-locks.md).
 
 <!-- sample-api:replace-begin -->
-The category carries one implementation, `command_service/product`, which issues replacement coupons
-when a product is discontinued. A write whose target rows can be named by identity is lockable and
-therefore decomposes into a usecase composed of Repository calls, which is why the purchase flow does
-not use one; the recipients here are defined by a predicate over cart rows, cannot be enumerated
-before the write, and have no upper bound, so the write is a set operation rather than a sequence of
-per-aggregate saves. It is the worked instance of branch 3 in
+The category carries two implementations, and the pair is what makes the criterion readable. A write
+whose target rows can be named by identity is lockable and therefore decomposes into a usecase composed
+of Repository calls, which is why the purchase flow does not use one.
+
+`command_service/product` issues replacement coupons when a product is discontinued. Its recipients are
+defined by a predicate over cart rows, cannot be enumerated before the write, and have no upper bound;
+independently, the issuance must commit together with the product's own write. It is the worked
+instance of branch 3a in
 [ADR-0034 (commandservice-atomicity-criterion)](../../../docs/adr/0034-commandservice-atomicity-criterion.md).
 
-Its parameters are the issuing conditions rather than a decided aggregate, because the aggregates
-cannot exist before the recipients are read. The rule the shape rule protects is kept all the same:
-the method reads the recipients and then builds every row through the Domain constructor, so no row
-reaches the database without satisfying the aggregate's invariants. Round trips stay at two and do
-not grow with the number of coupons.
+`command_service/coupon` issues one coupon to every user who has not withdrawn. It writes `coupons` and
+nothing else, so no atomicity requirement puts it here; its recipients are likewise fixed only by a
+predicate, and that alone is why it cannot decompose. It is the worked instance of branch 3b in
+[ADR-0114 (predicate-defined-set-writes-on-commandservice)](../../../docs/adr/0114-predicate-defined-set-writes-on-commandservice.md).
+**Read the two together:** the category is not "writes that span aggregates", and the second
+implementation is what shows it. Both call the same generated `InsertCoupons` query: the table and the
+columns are the same, so duplicating the statement per issuing reason would leave one copy behind the
+next column that is added.
+
+Each method also takes its shared columns from the validated aggregate it has just built, never from
+the raw params it was handed. The constructor is what turned those params into something known to
+satisfy the aggregate's invariants, so reading the columns back off it keeps the written values and the
+validated values the same object rather than two copies that can drift.
+
+The parameters of both are the issuing conditions rather than a decided aggregate, because the
+aggregates cannot exist before the recipients are read. The rule the shape rule protects is kept all
+the same: each method reads the recipients and then builds every row through the Domain constructor, so
+no row reaches the database without satisfying the aggregate's invariants. Round trips stay at two and
+do not grow with the number of coupons.
 <!-- sample-api:replace-with -->
 <!-- = The category carries no implementation until a write meets the criterion. -->
 <!-- sample-api:replace-end -->
@@ -353,9 +371,15 @@ than covered with a contrived test.
 |`repository/product/product_repository.go`|`UpdateStock`|`safecast.IntToInt32(p.Quantity())` error|同上|
 |`repository/product/product_repository.go`|`insertImages`|`safecast.IntToInt16(img.DisplaySort())` error|`product` validates `displaySort` into `[1, math.MaxInt16]`|
 |`repository/product/product_repository.go`|`syncImages`|`safecast.IntToInt16(img.DisplaySort())` error|同上|
+|`repository/cart/cart_repository.go`|`Create`|`safecast.IntToInt32(item.Quantity())` error|`cart` validates each item's `quantity` into `[1, 99]`|
+|`repository/cart/cart_repository.go`|`Update`|`safecast.IntToInt32(item.Quantity())` error|同上|
+|`repository/coupon/coupon_repository.go`|`Create`|`safecast.IntToInt16(...Kind().Code())` error|`DiscountKind` / `ScopeKind` are closed sets whose codes are single digits|
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|`uuid.New()` error|`crypto/rand` failure only|
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|`safecast.IntToInt16(...Kind().Code())` error|`DiscountKind` / `ScopeKind` are closed sets whose codes are single digits|
 |`command_service/product/product_discontinue_command_service.go`|`IssueDiscontinuationCoupons`|FK 23503 normalization|recipients come from an inner join on `users`, so the reference cannot be missing within the same transaction|
+|`command_service/coupon/coupon_bulk_issue_command_service.go`|`IssuePromotionalCoupons`|`uuid.New()` error|`crypto/rand` failure only|
+|`command_service/coupon/coupon_bulk_issue_command_service.go`|`IssuePromotionalCoupons`|`safecast.IntToInt16(...Kind().Code())` error|`DiscountKind` / `ScopeKind` are closed sets whose codes are single digits|
+|`command_service/coupon/coupon_bulk_issue_command_service.go`|`IssuePromotionalCoupons`|FK 23503 normalization|recipients are selected from `users` in the same transaction, so the reference cannot be missing|
 <!-- sample-api:replace-with -->
 <!-- = |File|Function|Uncovered branch|Why unreachable| -->
 <!-- = |---|---|---|---| -->

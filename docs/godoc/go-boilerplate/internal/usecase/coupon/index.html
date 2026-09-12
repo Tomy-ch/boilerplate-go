@@ -86,7 +86,7 @@
 			</div>
 			<div class="expanded">
 				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
-				<p>Package coupon は、クーポンの読み取りユースケースを提供します。
+				<p>Package coupon は、クーポンの発行と読み取りのユースケースを提供します。
 </p><p>「いまのカートに使えるか」と「いくら引かれるか」は集約をまたぐ問いですが、判定そのものは
 クーポンのドメインが持ちます。そのため QueryService ではなく、Repository を束ねて
 ドメインへ渡す通常のユースケースとして組み立てます（docs/rules.md の Repository / QueryService Rules）。
@@ -107,6 +107,8 @@
 			<dl>
 			
 			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
 			
 			
 				
@@ -120,10 +122,25 @@
 				
 			
 				
+				<dd><a href="#IssueCouponParams">type IssueCouponParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#IssuePromotionalCouponsParams">type IssuePromotionalCouponsParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#IssuePromotionalCouponsView">type IssuePromotionalCouponsView</a></dd>
+				
+				
+			
+				
 				<dd><a href="#Usecase">type Usecase</a></dd>
 				
 					
-					<dd>    <a href="#New">func New(couponRepo coupon.Repository, cartRepo cart.Repository, productRepo product.Repository, clk clock.Clock, tf observability.TracerFactory) Usecase</a></dd>
+					<dd>    <a href="#New">func New(couponRepo coupon.Repository, cartRepo cart.Repository, productRepo product.Repository, categoryRepo category.Repository, userRepo user.Repository, clk clock.Clock, txm tx.Manager, authorizer authz.Authorizer, bulkIssueCmd command.CommandService, tf observability.TracerFactory) Usecase</a></dd>
 				
 				
 			
@@ -138,6 +155,10 @@
 			<p>
 			<span style="font-size:90%">
 			
+				<a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_bulk_issue_usecase.go.html">coupon_bulk_issue_usecase.go</a>
+			
+				<a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_issue_usecase.go.html">coupon_issue_usecase.go</a>
+			
 				<a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html">coupon_usecase.go</a>
 			
 			</span>
@@ -150,11 +171,23 @@
 
 		
 		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>ErrFlatDiscountTooLarge は、定額値引きが maxPromotionFlatDiscount を超えたことを表します。
+
+				</p><pre>var <span id="ErrFlatDiscountTooLarge">ErrFlatDiscountTooLarge</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrValidation">ErrValidation</a>, &#34;coupon: flat discount exceeds the bulk issuance cap&#34;)</pre>
+			
+				<p>ErrTooManyRecipients は、受給対象が maxPromotionRecipients を超えたことを表します。
+要求の形ではなく母集団の状態が原因なので 409 へ写します。
+
+				</p><pre>var <span id="ErrTooManyRecipients">ErrTooManyRecipients</span> = <a href="../../../../go-boilerplate/pkg/xerrors/">xerrors</a>.<a href="../../../../go-boilerplate/pkg/xerrors/#Wrap">Wrap</a>(<a href="../../../../go-boilerplate/internal/apperror/">apperror</a>.<a href="../../../../go-boilerplate/internal/apperror/#ErrConflict">ErrConflict</a>, &#34;coupon: too many recipients for a bulk issuance&#34;)</pre>
+			
+		
 		
 		
 			
 			
-			<h2 id="CartCouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=1915:2128#L37">CartCouponView</a>
+			<h2 id="CartCouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=2164:2377#L42">CartCouponView</a>
 				<a class="permalink" href="#CartCouponView">¶</a>
 				
 				
@@ -183,7 +216,7 @@
 		
 			
 			
-			<h2 id="CouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=1078:1801#L17">CouponView</a>
+			<h2 id="CouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=1327:2050#L22">CouponView</a>
 				<a class="permalink" href="#CouponView">¶</a>
 				
 				
@@ -224,21 +257,135 @@
 		
 			
 			
-			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=2214:2915#L45">Usecase</a>
+			<h2 id="IssueCouponParams">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_issue_usecase.go.html?s=387:1124#L6">IssueCouponParams</a>
+				<a class="permalink" href="#IssueCouponParams">¶</a>
+				
+				
+			</h2>
+			<p>IssueCouponParams は、受給者を名指ししてクーポンを 1 枚発行する要求の入力です。
+
+			</p><pre>type IssueCouponParams struct {
+<span id="IssueCouponParams.UserID"></span>    <span class="comment">// UserID は、受給者の利用者 ID です。</span>
+    UserID <a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="IssueCouponParams.DiscountKind"></span>    <span class="comment">// DiscountKind は、値引きの決まり方の名前です（&#34;flat&#34; / &#34;rate&#34;）。</span>
+    DiscountKind <a href="../../../../builtin/#string">string</a>
+<span id="IssueCouponParams.DiscountValue"></span>    <span class="comment">// DiscountValue は、種別における値です。定額なら金額、定率なら率です。</span>
+    DiscountValue <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+<span id="IssueCouponParams.ScopeKind"></span>    <span class="comment">// ScopeKind は、適用範囲の決まり方の名前です（&#34;all&#34; / &#34;category&#34; / &#34;product&#34;）。</span>
+    ScopeKind <a href="../../../../builtin/#string">string</a>
+<span id="IssueCouponParams.ScopeTargetID"></span>    <span class="comment">// ScopeTargetID は、適用範囲が絞る対象の識別子です。全体では nil です。</span>
+    ScopeTargetID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="IssueCouponParams.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、発行するクーポンの有効期限です。締切を名指しするため絶対時刻で受けます。</span>
+    ExpiresAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="IssuePromotionalCouponsParams">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_bulk_issue_usecase.go.html?s=2293:2996#L31">IssuePromotionalCouponsParams</a>
+				<a class="permalink" href="#IssuePromotionalCouponsParams">¶</a>
+				
+				
+			</h2>
+			<p>IssuePromotionalCouponsParams は、販促クーポンを一括発行する要求の入力です。
+
+			</p><pre>type IssuePromotionalCouponsParams struct {
+<span id="IssuePromotionalCouponsParams.DiscountKind"></span>    <span class="comment">// DiscountKind は、値引きの決まり方の名前です（&#34;flat&#34; / &#34;rate&#34;）。</span>
+    DiscountKind <a href="../../../../builtin/#string">string</a>
+<span id="IssuePromotionalCouponsParams.DiscountValue"></span>    <span class="comment">// DiscountValue は、種別における値です。定額なら金額、定率なら率です。</span>
+    DiscountValue <a href="../../../../go-boilerplate/pkg/decimal/">decimal</a>.<a href="../../../../go-boilerplate/pkg/decimal/#Decimal">Decimal</a>
+<span id="IssuePromotionalCouponsParams.ScopeKind"></span>    <span class="comment">// ScopeKind は、適用範囲の決まり方の名前です（&#34;all&#34; / &#34;category&#34; / &#34;product&#34;）。</span>
+    ScopeKind <a href="../../../../builtin/#string">string</a>
+<span id="IssuePromotionalCouponsParams.ScopeTargetID"></span>    <span class="comment">// ScopeTargetID は、適用範囲が絞る対象の識別子です。全体では nil です。</span>
+    ScopeTargetID *<a href="../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>
+<span id="IssuePromotionalCouponsParams.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、発行するクーポンの有効期限です。キャンペーンの終了日を名指しするため絶対時刻で受けます。</span>
+    ExpiresAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="IssuePromotionalCouponsView">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_bulk_issue_usecase.go.html?s=3072:3482#L45">IssuePromotionalCouponsView</a>
+				<a class="permalink" href="#IssuePromotionalCouponsView">¶</a>
+				
+				
+			</h2>
+			<p>IssuePromotionalCouponsView は、一括発行の実行結果です。
+
+			</p><pre>type IssuePromotionalCouponsView struct {
+<span id="IssuePromotionalCouponsView.IssuedAt"></span>    <span class="comment">// IssuedAt は、発行が確定した日時です。</span>
+    IssuedAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="IssuePromotionalCouponsView.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、発行したクーポンの有効期限です。</span>
+    ExpiresAt <a href="../../../../time/">time</a>.<a href="../../../../time/#Time">Time</a>
+<span id="IssuePromotionalCouponsView.RecipientCount"></span>    <span class="comment">// RecipientCount は、受給対象になった利用者の数です。</span>
+    RecipientCount <a href="../../../../builtin/#int64">int64</a>
+<span id="IssuePromotionalCouponsView.IssuedCouponCount"></span>    <span class="comment">// IssuedCouponCount は、実際に発行したクーポンの枚数です。</span>
+    IssuedCouponCount <a href="../../../../builtin/#int64">int64</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=2475:3963#L50">Usecase</a>
 				<a class="permalink" href="#Usecase">¶</a>
 				
 				
 			</h2>
-			<p>Usecase は、クーポンの読み取りユースケースを定義します。
+			<p>Usecase は、クーポンの発行と読み取りのユースケースを定義します。
 
 			</p><pre>type Usecase interface {
-    <span class="comment">// ListMyCoupons は、認証主体が保有するクーポンを発行日時の新しい順で返します。</span>
-    <span class="comment">// 使用済み・失効済みも含みます。1 枚も持たない場合は空を返します。</span>
+    <span class="comment">// ListMyCoupons は、認証主体が保有するクーポンを [coupon.Repository.FindByUserID] と</span>
+    <span class="comment">// 同じ結果で返します。</span>
     ListMyCoupons(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>) ([]<a href="#CouponView">CouponView</a>, <a href="../../../../builtin/#error">error</a>)
     <span class="comment">// ListApplicableToMyCart は、認証主体のカートに対して使えるクーポンと、それぞれの値引き額を返します。</span>
     <span class="comment">// 使用済み・失効済みと、値引きが 0 になるクーポンは含みません。</span>
     <span class="comment">// カートを持たない場合も空を返します。</span>
     ListApplicableToMyCart(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>) ([]<a href="#CartCouponView">CartCouponView</a>, <a href="../../../../builtin/#error">error</a>)
+    <span class="comment">// IssueCoupon は、受給者を名指ししてクーポンを 1 枚発行し、発行したクーポンを返します。</span>
+    <span class="comment">// admin のみ実行できます。受給者は退会していない利用者に限り、存在しない場合と退会済みの場合は</span>
+    <span class="comment">// いずれも NotFound を返します。適用範囲が指す対象が存在しない場合も NotFound です。</span>
+    IssueCoupon(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="#IssueCouponParams">IssueCouponParams</a>) (<a href="#CouponView">CouponView</a>, <a href="../../../../builtin/#error">error</a>)
+    <span class="comment">// IssuePromotionalCoupons は、退会していないすべての利用者へ同一条件のクーポンを 1 枚ずつ発行し、</span>
+    <span class="comment">// その実行が起こしたことを件数で返します。admin のみ実行できます。</span>
+    IssuePromotionalCoupons(
+        ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="#IssuePromotionalCouponsParams">IssuePromotionalCouponsParams</a>,
+    ) (<a href="#IssuePromotionalCouponsView">IssuePromotionalCouponsView</a>, <a href="../../../../builtin/#error">error</a>)
 }</pre>
 
 			
@@ -251,7 +398,7 @@
 
 			
 				
-				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=3187:3348#L64">New</a>
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/coupon/coupon_usecase.go.html?s=4409:4717#L83">New</a>
 					<a class="permalink" href="#New">¶</a>
 					
 					
@@ -260,10 +407,15 @@
     couponRepo <a href="../../../../go-boilerplate/internal/domain/coupon/">coupon</a>.<a href="../../../../go-boilerplate/internal/domain/coupon/#Repository">Repository</a>,
     cartRepo <a href="../../../../go-boilerplate/internal/domain/cart/">cart</a>.<a href="../../../../go-boilerplate/internal/domain/cart/#Repository">Repository</a>,
     productRepo <a href="../../../../go-boilerplate/internal/domain/product/">product</a>.<a href="../../../../go-boilerplate/internal/domain/product/#Repository">Repository</a>,
+    categoryRepo <a href="../../../../go-boilerplate/internal/domain/product/category/">category</a>.<a href="../../../../go-boilerplate/internal/domain/product/category/#Repository">Repository</a>,
+    userRepo <a href="../../../../go-boilerplate/internal/domain/user/">user</a>.<a href="../../../../go-boilerplate/internal/domain/user/#Repository">Repository</a>,
     clk <a href="../../../../go-boilerplate/internal/usecase/boundary/clock/">clock</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/clock/#Clock">Clock</a>,
+    txm <a href="../../../../go-boilerplate/internal/usecase/boundary/tx/">tx</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/tx/#Manager">Manager</a>,
+    authorizer <a href="../../../../go-boilerplate/internal/usecase/boundary/authz/">authz</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/authz/#Authorizer">Authorizer</a>,
+    bulkIssueCmd <a href="../../../../go-boilerplate/internal/usecase/coupon/command/">command</a>.<a href="../../../../go-boilerplate/internal/usecase/coupon/command/#CommandService">CommandService</a>,
     tf <a href="../../../../go-boilerplate/internal/observability/">observability</a>.<a href="../../../../go-boilerplate/internal/observability/#TracerFactory">TracerFactory</a>,
 ) <a href="#Usecase">Usecase</a></pre>
-				<p>New は、クーポンの読み取りユースケースを生成して返します。
+				<p>New は、クーポンの発行と読み取りのユースケースを生成して返します。
 
 				
 				

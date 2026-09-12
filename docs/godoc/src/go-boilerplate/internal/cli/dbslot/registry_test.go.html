@@ -252,11 +252,11 @@
 <span id="L195" class="ln">   195  </span>
 <span id="L196" class="ln">   196  </span>			<span class="comment">// 別 owner からは解放されない。</span>
 <span id="L197" class="ln">   197  </span>			other := NewRegistry(r.dir, &#34;/w/other&#34;, &#34;b&#34;, 30*time.Minute, 8, func() time.Time { return now })
-<span id="L198" class="ln">   198  </span>			other.Release(1)
+<span id="L198" class="ln">   198  </span>			assert.False(t, other.Release(1))
 <span id="L199" class="ln">   199  </span>			assert.True(t, r.Exists(1))
 <span id="L200" class="ln">   200  </span>
 <span id="L201" class="ln">   201  </span>			<span class="comment">// 自分なら解放される。</span>
-<span id="L202" class="ln">   202  </span>			r.Release(1)
+<span id="L202" class="ln">   202  </span>			assert.True(t, r.Release(1))
 <span id="L203" class="ln">   203  </span>			assert.False(t, r.Exists(1))
 <span id="L204" class="ln">   204  </span>		})
 <span id="L205" class="ln">   205  </span>	})
@@ -284,7 +284,7 @@
 <span id="L227" class="ln">   227  </span>			r := newTestRegistry(t, &#34;/w/a&#34;, time.Unix(1000, 0))
 <span id="L228" class="ln">   228  </span>			require.True(t, r.TryAcquireFresh(1))
 <span id="L229" class="ln">   229  </span>			require.NoError(t, r.WriteMeta(1))
-<span id="L230" class="ln">   230  </span>			r.Release(1)
+<span id="L230" class="ln">   230  </span>			require.True(t, r.Release(1))
 <span id="L231" class="ln">   231  </span>
 <span id="L232" class="ln">   232  </span>			assert.False(t, r.Exists(1))
 <span id="L233" class="ln">   233  </span>		})
@@ -363,38 +363,81 @@
 <span id="L306" class="ln">   306  </span>	})
 <span id="L307" class="ln">   307  </span>}
 <span id="L308" class="ln">   308  </span>
-<span id="L309" class="ln">   309  </span>func TestRegistry_lockDir(t *testing.T) {
+<span id="L309" class="ln">   309  </span>func TestRegistry_HeldByOther(t *testing.T) {
 <span id="L310" class="ln">   310  </span>	t.Parallel()
 <span id="L311" class="ln">   311  </span>
 <span id="L312" class="ln">   312  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
 <span id="L313" class="ln">   313  </span>		t.Parallel()
 <span id="L314" class="ln">   314  </span>
-<span id="L315" class="ln">   315  </span>		t.Run(&#34;プールディレクトリ直下の slot-&lt;N&gt;.lock を指す&#34;, func(t *testing.T) {
+<span id="L315" class="ln">   315  </span>		t.Run(&#34;別 worktree が meta を書いたスロットは true&#34;, func(t *testing.T) {
 <span id="L316" class="ln">   316  </span>			t.Parallel()
 <span id="L317" class="ln">   317  </span>
-<span id="L318" class="ln">   318  </span>			r := NewRegistry(&#34;/pool&#34;, &#34;/w/a&#34;, &#34;b&#34;, time.Minute, 8, nil)
-<span id="L319" class="ln">   319  </span>
-<span id="L320" class="ln">   320  </span>			assert.Equal(t, &#34;/pool/slot-3.lock&#34;, r.lockDir(3))
-<span id="L321" class="ln">   321  </span>		})
-<span id="L322" class="ln">   322  </span>	})
-<span id="L323" class="ln">   323  </span>}
-<span id="L324" class="ln">   324  </span>
-<span id="L325" class="ln">   325  </span>func TestRegistry_metaPath(t *testing.T) {
-<span id="L326" class="ln">   326  </span>	t.Parallel()
-<span id="L327" class="ln">   327  </span>
-<span id="L328" class="ln">   328  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L329" class="ln">   329  </span>		t.Parallel()
-<span id="L330" class="ln">   330  </span>
-<span id="L331" class="ln">   331  </span>		t.Run(&#34;ロックディレクトリ内の meta を指す&#34;, func(t *testing.T) {
-<span id="L332" class="ln">   332  </span>			t.Parallel()
+<span id="L318" class="ln">   318  </span>			now := time.Unix(1000, 0)
+<span id="L319" class="ln">   319  </span>			owner := newTestRegistry(t, &#34;/w/other&#34;, now)
+<span id="L320" class="ln">   320  </span>			require.True(t, owner.TryAcquireFresh(1))
+<span id="L321" class="ln">   321  </span>			require.NoError(t, owner.WriteMeta(1))
+<span id="L322" class="ln">   322  </span>
+<span id="L323" class="ln">   323  </span>			viewer := NewRegistry(owner.dir, &#34;/w/me&#34;, &#34;b&#34;, 30*time.Minute, 8, func() time.Time { return now })
+<span id="L324" class="ln">   324  </span>			assert.True(t, viewer.HeldByOther(1))
+<span id="L325" class="ln">   325  </span>		})
+<span id="L326" class="ln">   326  </span>
+<span id="L327" class="ln">   327  </span>		t.Run(&#34;自分が meta を書いたスロットは false&#34;, func(t *testing.T) {
+<span id="L328" class="ln">   328  </span>			t.Parallel()
+<span id="L329" class="ln">   329  </span>
+<span id="L330" class="ln">   330  </span>			r := newTestRegistry(t, &#34;/w/self&#34;, time.Unix(1000, 0))
+<span id="L331" class="ln">   331  </span>			require.True(t, r.TryAcquireFresh(1))
+<span id="L332" class="ln">   332  </span>			require.NoError(t, r.WriteMeta(1))
 <span id="L333" class="ln">   333  </span>
-<span id="L334" class="ln">   334  </span>			r := NewRegistry(&#34;/pool&#34;, &#34;/w/a&#34;, &#34;b&#34;, time.Minute, 8, nil)
-<span id="L335" class="ln">   335  </span>
-<span id="L336" class="ln">   336  </span>			assert.Equal(t, &#34;/pool/slot-3.lock/meta&#34;, r.metaPath(3))
-<span id="L337" class="ln">   337  </span>		})
-<span id="L338" class="ln">   338  </span>	})
-<span id="L339" class="ln">   339  </span>}
+<span id="L334" class="ln">   334  </span>			assert.False(t, r.HeldByOther(1))
+<span id="L335" class="ln">   335  </span>		})
+<span id="L336" class="ln">   336  </span>	})
+<span id="L337" class="ln">   337  </span>
+<span id="L338" class="ln">   338  </span>	t.Run(&#34;異常系&#34;, func(t *testing.T) {
+<span id="L339" class="ln">   339  </span>		t.Parallel()
 <span id="L340" class="ln">   340  </span>
+<span id="L341" class="ln">   341  </span>		t.Run(&#34;meta を読めないスロットは他 worktree の保持とみなさない&#34;, func(t *testing.T) {
+<span id="L342" class="ln">   342  </span>			t.Parallel()
+<span id="L343" class="ln">   343  </span>
+<span id="L344" class="ln">   344  </span>			r := newTestRegistry(t, &#34;/w/self&#34;, time.Unix(1000, 0))
+<span id="L345" class="ln">   345  </span>			require.True(t, r.TryAcquireFresh(1))
+<span id="L346" class="ln">   346  </span>
+<span id="L347" class="ln">   347  </span>			assert.False(t, r.HeldByOther(1))
+<span id="L348" class="ln">   348  </span>		})
+<span id="L349" class="ln">   349  </span>	})
+<span id="L350" class="ln">   350  </span>}
+<span id="L351" class="ln">   351  </span>
+<span id="L352" class="ln">   352  </span>func TestRegistry_lockDir(t *testing.T) {
+<span id="L353" class="ln">   353  </span>	t.Parallel()
+<span id="L354" class="ln">   354  </span>
+<span id="L355" class="ln">   355  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L356" class="ln">   356  </span>		t.Parallel()
+<span id="L357" class="ln">   357  </span>
+<span id="L358" class="ln">   358  </span>		t.Run(&#34;プールディレクトリ直下の slot-&lt;N&gt;.lock を指す&#34;, func(t *testing.T) {
+<span id="L359" class="ln">   359  </span>			t.Parallel()
+<span id="L360" class="ln">   360  </span>
+<span id="L361" class="ln">   361  </span>			r := NewRegistry(&#34;/pool&#34;, &#34;/w/a&#34;, &#34;b&#34;, time.Minute, 8, nil)
+<span id="L362" class="ln">   362  </span>
+<span id="L363" class="ln">   363  </span>			assert.Equal(t, &#34;/pool/slot-3.lock&#34;, r.lockDir(3))
+<span id="L364" class="ln">   364  </span>		})
+<span id="L365" class="ln">   365  </span>	})
+<span id="L366" class="ln">   366  </span>}
+<span id="L367" class="ln">   367  </span>
+<span id="L368" class="ln">   368  </span>func TestRegistry_metaPath(t *testing.T) {
+<span id="L369" class="ln">   369  </span>	t.Parallel()
+<span id="L370" class="ln">   370  </span>
+<span id="L371" class="ln">   371  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L372" class="ln">   372  </span>		t.Parallel()
+<span id="L373" class="ln">   373  </span>
+<span id="L374" class="ln">   374  </span>		t.Run(&#34;ロックディレクトリ内の meta を指す&#34;, func(t *testing.T) {
+<span id="L375" class="ln">   375  </span>			t.Parallel()
+<span id="L376" class="ln">   376  </span>
+<span id="L377" class="ln">   377  </span>			r := NewRegistry(&#34;/pool&#34;, &#34;/w/a&#34;, &#34;b&#34;, time.Minute, 8, nil)
+<span id="L378" class="ln">   378  </span>
+<span id="L379" class="ln">   379  </span>			assert.Equal(t, &#34;/pool/slot-3.lock/meta&#34;, r.metaPath(3))
+<span id="L380" class="ln">   380  </span>		})
+<span id="L381" class="ln">   381  </span>	})
+<span id="L382" class="ln">   382  </span>}
+<span id="L383" class="ln">   383  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/cli/dbslot/registry_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

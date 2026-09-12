@@ -37,10 +37,24 @@ coverage, while the testable core lives here and is covered like any other packa
 - The core must NOT import Cobra, `internal/di`, OS signals, or infrastructure (except
   `infrastructure/rdb/driver` types). It operates on injected interfaces / function seams.
   `internal/config` is permitted — the enforced boundary is the `independent_cli` depguard rule in
-  `.golangci-full.yaml`, which denies the layers above but not `config`.
+  `.golangci.yaml`, which denies the layers above but not `config`.
 - The CLI layer does not contain feature business logic (that belongs in usecase / domain).
 - Adding a new command: add `cmd/<command>.go` (Cobra def + real-dependency wiring), add the core
   logic under `internal/cli/<command>/`, and register it in `registerCommands`.
+
+### What is deliberately not a command
+
+This convention governs the **application binary's subcommands** — operations a deployed environment
+has to be able to perform. A development tool that only ever runs against a local emulator is not one
+of those, and it lives in [`scripts/`](../../scripts/README.md) instead. The two are not competing
+placements for the same thing.
+
+`realtime-init` and `scripts/realtime-reset` are the pair that makes this visible, and the split
+between them is intentional. Creating the Realtime Delivery tables is something a real environment
+does, so it is a subcommand here. Deleting them is not, and staying outside this binary is what lets
+the reset tool sign with a credential real AWS rejects — a guard that holds independently of its
+endpoint check. Bringing it in would give it the app's `REALTIME_*` credentials and reduce two guards
+to one. Do not "fix" the asymmetry by moving it.
 
 ## Testing Policy
 

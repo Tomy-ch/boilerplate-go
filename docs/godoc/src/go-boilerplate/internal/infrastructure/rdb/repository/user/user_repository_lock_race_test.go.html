@@ -74,120 +74,131 @@
 <span id="L17" class="ln">    17  </span>	uuidtestkit &#34;go-boilerplate/pkg/uuid/testkit&#34;
 <span id="L18" class="ln">    18  </span>	&#34;go-boilerplate/pkg/xerrors&#34;
 <span id="L19" class="ln">    19  </span>
-<span id="L20" class="ln">    20  </span>	&#34;github.com/stretchr/testify/require&#34;
-<span id="L21" class="ln">    21  </span>)
-<span id="L22" class="ln">    22  </span>
-<span id="L23" class="ln">    23  </span><span class="comment">// raceBlockedGracePeriod は、購入役が退会役のロック解放を待たされていることを確認するために待つ時間です。</span>
-<span id="L24" class="ln">    24  </span><span class="comment">// 高負荷でこの時間内に問い合わせが届かない場合も「まだ完了していない」側に倒れるため、負荷は偽陽性を生みません。</span>
-<span id="L25" class="ln">    25  </span>const raceBlockedGracePeriod = 300 * time.Millisecond
-<span id="L26" class="ln">    26  </span>
-<span id="L27" class="ln">    27  </span>var (
-<span id="L28" class="ln">    28  </span>	<span class="comment">// errRollbackRaceTx は、購入役の tx を成否に関わらずロールバックさせるための番兵です。</span>
-<span id="L29" class="ln">    29  </span>	errRollbackRaceTx = xerrors.New(&#34;rollback race tx&#34;)
-<span id="L30" class="ln">    30  </span>	<span class="comment">// errPurchaserWithdrawn は、購入役が読み出した購入者が退会済みだったことを表す番兵です。</span>
-<span id="L31" class="ln">    31  </span>	errPurchaserWithdrawn = xerrors.New(&#34;purchaser withdrawn&#34;)
-<span id="L32" class="ln">    32  </span>)
-<span id="L33" class="ln">    33  </span>
-<span id="L34" class="ln">    34  </span><span class="comment">// Test_lockSerializesWithdrawalAgainstPurchase は、#766 の競合順序を実 DB の 2 トランザクションで再現し、</span>
-<span id="L35" class="ln">    35  </span><span class="comment">// 退会（排他ロック）が確定した時点で購入の在籍ガード（共有ロック）が拒否へ転じることを検証します。</span>
-<span id="L36" class="ln">    36  </span><span class="comment">//</span>
-<span id="L37" class="ln">    37  </span><span class="comment">// tx を 2 本同時に生かす必要があるため testkit.WithinTx（tx 1 本 + ロールバック）では表現できません。</span>
-<span id="L38" class="ln">    38  </span><span class="comment">// 退会役をコミットさせる必要から、検証用ユーザーは後始末で物理削除します。</span>
-<span id="L39" class="ln">    39  </span>func Test_lockSerializesWithdrawalAgainstPurchase(t *testing.T) {
-<span id="L40" class="ln">    40  </span>	t.Parallel()
-<span id="L41" class="ln">    41  </span>
-<span id="L42" class="ln">    42  </span>	testDB := testkit.NewTestDB(t)
-<span id="L43" class="ln">    43  </span>	<span class="comment">// 検証用ユーザーの作成から 2 本の tx の完了までを、他パッケージの CASCADE TRUNCATE から守る。</span>
-<span id="L44" class="ln">    44  </span>	<span class="comment">// 部分的にしか守らないと、作成直後の行が消えてロック競合の手前で落ちる。</span>
-<span id="L45" class="ln">    45  </span>	testkit.HoldSuiteSerialization(t, testDB)
+<span id="L20" class="ln">    20  </span>	&#34;github.com/stretchr/testify/assert&#34;
+<span id="L21" class="ln">    21  </span>	&#34;github.com/stretchr/testify/require&#34;
+<span id="L22" class="ln">    22  </span>)
+<span id="L23" class="ln">    23  </span>
+<span id="L24" class="ln">    24  </span><span class="comment">// raceBlockedGracePeriod は、購入役が退会役のロック解放を待たされていることを確認するために待つ時間です。</span>
+<span id="L25" class="ln">    25  </span><span class="comment">// 高負荷でこの時間内に問い合わせが届かない場合も「まだ完了していない」側に倒れるため、負荷は偽陽性を生みません。</span>
+<span id="L26" class="ln">    26  </span><span class="comment">// 待たされた事実は、後続役がロックを取れた時刻が先行役の解放より後であることでも確かめます。</span>
+<span id="L27" class="ln">    27  </span><span class="comment">// 最終状態の一致だけを見ると、ロックが外れていても後続役の往復がこの時間を超えれば同じ観測になり、</span>
+<span id="L28" class="ln">    28  </span><span class="comment">// 退行を見逃します。所要時間そのものを閾値と比べないのは、後続役の計測開始が先行役の待機開始より</span>
+<span id="L29" class="ln">    29  </span><span class="comment">// 遅れるぶん、ロックが効いていても閾値を下回るためです。</span>
+<span id="L30" class="ln">    30  </span>const raceBlockedGracePeriod = 300 * time.Millisecond
+<span id="L31" class="ln">    31  </span>
+<span id="L32" class="ln">    32  </span>var (
+<span id="L33" class="ln">    33  </span>	<span class="comment">// errRollbackRaceTx は、購入役の tx を成否に関わらずロールバックさせるための番兵です。</span>
+<span id="L34" class="ln">    34  </span>	errRollbackRaceTx = xerrors.New(&#34;rollback race tx&#34;)
+<span id="L35" class="ln">    35  </span>	<span class="comment">// errPurchaserWithdrawn は、購入役が読み出した購入者が退会済みだったことを表す番兵です。</span>
+<span id="L36" class="ln">    36  </span>	errPurchaserWithdrawn = xerrors.New(&#34;purchaser withdrawn&#34;)
+<span id="L37" class="ln">    37  </span>)
+<span id="L38" class="ln">    38  </span>
+<span id="L39" class="ln">    39  </span><span class="comment">// Test_lockSerializesWithdrawalAgainstPurchase は、#766 の競合順序を実 DB の 2 トランザクションで再現し、</span>
+<span id="L40" class="ln">    40  </span><span class="comment">// 退会（排他ロック）が確定した時点で購入の在籍ガード（共有ロック）が拒否へ転じることを検証します。</span>
+<span id="L41" class="ln">    41  </span><span class="comment">//</span>
+<span id="L42" class="ln">    42  </span><span class="comment">// tx を 2 本同時に生かす必要があるため testkit.WithinTx（tx 1 本 + ロールバック）では表現できません。</span>
+<span id="L43" class="ln">    43  </span><span class="comment">// 退会役をコミットさせる必要から、検証用ユーザーは後始末で物理削除します。</span>
+<span id="L44" class="ln">    44  </span>func Test_lockSerializesWithdrawalAgainstPurchase(t *testing.T) {
+<span id="L45" class="ln">    45  </span>	t.Parallel()
 <span id="L46" class="ln">    46  </span>
-<span id="L47" class="ln">    47  </span>	tracer := observability.NewMockInfraLayerTracer(t)
-<span id="L48" class="ln">    48  </span>	repo := &amp;repository{tracer: tracer, db: testDB}
-<span id="L49" class="ln">    49  </span>	lockRepo := &amp;lockRepository{tracer: tracer, db: testDB}
-<span id="L50" class="ln">    50  </span>
-<span id="L51" class="ln">    51  </span>	newTxManager := func() tx.Manager {
-<span id="L52" class="ln">    52  </span>		return driver.NewTransactionManager(
-<span id="L53" class="ln">    53  </span>			testDB,
-<span id="L54" class="ln">    54  </span>			config.NewDatabaseConfig(config.MockConfigForTest(t)),
-<span id="L55" class="ln">    55  </span>			logging.NewTestLogger(t),
-<span id="L56" class="ln">    56  </span>			system.NewSleeper(),
-<span id="L57" class="ln">    57  </span>		)
-<span id="L58" class="ln">    58  </span>	}
-<span id="L59" class="ln">    59  </span>
-<span id="L60" class="ln">    60  </span>	ctx := context.Background()
-<span id="L61" class="ln">    61  </span>	now := time.Now().UTC()
-<span id="L62" class="ln">    62  </span>	targetID := uuidtestkit.NewTestFromSalt(t, &#34;race-withdrawal-user&#34;)
-<span id="L63" class="ln">    63  </span>	prefectureID, err := uuid.Parse(&#34;a03aaec4-3bd6-4bfb-8e47-2fbfa026d344&#34;)
-<span id="L64" class="ln">    64  </span>	require.NoError(t, err)
-<span id="L65" class="ln">    65  </span>
-<span id="L66" class="ln">    66  </span>	target, err := user.New(targetID, user.Attributes{
-<span id="L67" class="ln">    67  </span>		FirstName:    &#34;Race&#34;,
-<span id="L68" class="ln">    68  </span>		LastName:     &#34;Target&#34;,
-<span id="L69" class="ln">    69  </span>		Email:        &#34;race.target@example.com&#34;,
-<span id="L70" class="ln">    70  </span>		Phone:        &#34;7777777777&#34;,
-<span id="L71" class="ln">    71  </span>		PrefectureID: prefectureID,
-<span id="L72" class="ln">    72  </span>		City:         &#34;新宿区&#34;,
-<span id="L73" class="ln">    73  </span>		Street:       &#34;9-9-9&#34;,
-<span id="L74" class="ln">    74  </span>		PostalCode:   &#34;160-0009&#34;,
-<span id="L75" class="ln">    75  </span>		CreatedAt:    now,
-<span id="L76" class="ln">    76  </span>		UpdatedAt:    now,
-<span id="L77" class="ln">    77  </span>	})
-<span id="L78" class="ln">    78  </span>	require.NoError(t, err)
-<span id="L79" class="ln">    79  </span>
-<span id="L80" class="ln">    80  </span>	<span class="comment">// 共有シードを退会させると他テストへ波及するため、この検証専用のユーザーを立てて後始末で物理削除する。</span>
-<span id="L81" class="ln">    81  </span>	require.NoError(t, repo.Create(ctx, target))
-<span id="L82" class="ln">    82  </span>	t.Cleanup(func() {
-<span id="L83" class="ln">    83  </span>		_, cleanupErr := driver.New(ctx, testDB).Exec(ctx, &#34;DELETE FROM users WHERE id = $1&#34;, targetID)
-<span id="L84" class="ln">    84  </span>		require.NoError(t, cleanupErr)
-<span id="L85" class="ln">    85  </span>	})
-<span id="L86" class="ln">    86  </span>
-<span id="L87" class="ln">    87  </span>	withdrawalLocked := make(chan struct{})
-<span id="L88" class="ln">    88  </span>	guardDone := make(chan struct{})
-<span id="L89" class="ln">    89  </span>	guardResult := make(chan error, 1)
-<span id="L90" class="ln">    90  </span>
-<span id="L91" class="ln">    91  </span>	<span class="comment">// 購入役: 退会役がユーザー行を押さえている間に在籍ガードへ入り、退会の確定まで待たされる。</span>
-<span id="L92" class="ln">    92  </span>	go func() {
-<span id="L93" class="ln">    93  </span>		defer close(guardDone)
-<span id="L94" class="ln">    94  </span>		&lt;-withdrawalLocked
-<span id="L95" class="ln">    95  </span>		guardResult &lt;- newTxManager().Do(ctx, func(txCtx context.Context) error {
-<span id="L96" class="ln">    96  </span>			purchaser, guardErr := lockRepo.LockShareByID(txCtx, targetID)
-<span id="L97" class="ln">    97  </span>			if guardErr != nil {
-<span id="L98" class="ln">    98  </span>				return xerrors.Join(errRollbackRaceTx, guardErr)
-<span id="L99" class="ln">    99  </span>			}
-<span id="L100" class="ln">   100  </span>			<span class="comment">// 共有ロックを取れた時点の状態が退会済みであることが、直列化の成立を示す。</span>
-<span id="L101" class="ln">   101  </span>			if !purchaser.IsActive() {
-<span id="L102" class="ln">   102  </span>				return xerrors.Join(errRollbackRaceTx, errPurchaserWithdrawn)
-<span id="L103" class="ln">   103  </span>			}
-<span id="L104" class="ln">   104  </span>			return errRollbackRaceTx
-<span id="L105" class="ln">   105  </span>		})
-<span id="L106" class="ln">   106  </span>	}()
-<span id="L107" class="ln">   107  </span>
-<span id="L108" class="ln">   108  </span>	<span class="comment">// 退会役: ユーザー行を排他ロックしてから論理削除を確定させる。</span>
-<span id="L109" class="ln">   109  </span>	require.NoError(t, newTxManager().Do(ctx, func(txCtx context.Context) error {
-<span id="L110" class="ln">   110  </span>		withdrawing, lockErr := lockRepo.LockByID(txCtx, targetID)
-<span id="L111" class="ln">   111  </span>		if lockErr != nil {
-<span id="L112" class="ln">   112  </span>			return lockErr
-<span id="L113" class="ln">   113  </span>		}
-<span id="L114" class="ln">   114  </span>		close(withdrawalLocked)
+<span id="L47" class="ln">    47  </span>	testDB := testkit.NewTestDB(t)
+<span id="L48" class="ln">    48  </span>	<span class="comment">// 検証用ユーザーの作成から 2 本の tx の完了までを、他パッケージの CASCADE TRUNCATE から守る。</span>
+<span id="L49" class="ln">    49  </span>	<span class="comment">// 部分的にしか守らないと、作成直後の行が消えてロック競合の手前で落ちる。</span>
+<span id="L50" class="ln">    50  </span>	testkit.HoldSuiteSerialization(t, testDB)
+<span id="L51" class="ln">    51  </span>
+<span id="L52" class="ln">    52  </span>	tracer := observability.NewMockInfraLayerTracer(t)
+<span id="L53" class="ln">    53  </span>	repo := &amp;repository{tracer: tracer, db: testDB}
+<span id="L54" class="ln">    54  </span>	lockRepo := &amp;lockRepository{tracer: tracer, db: testDB}
+<span id="L55" class="ln">    55  </span>
+<span id="L56" class="ln">    56  </span>	newTxManager := func() tx.Manager {
+<span id="L57" class="ln">    57  </span>		return driver.NewTransactionManager(
+<span id="L58" class="ln">    58  </span>			testDB,
+<span id="L59" class="ln">    59  </span>			config.NewDatabaseConfig(config.MockConfigForTest(t)),
+<span id="L60" class="ln">    60  </span>			logging.NewTestLogger(t),
+<span id="L61" class="ln">    61  </span>			system.NewSleeper(),
+<span id="L62" class="ln">    62  </span>		)
+<span id="L63" class="ln">    63  </span>	}
+<span id="L64" class="ln">    64  </span>
+<span id="L65" class="ln">    65  </span>	ctx := context.Background()
+<span id="L66" class="ln">    66  </span>	now := time.Now().UTC()
+<span id="L67" class="ln">    67  </span>	targetID := uuidtestkit.NewTestFromSalt(t, &#34;race-withdrawal-user&#34;)
+<span id="L68" class="ln">    68  </span>	prefectureID, err := uuid.Parse(&#34;a03aaec4-3bd6-4bfb-8e47-2fbfa026d344&#34;)
+<span id="L69" class="ln">    69  </span>	require.NoError(t, err)
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span>	target, err := user.New(targetID, user.Attributes{
+<span id="L72" class="ln">    72  </span>		FirstName:    &#34;Race&#34;,
+<span id="L73" class="ln">    73  </span>		LastName:     &#34;Target&#34;,
+<span id="L74" class="ln">    74  </span>		Email:        &#34;race.target@example.com&#34;,
+<span id="L75" class="ln">    75  </span>		Phone:        &#34;7777777777&#34;,
+<span id="L76" class="ln">    76  </span>		PrefectureID: prefectureID,
+<span id="L77" class="ln">    77  </span>		City:         &#34;新宿区&#34;,
+<span id="L78" class="ln">    78  </span>		Street:       &#34;9-9-9&#34;,
+<span id="L79" class="ln">    79  </span>		PostalCode:   &#34;160-0009&#34;,
+<span id="L80" class="ln">    80  </span>		CreatedAt:    now,
+<span id="L81" class="ln">    81  </span>		UpdatedAt:    now,
+<span id="L82" class="ln">    82  </span>	})
+<span id="L83" class="ln">    83  </span>	require.NoError(t, err)
+<span id="L84" class="ln">    84  </span>
+<span id="L85" class="ln">    85  </span>	<span class="comment">// 共有シードを退会させると他テストへ波及するため、この検証専用のユーザーを立てて後始末で物理削除する。</span>
+<span id="L86" class="ln">    86  </span>	require.NoError(t, repo.Create(ctx, target))
+<span id="L87" class="ln">    87  </span>	t.Cleanup(func() {
+<span id="L88" class="ln">    88  </span>		_, cleanupErr := driver.New(ctx, testDB).Exec(ctx, &#34;DELETE FROM users WHERE id = $1&#34;, targetID)
+<span id="L89" class="ln">    89  </span>		require.NoError(t, cleanupErr)
+<span id="L90" class="ln">    90  </span>	})
+<span id="L91" class="ln">    91  </span>
+<span id="L92" class="ln">    92  </span>	withdrawalLocked := make(chan struct{})
+<span id="L93" class="ln">    93  </span>	guardDone := make(chan struct{})
+<span id="L94" class="ln">    94  </span>	guardResult := make(chan error, 1)
+<span id="L95" class="ln">    95  </span>	guardAcquiredAt := make(chan time.Time, 1)
+<span id="L96" class="ln">    96  </span>	var withdrawalReleasedAt time.Time
+<span id="L97" class="ln">    97  </span>
+<span id="L98" class="ln">    98  </span>	<span class="comment">// 購入役: 退会役がユーザー行を押さえている間に在籍ガードへ入り、退会の確定まで待たされる。</span>
+<span id="L99" class="ln">    99  </span>	go func() {
+<span id="L100" class="ln">   100  </span>		defer close(guardDone)
+<span id="L101" class="ln">   101  </span>		&lt;-withdrawalLocked
+<span id="L102" class="ln">   102  </span>		guardResult &lt;- newTxManager().Do(ctx, func(txCtx context.Context) error {
+<span id="L103" class="ln">   103  </span>			purchaser, guardErr := lockRepo.LockShareByID(txCtx, targetID)
+<span id="L104" class="ln">   104  </span>			guardAcquiredAt &lt;- time.Now()
+<span id="L105" class="ln">   105  </span>			if guardErr != nil {
+<span id="L106" class="ln">   106  </span>				return xerrors.Join(errRollbackRaceTx, guardErr)
+<span id="L107" class="ln">   107  </span>			}
+<span id="L108" class="ln">   108  </span>			<span class="comment">// 共有ロックを取れた時点の状態が退会済みであることが、直列化の成立を示す。</span>
+<span id="L109" class="ln">   109  </span>			if !purchaser.IsActive() {
+<span id="L110" class="ln">   110  </span>				return xerrors.Join(errRollbackRaceTx, errPurchaserWithdrawn)
+<span id="L111" class="ln">   111  </span>			}
+<span id="L112" class="ln">   112  </span>			return errRollbackRaceTx
+<span id="L113" class="ln">   113  </span>		})
+<span id="L114" class="ln">   114  </span>	}()
 <span id="L115" class="ln">   115  </span>
-<span id="L116" class="ln">   116  </span>		<span class="comment">// ロックを握ったまま、購入役が素通りしないことを確かめる。</span>
-<span id="L117" class="ln">   117  </span>		select {
-<span id="L118" class="ln">   118  </span>		case &lt;-guardDone:
-<span id="L119" class="ln">   119  </span>			t.Error(&#34;購入役が退会役のロックを待たずに完了した&#34;)
-<span id="L120" class="ln">   120  </span>		case &lt;-time.After(raceBlockedGracePeriod):
+<span id="L116" class="ln">   116  </span>	<span class="comment">// 退会役: ユーザー行を排他ロックしてから論理削除を確定させる。</span>
+<span id="L117" class="ln">   117  </span>	require.NoError(t, newTxManager().Do(ctx, func(txCtx context.Context) error {
+<span id="L118" class="ln">   118  </span>		withdrawing, lockErr := lockRepo.LockByID(txCtx, targetID)
+<span id="L119" class="ln">   119  </span>		if lockErr != nil {
+<span id="L120" class="ln">   120  </span>			return lockErr
 <span id="L121" class="ln">   121  </span>		}
-<span id="L122" class="ln">   122  </span>
-<span id="L123" class="ln">   123  </span>		if markErr := withdrawing.MarkAsDeleted(time.Now().UTC()); markErr != nil {
-<span id="L124" class="ln">   124  </span>			return markErr
-<span id="L125" class="ln">   125  </span>		}
-<span id="L126" class="ln">   126  </span>		return repo.Update(txCtx, withdrawing)
-<span id="L127" class="ln">   127  </span>	}))
-<span id="L128" class="ln">   128  </span>
-<span id="L129" class="ln">   129  </span>	&lt;-guardDone
-<span id="L130" class="ln">   130  </span>	<span class="comment">// 退会が確定した以上、待たされていた購入が読み出す購入者は退会済みになっている。</span>
-<span id="L131" class="ln">   131  </span>	require.ErrorIs(t, &lt;-guardResult, errPurchaserWithdrawn)
-<span id="L132" class="ln">   132  </span>}
-<span id="L133" class="ln">   133  </span>
+<span id="L122" class="ln">   122  </span>		close(withdrawalLocked)
+<span id="L123" class="ln">   123  </span>
+<span id="L124" class="ln">   124  </span>		<span class="comment">// ロックを握ったまま、購入役が素通りしないことを確かめる。</span>
+<span id="L125" class="ln">   125  </span>		select {
+<span id="L126" class="ln">   126  </span>		case &lt;-guardDone:
+<span id="L127" class="ln">   127  </span>			t.Error(&#34;購入役が退会役のロックを待たずに完了した&#34;)
+<span id="L128" class="ln">   128  </span>		case &lt;-time.After(raceBlockedGracePeriod):
+<span id="L129" class="ln">   129  </span>		}
+<span id="L130" class="ln">   130  </span>		withdrawalReleasedAt = time.Now()
+<span id="L131" class="ln">   131  </span>
+<span id="L132" class="ln">   132  </span>		if markErr := withdrawing.MarkAsDeleted(time.Now().UTC()); markErr != nil {
+<span id="L133" class="ln">   133  </span>			return markErr
+<span id="L134" class="ln">   134  </span>		}
+<span id="L135" class="ln">   135  </span>		return repo.Update(txCtx, withdrawing)
+<span id="L136" class="ln">   136  </span>	}))
+<span id="L137" class="ln">   137  </span>
+<span id="L138" class="ln">   138  </span>	&lt;-guardDone
+<span id="L139" class="ln">   139  </span>	<span class="comment">// 退会が確定した以上、待たされていた購入が読み出す購入者は退会済みになっている。</span>
+<span id="L140" class="ln">   140  </span>	require.ErrorIs(t, &lt;-guardResult, errPurchaserWithdrawn)
+<span id="L141" class="ln">   141  </span>	<span class="comment">// 退会済みを観測できたのがロック待ちの結果であることを、取得時刻の前後で裏づける。</span>
+<span id="L142" class="ln">   142  </span>	assert.True(t, (&lt;-guardAcquiredAt).After(withdrawalReleasedAt))
+<span id="L143" class="ln">   143  </span>}
+<span id="L144" class="ln">   144  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/repository/user/user_repository_lock_race_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

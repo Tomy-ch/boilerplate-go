@@ -142,6 +142,16 @@
 		
 			<h2 id="pkg-constants">Constants</h2>
 			
+				
+				<pre>const (
+
+    <span class="comment">// SchemeBearerRegistration は、内部ユーザーが未登録の主体を受け付ける securityScheme の名前です</span>
+    <span class="comment">// （spec の securitySchemes のキー）。この名前を宣言した operation だけ、外部アイデンティティを</span>
+    <span class="comment">// 内部ユーザーへ解決せずに通します。宣言できるのは内部ユーザーを自ら作る操作だけです。</span>
+    <span class="comment">//nolint:gosec // G101: securityScheme の名前であって資格情報ではない</span>
+    <span id="SchemeBearerRegistration">SchemeBearerRegistration</span> = &#34;BearerAuthRegistration&#34;
+)</pre>
+			
 				<p>SchemeGroup は、Bearer 以外の securityScheme を担当する SchemeAuthenticator を集める fx group の名前です。
 集めた認証器の選び方は NewAuthenticator を参照。
 
@@ -175,7 +185,7 @@
 		
 			
 			
-			<h2 id="NewAuthenticator">func <a href="../../../../../../src/go-boilerplate/internal/controller/httpstack/oapi/auth/auth.go.html?s=2186:2357#L36">NewAuthenticator</a>
+			<h2 id="NewAuthenticator">func <a href="../../../../../../src/go-boilerplate/internal/controller/httpstack/oapi/auth/auth.go.html?s=2708:2879#L41">NewAuthenticator</a>
 				<a class="permalink" href="#NewAuthenticator">¶</a>
 				
 				
@@ -197,7 +207,7 @@ operation が宣言した securityScheme の名前が schemes のいずれかと
 		
 			
 			
-			</p><h2 id="SchemeAuthenticator">type <a href="../../../../../../src/go-boilerplate/internal/controller/httpstack/oapi/auth/auth.go.html?s=1268:1668#L25">SchemeAuthenticator</a>
+			</p><h2 id="SchemeAuthenticator">type <a href="../../../../../../src/go-boilerplate/internal/controller/httpstack/oapi/auth/auth.go.html?s=1790:2190#L30">SchemeAuthenticator</a>
 				<a class="permalink" href="#SchemeAuthenticator">¶</a>
 				
 				

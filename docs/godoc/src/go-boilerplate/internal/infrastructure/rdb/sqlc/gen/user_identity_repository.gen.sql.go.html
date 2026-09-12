@@ -69,42 +69,88 @@
 <span id="L12" class="ln">    12  </span>	uuid &#34;go-boilerplate/pkg/uuid&#34;
 <span id="L13" class="ln">    13  </span>)
 <span id="L14" class="ln">    14  </span>
-<span id="L15" class="ln">    15  </span>const resolveUserByIdentity = `-- name: ResolveUserByIdentity :one
-<span id="L16" class="ln">    16  </span>SELECT
-<span id="L17" class="ln">    17  </span>    u.id,
-<span id="L18" class="ln">    18  </span>    u.deleted_at
-<span id="L19" class="ln">    19  </span>FROM user_identities AS ui
-<span id="L20" class="ln">    20  </span>INNER JOIN users AS u ON ui.user_id = u.id
-<span id="L21" class="ln">    21  </span>WHERE ui.issuer = $1
-<span id="L22" class="ln">    22  </span>    AND ui.subject = $2
-<span id="L23" class="ln">    23  </span>`
-<span id="L24" class="ln">    24  </span>
-<span id="L25" class="ln">    25  </span>type ResolveUserByIdentityParams struct {
-<span id="L26" class="ln">    26  </span>	IssuerParam  string
-<span id="L27" class="ln">    27  </span>	SubjectParam string
-<span id="L28" class="ln">    28  </span>}
+<span id="L15" class="ln">    15  </span>const createUserIdentity = `-- name: CreateUserIdentity :exec
+<span id="L16" class="ln">    16  </span>INSERT INTO user_identities (
+<span id="L17" class="ln">    17  </span>    id,
+<span id="L18" class="ln">    18  </span>    user_id,
+<span id="L19" class="ln">    19  </span>    issuer,
+<span id="L20" class="ln">    20  </span>    subject
+<span id="L21" class="ln">    21  </span>) VALUES
+<span id="L22" class="ln">    22  </span>(
+<span id="L23" class="ln">    23  </span>    $1,
+<span id="L24" class="ln">    24  </span>    $2,
+<span id="L25" class="ln">    25  </span>    $3,
+<span id="L26" class="ln">    26  </span>    $4
+<span id="L27" class="ln">    27  </span>)
+<span id="L28" class="ln">    28  </span>`
 <span id="L29" class="ln">    29  </span>
-<span id="L30" class="ln">    30  </span>type ResolveUserByIdentityRow struct {
-<span id="L31" class="ln">    31  </span>	ID        uuid.UUID
-<span id="L32" class="ln">    32  </span>	DeletedAt *time.Time
-<span id="L33" class="ln">    33  </span>}
-<span id="L34" class="ln">    34  </span>
-<span id="L35" class="ln">    35  </span><span class="comment">// === source: database/dml/repository/user_identity/resolve_user_by_identity.sql ===</span>
-<span id="L36" class="ln">    36  </span><span class="comment">//</span>
-<span id="L37" class="ln">    37  </span><span class="comment">//	SELECT</span>
-<span id="L38" class="ln">    38  </span><span class="comment">//	    u.id,</span>
-<span id="L39" class="ln">    39  </span><span class="comment">//	    u.deleted_at</span>
-<span id="L40" class="ln">    40  </span><span class="comment">//	FROM user_identities AS ui</span>
-<span id="L41" class="ln">    41  </span><span class="comment">//	INNER JOIN users AS u ON ui.user_id = u.id</span>
-<span id="L42" class="ln">    42  </span><span class="comment">//	WHERE ui.issuer = $1</span>
-<span id="L43" class="ln">    43  </span><span class="comment">//	    AND ui.subject = $2</span>
-<span id="L44" class="ln">    44  </span>func (q *Queries) ResolveUserByIdentity(ctx context.Context, arg *ResolveUserByIdentityParams) (*ResolveUserByIdentityRow, error) {
-<span id="L45" class="ln">    45  </span>	row := q.db.QueryRow(ctx, resolveUserByIdentity, arg.IssuerParam, arg.SubjectParam)
-<span id="L46" class="ln">    46  </span>	var i ResolveUserByIdentityRow
-<span id="L47" class="ln">    47  </span>	err := row.Scan(&amp;i.ID, &amp;i.DeletedAt)
-<span id="L48" class="ln">    48  </span>	return &amp;i, err
-<span id="L49" class="ln">    49  </span>}
-<span id="L50" class="ln">    50  </span>
+<span id="L30" class="ln">    30  </span>type CreateUserIdentityParams struct {
+<span id="L31" class="ln">    31  </span>	ID      uuid.UUID
+<span id="L32" class="ln">    32  </span>	UserID  uuid.UUID
+<span id="L33" class="ln">    33  </span>	Issuer  string
+<span id="L34" class="ln">    34  </span>	Subject string
+<span id="L35" class="ln">    35  </span>}
+<span id="L36" class="ln">    36  </span>
+<span id="L37" class="ln">    37  </span><span class="comment">// === source: database/dml/repository/user_identity/insert_user_identity.sql ===</span>
+<span id="L38" class="ln">    38  </span><span class="comment">//</span>
+<span id="L39" class="ln">    39  </span><span class="comment">//	INSERT INTO user_identities (</span>
+<span id="L40" class="ln">    40  </span><span class="comment">//	    id,</span>
+<span id="L41" class="ln">    41  </span><span class="comment">//	    user_id,</span>
+<span id="L42" class="ln">    42  </span><span class="comment">//	    issuer,</span>
+<span id="L43" class="ln">    43  </span><span class="comment">//	    subject</span>
+<span id="L44" class="ln">    44  </span><span class="comment">//	) VALUES</span>
+<span id="L45" class="ln">    45  </span><span class="comment">//	(</span>
+<span id="L46" class="ln">    46  </span><span class="comment">//	    $1,</span>
+<span id="L47" class="ln">    47  </span><span class="comment">//	    $2,</span>
+<span id="L48" class="ln">    48  </span><span class="comment">//	    $3,</span>
+<span id="L49" class="ln">    49  </span><span class="comment">//	    $4</span>
+<span id="L50" class="ln">    50  </span><span class="comment">//	)</span>
+<span id="L51" class="ln">    51  </span>func (q *Queries) CreateUserIdentity(ctx context.Context, arg *CreateUserIdentityParams) error {
+<span id="L52" class="ln">    52  </span>	_, err := q.db.Exec(ctx, createUserIdentity,
+<span id="L53" class="ln">    53  </span>		arg.ID,
+<span id="L54" class="ln">    54  </span>		arg.UserID,
+<span id="L55" class="ln">    55  </span>		arg.Issuer,
+<span id="L56" class="ln">    56  </span>		arg.Subject,
+<span id="L57" class="ln">    57  </span>	)
+<span id="L58" class="ln">    58  </span>	return err
+<span id="L59" class="ln">    59  </span>}
+<span id="L60" class="ln">    60  </span>
+<span id="L61" class="ln">    61  </span>const resolveUserByIdentity = `-- name: ResolveUserByIdentity :one
+<span id="L62" class="ln">    62  </span>SELECT
+<span id="L63" class="ln">    63  </span>    u.id,
+<span id="L64" class="ln">    64  </span>    u.deleted_at
+<span id="L65" class="ln">    65  </span>FROM user_identities AS ui
+<span id="L66" class="ln">    66  </span>INNER JOIN users AS u ON ui.user_id = u.id
+<span id="L67" class="ln">    67  </span>WHERE ui.issuer = $1
+<span id="L68" class="ln">    68  </span>    AND ui.subject = $2
+<span id="L69" class="ln">    69  </span>`
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span>type ResolveUserByIdentityParams struct {
+<span id="L72" class="ln">    72  </span>	IssuerParam  string
+<span id="L73" class="ln">    73  </span>	SubjectParam string
+<span id="L74" class="ln">    74  </span>}
+<span id="L75" class="ln">    75  </span>
+<span id="L76" class="ln">    76  </span>type ResolveUserByIdentityRow struct {
+<span id="L77" class="ln">    77  </span>	ID        uuid.UUID
+<span id="L78" class="ln">    78  </span>	DeletedAt *time.Time
+<span id="L79" class="ln">    79  </span>}
+<span id="L80" class="ln">    80  </span>
+<span id="L81" class="ln">    81  </span><span class="comment">// === source: database/dml/repository/user_identity/resolve_user_by_identity.sql ===</span>
+<span id="L82" class="ln">    82  </span><span class="comment">//</span>
+<span id="L83" class="ln">    83  </span><span class="comment">//	SELECT</span>
+<span id="L84" class="ln">    84  </span><span class="comment">//	    u.id,</span>
+<span id="L85" class="ln">    85  </span><span class="comment">//	    u.deleted_at</span>
+<span id="L86" class="ln">    86  </span><span class="comment">//	FROM user_identities AS ui</span>
+<span id="L87" class="ln">    87  </span><span class="comment">//	INNER JOIN users AS u ON ui.user_id = u.id</span>
+<span id="L88" class="ln">    88  </span><span class="comment">//	WHERE ui.issuer = $1</span>
+<span id="L89" class="ln">    89  </span><span class="comment">//	    AND ui.subject = $2</span>
+<span id="L90" class="ln">    90  </span>func (q *Queries) ResolveUserByIdentity(ctx context.Context, arg *ResolveUserByIdentityParams) (*ResolveUserByIdentityRow, error) {
+<span id="L91" class="ln">    91  </span>	row := q.db.QueryRow(ctx, resolveUserByIdentity, arg.IssuerParam, arg.SubjectParam)
+<span id="L92" class="ln">    92  </span>	var i ResolveUserByIdentityRow
+<span id="L93" class="ln">    93  </span>	err := row.Scan(&amp;i.ID, &amp;i.DeletedAt)
+<span id="L94" class="ln">    94  </span>	return &amp;i, err
+<span id="L95" class="ln">    95  </span>}
+<span id="L96" class="ln">    96  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/user_identity_repository.gen.sql.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

@@ -1,0 +1,290 @@
+<!DOCTYPE html><html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#375EAB"/>
+
+  <title>command - go-boilerplate godoc</title>
+
+
+
+
+
+
+
+
+
+
+<link type="text/css" rel="stylesheet" href="../../../../../lib/style.css"/></head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="../../../../../">go-boilerplate godoc</a></div>
+<div class="top-heading" id="heading-narrow"><a href="../../../../../">go-boilerplate godoc</a></div>
+<!--<a href="#" id="menu-button"><span id="menu-button-arrow">▽</span></a>-->
+<div id="menu">
+<a href="../../../../../" style="margin-right: 10px;">Package Index</a>
+</div>
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package command
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import &#34;go-boilerplate/internal/usecase/coupon/command&#34;</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>Package command は、販促クーポン一括発行の書き込み操作（CommandService）のインターフェースを
+定義します（ADR-0032 (lightweight-cqrs)）。実装は infra 層に置き、渡された ctx のトランザクションに
+参加します。
+</p><p>所在が usecase 層なのは、CommandService がトランザクションの道具であり、所有者はトランザクションを
+開く側だからです。パッケージ名 command はワークフローの名であって集約の名ではありません。
+
+				
+			</p></div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="#CommandService">type CommandService</a></dd>
+				
+				
+			
+				
+				<dd><a href="#IssuePromotionalCouponsParams">type IssuePromotionalCouponsParams</a></dd>
+				
+				
+			
+				
+				<dd><a href="#IssuePromotionalCouponsResult">type IssuePromotionalCouponsResult</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/coupon/command/coupon_bulk_issue_command_service.go.html">coupon_bulk_issue_command_service.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+		
+			
+			
+			<h2 id="CommandService">type <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/command/coupon_bulk_issue_command_service.go.html?s=2273:3240#L34">CommandService</a>
+				<a class="permalink" href="#CommandService">¶</a>
+				
+				
+			</h2>
+			<p>CommandService は、販促クーポンの一括発行を定義します。
+</p><p>載せてよい書き込みの基準と、強制する条件がドメイン不変条件からの導出でなければならない規律は
+ADR-0032 (lightweight-cqrs) の Eligibility / Derivation を参照。
+
+			</p><pre>type CommandService interface {
+    <span class="comment">// IssuePromotionalCoupons は、退会していないすべての利用者へ、同一条件のクーポンを 1 枚ずつ</span>
+    <span class="comment">// 発行します。渡された ctx のトランザクション内で実行します。</span>
+    <span class="comment">//</span>
+    <span class="comment">// 集約ではなく発行条件を受け取る理由と、往復数が母集団に比例しない根拠は</span>
+    <span class="comment">// ADR-0114 (predicate-defined-set-writes-on-commandservice) を参照。原子性ではなく受給者を</span>
+    <span class="comment">// 識別子で名指しできないことがこの構造の理由です。</span>
+    <span class="comment">// 個々の Coupon は受給者を読んだあとにドメインのコンストラクタを通して組み立てます。</span>
+    <span class="comment">// 発行枚数の上限は強制しません。呼び出し側が書き込み前に判定します</span>
+    <span class="comment">// （docs/spec/usecase/coupon.md の Command Service を参照）。</span>
+    IssuePromotionalCoupons(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, params <a href="#IssuePromotionalCouponsParams">IssuePromotionalCouponsParams</a>) (<a href="#IssuePromotionalCouponsResult">IssuePromotionalCouponsResult</a>, <a href="../../../../../builtin/#error">error</a>)
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="IssuePromotionalCouponsParams">type <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/command/coupon_bulk_issue_command_service.go.html?s=972:1562#L10">IssuePromotionalCouponsParams</a>
+				<a class="permalink" href="#IssuePromotionalCouponsParams">¶</a>
+				
+				
+			</h2>
+			<p>IssuePromotionalCouponsParams は、販促クーポンを一括発行するための入力です。
+ExpiresAt と IssuedAt が同型のため構造体で受けます（docs/rules.md の Function Signature Rules）。
+
+			</p><pre>type IssuePromotionalCouponsParams struct {
+<span id="IssuePromotionalCouponsParams.Scope"></span>    <span class="comment">// Scope は、発行するクーポンの適用範囲です。検証済みの値オブジェクトを受け取ります。</span>
+    <span class="comment">// どの範囲を配るかは業務の判断なので、決めるのも組み立てるのも呼び出し側です。</span>
+    Scope <a href="../../../../../go-boilerplate/internal/domain/coupon/">coupon</a>.<a href="../../../../../go-boilerplate/internal/domain/coupon/#Scope">Scope</a>
+<span id="IssuePromotionalCouponsParams.Discount"></span>    <span class="comment">// Discount は、発行するクーポンの値引きです。全員に同じ条件で配ります。</span>
+    Discount <a href="../../../../../go-boilerplate/internal/domain/coupon/">coupon</a>.<a href="../../../../../go-boilerplate/internal/domain/coupon/#Discount">Discount</a>
+<span id="IssuePromotionalCouponsParams.ExpiresAt"></span>    <span class="comment">// ExpiresAt は、発行するクーポンの有効期限です。</span>
+    ExpiresAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+<span id="IssuePromotionalCouponsParams.IssuedAt"></span>    <span class="comment">// IssuedAt は、発行日時です。</span>
+    IssuedAt <a href="../../../../../time/">time</a>.<a href="../../../../../time/#Time">Time</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="IssuePromotionalCouponsResult">type <a href="../../../../../src/go-boilerplate/internal/usecase/coupon/command/coupon_bulk_issue_command_service.go.html?s=1634:1974#L23">IssuePromotionalCouponsResult</a>
+				<a class="permalink" href="#IssuePromotionalCouponsResult">¶</a>
+				
+				
+			</h2>
+			<p>IssuePromotionalCouponsResult は、一括発行の結果です。
+
+			</p><pre>type IssuePromotionalCouponsResult struct {
+<span id="IssuePromotionalCouponsResult.RecipientCount"></span>    <span class="comment">// RecipientCount は、受給対象になった利用者の数です。退会済みは含みません。</span>
+    RecipientCount <a href="../../../../../builtin/#int64">int64</a>
+<span id="IssuePromotionalCouponsResult.IssuedCouponCount"></span>    <span class="comment">// IssuedCouponCount は、実際に発行した枚数です。受給者 1 人につき 1 枚のため RecipientCount と一致します。</span>
+    IssuedCouponCount <a href="../../../../../builtin/#int64">int64</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+		</tbody></table>
+	</div>
+
+
+
+<div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+
+</body></html>

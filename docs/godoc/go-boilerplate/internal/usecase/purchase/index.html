@@ -248,7 +248,7 @@
 		
 			
 			
-			<h2 id="AppliedCouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2625:2784#L65">AppliedCouponView</a>
+			<h2 id="AppliedCouponView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2619:2778#L65">AppliedCouponView</a>
 				<a class="permalink" href="#AppliedCouponView">¶</a>
 				
 				
@@ -278,7 +278,7 @@
 		
 			
 			
-			<h2 id="CancelPurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2871:3148#L74">CancelPurchaseParams</a>
+			<h2 id="CancelPurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2865:3142#L74">CancelPurchaseParams</a>
 				<a class="permalink" href="#CancelPurchaseParams">¶</a>
 				
 				
@@ -307,7 +307,7 @@
 		
 			
 			
-			<h2 id="CancelPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=3442:3764#L83">CancelPurchaseView</a>
+			<h2 id="CancelPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=3436:3758#L83">CancelPurchaseView</a>
 				<a class="permalink" href="#CancelPurchaseView">¶</a>
 				
 				
@@ -376,7 +376,7 @@
 		
 			
 			
-			<h2 id="DeliverPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=5365:5688#L142">DeliverPurchaseView</a>
+			<h2 id="DeliverPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=5359:5682#L142">DeliverPurchaseView</a>
 				<a class="permalink" href="#DeliverPurchaseView">¶</a>
 				
 				
@@ -532,7 +532,7 @@
 		
 			
 			
-			<h2 id="PayPurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=3842:4104#L99">PayPurchaseParams</a>
+			<h2 id="PayPurchaseParams">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=3836:4098#L99">PayPurchaseParams</a>
 				<a class="permalink" href="#PayPurchaseParams">¶</a>
 				
 				
@@ -561,7 +561,7 @@
 		
 			
 			
-			<h2 id="PayPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=4309:4628#L108">PayPurchaseView</a>
+			<h2 id="PayPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=4303:4622#L108">PayPurchaseView</a>
 				<a class="permalink" href="#PayPurchaseView">¶</a>
 				
 				
@@ -789,12 +789,12 @@ ItemCount は行を見分けるための明細の要約です。
 		
 			
 			
-			<h2 id="PurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2220:2521#L50">PurchaseView</a>
+			<h2 id="PurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=2214:2515#L50">PurchaseView</a>
 				<a class="permalink" href="#PurchaseView">¶</a>
 				
 				
 			</h2>
-			<p>PurchaseView は、購入 1 件分のユースケース出力 DTO です。金額はすべて USD セント単位の整数です。
+			<p>PurchaseView は、購入 1 件分のユースケース出力 DTO です。金額の表現は CancelPurchaseView を参照。
 
 			</p><pre>type PurchaseView struct {
 <span id="PurchaseView.Code"></span>    Code           <a href="../../../../builtin/#string">string</a>
@@ -825,7 +825,7 @@ ItemCount は行を見分けるための明細の要約です。
 		
 			
 			
-			<h2 id="ShipPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=4831:5151#L125">ShipPurchaseView</a>
+			<h2 id="ShipPurchaseView">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=4825:5145#L125">ShipPurchaseView</a>
 				<a class="permalink" href="#ShipPurchaseView">¶</a>
 				
 				
@@ -892,7 +892,7 @@ ItemCount は行を見分けるための明細の要約です。
 		
 			
 			
-			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=5789:9398#L158">Usecase</a>
+			<h2 id="Usecase">type <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=5783:9463#L158">Usecase</a>
 				<a class="permalink" href="#Usecase">¶</a>
 				
 				
@@ -910,8 +910,9 @@ ItemCount は行を見分けるための明細の要約です。
     <span class="comment">// params.Window で注文日時の対象期間を、params.StatusCodes でステータスを絞り込めます</span>
     <span class="comment">// （いずれもゼロ値は絞り込みなし）。</span>
     GetPurchases(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, params <a href="#ListPurchasesParams">ListPurchasesParams</a>) (*<a href="#PurchaseListView">PurchaseListView</a>, <a href="../../../../builtin/#error">error</a>)
-    <span class="comment">// CancelPurchase は、本人の購入をキャンセルし、明細分の在庫を復元します。キャンセル・在庫復元・</span>
-    <span class="comment">// イベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも存在秘匿のため</span>
+    <span class="comment">// CancelPurchase は、本人の購入をキャンセルし、明細分の在庫を復元します。適用していたクーポンは</span>
+    <span class="comment">// 有効期限内なら未使用へ戻し、失効していれば使用済みのまま残します。キャンセル・クーポンの返却・</span>
+    <span class="comment">// 在庫復元・イベント発行は単一 tx で原子的に成立します。他ユーザーの購入・不存在はいずれも存在秘匿のため</span>
     <span class="comment">// NotFound（404）、不正遷移は 409 を返します。</span>
     CancelPurchase(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, params <a href="#CancelPurchaseParams">CancelPurchaseParams</a>) (<a href="#CancelPurchaseView">CancelPurchaseView</a>, <a href="../../../../builtin/#error">error</a>)
     <span class="comment">// PayPurchase は、本人の購入を支払い済みへ遷移させます。決済 SDK / PSP 連携は行わない擬似決済です。</span>
@@ -922,9 +923,8 @@ ItemCount は行を見分けるための明細の要約です。
     <span class="comment">// 状態遷移とイベント発行は単一 tx で原子的に成立します。管理者でない場合は 403、不存在は 404、</span>
     <span class="comment">// 二重発送・不正遷移は 409 を返します。</span>
     ShipPurchase(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, purchaseCode <a href="../../../../builtin/#string">string</a>) (<a href="#ShipPurchaseView">ShipPurchaseView</a>, <a href="../../../../builtin/#error">error</a>)
-    <span class="comment">// DeliverPurchase は、購入を配達済みへ遷移させます。管理者専用・所有者不問の扱いは ShipPurchase を参照。</span>
-    <span class="comment">// 状態遷移とイベント発行は単一 tx で原子的に成立します。管理者でない場合は 403、不存在は 404、</span>
-    <span class="comment">// 二重配達・不正遷移は 409 を返します。</span>
+    <span class="comment">// DeliverPurchase は、購入を配達済みへ遷移させます。管理者専用・所有者不問の扱い、単一 tx の原子性、</span>
+    <span class="comment">// 403 / 404 の契約は ShipPurchase を参照。二重配達・不正遷移は 409 を返します。</span>
     DeliverPurchase(ctx <a href="../../../../context/">context</a>.<a href="../../../../context/#Context">Context</a>, authn *<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/">auth</a>.<a href="../../../../go-boilerplate/internal/usecase/boundary/auth/#Authn">Authn</a>, purchaseCode <a href="../../../../builtin/#string">string</a>) (<a href="#DeliverPurchaseView">DeliverPurchaseView</a>, <a href="../../../../builtin/#error">error</a>)
     <span class="comment">// GetPurchaseDetail は、本人の購入 1 件を明細（商品名込み）とともに取得します。</span>
     <span class="comment">// 他ユーザーの購入・不存在はいずれも NotFound（404）です（存在秘匿の理由は CancelPurchase を参照）。</span>
@@ -946,7 +946,7 @@ ItemCount は行を見分けるための明細の要約です。
 
 			
 				
-				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=10092:10443#L218">New</a>
+				<h3 id="New">func <a href="../../../../src/go-boilerplate/internal/usecase/purchase/purchase_usecase.go.html?s=10157:10508#L218">New</a>
 					<a class="permalink" href="#New">¶</a>
 					
 					

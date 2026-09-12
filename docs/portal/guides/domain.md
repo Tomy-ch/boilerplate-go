@@ -426,6 +426,24 @@ request property names; the reason text stays in the wrapped error message (log-
 Server-internal invariants (id, timestamps) keep first-error return —
 they are not user-correctable input.
 
+**The identifier is attached by whoever knows which request field the value came from**,
+which is not always the code that detects the violation. Three shapes recur:
+
+- **The aggregate validates its own attributes.** It knows the request field, so it attaches
+  the identifier itself. This is the common case above.
+- **A shared value object raises the error.** A cross-aggregate lexicon type such as
+  `money.NewPrice` is reached from several request fields and cannot know which one it is
+  serving, so the identifier belongs to its caller — the Usecase that read the field.
+- **Another aggregate raises the error.** A referenced aggregate (a coupon named by a purchase
+  request) sees only its own invariant, never that it is being named as this request's
+  `couponId`. Its caller attaches the identifier, for the same reason.
+
+A validator shared with the reconstruction path needs no special handling here: a stored row that
+violates an invariant is a data-integrity failure, and the Repository flattens it to
+`apperror.ErrInternal` — dropping the sentinel and the `Meta` with it — so it never reaches a client
+as a `422` naming a request field. That flatten is load-bearing and lives in
+[`pgerror`](../infrastructure/rdb/pgerror/README.md), not here.
+
 ### Invariants (Domain Invariant)
 
 Entities must **always satisfy invariants**.
@@ -513,12 +531,18 @@ procedure:
   and the commit. The guard row is locked before the condition is evaluated, and held to the commit
   ([ADR-0036 (ordered-pessimistic-row-locks)](../../docs/adr/0036-ordered-pessimistic-row-locks.md)). The other aggregate is
   observed, never mutated, and the operation stays a regular usecase.
-- **A multi-aggregate write that must be atomic** (branch 3). The requirements say an intermediate
+- **A multi-aggregate write that must be atomic** (branch 3a). The requirements say an intermediate
   state must never be observable, so the writes run in one transaction through a CommandService
   ([ADR-0032 (lightweight-cqrs)](../../docs/adr/0032-lightweight-cqrs.md)).
 
 Everything else decomposes: a single-aggregate write plus an eventually consistent cascade, which is
 the branch this principle describes without exception.
+
+A CommandService is reached by one further branch — 3b, a write whose target rows are named only by a
+predicate ([ADR-0114 (predicate-defined-set-writes-on-commandservice)](../../docs/adr/0114-predicate-defined-set-writes-on-commandservice.md)).
+It is absent from the two above because it departs from nothing: the write it admits may stay inside a
+single aggregate. **Seeing a CommandService is therefore not evidence that this principle was
+departed from** — branch 3a is.
 
 > **Departure from Evans.** Evans makes the aggregate the boundary of *immediate* consistency — one
 > transaction changes one aggregate, and anything beyond it is reconciled afterwards. This model

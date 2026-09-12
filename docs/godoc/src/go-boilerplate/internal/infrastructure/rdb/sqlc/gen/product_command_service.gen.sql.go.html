@@ -64,163 +64,70 @@
 <span id="L7" class="ln">     7  </span>
 <span id="L8" class="ln">     8  </span>import (
 <span id="L9" class="ln">     9  </span>	&#34;context&#34;
-<span id="L10" class="ln">    10  </span>	&#34;time&#34;
-<span id="L11" class="ln">    11  </span>
-<span id="L12" class="ln">    12  </span>	decimal &#34;go-boilerplate/pkg/decimal&#34;
-<span id="L13" class="ln">    13  </span>	uuid &#34;go-boilerplate/pkg/uuid&#34;
-<span id="L14" class="ln">    14  </span>)
-<span id="L15" class="ln">    15  </span>
-<span id="L16" class="ln">    16  </span>const countDiscontinueAffectedCarts = `-- name: CountDiscontinueAffectedCarts :one
-<span id="L17" class="ln">    17  </span>SELECT COUNT(*)
-<span id="L18" class="ln">    18  </span>FROM cart_items AS ci
-<span id="L19" class="ln">    19  </span>WHERE ci.product_id = $1
-<span id="L20" class="ln">    20  </span>`
-<span id="L21" class="ln">    21  </span>
-<span id="L22" class="ln">    22  </span><span class="comment">// === source: database/dml/command_service/product/count_discontinue_affected_carts.sql ===</span>
-<span id="L23" class="ln">    23  </span><span class="comment">// 廃番対象の商品を明細に持つカートの件数を返す。所有者が確定していないゲストのカートも数える</span>
-<span id="L24" class="ln">    24  </span><span class="comment">// （受給者との母集団差は docs/spec/usecase/product.md の Workflow — DiscontinueProduct を参照）。</span>
-<span id="L25" class="ln">    25  </span><span class="comment">//</span>
-<span id="L26" class="ln">    26  </span><span class="comment">//	SELECT COUNT(*)</span>
-<span id="L27" class="ln">    27  </span><span class="comment">//	FROM cart_items AS ci</span>
-<span id="L28" class="ln">    28  </span><span class="comment">//	WHERE ci.product_id = $1</span>
-<span id="L29" class="ln">    29  </span>func (q *Queries) CountDiscontinueAffectedCarts(ctx context.Context, productID uuid.UUID) (int64, error) {
-<span id="L30" class="ln">    30  </span>	row := q.db.QueryRow(ctx, countDiscontinueAffectedCarts, productID)
-<span id="L31" class="ln">    31  </span>	var count int64
-<span id="L32" class="ln">    32  </span>	err := row.Scan(&amp;count)
-<span id="L33" class="ln">    33  </span>	return count, err
-<span id="L34" class="ln">    34  </span>}
-<span id="L35" class="ln">    35  </span>
-<span id="L36" class="ln">    36  </span>const insertDiscontinueCoupons = `-- name: InsertDiscontinueCoupons :execrows
-<span id="L37" class="ln">    37  </span>INSERT INTO coupons (
-<span id="L38" class="ln">    38  </span>    id,
-<span id="L39" class="ln">    39  </span>    user_id,
-<span id="L40" class="ln">    40  </span>    discount_kind,
-<span id="L41" class="ln">    41  </span>    discount_value,
-<span id="L42" class="ln">    42  </span>    scope_kind,
-<span id="L43" class="ln">    43  </span>    scope_target_id,
-<span id="L44" class="ln">    44  </span>    expires_at,
-<span id="L45" class="ln">    45  </span>    issued_at
-<span id="L46" class="ln">    46  </span>)
-<span id="L47" class="ln">    47  </span>SELECT
-<span id="L48" class="ln">    48  </span>    ids.id,
-<span id="L49" class="ln">    49  </span>    ids.user_id,
-<span id="L50" class="ln">    50  </span>    $1,
-<span id="L51" class="ln">    51  </span>    $2,
-<span id="L52" class="ln">    52  </span>    $3,
-<span id="L53" class="ln">    53  </span>    $4,
-<span id="L54" class="ln">    54  </span>    $5,
-<span id="L55" class="ln">    55  </span>    $6
-<span id="L56" class="ln">    56  </span>FROM (
-<span id="L57" class="ln">    57  </span>    SELECT
-<span id="L58" class="ln">    58  </span>        i.id,
-<span id="L59" class="ln">    59  </span>        u.user_id
-<span id="L60" class="ln">    60  </span>    FROM UNNEST($7::UUID[]) WITH ORDINALITY AS i (id, ord)
-<span id="L61" class="ln">    61  </span>    INNER JOIN UNNEST($8::UUID[]) WITH ORDINALITY AS u (user_id, ord)
-<span id="L62" class="ln">    62  </span>        ON i.ord = u.ord
-<span id="L63" class="ln">    63  </span>) AS ids
-<span id="L64" class="ln">    64  </span>`
-<span id="L65" class="ln">    65  </span>
-<span id="L66" class="ln">    66  </span>type InsertDiscontinueCouponsParams struct {
-<span id="L67" class="ln">    67  </span>	DiscountKind  int16
-<span id="L68" class="ln">    68  </span>	DiscountValue decimal.Decimal
-<span id="L69" class="ln">    69  </span>	ScopeKind     int16
-<span id="L70" class="ln">    70  </span>	ScopeTargetID *uuid.UUID
-<span id="L71" class="ln">    71  </span>	ExpiresAt     time.Time
-<span id="L72" class="ln">    72  </span>	IssuedAt      time.Time
-<span id="L73" class="ln">    73  </span>	Ids           []uuid.UUID
-<span id="L74" class="ln">    74  </span>	UserIds       []uuid.UUID
-<span id="L75" class="ln">    75  </span>}
-<span id="L76" class="ln">    76  </span>
-<span id="L77" class="ln">    77  </span><span class="comment">// === source: database/dml/command_service/product/insert_discontinue_coupons.sql ===</span>
-<span id="L78" class="ln">    78  </span><span class="comment">// 採番済みの id と受給者 user_id を 1 対 1 で zip し、同じ条件のクーポンを一括発行する</span>
-<span id="L79" class="ln">    79  </span><span class="comment">// （2 文に分かれる理由と往復コストは ADR-0034 の Worked instances を参照）。</span>
-<span id="L80" class="ln">    80  </span><span class="comment">// 2 つの配列は WITH ORDINALITY の行番号で突き合わせる（sqlc が 2 引数形の unnest を解決できない）。</span>
-<span id="L81" class="ln">    81  </span><span class="comment">// 長さが食い違うと内部結合で余った側が落ちるため、呼び出し側が必ず同じ長さで渡す。</span>
-<span id="L82" class="ln">    82  </span><span class="comment">//</span>
-<span id="L83" class="ln">    83  </span><span class="comment">//	INSERT INTO coupons (</span>
-<span id="L84" class="ln">    84  </span><span class="comment">//	    id,</span>
-<span id="L85" class="ln">    85  </span><span class="comment">//	    user_id,</span>
-<span id="L86" class="ln">    86  </span><span class="comment">//	    discount_kind,</span>
-<span id="L87" class="ln">    87  </span><span class="comment">//	    discount_value,</span>
-<span id="L88" class="ln">    88  </span><span class="comment">//	    scope_kind,</span>
-<span id="L89" class="ln">    89  </span><span class="comment">//	    scope_target_id,</span>
-<span id="L90" class="ln">    90  </span><span class="comment">//	    expires_at,</span>
-<span id="L91" class="ln">    91  </span><span class="comment">//	    issued_at</span>
-<span id="L92" class="ln">    92  </span><span class="comment">//	)</span>
-<span id="L93" class="ln">    93  </span><span class="comment">//	SELECT</span>
-<span id="L94" class="ln">    94  </span><span class="comment">//	    ids.id,</span>
-<span id="L95" class="ln">    95  </span><span class="comment">//	    ids.user_id,</span>
-<span id="L96" class="ln">    96  </span><span class="comment">//	    $1,</span>
-<span id="L97" class="ln">    97  </span><span class="comment">//	    $2,</span>
-<span id="L98" class="ln">    98  </span><span class="comment">//	    $3,</span>
-<span id="L99" class="ln">    99  </span><span class="comment">//	    $4,</span>
-<span id="L100" class="ln">   100  </span><span class="comment">//	    $5,</span>
-<span id="L101" class="ln">   101  </span><span class="comment">//	    $6</span>
-<span id="L102" class="ln">   102  </span><span class="comment">//	FROM (</span>
-<span id="L103" class="ln">   103  </span><span class="comment">//	    SELECT</span>
-<span id="L104" class="ln">   104  </span><span class="comment">//	        i.id,</span>
-<span id="L105" class="ln">   105  </span><span class="comment">//	        u.user_id</span>
-<span id="L106" class="ln">   106  </span><span class="comment">//	    FROM UNNEST($7::UUID[]) WITH ORDINALITY AS i (id, ord)</span>
-<span id="L107" class="ln">   107  </span><span class="comment">//	    INNER JOIN UNNEST($8::UUID[]) WITH ORDINALITY AS u (user_id, ord)</span>
-<span id="L108" class="ln">   108  </span><span class="comment">//	        ON i.ord = u.ord</span>
-<span id="L109" class="ln">   109  </span><span class="comment">//	) AS ids</span>
-<span id="L110" class="ln">   110  </span>func (q *Queries) InsertDiscontinueCoupons(ctx context.Context, arg *InsertDiscontinueCouponsParams) (int64, error) {
-<span id="L111" class="ln">   111  </span>	result, err := q.db.Exec(ctx, insertDiscontinueCoupons,
-<span id="L112" class="ln">   112  </span>		arg.DiscountKind,
-<span id="L113" class="ln">   113  </span>		arg.DiscountValue,
-<span id="L114" class="ln">   114  </span>		arg.ScopeKind,
-<span id="L115" class="ln">   115  </span>		arg.ScopeTargetID,
-<span id="L116" class="ln">   116  </span>		arg.ExpiresAt,
-<span id="L117" class="ln">   117  </span>		arg.IssuedAt,
-<span id="L118" class="ln">   118  </span>		arg.Ids,
-<span id="L119" class="ln">   119  </span>		arg.UserIds,
-<span id="L120" class="ln">   120  </span>	)
-<span id="L121" class="ln">   121  </span>	if err != nil {
-<span id="L122" class="ln">   122  </span>		return 0, err
-<span id="L123" class="ln">   123  </span>	}
-<span id="L124" class="ln">   124  </span>	return result.RowsAffected(), nil
-<span id="L125" class="ln">   125  </span>}
-<span id="L126" class="ln">   126  </span>
-<span id="L127" class="ln">   127  </span>const selectDiscontinueCouponRecipients = `-- name: SelectDiscontinueCouponRecipients :many
-<span id="L128" class="ln">   128  </span>SELECT DISTINCT c.user_id::UUID AS user_id
-<span id="L129" class="ln">   129  </span>FROM cart_items AS ci
-<span id="L130" class="ln">   130  </span>INNER JOIN carts AS c ON ci.cart_id = c.id
-<span id="L131" class="ln">   131  </span>INNER JOIN users AS u ON c.user_id = u.id
-<span id="L132" class="ln">   132  </span>WHERE ci.product_id = $1
-<span id="L133" class="ln">   133  </span>    AND u.deleted_at IS NULL
-<span id="L134" class="ln">   134  </span>`
-<span id="L135" class="ln">   135  </span>
-<span id="L136" class="ln">   136  </span><span class="comment">// === source: database/dml/command_service/product/select_discontinue_coupon_recipients.sql ===</span>
-<span id="L137" class="ln">   137  </span><span class="comment">// 廃番対象の商品を明細に持つカートのうち、所有者が確定していて退会もしていないユーザーを重複なく返す。</span>
-<span id="L138" class="ln">   138  </span><span class="comment">// 絞り込みの理由と母集団が確定する時点は docs/spec/usecase/product.md の</span>
-<span id="L139" class="ln">   139  </span><span class="comment">// Workflow — DiscontinueProduct の invariants を参照。</span>
-<span id="L140" class="ln">   140  </span><span class="comment">//</span>
-<span id="L141" class="ln">   141  </span><span class="comment">//	SELECT DISTINCT c.user_id::UUID AS user_id</span>
-<span id="L142" class="ln">   142  </span><span class="comment">//	FROM cart_items AS ci</span>
-<span id="L143" class="ln">   143  </span><span class="comment">//	INNER JOIN carts AS c ON ci.cart_id = c.id</span>
-<span id="L144" class="ln">   144  </span><span class="comment">//	INNER JOIN users AS u ON c.user_id = u.id</span>
-<span id="L145" class="ln">   145  </span><span class="comment">//	WHERE ci.product_id = $1</span>
-<span id="L146" class="ln">   146  </span><span class="comment">//	    AND u.deleted_at IS NULL</span>
-<span id="L147" class="ln">   147  </span>func (q *Queries) SelectDiscontinueCouponRecipients(ctx context.Context, productID uuid.UUID) ([]uuid.UUID, error) {
-<span id="L148" class="ln">   148  </span>	rows, err := q.db.Query(ctx, selectDiscontinueCouponRecipients, productID)
-<span id="L149" class="ln">   149  </span>	if err != nil {
-<span id="L150" class="ln">   150  </span>		return nil, err
-<span id="L151" class="ln">   151  </span>	}
-<span id="L152" class="ln">   152  </span>	defer rows.Close()
-<span id="L153" class="ln">   153  </span>	var items []uuid.UUID
-<span id="L154" class="ln">   154  </span>	for rows.Next() {
-<span id="L155" class="ln">   155  </span>		var user_id uuid.UUID
-<span id="L156" class="ln">   156  </span>		if err := rows.Scan(&amp;user_id); err != nil {
-<span id="L157" class="ln">   157  </span>			return nil, err
-<span id="L158" class="ln">   158  </span>		}
-<span id="L159" class="ln">   159  </span>		items = append(items, user_id)
-<span id="L160" class="ln">   160  </span>	}
-<span id="L161" class="ln">   161  </span>	if err := rows.Err(); err != nil {
-<span id="L162" class="ln">   162  </span>		return nil, err
-<span id="L163" class="ln">   163  </span>	}
-<span id="L164" class="ln">   164  </span>	return items, nil
-<span id="L165" class="ln">   165  </span>}
-<span id="L166" class="ln">   166  </span>
+<span id="L10" class="ln">    10  </span>
+<span id="L11" class="ln">    11  </span>	uuid &#34;go-boilerplate/pkg/uuid&#34;
+<span id="L12" class="ln">    12  </span>)
+<span id="L13" class="ln">    13  </span>
+<span id="L14" class="ln">    14  </span>const countDiscontinueAffectedCarts = `-- name: CountDiscontinueAffectedCarts :one
+<span id="L15" class="ln">    15  </span>SELECT COUNT(*)
+<span id="L16" class="ln">    16  </span>FROM cart_items AS ci
+<span id="L17" class="ln">    17  </span>WHERE ci.product_id = $1
+<span id="L18" class="ln">    18  </span>`
+<span id="L19" class="ln">    19  </span>
+<span id="L20" class="ln">    20  </span><span class="comment">// === source: database/dml/command_service/product/count_discontinue_affected_carts.sql ===</span>
+<span id="L21" class="ln">    21  </span><span class="comment">// 廃番対象の商品を明細に持つカートの件数を返す。所有者が確定していないゲストのカートも数える</span>
+<span id="L22" class="ln">    22  </span><span class="comment">// （受給者との母集団差は docs/spec/usecase/product.md の Workflow — DiscontinueProduct を参照）。</span>
+<span id="L23" class="ln">    23  </span><span class="comment">//</span>
+<span id="L24" class="ln">    24  </span><span class="comment">//	SELECT COUNT(*)</span>
+<span id="L25" class="ln">    25  </span><span class="comment">//	FROM cart_items AS ci</span>
+<span id="L26" class="ln">    26  </span><span class="comment">//	WHERE ci.product_id = $1</span>
+<span id="L27" class="ln">    27  </span>func (q *Queries) CountDiscontinueAffectedCarts(ctx context.Context, productID uuid.UUID) (int64, error) {
+<span id="L28" class="ln">    28  </span>	row := q.db.QueryRow(ctx, countDiscontinueAffectedCarts, productID)
+<span id="L29" class="ln">    29  </span>	var count int64
+<span id="L30" class="ln">    30  </span>	err := row.Scan(&amp;count)
+<span id="L31" class="ln">    31  </span>	return count, err
+<span id="L32" class="ln">    32  </span>}
+<span id="L33" class="ln">    33  </span>
+<span id="L34" class="ln">    34  </span>const selectDiscontinueCouponRecipients = `-- name: SelectDiscontinueCouponRecipients :many
+<span id="L35" class="ln">    35  </span>SELECT DISTINCT c.user_id::UUID AS user_id
+<span id="L36" class="ln">    36  </span>FROM cart_items AS ci
+<span id="L37" class="ln">    37  </span>INNER JOIN carts AS c ON ci.cart_id = c.id
+<span id="L38" class="ln">    38  </span>INNER JOIN users AS u ON c.user_id = u.id
+<span id="L39" class="ln">    39  </span>WHERE ci.product_id = $1
+<span id="L40" class="ln">    40  </span>    AND u.deleted_at IS NULL
+<span id="L41" class="ln">    41  </span>`
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span><span class="comment">// === source: database/dml/command_service/product/select_discontinue_coupon_recipients.sql ===</span>
+<span id="L44" class="ln">    44  </span><span class="comment">// 廃番対象の商品を明細に持つカートのうち、所有者が確定していて退会もしていないユーザーを重複なく返す。</span>
+<span id="L45" class="ln">    45  </span><span class="comment">// 絞り込みの理由と母集団が確定する時点は docs/spec/usecase/product.md の</span>
+<span id="L46" class="ln">    46  </span><span class="comment">// Workflow — DiscontinueProduct の invariants を参照。</span>
+<span id="L47" class="ln">    47  </span><span class="comment">//</span>
+<span id="L48" class="ln">    48  </span><span class="comment">//	SELECT DISTINCT c.user_id::UUID AS user_id</span>
+<span id="L49" class="ln">    49  </span><span class="comment">//	FROM cart_items AS ci</span>
+<span id="L50" class="ln">    50  </span><span class="comment">//	INNER JOIN carts AS c ON ci.cart_id = c.id</span>
+<span id="L51" class="ln">    51  </span><span class="comment">//	INNER JOIN users AS u ON c.user_id = u.id</span>
+<span id="L52" class="ln">    52  </span><span class="comment">//	WHERE ci.product_id = $1</span>
+<span id="L53" class="ln">    53  </span><span class="comment">//	    AND u.deleted_at IS NULL</span>
+<span id="L54" class="ln">    54  </span>func (q *Queries) SelectDiscontinueCouponRecipients(ctx context.Context, productID uuid.UUID) ([]uuid.UUID, error) {
+<span id="L55" class="ln">    55  </span>	rows, err := q.db.Query(ctx, selectDiscontinueCouponRecipients, productID)
+<span id="L56" class="ln">    56  </span>	if err != nil {
+<span id="L57" class="ln">    57  </span>		return nil, err
+<span id="L58" class="ln">    58  </span>	}
+<span id="L59" class="ln">    59  </span>	defer rows.Close()
+<span id="L60" class="ln">    60  </span>	var items []uuid.UUID
+<span id="L61" class="ln">    61  </span>	for rows.Next() {
+<span id="L62" class="ln">    62  </span>		var user_id uuid.UUID
+<span id="L63" class="ln">    63  </span>		if err := rows.Scan(&amp;user_id); err != nil {
+<span id="L64" class="ln">    64  </span>			return nil, err
+<span id="L65" class="ln">    65  </span>		}
+<span id="L66" class="ln">    66  </span>		items = append(items, user_id)
+<span id="L67" class="ln">    67  </span>	}
+<span id="L68" class="ln">    68  </span>	if err := rows.Err(); err != nil {
+<span id="L69" class="ln">    69  </span>		return nil, err
+<span id="L70" class="ln">    70  </span>	}
+<span id="L71" class="ln">    71  </span>	return items, nil
+<span id="L72" class="ln">    72  </span>}
+<span id="L73" class="ln">    73  </span>
 </pre><p><a href="../../../../../../../src/go-boilerplate/internal/infrastructure/rdb/sqlc/gen/product_command_service.gen.sql.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

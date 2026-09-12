@@ -666,51 +666,54 @@
 <span id="L609" class="ln">   609  </span>			actual, err := parseOptionalPrice(ptr.To(&#34;-0.01&#34;))
 <span id="L610" class="ln">   610  </span>			require.ErrorIs(t, err, money.ErrNegativePrice)
 <span id="L611" class="ln">   611  </span>			assert.Nil(t, actual)
-<span id="L612" class="ln">   612  </span>		})
-<span id="L613" class="ln">   613  </span>	})
-<span id="L614" class="ln">   614  </span>}
-<span id="L615" class="ln">   615  </span>
-<span id="L616" class="ln">   616  </span>func Test_resolveUpdatedImages(t *testing.T) {
-<span id="L617" class="ln">   617  </span>	t.Parallel()
+<span id="L612" class="ln">   612  </span>			meta, ok := apperror.MetaFrom(err)
+<span id="L613" class="ln">   613  </span>			require.True(t, ok)
+<span id="L614" class="ln">   614  </span>			assert.Equal(t, []string{domainproduct.FieldPrice}, meta.Details())
+<span id="L615" class="ln">   615  </span>		})
+<span id="L616" class="ln">   616  </span>	})
+<span id="L617" class="ln">   617  </span>}
 <span id="L618" class="ln">   618  </span>
-<span id="L619" class="ln">   619  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
-<span id="L620" class="ln">   620  </span>		t.Parallel()
+<span id="L619" class="ln">   619  </span>func Test_resolveUpdatedImages(t *testing.T) {
+<span id="L620" class="ln">   620  </span>	t.Parallel()
 <span id="L621" class="ln">   621  </span>
-<span id="L622" class="ln">   622  </span>		t.Run(&#34;未指定の場合、置き換えを行わないことを表すnilを返す&#34;, func(t *testing.T) {
-<span id="L623" class="ln">   623  </span>			t.Parallel()
+<span id="L622" class="ln">   622  </span>	t.Run(&#34;正常系&#34;, func(t *testing.T) {
+<span id="L623" class="ln">   623  </span>		t.Parallel()
 <span id="L624" class="ln">   624  </span>
-<span id="L625" class="ln">   625  </span>			actual, err := resolveUpdatedImages(patch.Unspecified[[]ProductImageParams]())
-<span id="L626" class="ln">   626  </span>
-<span id="L627" class="ln">   627  </span>			require.NoError(t, err)
-<span id="L628" class="ln">   628  </span>			assert.Nil(t, actual)
-<span id="L629" class="ln">   629  </span>		})
-<span id="L630" class="ln">   630  </span>
-<span id="L631" class="ln">   631  </span>		t.Run(&#34;null指定の場合、空の集合を返す&#34;, func(t *testing.T) {
-<span id="L632" class="ln">   632  </span>			t.Parallel()
+<span id="L625" class="ln">   625  </span>		t.Run(&#34;未指定の場合、置き換えを行わないことを表すnilを返す&#34;, func(t *testing.T) {
+<span id="L626" class="ln">   626  </span>			t.Parallel()
+<span id="L627" class="ln">   627  </span>
+<span id="L628" class="ln">   628  </span>			actual, err := resolveUpdatedImages(patch.Unspecified[[]ProductImageParams]())
+<span id="L629" class="ln">   629  </span>
+<span id="L630" class="ln">   630  </span>			require.NoError(t, err)
+<span id="L631" class="ln">   631  </span>			assert.Nil(t, actual)
+<span id="L632" class="ln">   632  </span>		})
 <span id="L633" class="ln">   633  </span>
-<span id="L634" class="ln">   634  </span>			actual, err := resolveUpdatedImages(patch.Null[[]ProductImageParams]())
-<span id="L635" class="ln">   635  </span>
-<span id="L636" class="ln">   636  </span>			require.NoError(t, err)
-<span id="L637" class="ln">   637  </span>			require.NotNil(t, actual)
-<span id="L638" class="ln">   638  </span>			assert.Empty(t, *actual)
-<span id="L639" class="ln">   639  </span>		})
-<span id="L640" class="ln">   640  </span>
-<span id="L641" class="ln">   641  </span>		t.Run(&#34;値指定の場合、その内容へ変換した集合を返す&#34;, func(t *testing.T) {
-<span id="L642" class="ln">   642  </span>			t.Parallel()
+<span id="L634" class="ln">   634  </span>		t.Run(&#34;null指定の場合、空の集合を返す&#34;, func(t *testing.T) {
+<span id="L635" class="ln">   635  </span>			t.Parallel()
+<span id="L636" class="ln">   636  </span>
+<span id="L637" class="ln">   637  </span>			actual, err := resolveUpdatedImages(patch.Null[[]ProductImageParams]())
+<span id="L638" class="ln">   638  </span>
+<span id="L639" class="ln">   639  </span>			require.NoError(t, err)
+<span id="L640" class="ln">   640  </span>			require.NotNil(t, actual)
+<span id="L641" class="ln">   641  </span>			assert.Empty(t, *actual)
+<span id="L642" class="ln">   642  </span>		})
 <span id="L643" class="ln">   643  </span>
-<span id="L644" class="ln">   644  </span>			actual, err := resolveUpdatedImages(patch.Value([]ProductImageParams{
-<span id="L645" class="ln">   645  </span>				{ImagePath: &#34;products/a.png&#34;, DisplaySort: 3},
-<span id="L646" class="ln">   646  </span>			}))
-<span id="L647" class="ln">   647  </span>
-<span id="L648" class="ln">   648  </span>			require.NoError(t, err)
-<span id="L649" class="ln">   649  </span>			require.NotNil(t, actual)
-<span id="L650" class="ln">   650  </span>			require.Len(t, *actual, 1)
-<span id="L651" class="ln">   651  </span>			assert.Equal(t, &#34;products/a.png&#34;, (*actual)[0].ImagePath())
-<span id="L652" class="ln">   652  </span>			assert.Equal(t, 3, (*actual)[0].DisplaySort())
-<span id="L653" class="ln">   653  </span>		})
-<span id="L654" class="ln">   654  </span>	})
-<span id="L655" class="ln">   655  </span>}
-<span id="L656" class="ln">   656  </span>
+<span id="L644" class="ln">   644  </span>		t.Run(&#34;値指定の場合、その内容へ変換した集合を返す&#34;, func(t *testing.T) {
+<span id="L645" class="ln">   645  </span>			t.Parallel()
+<span id="L646" class="ln">   646  </span>
+<span id="L647" class="ln">   647  </span>			actual, err := resolveUpdatedImages(patch.Value([]ProductImageParams{
+<span id="L648" class="ln">   648  </span>				{ImagePath: &#34;products/a.png&#34;, DisplaySort: 3},
+<span id="L649" class="ln">   649  </span>			}))
+<span id="L650" class="ln">   650  </span>
+<span id="L651" class="ln">   651  </span>			require.NoError(t, err)
+<span id="L652" class="ln">   652  </span>			require.NotNil(t, actual)
+<span id="L653" class="ln">   653  </span>			require.Len(t, *actual, 1)
+<span id="L654" class="ln">   654  </span>			assert.Equal(t, &#34;products/a.png&#34;, (*actual)[0].ImagePath())
+<span id="L655" class="ln">   655  </span>			assert.Equal(t, 3, (*actual)[0].DisplaySort())
+<span id="L656" class="ln">   656  </span>		})
+<span id="L657" class="ln">   657  </span>	})
+<span id="L658" class="ln">   658  </span>}
+<span id="L659" class="ln">   659  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/usecase/product/product_update_usecase_test.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

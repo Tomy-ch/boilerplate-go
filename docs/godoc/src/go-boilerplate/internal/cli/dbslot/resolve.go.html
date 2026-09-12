@@ -96,302 +96,380 @@
 <span id="L39" class="ln">    39  </span>	<span class="comment">// mockAuthIssuerPath は、mock 認証サーバーが issuer を生やすパスです。値は</span>
 <span id="L40" class="ln">    40  </span>	<span class="comment">// docker/mock-auth-server/config.json の issuerId と一致していなければなりません。</span>
 <span id="L41" class="ln">    41  </span>	mockAuthIssuerPath = &#34;/default&#34;
-<span id="L42" class="ln">    42  </span>)
-<span id="L43" class="ln">    43  </span>
-<span id="L44" class="ln">    44  </span>var (
-<span id="L45" class="ln">    45  </span>	<span class="comment">// errGitLayoutUnreadable は、git リポジトリではあるのにその構成を読み取れなかったことを表します。</span>
-<span id="L46" class="ln">    46  </span>	<span class="comment">// 「リンク worktree かどうか」を判定できないため、所有者判定はここで止まります。</span>
-<span id="L47" class="ln">    47  </span>	errGitLayoutUnreadable = xerrors.New(&#34;git repository exists but its layout could not be read&#34;)
+<span id="L42" class="ln">    42  </span>
+<span id="L43" class="ln">    43  </span>	<span class="comment">// slotInfixTable / slotInfixName は、基底名とスロット番号の間に入る区切りです</span>
+<span id="L44" class="ln">    44  </span>	<span class="comment">// （table だけ `_` である理由は docs/maintenance/db-worktree-pool.md）。</span>
+<span id="L45" class="ln">    45  </span>	slotInfixTable = &#34;_wt&#34;
+<span id="L46" class="ln">    46  </span>	slotInfixName  = &#34;-wt&#34;
+<span id="L47" class="ln">    47  </span>)
 <span id="L48" class="ln">    48  </span>
-<span id="L49" class="ln">    49  </span>	<span class="comment">// errNoDatabaseOwner は、リンク worktree がスロットを取得しておらず所有データベースが無いことを表します。</span>
-<span id="L50" class="ln">    50  </span>	errNoDatabaseOwner = xerrors.New(&#34;this worktree owns no database; run `make slot-acquire`&#34;)
-<span id="L51" class="ln">    51  </span>)
+<span id="L49" class="ln">    49  </span>var (
+<span id="L50" class="ln">    50  </span>	<span class="comment">// errGitLayoutUnreadable は、git リポジトリではあるのにその構成を読み取れなかったことを表します。</span>
+<span id="L51" class="ln">    51  </span>	errGitLayoutUnreadable = xerrors.New(&#34;git repository exists but its layout could not be read&#34;)
 <span id="L52" class="ln">    52  </span>
-<span id="L53" class="ln">    53  </span><span class="comment">// GitContext は、この checkout がどの git 文脈にあるかを表します。</span>
-<span id="L54" class="ln">    54  </span><span class="comment">// 「所有データベースが無い状態を検出できるか」はこの区別で決まります。</span>
-<span id="L55" class="ln">    55  </span>type GitContext int
+<span id="L53" class="ln">    53  </span>	<span class="comment">// errNoDatabaseOwner は、リンク worktree がスロットを取得しておらず所有データベースが無いことを表します。</span>
+<span id="L54" class="ln">    54  </span>	errNoDatabaseOwner = xerrors.New(&#34;this worktree owns no database; run `make slot-acquire`&#34;)
+<span id="L55" class="ln">    55  </span>)
 <span id="L56" class="ln">    56  </span>
-<span id="L57" class="ln">    57  </span><span class="comment">// GitProbe は、git 文脈の判定に使う外部依存の注入点です（テストで差し替えます）。</span>
-<span id="L58" class="ln">    58  </span>type GitProbe struct {
-<span id="L59" class="ln">    59  </span>	<span class="comment">// LookGit は、git 実行ファイルが使えるかを返します。</span>
-<span id="L60" class="ln">    60  </span>	LookGit func() error
-<span id="L61" class="ln">    61  </span>	<span class="comment">// GitDirs は、root で `git rev-parse --git-dir --git-common-dir` を実行した標準出力を返します。</span>
-<span id="L62" class="ln">    62  </span>	GitDirs func(ctx context.Context, root string) (string, error)
-<span id="L63" class="ln">    63  </span>	<span class="comment">// HasGitEntry は、root か その祖先に .git が存在するかを返します。</span>
-<span id="L64" class="ln">    64  </span>	HasGitEntry func(root string) bool
-<span id="L65" class="ln">    65  </span>}
-<span id="L66" class="ln">    66  </span>
-<span id="L67" class="ln">    67  </span><span class="comment">// Values は、スロットから導かれる解決済みの値です。</span>
-<span id="L68" class="ln">    68  </span><span class="comment">// 一箇所で導いて env（make が eval する KEY=VALUE）と status（人間向けの表示）の両方へ流すため、</span>
-<span id="L69" class="ln">    69  </span><span class="comment">// 「make が使う値」と「デバッグで読む値」が食い違いません。</span>
-<span id="L70" class="ln">    70  </span>type Values struct {
-<span id="L71" class="ln">    71  </span>	Git             GitContext
-<span id="L72" class="ln">    72  </span>	SlotHeld        bool   <span class="comment">// .gobp-db-slot が所有データベースを宣言しているか</span>
-<span id="L73" class="ln">    73  </span>	DBLocal         string <span class="comment">// 所有する local 系データベース</span>
-<span id="L74" class="ln">    74  </span>	DBTest          string <span class="comment">// 所有する test 系データベース</span>
-<span id="L75" class="ln">    75  </span>	AppProject      string <span class="comment">// app 層の compose プロジェクト名</span>
-<span id="L76" class="ln">    76  </span>	AuthIssuer      string <span class="comment">// mock 認証サーバーのホスト公開 URL（トークンの iss）</span>
-<span id="L77" class="ln">    77  </span>	InfraNoRecreate string <span class="comment">// 共有インフラへ渡す --no-recreate（不要なら空）</span>
-<span id="L78" class="ln">    78  </span>}
-<span id="L79" class="ln">    79  </span>
-<span id="L80" class="ln">    80  </span><span class="comment">// Resolver は、スロットから導かれる値の解決と所有者判定を担います。</span>
-<span id="L81" class="ln">    81  </span><span class="comment">// .gobp-db-slot を書いているのが Pool である以上、そこから導かれる値の所有者も同じ側に置きます。</span>
-<span id="L82" class="ln">    82  </span>type Resolver struct {
-<span id="L83" class="ln">    83  </span>	cfg   Config
-<span id="L84" class="ln">    84  </span>	probe GitProbe
-<span id="L85" class="ln">    85  </span>	out   io.Writer
-<span id="L86" class="ln">    86  </span>}
-<span id="L87" class="ln">    87  </span>
-<span id="L88" class="ln">    88  </span><span class="comment">// String は、GitContext の表示名を返します。</span>
-<span id="L89" class="ln">    89  </span>func (c GitContext) String() string {
-<span id="L90" class="ln">    90  </span>	switch c {
-<span id="L91" class="ln">    91  </span>	case GitUnavailable:
-<span id="L92" class="ln">    92  </span>		return &#34;git-unavailable&#34;
-<span id="L93" class="ln">    93  </span>	case GitNoRepository:
-<span id="L94" class="ln">    94  </span>		return &#34;no-repository&#34;
-<span id="L95" class="ln">    95  </span>	case GitMainCheckout:
-<span id="L96" class="ln">    96  </span>		return &#34;main-checkout&#34;
-<span id="L97" class="ln">    97  </span>	case GitLinkedWorktree:
-<span id="L98" class="ln">    98  </span>		return &#34;linked-worktree&#34;
-<span id="L99" class="ln">    99  </span>	default:
-<span id="L100" class="ln">   100  </span>		return &#34;unknown&#34;
-<span id="L101" class="ln">   101  </span>	}
-<span id="L102" class="ln">   102  </span>}
-<span id="L103" class="ln">   103  </span>
-<span id="L104" class="ln">   104  </span><span class="comment">// NewResolver は Resolver を生成します。probe が nil の場合はホストの git を使います。</span>
-<span id="L105" class="ln">   105  </span>func NewResolver(cfg Config, probe *GitProbe, out io.Writer) *Resolver {
-<span id="L106" class="ln">   106  </span>	p := realGitProbe()
-<span id="L107" class="ln">   107  </span>	if probe != nil {
-<span id="L108" class="ln">   108  </span>		p = *probe
-<span id="L109" class="ln">   109  </span>	}
-<span id="L110" class="ln">   110  </span>
-<span id="L111" class="ln">   111  </span>	return &amp;Resolver{cfg: cfg, probe: p, out: out}
-<span id="L112" class="ln">   112  </span>}
-<span id="L113" class="ln">   113  </span>
-<span id="L114" class="ln">   114  </span><span class="comment">// Resolve は、git 文脈と .gobp-db-slot から解決済みの値を組み立てます。</span>
-<span id="L115" class="ln">   115  </span><span class="comment">// git リポジトリなのに構成を読めなかった場合だけエラーにします（inspectGit を参照）。</span>
-<span id="L116" class="ln">   116  </span>func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
-<span id="L117" class="ln">   117  </span>	gitCtx, err := r.inspectGit(ctx)
-<span id="L118" class="ln">   118  </span>	if err != nil {
-<span id="L119" class="ln">   119  </span>		return Values{}, err
-<span id="L120" class="ln">   120  </span>	}
-<span id="L121" class="ln">   121  </span>
-<span id="L122" class="ln">   122  </span>	slot := readSlotFile(filepath.Join(r.cfg.Root, &#34;.gobp-db-slot&#34;))
-<span id="L123" class="ln">   123  </span>
-<span id="L124" class="ln">   124  </span>	values := Values{
-<span id="L125" class="ln">   125  </span>		Git:        gitCtx,
-<span id="L126" class="ln">   126  </span>		SlotHeld:   slot[&#34;DB_NAME_LOCAL&#34;] != &#34;&#34;,
-<span id="L127" class="ln">   127  </span>		DBLocal:    orDefault(slot[&#34;DB_NAME_LOCAL&#34;], defaultDBLocal),
-<span id="L128" class="ln">   128  </span>		DBTest:     orDefault(slot[&#34;DB_NAME_TEST&#34;], defaultDBTest),
-<span id="L129" class="ln">   129  </span>		AppProject: orDefault(slot[&#34;SERVE_PROJECT&#34;], &#34;gobp-app-&#34;+filepath.Base(r.cfg.Root)),
-<span id="L130" class="ln">   130  </span>		AuthIssuer: &#34;http://localhost:&#34; + orDefault(slot[&#34;MOCK_AUTH_HOST_PORT&#34;], strconv.Itoa(r.cfg.MockAuthBase)) + mockAuthIssuerPath,
-<span id="L131" class="ln">   131  </span>	}
-<span id="L132" class="ln">   132  </span>
-<span id="L133" class="ln">   133  </span>	<span class="comment">// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。</span>
-<span id="L134" class="ln">   134  </span>	if gitCtx == GitLinkedWorktree {
-<span id="L135" class="ln">   135  </span>		values.InfraNoRecreate = noRecreateFlag
-<span id="L136" class="ln">   136  </span>	}
+<span id="L57" class="ln">    57  </span><span class="comment">// GitContext は、この checkout がどの git 文脈にあるかを表します。</span>
+<span id="L58" class="ln">    58  </span><span class="comment">// 文脈ごとの扱いは RequireOwner を参照。</span>
+<span id="L59" class="ln">    59  </span>type GitContext int
+<span id="L60" class="ln">    60  </span>
+<span id="L61" class="ln">    61  </span><span class="comment">// GitProbe は、git 文脈の判定に使う外部依存の注入点です（テストで差し替えます）。</span>
+<span id="L62" class="ln">    62  </span>type GitProbe struct {
+<span id="L63" class="ln">    63  </span>	<span class="comment">// LookGit は、git 実行ファイルが使えるかを返します。</span>
+<span id="L64" class="ln">    64  </span>	LookGit func() error
+<span id="L65" class="ln">    65  </span>	<span class="comment">// GitDirs は、root で `git rev-parse --git-dir --git-common-dir` を実行した標準出力を返します。</span>
+<span id="L66" class="ln">    66  </span>	GitDirs func(ctx context.Context, root string) (string, error)
+<span id="L67" class="ln">    67  </span>	<span class="comment">// HasGitEntry は、root か その祖先に .git が存在するかを返します。</span>
+<span id="L68" class="ln">    68  </span>	HasGitEntry func(root string) bool
+<span id="L69" class="ln">    69  </span>}
+<span id="L70" class="ln">    70  </span>
+<span id="L71" class="ln">    71  </span><span class="comment">// LeaseProbe は、リース所有権の判定に使う外部依存の注入点です（テストで差し替えます。</span>
+<span id="L72" class="ln">    72  </span><span class="comment">// ファイルの存在が所有の証明にならない理由は README.md「Slot file」）。</span>
+<span id="L73" class="ln">    73  </span>type LeaseProbe struct {
+<span id="L74" class="ln">    74  </span>	<span class="comment">// OwnedBySelf は、そのスロットのリースを自 worktree が保持しているかを返します。</span>
+<span id="L75" class="ln">    75  </span>	OwnedBySelf func(slot int) bool
+<span id="L76" class="ln">    76  </span>}
+<span id="L77" class="ln">    77  </span>
+<span id="L78" class="ln">    78  </span><span class="comment">// Values は、スロットから導かれる解決済みの値です</span>
+<span id="L79" class="ln">    79  </span><span class="comment">// （env / status の双方へ同一の導出を流す理由は README.md「Resolved values」）。</span>
+<span id="L80" class="ln">    80  </span>type Values struct {
+<span id="L81" class="ln">    81  </span>	Git             GitContext
+<span id="L82" class="ln">    82  </span>	SlotHeld        bool   <span class="comment">// .gobp-db-slot が宣言するスロットのリースを実際に保持しているか</span>
+<span id="L83" class="ln">    83  </span>	DBLocal         string <span class="comment">// 所有する local 系データベース</span>
+<span id="L84" class="ln">    84  </span>	DBTest          string <span class="comment">// 所有する test 系データベース</span>
+<span id="L85" class="ln">    85  </span>	AppProject      string <span class="comment">// app 層の compose プロジェクト名</span>
+<span id="L86" class="ln">    86  </span>	AuthIssuer      string <span class="comment">// mock 認証サーバーのホスト公開 URL（トークンの iss）</span>
+<span id="L87" class="ln">    87  </span>	InfraNoRecreate string <span class="comment">// 共有インフラへ渡す --no-recreate（不要なら空）</span>
+<span id="L88" class="ln">    88  </span>
+<span id="L89" class="ln">    89  </span>	<span class="comment">// Realtime Delivery の資源名。共有の DynamoDB Local / GoAWS 上でスロット毎に名前空間を分けます</span>
+<span id="L90" class="ln">    90  </span>	<span class="comment">// （docs/maintenance/db-worktree-pool.md「The Realtime Delivery emulators are shared instances」）。</span>
+<span id="L91" class="ln">    91  </span>	RealtimeTableSuffix string <span class="comment">// table 名の末尾（realtime_event_log_&lt;suffix&gt; の suffix）</span>
+<span id="L92" class="ln">    92  </span>	RealtimeQueuePrefix string <span class="comment">// serve instance ごとの queue 名の先頭</span>
+<span id="L93" class="ln">    93  </span>	RealtimeTopic       string <span class="comment">// fan-out topic の ARN</span>
+<span id="L94" class="ln">    94  </span>}
+<span id="L95" class="ln">    95  </span>
+<span id="L96" class="ln">    96  </span><span class="comment">// Resolver は、スロットから導かれる値の解決と所有者判定を担います。</span>
+<span id="L97" class="ln">    97  </span><span class="comment">// .gobp-db-slot を書いているのが Pool である以上、そこから導かれる値の所有者も同じ側に置きます。</span>
+<span id="L98" class="ln">    98  </span>type Resolver struct {
+<span id="L99" class="ln">    99  </span>	cfg   Config
+<span id="L100" class="ln">   100  </span>	probe GitProbe
+<span id="L101" class="ln">   101  </span>	lease LeaseProbe
+<span id="L102" class="ln">   102  </span>	out   io.Writer
+<span id="L103" class="ln">   103  </span>}
+<span id="L104" class="ln">   104  </span>
+<span id="L105" class="ln">   105  </span><span class="comment">// String は、GitContext の表示名を返します。</span>
+<span id="L106" class="ln">   106  </span>func (c GitContext) String() string {
+<span id="L107" class="ln">   107  </span>	switch c {
+<span id="L108" class="ln">   108  </span>	case GitUnavailable:
+<span id="L109" class="ln">   109  </span>		return &#34;git-unavailable&#34;
+<span id="L110" class="ln">   110  </span>	case GitNoRepository:
+<span id="L111" class="ln">   111  </span>		return &#34;no-repository&#34;
+<span id="L112" class="ln">   112  </span>	case GitMainCheckout:
+<span id="L113" class="ln">   113  </span>		return &#34;main-checkout&#34;
+<span id="L114" class="ln">   114  </span>	case GitLinkedWorktree:
+<span id="L115" class="ln">   115  </span>		return &#34;linked-worktree&#34;
+<span id="L116" class="ln">   116  </span>	default:
+<span id="L117" class="ln">   117  </span>		return &#34;unknown&#34;
+<span id="L118" class="ln">   118  </span>	}
+<span id="L119" class="ln">   119  </span>}
+<span id="L120" class="ln">   120  </span>
+<span id="L121" class="ln">   121  </span><span class="comment">// NewResolver は Resolver を生成します。probe が nil の場合はホストの git を使います。</span>
+<span id="L122" class="ln">   122  </span><span class="comment">// lease が nil のときはリースを確認できないため、どのスロットも保持していないものとして解決します</span>
+<span id="L123" class="ln">   123  </span><span class="comment">// （所有を騙るより、スロットの取り直しを案内して止まるほうが安全なため）。</span>
+<span id="L124" class="ln">   124  </span>func NewResolver(cfg Config, probe *GitProbe, lease *LeaseProbe, out io.Writer) *Resolver {
+<span id="L125" class="ln">   125  </span>	p := realGitProbe()
+<span id="L126" class="ln">   126  </span>	if probe != nil {
+<span id="L127" class="ln">   127  </span>		p = *probe
+<span id="L128" class="ln">   128  </span>	}
+<span id="L129" class="ln">   129  </span>
+<span id="L130" class="ln">   130  </span>	var l LeaseProbe
+<span id="L131" class="ln">   131  </span>	if lease != nil {
+<span id="L132" class="ln">   132  </span>		l = *lease
+<span id="L133" class="ln">   133  </span>	}
+<span id="L134" class="ln">   134  </span>
+<span id="L135" class="ln">   135  </span>	return &amp;Resolver{cfg: cfg, probe: p, lease: l, out: out}
+<span id="L136" class="ln">   136  </span>}
 <span id="L137" class="ln">   137  </span>
-<span id="L138" class="ln">   138  </span>	return values, nil
-<span id="L139" class="ln">   139  </span>}
-<span id="L140" class="ln">   140  </span>
-<span id="L141" class="ln">   141  </span><span class="comment">// RequireOwner は、所有データベースを持たない状態（リンク worktree かつスロット未取得）を</span>
-<span id="L142" class="ln">   142  </span><span class="comment">// 検出してエラーにします。主 checkout・ツールランナー内・CI は素通りします。</span>
-<span id="L143" class="ln">   143  </span><span class="comment">//</span>
-<span id="L144" class="ln">   144  </span><span class="comment">// 判定は三値です。「git 実行ファイルが無い」「リポジトリでない」は素通り、</span>
-<span id="L145" class="ln">   145  </span><span class="comment">// 「リポジトリなのに読めない」は失敗（理由は docs/maintenance/db-worktree-pool.md）。</span>
-<span id="L146" class="ln">   146  </span>func (r *Resolver) RequireOwner(ctx context.Context) error {
-<span id="L147" class="ln">   147  </span>	values, err := r.Resolve(ctx)
-<span id="L148" class="ln">   148  </span>	if err != nil {
-<span id="L149" class="ln">   149  </span>		return err
-<span id="L150" class="ln">   150  </span>	}
-<span id="L151" class="ln">   151  </span>
-<span id="L152" class="ln">   152  </span>	if values.Git != GitLinkedWorktree || values.SlotHeld {
-<span id="L153" class="ln">   153  </span>		return nil
-<span id="L154" class="ln">   154  </span>	}
-<span id="L155" class="ln">   155  </span>
-<span id="L156" class="ln">   156  </span>	_, _ = fmt.Fprint(r.out, &#34;❌ この worktree は DB スロットを取得していないため、所有するデータベースがありません。\n&#34;+
-<span id="L157" class="ln">   157  </span>		&#34;   1 つのデータベースを複数の checkout から触らないよう、既定の local / test へは\n&#34;+
-<span id="L158" class="ln">   158  </span>		&#34;   フォールバックしません。\n&#34;+
-<span id="L159" class="ln">   159  </span>		&#34;   → make slot-acquire でスロットを取得してください（make slot-status で空きを確認）。\n&#34;)
-<span id="L160" class="ln">   160  </span>
-<span id="L161" class="ln">   161  </span>	return errNoDatabaseOwner
-<span id="L162" class="ln">   162  </span>}
-<span id="L163" class="ln">   163  </span>
-<span id="L164" class="ln">   164  </span><span class="comment">// PrintEnv は、make のレシピが eval して読む KEY=VALUE を出力します。</span>
-<span id="L165" class="ln">   165  </span>func (r *Resolver) PrintEnv(ctx context.Context) error {
-<span id="L166" class="ln">   166  </span>	values, err := r.Resolve(ctx)
-<span id="L167" class="ln">   167  </span>	if err != nil {
-<span id="L168" class="ln">   168  </span>		return err
-<span id="L169" class="ln">   169  </span>	}
-<span id="L170" class="ln">   170  </span>
-<span id="L171" class="ln">   171  </span>	_, _ = fmt.Fprint(r.out, RenderEnv(values))
-<span id="L172" class="ln">   172  </span>
-<span id="L173" class="ln">   173  </span>	return nil
-<span id="L174" class="ln">   174  </span>}
-<span id="L175" class="ln">   175  </span>
-<span id="L176" class="ln">   176  </span><span class="comment">// PrintValues は、解決済みの値を人間向けに表示します。どの compose プロジェクトとどの</span>
-<span id="L177" class="ln">   177  </span><span class="comment">// データベースを叩くのかは、この経路が唯一の確認窓口になります。</span>
-<span id="L178" class="ln">   178  </span>func (r *Resolver) PrintValues(ctx context.Context) error {
-<span id="L179" class="ln">   179  </span>	values, err := r.Resolve(ctx)
-<span id="L180" class="ln">   180  </span>	if err != nil {
-<span id="L181" class="ln">   181  </span>		return err
-<span id="L182" class="ln">   182  </span>	}
-<span id="L183" class="ln">   183  </span>
-<span id="L184" class="ln">   184  </span>	_, _ = fmt.Fprint(r.out, RenderValues(values))
-<span id="L185" class="ln">   185  </span>
-<span id="L186" class="ln">   186  </span>	return nil
-<span id="L187" class="ln">   187  </span>}
-<span id="L188" class="ln">   188  </span>
-<span id="L189" class="ln">   189  </span><span class="comment">// inspectGit は、git 文脈を判定します。</span>
-<span id="L190" class="ln">   190  </span><span class="comment">// git を引けなかったときは、.git の有無で「リポジトリでない」と「リポジトリなのに読めない」を</span>
-<span id="L191" class="ln">   191  </span><span class="comment">// 分けます。git のエラーメッセージはロケールで変わるため、メッセージは判定材料にしません。</span>
-<span id="L192" class="ln">   192  </span>func (r *Resolver) inspectGit(ctx context.Context) (GitContext, error) {
-<span id="L193" class="ln">   193  </span>	if err := r.probe.LookGit(); err != nil {
-<span id="L194" class="ln">   194  </span>		return GitUnavailable, nil <span class="comment">//nolint:nilerr // git が無いのは異常ではなく「判定できない文脈」であり、素通りが正しい</span>
-<span id="L195" class="ln">   195  </span>	}
-<span id="L196" class="ln">   196  </span>
-<span id="L197" class="ln">   197  </span>	out, err := r.probe.GitDirs(ctx, r.cfg.Root)
-<span id="L198" class="ln">   198  </span>	if err != nil {
-<span id="L199" class="ln">   199  </span>		if r.probe.HasGitEntry(r.cfg.Root) {
-<span id="L200" class="ln">   200  </span>			return 0, xerrors.Wrap(errGitLayoutUnreadable, err.Error())
-<span id="L201" class="ln">   201  </span>		}
-<span id="L202" class="ln">   202  </span>
-<span id="L203" class="ln">   203  </span>		return GitNoRepository, nil
-<span id="L204" class="ln">   204  </span>	}
-<span id="L205" class="ln">   205  </span>
-<span id="L206" class="ln">   206  </span>	fields := strings.Fields(out)
-<span id="L207" class="ln">   207  </span>	if len(fields) != gitDirsFields {
-<span id="L208" class="ln">   208  </span>		return 0, xerrors.Wrap(errGitLayoutUnreadable, &#34;unexpected `git rev-parse` output: &#34;+strconv.Quote(out))
+<span id="L138" class="ln">   138  </span><span class="comment">// Resolve は、git 文脈と .gobp-db-slot から解決済みの値を組み立てます。</span>
+<span id="L139" class="ln">   139  </span><span class="comment">// git リポジトリなのに構成を読めなかった場合だけエラーにします（inspectGit を参照）。</span>
+<span id="L140" class="ln">   140  </span>func (r *Resolver) Resolve(ctx context.Context) (Values, error) {
+<span id="L141" class="ln">   141  </span>	gitCtx, err := r.inspectGit(ctx)
+<span id="L142" class="ln">   142  </span>	if err != nil {
+<span id="L143" class="ln">   143  </span>		return Values{}, err
+<span id="L144" class="ln">   144  </span>	}
+<span id="L145" class="ln">   145  </span>
+<span id="L146" class="ln">   146  </span>	values := Values{
+<span id="L147" class="ln">   147  </span>		Git:        gitCtx,
+<span id="L148" class="ln">   148  </span>		DBLocal:    defaultDBLocal,
+<span id="L149" class="ln">   149  </span>		DBTest:     defaultDBTest,
+<span id="L150" class="ln">   150  </span>		AppProject: &#34;gobp-app-&#34; + filepath.Base(r.cfg.Root),
+<span id="L151" class="ln">   151  </span>		AuthIssuer: mockAuthIssuer(r.cfg.MockAuthBase),
+<span id="L152" class="ln">   152  </span>
+<span id="L153" class="ln">   153  </span>		RealtimeTableSuffix: r.cfg.Realtime.TableSuffix,
+<span id="L154" class="ln">   154  </span>		RealtimeQueuePrefix: r.cfg.Realtime.QueuePrefix,
+<span id="L155" class="ln">   155  </span>		RealtimeTopic:       r.cfg.Realtime.Topic,
+<span id="L156" class="ln">   156  </span>	}
+<span id="L157" class="ln">   157  </span>
+<span id="L158" class="ln">   158  </span>	<span class="comment">// リースを保持しているスロットの値だけを、その番号から導く</span>
+<span id="L159" class="ln">   159  </span>	<span class="comment">// （.gobp-db-slot の他フィールドを読まない理由は README.md「Resolved values」）。</span>
+<span id="L160" class="ln">   160  </span>	if slot, held := r.heldSlot(); held {
+<span id="L161" class="ln">   161  </span>		num := strconv.Itoa(slot)
+<span id="L162" class="ln">   162  </span>		values.SlotHeld = true
+<span id="L163" class="ln">   163  </span>		values.DBLocal = dbLocal(slot)
+<span id="L164" class="ln">   164  </span>		values.DBTest = dbTest(slot)
+<span id="L165" class="ln">   165  </span>		values.AppProject = serveProject(slot)
+<span id="L166" class="ln">   166  </span>		values.AuthIssuer = mockAuthIssuer(r.cfg.MockAuthBase + slot)
+<span id="L167" class="ln">   167  </span>		values.RealtimeTableSuffix = realtimeName(r.cfg.Realtime.TableSuffix, num, slotInfixTable)
+<span id="L168" class="ln">   168  </span>		values.RealtimeQueuePrefix = realtimeName(r.cfg.Realtime.QueuePrefix, num, slotInfixName)
+<span id="L169" class="ln">   169  </span>		values.RealtimeTopic = realtimeName(r.cfg.Realtime.Topic, num, slotInfixName)
+<span id="L170" class="ln">   170  </span>	}
+<span id="L171" class="ln">   171  </span>
+<span id="L172" class="ln">   172  </span>	<span class="comment">// 共有インフラを奪い合う相手が居るのはリンク worktree のときだけなので、単一 checkout では空にします。</span>
+<span id="L173" class="ln">   173  </span>	if gitCtx == GitLinkedWorktree {
+<span id="L174" class="ln">   174  </span>		values.InfraNoRecreate = noRecreateFlag
+<span id="L175" class="ln">   175  </span>	}
+<span id="L176" class="ln">   176  </span>
+<span id="L177" class="ln">   177  </span>	return values, nil
+<span id="L178" class="ln">   178  </span>}
+<span id="L179" class="ln">   179  </span>
+<span id="L180" class="ln">   180  </span><span class="comment">// RequireOwner は、所有データベースを持たない状態（リンク worktree かつスロット未取得）を</span>
+<span id="L181" class="ln">   181  </span><span class="comment">// 検出してエラーにします。主 checkout・ツールランナー内・CI は素通りします。</span>
+<span id="L182" class="ln">   182  </span><span class="comment">//</span>
+<span id="L183" class="ln">   183  </span><span class="comment">// 判定は三値です。「git 実行ファイルが無い」「リポジトリでない」は素通り、</span>
+<span id="L184" class="ln">   184  </span><span class="comment">// 「リポジトリなのに読めない」は失敗（理由は docs/maintenance/db-worktree-pool.md）。</span>
+<span id="L185" class="ln">   185  </span>func (r *Resolver) RequireOwner(ctx context.Context) error {
+<span id="L186" class="ln">   186  </span>	values, err := r.Resolve(ctx)
+<span id="L187" class="ln">   187  </span>	if err != nil {
+<span id="L188" class="ln">   188  </span>		return err
+<span id="L189" class="ln">   189  </span>	}
+<span id="L190" class="ln">   190  </span>
+<span id="L191" class="ln">   191  </span>	if values.Git != GitLinkedWorktree || values.SlotHeld {
+<span id="L192" class="ln">   192  </span>		return nil
+<span id="L193" class="ln">   193  </span>	}
+<span id="L194" class="ln">   194  </span>
+<span id="L195" class="ln">   195  </span>	_, _ = fmt.Fprint(r.out, &#34;❌ この worktree は DB スロットを取得していない（または取得したスロットが\n&#34;+
+<span id="L196" class="ln">   196  </span>		&#34;   他 worktree に回収されている）ため、所有するデータベースがありません。\n&#34;+
+<span id="L197" class="ln">   197  </span>		&#34;   1 つのデータベースを複数の checkout から触らないよう、既定の local / test へは\n&#34;+
+<span id="L198" class="ln">   198  </span>		&#34;   フォールバックしません。\n&#34;+
+<span id="L199" class="ln">   199  </span>		&#34;   → make slot-acquire でスロットを取得してください（make slot-status で空きを確認）。\n&#34;)
+<span id="L200" class="ln">   200  </span>
+<span id="L201" class="ln">   201  </span>	return errNoDatabaseOwner
+<span id="L202" class="ln">   202  </span>}
+<span id="L203" class="ln">   203  </span>
+<span id="L204" class="ln">   204  </span><span class="comment">// PrintEnv は、make のレシピが eval して読む KEY=VALUE を出力します。</span>
+<span id="L205" class="ln">   205  </span>func (r *Resolver) PrintEnv(ctx context.Context) error {
+<span id="L206" class="ln">   206  </span>	values, err := r.Resolve(ctx)
+<span id="L207" class="ln">   207  </span>	if err != nil {
+<span id="L208" class="ln">   208  </span>		return err
 <span id="L209" class="ln">   209  </span>	}
 <span id="L210" class="ln">   210  </span>
-<span id="L211" class="ln">   211  </span>	if r.absDir(fields[0]) == r.absDir(fields[1]) {
-<span id="L212" class="ln">   212  </span>		return GitMainCheckout, nil
-<span id="L213" class="ln">   213  </span>	}
-<span id="L214" class="ln">   214  </span>
-<span id="L215" class="ln">   215  </span>	return GitLinkedWorktree, nil
-<span id="L216" class="ln">   216  </span>}
-<span id="L217" class="ln">   217  </span>
-<span id="L218" class="ln">   218  </span><span class="comment">// absDir は、git が返したパス（cwd 相対のことがある）を比較できる形へ揃えます。</span>
-<span id="L219" class="ln">   219  </span>func (r *Resolver) absDir(path string) string {
-<span id="L220" class="ln">   220  </span>	if !filepath.IsAbs(path) {
-<span id="L221" class="ln">   221  </span>		path = filepath.Join(r.cfg.Root, path)
+<span id="L211" class="ln">   211  </span>	_, _ = fmt.Fprint(r.out, RenderEnv(values))
+<span id="L212" class="ln">   212  </span>
+<span id="L213" class="ln">   213  </span>	return nil
+<span id="L214" class="ln">   214  </span>}
+<span id="L215" class="ln">   215  </span>
+<span id="L216" class="ln">   216  </span><span class="comment">// PrintValues は、解決済みの値を人間向けに表示します。どの compose プロジェクトとどの</span>
+<span id="L217" class="ln">   217  </span><span class="comment">// データベースを叩くのかは、この経路が唯一の確認窓口になります。</span>
+<span id="L218" class="ln">   218  </span>func (r *Resolver) PrintValues(ctx context.Context) error {
+<span id="L219" class="ln">   219  </span>	values, err := r.Resolve(ctx)
+<span id="L220" class="ln">   220  </span>	if err != nil {
+<span id="L221" class="ln">   221  </span>		return err
 <span id="L222" class="ln">   222  </span>	}
 <span id="L223" class="ln">   223  </span>
-<span id="L224" class="ln">   224  </span>	return filepath.Clean(path)
-<span id="L225" class="ln">   225  </span>}
-<span id="L226" class="ln">   226  </span>
-<span id="L227" class="ln">   227  </span><span class="comment">// RenderEnv は、解決済みの値を make のレシピが eval できる KEY=VALUE へ整形します。</span>
-<span id="L228" class="ln">   228  </span>func RenderEnv(v Values) string {
-<span id="L229" class="ln">   229  </span>	pairs := [][2]string{
-<span id="L230" class="ln">   230  </span>		{&#34;GOBP_GIT_CONTEXT&#34;, v.Git.String()},
-<span id="L231" class="ln">   231  </span>		{&#34;DB_LOCAL&#34;, v.DBLocal},
-<span id="L232" class="ln">   232  </span>		{&#34;DB_TEST&#34;, v.DBTest},
-<span id="L233" class="ln">   233  </span>		{&#34;APP_PROJECT&#34;, v.AppProject},
-<span id="L234" class="ln">   234  </span>		{&#34;AUTH_ISSUER&#34;, v.AuthIssuer},
-<span id="L235" class="ln">   235  </span>		{&#34;INFRA_NO_RECREATE&#34;, v.InfraNoRecreate},
-<span id="L236" class="ln">   236  </span>	}
-<span id="L237" class="ln">   237  </span>
-<span id="L238" class="ln">   238  </span>	var sb strings.Builder
-<span id="L239" class="ln">   239  </span>	for _, kv := range pairs {
-<span id="L240" class="ln">   240  </span>		fmt.Fprintf(&amp;sb, &#34;%s=&#39;%s&#39;\n&#34;, kv[0], strings.ReplaceAll(kv[1], &#34;&#39;&#34;, `&#39;\&#39;&#39;`))
-<span id="L241" class="ln">   241  </span>	}
-<span id="L242" class="ln">   242  </span>
-<span id="L243" class="ln">   243  </span>	return sb.String()
-<span id="L244" class="ln">   244  </span>}
-<span id="L245" class="ln">   245  </span>
-<span id="L246" class="ln">   246  </span><span class="comment">// RenderValues は、解決済みの値を人間向けの一覧へ整形します。</span>
-<span id="L247" class="ln">   247  </span>func RenderValues(v Values) string {
-<span id="L248" class="ln">   248  </span>	var sb strings.Builder
-<span id="L249" class="ln">   249  </span>
-<span id="L250" class="ln">   250  </span>	sb.WriteString(&#34;\n--- この checkout の解決済みの値 ---\n&#34;)
-<span id="L251" class="ln">   251  </span>	fmt.Fprintf(&amp;sb, &#34;git context       : %s\n&#34;, v.Git)
-<span id="L252" class="ln">   252  </span>	fmt.Fprintf(&amp;sb, &#34;slot held         : %s\n&#34;, yesNo(v.SlotHeld))
-<span id="L253" class="ln">   253  </span>	fmt.Fprintf(&amp;sb, &#34;DB_LOCAL          : %s\n&#34;, v.DBLocal)
-<span id="L254" class="ln">   254  </span>	fmt.Fprintf(&amp;sb, &#34;DB_TEST           : %s\n&#34;, v.DBTest)
-<span id="L255" class="ln">   255  </span>	fmt.Fprintf(&amp;sb, &#34;APP_PROJECT       : %s\n&#34;, v.AppProject)
-<span id="L256" class="ln">   256  </span>	fmt.Fprintf(&amp;sb, &#34;AUTH_ISSUER       : %s\n&#34;, v.AuthIssuer)
-<span id="L257" class="ln">   257  </span>	fmt.Fprintf(&amp;sb, &#34;INFRA_NO_RECREATE : %s\n&#34;, orDefault(v.InfraNoRecreate, &#34;（渡さない）&#34;))
+<span id="L224" class="ln">   224  </span>	_, _ = fmt.Fprint(r.out, RenderValues(values))
+<span id="L225" class="ln">   225  </span>
+<span id="L226" class="ln">   226  </span>	return nil
+<span id="L227" class="ln">   227  </span>}
+<span id="L228" class="ln">   228  </span>
+<span id="L229" class="ln">   229  </span><span class="comment">// heldSlot は、.gobp-db-slot が宣言するスロットのうち、自 worktree がリースを保持しているものを返します。</span>
+<span id="L230" class="ln">   230  </span><span class="comment">// 宣言が壊れている（スロット番号や DB 名が読めない）場合と、リースを確認できない場合は保持なしとします。</span>
+<span id="L231" class="ln">   231  </span>func (r *Resolver) heldSlot() (int, bool) {
+<span id="L232" class="ln">   232  </span>	slot := readSlotFile(filepath.Join(r.cfg.Root, &#34;.gobp-db-slot&#34;))
+<span id="L233" class="ln">   233  </span>	if slot[&#34;DB_NAME_LOCAL&#34;] == &#34;&#34; || r.lease.OwnedBySelf == nil {
+<span id="L234" class="ln">   234  </span>		return 0, false
+<span id="L235" class="ln">   235  </span>	}
+<span id="L236" class="ln">   236  </span>
+<span id="L237" class="ln">   237  </span>	n, err := strconv.Atoi(slot[&#34;SLOT&#34;])
+<span id="L238" class="ln">   238  </span>	if err != nil {
+<span id="L239" class="ln">   239  </span>		return 0, false
+<span id="L240" class="ln">   240  </span>	}
+<span id="L241" class="ln">   241  </span>
+<span id="L242" class="ln">   242  </span>	return n, r.lease.OwnedBySelf(n)
+<span id="L243" class="ln">   243  </span>}
+<span id="L244" class="ln">   244  </span>
+<span id="L245" class="ln">   245  </span><span class="comment">// inspectGit は、git 文脈を判定します。</span>
+<span id="L246" class="ln">   246  </span><span class="comment">// git を引けなかったときは、.git の有無で「リポジトリでない」と「リポジトリなのに読めない」を</span>
+<span id="L247" class="ln">   247  </span><span class="comment">// 分けます。git のエラーメッセージはロケールで変わるため、メッセージは判定材料にしません。</span>
+<span id="L248" class="ln">   248  </span>func (r *Resolver) inspectGit(ctx context.Context) (GitContext, error) {
+<span id="L249" class="ln">   249  </span>	if err := r.probe.LookGit(); err != nil {
+<span id="L250" class="ln">   250  </span>		return GitUnavailable, nil <span class="comment">//nolint:nilerr // git が無いのは異常ではなく「判定できない文脈」であり、素通りが正しい</span>
+<span id="L251" class="ln">   251  </span>	}
+<span id="L252" class="ln">   252  </span>
+<span id="L253" class="ln">   253  </span>	out, err := r.probe.GitDirs(ctx, r.cfg.Root)
+<span id="L254" class="ln">   254  </span>	if err != nil {
+<span id="L255" class="ln">   255  </span>		if r.probe.HasGitEntry(r.cfg.Root) {
+<span id="L256" class="ln">   256  </span>			return 0, xerrors.Wrap(errGitLayoutUnreadable, err.Error())
+<span id="L257" class="ln">   257  </span>		}
 <span id="L258" class="ln">   258  </span>
-<span id="L259" class="ln">   259  </span>	return sb.String()
-<span id="L260" class="ln">   260  </span>}
+<span id="L259" class="ln">   259  </span>		return GitNoRepository, nil
+<span id="L260" class="ln">   260  </span>	}
 <span id="L261" class="ln">   261  </span>
-<span id="L262" class="ln">   262  </span><span class="comment">// realGitProbe は、ホストの git を使う GitProbe を返します。</span>
-<span id="L263" class="ln">   263  </span>func realGitProbe() GitProbe {
-<span id="L264" class="ln">   264  </span>	return GitProbe{
-<span id="L265" class="ln">   265  </span>		LookGit: func() error {
-<span id="L266" class="ln">   266  </span>			_, err := exec.LookPath(&#34;git&#34;)
-<span id="L267" class="ln">   267  </span>
-<span id="L268" class="ln">   268  </span>			return err
-<span id="L269" class="ln">   269  </span>		},
-<span id="L270" class="ln">   270  </span>		GitDirs: func(ctx context.Context, root string) (string, error) {
-<span id="L271" class="ln">   271  </span>			cmd := exec.CommandContext(ctx, &#34;git&#34;, &#34;rev-parse&#34;, &#34;--git-dir&#34;, &#34;--git-common-dir&#34;)
-<span id="L272" class="ln">   272  </span>			cmd.Dir = root
-<span id="L273" class="ln">   273  </span>			out, err := cmd.Output()
-<span id="L274" class="ln">   274  </span>
-<span id="L275" class="ln">   275  </span>			return string(out), err
-<span id="L276" class="ln">   276  </span>		},
-<span id="L277" class="ln">   277  </span>		HasGitEntry: hasGitEntry,
+<span id="L262" class="ln">   262  </span>	fields := strings.Fields(out)
+<span id="L263" class="ln">   263  </span>	if len(fields) != gitDirsFields {
+<span id="L264" class="ln">   264  </span>		return 0, xerrors.Wrap(errGitLayoutUnreadable, &#34;unexpected `git rev-parse` output: &#34;+strconv.Quote(out))
+<span id="L265" class="ln">   265  </span>	}
+<span id="L266" class="ln">   266  </span>
+<span id="L267" class="ln">   267  </span>	if r.absDir(fields[0]) == r.absDir(fields[1]) {
+<span id="L268" class="ln">   268  </span>		return GitMainCheckout, nil
+<span id="L269" class="ln">   269  </span>	}
+<span id="L270" class="ln">   270  </span>
+<span id="L271" class="ln">   271  </span>	return GitLinkedWorktree, nil
+<span id="L272" class="ln">   272  </span>}
+<span id="L273" class="ln">   273  </span>
+<span id="L274" class="ln">   274  </span><span class="comment">// absDir は、git が返したパス（cwd 相対のことがある）を比較できる形へ揃えます。</span>
+<span id="L275" class="ln">   275  </span>func (r *Resolver) absDir(path string) string {
+<span id="L276" class="ln">   276  </span>	if !filepath.IsAbs(path) {
+<span id="L277" class="ln">   277  </span>		path = filepath.Join(r.cfg.Root, path)
 <span id="L278" class="ln">   278  </span>	}
-<span id="L279" class="ln">   279  </span>}
-<span id="L280" class="ln">   280  </span>
-<span id="L281" class="ln">   281  </span><span class="comment">// hasGitEntry は、dir か その祖先に .git（ディレクトリ、またはリンク worktree の .git ファイル）が</span>
-<span id="L282" class="ln">   282  </span><span class="comment">// あるかを返します。</span>
-<span id="L283" class="ln">   283  </span>func hasGitEntry(dir string) bool {
-<span id="L284" class="ln">   284  </span>	for {
-<span id="L285" class="ln">   285  </span>		if _, err := os.Lstat(filepath.Join(dir, &#34;.git&#34;)); err == nil {
-<span id="L286" class="ln">   286  </span>			return true
-<span id="L287" class="ln">   287  </span>		}
-<span id="L288" class="ln">   288  </span>
-<span id="L289" class="ln">   289  </span>		parent := filepath.Dir(dir)
-<span id="L290" class="ln">   290  </span>		if parent == dir {
-<span id="L291" class="ln">   291  </span>			return false
-<span id="L292" class="ln">   292  </span>		}
-<span id="L293" class="ln">   293  </span>
-<span id="L294" class="ln">   294  </span>		dir = parent
+<span id="L279" class="ln">   279  </span>
+<span id="L280" class="ln">   280  </span>	return filepath.Clean(path)
+<span id="L281" class="ln">   281  </span>}
+<span id="L282" class="ln">   282  </span>
+<span id="L283" class="ln">   283  </span><span class="comment">// RenderEnv は、解決済みの値を make のレシピが eval できる KEY=VALUE へ整形します。</span>
+<span id="L284" class="ln">   284  </span>func RenderEnv(v Values) string {
+<span id="L285" class="ln">   285  </span>	pairs := [][2]string{
+<span id="L286" class="ln">   286  </span>		{&#34;GOBP_GIT_CONTEXT&#34;, v.Git.String()},
+<span id="L287" class="ln">   287  </span>		{&#34;DB_LOCAL&#34;, v.DBLocal},
+<span id="L288" class="ln">   288  </span>		{&#34;DB_TEST&#34;, v.DBTest},
+<span id="L289" class="ln">   289  </span>		{&#34;APP_PROJECT&#34;, v.AppProject},
+<span id="L290" class="ln">   290  </span>		{&#34;AUTH_ISSUER&#34;, v.AuthIssuer},
+<span id="L291" class="ln">   291  </span>		{&#34;INFRA_NO_RECREATE&#34;, v.InfraNoRecreate},
+<span id="L292" class="ln">   292  </span>		{&#34;REALTIME_TABLE_SUFFIX&#34;, v.RealtimeTableSuffix},
+<span id="L293" class="ln">   293  </span>		{&#34;REALTIME_QUEUE_PREFIX&#34;, v.RealtimeQueuePrefix},
+<span id="L294" class="ln">   294  </span>		{&#34;REALTIME_TOPIC&#34;, v.RealtimeTopic},
 <span id="L295" class="ln">   295  </span>	}
-<span id="L296" class="ln">   296  </span>}
-<span id="L297" class="ln">   297  </span>
-<span id="L298" class="ln">   298  </span><span class="comment">// readSlotFile は、.gobp-db-slot の KEY=VALUE を読み取ります。</span>
-<span id="L299" class="ln">   299  </span><span class="comment">// ファイルが無い状態は「スロット未取得」という正常な状態なので、空の map を返します。</span>
-<span id="L300" class="ln">   300  </span>func readSlotFile(path string) map[string]string {
-<span id="L301" class="ln">   301  </span>	values := make(map[string]string)
-<span id="L302" class="ln">   302  </span>
-<span id="L303" class="ln">   303  </span>	b, err := os.ReadFile(path) <span class="comment">//nolint:gosec // 読むのは自 worktree の .gobp-db-slot のみ</span>
-<span id="L304" class="ln">   304  </span>	if err != nil {
-<span id="L305" class="ln">   305  </span>		return values
-<span id="L306" class="ln">   306  </span>	}
-<span id="L307" class="ln">   307  </span>
-<span id="L308" class="ln">   308  </span>	for line := range strings.SplitSeq(string(b), &#34;\n&#34;) {
-<span id="L309" class="ln">   309  </span>		key, value, found := strings.Cut(strings.TrimSpace(line), &#34;=&#34;)
-<span id="L310" class="ln">   310  </span>		if !found {
-<span id="L311" class="ln">   311  </span>			continue
-<span id="L312" class="ln">   312  </span>		}
-<span id="L313" class="ln">   313  </span>
-<span id="L314" class="ln">   314  </span>		values[key] = value
-<span id="L315" class="ln">   315  </span>	}
-<span id="L316" class="ln">   316  </span>
-<span id="L317" class="ln">   317  </span>	return values
-<span id="L318" class="ln">   318  </span>}
-<span id="L319" class="ln">   319  </span>
-<span id="L320" class="ln">   320  </span><span class="comment">// orDefault は、value が空なら def を返します。</span>
-<span id="L321" class="ln">   321  </span>func orDefault(value, def string) string {
-<span id="L322" class="ln">   322  </span>	if value == &#34;&#34; {
-<span id="L323" class="ln">   323  </span>		return def
-<span id="L324" class="ln">   324  </span>	}
-<span id="L325" class="ln">   325  </span>
-<span id="L326" class="ln">   326  </span>	return value
-<span id="L327" class="ln">   327  </span>}
-<span id="L328" class="ln">   328  </span>
-<span id="L329" class="ln">   329  </span><span class="comment">// yesNo は、真偽を表示用の文字列にします。</span>
-<span id="L330" class="ln">   330  </span>func yesNo(v bool) string {
-<span id="L331" class="ln">   331  </span>	if v {
-<span id="L332" class="ln">   332  </span>		return &#34;yes&#34;
-<span id="L333" class="ln">   333  </span>	}
-<span id="L334" class="ln">   334  </span>
-<span id="L335" class="ln">   335  </span>	return &#34;no&#34;
-<span id="L336" class="ln">   336  </span>}
-<span id="L337" class="ln">   337  </span>
+<span id="L296" class="ln">   296  </span>
+<span id="L297" class="ln">   297  </span>	var sb strings.Builder
+<span id="L298" class="ln">   298  </span>	for _, kv := range pairs {
+<span id="L299" class="ln">   299  </span>		fmt.Fprintf(&amp;sb, &#34;%s=&#39;%s&#39;\n&#34;, kv[0], strings.ReplaceAll(kv[1], &#34;&#39;&#34;, `&#39;\&#39;&#39;`))
+<span id="L300" class="ln">   300  </span>	}
+<span id="L301" class="ln">   301  </span>
+<span id="L302" class="ln">   302  </span>	return sb.String()
+<span id="L303" class="ln">   303  </span>}
+<span id="L304" class="ln">   304  </span>
+<span id="L305" class="ln">   305  </span><span class="comment">// RenderValues は、解決済みの値を人間向けの一覧へ整形します。</span>
+<span id="L306" class="ln">   306  </span>func RenderValues(v Values) string {
+<span id="L307" class="ln">   307  </span>	var sb strings.Builder
+<span id="L308" class="ln">   308  </span>
+<span id="L309" class="ln">   309  </span>	sb.WriteString(&#34;\n--- この checkout の解決済みの値 ---\n&#34;)
+<span id="L310" class="ln">   310  </span>	fmt.Fprintf(&amp;sb, &#34;git context       : %s\n&#34;, v.Git)
+<span id="L311" class="ln">   311  </span>	fmt.Fprintf(&amp;sb, &#34;slot held         : %s\n&#34;, yesNo(v.SlotHeld))
+<span id="L312" class="ln">   312  </span>	fmt.Fprintf(&amp;sb, &#34;DB_LOCAL          : %s\n&#34;, v.DBLocal)
+<span id="L313" class="ln">   313  </span>	fmt.Fprintf(&amp;sb, &#34;DB_TEST           : %s\n&#34;, v.DBTest)
+<span id="L314" class="ln">   314  </span>	fmt.Fprintf(&amp;sb, &#34;APP_PROJECT       : %s\n&#34;, v.AppProject)
+<span id="L315" class="ln">   315  </span>	fmt.Fprintf(&amp;sb, &#34;AUTH_ISSUER       : %s\n&#34;, v.AuthIssuer)
+<span id="L316" class="ln">   316  </span>	fmt.Fprintf(&amp;sb, &#34;INFRA_NO_RECREATE : %s\n&#34;, orDefault(v.InfraNoRecreate, &#34;（渡さない）&#34;))
+<span id="L317" class="ln">   317  </span>	fmt.Fprintf(&amp;sb, &#34;REALTIME_TABLE    : %s\n&#34;, v.RealtimeTableSuffix)
+<span id="L318" class="ln">   318  </span>	fmt.Fprintf(&amp;sb, &#34;REALTIME_QUEUE    : %s\n&#34;, v.RealtimeQueuePrefix)
+<span id="L319" class="ln">   319  </span>	fmt.Fprintf(&amp;sb, &#34;REALTIME_TOPIC    : %s\n&#34;, v.RealtimeTopic)
+<span id="L320" class="ln">   320  </span>
+<span id="L321" class="ln">   321  </span>	return sb.String()
+<span id="L322" class="ln">   322  </span>}
+<span id="L323" class="ln">   323  </span>
+<span id="L324" class="ln">   324  </span><span class="comment">// realGitProbe は、ホストの git を使う GitProbe を返します。</span>
+<span id="L325" class="ln">   325  </span>func realGitProbe() GitProbe {
+<span id="L326" class="ln">   326  </span>	return GitProbe{
+<span id="L327" class="ln">   327  </span>		LookGit: func() error {
+<span id="L328" class="ln">   328  </span>			_, err := exec.LookPath(&#34;git&#34;)
+<span id="L329" class="ln">   329  </span>
+<span id="L330" class="ln">   330  </span>			return err
+<span id="L331" class="ln">   331  </span>		},
+<span id="L332" class="ln">   332  </span>		GitDirs: func(ctx context.Context, root string) (string, error) {
+<span id="L333" class="ln">   333  </span>			cmd := exec.CommandContext(ctx, &#34;git&#34;, &#34;rev-parse&#34;, &#34;--git-dir&#34;, &#34;--git-common-dir&#34;)
+<span id="L334" class="ln">   334  </span>			cmd.Dir = root
+<span id="L335" class="ln">   335  </span>			out, err := cmd.Output()
+<span id="L336" class="ln">   336  </span>
+<span id="L337" class="ln">   337  </span>			return string(out), err
+<span id="L338" class="ln">   338  </span>		},
+<span id="L339" class="ln">   339  </span>		HasGitEntry: hasGitEntry,
+<span id="L340" class="ln">   340  </span>	}
+<span id="L341" class="ln">   341  </span>}
+<span id="L342" class="ln">   342  </span>
+<span id="L343" class="ln">   343  </span><span class="comment">// hasGitEntry は、dir か その祖先に .git（ディレクトリ、またはリンク worktree の .git ファイル）が</span>
+<span id="L344" class="ln">   344  </span><span class="comment">// あるかを返します。</span>
+<span id="L345" class="ln">   345  </span>func hasGitEntry(dir string) bool {
+<span id="L346" class="ln">   346  </span>	for {
+<span id="L347" class="ln">   347  </span>		if _, err := os.Lstat(filepath.Join(dir, &#34;.git&#34;)); err == nil {
+<span id="L348" class="ln">   348  </span>			return true
+<span id="L349" class="ln">   349  </span>		}
+<span id="L350" class="ln">   350  </span>
+<span id="L351" class="ln">   351  </span>		parent := filepath.Dir(dir)
+<span id="L352" class="ln">   352  </span>		if parent == dir {
+<span id="L353" class="ln">   353  </span>			return false
+<span id="L354" class="ln">   354  </span>		}
+<span id="L355" class="ln">   355  </span>
+<span id="L356" class="ln">   356  </span>		dir = parent
+<span id="L357" class="ln">   357  </span>	}
+<span id="L358" class="ln">   358  </span>}
+<span id="L359" class="ln">   359  </span>
+<span id="L360" class="ln">   360  </span><span class="comment">// readSlotFile は、.gobp-db-slot の KEY=VALUE を読み取ります。</span>
+<span id="L361" class="ln">   361  </span><span class="comment">// ファイルが無い状態は「スロット未取得」という正常な状態なので、空の map を返します。</span>
+<span id="L362" class="ln">   362  </span>func readSlotFile(path string) map[string]string {
+<span id="L363" class="ln">   363  </span>	values := make(map[string]string)
+<span id="L364" class="ln">   364  </span>
+<span id="L365" class="ln">   365  </span>	b, err := os.ReadFile(path) <span class="comment">//nolint:gosec // 読むのは自 worktree の .gobp-db-slot のみ</span>
+<span id="L366" class="ln">   366  </span>	if err != nil {
+<span id="L367" class="ln">   367  </span>		return values
+<span id="L368" class="ln">   368  </span>	}
+<span id="L369" class="ln">   369  </span>
+<span id="L370" class="ln">   370  </span>	for line := range strings.SplitSeq(string(b), &#34;\n&#34;) {
+<span id="L371" class="ln">   371  </span>		key, value, found := strings.Cut(strings.TrimSpace(line), &#34;=&#34;)
+<span id="L372" class="ln">   372  </span>		if !found {
+<span id="L373" class="ln">   373  </span>			continue
+<span id="L374" class="ln">   374  </span>		}
+<span id="L375" class="ln">   375  </span>
+<span id="L376" class="ln">   376  </span>		values[key] = value
+<span id="L377" class="ln">   377  </span>	}
+<span id="L378" class="ln">   378  </span>
+<span id="L379" class="ln">   379  </span>	return values
+<span id="L380" class="ln">   380  </span>}
+<span id="L381" class="ln">   381  </span>
+<span id="L382" class="ln">   382  </span><span class="comment">// mockAuthIssuer は、mock 認証サーバーのホスト公開ポートから issuer URL を組み立てます。</span>
+<span id="L383" class="ln">   383  </span>func mockAuthIssuer(port int) string {
+<span id="L384" class="ln">   384  </span>	return &#34;http://localhost:&#34; + strconv.Itoa(port) + mockAuthIssuerPath
+<span id="L385" class="ln">   385  </span>}
+<span id="L386" class="ln">   386  </span>
+<span id="L387" class="ln">   387  </span><span class="comment">// realtimeName は、基底名にスロット番号を継いだ資源名を返します（基底の出所は Config.Realtime）。</span>
+<span id="L388" class="ln">   388  </span><span class="comment">// 基底が空なら継ぎません。LoadRealtimeBase が空を弾くので今は届きませんが、継ぐと `-wt2` のような</span>
+<span id="L389" class="ln">   389  </span><span class="comment">// 名前でない値になるため、基底の検査が緩んだときにここで止めます。</span>
+<span id="L390" class="ln">   390  </span>func realtimeName(base, slot, infix string) string {
+<span id="L391" class="ln">   391  </span>	if base == &#34;&#34; || slot == &#34;&#34; {
+<span id="L392" class="ln">   392  </span>		return base
+<span id="L393" class="ln">   393  </span>	}
+<span id="L394" class="ln">   394  </span>
+<span id="L395" class="ln">   395  </span>	return base + infix + slot
+<span id="L396" class="ln">   396  </span>}
+<span id="L397" class="ln">   397  </span>
+<span id="L398" class="ln">   398  </span><span class="comment">// orDefault は、value が空なら def を返します。</span>
+<span id="L399" class="ln">   399  </span>func orDefault(value, def string) string {
+<span id="L400" class="ln">   400  </span>	if value == &#34;&#34; {
+<span id="L401" class="ln">   401  </span>		return def
+<span id="L402" class="ln">   402  </span>	}
+<span id="L403" class="ln">   403  </span>
+<span id="L404" class="ln">   404  </span>	return value
+<span id="L405" class="ln">   405  </span>}
+<span id="L406" class="ln">   406  </span>
+<span id="L407" class="ln">   407  </span><span class="comment">// yesNo は、真偽を表示用の文字列にします。</span>
+<span id="L408" class="ln">   408  </span>func yesNo(v bool) string {
+<span id="L409" class="ln">   409  </span>	if v {
+<span id="L410" class="ln">   410  </span>		return &#34;yes&#34;
+<span id="L411" class="ln">   411  </span>	}
+<span id="L412" class="ln">   412  </span>
+<span id="L413" class="ln">   413  </span>	return &#34;no&#34;
+<span id="L414" class="ln">   414  </span>}
+<span id="L415" class="ln">   415  </span>
 </pre><p><a href="../../../../../src/go-boilerplate/internal/cli/dbslot/resolve.go.html?m=text">View as plain text</a></p>
 
 <div id="footer">Generated by <a href="https://godoc.org/golang.org/x/tools/godoc" target="_blank">godoc</a> + <a href="https://codeberg.org/tslocum/godoc-static" target="_blank">godoc-static</a></div>

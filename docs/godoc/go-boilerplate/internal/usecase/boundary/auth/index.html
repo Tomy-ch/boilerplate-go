@@ -159,6 +159,11 @@
 				
 			
 				
+				<dd><a href="#IdentityRegistrar">type IdentityRegistrar</a></dd>
+				
+				
+			
+				
 				<dd><a href="#IdentityResolver">type IdentityResolver</a></dd>
 				
 				
@@ -181,6 +186,8 @@
 				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/auth/credential.go.html">credential.go</a>
 			
 				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/auth/error.go.html">error.go</a>
+			
+				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/auth/registrar.go.html">registrar.go</a>
 			
 				<a href="../../../../../src/go-boilerplate/internal/usecase/boundary/auth/resolver.go.html">resolver.go</a>
 			
@@ -464,7 +471,37 @@ userID がゼロ値の場合は ErrUserIDZero を返します。
 		
 			
 			
-			</p><h2 id="IdentityResolver">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/auth/resolver.go.html?s=341:725#L1">IdentityResolver</a>
+			</p><h2 id="IdentityRegistrar">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/auth/registrar.go.html?s=408:878#L2">IdentityRegistrar</a>
+				<a class="permalink" href="#IdentityRegistrar">¶</a>
+				
+				
+			</h2>
+			<p>IdentityRegistrar は、認証済みの外部アイデンティティ（issuer + subject）を内部ユーザーへ結び付ける
+インターフェースです。IdentityResolver が読む対応関係を、こちらが作ります。
+
+			</p><pre>type IdentityRegistrar interface {
+    <span class="comment">// Register は、issuer と subject の組を userID へ結び付けます。</span>
+    <span class="comment">// 呼び出し元のトランザクションがあればそれに参加します。</span>
+    <span class="comment">// 同じ組が既に結び付いている場合は apperror.ErrConflict を返します。</span>
+    <span class="comment">// 在籍しない userID への結び付けは apperror.ErrInvalidArgument を返します。</span>
+    Register(ctx <a href="../../../../../context/">context</a>.<a href="../../../../../context/#Context">Context</a>, userID <a href="../../../../../go-boilerplate/pkg/uuid/">uuid</a>.<a href="../../../../../go-boilerplate/pkg/uuid/#UUID">UUID</a>, issuer, subject <a href="../../../../../builtin/#string">string</a>) <a href="../../../../../builtin/#error">error</a>
+}</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="IdentityResolver">type <a href="../../../../../src/go-boilerplate/internal/usecase/boundary/auth/resolver.go.html?s=341:725#L1">IdentityResolver</a>
 				<a class="permalink" href="#IdentityResolver">¶</a>
 				
 				
